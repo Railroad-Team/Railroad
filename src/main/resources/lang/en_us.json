@@ -6,6 +6,7 @@
 	
 	"menuBar.json.name": "Json File",
 	"menuBar.json.itemModel": "Item Model",
+	"menuBar.json.craftingRecipe": "Crafting Recipe",
 	
 	"tabs.projectExplorer.name": "Project Explorer",
 	
@@ -30,6 +31,7 @@
 	"buttons.next": "Next",
 	"buttons.cancel": "Cancel",
 	"buttons.create": "Create",
+	"buttons.continue": "Continue",
 	
 	"textArea.selectPath": "Select Folder",
 	"textArea.fileName": "File Name",
@@ -41,6 +43,18 @@
 	
 	"jsonGenerator.parent": "Parent",
 	"jsonGenerator.modelTypeField": "Model Type: ",
-	"jsonGenerator.layer0": "Layer0 Texture: "
+	"jsonGenerator.layer0": "Layer0 Texture: ",
+	
+	"jsonGenerator.recipeTypeField": "Recipe Type: ",
+	"jsonGenerator.ingredientForKey": "Ingredient for key %: ",
+	"jsonGenerator.result": "Result: ",
+	"jsonGenerator.count": "Count: ",
+	
+	"alert.typeNotSelected": "Type Not Selected!",
+	"alert.noFileName": "File Name Not Provided!",
+	"alert.fileExists": "File already exists!",
+	
+	"alert.shapedCrafting.patternEmpty": "Pattern cannot be empty!",
+	"alert.shapedCrafting.rowsLength": "Rows need to have the same length!"
 	
 }

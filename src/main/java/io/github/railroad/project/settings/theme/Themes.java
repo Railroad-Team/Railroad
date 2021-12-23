@@ -14,9 +14,11 @@ public class Themes {
 
 	public static final Theme DARK_THEME = new Theme("DarkMode").withButtonColor(fxColourToAwt(Color.DARKGRAY))
 			.withBackgroundColor(fxColourToAwt(Color.DIMGRAY))
-			.withTextColor(fxColourToAwt(Color.ALICEBLUE));
+			.withTextColor(fxColourToAwt(Color.ALICEBLUE))
+			.withTextFieldColor(fxColourToAwt(Color.LIGHTGRAY));
 
 	public static final Theme WHITE_THEME = new Theme("WhiteMode").withButtonColor(fxColourToAwt(Color.ANTIQUEWHITE))
 			.withBackgroundColor(fxColourToAwt(Color.FLORALWHITE))
-			.withTextColor(fxColourToAwt(Color.BLACK));
+			.withTextColor(fxColourToAwt(Color.BLACK))
+			.withTextFieldColor(fxColourToAwt(Color.WHITESMOKE));
 }

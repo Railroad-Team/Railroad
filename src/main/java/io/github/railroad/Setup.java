@@ -189,6 +189,12 @@ public class Setup {
                 controller.textArea = newCodeArea;
                 controller.setFile(file);
             }
+            
+            DiscordRichPresence newPresence = new DiscordRichPresence.Builder("Working on " + project.getProjectName())
+                    .setDetails("Editing " + file.getName()).setBigImage("logo", "Railroad IDE")
+                    .setSmallImage("logo", "An IDE built for modders, made by modders.").setParty("", 0, 0)
+                    .setStartTimestamps(System.currentTimeMillis()).build();
+        	DiscordRPC.discordUpdatePresence(newPresence);
         } else if (this.editorTabPane.getTabs().isEmpty()) {
             if (this.mainSplitPane.getItems().size() > 1) {
                 this.mainSplitPane.getItems().remove(1);
@@ -200,12 +206,6 @@ public class Setup {
             this.baseCodeArea.getProperties().put("RealParent", this.mainSplitPane);
         }
         
-        DiscordRichPresence newPresence = new DiscordRichPresence.Builder("Working on " + project.getProjectName())
-                .setDetails("Editing " + file.getName()).setBigImage("logo", "Railroad IDE")
-                .setSmallImage("logo", "An IDE built for modders, made by modders.").setParty("", 0, 0)
-                .setStartTimestamps(System.currentTimeMillis()).build();
-    	DiscordRPC.discordUpdatePresence(newPresence);
-
         // TODO: Use this. But fix the tab pane and scroll bar issues that occur
         // dividerAdjust();
     }

@@ -14,6 +14,7 @@ public class Theme {
 	private Color buttonColour;
 	private Color backgroundColour;
 	private Color textColour;
+	private Color textFieldColour;
 
 	public Theme(String name) {
 		this.name = name;
@@ -63,5 +64,14 @@ public class Theme {
 	
 	public Color getTextColor() {
 		return textColour;
+	}
+	
+	public Theme withTextFieldColor(Color textFieldColor) {
+		this.textFieldColour = textFieldColor;
+		return this;
+	}
+
+	public Color getTextFieldColor() {
+		return textFieldColour;
 	}
 }

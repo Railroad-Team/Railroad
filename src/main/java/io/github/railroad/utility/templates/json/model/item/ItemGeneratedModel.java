@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.lang.LangProvider;
 import io.github.railroad.utility.Gsons;
+import io.github.railroad.utility.helper.JavaFXHelper;
 import io.github.railroad.utility.templates.json.JsonTemplate;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -19,21 +20,25 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.HBox;
+import javafx.stage.Stage;
 
 public class ItemGeneratedModel extends JsonTemplate {
 
-	public ItemGeneratedModel(@NotNull Project project, String fileName) {
-		super(project, fileName);
+	public ItemGeneratedModel(@NotNull Project project, String folder, String fileName) {
+		super(project, folder, fileName);
 	}
 
 	private TextField layer0Texture = new TextField();
 	private Label layer0Label = new Label(fromLang("layer0"));
 
 	@Override
-	public void openWindow() {
+	public void openWindow(Stage stage) {
 		clearCache();
+
 		layer0Label.setPadding(new Insets(3));
+
+		layer0Texture.setOnInputMethodTextChanged(e -> System.out.println(e.getCommitted()));
 
 		final var createBtn = new Button(LangProvider.fromLang("buttons.create"));
 
@@ -46,7 +51,7 @@ public class ItemGeneratedModel extends JsonTemplate {
 
 			jsonObject.add("textures", texturesObj);
 
-			var file = new File(project.getProjectFolder(), fileName + ".json");
+			var file = new File(folderName, fileName + ".json");
 
 			if (file.exists()) {
 				var alert = new Alert(AlertType.ERROR);
@@ -62,11 +67,19 @@ public class ItemGeneratedModel extends JsonTemplate {
 			}
 		});
 
-		final var vbox = new VBox(5, layer0Label, layer0Texture, createBtn);
-		final var scene = new Scene(vbox);
+		final var hbox = new HBox(5, layer0Label, layer0Texture, createBtn);
+		hbox.setPadding(new Insets(10));
+		JavaFXHelper.setNodeStyle(project.getTheme(), layer0Label, layer0Texture, createBtn, hbox);
+		final var scene = new Scene(hbox);
 
+		stage.setTitle("Item Generated Json File");
+		stage.sizeToScene();
+		stage.requestFocus();
+		stage.centerOnScreen();
+		stage.setResizable(true);
 		stage.setScene(scene);
 		stage.showAndWait();
+		// });
 	}
 
 	@Override

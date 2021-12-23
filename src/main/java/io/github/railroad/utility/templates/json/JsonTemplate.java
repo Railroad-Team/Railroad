@@ -10,32 +10,35 @@ import javafx.stage.Stage;
 
 /**
  * Class used for creating JsonTemplates for the json generator
+ * 
  * @author matyrobbrt
  *
  */
 public abstract class JsonTemplate {
-	
+
 	public final Project project;
 	public final String fileName;
+	public final String folderName;
 
-	protected JsonTemplate(@NotNull Project project, String fileName) {
+	protected JsonTemplate(@NotNull Project project, String folderName, String fileName) {
 		this.project = project;
 		this.fileName = fileName;
+		this.folderName = folderName;
 	}
+
+	public abstract void openWindow(Stage stage);
 
 	protected final Stage stage = new Stage();
 
-	public abstract void openWindow();
-	
 	public void writeDirectory(File dir) {
 		if (!dir.exists())
 			dir.mkdirs();
 	}
-	
+
 	public String fromLang(String key) {
 		return LangProvider.fromLang("jsonGenerator." + key);
 	}
-	
+
 	protected void clearCache() {
 
 	}

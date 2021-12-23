@@ -47,6 +47,10 @@ public class Railroad extends Application {
         
         scene.setOnKeyPressed(this.setup::handleKeyPress);
     }
+    
+    public static String getResource(String name) {
+    	return Railroad.class.getResource(name).getPath();
+    }
 
     @Override
     public void stop() {
