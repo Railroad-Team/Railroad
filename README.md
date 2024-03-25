@@ -1,4 +1,4 @@
-<img src="/src/main/resources/images/logo.png" width="128" height="128" alt="The Railroad IDE logo"/>
+<img src="/src/main/resources/io/github/railroad/images/logo.png" width="128" height="128" alt="The Railroad IDE logo"/>
 
 # Railroad IDE
 
