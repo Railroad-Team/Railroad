@@ -10,7 +10,9 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
-import okhttp3.*;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -28,8 +30,8 @@ public record ForgeVersion(MinecraftVersion minecraftVersion, String id, boolean
     private static final ObjectProperty<ForgeVersion> LATEST = new SimpleObjectProperty<>();
 
     public static void load() {
-        Promos.load();
-        requestForgeVersions();
+        Promos.requestForgePromos();
+        ForgeVersion.requestForgeVersions();
     }
 
     private static void requestForgeVersions() {
@@ -49,13 +51,14 @@ public record ForgeVersion(MinecraftVersion minecraftVersion, String id, boolean
             MinecraftVersion minecraftVersionObj = parsedMinecraftVersion.get();
 
             ForgeVersion latest = Promos.getLatest(minecraftVersionObj);
-            boolean isLatest = latest != null && latest.id().equals(version);
+            boolean isLatest = latest != null && latest.id().equals(forgeVersion);
             if (isLatest) {
                 LATEST.set(latest);
             }
 
             ForgeVersion recommended = Promos.getRecommended(minecraftVersionObj);
-            boolean isRecommended = recommended != null && recommended.id().equals(version);
+
+            boolean isRecommended = recommended != null && recommended.id().equals(forgeVersion);
             if (isRecommended) {
                 FORGE_VERSIONS.computeIfAbsent(minecraftVersionObj, k -> FXCollections.observableArrayList()).add(recommended);
             } else if (isLatest) {
@@ -98,69 +101,39 @@ public record ForgeVersion(MinecraftVersion minecraftVersion, String id, boolean
         private static final ObservableMap<MinecraftVersion, ForgeVersion> RECOMMENDED = FXCollections.observableHashMap();
         private static final ObservableMap<MinecraftVersion, ForgeVersion> LATEST = FXCollections.observableHashMap();
 
-        public static void load() {
-            requestForgePromos();
-        }
-
         private static void requestForgePromos() {
-            Railroad.HTTP_CLIENT.newCall(new Request.Builder().url(FORGE_PROMOS_URL).get().build()).enqueue(new Callback() {
-                @Override
-                public void onFailure(@NotNull Call call, @NotNull IOException exception) {
-                    throw new RuntimeException("Failed to request Forge promos", exception);
-                }
+            try (Response response = Railroad.HTTP_CLIENT.newCall(new Request.Builder().url(FORGE_PROMOS_URL).get().build()).execute()) {
+                String json = getString(response);
 
-                @Override
-                public void onResponse(@NotNull Call call, @NotNull Response response) {
-                    if (!response.isSuccessful()) {
-                        throw new RuntimeException("Failed to request Forge promos: " + response.message());
+                JsonObject object = Railroad.GSON.fromJson(json, JsonObject.class);
+                JsonObject promosObject = object.getAsJsonObject("promos");
+                for (Map.Entry<String, JsonElement> entry : promosObject.entrySet()) {
+                    String key = entry.getKey();
+                    String forgeVersion = entry.getValue().getAsString();
+
+                    String[] split = key.split("-");
+                    String mcVersionStr = split[0];
+                    boolean recommended = split.length > 1 && split[1].equals("recommended");
+
+                    Optional<MinecraftVersion> minecraftVersionOpt = MinecraftVersion.fromId(mcVersionStr);
+                    if (minecraftVersionOpt.isEmpty())
+                        continue;
+
+                    MinecraftVersion minecraftVersion = minecraftVersionOpt.get();
+                    ForgeVersion forgeVersionObj = RECOMMENDED.get(minecraftVersion);
+                    if (forgeVersionObj == null || !forgeVersionObj.id().equals(forgeVersion)) {
+                        forgeVersionObj = new ForgeVersion(minecraftVersion, forgeVersion, recommended);
                     }
 
-                    try {
-                        ResponseBody body = response.body();
-                        if (body == null) {
-                            throw new RuntimeException("Failed to request Forge promos: Empty response body");
-                        }
-
-                        String json = body.string();
-                        if (json.isBlank()) {
-                            throw new RuntimeException("Failed to request Forge promos: Empty JSON response");
-                        }
-
-                        JsonObject object = Railroad.GSON.fromJson(json, JsonObject.class);
-                        JsonObject promosObject = object.getAsJsonObject("promos");
-                        for (Map.Entry<String, JsonElement> entry : promosObject.entrySet()) {
-                            String key = entry.getKey();
-                            String forgeVersion = entry.getValue().getAsString();
-
-                            String[] split = key.split("-");
-                            String mcVersionStr = split[0];
-                            boolean recommended = split.length > 1 && split[1].equals("recommended");
-
-                            Optional<MinecraftVersion> minecraftVersionOpt = MinecraftVersion.fromId(mcVersionStr);
-                            if (minecraftVersionOpt.isEmpty())
-                                continue;
-
-                            MinecraftVersion minecraftVersion = minecraftVersionOpt.get();
-                            ForgeVersion forgeVersionObj = RECOMMENDED.get(minecraftVersion);
-                            if (forgeVersionObj == null || !forgeVersionObj.id().equals(forgeVersion)) {
-                                forgeVersionObj = new ForgeVersion(minecraftVersion, forgeVersion, recommended);
-                            }
-
-                            if (recommended) {
-                                synchronized (RECOMMENDED) {
-                                    RECOMMENDED.put(minecraftVersion, forgeVersionObj);
-                                }
-                            } else {
-                                synchronized (LATEST) {
-                                    LATEST.put(minecraftVersion, forgeVersionObj);
-                                }
-                            }
-                        }
-                    } catch (IOException exception) {
-                        throw new RuntimeException("Failed to request Forge promos", exception);
+                    if (recommended) {
+                        RECOMMENDED.put(minecraftVersion, forgeVersionObj);
+                    } else {
+                        LATEST.put(minecraftVersion, forgeVersionObj);
                     }
                 }
-            });
+            } catch (IOException exception) {
+                throw new RuntimeException("Failed to request Forge promos", exception);
+            }
         }
 
         private static ForgeVersion getLatest(MinecraftVersion minecraftVersion) {
@@ -169,6 +142,22 @@ public record ForgeVersion(MinecraftVersion minecraftVersion, String id, boolean
 
         private static ForgeVersion getRecommended(MinecraftVersion minecraftVersion) {
             return RECOMMENDED.get(minecraftVersion);
+        }
+
+        @NotNull
+        private static String getString(Response response) throws IOException {
+            if (!response.isSuccessful())
+                throw new RuntimeException("Failed to request Forge promos: " + response.message());
+
+            ResponseBody body = response.body();
+            if (body == null)
+                throw new RuntimeException("Failed to request Forge promos: Empty response body");
+
+            String bodyStr = body.string();
+            if (bodyStr.isBlank())
+                throw new RuntimeException("Failed to request Forge promos: Empty response");
+
+            return bodyStr;
         }
     }
 }

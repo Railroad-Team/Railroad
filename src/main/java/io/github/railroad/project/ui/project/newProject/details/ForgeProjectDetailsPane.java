@@ -7,18 +7,28 @@ import io.github.railroad.project.ProjectType;
 import io.github.railroad.project.ui.BrowseButton;
 import io.github.railroad.utility.ClassNameValidator;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.Border;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.util.StringConverter;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeRegular;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ForgeProjectDetailsPane extends VBox {
     private final TextField projectNameField = new TextField();
     private final TextField projectPathField = new TextField();
-    private final BrowseButton browseButton = new BrowseButton(this.projectPathField, BrowseButton.BrowseType.DIRECTORY, BrowseButton.BrowseSelectionMode.SINGLE);
+    private final BrowseButton browseButton;
     private final CheckBox createGitCheckBox = new CheckBox();
     private final ComboBox<License> licenseComboBox = new ComboBox<>();
     private final TextField licenseCustomField = new TextField();
@@ -40,28 +50,94 @@ public class ForgeProjectDetailsPane extends VBox {
     private final TextField artifactIdField = new TextField();
     private final TextField versionField = new TextField();
 
+    private final AtomicBoolean hasOneDriveWarning = new AtomicBoolean(false);
+    private final AtomicBoolean hasModidWarning = new AtomicBoolean(false);
+    private final AtomicBoolean hasTypedInModid = new AtomicBoolean(false);
+
     public ForgeProjectDetailsPane() {
         // Project Section
         var projectSection = new VBox(10);
 
         var projectNameBox = new HBox(10);
+        projectNameBox.setAlignment(Pos.CENTER_LEFT);
         var projectNameLabel = new Label("Name:");
         projectNameLabel.setLabelFor(projectNameField);
         projectNameBox.getChildren().addAll(projectNameLabel, projectNameField);
 
+        var projectPathVBox = new VBox(10);
+        projectPathVBox.setAlignment(Pos.CENTER_LEFT);
+
+        var createdAtLabel = new Label("This will be created at: " + System.getProperty("user.home"));
+        createdAtLabel.setGraphic(new FontIcon(FontAwesomeSolid.INFO_CIRCLE));
+        createdAtLabel.setTooltip(new Tooltip("The project will be created in this directory."));
+        createdAtLabel.setTextFill(Color.SLATEGRAY);
+
         var projectPathBox = new HBox(10);
+        projectPathBox.setAlignment(Pos.CENTER_LEFT);
         var projectPathLabel = new Label("Location:");
         projectPathLabel.setLabelFor(projectPathField);
         projectPathField.setPrefWidth(300);
+        projectPathField.setText(System.getProperty("user.home"));
+        projectPathField.setEditable(false);
+        projectPathField.textProperty().addListener((observable, oldValue, newValue) -> {
+            // Validate the project path
+            Path path = Path.of(newValue);
+            if (Files.notExists(path) || !Files.isDirectory(path))
+                projectPathField.setStyle("-fx-text-fill: red;");
+            else
+                projectPathField.setStyle("-fx-text-fill: black;");
+
+            // Update the created at label
+            String fullPath = fixPath(projectPathField.getText().trim() + "/" + projectNameField.getText().trim());
+            createdAtLabel.setText("This will be created at: " + fullPath);
+
+            // If the project is in OneDrive, warn the user
+            if (fullPath.contains("OneDrive") && hasOneDriveWarning.compareAndSet(false, true)) {
+                projectPathField.setStyle("-fx-text-fill: orange;");
+
+                var tooltip = new Tooltip("It is not recommended to create projects in OneDrive as it has a tendency to cause problems.");
+                Tooltip.install(projectPathField, tooltip);
+
+                var warningIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
+                warningIcon.setIconSize(16);
+                warningIcon.setIconColor(Color.ORANGE);
+                projectPathBox.getChildren().add(warningIcon);
+            } else if (!fullPath.contains("OneDrive") && hasOneDriveWarning.compareAndSet(true, false)) {
+                projectPathField.setStyle("-fx-text-fill: black;");
+
+                Tooltip.uninstall(projectPathField, projectPathField.getTooltip());
+
+                projectPathBox.getChildren().removeLast();
+            } else if(fullPath.contains("OneDrive")) {
+                projectPathField.setStyle("-fx-text-fill: orange;");
+            } else {
+                projectPathField.setStyle("-fx-text-fill: black;");
+            }
+        });
+
+        var browseButtonIcon = new FontIcon(FontAwesomeSolid.FOLDER_OPEN);
+        browseButtonIcon.setIconSize(16);
+        browseButtonIcon.setIconColor(Color.CADETBLUE);
+        browseButton = new BrowseButton();
+        browseButton.parentWindowProperty().bind(sceneProperty().map(Scene::getWindow));
+        browseButton.textFieldProperty().set(projectPathField);
+        browseButton.browseTypeProperty().set(BrowseButton.BrowseType.DIRECTORY);
+        browseButton.setGraphic(browseButtonIcon);
+        browseButton.setTooltip(new Tooltip("Browse"));
         projectPathBox.getChildren().addAll(projectPathLabel, projectPathField, browseButton);
 
+        projectPathVBox.getChildren().addAll(projectPathBox, createdAtLabel);
+
         var gitBox = new HBox(10);
+        gitBox.setAlignment(Pos.CENTER_LEFT);
         var createGitLabel = new Label("Create Git Repository:");
         createGitLabel.setLabelFor(createGitCheckBox);
         gitBox.getChildren().addAll(createGitLabel, createGitCheckBox);
 
         var licenseVBox = new VBox(10);
+        licenseVBox.setAlignment(Pos.CENTER_LEFT);
         var licenseBox = new HBox(10);
+        licenseBox.setAlignment(Pos.CENTER_LEFT);
         var licenseLabel = new Label("License:");
         licenseLabel.setLabelFor(licenseComboBox);
         licenseComboBox.getItems().addAll(License.values());
@@ -87,12 +163,14 @@ public class ForgeProjectDetailsPane extends VBox {
         licenseBox.getChildren().addAll(licenseLabel, licenseComboBox);
         licenseVBox.getChildren().add(licenseBox);
 
-        projectSection.getChildren().addAll(projectNameBox, projectPathBox, gitBox, licenseVBox);
+        projectSection.getChildren().addAll(projectNameBox, projectPathVBox, gitBox, licenseVBox);
 
         // Minecraft Section
         var minecraftSection = new VBox(10);
+        minecraftSection.setAlignment(Pos.CENTER_LEFT);
 
         var minecraftVersionBox = new HBox(10);
+        minecraftVersionBox.setAlignment(Pos.CENTER_LEFT);
         var minecraftVersionLabel = new Label("Minecraft Version:");
         minecraftVersionLabel.setLabelFor(minecraftVersionComboBox);
         minecraftVersionComboBox.getItems().addAll(MinecraftVersion.getSupportedVersions(ProjectType.FORGE));
@@ -111,39 +189,75 @@ public class ForgeProjectDetailsPane extends VBox {
         minecraftVersionBox.getChildren().addAll(minecraftVersionLabel, minecraftVersionComboBox);
 
         var forgeVersionBox = new HBox(10);
+        forgeVersionBox.setAlignment(Pos.CENTER_LEFT);
         var forgeVersionLabel = new Label("Forge Version:");
         forgeVersionLabel.setLabelFor(forgeVersionComboBox);
         minecraftVersionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             forgeVersionComboBox.getItems().setAll(ForgeVersion.getVersions(newValue));
             forgeVersionComboBox.setValue(ForgeVersion.getLatestVersion(newValue));
         });
-        forgeVersionComboBox.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(ForgeVersion object) {
-                return object.id();
-            }
-
-            @Override
-            public ForgeVersion fromString(String string) {
-                return ForgeVersion.fromId(string).orElse(null);
-            }
-        });
         forgeVersionComboBox.setCellFactory(param -> new ForgeVersionListCell());
-        forgeVersionComboBox.getItems().addAll(ForgeVersion.getVersions(MinecraftVersion.getLatestStableVersion())); // TODO: Figure out why recommended is not showing
+        forgeVersionComboBox.setButtonCell(new ForgeVersionListCell());
+        forgeVersionComboBox.getItems().addAll(ForgeVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
         forgeVersionComboBox.setValue(ForgeVersion.getLatestVersion(MinecraftVersion.getLatestStableVersion()));
         forgeVersionBox.getChildren().addAll(forgeVersionLabel, forgeVersionComboBox);
 
         var modIdBox = new HBox(10);
+        modIdBox.setAlignment(Pos.CENTER_LEFT);
         var modIdLabel = new Label("Mod ID:");
         modIdLabel.setLabelFor(modIdField);
+        Border modidFieldBorder = modIdField.getBorder();
         modIdField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (!newValue.matches("[a-z0-9_-]*")) { // Only allow [a-z0-9_-]
-                modIdField.setText(oldValue);
+            if(oldValue.equals(newValue))
+                return;
+
+            if (!newValue.matches("[a-z][a-z0-9_]")) {
+                modIdField.setText(newValue = newValue.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_]", ""));
             }
+
+            // Only allow a maximum of 64 characters
+            if (newValue.length() > 64) {
+                modIdField.setText(newValue = newValue.substring(0, 64));
+            }
+
+            // Validate the mod ID
+            if (newValue.length() < 3 || !newValue.matches("^[a-z][a-z0-9_]{1,63}$"))
+                modIdField.setStyle("-fx-border-color: red;");
+            else
+                modIdField.setBorder(modidFieldBorder);
+
+            // If the mod ID is not valid, show a warning
+            if ((newValue.length() < 5 && newValue.length() > 2) && hasModidWarning.compareAndSet(false, true)) {
+                modIdField.setStyle("-fx-border-color: orange;");
+
+                var tooltip = new Tooltip("Short mod IDs are discouraged as they may conflict with other mods.");
+                Tooltip.install(modIdField, tooltip);
+
+                var warningIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
+                warningIcon.setIconSize(16);
+                warningIcon.setIconColor(Color.ORANGE);
+                modIdBox.getChildren().add(warningIcon);
+            } else if (newValue.length() >= 5 && hasModidWarning.compareAndSet(true, false)) {
+                modIdField.setBorder(modidFieldBorder);
+
+                Tooltip.uninstall(modIdField, modIdField.getTooltip());
+                modIdBox.getChildren().removeLast();
+            } else if(newValue.length() < 3 && hasModidWarning.compareAndSet(true, false)) {
+                Tooltip.uninstall(modIdField, modIdField.getTooltip());
+                modIdBox.getChildren().removeLast();
+            }
+        });
+        modIdField.setOnKeyTyped(event -> {
+            // If the user has typed in the mod ID and it is not empty, set the hasTypedInModid flag to true
+            if (!hasTypedInModid.get() && !modIdField.getText().isBlank())
+                hasTypedInModid.set(true);
+            else if (hasTypedInModid.get() && modIdField.getText().isBlank())
+                hasTypedInModid.set(false);
         });
         modIdBox.getChildren().addAll(modIdLabel, modIdField);
 
         var modNameBox = new HBox(10);
+        modNameBox.setAlignment(Pos.CENTER_LEFT);
         var modNameLabel = new Label("Mod Name:");
         modNameLabel.setLabelFor(modNameField);
         modNameField.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -154,6 +268,7 @@ public class ForgeProjectDetailsPane extends VBox {
         modNameBox.getChildren().addAll(modNameLabel, modNameField);
 
         var mainClassBox = new HBox(10);
+        mainClassBox.setAlignment(Pos.CENTER_LEFT);
         var mainClassLabel = new Label("Main Class:");
         mainClassLabel.setLabelFor(mainClassField);
         mainClassField.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -164,11 +279,13 @@ public class ForgeProjectDetailsPane extends VBox {
         mainClassBox.getChildren().addAll(mainClassLabel, mainClassField);
 
         var useMixinsBox = new HBox(10);
+        useMixinsBox.setAlignment(Pos.CENTER_LEFT);
         var useMixinsLabel = new Label("Use Mixins:");
         useMixinsLabel.setLabelFor(useMixinsCheckBox);
         useMixinsBox.getChildren().addAll(useMixinsLabel, useMixinsCheckBox);
 
         var useAccessTransformerBox = new HBox(10);
+        useAccessTransformerBox.setAlignment(Pos.CENTER_LEFT);
         var useAccessTransformerLabel = new Label("Use Access Transformer:");
         useAccessTransformerLabel.setLabelFor(useAccessTransformerCheckBox);
         useAccessTransformerBox.getChildren().addAll(useAccessTransformerLabel, useAccessTransformerCheckBox);
@@ -178,13 +295,16 @@ public class ForgeProjectDetailsPane extends VBox {
 
         // Optional Section
         var optionalSection = new VBox(10);
+        optionalSection.setAlignment(Pos.CENTER_LEFT);
 
         var authorBox = new HBox(10);
+        authorBox.setAlignment(Pos.CENTER_LEFT);
         var authorLabel = new Label("Author:");
         authorLabel.setLabelFor(authorField);
         authorBox.getChildren().addAll(authorLabel, authorField);
 
         var descriptionBox = new HBox(10);
+        descriptionBox.setAlignment(Pos.CENTER_LEFT);
         var descriptionLabel = new Label("Description:");
         descriptionLabel.setLabelFor(descriptionArea);
         descriptionArea.setPrefHeight(100);
@@ -197,11 +317,13 @@ public class ForgeProjectDetailsPane extends VBox {
         descriptionBox.getChildren().addAll(descriptionLabel, descriptionArea);
 
         var issuesBox = new HBox(10);
+        issuesBox.setAlignment(Pos.CENTER_LEFT);
         var issuesLabel = new Label("Issues:");
         issuesLabel.setLabelFor(issuesField);
         issuesBox.getChildren().addAll(issuesLabel, issuesField);
 
         var updateJsonUrlBox = new HBox(10);
+        updateJsonUrlBox.setAlignment(Pos.CENTER_LEFT);
         var updateJsonUrlLabel = new Label("Update JSON URL:");
         updateJsonUrlLabel.setLabelFor(updateJsonUrlField);
         updateJsonUrlBox.getChildren().addAll(updateJsonUrlLabel, updateJsonUrlField);
@@ -210,18 +332,22 @@ public class ForgeProjectDetailsPane extends VBox {
 
         // Maven Section
         var mavenSection = new VBox(10);
+        mavenSection.setAlignment(Pos.CENTER_LEFT);
 
         var groupIdBox = new HBox(10);
+        groupIdBox.setAlignment(Pos.CENTER_LEFT);
         var groupIdLabel = new Label("Group ID:");
         groupIdLabel.setLabelFor(groupIdField);
         groupIdBox.getChildren().addAll(groupIdLabel, groupIdField);
 
         var artifactIdBox = new HBox(10);
+        artifactIdBox.setAlignment(Pos.CENTER_LEFT);
         var artifactIdLabel = new Label("Artifact ID:");
         artifactIdLabel.setLabelFor(artifactIdField);
         artifactIdBox.getChildren().addAll(artifactIdLabel, artifactIdField);
 
         var versionBox = new HBox(10);
+        versionBox.setAlignment(Pos.CENTER_LEFT);
         var versionLabel = new Label("Version:");
         versionLabel.setLabelFor(versionField);
         versionBox.getChildren().addAll(versionLabel, versionField);
@@ -234,14 +360,66 @@ public class ForgeProjectDetailsPane extends VBox {
                 new Separator(), mavenSection);
         setSpacing(20);
         setPadding(new Insets(10));
+
+        projectNameField.textProperty().addListener((observable, oldValue, newValue) -> {
+            // Remove any .<>:"/\|?* characters from the project name
+            newValue = newValue.replaceAll("[.<>:\"/\\\\|?*]", "");
+
+            // Check that the name does not exceed 256 characters
+            if (newValue.length() > 256)
+                projectNameField.setText(newValue.substring(0, 256));
+
+            // Validate the project name
+            if (newValue.isBlank())
+                projectNameField.setStyle("-fx-text-fill: red;");
+            else
+                projectNameField.setStyle("-fx-text-fill: black;");
+
+            // Update the created at label
+            String path = fixPath(projectPathField.getText().trim() + "/" + projectNameField.getText().trim());
+            createdAtLabel.setText("This will be created at: " + path);
+
+            // Update the mod ID field if it is empty
+            if (!hasTypedInModid.get() || modIdField.getText().isBlank())
+                modIdField.setText(newValue.toLowerCase(Locale.ROOT).replace(" ", "_").replaceAll("[^a-z0-9_-]", ""));
+        });
+    }
+
+    private static String fixPath(String path) {
+        while (path.endsWith(" "))
+            path = path.substring(0, path.length() - 1);
+
+        path = path.replace("/", "\\");
+
+        // Remove trailing backslashes
+        while (path.endsWith("\\"))
+            path = path.substring(0, path.length() - 1);
+
+        // remove any whitespace before a backslash
+        path = path.replaceAll("\\s+\\\\", "\\");
+
+        // remove any whitespace after a backslash
+        path = path.replaceAll("\\\\\\\\s+", "\\\\");
+
+        // remove any double backslashes
+        path = path.replaceAll("\\\\\\\\", "\\\\");
+
+        // remove any trailing whitespace
+        path = path.trim();
+
+        return path;
     }
 
     public static class ForgeVersionListCell extends ListCell<ForgeVersion> {
-        private final FontIcon starIcon = new FontIcon(FontAwesomeRegular.STAR);
+        private final FontIcon starIcon = new FontIcon(FontAwesomeSolid.STAR);
+        private final FontIcon halfStarIcon = new FontIcon(FontAwesomeSolid.STAR_HALF_ALT);
 
         public ForgeVersionListCell() {
-            this.starIcon.setFill(Color.GOLD);
             this.starIcon.setIconSize(16);
+            this.starIcon.setIconColor(Color.GOLD);
+
+            this.halfStarIcon.setIconSize(16);
+            this.halfStarIcon.setIconColor(Color.GOLD);
         }
 
         @Override
@@ -252,7 +430,7 @@ public class ForgeProjectDetailsPane extends VBox {
                 setGraphic(null);
             } else {
                 setText(item.id());
-                setGraphic(item.recommended() ? starIcon : null);
+                setGraphic(item.recommended() ? starIcon : Objects.equals(item.id(), ForgeVersion.getLatestVersion(item.minecraftVersion()).id()) ? halfStarIcon : null);
             }
         }
     }

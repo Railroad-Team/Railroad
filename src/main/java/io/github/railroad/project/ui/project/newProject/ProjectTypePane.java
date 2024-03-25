@@ -21,6 +21,7 @@ public class ProjectTypePane extends VBox {
         projectTypeListView = new ListView<>();
         projectTypeListView.setCellFactory(param -> new ProjectTypeCell());
         projectTypeListView.getItems().addAll(ProjectType.values());
+        projectTypeListView.getSelectionModel().selectFirst();
 
         projectTypesScroller.setContent(projectTypeListView);
 
