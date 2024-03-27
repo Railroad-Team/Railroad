@@ -2,6 +2,10 @@ package io.github.railroad.project.ui.project.newProject.details;
 
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
+import io.github.railroad.minecraft.RecommendableVersion;
+import io.github.railroad.minecraft.mapping.MappingChannel;
+import io.github.railroad.minecraft.mapping.MappingHelper;
+import io.github.railroad.minecraft.mapping.MappingVersion;
 import io.github.railroad.project.License;
 import io.github.railroad.project.ProjectType;
 import io.github.railroad.project.ui.BrowseButton;
@@ -24,6 +28,8 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class ForgeProjectDetailsPane extends VBox {
     private final TextField projectNameField = new TextField();
@@ -41,7 +47,10 @@ public class ForgeProjectDetailsPane extends VBox {
     private final CheckBox useMixinsCheckBox = new CheckBox();
     private final CheckBox useAccessTransformerCheckBox = new CheckBox();
 
-    private final TextField authorField = new TextField(); // optional
+    private final ComboBox<MappingChannel> mappingChannelComboBox = new ComboBox<>();
+    private final ComboBox<MappingVersion> mappingVersionComboBox = new ComboBox<>();
+
+    private final TextField authorField = new TextField(System.getProperty("user.name")); // optional
     private final TextArea descriptionArea = new TextArea(); // optional
     private final TextField issuesField = new TextField(); // optional
     private final TextField updateJsonUrlField = new TextField(); // optional
@@ -53,6 +62,8 @@ public class ForgeProjectDetailsPane extends VBox {
     private final AtomicBoolean hasOneDriveWarning = new AtomicBoolean(false);
     private final AtomicBoolean hasModidWarning = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInModid = new AtomicBoolean(false);
+    private final AtomicBoolean hasTypedInModName = new AtomicBoolean(false);
+    private final AtomicBoolean hasTypedInMainClass = new AtomicBoolean(false);
 
     public ForgeProjectDetailsPane() {
         // Project Section
@@ -79,13 +90,14 @@ public class ForgeProjectDetailsPane extends VBox {
         projectPathField.setPrefWidth(300);
         projectPathField.setText(System.getProperty("user.home"));
         projectPathField.setEditable(false);
+        Border projectPathFieldBorder = projectPathField.getBorder();
         projectPathField.textProperty().addListener((observable, oldValue, newValue) -> {
             // Validate the project path
             Path path = Path.of(newValue);
             if (Files.notExists(path) || !Files.isDirectory(path))
-                projectPathField.setStyle("-fx-text-fill: red;");
+                projectPathField.setStyle("-fx-border-color: red;");
             else
-                projectPathField.setStyle("-fx-text-fill: black;");
+                projectPathField.setBorder(projectPathFieldBorder);
 
             // Update the created at label
             String fullPath = fixPath(projectPathField.getText().trim() + "/" + projectNameField.getText().trim());
@@ -93,7 +105,7 @@ public class ForgeProjectDetailsPane extends VBox {
 
             // If the project is in OneDrive, warn the user
             if (fullPath.contains("OneDrive") && hasOneDriveWarning.compareAndSet(false, true)) {
-                projectPathField.setStyle("-fx-text-fill: orange;");
+                projectPathField.setStyle("-fx-border-color: orange;");
 
                 var tooltip = new Tooltip("It is not recommended to create projects in OneDrive as it has a tendency to cause problems.");
                 Tooltip.install(projectPathField, tooltip);
@@ -103,15 +115,15 @@ public class ForgeProjectDetailsPane extends VBox {
                 warningIcon.setIconColor(Color.ORANGE);
                 projectPathBox.getChildren().add(warningIcon);
             } else if (!fullPath.contains("OneDrive") && hasOneDriveWarning.compareAndSet(true, false)) {
-                projectPathField.setStyle("-fx-text-fill: black;");
+                projectPathField.setBorder(projectPathFieldBorder);
 
                 Tooltip.uninstall(projectPathField, projectPathField.getTooltip());
 
                 projectPathBox.getChildren().removeLast();
             } else if(fullPath.contains("OneDrive")) {
-                projectPathField.setStyle("-fx-text-fill: orange;");
+                projectPathField.setStyle("-fx-border-color: orange;");
             } else {
-                projectPathField.setStyle("-fx-text-fill: black;");
+                projectPathField.setBorder(projectPathFieldBorder);
             }
         });
 
@@ -195,9 +207,18 @@ public class ForgeProjectDetailsPane extends VBox {
         minecraftVersionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             forgeVersionComboBox.getItems().setAll(ForgeVersion.getVersions(newValue));
             forgeVersionComboBox.setValue(ForgeVersion.getLatestVersion(newValue));
+
+            MappingHelper.loadMappings(mappingChannelComboBox.getItems(), newValue);
+            mappingChannelComboBox.setValue(mappingChannelComboBox.getItems().getFirst());
         });
-        forgeVersionComboBox.setCellFactory(param -> new ForgeVersionListCell());
-        forgeVersionComboBox.setButtonCell(new ForgeVersionListCell());
+        forgeVersionComboBox.setCellFactory(param -> new StarableListCell<>(
+                version -> version instanceof RecommendableVersion recommendableVersion && recommendableVersion.isRecommended(),
+                version -> Objects.equals(version.id(), ForgeVersion.getLatestVersion(minecraftVersionComboBox.getValue()).id()),
+                ForgeVersion::id));
+        forgeVersionComboBox.setButtonCell(new StarableListCell<>(
+                version -> version instanceof RecommendableVersion recommendableVersion && recommendableVersion.isRecommended(),
+                version -> Objects.equals(version.id(), ForgeVersion.getLatestVersion(minecraftVersionComboBox.getValue()).id()),
+                ForgeVersion::id));
         forgeVersionComboBox.getItems().addAll(ForgeVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
         forgeVersionComboBox.setValue(ForgeVersion.getLatestVersion(MinecraftVersion.getLatestStableVersion()));
         forgeVersionBox.getChildren().addAll(forgeVersionLabel, forgeVersionComboBox);
@@ -265,6 +286,13 @@ public class ForgeProjectDetailsPane extends VBox {
                 modNameField.setText(newValue.substring(0, 256));
             }
         });
+        modNameField.setOnKeyTyped(event -> {
+            // If the user has typed in the mod name and it is not empty, set the hasTypedInModName flag to true
+            if (!hasTypedInModName.get() && !modNameField.getText().isBlank())
+                hasTypedInModName.set(true);
+            else if (hasTypedInModName.get() && modNameField.getText().isBlank())
+                hasTypedInModName.set(false);
+        });
         modNameBox.getChildren().addAll(modNameLabel, modNameField);
 
         var mainClassBox = new HBox(10);
@@ -275,6 +303,13 @@ public class ForgeProjectDetailsPane extends VBox {
             if (!ClassNameValidator.isValid(newValue)) {
                 mainClassField.setText(oldValue);
             }
+        });
+        mainClassField.setOnKeyTyped(event -> {
+            // If the user has typed in the main class and it is not empty, set the hasTypedInMainClass flag to true
+            if (!hasTypedInMainClass.get() && !mainClassField.getText().isBlank())
+                hasTypedInMainClass.set(true);
+            else if (hasTypedInMainClass.get() && mainClassField.getText().isBlank())
+                hasTypedInMainClass.set(false);
         });
         mainClassBox.getChildren().addAll(mainClassLabel, mainClassField);
 
@@ -293,6 +328,54 @@ public class ForgeProjectDetailsPane extends VBox {
         minecraftSection.getChildren().addAll(minecraftVersionBox, forgeVersionBox,
                 modIdBox, modNameBox, mainClassBox, useMixinsBox, useAccessTransformerBox);
 
+        // Mapping Section
+        var mappingSection = new VBox(10);
+        mappingSection.setAlignment(Pos.CENTER_LEFT);
+
+        var mappingChannelBox = new HBox(10);
+        mappingChannelBox.setAlignment(Pos.CENTER_LEFT);
+        var mappingChannelLabel = new Label("Mapping Channel:");
+        mappingChannelLabel.setLabelFor(mappingChannelComboBox);
+        MappingHelper.loadMappings(mappingChannelComboBox.getItems(), minecraftVersionComboBox.getValue());
+        mappingChannelComboBox.setValue(MappingChannel.MOJMAP);
+        mappingChannelComboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(MappingChannel object) {
+                return object == null ? "" : object.getName();
+            }
+
+            @Override
+            public MappingChannel fromString(String string) {
+                return MappingChannel.valueOf(string.toUpperCase(Locale.ROOT));
+            }
+        });
+        mappingChannelComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue == null)
+                return;
+
+            MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.getValue(), newValue);
+            mappingVersionComboBox.setValue(mappingVersionComboBox.getItems().getFirst());
+        });
+        mappingChannelBox.getChildren().addAll(mappingChannelLabel, mappingChannelComboBox);
+
+        var mappingVersionBox = new HBox(10);
+        mappingVersionBox.setAlignment(Pos.CENTER_LEFT);
+        var mappingVersionLabel = new Label("Mapping Version:");
+        mappingVersionLabel.setLabelFor(mappingVersionComboBox);
+        mappingVersionComboBox.setCellFactory(param -> new StarableListCell<>(
+                version -> version instanceof RecommendableVersion recommendableVersion && recommendableVersion.isRecommended(),
+                MappingVersion::isLatest,
+                MappingVersion::getId));
+        mappingVersionComboBox.setButtonCell(new StarableListCell<>(
+                version -> version instanceof RecommendableVersion recommendableVersion && recommendableVersion.isRecommended(),
+                MappingVersion::isLatest,
+                MappingVersion::getId));
+        MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.getValue(), mappingChannelComboBox.getValue());
+        mappingVersionComboBox.setValue(mappingVersionComboBox.getItems().getFirst());
+        mappingVersionBox.getChildren().addAll(mappingVersionLabel, mappingVersionComboBox);
+
+        mappingSection.getChildren().addAll(mappingChannelBox, mappingVersionBox);
+
         // Optional Section
         var optionalSection = new VBox(10);
         optionalSection.setAlignment(Pos.CENTER_LEFT);
@@ -301,6 +384,11 @@ public class ForgeProjectDetailsPane extends VBox {
         authorBox.setAlignment(Pos.CENTER_LEFT);
         var authorLabel = new Label("Author:");
         authorLabel.setLabelFor(authorField);
+        authorField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue.length() > 256) {
+                authorField.setText(newValue.substring(0, 256));
+            }
+        });
         authorBox.getChildren().addAll(authorLabel, authorField);
 
         var descriptionBox = new HBox(10);
@@ -356,11 +444,13 @@ public class ForgeProjectDetailsPane extends VBox {
 
         getChildren().addAll(projectSection,
                 new Separator(), minecraftSection,
+                new Separator(), mappingSection,
                 new Separator(), optionalSection,
                 new Separator(), mavenSection);
         setSpacing(20);
         setPadding(new Insets(10));
 
+        Border projectNameFieldBorder = projectNameField.getBorder();
         projectNameField.textProperty().addListener((observable, oldValue, newValue) -> {
             // Remove any .<>:"/\|?* characters from the project name
             newValue = newValue.replaceAll("[.<>:\"/\\\\|?*]", "");
@@ -371,9 +461,9 @@ public class ForgeProjectDetailsPane extends VBox {
 
             // Validate the project name
             if (newValue.isBlank())
-                projectNameField.setStyle("-fx-text-fill: red;");
+                projectNameField.setStyle("-fx-border-color: red;");
             else
-                projectNameField.setStyle("-fx-text-fill: black;");
+                projectNameField.setBorder(projectNameFieldBorder);
 
             // Update the created at label
             String path = fixPath(projectPathField.getText().trim() + "/" + projectNameField.getText().trim());
@@ -382,6 +472,22 @@ public class ForgeProjectDetailsPane extends VBox {
             // Update the mod ID field if it is empty
             if (!hasTypedInModid.get() || modIdField.getText().isBlank())
                 modIdField.setText(newValue.toLowerCase(Locale.ROOT).replace(" ", "_").replaceAll("[^a-z0-9_-]", ""));
+
+            // Update the mod name field if it is empty
+            if (!hasTypedInModName.get() || modNameField.getText().isBlank())
+                modNameField.setText(newValue);
+
+            // Update the main class field if it is empty
+            if (!hasTypedInMainClass.get() || mainClassField.getText().isBlank()) {
+                // convert to pascal case
+                String[] words = newValue.split("[ _-]+");
+                var pascalCase = new StringBuilder();
+                for (String word : words) {
+                    pascalCase.append(word.substring(0, 1).toUpperCase(Locale.ROOT)).append(word.substring(1));
+                }
+
+                mainClassField.setText(pascalCase.toString().replaceAll("[^a-zA-Z0-9]", ""));
+            }
         });
     }
 
@@ -410,11 +516,19 @@ public class ForgeProjectDetailsPane extends VBox {
         return path;
     }
 
-    public static class ForgeVersionListCell extends ListCell<ForgeVersion> {
+    public static class StarableListCell<T> extends ListCell<T> {
         private final FontIcon starIcon = new FontIcon(FontAwesomeSolid.STAR);
         private final FontIcon halfStarIcon = new FontIcon(FontAwesomeSolid.STAR_HALF_ALT);
 
-        public ForgeVersionListCell() {
+        private final Predicate<T> isRecommended;
+        private final Predicate<T> isLatest;
+        private final Function<T, String> stringConverter;
+
+        public StarableListCell(Predicate<T> isRecommended, Predicate<T> isLatest, Function<T, String> stringConverter) {
+            this.isRecommended = isRecommended;
+            this.isLatest = isLatest;
+            this.stringConverter = stringConverter;
+
             this.starIcon.setIconSize(16);
             this.starIcon.setIconColor(Color.GOLD);
 
@@ -423,14 +537,14 @@ public class ForgeProjectDetailsPane extends VBox {
         }
 
         @Override
-        protected void updateItem(ForgeVersion item, boolean empty) {
+        protected void updateItem(T item, boolean empty) {
             super.updateItem(item, empty);
             if (empty || item == null) {
                 setText(null);
                 setGraphic(null);
             } else {
-                setText(item.id());
-                setGraphic(item.recommended() ? starIcon : Objects.equals(item.id(), ForgeVersion.getLatestVersion(item.minecraftVersion()).id()) ? halfStarIcon : null);
+                setText(stringConverter.apply(item));
+                setGraphic(isRecommended.test(item) ? starIcon : isLatest.test(item) ? halfStarIcon : null);
             }
         }
     }

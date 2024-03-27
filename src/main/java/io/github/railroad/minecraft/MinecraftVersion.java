@@ -9,8 +9,9 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import okhttp3.*;
-import org.jetbrains.annotations.NotNull;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -31,70 +32,52 @@ public record MinecraftVersion(String id, VersionType type, String url, LocalDat
     }
 
     private static void requestMinecraftVersions() {
-        Railroad.HTTP_CLIENT.newCall(new Request.Builder().url(MINECRAFT_VERSIONS_URL).build()).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException exception) {
-                throw new RuntimeException("Failed to request Minecraft versions", exception);
+        try (Response response = Railroad.HTTP_CLIENT.newCall(new Request.Builder().url(MINECRAFT_VERSIONS_URL).build()).execute()) {
+            if (!response.isSuccessful())
+                throw new RuntimeException("Failed to request Minecraft versions: " + response.message());
+
+            ResponseBody body = response.body();
+            if (body == null)
+                throw new RuntimeException("Failed to request Minecraft versions: Empty response body");
+
+            String json = body.string();
+            if (json.isBlank())
+                throw new RuntimeException("Failed to request Minecraft versions: Empty JSON response");
+
+            JsonObject object = Railroad.GSON.fromJson(json, JsonObject.class);
+
+            JsonObject latestObject = object.getAsJsonObject("latest");
+            String latestStableId = latestObject.get("release").getAsString();
+            String latestSnapshotId = latestObject.get("snapshot").getAsString();
+
+            List<MinecraftVersion> versions = new ArrayList<>();
+
+            JsonArray versionsArray = object.getAsJsonArray("versions");
+            for (JsonElement jsonElement : versionsArray) {
+                JsonObject versionObject = jsonElement.getAsJsonObject();
+                String id = versionObject.get("id").getAsString();
+                var type = VersionType.valueOf(versionObject.get("type").getAsString().toUpperCase(Locale.ROOT));
+                String url = versionObject.get("url").getAsString();
+                String time = versionObject.get("time").getAsString().split("\\+")[0]; // Remove timezone (e.g. +00:00
+                String releaseTime = versionObject.get("releaseTime").getAsString().split("\\+")[0]; // Remove timezone (e.g. +00:00
+                versions.add(new MinecraftVersion(id, type, url, LocalDateTime.parse(time), LocalDateTime.parse(releaseTime)));
             }
 
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) {
-                List<MinecraftVersion> versions = new ArrayList<>();
-                if (!response.isSuccessful()) {
-                    throw new RuntimeException("Failed to request Minecraft versions: " + response.message());
-                }
+            MINECRAFT_VERSIONS.clear();
+            MINECRAFT_VERSIONS.addAll(versions);
 
-                try {
-                    ResponseBody body = response.body();
-                    if (body == null) {
-                        throw new RuntimeException("Failed to request Minecraft versions: Empty response body");
-                    }
+            LATEST_STABLE.set(MINECRAFT_VERSIONS.stream()
+                    .filter(version -> version.id.equals(latestStableId))
+                    .findFirst()
+                    .orElse(null));
 
-                    String json = body.string();
-                    if (json.isBlank()) {
-                        throw new RuntimeException("Failed to request Minecraft versions: Empty JSON response");
-                    }
-
-                    JsonObject object = Railroad.GSON.fromJson(json, JsonObject.class);
-
-                    JsonObject latestObject = object.getAsJsonObject("latest");
-                    String latestStableId = latestObject.get("release").getAsString();
-                    String latestSnapshotId = latestObject.get("snapshot").getAsString();
-
-                    JsonArray versionsArray = object.getAsJsonArray("versions");
-                    for (JsonElement jsonElement : versionsArray) {
-                        JsonObject versionObject = jsonElement.getAsJsonObject();
-                        String id = versionObject.get("id").getAsString();
-                        var type = VersionType.valueOf(versionObject.get("type").getAsString().toUpperCase(Locale.ROOT));
-                        String url = versionObject.get("url").getAsString();
-                        String time = versionObject.get("time").getAsString().split("\\+")[0]; // Remove timezone (e.g. +00:00
-                        String releaseTime = versionObject.get("releaseTime").getAsString().split("\\+")[0]; // Remove timezone (e.g. +00:00
-                        versions.add(new MinecraftVersion(id, type, url, LocalDateTime.parse(time), LocalDateTime.parse(releaseTime)));
-                    }
-
-                    synchronized (MINECRAFT_VERSIONS) {
-                        MINECRAFT_VERSIONS.clear();
-                        MINECRAFT_VERSIONS.addAll(versions);
-                    }
-
-                    synchronized (LATEST_STABLE) {
-                        LATEST_STABLE.set(MINECRAFT_VERSIONS.stream()
-                                .filter(version -> version.id.equals(latestStableId))
-                                .findFirst()
-                                .orElse(null));
-                    }
-
-                    synchronized (LATEST_SNAPSHOT) {
-                        LATEST_SNAPSHOT.set(MINECRAFT_VERSIONS.stream()
-                                .filter(version -> version.id.equals(latestSnapshotId))
-                                .findFirst()
-                                .orElse(null));
-                    }
-                } catch (IOException exception) {
-                    throw new RuntimeException("Failed to parse Minecraft versions", exception);
-                }
-            }
-        });
+            LATEST_SNAPSHOT.set(MINECRAFT_VERSIONS.stream()
+                    .filter(version -> version.id.equals(latestSnapshotId))
+                    .findFirst()
+                    .orElse(null));
+        } catch (IOException exception) {
+            throw new RuntimeException("Failed to request Minecraft versions", exception);
+        }
     }
 
     public static ObservableList<MinecraftVersion> getSupportedVersions(ProjectType projectType) {
@@ -121,6 +104,19 @@ public record MinecraftVersion(String id, VersionType type, String url, LocalDat
         return MINECRAFT_VERSIONS.stream()
                 .filter(version -> version.id.equals(id))
                 .findFirst();
+    }
+
+    public static boolean isLatest(MinecraftVersion mcVersion) {
+        return mcVersion.equals(LATEST_STABLE.get()) || mcVersion.equals(LATEST_SNAPSHOT.get());
+    }
+
+    public static Optional<MinecraftVersion> getMajorVersion(MinecraftVersion minecraftVersion) {
+        String[] split = minecraftVersion.id.split("\\.");
+        if (split.length < 2)
+            return Optional.empty();
+
+        String majorVersion = split[0] + "." + split[1];
+        return fromId(majorVersion);
     }
 
     public enum VersionType {

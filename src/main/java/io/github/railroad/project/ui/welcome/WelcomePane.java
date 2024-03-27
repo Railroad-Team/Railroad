@@ -1,6 +1,8 @@
 package io.github.railroad.project.ui.welcome;
 
+import io.github.railroad.settings.ui.SettingsPane;
 import javafx.geometry.Orientation;
+import javafx.scene.Scene;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.Priority;
@@ -33,6 +35,25 @@ public class WelcomePane extends SplitPane {
 
         SplitPane.setResizableWithParent(leftPane, false);
         SplitPane.setResizableWithParent(rightPane, false);
+
+        leftPane.getListView().getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            switch (newValue) {
+                case HOME -> {
+                    if(getChildren().get(1) != rightPane) {
+                        getItems().set(1, rightPane);
+                    }
+                }
+                case SETTINGS -> {
+                    var settingsPane = new SettingsPane();
+                    Scene scene = getScene();
+                    scene.setRoot(settingsPane);
+                    settingsPane.getBackButton().setOnAction(event -> {
+                        scene.setRoot(WelcomePane.this);
+                        leftPane.getListView().getSelectionModel().select(oldValue);
+                    });
+                }
+            }
+        });
     }
 
     public WelcomeProjectsPane getProjectsPane() {
