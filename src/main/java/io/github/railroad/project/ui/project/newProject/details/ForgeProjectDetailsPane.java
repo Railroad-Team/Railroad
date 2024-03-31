@@ -8,8 +8,10 @@ import io.github.railroad.minecraft.mapping.MappingHelper;
 import io.github.railroad.minecraft.mapping.MappingVersion;
 import io.github.railroad.project.License;
 import io.github.railroad.project.ProjectType;
+import io.github.railroad.project.data.ForgeProjectData;
 import io.github.railroad.project.ui.BrowseButton;
 import io.github.railroad.utility.ClassNameValidator;
+import javafx.beans.binding.BooleanBinding;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -18,7 +20,6 @@ import javafx.scene.layout.Border;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -27,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -34,7 +36,6 @@ import java.util.function.Predicate;
 public class ForgeProjectDetailsPane extends VBox {
     private final TextField projectNameField = new TextField();
     private final TextField projectPathField = new TextField();
-    private final BrowseButton browseButton;
     private final CheckBox createGitCheckBox = new CheckBox();
     private final ComboBox<License> licenseComboBox = new ComboBox<>();
     private final TextField licenseCustomField = new TextField();
@@ -64,6 +65,7 @@ public class ForgeProjectDetailsPane extends VBox {
     private final AtomicBoolean hasTypedInModid = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInModName = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInMainClass = new AtomicBoolean(false);
+    private final AtomicBoolean hasTypedInArtifactId = new AtomicBoolean(false);
 
     public ForgeProjectDetailsPane() {
         // Project Section
@@ -120,7 +122,7 @@ public class ForgeProjectDetailsPane extends VBox {
                 Tooltip.uninstall(projectPathField, projectPathField.getTooltip());
 
                 projectPathBox.getChildren().removeLast();
-            } else if(fullPath.contains("OneDrive")) {
+            } else if (fullPath.contains("OneDrive")) {
                 projectPathField.setStyle("-fx-border-color: orange;");
             } else {
                 projectPathField.setBorder(projectPathFieldBorder);
@@ -130,7 +132,7 @@ public class ForgeProjectDetailsPane extends VBox {
         var browseButtonIcon = new FontIcon(FontAwesomeSolid.FOLDER_OPEN);
         browseButtonIcon.setIconSize(16);
         browseButtonIcon.setIconColor(Color.CADETBLUE);
-        browseButton = new BrowseButton();
+        var browseButton = new BrowseButton();
         browseButton.parentWindowProperty().bind(sceneProperty().map(Scene::getWindow));
         browseButton.textFieldProperty().set(projectPathField);
         browseButton.browseTypeProperty().set(BrowseButton.BrowseType.DIRECTORY);
@@ -229,7 +231,7 @@ public class ForgeProjectDetailsPane extends VBox {
         modIdLabel.setLabelFor(modIdField);
         Border modidFieldBorder = modIdField.getBorder();
         modIdField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if(oldValue.equals(newValue))
+            if (oldValue.equals(newValue))
                 return;
 
             if (!newValue.matches("[a-z][a-z0-9_]")) {
@@ -263,10 +265,14 @@ public class ForgeProjectDetailsPane extends VBox {
 
                 Tooltip.uninstall(modIdField, modIdField.getTooltip());
                 modIdBox.getChildren().removeLast();
-            } else if(newValue.length() < 3 && hasModidWarning.compareAndSet(true, false)) {
+            } else if (newValue.length() < 3 && hasModidWarning.compareAndSet(true, false)) {
                 Tooltip.uninstall(modIdField, modIdField.getTooltip());
                 modIdBox.getChildren().removeLast();
             }
+
+            // update the artifact ID field if it is empty
+            if (!hasTypedInArtifactId.get() || artifactIdField.getText().isBlank())
+                artifactIdField.setText(newValue.replaceAll("[^a-z0-9-]", ""));
         });
         modIdField.setOnKeyTyped(event -> {
             // If the user has typed in the mod ID and it is not empty, set the hasTypedInModid flag to true
@@ -350,7 +356,7 @@ public class ForgeProjectDetailsPane extends VBox {
             }
         });
         mappingChannelComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue == null)
+            if (newValue == null)
                 return;
 
             MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.getValue(), newValue);
@@ -488,7 +494,58 @@ public class ForgeProjectDetailsPane extends VBox {
 
                 mainClassField.setText(pascalCase.toString().replaceAll("[^a-zA-Z0-9]", ""));
             }
+
+            // Update the artifact ID field if it is empty
+            if (!hasTypedInArtifactId.get() || artifactIdField.getText().isBlank())
+                artifactIdField.setText(newValue.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9-]", ""));
         });
+
+        var createButton = new Button("Create");
+        createButton.setAlignment(Pos.CENTER_RIGHT);
+        getChildren().add(createButton);
+
+//        createButton.disableProperty().bind(
+//                isInvalid(projectNameField)
+//                        .or(isInvalid(projectPathField))
+//                        .or(isInvalid(modIdField))
+//                        .or(isInvalid(modNameField))
+//                        .or(isInvalid(mainClassField))
+//                        .or(isInvalid(groupIdField))
+//                        .or(isInvalid(artifactIdField))
+//                        .or(isInvalid(versionField))
+//                        .or(isInvalid(minecraftVersionComboBox))
+//                        .or(isInvalid(forgeVersionComboBox))
+//                        .or(isInvalid(mappingChannelComboBox))
+//                        .or(isInvalid(mappingVersionComboBox))
+//                        .or(isInvalid(licenseComboBox)
+//                                .or(licenseComboBox.valueProperty().isEqualTo(License.CUSTOM)
+//                                        .and(licenseCustomField.textProperty().isEmpty()))));
+
+        createButton.setOnAction(event -> {
+            if (validate()) {
+                Scene scene = getScene();
+
+                ForgeProjectData data = createData();
+                scene.setRoot(new ForgeProjectCreationPane(data));
+                event.consume();
+            }
+        });
+    }
+
+    private static BooleanBinding isInvalid(TextField textField) {
+        return textField.textProperty().isEmpty().or(textField.styleProperty().isEqualTo("-fx-border-color: red;"));
+    }
+
+    private static BooleanBinding isInvalid(ComboBox<?> comboBox) {
+        return comboBox.valueProperty().isNull().or(comboBox.styleProperty().isEqualTo("-fx-border-color: red;"));
+    }
+
+    private static void createAlert(String header, String content) {
+        var alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+        alert.showAndWait();
     }
 
     private static String fixPath(String path) {
@@ -514,6 +571,202 @@ public class ForgeProjectDetailsPane extends VBox {
         path = path.trim();
 
         return path;
+    }
+
+    protected boolean validate() {
+        // Validate the project name
+        if (projectNameField.getText().isBlank()) {
+            projectNameField.setStyle("-fx-border-color: red;");
+            projectNameField.requestFocus();
+
+            createAlert("Project Name is Required", "Please enter a name for your project.");
+            return false;
+        }
+
+        // Validate the project path
+        if (projectPathField.getText().isBlank()) {
+            projectPathField.setStyle("-fx-border-color: red;");
+            projectPathField.requestFocus();
+
+            createAlert("Project Path is Required", "Please enter a path for your project.");
+            return false;
+        }
+
+        Path path = Path.of(projectPathField.getText());
+        if (Files.notExists(path)) {
+            projectPathField.setStyle("-fx-border-color: red;");
+            projectPathField.requestFocus();
+
+            createAlert("Invalid Project Path", "The specified path does not exist.");
+            return false;
+        }
+
+        if (!Files.isDirectory(path)) {
+            projectPathField.setStyle("-fx-border-color: red;");
+            projectPathField.requestFocus();
+
+            createAlert("Invalid Project Path", "The specified path is not a directory.");
+            return false;
+        }
+
+        // Validate the mod ID
+        if (modIdField.getText().isBlank()) {
+            modIdField.setStyle("-fx-border-color: red;");
+            modIdField.requestFocus();
+
+            createAlert("Mod ID is Required", "Please enter a mod ID for your project.");
+            return false;
+        }
+
+        if (modIdField.getText().length() < 2) {
+            modIdField.setStyle("-fx-border-color: red;");
+            modIdField.requestFocus();
+
+            createAlert("Invalid Mod ID", "The mod ID must be at least 2 characters long.");
+            return false;
+        }
+
+        if (!modIdField.getText().matches("^[a-z][a-z0-9_]{1,63}$")) {
+            modIdField.setStyle("-fx-border-color: red;");
+            modIdField.requestFocus();
+
+            createAlert("Invalid Mod ID", "The mod ID must start with a lowercase letter and contain only lowercase letters, numbers, and underscores.");
+            return false;
+        }
+
+        // Validate the mod name
+        if (modNameField.getText().isBlank()) {
+            modNameField.setStyle("-fx-border-color: red;");
+            modNameField.requestFocus();
+
+            createAlert("Mod Name is Required", "Please enter a mod name for your project.");
+            return false;
+        }
+
+        if (modNameField.getText().length() < 2) {
+            modNameField.setStyle("-fx-border-color: red;");
+            modNameField.requestFocus();
+
+            createAlert("Invalid Mod Name", "The mod name must be at least 2 characters long.");
+            return false;
+        }
+
+        if (modNameField.getText().length() > 256) {
+            modNameField.setStyle("-fx-border-color: red;");
+            modNameField.requestFocus();
+
+            createAlert("Invalid Mod Name", "The mod name must be at most 256 characters long.");
+            return false;
+        }
+
+        // Validate the main class
+        if (mainClassField.getText().isBlank()) {
+            mainClassField.setStyle("-fx-border-color: red;");
+            mainClassField.requestFocus();
+
+            createAlert("Main Class is Required", "Please enter a main class for your project.");
+            return false;
+        }
+
+        if (!ClassNameValidator.isValid(mainClassField.getText())) {
+            mainClassField.setStyle("-fx-border-color: red;");
+            mainClassField.requestFocus();
+
+            createAlert("Invalid Main Class", "The main class must be a valid Java class name.");
+            return false;
+        }
+
+        // Validate the group ID
+        if (groupIdField.getText().isBlank()) {
+            groupIdField.setStyle("-fx-border-color: red;");
+            groupIdField.requestFocus();
+
+            createAlert("Group ID is Required", "Please enter a group ID for your project.");
+            return false;
+        }
+
+        if (!groupIdField.getText().matches("[a-zA-Z0-9.]+")) {
+            groupIdField.setStyle("-fx-border-color: red;");
+            groupIdField.requestFocus();
+
+            createAlert("Invalid Group ID", "The group ID must contain only letters, numbers, and periods.");
+            return false;
+        }
+
+        // Validate the artifact ID
+        if (artifactIdField.getText().isBlank()) {
+            artifactIdField.setStyle("-fx-border-color: red;");
+            artifactIdField.requestFocus();
+
+            createAlert("Artifact ID is Required", "Please enter an artifact ID for your project.");
+            return false;
+        }
+
+        if (!artifactIdField.getText().matches("[a-z0-9-]+")) {
+            artifactIdField.setStyle("-fx-border-color: red;");
+            artifactIdField.requestFocus();
+
+            createAlert("Invalid Artifact ID", "The artifact ID must contain only lowercase letters, numbers, and hyphens.");
+            return false;
+        }
+
+        // Validate the version
+        if (versionField.getText().isBlank()) {
+            versionField.setStyle("-fx-border-color: red;");
+            versionField.requestFocus();
+
+            createAlert("Version is Required", "Please enter a version for your project.");
+            return false;
+        }
+
+        if (!versionField.getText().matches("[0-9]+(\\.[0-9]+){0,2}(-[a-zA-Z0-9]+)?")) {
+            versionField.setStyle("-fx-border-color: red;");
+            versionField.requestFocus();
+
+            createAlert("Invalid Version", "The version must be in the format of x.y.z or x.y.z-tag.");
+            return false;
+        }
+
+        // Validate the license
+        if (licenseComboBox.getValue() == License.CUSTOM && licenseCustomField.getText().isBlank()) {
+            licenseCustomField.setStyle("-fx-border-color: red;");
+            licenseCustomField.requestFocus();
+
+            createAlert("Custom License is Required", "Please enter a custom license for your project.");
+            return false;
+        }
+
+        return true;
+    }
+
+    protected ForgeProjectData createData() {
+        String projectName = projectNameField.getText().trim();
+        String projectPath = fixPath(projectPathField.getText().trim());
+        boolean createGit = createGitCheckBox.isSelected();
+        License license = licenseComboBox.getValue();
+        String licenseCustom = license == License.CUSTOM ? licenseCustomField.getText().trim() : null;
+        MinecraftVersion minecraftVersion = minecraftVersionComboBox.getValue();
+        ForgeVersion forgeVersion = forgeVersionComboBox.getValue();
+        String modId = modIdField.getText().trim();
+        String modName = modNameField.getText().trim();
+        String mainClass = mainClassField.getText().trim();
+        boolean useMixins = useMixinsCheckBox.isSelected();
+        boolean useAccessTransformer = useAccessTransformerCheckBox.isSelected();
+        MappingChannel mappingChannel = mappingChannelComboBox.getValue();
+        MappingVersion mappingVersion = mappingVersionComboBox.getValue();
+        Optional<String> author = Optional.of(authorField.getText().trim()).filter(s -> !s.isBlank());
+        Optional<String> description = Optional.of(descriptionArea.getText().trim()).filter(s -> !s.isBlank());
+        Optional<String> issues = Optional.of(issuesField.getText().trim()).filter(s -> !s.isBlank());
+        Optional<String> updateJsonUrl = Optional.of(updateJsonUrlField.getText().trim()).filter(s -> !s.isBlank());
+        String groupId = groupIdField.getText().trim();
+        String artifactId = artifactIdField.getText().trim();
+        String version = versionField.getText().trim();
+
+        return new ForgeProjectData(projectName, projectPath, createGit, license, licenseCustom,
+                minecraftVersion, forgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer,
+                mappingChannel, mappingVersion,
+                author, description, issues, updateJsonUrl,
+                groupId, artifactId, version);
     }
 
     public static class StarableListCell<T> extends ListCell<T> {
