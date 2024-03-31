@@ -7,6 +7,8 @@ import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.project.ui.welcome.WelcomePane;
 import javafx.application.Application;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.stage.Stage;
@@ -14,19 +16,24 @@ import okhttp3.OkHttpClient;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static boolean DEBUG = false;
+    private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
 
     @Override
     public void start(Stage primaryStage) {
         MinecraftVersion.load();
         ForgeVersion.load();
+
         var welcomePane = new WelcomePane();
-        var scene = new Scene(welcomePane, 800, 600);
+        var scene = new Scene(welcomePane, 1024, 768);
         handleStyles(scene);
+
         primaryStage.setMinWidth(scene.getWidth() + 10);
         primaryStage.setMinHeight(scene.getHeight() + 10);
         primaryStage.setScene(scene);
@@ -34,8 +41,12 @@ public class Railroad extends Application {
         primaryStage.show();
 
         welcomePane.getHeaderPane().getNewProjectButton().setOnAction(event -> {
-            var newProjectPane = new NewProjectPane();
+            var newProjectPane = this.newProjectPane.updateAndGet(
+                    pane -> Objects.requireNonNullElseGet(pane, NewProjectPane::new));
+
             scene.setRoot(newProjectPane);
+
+            newProjectPane.getBackButton().setOnAction(event1 -> scene.setRoot(welcomePane));
         });
     }
 

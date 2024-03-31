@@ -4,6 +4,7 @@ import io.github.railroad.Railroad;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Separator;
 import javafx.scene.image.Image;
@@ -11,6 +12,11 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
+import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.Objects;
 
@@ -35,6 +41,7 @@ public class WelcomeLeftPane extends VBox {
 
         listView.getItems().addAll(MenuType.values());
         listView.getSelectionModel().select(MenuType.HOME);
+        listView.setCellFactory(param -> new MenuTypeCell());
 
         setPrefWidth(200);
         setAlignment(Pos.TOP_CENTER);
@@ -47,20 +54,56 @@ public class WelcomeLeftPane extends VBox {
     }
 
     public enum MenuType {
-        HOME, SETTINGS;
+        HOME("Home", FontAwesomeSolid.HOME, Color.RED),
+        SETTINGS("Settings", FontAwesomeSolid.COG, Color.BLUE);
 
         private final String name;
+        private final Ikon icon;
+        private final Paint color;
 
-        MenuType(String name) {
+        MenuType(String name, Ikon icon, Paint color) {
             this.name = name;
+            this.icon = icon;
+            this.color = color;
         }
 
-        MenuType() {
-            this.name = name().charAt(0) + name().substring(1).toLowerCase();
+        MenuType(String name, Ikon icon) {
+            this(name, icon, Color.BLACK);
         }
 
         public String getName() {
             return this.name;
+        }
+
+        public Ikon getIcon() {
+            return this.icon;
+        }
+
+        public Paint getColor() {
+            return this.color;
+        }
+    }
+
+    public static class MenuTypeCell extends ListCell<MenuType> {
+        private final FontIcon icon = new FontIcon();
+
+        public MenuTypeCell() {
+            icon.setIconSize(24);
+        }
+
+        @Override
+        protected void updateItem(MenuType item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) {
+                setText(null);
+                setGraphic(null);
+            } else {
+                icon.setIconCode(item.getIcon());
+                icon.setIconColor(item.getColor());
+                setGraphic(icon);
+
+                setText(item.getName());
+            }
         }
     }
 }

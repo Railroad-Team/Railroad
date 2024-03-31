@@ -34,7 +34,7 @@ public class WelcomePane extends SplitPane {
         getItems().addAll(leftPane, rightPane);
 
         SplitPane.setResizableWithParent(leftPane, false);
-        SplitPane.setResizableWithParent(rightPane, false);
+        SplitPane.setResizableWithParent(rightPane, true);
 
         leftPane.getListView().getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             switch (newValue) {
