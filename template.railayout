@@ -1,0 +1,29 @@
+HSplit {
+    VSplit {
+       75%,
+       FileExplorer {
+           15%,
+           currentDirectory: "/home/user/project"
+       },
+       TextEditor {
+           65%,
+           tabs: [
+              "Main.java",
+                "Utils.java",
+                "Test.java"
+           ]
+       },
+       GradleTasks {
+           20%,
+           tasks: [
+               "build",
+               "clean",
+               "test"
+           ]
+       }
+    },
+    Terminal {
+       25%,
+       content: "gradle build"
+    }
+}
