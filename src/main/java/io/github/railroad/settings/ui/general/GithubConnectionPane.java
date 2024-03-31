@@ -3,6 +3,8 @@ package io.github.railroad.settings.ui.general;
 import io.github.railroad.github.GithubAccount;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
@@ -24,21 +26,6 @@ public class GithubConnectionPane extends HBox {
         super(10);
 
         this.githubAccount.set(GithubAccount.loadExisting());
-        this.githubAccount.addListener((observable, oldValue, newValue) -> {
-            if (newValue == null) {
-                getChildren().clear();
-                getChildren().add(connectButton);
-                return;
-            }
-
-            profileImage.setImage(new Image(newValue.profileImageUrl()));
-            profileUsername.setText(newValue.username());
-            profileEmail.setText(newValue.email());
-
-            getChildren().remove(connectButton);
-            getChildren().addAll(profileImage, new Separator(), profileUsername, profileEmail, disconnectButton);
-        });
-
         profileImage.setPreserveRatio(true);
         profileImage.setFitHeight(50);
         profileImage.setFitWidth(50);
@@ -61,8 +48,31 @@ public class GithubConnectionPane extends HBox {
         });
 
         var detailsPane = new VBox(5, profileUsername, profileEmail);
-        detailsPane.setPrefWidth(200);
+        detailsPane.setAlignment(Pos.CENTER);
 
-        getChildren().addAll(profileImage, new Separator(), detailsPane, githubAccount.get() == null ? connectButton : disconnectButton);
+        if (githubAccount.get() == null) {
+            getChildren().setAll(connectButton);
+        } else {
+            profileImage.setImage(new Image(githubAccount.get().profileImageUrl()));
+            profileUsername.setText(githubAccount.get().username());
+            profileEmail.setText(githubAccount.get().email());
+
+            getChildren().setAll(profileImage, detailsPane, disconnectButton);
+        }
+
+        setAlignment(Pos.CENTER_LEFT);
+
+        this.githubAccount.addListener((observable, oldValue, newValue) -> {
+            if (newValue == null) {
+                getChildren().setAll(connectButton);
+                return;
+            }
+
+            profileImage.setImage(new Image(newValue.profileImageUrl()));
+            profileUsername.setText(newValue.username());
+            profileEmail.setText(newValue.email());
+
+            getChildren().setAll(profileImage, detailsPane, disconnectButton);
+        });
     }
 }

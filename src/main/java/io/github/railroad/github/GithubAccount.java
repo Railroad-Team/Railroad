@@ -8,7 +8,7 @@ public record GithubAccount(String username, String email, String profileImageUr
 
     public static GithubAccount connect() {
         // TODO: Connect to GitHub
-        return new GithubAccount("username", "example@gmail.com", "https://place-hold.it/300", "access-token");
+        return new GithubAccount("John Doe", "john.doe@gmail.com", "https://place-hold.it/100", "access-token");
     }
 
     public void disconnect() {
