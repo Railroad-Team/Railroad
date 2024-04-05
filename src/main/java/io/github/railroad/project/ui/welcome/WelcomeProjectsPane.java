@@ -3,6 +3,7 @@ package io.github.railroad.project.ui.welcome;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.ProjectSort;
 import io.github.railroad.project.ui.project.ProjectListCell;
+import io.github.railroad.project.ui.project.ProjectSearchField;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.ListView;
@@ -16,12 +17,19 @@ public class WelcomeProjectsPane extends ScrollPane {
     private final ListView<Project> projectsList = new ListView<>();
     private ObservableValue<ProjectSort> sortProperty;
 
-    public WelcomeProjectsPane() {
+    public WelcomeProjectsPane(ProjectSearchField searchField) {
         setStyle("-fx-background-color: #f0f0f0;");
         setFitToWidth(true);
         setFitToHeight(true);
         setHbarPolicy(ScrollBarPolicy.NEVER);
         setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
+
+        searchField.textProperty().addListener(obs->{
+            String filter = searchField.getText();
+            filterProjects(filter);
+
+        });
+
 
         projectsList.setCellFactory(param -> new ProjectListCell());
 
@@ -54,8 +62,7 @@ public class WelcomeProjectsPane extends ScrollPane {
             }
         });
 
-        projectsList.getItems().addAll(Project.loadProjects());
-
+        filterProjects("");
         setContent(projectsList);
     }
 
@@ -66,6 +73,25 @@ public class WelcomeProjectsPane extends ScrollPane {
     public void removeProject(Project project) {
         projectsList.getItems().remove(project);
     }
+
+    public void filterProjects(String value) {
+        if (value == null || value.isEmpty()) {
+            projectsList.getItems().clear();
+            projectsList.getItems().addAll(Project.loadProjects());
+        } else {
+            List<Project> filteredProjects = new ArrayList<>();
+
+            for (Project project : Project.loadProjects()) {
+                if (project.getAlias().toLowerCase().contains(value.toLowerCase())) {
+                    filteredProjects.add(project);
+                }
+            }
+
+            projectsList.getItems().clear();
+            projectsList.getItems().addAll(filteredProjects);
+        }
+    }
+
 
     public void setSortProperty(ObservableValue<ProjectSort> observable) {
         sortProperty = observable;
