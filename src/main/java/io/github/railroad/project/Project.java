@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
+import io.github.railroad.utility.ConfigHandler;
+
 public class Project {
     private final Path path;
     private String alias;
@@ -68,7 +70,7 @@ public class Project {
 
     public static Collection<Project> loadProjects() {
         List<Project> projects = new ArrayList<>();
-
+        ConfigHandler configHandler = new ConfigHandler();
         for (int i = 0; i < ThreadLocalRandom.current().nextInt(20, 100); i++) {
             projects.add(new Project(Path.of("C:/Projects/Project" + i + "/" + generateRandomName())));
         }
