@@ -1,5 +1,6 @@
 package io.github.railroad.project;
 
+import com.google.gson.JsonObject;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 
@@ -9,7 +10,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
-
+import org.json.*;
 import io.github.railroad.utility.ConfigHandler;
 
 public class Project {
@@ -71,11 +72,18 @@ public class Project {
     public static Collection<Project> loadProjects() {
         List<Project> projects = new ArrayList<>();
         ConfigHandler configHandler = new ConfigHandler();
-        for (int i = 0; i < ThreadLocalRandom.current().nextInt(20, 100); i++) {
-            projects.add(new Project(Path.of("C:/Projects/Project" + i + "/" + generateRandomName())));
+        JSONArray projectsJsonArray = configHandler.getProjectsConfig();
+        for (int i = 0; i < projectsJsonArray.length(); i++) {
+            JSONObject projectObject = projectsJsonArray.getJSONObject(i);
+            String projectPath = projectObject.getString("path");
+            String projectAlias = projectObject.getString("alias");
+            projects.add(new Project(Path.of(projectPath),projectAlias));
+            System.out.println(projectAlias);
         }
-
         return projects;
+        //for (int i = 0; i < ThreadLocalRandom.current().nextInt(20, 100); i++) {
+        //    projects.add(new Project(Path.of("C:/Projects/Project" + i + "/" + generateRandomName())));
+        //}
     }
 
     // TODO: Delete this once projects can be saved

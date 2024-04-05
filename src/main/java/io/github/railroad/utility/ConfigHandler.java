@@ -1,7 +1,9 @@
 package io.github.railroad.utility;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -13,20 +15,40 @@ public class ConfigHandler {
     public ConfigHandler() {}
     public static void CreateDefaultConfigs() {
         CreateDirectory(getConfigPath());
+        createProjectsJsonIfNotExists();
     }
 
-    public static JSONObject getProjectsConfig() {
-        Path projectsJsonPath = getConfigPath().resolve("projects.json");
-        StringBuilder jsonContent = new StringBuilder();
+
+    private static void createProjectsJsonIfNotExists() {
+        Path projectsJsonPath = getConfigPath().resolve("config.json");
+        if (!Files.exists(projectsJsonPath)) {
+            try {
+                JSONObject initialData = new JSONObject();
+                JSONArray projectsArray = new JSONArray();
+                initialData.put("projects", projectsArray);
+                writeJsonToFile(projectsJsonPath, initialData.toString());
+            } catch (IOException e) {
+                throw new RuntimeException("Error creating config.json", e);
+            }
+        }
+    }
+    public static JSONArray getProjectsConfig() {
+        Path projectsJsonPath = getConfigPath().resolve("config.json");
+        if (!Files.exists(projectsJsonPath)) {
+            createProjectsJsonIfNotExists();
+        }
+
         try (BufferedReader reader = new BufferedReader(new FileReader(projectsJsonPath.toFile()))) {
+            StringBuilder jsonContent = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
                 jsonContent.append(line);
             }
+            JSONObject jsonObject = new JSONObject(jsonContent.toString());
+            return jsonObject.getJSONArray("projects");
         } catch (IOException e) {
-            throw new RuntimeException("Error reading projects.json", e);
+            throw new RuntimeException("Error reading config.json", e);
         }
-        return new JSONObject(jsonContent.toString());
     }
     public static Path getConfigPath() {
         //TODO Implemnet MAC
@@ -49,6 +71,11 @@ public class ConfigHandler {
         }
         catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+    private static void writeJsonToFile(Path filePath, String jsonContent) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath.toFile()))) {
+            writer.write(jsonContent);
         }
     }
 }
