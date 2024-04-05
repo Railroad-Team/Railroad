@@ -19,14 +19,18 @@ import java.net.URL;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.github.railroad.utility.ConfigHandler;
+
 public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static boolean DEBUG = false;
     private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
 
+    private static final ConfigHandler configHandler  = new ConfigHandler();
     @Override
     public void start(Stage primaryStage) {
+        configHandler.CreateDefaultConfigs();
         MinecraftVersion.load();
         ForgeVersion.load();
 
@@ -49,7 +53,6 @@ public class Railroad extends Application {
             newProjectPane.getBackButton().setOnAction(event1 -> scene.setRoot(welcomePane));
         });
     }
-
     private static void handleStyles(Scene scene) {
         String debugStyles = getResource("styles/debug.css").toExternalForm();
         if (DEBUG) {
