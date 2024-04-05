@@ -1,6 +1,5 @@
 package io.github.railroad.project;
 
-import com.google.gson.JsonObject;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 
