@@ -9,8 +9,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
-import org.json.*;
-import io.github.railroad.utility.ConfigHandler;
+
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+
 
 public class Project {
     private final Path path;
@@ -124,6 +128,18 @@ public class Project {
         return lastOpened;
     }
 
+    public String getLastOpenedFriendly() {
+
+        Instant instant = Instant.ofEpochMilli(this.getLastOpened());
+        ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
+        ZonedDateTime currentTime = ZonedDateTime.now();
+        long daysDifference = ChronoUnit.DAYS.between(zonedDateTime, currentTime);
+        if (Long.toString(daysDifference).equals("0")) {
+            return "Today";
+        } else {
+            return Long.toString(daysDifference) + " Days ago";
+        }
+    }
     public void setLastOpened(long lastOpened) {
         this.lastOpened = lastOpened;
         if (this.manager != null) {

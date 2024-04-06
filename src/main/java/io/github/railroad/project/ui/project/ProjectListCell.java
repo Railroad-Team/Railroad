@@ -7,6 +7,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.Separator;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
@@ -40,6 +41,8 @@ public class ProjectListCell extends ListCell<Project> {
         private final ImageView icon;
         private final Label label;
 
+        private final Label lastOpened;
+
         public ProjectListNode() {
             setSpacing(10);
             setPadding(new Insets(5));
@@ -58,7 +61,12 @@ public class ProjectListCell extends ListCell<Project> {
             label.setStyle("-fx-font-size: 16px;");
             this.label = label;
 
-            getChildren().addAll(icon, label);
+            var lastOpened = new Label();
+            lastOpened.textProperty().bind(project.map(Project::getLastOpenedFriendly));
+            lastOpened.setStyle("-fx-font-size: 16px;");
+            this.lastOpened = lastOpened;
+
+            getChildren().addAll(icon, label,lastOpened);
         }
 
         public ProjectListNode(Project project) {
