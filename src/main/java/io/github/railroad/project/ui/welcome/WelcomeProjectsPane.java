@@ -1,6 +1,7 @@
 package io.github.railroad.project.ui.welcome;
 
 import io.github.railroad.project.Project;
+import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ProjectSort;
 import io.github.railroad.project.ui.project.ProjectListCell;
 import io.github.railroad.project.ui.project.ProjectSearchField;
@@ -15,6 +16,8 @@ import java.util.List;
 
 public class WelcomeProjectsPane extends ScrollPane {
     private final ListView<Project> projectsList = new ListView<>();
+
+    private final ProjectManager manager = new ProjectManager();
     private ObservableValue<ProjectSort> sortProperty;
 
     public WelcomeProjectsPane(ProjectSearchField searchField) {
@@ -75,19 +78,17 @@ public class WelcomeProjectsPane extends ScrollPane {
     }
 
     public void filterProjects(String value) {
+        projectsList.getItems().clear();
         if (value == null || value.isEmpty()) {
-            projectsList.getItems().clear();
-            projectsList.getItems().addAll(Project.loadProjects());
+            projectsList.getItems().addAll(manager.loadProjects());
         } else {
             List<Project> filteredProjects = new ArrayList<>();
 
-            for (Project project : Project.loadProjects()) {
+            for (Project project : manager.loadProjects()) {
                 if (project.getAlias().toLowerCase().contains(value.toLowerCase())) {
                     filteredProjects.add(project);
                 }
             }
-
-            projectsList.getItems().clear();
             projectsList.getItems().addAll(filteredProjects);
         }
     }

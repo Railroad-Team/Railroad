@@ -16,7 +16,10 @@ public class Project {
     private final Path path;
     private String alias;
     private Optional<Image> icon;
-    private long lastOpened = ThreadLocalRandom.current().nextLong(0, System.currentTimeMillis()); // TODO: Implement last opened
+    private long lastOpened;
+
+    private String UUID;
+    private ProjectManager manager;
 
     public Project(Path path) {
         this(path, path.getFileName().toString());
@@ -68,22 +71,7 @@ public class Project {
         return abbreviation.toString();
     }
 
-    public static Collection<Project> loadProjects() {
-        List<Project> projects = new ArrayList<>();
-        ConfigHandler configHandler = new ConfigHandler();
-        JSONArray projectsJsonArray = configHandler.getProjectsConfig();
-        for (int i = 0; i < projectsJsonArray.length(); i++) {
-            JSONObject projectObject = projectsJsonArray.getJSONObject(i);
-            String projectPath = projectObject.getString("path");
-            String projectAlias = projectObject.getString("alias");
-            projects.add(new Project(Path.of(projectPath),projectAlias));
-            System.out.println(projectAlias);
-        }
-        return projects;
-        //for (int i = 0; i < ThreadLocalRandom.current().nextInt(20, 100); i++) {
-        //    projects.add(new Project(Path.of("C:/Projects/Project" + i + "/" + generateRandomName())));
-        //}
-    }
+
 
     // TODO: Delete this once projects can be saved
     private static String generateRandomName() {
@@ -136,9 +124,12 @@ public class Project {
         return lastOpened;
     }
 
+    public void setLastOpened(long lastOpened) {
+        this.lastOpened = lastOpened;
+    }
     public void open() {
         System.out.println("Opening project: " + path);
-        this.lastOpened = System.currentTimeMillis();
+        this.setLastOpened(System.currentTimeMillis());
     }
 
     public void delete(boolean deleteFiles) {
@@ -167,5 +158,17 @@ public class Project {
     @Override
     public int hashCode() {
         return path.hashCode();
+    }
+
+    public void setManager(ProjectManager manager) {
+        this.manager = manager;
+    }
+
+    public String getUUID() {
+        return UUID;
+    }
+
+    public void setUUID(String UUID) {
+        this.UUID = UUID;
     }
 }
