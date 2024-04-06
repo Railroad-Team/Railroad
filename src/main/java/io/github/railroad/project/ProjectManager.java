@@ -16,7 +16,7 @@ public class ProjectManager {
     private final ConfigHandler configHandler = new ConfigHandler();
     private Collection<Project> projects;
     public ProjectManager() {
-
+        configHandler.CreateDefaultConfigs();
     }
     public Collection<Project> loadProjects() {
         List<Project> projects = new ArrayList<>();

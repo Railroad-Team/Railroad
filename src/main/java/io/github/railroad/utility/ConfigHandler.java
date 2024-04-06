@@ -9,17 +9,19 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import com.google.gson.JsonObject;
 import org.json.*;
 public class ConfigHandler {
 
     public ConfigHandler() {}
-    public static void CreateDefaultConfigs() {
+    public void CreateDefaultConfigs() {
         CreateDirectory(getConfigPath());
         createProjectsJsonIfNotExists();
     }
 
 
-    private static void createProjectsJsonIfNotExists() {
+    private void createProjectsJsonIfNotExists() {
         Path projectsJsonPath = getConfigPath().resolve("config.json");
         if (!Files.exists(projectsJsonPath)) {
             try {
@@ -32,7 +34,7 @@ public class ConfigHandler {
             }
         }
     }
-    public static JSONArray getProjectsConfig() {
+    public JSONObject getConfigJson() {
         Path projectsJsonPath = getConfigPath().resolve("config.json");
         if (!Files.exists(projectsJsonPath)) {
             createProjectsJsonIfNotExists();
@@ -44,13 +46,17 @@ public class ConfigHandler {
             while ((line = reader.readLine()) != null) {
                 jsonContent.append(line);
             }
-            JSONObject jsonObject = new JSONObject(jsonContent.toString());
-            return jsonObject.getJSONArray("projects");
+            return new JSONObject(jsonContent.toString());
+            //return jsonObject.getJSONArray("projects");
         } catch (IOException e) {
             throw new RuntimeException("Error reading config.json", e);
         }
     }
-    public static Path getConfigPath() {
+
+    public JSONArray getProjectsConfig() {
+        return getConfigJson().getJSONArray("projects");
+    }
+    public Path getConfigPath() {
         //TODO Implemnet MAC
         var os = System.getProperty("os.name");
         var homePath = System.getProperty("user.home");
@@ -62,7 +68,7 @@ public class ConfigHandler {
             return Paths.get("");
         }
     }
-    private static void CreateDirectory(Path path) {
+    private void CreateDirectory(Path path) {
         try {
             Files.createDirectory(path);
         }
@@ -73,7 +79,19 @@ public class ConfigHandler {
             throw new RuntimeException(e);
         }
     }
-    private static void writeJsonToFile(Path filePath, String jsonContent) throws IOException {
+    public void updateConfig(JSONObject obj) {
+        Path projectsJsonPath = getConfigPath().resolve("config.json");
+        if (!Files.exists(projectsJsonPath)) {
+            createProjectsJsonIfNotExists();
+        }
+        try {
+            writeJsonToFile(projectsJsonPath, obj.toString());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+    private void writeJsonToFile(Path filePath, String jsonContent) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath.toFile()))) {
             writer.write(jsonContent);
         }

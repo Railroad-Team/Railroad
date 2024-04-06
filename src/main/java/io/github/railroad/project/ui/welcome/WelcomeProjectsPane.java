@@ -14,10 +14,11 @@ import javafx.scene.input.KeyCode;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.github.railroad.Railroad.manager;
+
 public class WelcomeProjectsPane extends ScrollPane {
     private final ListView<Project> projectsList = new ListView<>();
 
-    private final ProjectManager manager = new ProjectManager();
     private ObservableValue<ProjectSort> sortProperty;
 
     public WelcomeProjectsPane(ProjectSearchField searchField) {

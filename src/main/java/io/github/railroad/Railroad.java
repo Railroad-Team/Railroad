@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
+import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.project.ui.welcome.WelcomePane;
 import javafx.application.Application;
@@ -19,18 +20,15 @@ import java.net.URL;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.github.railroad.utility.ConfigHandler;
-
 public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static boolean DEBUG = false;
     private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
 
-    private static final ConfigHandler configHandler  = new ConfigHandler();
+    public static ProjectManager manager = new ProjectManager();
     @Override
     public void start(Stage primaryStage) {
-        configHandler.CreateDefaultConfigs();
         MinecraftVersion.load();
         ForgeVersion.load();
 
