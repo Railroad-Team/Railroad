@@ -126,6 +126,10 @@ public class Project {
 
     public void setLastOpened(long lastOpened) {
         this.lastOpened = lastOpened;
+        if (this.manager != null) {
+            this.manager.UpdateProjectInfo(this);
+        }
+
     }
     public void open() {
         System.out.println("Opening project: " + path);
@@ -138,7 +142,7 @@ public class Project {
 
     @Override
     public String toString() {
-        return alias;
+        return alias + " - " + getLastOpened();
     }
 
     @Override

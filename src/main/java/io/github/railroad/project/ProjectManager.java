@@ -29,8 +29,8 @@ public class ProjectManager {
             String uuid = projectObject.getString("uuid");
             Project project = new Project(Path.of(projectPath),projectAlias);
             if (projectObject.has("lastopened")) {
-                String lastopened = projectObject.getString("lastopened");
-                project.setLastOpened(parseLong(lastopened));
+                Long lastopened = projectObject.getLong("lastopened");
+                project.setLastOpened(lastopened);
             }
             project.setUUID(uuid);
             project.setManager(this);
@@ -42,6 +42,19 @@ public class ProjectManager {
     }
 
     public void UpdateProjectInfo(Project project) {
+        JSONObject object = configHandler.getConfigJson();
+        JSONArray projects = object.getJSONArray("projects");
+        for (int i = 0; i < projects.length(); i++) {
+            JSONObject projectObject = projects.getJSONObject(i);
+            System.out.println(projectObject.get("uuid"));
+            System.out.println(project.getUUID());
+            System.out.println("Finsihed compare");
+            if (projectObject.get("uuid").toString().equals(project.getUUID())) {
+                projectObject.putOnce("lastopened", project.getLastOpened());
+                System.out.println("Found Project");
+            }
+        }
+        configHandler.updateConfig(object);
 
     }
 
