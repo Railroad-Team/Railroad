@@ -21,6 +21,7 @@ public class WelcomeProjectsPane extends ScrollPane {
     private ObservableValue<ProjectSort> sortProperty;
 
     public WelcomeProjectsPane(ProjectSearchField searchField) {
+        manager.loadProjects();
         setStyle("-fx-background-color: #f0f0f0;");
         setFitToWidth(true);
         setFitToHeight(true);
@@ -80,11 +81,11 @@ public class WelcomeProjectsPane extends ScrollPane {
     public void filterProjects(String value) {
         projectsList.getItems().clear();
         if (value == null || value.isEmpty()) {
-            projectsList.getItems().addAll(manager.loadProjects());
+            projectsList.getItems().addAll(manager.getProjects());
         } else {
             List<Project> filteredProjects = new ArrayList<>();
 
-            for (Project project : manager.loadProjects()) {
+            for (Project project : manager.getProjects()) {
                 if (project.getAlias().toLowerCase().contains(value.toLowerCase())) {
                     filteredProjects.add(project);
                 }

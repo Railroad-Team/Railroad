@@ -14,6 +14,7 @@ import static java.lang.Long.parseLong;
 public class ProjectManager {
 
     private final ConfigHandler configHandler = new ConfigHandler();
+    private Collection<Project> projects;
     public ProjectManager() {
 
     }
@@ -36,10 +37,19 @@ public class ProjectManager {
             projects.add(project);
             System.out.println(projectAlias);
         }
+        this.projects = projects;
         return projects;
     }
 
     public void UpdateProjectInfo(Project project) {
 
+    }
+
+    public Collection<Project> getProjects() {
+        return projects;
+    }
+
+    public void setProjects(Collection<Project> projects) {
+        this.projects = projects;
     }
 }
