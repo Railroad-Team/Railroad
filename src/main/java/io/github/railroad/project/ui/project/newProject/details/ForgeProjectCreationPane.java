@@ -94,7 +94,6 @@ public class ForgeProjectCreationPane extends BorderPane {
         File gradlePropertiesFile = new File(projectPath+"/gradle.properties");
 
         try {
-            // Update the property 'minecraft_version' with the desired value
             updateKeyValuePairByLine("mod_id", this.data.modId(), gradlePropertiesFile);
             updateKeyValuePairByLine("mod_name", this.data.modName(), gradlePropertiesFile);
             updateKeyValuePairByLine("mod_version", this.data.version(), gradlePropertiesFile);
