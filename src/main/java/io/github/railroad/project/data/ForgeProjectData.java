@@ -6,9 +6,10 @@ import io.github.railroad.minecraft.mapping.MappingChannel;
 import io.github.railroad.minecraft.mapping.MappingVersion;
 import io.github.railroad.project.License;
 
+import java.nio.file.Path;
 import java.util.Optional;
 
-public record ForgeProjectData(String projectName, String projectPath, boolean createGit, License license, String licenseCustom,
+public record ForgeProjectData(String projectName, Path projectPath, boolean createGit, License license, String licenseCustom,
                                MinecraftVersion minecraftVersion, ForgeVersion forgeVersion, String modId, String modName,
                                String mainClass, boolean useMixins, boolean useAccessTransformer,
                                MappingChannel mappingChannel, MappingVersion mappingVersion,

@@ -73,25 +73,26 @@ public class ForgeProjectCreationPane extends BorderPane {
         // Download Link
         //https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.2-48.1.0/forge-1.20.2-48.1.0-mdk.zip
         String filenametodownload = this.data.minecraftVersion().id() + "-" + this.data.forgeVersion().id();
-        String projectPath = (this.data.projectPath().replace("\\","/") + "/" + this.data.projectName());
+        Path projectPath = this.data.projectPath().resolve(this.data.projectName());
+        System.out.println("New ProjectPath: "+ projectPath.toString());
         try {
-            Files.createDirectories(Paths.get(projectPath));
+            Files.createDirectories(projectPath);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         copyUrlToFile(
                 "https://maven.minecraftforge.net/net/minecraftforge/forge/"+filenametodownload+"/forge-"+filenametodownload+"-mdk.zip",
-                Path.of(projectPath+"/"+filenametodownload+".zip"));
+                Path.of(projectPath.resolve(filenametodownload).toString() + ".zip"));
         progressBar.setProgress(.2);
         try {
-            UnZipFile(projectPath+"/"+filenametodownload+".zip",projectPath);
+            UnZipFile(Path.of(projectPath.resolve(filenametodownload).toString() + ".zip").toString(),projectPath.toString());
             progressBar.setProgress(.5);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        manager.NewProject(new Project(Path.of(projectPath), this.data.projectName()));
+        manager.NewProject(new Project(projectPath, this.data.projectName()));
         progressBar.setProgress(.6);
-        File gradlePropertiesFile = new File(projectPath+"/gradle.properties");
+        File gradlePropertiesFile = projectPath.resolve("gradle.properties").toFile();
 
         try {
             updateKeyValuePairByLine("mod_id", this.data.modId(), gradlePropertiesFile);
