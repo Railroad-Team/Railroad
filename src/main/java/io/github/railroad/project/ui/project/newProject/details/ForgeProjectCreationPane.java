@@ -24,6 +24,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import static io.github.railroad.utility.FileHandler.copyUrlToFile;
 import static io.github.railroad.utility.FileHandler.UnZipFile;
 import static io.github.railroad.Railroad.manager;
+import static io.github.railroad.utility.FileHandler.updateKeyValuePairByLine;
 
 public class ForgeProjectCreationPane extends BorderPane {
     private final ForgeProjectData data;
@@ -90,5 +91,19 @@ public class ForgeProjectCreationPane extends BorderPane {
         }
         manager.NewProject(new Project(Path.of(projectPath), this.data.projectName()));
         progressBar.setProgress(.6);
+        File gradlePropertiesFile = new File(projectPath+"/gradle.properties");
+
+        try {
+            // Update the property 'minecraft_version' with the desired value
+            updateKeyValuePairByLine("mod_id", this.data.modId(), gradlePropertiesFile);
+            updateKeyValuePairByLine("mod_name", this.data.modName(), gradlePropertiesFile);
+            updateKeyValuePairByLine("mod_version", this.data.version(), gradlePropertiesFile);
+            updateKeyValuePairByLine("mod_group_id", this.data.groupId(), gradlePropertiesFile);
+            updateKeyValuePairByLine("mod_authors", this.data.author().orElse(""), gradlePropertiesFile);
+            updateKeyValuePairByLine("mod_description", this.data.description().orElse(""), gradlePropertiesFile);
+            System.out.println("gradle.properties updated successfully.");
+        } catch (IOException e) {
+            System.err.println("Error updating gradle.properties: " + e.getMessage());
+        }
     }
 }

@@ -27,6 +27,23 @@ public class FileHandler {
         }
     }
 
+    public static void updateKeyValuePairByLine(String key, String value, File file) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(file));
+        StringBuilder stringBuilder = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (line.startsWith(key + "=")) {
+                // Replace the existing value
+                line = key + "=" + value;
+            }
+            stringBuilder.append(line).append("\n");
+        }
+        reader.close();
+        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+        writer.write(stringBuilder.toString());
+        writer.close();
+    }
+
     public static void UnZipFile(String fileZip, String dstDir) throws IOException {
         File destDir = new File(dstDir);
 
