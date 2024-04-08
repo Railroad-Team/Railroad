@@ -1,7 +1,6 @@
 package io.github.railroad.project.ui.welcome;
 
 import io.github.railroad.project.Project;
-import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ProjectSort;
 import io.github.railroad.project.ui.project.ProjectListCell;
 import io.github.railroad.project.ui.project.ProjectSearchField;
@@ -59,8 +58,8 @@ public class WelcomeProjectsPane extends ScrollPane {
             } else if (event.getCode() == KeyCode.DELETE) {
                 Project project = projectsList.getSelectionModel().getSelectedItem();
                 if (project != null) {
-                    project.delete(false); // TODO: Ask for confirmation
-                    removeProject(project);
+                    manager.RemoveProject(project);
+                    filterProjects("");
                 }
 
                 event.consume();
@@ -71,10 +70,6 @@ public class WelcomeProjectsPane extends ScrollPane {
         setContent(projectsList);
     }
 
-    public void addProject(Project project) {
-        projectsList.getItems().add(project);
-    }
-
     public void removeProject(Project project) {
         projectsList.getItems().remove(project);
     }
@@ -82,11 +77,11 @@ public class WelcomeProjectsPane extends ScrollPane {
     public void filterProjects(String value) {
         projectsList.getItems().clear();
         if (value == null || value.isEmpty()) {
-            projectsList.getItems().addAll(manager.getProjects());
+            projectsList.getItems().addAll(manager.getProjectCollection());
         } else {
             List<Project> filteredProjects = new ArrayList<>();
 
-            for (Project project : manager.getProjects()) {
+            for (Project project : manager.getProjectCollection()) {
                 if (project.getAlias().toLowerCase().contains(value.toLowerCase())) {
                     filteredProjects.add(project);
                 }

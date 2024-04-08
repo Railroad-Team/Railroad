@@ -1,7 +1,14 @@
 package io.github.railroad.project.ui.project.newProject.details;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import io.github.palexdev.materialfx.controls.MFXProgressBar;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
+import io.github.railroad.project.Project;
 import io.github.railroad.project.data.ForgeProjectData;
 import io.github.railroad.task.TaskManager;
 import javafx.beans.property.ListProperty;
@@ -14,6 +21,9 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+import static io.github.railroad.utility.FileHandler.copyUrlToFile;
+import static io.github.railroad.utility.FileHandler.UnZipFile;
+import static io.github.railroad.Railroad.manager;
 
 public class ForgeProjectCreationPane extends BorderPane {
     private final ForgeProjectData data;
@@ -58,5 +68,27 @@ public class ForgeProjectCreationPane extends BorderPane {
 
         setTop(new Label("Creating project..."));
         setAlignment(getTop(), Pos.CENTER);
+        progressBar.setProgress(0);
+        // Download Link
+        //https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.2-48.1.0/forge-1.20.2-48.1.0-mdk.zip
+        String filenametodownload = this.data.minecraftVersion().id() + "-" + this.data.forgeVersion().id();
+        String projectPath = (this.data.projectPath().replace("\\","/") + "/" + this.data.projectName());
+        try {
+            Files.createDirectories(Paths.get(projectPath));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        copyUrlToFile(
+                "https://maven.minecraftforge.net/net/minecraftforge/forge/"+filenametodownload+"/forge-"+filenametodownload+"-mdk.zip",
+                Path.of(projectPath+"/"+filenametodownload+".zip"));
+        progressBar.setProgress(.2);
+        try {
+            UnZipFile(projectPath+"/"+filenametodownload+".zip",projectPath);
+            progressBar.setProgress(.5);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        manager.NewProject(new Project(Path.of(projectPath), this.data.projectName()));
+        progressBar.setProgress(.6);
     }
 }

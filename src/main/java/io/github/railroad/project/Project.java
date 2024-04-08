@@ -2,11 +2,12 @@ package io.github.railroad.project;
 
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
+import java.util.UUID;
+
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -22,7 +23,7 @@ public class Project {
     private Optional<Image> icon;
     private long lastOpened;
 
-    private String UUID;
+    private String ID;
     private ProjectManager manager;
 
     public Project(Path path) {
@@ -152,10 +153,6 @@ public class Project {
         this.setLastOpened(System.currentTimeMillis());
     }
 
-    public void delete(boolean deleteFiles) {
-        System.out.println("Deleting project: " + path);
-    }
-
     @Override
     public String toString() {
         return alias + " - " + getLastOpened();
@@ -184,11 +181,15 @@ public class Project {
         this.manager = manager;
     }
 
-    public String getUUID() {
-        return UUID;
+    public String getID() {
+        if ((this.ID == null) || (this.ID.isEmpty())) {
+            UUID uuid = UUID.randomUUID();
+            this.ID = uuid.toString();
+        }
+        return ID;
     }
 
-    public void setUUID(String UUID) {
-        this.UUID = UUID;
+    public void setID(String ID) {
+        this.ID = ID;
     }
 }

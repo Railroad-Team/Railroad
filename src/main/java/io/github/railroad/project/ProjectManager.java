@@ -14,7 +14,7 @@ import static java.lang.Long.parseLong;
 public class ProjectManager {
 
     private final ConfigHandler configHandler = new ConfigHandler();
-    private Collection<Project> projects;
+    private Collection<Project> projectCollection;
     public ProjectManager() {
         configHandler.CreateDefaultConfigs();
     }
@@ -32,37 +32,68 @@ public class ProjectManager {
                 Long lastopened = projectObject.getLong("lastopened");
                 project.setLastOpened(lastopened);
             }
-            project.setUUID(uuid);
+            project.setID(uuid);
             project.setManager(this);
             projects.add(project);
             System.out.println(projectAlias);
         }
-        this.projects = projects;
+        this.setProjectCollection(projects);
         return projects;
     }
 
     public void UpdateProjectInfo(Project project) {
+        UpdateProjectInfo(project, false);
+    }
+
+    public void UpdateProjectInfo(Project project, boolean removeProject) {
         JSONObject object = configHandler.getConfigJson();
         JSONArray projects = object.getJSONArray("projects");
+        boolean found = false;
         for (int i = 0; i < projects.length(); i++) {
             JSONObject projectObject = projects.getJSONObject(i);
-            System.out.println(projectObject.get("uuid"));
-            System.out.println(project.getUUID());
-            System.out.println("Finsihed compare");
-            if (projectObject.get("uuid").toString().equals(project.getUUID())) {
-                projectObject.putOnce("lastopened", project.getLastOpened());
-                System.out.println("Found Project");
+            if (projectObject.get("uuid").toString().equals(project.getID())) {
+                if (removeProject) {
+                    projects.remove(i);
+                    break;
+                } else {
+                    found = true;
+                    projectObject.put("lastopened",project.getLastOpened());
+                }
+
             }
+        }
+        if ((!found) && (!removeProject)) {
+            System.out.println("Create new Project");
+            JSONObject newProject = new JSONObject();
+            newProject.put("uuid", project.getID());
+            newProject.put("path", project.getPath());
+            newProject.put("alias", project.getAlias());
+            projects.put(newProject);
         }
         configHandler.updateConfig(object);
 
     }
 
-    public Collection<Project> getProjects() {
-        return projects;
+    public Collection<Project> getProjectCollection() {
+        return projectCollection;
     }
 
-    public void setProjects(Collection<Project> projects) {
-        this.projects = projects;
+    public Project NewProject(Project project) {
+        this.UpdateProjectInfo(project);
+        project.setManager(this);
+        this.projectCollection.add(project);
+        return project;
     }
+
+    public boolean RemoveProject(Project project) {
+        this.projectCollection.remove(project);
+        UpdateProjectInfo(project, true);
+        return true;
+    }
+
+    public void setProjectCollection(Collection<Project> projectCollection) {
+        this.projectCollection = projectCollection;
+    }
+
+
 }

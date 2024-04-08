@@ -80,6 +80,7 @@ public class ConfigHandler {
         }
     }
     public void updateConfig(JSONObject obj) {
+        System.out.println("Updateting config file");
         Path projectsJsonPath = getConfigPath().resolve("config.json");
         if (!Files.exists(projectsJsonPath)) {
             createProjectsJsonIfNotExists();
