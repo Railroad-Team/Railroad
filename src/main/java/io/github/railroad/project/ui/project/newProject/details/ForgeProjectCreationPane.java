@@ -5,16 +5,21 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 import io.github.palexdev.materialfx.controls.MFXProgressBar;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.data.ForgeProjectData;
 import io.github.railroad.task.TaskManager;
+import javafx.application.Platform;
 import javafx.beans.property.ListProperty;
 import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Task;
 import javafx.geometry.Pos;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
@@ -25,6 +30,8 @@ import static io.github.railroad.utility.FileHandler.copyUrlToFile;
 import static io.github.railroad.utility.FileHandler.UnZipFile;
 import static io.github.railroad.Railroad.manager;
 import static io.github.railroad.utility.FileHandler.updateKeyValuePairByLine;
+
+
 
 public class ForgeProjectCreationPane extends BorderPane {
     private final ForgeProjectData data;
@@ -38,6 +45,79 @@ public class ForgeProjectCreationPane extends BorderPane {
     private final Label errorLabel = new Label();
 
     private final ListProperty<Throwable> errors = new SimpleListProperty<>(FXCollections.observableArrayList());
+
+    private static class ProjectCreationTask extends Task<Void> {
+        private final ForgeProjectData data;
+
+        public ProjectCreationTask(ForgeProjectData data) {
+            this.data = data;
+        }
+
+        @Override
+        protected Void call() throws Exception {
+            String filenametodownload = data.minecraftVersion().id() + "-" + data.forgeVersion().id();
+            Path projectPath = data.projectPath().resolve(data.projectName());
+            Files.createDirectories(projectPath);
+            updateProgress(1, 10);
+            Thread.sleep(500);
+            copyUrlToFile("https://maven.minecraftforge.net/net/minecraftforge/forge/" + filenametodownload + "/forge-" + filenametodownload + "-mdk.zip",
+                    Path.of(projectPath.resolve(filenametodownload).toString() + ".zip"));
+            updateProgress(3, 10);
+            Thread.sleep(500);
+            UnZipFile(Path.of(projectPath.resolve(filenametodownload).toString() + ".zip").toString(), projectPath.toString());
+            updateProgress(5, 10);
+            Thread.sleep(500);
+            manager.NewProject(new Project(projectPath, this.data.projectName()));
+            updateProgress(6, 10);
+            Thread.sleep(500);
+            File gradlePropertiesFile = projectPath.resolve("gradle.properties").toFile();
+
+            updateKeyValuePairByLine("mod_id", this.data.modId(), gradlePropertiesFile);
+            updateKeyValuePairByLine("mod_name", this.data.modName(), gradlePropertiesFile);
+            updateKeyValuePairByLine("mod_version", this.data.version(), gradlePropertiesFile);
+            updateKeyValuePairByLine("mod_group_id", this.data.groupId(), gradlePropertiesFile);
+            updateKeyValuePairByLine("mod_authors", this.data.author().orElse(""), gradlePropertiesFile);
+            updateKeyValuePairByLine("mod_description", this.data.description().orElse(""), gradlePropertiesFile);
+            System.out.println("gradle.properties updated successfully.");
+            updateProgress(7,10);
+            Thread.sleep(500);
+
+            File com = projectPath
+                    .resolve("src")
+                    .resolve("main")
+                    .resolve("java")
+                    .resolve("com")
+                    .resolve(this.data.author().orElse(this.data.projectName()))
+                    .resolve(this.data.modId()).toFile();
+            com.mkdirs();
+                Files.copy(projectPath
+                                .resolve("src")
+                                .resolve("main")
+                                .resolve("java")
+                                .resolve("com")
+                                .resolve("example")
+                                .resolve("examplemod")
+                                .resolve("Config.java").toAbsolutePath(),
+                        com.toPath().resolve("Config.java").toAbsolutePath());
+                updateProgress(8,10);
+            Thread.sleep(500);
+                Files.copy(projectPath
+                                .resolve("src")
+                                .resolve("main")
+                                .resolve("java")
+                                .resolve("com")
+                                .resolve("example")
+                                .resolve("examplemod")
+                                .resolve("ExampleMod.java").toAbsolutePath(),
+                        com.toPath().resolve(this.data.modId()+".java").toAbsolutePath());
+                updateProgress(9,10);
+            Thread.sleep(500);
+            updateProgress(10,10);
+            return null;
+
+        }
+    }
+
 
     public ForgeProjectCreationPane(ForgeProjectData data) {
         this.data = data;
@@ -70,40 +150,27 @@ public class ForgeProjectCreationPane extends BorderPane {
         setTop(new Label("Creating project..."));
         setAlignment(getTop(), Pos.CENTER);
         progressBar.setProgress(0);
-        // Download Link
-        //https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.2-48.1.0/forge-1.20.2-48.1.0-mdk.zip
-        String filenametodownload = this.data.minecraftVersion().id() + "-" + this.data.forgeVersion().id();
-        Path projectPath = this.data.projectPath().resolve(this.data.projectName());
-        System.out.println("New ProjectPath: "+ projectPath.toString());
-        try {
-            Files.createDirectories(projectPath);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        copyUrlToFile(
-                "https://maven.minecraftforge.net/net/minecraftforge/forge/"+filenametodownload+"/forge-"+filenametodownload+"-mdk.zip",
-                Path.of(projectPath.resolve(filenametodownload).toString() + ".zip"));
-        progressBar.setProgress(.2);
-        try {
-            UnZipFile(Path.of(projectPath.resolve(filenametodownload).toString() + ".zip").toString(),projectPath.toString());
-            progressBar.setProgress(.5);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        manager.NewProject(new Project(projectPath, this.data.projectName()));
-        progressBar.setProgress(.6);
-        File gradlePropertiesFile = projectPath.resolve("gradle.properties").toFile();
 
-        try {
-            updateKeyValuePairByLine("mod_id", this.data.modId(), gradlePropertiesFile);
-            updateKeyValuePairByLine("mod_name", this.data.modName(), gradlePropertiesFile);
-            updateKeyValuePairByLine("mod_version", this.data.version(), gradlePropertiesFile);
-            updateKeyValuePairByLine("mod_group_id", this.data.groupId(), gradlePropertiesFile);
-            updateKeyValuePairByLine("mod_authors", this.data.author().orElse(""), gradlePropertiesFile);
-            updateKeyValuePairByLine("mod_description", this.data.description().orElse(""), gradlePropertiesFile);
-            System.out.println("gradle.properties updated successfully.");
-        } catch (IOException e) {
-            System.err.println("Error updating gradle.properties: " + e.getMessage());
+        ProjectCreationTask task = new ProjectCreationTask(data);
+        progressBar.progressProperty().bind(task.progressProperty());
+
+        task.setOnSucceeded(event -> {
+            // Update UI or perform any final operations
+            //progressBar.setProgress(1.0); // Update progress to 100%
+        });
+
+        // Start the task in a background thread
+        new Thread(task).start();
+    }
+    private void showErrorAlert(String title, String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            // Handle OK button action if needed
         }
     }
 }
