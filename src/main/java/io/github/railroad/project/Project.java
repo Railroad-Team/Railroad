@@ -109,6 +109,8 @@ public class Project {
         return path;
     }
 
+    public String getPathStr() {return getPath().toString(); }
+
     public String getAlias() {
         return alias;
     }
