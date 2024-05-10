@@ -36,7 +36,7 @@ To report a bug go [here](https://github.com/Railroad-Team/Railroad/issues). Use
 
 ![The Official GPL v3 Logo](https://www.gnu.org/graphics/gplv3-127x51.png)
 
-Copyright (c) 2021, 2022 the Railroad IDE contributors.
+Copyright (c) 2024 the Railroad IDE contributors.
 
 Railroad IDE is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
