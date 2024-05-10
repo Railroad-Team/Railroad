@@ -1,11 +1,15 @@
 package io.github.railroad.utility;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -27,65 +31,54 @@ public class FileHandler {
         }
     }
 
-    public static void updateKeyValuePairByLine(String key, String value, File file) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(file));
-        StringBuilder stringBuilder = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
+    public static void updateKeyValuePairByLine(String key, String value, Path file) throws IOException {
+        var stringBuilder = new StringBuilder();
+
+        List<String> lines = Files.readAllLines(file);
+        for (String line : lines) {
             if (line.startsWith(key + "=")) {
                 // Replace the existing value
                 line = key + "=" + value;
             }
+
             stringBuilder.append(line).append("\n");
         }
-        reader.close();
-        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-        writer.write(stringBuilder.toString());
-        writer.close();
+
+        Files.writeString(file, stringBuilder.toString());
     }
 
-    public static void UnZipFile(String fileZip, String dstDir) throws IOException {
-        File destDir = new File(dstDir);
+    public static void unzipFile(String fileZip, String dstDir) throws IOException {
+        try (var zipInputStream = new ZipInputStream(new FileInputStream(fileZip))) {
+            ZipEntry zipEntry = zipInputStream.getNextEntry();
+            while (zipEntry != null) {
+                Path newFile = newFile(Path.of(dstDir), zipEntry);
+                if (zipEntry.isDirectory()) {
+                    Files.createDirectories(newFile);
+                    if (!Files.isDirectory(newFile))
+                        throw new IOException("Failed to create directory " + newFile);
+                } else {
+                    // fix for Windows-created archives
+                    Path parent = newFile.getParent();
+                    Files.createDirectories(parent);
+                    if (!Files.isDirectory(parent))
+                        throw new IOException("Failed to create directory " + parent);
 
-        byte[] buffer = new byte[1024];
-        ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip));
-        ZipEntry zipEntry = zis.getNextEntry();
-        while (zipEntry != null) {
-            File newFile = newFile(destDir, zipEntry);
-            if (zipEntry.isDirectory()) {
-                if (!newFile.isDirectory() && !newFile.mkdirs()) {
-                    throw new IOException("Failed to create directory " + newFile);
-                }
-            } else {
-                // fix for Windows-created archives
-                File parent = newFile.getParentFile();
-                if (!parent.isDirectory() && !parent.mkdirs()) {
-                    throw new IOException("Failed to create directory " + parent);
+                    // write file content
+                    Files.copy(zipInputStream, newFile, StandardCopyOption.REPLACE_EXISTING);
                 }
 
-                // write file content
-                FileOutputStream fos = new FileOutputStream(newFile);
-                int len;
-                while ((len = zis.read(buffer)) > 0) {
-                    fos.write(buffer, 0, len);
-                }
-                fos.close();
+                zipEntry = zipInputStream.getNextEntry();
             }
-            zipEntry = zis.getNextEntry();
-        }
 
-        zis.closeEntry();
-        zis.close();
+            zipInputStream.closeEntry();
+        }
     }
-    public static File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {
-        File destFile = new File(destinationDir, zipEntry.getName());
 
-        String destDirPath = destinationDir.getCanonicalPath();
-        String destFilePath = destFile.getCanonicalPath();
+    public static Path newFile(Path destinationDir, ZipEntry zipEntry) throws IOException {
+        var destFile = Paths.get(destinationDir.toString(), zipEntry.getName());
 
-        if (!destFilePath.startsWith(destDirPath + File.separator)) {
-            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
-        }
+        if (!destFile.normalize().startsWith(destinationDir))
+            throw new IOException("Bad zip entry: " + zipEntry.getName());
 
         return destFile;
     }

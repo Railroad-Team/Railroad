@@ -23,7 +23,7 @@ public class Project {
     private Optional<Image> icon;
     private long lastOpened;
 
-    private String ID;
+    private String id;
     private ProjectManager manager;
 
     public Project(Path path) {
@@ -75,8 +75,6 @@ public class Project {
 
         return abbreviation.toString();
     }
-
-
 
     // TODO: Delete this once projects can be saved
     private static String generateRandomName() {
@@ -132,27 +130,27 @@ public class Project {
     }
 
     public String getLastOpenedFriendly() {
-
-        Instant instant = Instant.ofEpochMilli(this.getLastOpened());
+        var instant = Instant.ofEpochMilli(this.getLastOpened());
         ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
-        ZonedDateTime currentTime = ZonedDateTime.now();
+        var currentTime = ZonedDateTime.now();
         long daysDifference = ChronoUnit.DAYS.between(zonedDateTime, currentTime);
-        if (Long.toString(daysDifference).equals("0")) {
+        if (daysDifference == 0) {
             return "Today";
         } else {
-            return Long.toString(daysDifference) + " Days ago";
+            return daysDifference + " Days ago";
         }
     }
+
     public void setLastOpened(long lastOpened) {
         this.lastOpened = lastOpened;
         if (this.manager != null) {
-            this.manager.UpdateProjectInfo(this);
+            this.manager.updateProjectInfo(this);
         }
-
     }
+
     public void open() {
         System.out.println("Opening project: " + path);
-        this.setLastOpened(System.currentTimeMillis());
+        setLastOpened(System.currentTimeMillis());
     }
 
     @Override
@@ -183,15 +181,15 @@ public class Project {
         this.manager = manager;
     }
 
-    public String getID() {
-        if ((this.ID == null) || (this.ID.isEmpty())) {
-            UUID uuid = UUID.randomUUID();
-            this.ID = uuid.toString();
+    public String getId() {
+        if (this.id == null || this.id.isEmpty()) {
+            this.id = UUID.randomUUID().toString();
         }
-        return ID;
+
+        return id;
     }
 
-    public void setID(String ID) {
-        this.ID = ID;
+    public void setId(String id) {
+        this.id = id;
     }
 }

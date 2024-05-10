@@ -741,7 +741,7 @@ public class ForgeProjectDetailsPane extends VBox {
 
     protected ForgeProjectData createData() {
         String projectName = projectNameField.getText().trim();
-        Path projectPath = Path.of(projectPathField.getText().trim());
+        var projectPath = Path.of(projectPathField.getText().trim());
         boolean createGit = createGitCheckBox.isSelected();
         License license = licenseComboBox.getValue();
         String licenseCustom = license == License.CUSTOM ? licenseCustomField.getText().trim() : null;

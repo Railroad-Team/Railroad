@@ -1,63 +1,60 @@
 package io.github.railroad.utility;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import io.github.railroad.Railroad;
+
 import java.io.IOException;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import com.google.gson.JsonObject;
-import org.json.*;
-public class ConfigHandler {
+public final class ConfigHandler {
+    private ConfigHandler() {}
 
-    public ConfigHandler() {}
-    public void CreateDefaultConfigs() {
-        CreateDirectory(getConfigPath());
+    public static void createDefaultConfigs() {
+        try {
+            Files.createDirectories(getConfigPath());
+        } catch (IOException exception) {
+            throw new IllegalStateException("Error creating config directory", exception);
+        }
+
         createProjectsJsonIfNotExists();
     }
 
-
-    private void createProjectsJsonIfNotExists() {
+    private static void createProjectsJsonIfNotExists() {
         Path projectsJsonPath = getConfigPath().resolve("config.json");
-        if (!Files.exists(projectsJsonPath)) {
+        if (Files.notExists(projectsJsonPath)) {
             try {
-                JSONObject initialData = new JSONObject();
-                JSONArray projectsArray = new JSONArray();
-                initialData.put("projects", projectsArray);
-                writeJsonToFile(projectsJsonPath, initialData.toString());
-            } catch (IOException e) {
-                throw new RuntimeException("Error creating config.json", e);
+                var initialData = new JsonObject();
+                var projectsArray = new JsonArray();
+                initialData.add("projects", projectsArray);
+                Files.writeString(projectsJsonPath, Railroad.GSON.toJson(initialData));
+            } catch (IOException exception) {
+                throw new IllegalStateException("Error creating config.json", exception);
             }
         }
     }
-    public JSONObject getConfigJson() {
-        Path projectsJsonPath = getConfigPath().resolve("config.json");
-        if (!Files.exists(projectsJsonPath)) {
-            createProjectsJsonIfNotExists();
-        }
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(projectsJsonPath.toFile()))) {
-            StringBuilder jsonContent = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                jsonContent.append(line);
+    public static JsonObject getConfigJson() {
+        try {
+            Path projectsJsonPath = getConfigPath().resolve("config.json");
+            if (Files.notExists(projectsJsonPath)) {
+                createProjectsJsonIfNotExists();
             }
-            return new JSONObject(jsonContent.toString());
-            //return jsonObject.getJSONArray("projects");
-        } catch (IOException e) {
-            throw new RuntimeException("Error reading config.json", e);
+
+            return Railroad.GSON.fromJson(Files.readString(projectsJsonPath), JsonObject.class);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Error reading config.json", exception);
         }
     }
 
-    public JSONArray getProjectsConfig() {
-        return getConfigJson().getJSONArray("projects");
+    public static JsonArray getProjectsConfig() {
+        return getConfigJson().getAsJsonArray("projects");
     }
-    public Path getConfigPath() {
-        //TODO Implemnet MAC
+
+    public static Path getConfigPath() {
+        // TODO: Implement MacOS support
         var os = System.getProperty("os.name");
         var homePath = System.getProperty("user.home");
         if (os.startsWith("Linux")) {
@@ -68,33 +65,19 @@ public class ConfigHandler {
             return Paths.get("");
         }
     }
-    private void CreateDirectory(Path path) {
-        try {
-            Files.createDirectory(path);
-        }
-        catch (FileAlreadyExistsException a) {
 
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-    public void updateConfig(JSONObject obj) {
-        System.out.println("Updateting config file");
+    public static void updateConfig(JsonObject obj) {
+        System.out.println("Updating config file");
+
         Path projectsJsonPath = getConfigPath().resolve("config.json");
-        if (!Files.exists(projectsJsonPath)) {
+        if (Files.notExists(projectsJsonPath)) {
             createProjectsJsonIfNotExists();
         }
-        try {
-            writeJsonToFile(projectsJsonPath, obj.toString());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
 
-    }
-    private void writeJsonToFile(Path filePath, String jsonContent) throws IOException {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath.toFile()))) {
-            writer.write(jsonContent);
+        try {
+            Files.writeString(projectsJsonPath, Railroad.GSON.toJson(obj));
+        } catch (IOException exception) {
+            throw new IllegalStateException("Error updating config.json", exception);
         }
     }
 }

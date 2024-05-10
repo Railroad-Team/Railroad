@@ -8,8 +8,6 @@ import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.project.ui.welcome.WelcomePane;
 import javafx.application.Application;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.stage.Stage;
@@ -26,7 +24,8 @@ public class Railroad extends Application {
     private static boolean DEBUG = false;
     private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
 
-    public static ProjectManager manager = new ProjectManager();
+    public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
+
     @Override
     public void start(Stage primaryStage) {
         MinecraftVersion.load();
@@ -51,6 +50,7 @@ public class Railroad extends Application {
             newProjectPane.getBackButton().setOnAction(event1 -> scene.setRoot(welcomePane));
         });
     }
+
     private static void handleStyles(Scene scene) {
         String debugStyles = getResource("styles/debug.css").toExternalForm();
         if (DEBUG) {

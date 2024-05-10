@@ -1,5 +1,6 @@
 package io.github.railroad.project.ui.welcome;
 
+import io.github.railroad.Railroad;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.ProjectSort;
 import io.github.railroad.project.ui.project.ProjectListCell;
@@ -12,8 +13,7 @@ import javafx.scene.input.KeyCode;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static io.github.railroad.Railroad.manager;
+import java.util.Locale;
 
 public class WelcomeProjectsPane extends ScrollPane {
     private final ListView<Project> projectsList = new ListView<>();
@@ -21,7 +21,7 @@ public class WelcomeProjectsPane extends ScrollPane {
     private ObservableValue<ProjectSort> sortProperty;
 
     public WelcomeProjectsPane(ProjectSearchField searchField) {
-        manager.loadProjects();
+        Railroad.PROJECT_MANAGER.loadProjects();
         setStyle("-fx-background-color: #f0f0f0;");
         setFitToWidth(true);
         setFitToHeight(true);
@@ -31,9 +31,7 @@ public class WelcomeProjectsPane extends ScrollPane {
         searchField.textProperty().addListener(obs->{
             String filter = searchField.getText();
             filterProjects(filter);
-
         });
-
 
         projectsList.setCellFactory(param -> new ProjectListCell());
 
@@ -58,7 +56,7 @@ public class WelcomeProjectsPane extends ScrollPane {
             } else if (event.getCode() == KeyCode.DELETE) {
                 Project project = projectsList.getSelectionModel().getSelectedItem();
                 if (project != null) {
-                    manager.RemoveProject(project);
+                    Railroad.PROJECT_MANAGER.removeProject(project);
                     filterProjects("");
                 }
 
@@ -76,20 +74,21 @@ public class WelcomeProjectsPane extends ScrollPane {
 
     public void filterProjects(String value) {
         projectsList.getItems().clear();
+
         if (value == null || value.isEmpty()) {
-            projectsList.getItems().addAll(manager.getProjectCollection());
-        } else {
-            List<Project> filteredProjects = new ArrayList<>();
-
-            for (Project project : manager.getProjectCollection()) {
-                if (project.getAlias().toLowerCase().contains(value.toLowerCase())) {
-                    filteredProjects.add(project);
-                }
-            }
-            projectsList.getItems().addAll(filteredProjects);
+            projectsList.getItems().addAll(Railroad.PROJECT_MANAGER.getProjectCollection());
+            return;
         }
-    }
 
+        List<Project> filteredProjects = new ArrayList<>();
+        for (Project project : Railroad.PROJECT_MANAGER.getProjectCollection()) {
+            if (project.getAlias().toLowerCase(Locale.ROOT).contains(value.toLowerCase(Locale.ROOT))) {
+                filteredProjects.add(project);
+            }
+        }
+
+        projectsList.getItems().addAll(filteredProjects);
+    }
 
     public void setSortProperty(ObservableValue<ProjectSort> observable) {
         sortProperty = observable;

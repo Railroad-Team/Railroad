@@ -1,15 +1,11 @@
 package io.github.railroad.project.ui.project.newProject.details;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Optional;
-
 import io.github.palexdev.materialfx.controls.MFXProgressBar;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
+import io.github.railroad.Railroad;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.data.ForgeProjectData;
+import io.github.railroad.utility.FileHandler;
 import javafx.application.Platform;
 import javafx.beans.property.ListProperty;
 import javafx.beans.property.SimpleListProperty;
@@ -24,12 +20,11 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
-import static io.github.railroad.utility.FileHandler.copyUrlToFile;
-import static io.github.railroad.utility.FileHandler.UnZipFile;
-import static io.github.railroad.Railroad.manager;
-import static io.github.railroad.utility.FileHandler.updateKeyValuePairByLine;
 
-
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
 
 public class ForgeProjectCreationPane extends BorderPane {
     private final ForgeProjectData data;
@@ -52,41 +47,41 @@ public class ForgeProjectCreationPane extends BorderPane {
         @Override
         protected Void call() throws Exception {
             try {
-                String filenametodownload = data.minecraftVersion().id() + "-" + data.forgeVersion().id();
+                String fileName = data.minecraftVersion().id() + "-" + data.forgeVersion().id();
                 Path projectPath = data.projectPath().resolve(data.projectName());
                 Files.createDirectories(projectPath);
                 updateProgress(1, 10);
                 Thread.sleep(500);
-                copyUrlToFile("https://maven.minecraftforge.net/net/minecraftforge/forge/" + filenametodownload + "/forge-" + filenametodownload + "-mdk.zip",
-                        Path.of(projectPath.resolve(filenametodownload) + ".zip"));
+                FileHandler.copyUrlToFile("https://maven.minecraftforge.net/net/minecraftforge/forge/" + fileName + "/forge-" + fileName + "-mdk.zip",
+                        Path.of(projectPath.resolve(fileName) + ".zip"));
                 updateProgress(3, 10);
                 Thread.sleep(500);
-                UnZipFile(Path.of(projectPath.resolve(filenametodownload) + ".zip").toString(), projectPath.toString());
+                FileHandler.unzipFile(Path.of(projectPath.resolve(fileName) + ".zip").toString(), projectPath.toString());
                 updateProgress(5, 10);
                 Thread.sleep(500);
-                manager.NewProject(new Project(projectPath, this.data.projectName()));
+                Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
                 updateProgress(6, 10);
                 Thread.sleep(500);
-                File gradlePropertiesFile = projectPath.resolve("gradle.properties").toFile();
+                Path gradlePropertiesFile = projectPath.resolve("gradle.properties");
 
-                updateKeyValuePairByLine("mod_id", this.data.modId(), gradlePropertiesFile);
-                updateKeyValuePairByLine("mod_name", this.data.modName(), gradlePropertiesFile);
-                updateKeyValuePairByLine("mod_version", this.data.version(), gradlePropertiesFile);
-                updateKeyValuePairByLine("mod_group_id", this.data.groupId(), gradlePropertiesFile);
-                updateKeyValuePairByLine("mod_authors", this.data.author().orElse(""), gradlePropertiesFile);
-                updateKeyValuePairByLine("mod_description", this.data.description().orElse(""), gradlePropertiesFile);
+                FileHandler.updateKeyValuePairByLine("mod_id", this.data.modId(), gradlePropertiesFile);
+                FileHandler.updateKeyValuePairByLine("mod_name", this.data.modName(), gradlePropertiesFile);
+                FileHandler.updateKeyValuePairByLine("mod_version", this.data.version(), gradlePropertiesFile);
+                FileHandler.updateKeyValuePairByLine("mod_group_id", this.data.groupId(), gradlePropertiesFile);
+                FileHandler.updateKeyValuePairByLine("mod_authors", this.data.author().orElse(""), gradlePropertiesFile);
+                FileHandler.updateKeyValuePairByLine("mod_description", this.data.description().orElse(""), gradlePropertiesFile);
                 System.out.println("gradle.properties updated successfully.");
-                updateProgress(7,10);
+                updateProgress(7, 10);
                 Thread.sleep(500);
 
-                File com = projectPath
+                Path com = projectPath
                         .resolve("src")
                         .resolve("main")
                         .resolve("java")
                         .resolve("com")
                         .resolve(this.data.author().orElse(this.data.projectName()))
-                        .resolve(this.data.modId()).toFile();
-                com.mkdirs();
+                        .resolve(this.data.modId());
+                Files.createDirectories(com);
                 Files.copy(projectPath
                                 .resolve("src")
                                 .resolve("main")
@@ -95,8 +90,8 @@ public class ForgeProjectCreationPane extends BorderPane {
                                 .resolve("example")
                                 .resolve("examplemod")
                                 .resolve("Config.java").toAbsolutePath(),
-                        com.toPath().resolve("Config.java").toAbsolutePath());
-                updateProgress(8,10);
+                        com.resolve("Config.java").toAbsolutePath());
+                updateProgress(8, 10);
                 Thread.sleep(500);
                 Files.copy(projectPath
                                 .resolve("src")
@@ -106,19 +101,18 @@ public class ForgeProjectCreationPane extends BorderPane {
                                 .resolve("example")
                                 .resolve("examplemod")
                                 .resolve("ExampleMod.java").toAbsolutePath(),
-                        com.toPath().resolve(this.data.modId()+".java").toAbsolutePath());
-                updateProgress(9,10);
+                        com.resolve(this.data.modId() + ".java").toAbsolutePath());
+                updateProgress(9, 10);
                 Thread.sleep(500);
-                updateProgress(10,10);
-            } catch (IOException e) {
+                updateProgress(10, 10);
+            } catch (IOException exception) {
                 // Handle errors
-                Platform.runLater(() -> showErrorAlert("Error", "An error occurred while creating the project.", e.getMessage()));
+                Platform.runLater(() -> showErrorAlert("Error", "An error occurred while creating the project.", exception.getMessage()));
             }
-            return null;
 
+            return null;
         }
     }
-
 
     public ForgeProjectCreationPane(ForgeProjectData data) {
         this.data = data;
@@ -152,16 +146,18 @@ public class ForgeProjectCreationPane extends BorderPane {
         setAlignment(getTop(), Pos.CENTER);
         progressBar.setProgress(0);
 
-        ProjectCreationTask task = new ProjectCreationTask(data);
+        var task = new ProjectCreationTask(data);
         progressBar.progressProperty().bind(task.progressProperty());
         task.setOnSucceeded(event -> {
             // Update UI or perform any final operations
             //progressBar.setProgress(1.0); // Update progress to 100%
         });
+
         new Thread(task).start();
     }
+
     private static void showErrorAlert(String title, String header, String content) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
+        var alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
         alert.setHeaderText(header);
         alert.setContentText(content);
