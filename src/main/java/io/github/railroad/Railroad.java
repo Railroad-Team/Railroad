@@ -23,16 +23,14 @@ public class Railroad extends Application {
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static boolean DEBUG = false;
 
-    private static Scene _scene;
-    private static Stage _window;
+    private static Scene scene;
+    private static Stage window;
 
-    public static Scene getScene()
-    {
-        return _scene;
+    public static Scene getScene() {
+        return scene;
     }
-    public static Stage getWindow()
-    {
-        return _window;
+    public static Stage getWindow() {
+        return window;
     }
 
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
