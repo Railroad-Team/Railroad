@@ -1,7 +1,7 @@
 package io.github.railroad.layout;
 
-import io.github.railroad.utility.Tree;
-import io.github.railroad.utility.Tree.Node;
+import io.github.railroad.utility.NodeTree;
+import io.github.railroad.utility.NodeTree.Node;
 import javafx.util.Pair;
 
 import java.io.File;
@@ -44,12 +44,12 @@ public class LayoutParser {
 
     private static Layout parse(String string) throws LayoutParseException {
         List<Token> tokens = tokenize(string);
-        Tree<LayoutItem> tree = constructTree(tokens);
+        NodeTree<LayoutItem> tree = constructTree(tokens);
         return new Layout(tree);
     }
 
     // TODO: When exceptions are thrown, give the line number and column number
-    public static Tree<LayoutItem> constructTree(List<Token> tokens) throws LayoutParseException {
+    public static NodeTree<LayoutItem> constructTree(List<Token> tokens) throws LayoutParseException {
         if (tokens.isEmpty()) {
             throw new LayoutParseException("The layout is empty");
         }
@@ -60,7 +60,7 @@ public class LayoutParser {
         }
 
         var item = new LayoutItem(token.value());
-        var tree = new Tree<>(new Node<>(item));
+        var tree = new NodeTree<>(new Node<>(item));
 
         Stack<Node<LayoutItem>> stack = new Stack<>();
         stack.push(tree.getRoot());
@@ -93,8 +93,8 @@ public class LayoutParser {
                         throw new LayoutParseException("Invalid property object: " + token.value());
                     }
 
-                    Tree<LayoutItem> subTree = constructTree(tokenize(parts[1]));
-                    parent.getValue().setProperty(parts[0], subTree.getRoot().getValue());
+                    NodeTree<LayoutItem> subNodeTree = constructTree(tokenize(parts[1]));
+                    parent.getValue().setProperty(parts[0], subNodeTree.getRoot().getValue());
                 }
                 case PROPERTY_ARRAY -> { // TODO: Handle nested arrays or objects and convert types
                     String[] parts = token.value().split(":");

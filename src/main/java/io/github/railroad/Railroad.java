@@ -6,24 +6,25 @@ import com.google.gson.GsonBuilder;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
-import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.project.ui.welcome.WelcomePane;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.Pane;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import okhttp3.OkHttpClient;
 
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static boolean DEBUG = false;
-    private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
+
+    public static Scene SCENE;
+    public static Stage WINDOW;
 
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
 
@@ -32,24 +33,32 @@ public class Railroad extends Application {
         MinecraftVersion.load();
         ForgeVersion.load();
 
+        WINDOW = primaryStage;
+
+        // Calculate the primary screen size to better fit the window
+        Screen screen = Screen.getPrimary();
+
+        double screenW = screen.getBounds().getWidth();
+        double screenH = screen.getBounds().getHeight();
+
+        double windowW = Math.max(500, Math.min(screenW * 0.75, 768));
+        double windowH = Math.max(500, Math.min(screenH * 0.75, 1024));
+
+        // Start the welcome screen and window
+        SCENE = new Scene(new Pane(), windowW, windowH);
+
         var welcomePane = new WelcomePane();
-        var scene = new Scene(welcomePane, 1024, 768);
-        handleStyles(scene);
+        SCENE.setRoot(welcomePane);
 
-        primaryStage.setMinWidth(scene.getWidth() + 10);
-        primaryStage.setMinHeight(scene.getHeight() + 10);
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Welcome to Railroad");
+        handleStyles(SCENE);
+
+        // Open setup and show the window
+        primaryStage.setMinWidth(SCENE.getWidth() + 10);
+        primaryStage.setMinHeight(SCENE.getHeight() + 10);
+        primaryStage.setScene(SCENE);
+        primaryStage.setTitle("Railroad - 1.0.0(dev)");
         primaryStage.show();
-
-        welcomePane.getHeaderPane().getNewProjectButton().setOnAction(event -> {
-            var newProjectPane = this.newProjectPane.updateAndGet(
-                    pane -> Objects.requireNonNullElseGet(pane, NewProjectPane::new));
-
-            scene.setRoot(newProjectPane);
-
-            newProjectPane.getBackButton().setOnAction(event1 -> scene.setRoot(welcomePane));
-        });
+        primaryStage.toFront();
     }
 
     private static void handleStyles(Scene scene) {

@@ -25,19 +25,26 @@ public class SettingsPane extends BorderPane {
 
         this.leftPane = new SettingsCategoriesPane(this);
         this.rightPane = new ScrollPane(new SettingsGeneralPane());
+
         leftPane.setMinWidth(200);
         rightPane.setMinWidth(600);
+
         rightPane.setFitToWidth(true);
         rightPane.setFitToHeight(true);
+
         rightPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         rightPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
         var splitPane = new SplitPane(leftPane, rightPane);
+
         splitPane.setOrientation(Orientation.HORIZONTAL);
-        setCenter(splitPane);
+
         SplitPane.setResizableWithParent(leftPane, false);
         SplitPane.setResizableWithParent(rightPane, false);
+
         BorderPane.setAlignment(splitPane, Pos.CENTER);
+
+        setCenter(splitPane);
 
         this.settingsCategory.addListener((observable, oldValue, newValue) -> {
             Node newRightPane = switch (newValue) {
