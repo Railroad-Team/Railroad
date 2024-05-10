@@ -136,6 +136,8 @@ public class Project {
         long daysDifference = ChronoUnit.DAYS.between(zonedDateTime, currentTime);
         if (daysDifference == 0) {
             return "Today";
+        } else if (daysDifference > 1000) {
+            return "You forgot me ;(";
         } else {
             return daysDifference + " Days ago";
         }
