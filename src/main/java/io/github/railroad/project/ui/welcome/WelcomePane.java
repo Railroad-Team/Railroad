@@ -16,7 +16,7 @@ public class WelcomePane extends SplitPane {
     public WelcomePane() {
         leftPane = new WelcomeLeftPane();
         headerPane = new WelcomeHeaderPane();
-        projectsPane = new WelcomeProjectsPane();
+        projectsPane = new WelcomeProjectsPane(headerPane.getSearchField());
         projectsPane.setSortProperty(headerPane.getSortComboBox().valueProperty());
 
         leftPane.setPrefWidth(200);

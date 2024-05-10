@@ -4,11 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
+import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.project.ui.welcome.WelcomePane;
 import javafx.application.Application;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.stage.Stage;
@@ -24,6 +23,8 @@ public class Railroad extends Application {
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static boolean DEBUG = false;
     private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
+
+    public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
 
     @Override
     public void start(Stage primaryStage) {

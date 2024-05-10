@@ -2,19 +2,29 @@ package io.github.railroad.project;
 
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
+import java.util.UUID;
+
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+
 
 public class Project {
     private final Path path;
     private String alias;
     private Optional<Image> icon;
-    private long lastOpened = ThreadLocalRandom.current().nextLong(0, System.currentTimeMillis()); // TODO: Implement last opened
+    private long lastOpened;
+
+    private String id;
+    private ProjectManager manager;
 
     public Project(Path path) {
         this(path, path.getFileName().toString());
@@ -66,16 +76,6 @@ public class Project {
         return abbreviation.toString();
     }
 
-    public static Collection<Project> loadProjects() {
-        List<Project> projects = new ArrayList<>();
-
-        for (int i = 0; i < ThreadLocalRandom.current().nextInt(20, 100); i++) {
-            projects.add(new Project(Path.of("C:/Projects/Project" + i + "/" + generateRandomName())));
-        }
-
-        return projects;
-    }
-
     // TODO: Delete this once projects can be saved
     private static String generateRandomName() {
         char[] chars = "abcdefghijklmnopqrs t u v w x y z ".toCharArray();
@@ -107,6 +107,8 @@ public class Project {
         return path;
     }
 
+    public String getPathStr() {return getPath().toString(); }
+
     public String getAlias() {
         return alias;
     }
@@ -127,18 +129,33 @@ public class Project {
         return lastOpened;
     }
 
-    public void open() {
-        System.out.println("Opening project: " + path);
-        this.lastOpened = System.currentTimeMillis();
+    public String getLastOpenedFriendly() {
+        var instant = Instant.ofEpochMilli(this.getLastOpened());
+        ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
+        var currentTime = ZonedDateTime.now();
+        long daysDifference = ChronoUnit.DAYS.between(zonedDateTime, currentTime);
+        if (daysDifference == 0) {
+            return "Today";
+        } else {
+            return daysDifference + " Days ago";
+        }
     }
 
-    public void delete(boolean deleteFiles) {
-        System.out.println("Deleting project: " + path);
+    public void setLastOpened(long lastOpened) {
+        this.lastOpened = lastOpened;
+        if (this.manager != null) {
+            this.manager.updateProjectInfo(this);
+        }
+    }
+
+    public void open() {
+        System.out.println("Opening project: " + path);
+        setLastOpened(System.currentTimeMillis());
     }
 
     @Override
     public String toString() {
-        return alias;
+        return alias + " - " + getLastOpened();
     }
 
     @Override
@@ -158,5 +175,21 @@ public class Project {
     @Override
     public int hashCode() {
         return path.hashCode();
+    }
+
+    public void setManager(ProjectManager manager) {
+        this.manager = manager;
+    }
+
+    public String getId() {
+        if (this.id == null || this.id.isEmpty()) {
+            this.id = UUID.randomUUID().toString();
+        }
+
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }
