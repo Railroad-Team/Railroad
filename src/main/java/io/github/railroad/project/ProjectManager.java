@@ -47,16 +47,18 @@ public class ProjectManager {
     public void updateProjectInfo(Project project, boolean removeProject) {
         JsonObject object = ConfigHandler.getConfigJson();
         JsonArray projects = object.getAsJsonArray("projects");
+        System.out.println("Starting project update: "+ project.getId());
         boolean found = false;
         for (JsonElement projectElement : projects) {
             JsonObject projectObject = projectElement.getAsJsonObject();
-            if (projectObject.get("uuid").toString().equals(project.getId())) {
+            if (projectObject.get("uuid").getAsString().equals(project.getId())) {
                 if (removeProject) {
                     projects.remove(projectElement);
                     break;
                 } else {
                     found = true;
                     projectObject.addProperty("lastOpened", project.getLastOpened());
+                    System.out.println("Starting update project: " +project.getId()+ " last opened to: "+ project.getLastOpened());
                 }
 
             }
