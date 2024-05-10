@@ -1,5 +1,6 @@
 package io.github.railroad;
 
+import atlantafx.base.theme.PrimerDark;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.railroad.minecraft.ForgeVersion;
@@ -52,6 +53,8 @@ public class Railroad extends Application {
     }
 
     private static void handleStyles(Scene scene) {
+        Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
+
         String debugStyles = getResource("styles/debug.css").toExternalForm();
         if (DEBUG) {
             scene.getStylesheets().add(debugStyles);
