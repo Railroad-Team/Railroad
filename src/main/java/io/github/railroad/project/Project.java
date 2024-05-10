@@ -2,6 +2,7 @@ package io.github.railroad.project;
 
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
+
 import java.util.UUID;
 
 
@@ -110,10 +111,31 @@ public class Project {
         ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
         var currentTime = ZonedDateTime.now();
         long daysDifference = ChronoUnit.DAYS.between(zonedDateTime, currentTime);
-        if (daysDifference == 0) {
-            return "Today";
+        long secondsDifference = ChronoUnit.SECONDS.between(zonedDateTime, currentTime);
+        if (daysDifference > 4000) {
+            return "You forgot me ;(";
         } else {
-            return daysDifference + " Days ago";
+            if (secondsDifference < 60) {
+                return secondsDifference + " seconds ago";
+            } else if (secondsDifference < 3600) {
+                long minutes = secondsDifference / 60;
+                return minutes + (minutes == 1 ? " minute ago" : " minutes ago");
+            } else if (secondsDifference < 86400) {
+                long hours = secondsDifference / 3600;
+                return hours + (hours == 1 ? " hour ago" : " hours ago");
+            } else if (secondsDifference < 604800) {
+                long days = secondsDifference / 86400;
+                return days + (days == 1 ? " day ago" : " days ago");
+            } else if (secondsDifference < 2419200) {
+                long weeks = secondsDifference / 604800;
+                return weeks + (weeks == 1 ? " week ago" : " weeks ago");
+            } else if (secondsDifference < 29030400) {
+                long months = secondsDifference / 2419200;
+                return months + (months == 1 ? " month ago" : " months ago");
+            } else {
+                long years = secondsDifference / 29030400;
+                return years + (years == 1 ? " year ago" : " years ago");
+            }
         }
     }
 
