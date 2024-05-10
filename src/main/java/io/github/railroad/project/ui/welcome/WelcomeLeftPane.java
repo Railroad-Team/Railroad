@@ -56,9 +56,9 @@ public class WelcomeLeftPane extends VBox {
     }
 
     public enum MenuType {
-        NEW_PROJ("New Project", FontAwesomeSolid.PLUS, Color.BLACK),
-        OPEN_PROJ("Open Project", FontAwesomeSolid.FOLDER_OPEN, Color.BLACK),
-        IMPORT_PROJ("Import Project", FontAwesomeSolid.FILE_IMPORT, Color.BLACK),
+        NEW_PROJECT("New Project", FontAwesomeSolid.PLUS, Color.BLACK),
+        OPEN_PROJECT("Open Project", FontAwesomeSolid.FOLDER_OPEN, Color.BLACK),
+        IMPORT_PROJECT("Import Project", FontAwesomeSolid.FILE_IMPORT, Color.BLACK),
         SETTINGS("Settings", FontAwesomeSolid.COG, Color.BLACK);
 
         private final String name;

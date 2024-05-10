@@ -80,11 +80,14 @@ public class Project {
     public Path getPath() {
         return path;
     }
+
     public String getPathString() {
         return path.toString();
     }
 
-    public String getPathStr() {return getPath().toString(); }
+    public String getPathStr() {
+        return getPath().toString();
+    }
 
     public String getAlias() {
         return alias;

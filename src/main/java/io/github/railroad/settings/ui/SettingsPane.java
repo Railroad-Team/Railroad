@@ -2,6 +2,7 @@ package io.github.railroad.settings.ui;
 
 import io.github.railroad.settings.SettingsCategory;
 import io.github.railroad.settings.ui.general.SettingsGeneralPane;
+import io.github.railroad.ui.defaults.RRBorderPane;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Orientation;
@@ -12,7 +13,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.BorderPane;
 
-public class SettingsPane extends BorderPane {
+public class SettingsPane extends RRBorderPane {
     private final ObjectProperty<SettingsCategory> settingsCategory = new SimpleObjectProperty<>(SettingsCategory.GENERAL);
     private final SettingsCategoriesPane leftPane;
     private final ScrollPane rightPane;

@@ -3,7 +3,6 @@ package io.github.railroad.project.ui.welcome;
 import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.settings.ui.SettingsPane;
 import javafx.geometry.Orientation;
-import javafx.scene.control.MultipleSelectionModel;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.Priority;
@@ -11,8 +10,6 @@ import javafx.scene.layout.VBox;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static io.github.railroad.Railroad.SCENE;
 
 public class WelcomePane extends SplitPane {
     private final WelcomeLeftPane leftPane;
@@ -50,22 +47,21 @@ public class WelcomePane extends SplitPane {
                 .selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> {
             switch (newValue) {
-                case NEW_PROJ -> {
+                case NEW_PROJECT -> {
                     var newProjectPane = this.newProjectPane.updateAndGet(
                             pane -> Objects.requireNonNullElseGet(pane, NewProjectPane::new));
-                    SCENE.setRoot(newProjectPane);
-                    newProjectPane.getBackButton().setOnAction(event1 -> SCENE.setRoot(WelcomePane.this));
+                    getScene().setRoot(newProjectPane);
+                    newProjectPane.getBackButton().setOnAction(event1 -> getScene().setRoot(WelcomePane.this));
                 }
-                case OPEN_PROJ -> System.out.println("[Open Project] is still not implemented!");
-                case IMPORT_PROJ -> System.out.println("[Import project] is still not implemented!");
+                case OPEN_PROJECT -> System.out.println("[Open Project] is still not implemented!");
+                case IMPORT_PROJECT -> System.out.println("[Import project] is still not implemented!");
 
                 case SETTINGS -> {
                     var settingsPane = this.settingsPane.updateAndGet(
                             pane -> Objects.requireNonNullElseGet(pane, SettingsPane::new));
-                    SCENE.setRoot(settingsPane);
-                    settingsPane.getBackButton().setOnAction(e -> {
-                        SCENE.setRoot(WelcomePane.this);
-                    });
+                    getScene().setRoot(settingsPane);
+                    settingsPane.getBackButton().setOnAction(e ->
+                            getScene().setRoot(WelcomePane.this));
                 }
 
                 default -> throw new IllegalStateException("Unexpected value: " + newValue);

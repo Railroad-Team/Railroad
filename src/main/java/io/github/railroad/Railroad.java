@@ -23,8 +23,17 @@ public class Railroad extends Application {
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static boolean DEBUG = false;
 
-    public static Scene SCENE;
-    public static Stage WINDOW;
+    private static Scene _scene;
+    private static Stage _window;
+
+    public static Scene getScene()
+    {
+        return _scene;
+    }
+    public static Stage getWindow()
+    {
+        return _window;
+    }
 
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
 
@@ -33,7 +42,7 @@ public class Railroad extends Application {
         MinecraftVersion.load();
         ForgeVersion.load();
 
-        WINDOW = primaryStage;
+        _window = primaryStage;
 
         // Calculate the primary screen size to better fit the window
         Screen screen = Screen.getPrimary();
@@ -45,20 +54,20 @@ public class Railroad extends Application {
         double windowH = Math.max(500, Math.min(screenH * 0.75, 1024));
 
         // Start the welcome screen and window
-        SCENE = new Scene(new Pane(), windowW, windowH);
+        _scene = new Scene(new Pane(), windowW, windowH);
 
         var welcomePane = new WelcomePane();
-        SCENE.setRoot(welcomePane);
+        _scene.setRoot(welcomePane);
 
-        handleStyles(SCENE);
+        handleStyles(_scene);
 
         // Open setup and show the window
-        primaryStage.setMinWidth(SCENE.getWidth() + 10);
-        primaryStage.setMinHeight(SCENE.getHeight() + 10);
-        primaryStage.setScene(SCENE);
+        primaryStage.setMinWidth(_scene.getWidth() + 10);
+        primaryStage.setMinHeight(_scene.getHeight() + 10);
+        primaryStage.setScene(_scene);
         primaryStage.setTitle("Railroad - 1.0.0(dev)");
         primaryStage.show();
-        primaryStage.toFront();
+        // FIXME window is not being focused when it open
     }
 
     private static void handleStyles(Scene scene) {
