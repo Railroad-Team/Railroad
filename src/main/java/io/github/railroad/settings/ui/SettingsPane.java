@@ -2,6 +2,7 @@ package io.github.railroad.settings.ui;
 
 import io.github.railroad.settings.SettingsCategory;
 import io.github.railroad.settings.ui.general.SettingsGeneralPane;
+import io.github.railroad.ui.defaults.RRBorderPane;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Orientation;
@@ -12,7 +13,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.BorderPane;
 
-public class SettingsPane extends BorderPane {
+public class SettingsPane extends RRBorderPane {
     private final ObjectProperty<SettingsCategory> settingsCategory = new SimpleObjectProperty<>(SettingsCategory.GENERAL);
     private final SettingsCategoriesPane leftPane;
     private final ScrollPane rightPane;
@@ -25,19 +26,26 @@ public class SettingsPane extends BorderPane {
 
         this.leftPane = new SettingsCategoriesPane(this);
         this.rightPane = new ScrollPane(new SettingsGeneralPane());
+
         leftPane.setMinWidth(200);
         rightPane.setMinWidth(600);
+
         rightPane.setFitToWidth(true);
         rightPane.setFitToHeight(true);
+
         rightPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         rightPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
         var splitPane = new SplitPane(leftPane, rightPane);
+
         splitPane.setOrientation(Orientation.HORIZONTAL);
-        setCenter(splitPane);
+
         SplitPane.setResizableWithParent(leftPane, false);
         SplitPane.setResizableWithParent(rightPane, false);
+
         BorderPane.setAlignment(splitPane, Pos.CENTER);
+
+        setCenter(splitPane);
 
         this.settingsCategory.addListener((observable, oldValue, newValue) -> {
             Node newRightPane = switch (newValue) {

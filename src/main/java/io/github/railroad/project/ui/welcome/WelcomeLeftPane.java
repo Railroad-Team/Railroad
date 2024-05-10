@@ -2,7 +2,6 @@ package io.github.railroad.project.ui.welcome;
 
 import io.github.railroad.Railroad;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -18,8 +17,6 @@ import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.util.Objects;
-
 public class WelcomeLeftPane extends VBox {
     private final ListView<MenuType> listView = new ListView<>();
 
@@ -29,24 +26,29 @@ public class WelcomeLeftPane extends VBox {
 
         var hbox = new HBox();
         hbox.setAlignment(Pos.CENTER);
-        hbox.getChildren().add(new ImageView(new Image(Railroad.getResourceAsStream("images/logo.png"), 100, 100, true, true)));
+        hbox.getChildren().add(new ImageView(
+                new Image(Railroad.getResourceAsStream("images/logo.png"), 100, 100, true, true)));
 
         var rightVbox = new VBox();
         rightVbox.setAlignment(Pos.CENTER);
         rightVbox.getChildren().add(new Label("Railroad IDE"));
-        rightVbox.getChildren().add(new Label("1.0.0"));
+        rightVbox.getChildren().add(new Label("1.0.0(dev)"));
 
         hbox.getChildren().add(rightVbox);
         topBox.getChildren().add(hbox);
 
         listView.getItems().addAll(MenuType.values());
-        listView.getSelectionModel().select(MenuType.HOME);
         listView.setCellFactory(param -> new MenuTypeCell());
 
         setPrefWidth(200);
         setAlignment(Pos.TOP_CENTER);
-        getChildren().addAll(topBox, new Separator(), listView);
         VBox.setVgrow(listView, Priority.ALWAYS);
+
+        getChildren().addAll(
+                topBox,
+                new Separator(),
+                listView
+        );
     }
 
     public ListView<MenuType> getListView() {
@@ -54,8 +56,10 @@ public class WelcomeLeftPane extends VBox {
     }
 
     public enum MenuType {
-        HOME("Home", FontAwesomeSolid.HOME, Color.RED),
-        SETTINGS("Settings", FontAwesomeSolid.COG, Color.BLUE);
+        NEW_PROJECT("New Project", FontAwesomeSolid.PLUS, Color.BLACK),
+        OPEN_PROJECT("Open Project", FontAwesomeSolid.FOLDER_OPEN, Color.BLACK),
+        IMPORT_PROJECT("Import Project", FontAwesomeSolid.FILE_IMPORT, Color.BLACK),
+        SETTINGS("Settings", FontAwesomeSolid.COG, Color.BLACK);
 
         private final String name;
         private final Ikon icon;

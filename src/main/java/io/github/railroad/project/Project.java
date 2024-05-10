@@ -77,38 +77,17 @@ public class Project {
         return abbreviation.toString();
     }
 
-    // TODO: Delete this once projects can be saved
-    private static String generateRandomName() {
-        char[] chars = "abcdefghijklmnopqrs t u v w x y z ".toCharArray();
-        var builder = new StringBuilder();
-        int length = ThreadLocalRandom.current().nextInt(10, 20);
-        for (int i = 0; i < length; i++) {
-            char c = chars[ThreadLocalRandom.current().nextInt(chars.length)];
-
-            while (i == 0 && c == ' ')
-                c = chars[ThreadLocalRandom.current().nextInt(chars.length)];
-
-            if (i == 0 || builder.charAt(i - 1) == ' ')
-                c = Character.toUpperCase(c);
-
-            while (i != 0 && c == ' ' && builder.charAt(i - 1) == ' ') {
-                c = chars[ThreadLocalRandom.current().nextInt(chars.length)];
-            }
-
-            if (c == ' ' && i == length - 1)
-                continue;
-
-            builder.append(c);
-        }
-
-        return builder.toString();
-    }
-
     public Path getPath() {
         return path;
     }
 
-    public String getPathStr() {return getPath().toString(); }
+    public String getPathString() {
+        return path.toString();
+    }
+
+    public String getPathStr() {
+        return getPath().toString();
+    }
 
     public String getAlias() {
         return alias;
