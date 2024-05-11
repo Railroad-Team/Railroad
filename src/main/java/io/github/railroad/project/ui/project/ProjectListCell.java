@@ -1,17 +1,16 @@
 package io.github.railroad.project.ui.project;
 
 import io.github.railroad.project.Project;
+import io.github.railroad.ui.defaults.*;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 
-public class ProjectListCell extends ListCell<Project> {
+public class ProjectListCell extends RRListCell<Project> {
     private final ProjectListNode node = new ProjectListNode();
 
     @Override
@@ -35,7 +34,7 @@ public class ProjectListCell extends ListCell<Project> {
         node.getLabel().setTextFill(Color.BLACK);
     }
 
-    public static class ProjectListNode extends VBox {
+    public static class ProjectListNode extends RRHBox {
         private final ObjectProperty<Project> project = new SimpleObjectProperty<>();
         private final ImageView icon;
         private final Label label;
@@ -45,15 +44,16 @@ public class ProjectListCell extends ListCell<Project> {
         public ProjectListNode() {
             setSpacing(5);
             setPadding(new Insets(5));
-            setBackground(new Background(new BackgroundFill(Color.LIGHTGRAY, CornerRadii.EMPTY, Insets.EMPTY)));
             setAlignment(Pos.CENTER_LEFT);
 
             var icon = new ImageView();
-            icon.setFitWidth(32);
-            icon.setFitHeight(32);
+            icon.setFitWidth(64);
+            icon.setFitHeight(64);
             icon.setPreserveRatio(true);
             icon.imageProperty().bind(project.map(project -> project.getIcon().orElse(null)));
             this.icon = icon;
+
+            var infoContainer = new RRVBox();
 
             var nameLabel = new Label();
             nameLabel.textProperty().bind(project.map(Project::getAlias));
@@ -70,10 +70,8 @@ public class ProjectListCell extends ListCell<Project> {
             lastOpened.setStyle("-fx-font-size: 14px; -fx-text-fill: #808080;");
             this.lastOpened = lastOpened;
 
-            HBox nameBox = new HBox(icon, nameLabel);
-            nameBox.setAlignment(Pos.CENTER_LEFT);
-
-            getChildren().addAll(nameBox, pathLabel, lastOpened);
+            infoContainer.getChildren().addAll(nameLabel, pathLabel, lastOpened);
+            getChildren().addAll(icon, infoContainer);
         }
 
         public ProjectListNode(Project project) {
@@ -91,6 +89,14 @@ public class ProjectListCell extends ListCell<Project> {
 
         public Label getLabel() {
             return label;
+        }
+
+        public Label getPathLabel() {
+            return pathLabel;
+        }
+
+        public Label getLastOpenedLabel() {
+            return lastOpened;
         }
     }
 }

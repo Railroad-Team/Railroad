@@ -87,8 +87,8 @@ public class Railroad extends Application {
 
         // setting up base theme
         //FIXME anti-pain development comments <3
-        //String baseTheme = getResource("styles/base.css").toExternalForm();
-        //scene.getStylesheets().add(baseTheme);
+        String baseTheme = getResource("styles/base.css").toExternalForm();
+        scene.getStylesheets().add(baseTheme);
     }
 
     public static URL getResource(String path) {

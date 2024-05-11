@@ -1,12 +1,122 @@
-/* This styles everything */
-.Railroad {
-    -fx-text-fill: green;
-    -fx-background-color: red;
+/* Styles: */
+
+/* Background */
+.background-none,
+.List:even.background-none,
+.List:odd.background-none {
+   -fx-background-color: transparent;
 }
 
-/* This styles blank list cells */
+.background-1,
+.List:even.background-1,
+.List:odd.background-1 {
+   -fx-background-color: -bg-color-1;
+}
+
+.background-2,
+.List:even.background-2,
+.List:odd.background-2, {
+   -fx-background-color: -bg-color-2;
+}
+
+.background-3,
+.List:even.background-3,
+.List:odd.background-3, {
+   -fx-background-color: -bg-color-3;
+}
+
+/* Contrast */
+.Pane.contrast-1 {
+    -fx-text-fill: -contrast-color-1;
+}
+.SplitPane.contrast-1 > .split-pane-divider {
+    -fx-text-fill: null;
+    -fx-background-color: -contrast-color-1;
+}
+.Separator.contrast-1 > .line {
+    -fx-background-color: -contrast-color-1;
+}
+
+.Pane.contrast-2 {
+    -fx-text-fill: -contrast-color-2;
+}
+.SplitPane.contrast-2 > .split-pane-divider {
+    -fx-text-fill: null;
+    -fx-background-color: -contrast-color-2;
+}
+.Separator.contrast-2 > .line {
+    -fx-background-color: -contrast-color-2;
+}
+
+.Pane.contrast-3 {
+    -fx-text-fill: -contrast-color-3;
+}
+.SplitPane.contrast-3 > .split-pane-divider {
+    -fx-text-fill: null;
+    -fx-background-color: -contrast-color-3;
+}
+.Separator.contrast-3 > .line {
+    -fx-background-color: -contrast-color-3;
+}
+
+
+/* Inheritance */
+.background-none .background-1,
+.background-none .background-2,
+.background-none .background-3,
+.background-none .background-4,
+
+.background-1 .background-2,
+.background-1 .background-3,
+.background-1 .background-4,
+
+.background-2 .background-3,
+.background-2 .background-4,
+
+.background-3 .background-4
+{
+    -fx-background-color: null;
+}
+
+/* Standardization */
+.SplitPane:horizontal > .split-pane-divider {
+    -fx-padding: 4 100% 4 100%;
+}
+.SplitPane:vertical > .split-pane-divider {
+    -fx-padding: 100% 4 100% 4;
+}
+.Separator > .line {
+    -fx-border-color: null;
+    -fx-padding: 0;
+}
+.Railroad.Separator:horizontal > .line { -fx-pref-height: 1; }
+.Railroad.Separator:vertical > .line { -fx-pref-width: 1; }
+
+/*
 .Railroad.List:even,
 .Railroad.List:odd, {
     -fx-text-fill: green;
     -fx-background-color: red;
+}
+.Railroad.Separator > .line {
+    -fx-background-color: blue;
+    -fx-border-color: null;
+}
+.Railroad.Separator:horizontal > .line { -fx-pref-height: 2; }
+.Railroad.Separator:vertical > .line { -fx-pref-width: 2; }
+*/
+
+/* Default theme */
+.Railroad {
+
+       -bg-color-1: #ffffff;
+       -bg-color-2: #e6e6e6;
+       -bg-color-3: #cccccc;
+       -bg-color-4: #b3b3b3;
+
+       -contrast-color-1: #000000;
+       -contrast-color-2: #1a1a1a;
+       -contrast-color-3: #333333;
+       -contrast-color-4: #4d4d4d;
+
 }

@@ -5,24 +5,23 @@ import io.github.railroad.project.Project;
 import io.github.railroad.project.ProjectSort;
 import io.github.railroad.project.ui.project.ProjectListCell;
 import io.github.railroad.project.ui.project.ProjectSearchField;
+import io.github.railroad.ui.defaults.RRScrollPane;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.ListView;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class WelcomeProjectsPane extends ScrollPane {
+public class WelcomeProjectsPane extends RRScrollPane {
     private final ListView<Project> projectsList = new ListView<>();
 
     private ObservableValue<ProjectSort> sortProperty;
 
     public WelcomeProjectsPane(ProjectSearchField searchField) {
         Railroad.PROJECT_MANAGER.loadProjects();
-        setStyle("-fx-background-color: #f0f0f0;");
         setFitToWidth(true);
         setFitToHeight(true);
         setHbarPolicy(ScrollBarPolicy.NEVER);

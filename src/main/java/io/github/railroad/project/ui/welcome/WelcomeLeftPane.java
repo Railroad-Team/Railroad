@@ -3,6 +3,7 @@ package io.github.railroad.project.ui.welcome;
 import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRListView;
+import io.github.railroad.ui.defaults.RRSeparator;
 import io.github.railroad.ui.defaults.RRVBox;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -46,7 +47,7 @@ public class WelcomeLeftPane extends RRVBox {
 
         getChildren().addAll(
                 topBox,
-                new Separator(),
+                new RRSeparator(),
                 listView
         );
     }

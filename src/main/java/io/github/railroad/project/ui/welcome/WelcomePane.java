@@ -3,8 +3,9 @@ package io.github.railroad.project.ui.welcome;
 import io.github.railroad.Railroad;
 import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.settings.ui.SettingsPane;
+import io.github.railroad.ui.defaults.RRSeparator;
+import io.github.railroad.ui.defaults.RRSplitPane;
 import javafx.geometry.Orientation;
-import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -12,7 +13,7 @@ import javafx.scene.layout.VBox;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class WelcomePane extends SplitPane {
+public class WelcomePane extends RRSplitPane {
     private final WelcomeLeftPane leftPane;
     private final WelcomeHeaderPane headerPane;
     private final WelcomeProjectsPane projectsPane;
@@ -28,7 +29,7 @@ public class WelcomePane extends SplitPane {
 
         headerPane.setPrefHeight(80);
 
-        var rightPane = new VBox(headerPane, new Separator(), projectsPane);
+        var rightPane = new VBox(headerPane, new RRSeparator(), projectsPane);
         VBox.setVgrow(projectsPane, Priority.ALWAYS);
 
         setOrientation(Orientation.HORIZONTAL);
