@@ -2,12 +2,15 @@ package io.github.railroad.project.ui.welcome;
 
 import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.settings.ui.SettingsPane;
+import io.github.railroad.project.ui.BrowseButton;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import javax.swing.filechooser.FileSystemView;
+import java.io.File;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -53,8 +56,15 @@ public class WelcomePane extends SplitPane {
                     getScene().setRoot(newProjectPane);
                     newProjectPane.getBackButton().setOnAction(event1 -> getScene().setRoot(WelcomePane.this));
                 }
-                case OPEN_PROJECT -> System.out.println("[Open Project] is still not implemented!");
-                case IMPORT_PROJECT -> System.out.println("[Import project] is still not implemented!");
+                case OPEN_PROJECT -> {
+                    System.out.println();
+                    File defaultPath = FileSystemView.getFileSystemView().getHomeDirectory();
+                    String title = "Open Project";
+                    var directoryChooser = new BrowseButton().FolderBrowser(defaultPath, title);
+                }
+                case IMPORT_PROJECT -> {
+                    System.out.println("[Import project] is still not implemented!");
+                }
 
                 case SETTINGS -> {
                     var settingsPane = this.settingsPane.updateAndGet(

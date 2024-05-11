@@ -40,7 +40,7 @@ public class Railroad extends Application {
         MinecraftVersion.load();
         ForgeVersion.load();
 
-        _window = primaryStage;
+        Stage _window = primaryStage;
 
         // Calculate the primary screen size to better fit the window
         Screen screen = Screen.getPrimary();
@@ -52,7 +52,7 @@ public class Railroad extends Application {
         double windowH = Math.max(500, Math.min(screenH * 0.75, 1024));
 
         // Start the welcome screen and window
-        _scene = new Scene(new Pane(), windowW, windowH);
+        Scene _scene = new Scene(new Pane(), windowW, windowH);
 
         var welcomePane = new WelcomePane();
         _scene.setRoot(welcomePane);
