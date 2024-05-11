@@ -6,7 +6,7 @@
 
 /* This styles blank list cells */
 .Railroad.List:even,
-.Railroad.List:odd, {
+.Railroad.List:odd {
     -fx-text-fill: green;
     -fx-background-color: red;
 }
