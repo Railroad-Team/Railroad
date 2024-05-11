@@ -57,13 +57,14 @@ public class WelcomePane extends SplitPane {
                     newProjectPane.getBackButton().setOnAction(event1 -> getScene().setRoot(WelcomePane.this));
                 }
                 case OPEN_PROJECT -> {
-                    System.out.println();
-                    File defaultPath = FileSystemView.getFileSystemView().getHomeDirectory();
-                    String title = "Open Project";
-                    var directoryChooser = new BrowseButton().FolderBrowser(defaultPath, title);
+                    var directoryChooser = new BrowseButton().FolderBrowser(FileSystemView.getFileSystemView().getHomeDirectory(), "Open Project");
+                    //TODO Create/import/whatever with the selected folder here
+                    System.out.println(String.format("Dir Selected: %s", directoryChooser.showDialog(getScene().getWindow())));
                 }
                 case IMPORT_PROJECT -> {
                     System.out.println("[Import project] is still not implemented!");
+                    //TODO Either create an import pane with options for java ver, mc ver, forge/fabric etc OR have open dir & automagically work it out and maybe check with the user
+                    //TODO That all of the values are correct?
                 }
 
                 case SETTINGS -> {

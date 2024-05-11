@@ -67,9 +67,6 @@ public class BrowseButton extends Button {
             switch (browseType.getValue()) {
                 case FILE -> {
                     var fileChooser = FileBrowser(defaultLocation.toFile(), "Select File", null);
-
-                    fileChooser.setTitle("Select File");
-                    fileChooser.setInitialDirectory(defaultLocation.toFile());
                     if (selectionMode == BrowseSelectionMode.SINGLE) {
                         textField.setText(fileChooser.showOpenDialog(parentWindow.get()).getAbsolutePath());
                     } else {
@@ -80,14 +77,11 @@ public class BrowseButton extends Button {
                     }
                 }
                 case DIRECTORY -> {
-                    File defaultPath = defaultLocation.toFile();
-                    String title = "Select Directory";
-
-                    var folderBrowser = FolderBrowser(defaultPath, title);
+                    var folderBrowser = FolderBrowser(defaultLocation.toFile(), "Select Directory");
                     textField.setText(folderBrowser.showDialog(parentWindow.get()).getAbsolutePath());
                 }
                 case IMAGE -> {
-                    FileChooser imageChooser = ImageBrowser(defaultLocation.toFile(), "Select Image");
+                    var imageChooser = ImageBrowser(defaultLocation.toFile(), "Select Image");
                     if (selectionMode == BrowseSelectionMode.SINGLE) {
                         textField.setText(imageChooser.showOpenDialog(parentWindow.get()).getAbsolutePath());
                     } else {
