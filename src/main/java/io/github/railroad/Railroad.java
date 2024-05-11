@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.railroad.discord.DiscordCore;
 import io.github.railroad.discord.activity.DiscordActivity;
+import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
@@ -69,16 +70,6 @@ public class Railroad extends Application {
     private static DiscordCore setupDiscord() {
         var discord = new DiscordCore("853387211897700394");
 
-        var activity = new DiscordActivity();
-        activity.setType(DiscordActivity.ActivityType.PLAYING);
-        activity.setDetails("Working on Railroad");
-        activity.setState("v0.1.0");
-        activity.getTimestamps().setStart(Instant.now());
-        activity.getAssets().setLargeImage("logo");
-
-        discord.getActivityManager().updateActivity(activity,
-                discordResult -> System.out.println("Activity Update Status: " + discordResult));
-
         Runtime.getRuntime().addShutdownHook(new Thread(discord::close));
 
         return discord;
@@ -126,5 +117,8 @@ public class Railroad extends Application {
         // FIXME window is not being focused when it open
 
         DISCORD = setupDiscord();
+
+        //Setup main menu RP
+        RailroadActivities.setActivity(RailroadActivities.RailroadActivityTypes.PROJECT_SELECTION);
     }
 }

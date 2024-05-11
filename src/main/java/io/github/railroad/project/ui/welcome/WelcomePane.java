@@ -1,6 +1,7 @@
 package io.github.railroad.project.ui.welcome;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.settings.ui.SettingsPane;
 import io.github.railroad.project.ui.BrowseButton;
@@ -57,8 +58,11 @@ public class WelcomePane extends SplitPane {
                     var newProjectPane = this.newProjectPane.updateAndGet(
                             pane -> Objects.requireNonNullElseGet(pane, NewProjectPane::new));
                     Railroad.getScene().setRoot(newProjectPane);
-                    newProjectPane.getBackButton().setOnAction(e ->
-                            Railroad.getScene().setRoot(WelcomePane.this));
+                    RailroadActivities.setActivity(RailroadActivities.RailroadActivityTypes.PROJECT_CREATION);
+                    newProjectPane.getBackButton().setOnAction(e -> {
+                                RailroadActivities.setActivity(RailroadActivities.RailroadActivityTypes.PROJECT_SELECTION);
+                                Railroad.getScene().setRoot(WelcomePane.this);
+                            });
                 }
                 case OPEN_PROJECT -> {
                     var directoryChooser = folderBrowser(FileSystemView.getFileSystemView().getHomeDirectory(), "Open Project");
