@@ -1,4 +1,4 @@
-package io.github.railroad.github;
+package io.github.railroad.vcs.connections.github;
 
 public record GithubAccount(String username, String email, String profileImageUrl, String accessToken) {
     public static GithubAccount loadExisting() {

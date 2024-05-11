@@ -1,13 +1,11 @@
 package io.github.railroad.settings.ui.general;
 
-import io.github.railroad.github.GithubAccount;
+import io.github.railroad.vcs.connections.github.GithubAccount;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Separator;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
