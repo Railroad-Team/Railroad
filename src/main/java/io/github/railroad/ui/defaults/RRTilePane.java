@@ -5,6 +5,6 @@ import javafx.scene.layout.TilePane;
 public class RRTilePane extends TilePane {
     public RRTilePane() {
         super();
-        setStyle("-fx-background-color: -color-bg-default;");
+        getStyleClass().addAll("Railroad", "Pane", "TilePane", "background-2");
     }
 }
