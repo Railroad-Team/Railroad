@@ -5,6 +5,6 @@ import javafx.scene.layout.GridPane;
 public class RRGridPane extends GridPane {
     public RRGridPane() {
         super();
-        setStyle("-fx-background-color: -color-bg-default;");
+        getStyleClass().addAll("Railroad", "Pane", "GridPane", "background-2");
     }
 }

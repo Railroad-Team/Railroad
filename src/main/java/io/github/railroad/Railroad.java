@@ -40,7 +40,7 @@ public class Railroad extends Application {
         MinecraftVersion.load();
         ForgeVersion.load();
 
-        _window = primaryStage;
+        window = primaryStage;
 
         // Calculate the primary screen size to better fit the window
         Screen screen = Screen.getPrimary();
@@ -52,30 +52,27 @@ public class Railroad extends Application {
         double windowH = Math.max(500, Math.min(screenH * 0.75, 1024));
 
         // Start the welcome screen and window
-        _scene = new Scene(new Pane(), windowW, windowH);
+        scene = new Scene(new Pane(), windowW, windowH);
 
         var welcomePane = new WelcomePane();
-        _scene.setRoot(welcomePane);
+        scene.setRoot(welcomePane);
 
-        handleStyles(_scene);
+        handleStyles(scene);
 
         // Open setup and show the window
-        primaryStage.setMinWidth(_scene.getWidth() + 10);
-        primaryStage.setMinHeight(_scene.getHeight() + 10);
-        primaryStage.setScene(_scene);
+        primaryStage.setMinWidth(scene.getWidth() + 10);
+        primaryStage.setMinHeight(scene.getHeight() + 10);
+        primaryStage.setScene(scene);
         primaryStage.setTitle("Railroad - 1.0.0(dev)");
         primaryStage.show();
         // FIXME window is not being focused when it open
     }
 
     private static void handleStyles(Scene scene) {
-        Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
+        //Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
 
+        // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();
-        if (DEBUG) {
-            scene.getStylesheets().add(debugStyles);
-        }
-
         scene.setOnKeyReleased(event -> {
             if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.D) {
                 if (DEBUG) {
@@ -87,6 +84,11 @@ public class Railroad extends Application {
                 DEBUG = !DEBUG;
             }
         });
+
+        // setting up base theme
+        //FIXME anti-pain development comments <3
+        //String baseTheme = getResource("styles/base.css").toExternalForm();
+        //scene.getStylesheets().add(baseTheme);
     }
 
     public static URL getResource(String path) {
