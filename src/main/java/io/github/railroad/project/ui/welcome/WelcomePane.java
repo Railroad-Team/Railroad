@@ -1,5 +1,6 @@
 package io.github.railroad.project.ui.welcome;
 
+import io.github.railroad.Railroad;
 import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.settings.ui.SettingsPane;
 import io.github.railroad.project.ui.BrowseButton;
@@ -55,8 +56,9 @@ public class WelcomePane extends SplitPane {
                 case NEW_PROJECT -> {
                     var newProjectPane = this.newProjectPane.updateAndGet(
                             pane -> Objects.requireNonNullElseGet(pane, NewProjectPane::new));
-                    getScene().setRoot(newProjectPane);
-                    newProjectPane.getBackButton().setOnAction(event1 -> getScene().setRoot(WelcomePane.this));
+                    Railroad.getScene().setRoot(newProjectPane);
+                    newProjectPane.getBackButton().setOnAction(e ->
+                            Railroad.getScene().setRoot(WelcomePane.this));
                 }
                 case OPEN_PROJECT -> {
                     var directoryChooser = folderBrowser(FileSystemView.getFileSystemView().getHomeDirectory(), "Open Project");
@@ -72,9 +74,9 @@ public class WelcomePane extends SplitPane {
                 case SETTINGS -> {
                     var settingsPane = this.settingsPane.updateAndGet(
                             pane -> Objects.requireNonNullElseGet(pane, SettingsPane::new));
-                    getScene().setRoot(settingsPane);
+                    Railroad.getScene().setRoot(settingsPane);
                     settingsPane.getBackButton().setOnAction(e ->
-                            getScene().setRoot(WelcomePane.this));
+                            Railroad.getScene().setRoot(WelcomePane.this));
                 }
 
                 default -> throw new IllegalStateException("Unexpected value: " + newValue);

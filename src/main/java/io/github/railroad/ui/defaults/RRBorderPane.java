@@ -5,6 +5,6 @@ import javafx.scene.layout.BorderPane;
 public class RRBorderPane extends BorderPane {
     public RRBorderPane() {
         super();
-        setStyle("-fx-background-color: -color-bg-default;");
+        getStyleClass().addAll("Railroad", "Pane", "BorderPane", "background-2");
     }
 }

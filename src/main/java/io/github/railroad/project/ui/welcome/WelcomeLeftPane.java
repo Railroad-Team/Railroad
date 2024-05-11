@@ -1,35 +1,35 @@
 package io.github.railroad.project.ui.welcome;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.defaults.RRListView;
+import io.github.railroad.ui.defaults.RRVBox;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
 import javafx.scene.control.Separator;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-public class WelcomeLeftPane extends VBox {
-    private final ListView<MenuType> listView = new ListView<>();
+public class WelcomeLeftPane extends RRVBox {
+    private final RRListView<MenuType> listView = new RRListView<>();
 
     public WelcomeLeftPane() {
-        var topBox = new VBox();
+        var topBox = new RRVBox();
         topBox.setPrefHeight(80);
 
-        var hbox = new HBox();
+        var hbox = new RRHBox();
         hbox.setAlignment(Pos.CENTER);
         hbox.getChildren().add(new ImageView(
                 new Image(Railroad.getResourceAsStream("images/logo.png"), 100, 100, true, true)));
 
-        var rightVbox = new VBox();
+        var rightVbox = new RRVBox();
         rightVbox.setAlignment(Pos.CENTER);
         rightVbox.getChildren().add(new Label("Railroad IDE"));
         rightVbox.getChildren().add(new Label("1.0.0(dev)"));
@@ -42,7 +42,7 @@ public class WelcomeLeftPane extends VBox {
 
         setPrefWidth(200);
         setAlignment(Pos.TOP_CENTER);
-        VBox.setVgrow(listView, Priority.ALWAYS);
+        RRVBox.setVgrow(listView, Priority.ALWAYS);
 
         getChildren().addAll(
                 topBox,
@@ -51,7 +51,7 @@ public class WelcomeLeftPane extends VBox {
         );
     }
 
-    public ListView<MenuType> getListView() {
+    public RRListView<MenuType> getListView() {
         return listView;
     }
 

@@ -5,6 +5,6 @@ import javafx.scene.layout.VBox;
 public class RRVBox extends VBox {
     public RRVBox() {
         super();
-        setStyle("-fx-background-color: -color-bg-default;");
+        getStyleClass().addAll("Railroad", "Pane", "VBox", "background-2");
     }
 }
