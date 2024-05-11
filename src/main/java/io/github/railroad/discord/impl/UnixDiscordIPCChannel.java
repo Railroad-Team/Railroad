@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class UnixDiscordIPCChannel implements DiscordIPCChannel {
     private final SocketChannel channel;
@@ -60,11 +59,10 @@ public class UnixDiscordIPCChannel implements DiscordIPCChannel {
                     try {
                         List<String> list = new ArrayList<>();
                         Path path = Paths.get(pathStr);
-                        try (Stream<Path> stream = Files.list(path)) {
-                            return stream.filter(p -> p.getFileName().toString().startsWith("snap.discord_"))
-                                    .map(Path::toAbsolutePath)
-                                    .map(Path::toString);
-                        }
+                        return Files.list(path)
+                                .filter(p -> p.startsWith("snap.discord_"))
+                                .map(Path::toAbsolutePath)
+                                .map(Path::toString);
                     } catch (IOException exception) {
                         return Arrays.stream(new String[0]);
                     }
