@@ -1,12 +1,12 @@
-/* This styles everything */
-.Railroad {
-    -fx-text-fill: green;
-    -fx-background-color: red;
+.Railroad, .split-pane, .scroll-pane {
+    -fx-background-color: -color-bg-default;
+    -fx-text-fill: -color-fg-default;
 }
 
-/* This styles blank list cells */
-.Railroad.List:even,
-.Railroad.List:odd {
-    -fx-text-fill: green;
-    -fx-background-color: red;
+.project-list-cell {
+    -fx-background-color: -color-bg-inset;
+}
+
+.project-list-node {
+    -fx-background-color: -color-bg-subtle;
 }

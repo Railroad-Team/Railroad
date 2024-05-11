@@ -5,7 +5,6 @@ import javafx.collections.FXCollections;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListCell;
 import javafx.util.StringConverter;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeRegular;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -16,7 +15,7 @@ public class ProjectSortComboBox extends ComboBox<ProjectSort> {
 
     public ProjectSortComboBox() {
         setItems(FXCollections.observableArrayList(ProjectSort.values()));
-        setPrefWidth(90);
+        setPrefWidth(120);
         setConverter(new StringConverter<>() {
             @Override
             public String toString(ProjectSort object) {

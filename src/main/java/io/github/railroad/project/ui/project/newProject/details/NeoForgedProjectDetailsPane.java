@@ -1,8 +1,8 @@
 package io.github.railroad.project.ui.project.newProject.details;
 
-import javafx.scene.layout.BorderPane;
+import io.github.railroad.ui.defaults.RRBorderPane;
 
-public class NeoForgedProjectDetailsPane extends BorderPane {
+public class NeoForgedProjectDetailsPane extends RRBorderPane {
     public NeoForgedProjectDetailsPane() {
 
     }

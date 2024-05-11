@@ -17,6 +17,7 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import okhttp3.OkHttpClient;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.time.Instant;
@@ -60,10 +61,8 @@ public class Railroad extends Application {
             }
         });
 
-        // setting up base theme
-        // FIXME anti-pain development comments <3
-        // String baseTheme = getResource("styles/base.css").toExternalForm();
-        // scene.getStylesheets().add(baseTheme);
+        String baseTheme = getResource("styles/base.css").toExternalForm();
+        scene.getStylesheets().add(baseTheme);
     }
 
     private static DiscordCore setupDiscord() {
@@ -78,8 +77,6 @@ public class Railroad extends Application {
 
         discord.getActivityManager().updateActivity(activity,
                 discordResult -> System.out.println("Activity Update Status: " + discordResult));
-
-        Runtime.getRuntime().addShutdownHook(new Thread(discord::close));
 
         return discord;
     }
@@ -106,8 +103,8 @@ public class Railroad extends Application {
         double screenH = screen.getBounds().getHeight();
 
         // TODO: Find a better way to calculate these because it makes it weird on different sized monitors
-        double windowW = Math.max(500, Math.min(screenW * 0.75, 768));
-        double windowH = Math.max(500, Math.min(screenH * 0.75, 1024));
+        double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
+        double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
 
         // Start the welcome screen and window
         scene = new Scene(new Pane(), windowW, windowH);
@@ -126,5 +123,11 @@ public class Railroad extends Application {
         // FIXME window is not being focused when it open
 
         DISCORD = setupDiscord();
+    }
+
+    @Override
+    public void stop() throws Exception {
+        System.out.println("Stopping Railroad");
+        System.exit(0);
     }
 }

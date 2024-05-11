@@ -1,6 +1,8 @@
 package io.github.railroad.project.ui.project;
 
 import io.github.railroad.project.Project;
+import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.defaults.RRVBox;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
@@ -13,6 +15,10 @@ import javafx.scene.paint.Color;
 
 public class ProjectListCell extends ListCell<Project> {
     private final ProjectListNode node = new ProjectListNode();
+
+    public ProjectListCell() {
+        getStyleClass().add("project-list-cell");
+    }
 
     @Override
     protected void updateItem(Project project, boolean empty) {
@@ -28,14 +34,7 @@ public class ProjectListCell extends ListCell<Project> {
         }
     }
 
-    @Override
-    public void updateSelected(boolean selected) {
-        super.updateSelected(selected);
-        node.setStyle(selected ? "-fx-background-color: #f0f0f0;" : "-fx-background-color: #ffffff;");
-        node.getLabel().setTextFill(Color.BLACK);
-    }
-
-    public static class ProjectListNode extends VBox {
+    public static class ProjectListNode extends RRVBox {
         private final ObjectProperty<Project> project = new SimpleObjectProperty<>();
         private final ImageView icon;
         private final Label label;
@@ -43,9 +42,10 @@ public class ProjectListCell extends ListCell<Project> {
         private final Label lastOpened;
 
         public ProjectListNode() {
+            getStyleClass().add("project-list-node");
+
             setSpacing(5);
-            setPadding(new Insets(5));
-            setBackground(new Background(new BackgroundFill(Color.LIGHTGRAY, CornerRadii.EMPTY, Insets.EMPTY)));
+            setPadding(new Insets(10));
             setAlignment(Pos.CENTER_LEFT);
 
             var icon = new ImageView();
@@ -70,7 +70,8 @@ public class ProjectListCell extends ListCell<Project> {
             lastOpened.setStyle("-fx-font-size: 14px; -fx-text-fill: #808080;");
             this.lastOpened = lastOpened;
 
-            HBox nameBox = new HBox(icon, nameLabel);
+            var nameBox = new RRHBox(5);
+            nameBox.getChildren().addAll(icon, nameLabel);
             nameBox.setAlignment(Pos.CENTER_LEFT);
 
             getChildren().addAll(nameBox, pathLabel, lastOpened);

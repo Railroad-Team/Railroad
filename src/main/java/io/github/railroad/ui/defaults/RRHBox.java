@@ -7,4 +7,9 @@ public class RRHBox extends HBox {
         super();
         getStyleClass().addAll("Railroad", "Pane", "HBox", "background-2");
     }
+
+    public RRHBox(double spacing) {
+        super(spacing);
+        getStyleClass().addAll("Railroad", "Pane", "HBox", "background-2");
+    }
 }
