@@ -14,6 +14,8 @@ import java.io.File;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.github.railroad.project.ui.BrowseButton.folderBrowser;
+
 public class WelcomePane extends SplitPane {
     private final WelcomeLeftPane leftPane;
     private final WelcomeHeaderPane headerPane;
@@ -57,7 +59,7 @@ public class WelcomePane extends SplitPane {
                     newProjectPane.getBackButton().setOnAction(event1 -> getScene().setRoot(WelcomePane.this));
                 }
                 case OPEN_PROJECT -> {
-                    var directoryChooser = new BrowseButton().FolderBrowser(FileSystemView.getFileSystemView().getHomeDirectory(), "Open Project");
+                    var directoryChooser = folderBrowser(FileSystemView.getFileSystemView().getHomeDirectory(), "Open Project");
                     //TODO Create/import/whatever with the selected folder here
                     System.out.println(String.format("Dir Selected: %s", directoryChooser.showDialog(getScene().getWindow())));
                 }

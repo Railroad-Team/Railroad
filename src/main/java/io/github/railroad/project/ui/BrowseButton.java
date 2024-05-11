@@ -20,16 +20,16 @@ public class BrowseButton extends Button {
     private final ObjectProperty<BrowseSelectionMode> selectionMode = new SimpleObjectProperty<>(BrowseSelectionMode.SINGLE);
     private final ObjectProperty<Path> defaultLocation = new SimpleObjectProperty<>(Path.of(System.getProperty("user.home")));
 
-    public DirectoryChooser FolderBrowser(File defaultPath, String title){
-        DirectoryChooser directoryChooser = new DirectoryChooser();
+    public static DirectoryChooser folderBrowser(File defaultPath, String title){
+        var directoryChooser = new DirectoryChooser();
         directoryChooser.setTitle(title);
         directoryChooser.setInitialDirectory(defaultPath);
 
         return directoryChooser;
     }
 
-    public FileChooser FileBrowser(File defaultPath, String title, @Nullable FileChooser.ExtensionFilter filter){
-        FileChooser fileChooser = new FileChooser();
+    public static FileChooser fileBrowser(File defaultPath, String title, @Nullable FileChooser.ExtensionFilter filter){
+        var fileChooser = new FileChooser();
         fileChooser.setTitle(title);
         fileChooser.setInitialDirectory(defaultPath);
         if(filter != null){
@@ -39,10 +39,10 @@ public class BrowseButton extends Button {
         return fileChooser;
     }
 
-    public FileChooser ImageBrowser(File defaultPath, String title){
-        FileChooser.ExtensionFilter filter = new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif");
+    public static FileChooser imageBrowser(File defaultPath, String title){
+        var filter = new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif");
 
-        FileChooser fileChooser = new FileChooser();
+        var fileChooser = new FileChooser();
         fileChooser.setTitle(title);
         fileChooser.setInitialDirectory(defaultPath);
         fileChooser.setSelectedExtensionFilter(filter);
@@ -66,7 +66,7 @@ public class BrowseButton extends Button {
 
             switch (browseType.getValue()) {
                 case FILE -> {
-                    var fileChooser = FileBrowser(defaultLocation.toFile(), "Select File", null);
+                    var fileChooser = fileBrowser(defaultLocation.toFile(), "Select File", null);
                     if (selectionMode == BrowseSelectionMode.SINGLE) {
                         textField.setText(fileChooser.showOpenDialog(parentWindow.get()).getAbsolutePath());
                     } else {
@@ -77,11 +77,11 @@ public class BrowseButton extends Button {
                     }
                 }
                 case DIRECTORY -> {
-                    var folderBrowser = FolderBrowser(defaultLocation.toFile(), "Select Directory");
+                    var folderBrowser = folderBrowser(defaultLocation.toFile(), "Select Directory");
                     textField.setText(folderBrowser.showDialog(parentWindow.get()).getAbsolutePath());
                 }
                 case IMAGE -> {
-                    var imageChooser = ImageBrowser(defaultLocation.toFile(), "Select Image");
+                    var imageChooser = imageBrowser(defaultLocation.toFile(), "Select Image");
                     if (selectionMode == BrowseSelectionMode.SINGLE) {
                         textField.setText(imageChooser.showOpenDialog(parentWindow.get()).getAbsolutePath());
                     } else {
