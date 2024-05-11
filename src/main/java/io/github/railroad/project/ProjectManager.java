@@ -26,7 +26,7 @@ public class ProjectManager {
             String projectAlias = projectObject.get("alias").getAsString();
             String uuid = projectObject.get("uuid").getAsString();
             Project project = new Project(Path.of(projectPath), projectAlias);
-            if (projectObject.has("lastopened")) {
+            if (projectObject.has("lastOpened")) {
                 long lastOpened = projectObject.get("lastOpened").getAsLong();
                 project.setLastOpened(lastOpened);
             }

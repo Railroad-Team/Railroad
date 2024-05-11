@@ -2,6 +2,7 @@ package io.github.railroad.project;
 
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
+
 import java.util.UUID;
 
 
@@ -76,38 +77,17 @@ public class Project {
         return abbreviation.toString();
     }
 
-    // TODO: Delete this once projects can be saved
-    private static String generateRandomName() {
-        char[] chars = "abcdefghijklmnopqrs t u v w x y z ".toCharArray();
-        var builder = new StringBuilder();
-        int length = ThreadLocalRandom.current().nextInt(10, 20);
-        for (int i = 0; i < length; i++) {
-            char c = chars[ThreadLocalRandom.current().nextInt(chars.length)];
-
-            while (i == 0 && c == ' ')
-                c = chars[ThreadLocalRandom.current().nextInt(chars.length)];
-
-            if (i == 0 || builder.charAt(i - 1) == ' ')
-                c = Character.toUpperCase(c);
-
-            while (i != 0 && c == ' ' && builder.charAt(i - 1) == ' ') {
-                c = chars[ThreadLocalRandom.current().nextInt(chars.length)];
-            }
-
-            if (c == ' ' && i == length - 1)
-                continue;
-
-            builder.append(c);
-        }
-
-        return builder.toString();
-    }
-
     public Path getPath() {
         return path;
     }
 
-    public String getPathStr() {return getPath().toString(); }
+    public String getPathString() {
+        return path.toString();
+    }
+
+    public String getPathStr() {
+        return getPath().toString();
+    }
 
     public String getAlias() {
         return alias;
@@ -134,10 +114,31 @@ public class Project {
         ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
         var currentTime = ZonedDateTime.now();
         long daysDifference = ChronoUnit.DAYS.between(zonedDateTime, currentTime);
-        if (daysDifference == 0) {
-            return "Today";
+        long secondsDifference = ChronoUnit.SECONDS.between(zonedDateTime, currentTime);
+        if (daysDifference > 4000) {
+            return "You forgot me ;(";
         } else {
-            return daysDifference + " Days ago";
+            if (secondsDifference < 60) {
+                return secondsDifference + " seconds ago";
+            } else if (secondsDifference < 3600) {
+                long minutes = secondsDifference / 60;
+                return minutes + (minutes == 1 ? " minute ago" : " minutes ago");
+            } else if (secondsDifference < 86400) {
+                long hours = secondsDifference / 3600;
+                return hours + (hours == 1 ? " hour ago" : " hours ago");
+            } else if (secondsDifference < 604800) {
+                long days = secondsDifference / 86400;
+                return days + (days == 1 ? " day ago" : " days ago");
+            } else if (secondsDifference < 2419200) {
+                long weeks = secondsDifference / 604800;
+                return weeks + (weeks == 1 ? " week ago" : " weeks ago");
+            } else if (secondsDifference < 29030400) {
+                long months = secondsDifference / 2419200;
+                return months + (months == 1 ? " month ago" : " months ago");
+            } else {
+                long years = secondsDifference / 29030400;
+                return years + (years == 1 ? " year ago" : " years ago");
+            }
         }
     }
 

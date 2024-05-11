@@ -1,17 +1,23 @@
 package io.github.railroad.project.ui.welcome;
 
+import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.settings.ui.SettingsPane;
 import javafx.geometry.Orientation;
-import javafx.scene.Scene;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
+
 public class WelcomePane extends SplitPane {
     private final WelcomeLeftPane leftPane;
     private final WelcomeHeaderPane headerPane;
     private final WelcomeProjectsPane projectsPane;
+
+    private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
+    private final AtomicReference<SettingsPane> settingsPane = new AtomicReference<>();
 
     public WelcomePane() {
         leftPane = new WelcomeLeftPane();
@@ -19,16 +25,10 @@ public class WelcomePane extends SplitPane {
         projectsPane = new WelcomeProjectsPane(headerPane.getSearchField());
         projectsPane.setSortProperty(headerPane.getSortComboBox().valueProperty());
 
-        leftPane.setPrefWidth(200);
-        leftPane.setMinWidth(200);
-
         headerPane.setPrefHeight(80);
-        projectsPane.setPrefHeight(500);
 
         var rightPane = new VBox(headerPane, new Separator(), projectsPane);
         VBox.setVgrow(projectsPane, Priority.ALWAYS);
-        rightPane.setPrefWidth(600);
-        rightPane.setMinWidth(600);
 
         setOrientation(Orientation.HORIZONTAL);
         getItems().addAll(leftPane, rightPane);
@@ -36,24 +36,39 @@ public class WelcomePane extends SplitPane {
         SplitPane.setResizableWithParent(leftPane, false);
         SplitPane.setResizableWithParent(rightPane, true);
 
-        leftPane.getListView().getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+        leftPane.setMinWidth(100);
+        rightPane.setMinWidth(300);
+
+        setDividerPositions((1.0/3));
+
+        // Setup buttons
+        leftPane.getListView()
+                .getSelectionModel()
+                .selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> {
             switch (newValue) {
-                case HOME -> {
-                    if(getChildren().get(1) != rightPane) {
-                        getItems().set(1, rightPane);
-                    }
+                case NEW_PROJECT -> {
+                    var newProjectPane = this.newProjectPane.updateAndGet(
+                            pane -> Objects.requireNonNullElseGet(pane, NewProjectPane::new));
+                    getScene().setRoot(newProjectPane);
+                    newProjectPane.getBackButton().setOnAction(event1 -> getScene().setRoot(WelcomePane.this));
                 }
+                case OPEN_PROJECT -> System.out.println("[Open Project] is still not implemented!");
+                case IMPORT_PROJECT -> System.out.println("[Import project] is still not implemented!");
+
                 case SETTINGS -> {
-                    var settingsPane = new SettingsPane();
-                    Scene scene = getScene();
-                    scene.setRoot(settingsPane);
-                    settingsPane.getBackButton().setOnAction(event -> {
-                        scene.setRoot(WelcomePane.this);
-                        leftPane.getListView().getSelectionModel().select(oldValue);
-                    });
+                    var settingsPane = this.settingsPane.updateAndGet(
+                            pane -> Objects.requireNonNullElseGet(pane, SettingsPane::new));
+                    getScene().setRoot(settingsPane);
+                    settingsPane.getBackButton().setOnAction(e ->
+                            getScene().setRoot(WelcomePane.this));
                 }
+
+                default -> throw new IllegalStateException("Unexpected value: " + newValue);
             }
+            leftPane.getListView().getSelectionModel().clearSelection();
         });
+
     }
 
     public WelcomeProjectsPane getProjectsPane() {

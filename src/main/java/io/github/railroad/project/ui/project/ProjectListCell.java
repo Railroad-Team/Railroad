@@ -11,7 +11,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 
-
 public class ProjectListCell extends ListCell<Project> {
     private final ProjectListNode node = new ProjectListNode();
 

@@ -2,14 +2,15 @@ package io.github.railroad.utility;
 
 import java.util.*;
 
-public class Tree<T> {
+public class NodeTree<T> {
+
     private Node<T> root;
 
-    public Tree() {
+    public NodeTree() {
         this.root = null;
     }
 
-    public Tree(Node<T> root) {
+    public NodeTree(Node<T> root) {
         this.root = root;
     }
 
@@ -30,6 +31,7 @@ public class Tree<T> {
     }
 
     public static class Node<T> {
+
         private final T value;
         private final List<Node<T>> children = new ArrayList<>();
 
@@ -83,5 +85,7 @@ public class Tree<T> {
         public void removeChild(Node<T> child) {
             children.remove(child);
         }
+
     }
+
 }

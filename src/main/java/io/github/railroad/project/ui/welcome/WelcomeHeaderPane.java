@@ -1,41 +1,44 @@
 package io.github.railroad.project.ui.welcome;
 
-import io.github.railroad.project.ui.OpenProjectButton;
-import io.github.railroad.project.ui.ImportProjectButton;
-import io.github.railroad.project.ui.NewProjectButton;
 import io.github.railroad.project.ui.project.ProjectSearchField;
 import io.github.railroad.project.ui.project.ProjectSortComboBox;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 
 public class WelcomeHeaderPane extends HBox {
     private final ProjectSearchField searchField;
     private final ProjectSortComboBox sortComboBox;
-    private final NewProjectButton newProjectButton;
-    private final OpenProjectButton openProjectButton;
-    private final ImportProjectButton importProjectButton;
 
     public WelcomeHeaderPane() {
+        // Creating and styling children
+        var title = new Text();
+        title.setText("Projects List");
+        title.setStyle("-fx-font-size: 20px;");
+
         searchField = new ProjectSearchField();
-        getChildren().add(searchField);
-
-        HBox.setHgrow(searchField, Priority.ALWAYS);
-
         sortComboBox = new ProjectSortComboBox();
-        getChildren().add(sortComboBox);
 
-        newProjectButton = new NewProjectButton();
-        getChildren().add(newProjectButton);
+        // Containers setup
+        var options = new HBox();
+        options.getChildren().addAll(searchField, sortComboBox);
+        HBox.setHgrow(searchField, Priority.ALWAYS);
+        VBox.setVgrow(options, Priority.ALWAYS);
+        options.setAlignment(Pos.BOTTOM_LEFT);
+        options.setSpacing(10);
 
-        openProjectButton = new OpenProjectButton();
-        getChildren().add(openProjectButton);
+        var vbox = new VBox();
+        vbox.getChildren().addAll(title, options);
+        HBox.setHgrow(vbox, Priority.ALWAYS);
 
-        importProjectButton = new ImportProjectButton();
-        getChildren().add(importProjectButton);
+        getChildren().add(vbox);
 
-        setSpacing(10);
-        setStyle("-fx-padding: 10; -fx-background-color: #f0f0f0;");
+        // Styling
+        setPadding(new Insets(10));
+        setStyle("-fx-background-color: #f0f0f0;");
         setAlignment(Pos.CENTER_LEFT);
     }
 
@@ -45,17 +48,5 @@ public class WelcomeHeaderPane extends HBox {
 
     public ProjectSortComboBox getSortComboBox() {
         return sortComboBox;
-    }
-
-    public NewProjectButton getNewProjectButton() {
-        return newProjectButton;
-    }
-
-    public OpenProjectButton getOpenProjectButton() {
-        return openProjectButton;
-    }
-
-    public ImportProjectButton getVCSProjectButton() {
-        return importProjectButton;
     }
 }
