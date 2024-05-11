@@ -5,6 +5,6 @@ import javafx.scene.layout.AnchorPane;
 public class RRAnchorPane extends AnchorPane {
     public RRAnchorPane() {
         super();
-        setStyle("-fx-background-color: -color-bg-default;");
+        getStyleClass().addAll("Railroad", "Pane", "AnchorPane", "background-2");
     }
 }
