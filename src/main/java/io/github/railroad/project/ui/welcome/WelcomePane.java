@@ -3,14 +3,19 @@ package io.github.railroad.project.ui.welcome;
 import io.github.railroad.Railroad;
 import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.settings.ui.SettingsPane;
+import io.github.railroad.project.ui.BrowseButton;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import javax.swing.filechooser.FileSystemView;
+import java.io.File;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static io.github.railroad.project.ui.BrowseButton.folderBrowser;
 
 public class WelcomePane extends SplitPane {
     private final WelcomeLeftPane leftPane;
@@ -55,8 +60,16 @@ public class WelcomePane extends SplitPane {
                     newProjectPane.getBackButton().setOnAction(e ->
                             Railroad.getScene().setRoot(WelcomePane.this));
                 }
-                case OPEN_PROJECT -> System.out.println("[Open Project] is still not implemented!");
-                case IMPORT_PROJECT -> System.out.println("[Import project] is still not implemented!");
+                case OPEN_PROJECT -> {
+                    var directoryChooser = folderBrowser(FileSystemView.getFileSystemView().getHomeDirectory(), "Open Project");
+                    //TODO Create/import/whatever with the selected folder here
+                    System.out.println(String.format("Dir Selected: %s", directoryChooser.showDialog(getScene().getWindow())));
+                }
+                case IMPORT_PROJECT -> {
+                    System.out.println("[Import project] is still not implemented!");
+                    //TODO Either create an import pane with options for java ver, mc ver, forge/fabric etc OR have open dir & automagically work it out and maybe check with the user
+                    //TODO That all of the values are correct?
+                }
 
                 case SETTINGS -> {
                     var settingsPane = this.settingsPane.updateAndGet(
