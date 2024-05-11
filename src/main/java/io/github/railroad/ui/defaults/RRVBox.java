@@ -7,4 +7,9 @@ public class RRVBox extends VBox {
         super();
         getStyleClass().addAll("Railroad", "Pane", "VBox", "background-2");
     }
+
+    public RRVBox(double spacing) {
+        super(spacing);
+        getStyleClass().addAll("Railroad", "Pane", "VBox", "background-2");
+    }
 }
