@@ -9,6 +9,9 @@ import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ui.welcome.WelcomePane;
+import io.github.railroad.vcs.RepositoryManager;
+import io.github.railroad.vcs.connections.Profile;
+import io.github.railroad.vcs.connections.github.GithubConnection;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
@@ -91,9 +94,13 @@ public class Railroad extends Application {
     public static InputStream getResourceAsStream(String path) {
         return Railroad.class.getResourceAsStream("/io/github/railroad/" + path);
     }
-
+    public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
+    private static final Profile PROFILE = new Profile();
     @Override
     public void start(Stage primaryStage) {
+
+        REPOSITORY_MANAGER.addConnection(new GithubConnection(PROFILE));
+        REPOSITORY_MANAGER.updateRepositories();
         MinecraftVersion.load();
         ForgeVersion.load();
 
