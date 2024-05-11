@@ -98,7 +98,6 @@ public class Railroad extends Application {
         ForgeVersion.load();
 
         window = primaryStage;
-        main
 
         // Calculate the primary screen size to better fit the window
         Screen screen = Screen.getPrimary();
@@ -112,7 +111,6 @@ public class Railroad extends Application {
 
         // Start the welcome screen and window
         scene = new Scene(new Pane(), windowW, windowH);
-        main
 
         var welcomePane = new WelcomePane();
         scene.setRoot(welcomePane);
