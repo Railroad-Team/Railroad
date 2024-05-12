@@ -3,16 +3,20 @@ package io.github.railroad.PluginManager;
 import io.github.railroad.discord.activity.RailroadActivities;
 
 public abstract class Plugin {
-    private PluginStates state = PluginStates.notloaded;
-    public abstract boolean InitPlugin();
-    public abstract boolean LoadPlugin();
-    public abstract boolean UnloadPlugin();
-    public abstract boolean RaildraodActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes);
-    public abstract boolean ReloadPlugin();
-    public void UpdateStatus(PluginStates states) {
-        this.state = states;
+    private PluginStates state = PluginStates.NOTLOADED;
+    public abstract PluginPhaseResult InitPlugin();
+    public abstract PluginPhaseResult LoadPlugin();
+    public abstract PluginPhaseResult UnloadPlugin();
+    public abstract PluginPhaseResult RaildraodActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes);
+    public abstract PluginPhaseResult ReloadPlugin();
+    public void UpdateStatus(PluginStates state) {
+        System.out.println("[PluginManager]["+this.getClass().getName()+"] Change state from: "+this.state+" to: " +state);
+        this.state = state;
     }
     public PluginStates getState() {
         return this.state;
+    }
+    public PluginPhaseResult getNewPhase() {
+        return new PluginPhaseResult();
     }
 }

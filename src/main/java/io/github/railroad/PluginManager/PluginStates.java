@@ -1,5 +1,5 @@
 package io.github.railroad.PluginManager;
 
 public enum PluginStates {
-    notloaded, loading, loaded, error
+    NOTLOADED, STARTING_INIT, FINSIHED_INIT, LOADING, LOADED
 }

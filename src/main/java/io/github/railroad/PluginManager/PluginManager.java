@@ -13,11 +13,23 @@ public class PluginManager {
 
     public void LoadAllPlugins() {
         for (Plugin plugin: this.pluginList) {
-            plugin.InitPlugin();
-            plugin.LoadPlugin();
+            PluginPhaseResult initphaseResult = plugin.InitPlugin();
+            if (plugin.getState() == PluginStates.FINSIHED_INIT) {
+                PluginPhaseResult loadphaseResult = plugin.LoadPlugin();
+                if (plugin.getState() == PluginStates.LOADED) {
+                } else {
+                    this.showError(plugin, loadphaseResult);
+                }
+            } else {
+                this.showError(plugin, initphaseResult);
+            }
+
         }
     }
 
+    public void showError(Plugin plugin, PluginPhaseResult pluginPhaseResult) {
+        System.out.println("[PluginManager]["+plugin.getClass().getName()+"] Errors: " + pluginPhaseResult.getErrors());
+    }
     public void unLoadAllPlugins() {
         for (Plugin plugin: this.pluginList) {
             plugin.UnloadPlugin();
