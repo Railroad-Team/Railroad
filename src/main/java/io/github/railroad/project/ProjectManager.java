@@ -17,8 +17,8 @@ public class ProjectManager {
         ConfigHandler.createDefaultConfigs();
     }
 
-    private static void deleteDirectory(File dir){
-        for (File subfile : dir.listFiles()){
+    private static void deleteDirectory(File dir) {
+        for (File subfile : dir.listFiles()) {
             if(subfile.isDirectory()){
                 deleteDirectory(subfile);
             }
@@ -52,7 +52,7 @@ public class ProjectManager {
     }
 
     public void updateProjectInfo(Project project) {
-        updateProjectInfo(project, false);
+        updateProjectInfo(project, false, false);
     }
 
     public void updateProjectInfo(Project project, boolean removeProject, boolean deleteProject) {
@@ -65,7 +65,7 @@ public class ProjectManager {
             if (projectObject.get("uuid").getAsString().equals(project.getId())) {
                 if (removeProject) {
                     projects.remove(projectElement);
-                    if(deleteProject){
+                    if(deleteProject) {
                         deleteProjectFiles(project);
                     }
                     break;
