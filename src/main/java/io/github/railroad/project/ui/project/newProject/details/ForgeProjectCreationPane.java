@@ -49,18 +49,21 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 Files.createDirectories(projectPath);
                 updateProgress(1, 10);
                 Thread.sleep(500);
+
                 FileHandler.copyUrlToFile("https://maven.minecraftforge.net/net/minecraftforge/forge/" + fileName + "/forge-" + fileName + "-mdk.zip",
                         Path.of(projectPath.resolve(fileName) + ".zip"));
                 updateProgress(3, 10);
                 Thread.sleep(500);
+
                 FileHandler.unzipFile(Path.of(projectPath.resolve(fileName) + ".zip").toString(), projectPath.toString());
                 updateProgress(5, 10);
                 Thread.sleep(500);
+
                 Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
                 updateProgress(6, 10);
                 Thread.sleep(500);
-                Path gradlePropertiesFile = projectPath.resolve("gradle.properties");
 
+                Path gradlePropertiesFile = projectPath.resolve("gradle.properties");
                 FileHandler.updateKeyValuePairByLine("mod_id", this.data.modId(), gradlePropertiesFile);
                 FileHandler.updateKeyValuePairByLine("mod_name", this.data.modName(), gradlePropertiesFile);
                 FileHandler.updateKeyValuePairByLine("mod_version", this.data.version(), gradlePropertiesFile);
@@ -90,6 +93,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                         com.resolve("Config.java").toAbsolutePath());
                 updateProgress(8, 10);
                 Thread.sleep(500);
+
                 Files.copy(projectPath
                                 .resolve("src")
                                 .resolve("main")

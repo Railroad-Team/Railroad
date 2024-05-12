@@ -9,7 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -81,5 +83,40 @@ public class FileHandler {
             throw new IOException("Bad zip entry: " + zipEntry.getName());
 
         return destFile;
+    }
+
+    public static void copyFolder(Path src, Path dst) {
+        try (Stream<Path> files = Files.walk(src)) {
+            files.forEach(source -> {
+                try {
+                    Path destination = dst.resolve(src.relativize(source));
+                    if (Files.isDirectory(source)) {
+                        Files.createDirectories(destination);
+                    } else {
+                        Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                } catch (IOException exception) {
+                    throw new RuntimeException("Failed to copy folder", exception);
+                }
+            });
+        } catch (IOException exception) {
+            throw new RuntimeException("Failed to copy folder", exception);
+        }
+    }
+
+    public static void deleteFolder(Path folder) {
+        try (Stream<Path> paths = Files.walk(folder)) {
+            paths.sorted(Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    Files.delete(path);
+                } catch (IOException exception) {
+                    throw new RuntimeException("Failed to delete folder", exception);
+                }
+            });
+
+            Files.delete(folder);
+        } catch (IOException exception) {
+            throw new RuntimeException("Failed to delete folder", exception);
+        }
     }
 }

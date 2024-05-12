@@ -10,6 +10,7 @@ import io.github.railroad.project.License;
 import io.github.railroad.project.ProjectType;
 import io.github.railroad.project.data.ForgeProjectData;
 import io.github.railroad.project.ui.BrowseButton;
+import io.github.railroad.project.ui.project.newProject.StarableListCell;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ClassNameValidator;
@@ -489,6 +490,9 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 String[] words = newValue.split("[ _-]+");
                 var pascalCase = new StringBuilder();
                 for (String word : words) {
+                    if(word.isBlank())
+                        continue;
+
                     pascalCase.append(word.substring(0, 1).toUpperCase(Locale.ROOT)).append(word.substring(1));
                 }
 
@@ -767,38 +771,5 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 mappingChannel, mappingVersion,
                 author, description, issues, updateJsonUrl,
                 groupId, artifactId, version);
-    }
-
-    public static class StarableListCell<T> extends ListCell<T> {
-        private final FontIcon starIcon = new FontIcon(FontAwesomeSolid.STAR);
-        private final FontIcon halfStarIcon = new FontIcon(FontAwesomeSolid.STAR_HALF_ALT);
-
-        private final Predicate<T> isRecommended;
-        private final Predicate<T> isLatest;
-        private final Function<T, String> stringConverter;
-
-        public StarableListCell(Predicate<T> isRecommended, Predicate<T> isLatest, Function<T, String> stringConverter) {
-            this.isRecommended = isRecommended;
-            this.isLatest = isLatest;
-            this.stringConverter = stringConverter;
-
-            this.starIcon.setIconSize(16);
-            this.starIcon.setIconColor(Color.GOLD);
-
-            this.halfStarIcon.setIconSize(16);
-            this.halfStarIcon.setIconColor(Color.GOLD);
-        }
-
-        @Override
-        protected void updateItem(T item, boolean empty) {
-            super.updateItem(item, empty);
-            if (empty || item == null) {
-                setText(null);
-                setGraphic(null);
-            } else {
-                setText(stringConverter.apply(item));
-                setGraphic(isRecommended.test(item) ? starIcon : isLatest.test(item) ? halfStarIcon : null);
-            }
-        }
     }
 }
