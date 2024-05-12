@@ -72,10 +72,9 @@ public class Railroad extends Application {
     @Override
     public void start(Stage primaryStage) {
         ConfigHandler.updateConfig(ConfigHandler.getConfigJson());
-        PLUGIN_MANAGER.loadPluginsFromConfig();
+        PLUGIN_MANAGER.start();
         MinecraftVersion.load();
         ForgeVersion.load();
-        PLUGIN_MANAGER.LoadAllPlugins();
         window = primaryStage;
 
         // Calculate the primary screen size to better fit the window

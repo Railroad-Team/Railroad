@@ -81,6 +81,7 @@ public class Discord extends Plugin {
             phaseResult.AddError(new Error(e.getMessage()));
         }
         this.UpdateStatus(PluginStates.ACTIVITY_UPDATE_FINSIHED);
+        this.UpdateStatus(PluginStates.LOADED);
         return new PluginPhaseResult();
     }
 

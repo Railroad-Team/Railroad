@@ -12,7 +12,9 @@ public class PluginHealthChecker extends Thread {
                 if (plugin.getState() == PluginStates.ERROR_INIT) {
                     plugin.print("Init failed, restarting Init...");
                     PluginPhaseResult result = plugin.InitPlugin();
-                    PluginManager.showError(plugin, result);
+                    if (plugin.getState() != PluginStates.FINSIHED_INIT) {
+                        PluginManager.showError(plugin, result, "Healthcheck");
+                    }
                 }
                 sleep(10000);
             } catch (InterruptedException e) {
