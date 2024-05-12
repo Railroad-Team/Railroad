@@ -7,19 +7,18 @@ import java.time.Instant;
 public class RailroadActivities {
     public enum RailroadActivityTypes{
         RAILROAD_DEFAULT(),
-        EDIT_FILE(),
-
+        EDIT_FILE();
     }
 
-    public static void setActivity(DiscordActivity activity){
+    public static void setActivity(DiscordActivity activity) {
         Railroad.getDiscord().getActivityManager().updateActivity(activity);
     }
-    public static void setActivity(RailroadActivityTypes type){
+    public static void setActivity(RailroadActivityTypes type) {
         //TODO add current project name & file name into details
         var activity = new DiscordActivity();
-        switch(type){
+        switch(type) {
             case RAILROAD_DEFAULT:
-                activity.setDetails("Selecting a project");
+                activity.setDetails("Modding Minecraft");
                 activity.setType(DiscordActivity.ActivityType.PLAYING);
                 activity.setState("v0.1.0");
                 activity.getTimestamps().setStart(Instant.now());
@@ -31,7 +30,16 @@ public class RailroadActivities {
                 activity.setState("v0.1.0");
                 activity.getTimestamps().setStart(Instant.now());
                 activity.getAssets().setLargeImage("logo");
+                break;
+            default:
+                activity.setDetails("Modding Minecraft");
+                activity.setType(DiscordActivity.ActivityType.PLAYING);
+                activity.setState("v0.1.0");
+                activity.getTimestamps().setStart(Instant.now());
+                activity.getAssets().setLargeImage("logo");
+                break;
         }
+
         Railroad.getDiscord().getActivityManager().updateActivity(activity);
     }
 }

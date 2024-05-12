@@ -62,9 +62,7 @@ public class Railroad extends Application {
 
         String baseTheme = getResource("styles/base.css").toExternalForm();
         scene.getStylesheets().add(baseTheme);
-        
     }
-
 
     private static DiscordCore setupDiscord() {
         var discord = new DiscordCore("853387211897700394");
