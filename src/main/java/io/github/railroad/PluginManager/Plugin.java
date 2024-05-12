@@ -16,7 +16,7 @@ public abstract class Plugin {
     public abstract PluginPhaseResult RaildraodActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes);
     public abstract PluginPhaseResult ReloadPlugin();
     public void UpdateStatus(PluginStates state) {
-        System.out.println("[Plugin]["+this.getClass().getName()+"] Change state from: "+this.state+" to: " +state);
+        print("Change state from: "+this.state+" to: " +state);
         this.state = state;
     }
     public PluginStates getState() {
