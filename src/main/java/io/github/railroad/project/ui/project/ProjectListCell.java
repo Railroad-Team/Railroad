@@ -41,6 +41,7 @@ public class ProjectListCell extends ListCell<Project> {
         private final Label label;
         private final Label pathLabel;
         private final Label lastOpened;
+        private final Button settingsButton;
 
         public ProjectListNode() {
             getStyleClass().add("project-list-node");
@@ -72,7 +73,11 @@ public class ProjectListCell extends ListCell<Project> {
             this.lastOpened = lastOpened;
 
             var settingsButton = new Button();
-            settingsButton.setText("Project Settings");
+            settingsButton.setText("...");
+            settingsButton.setStyle("-fx-font-size: 24px;");
+            settingsButton.setAlignment(Pos.BOTTOM_RIGHT);
+            this.settingsButton = settingsButton;
+
 
             var nameBox = new RRHBox(5);
             nameBox.getChildren().addAll(icon, nameLabel);
