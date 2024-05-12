@@ -60,11 +60,15 @@ public class Railroad extends Application {
             }
         });
 
+        String baseTheme = getResource("styles/base.css").toExternalForm();
+        scene.getStylesheets().add(baseTheme);
+        
         // setting up base theme
         // FIXME anti-pain development comments <3
         // String baseTheme = getResource("styles/base.css").toExternalForm();
         // scene.getStylesheets().add(baseTheme);
     }
+
 
     private static DiscordCore setupDiscord() {
         var discord = new DiscordCore("853387211897700394");
@@ -96,8 +100,8 @@ public class Railroad extends Application {
         double screenH = screen.getBounds().getHeight();
 
         // TODO: Find a better way to calculate these because it makes it weird on different sized monitors
-        double windowW = Math.max(500, Math.min(screenW * 0.75, 768));
-        double windowH = Math.max(500, Math.min(screenH * 0.75, 1024));
+        double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
+        double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
 
         // Start the welcome screen and window
         scene = new Scene(new Pane(), windowW, windowH);
@@ -119,5 +123,10 @@ public class Railroad extends Application {
 
         //Setup main menu RP
         RailroadActivities.setActivity(RailroadActivityTypes.RAILROAD_DEFAULT);
+    }
+    @Override
+    public void stop() throws Exception {
+        System.out.println("Stopping Railroad");
+        System.exit(0);
     }
 }
