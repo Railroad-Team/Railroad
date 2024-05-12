@@ -23,10 +23,10 @@ public class PluginManager {
                 PluginPhaseResult loadphaseResult = plugin.LoadPlugin();
                 if (plugin.getState() == PluginStates.LOADED) {
                 } else {
-                    this.showError(plugin, loadphaseResult);
+                    showError(plugin, loadphaseResult);
                 }
             } else {
-                this.showError(plugin, initphaseResult);
+                showError(plugin, initphaseResult);
             }
 
         }
@@ -41,21 +41,31 @@ public class PluginManager {
                 Object o = Class.forName("io.github.railroad.Plugins."+s.getAsString()).newInstance();
                 this.AddPlugin((Plugin) o);
             } catch (Exception e) {
-                System.out.println("[PluginManager][ConfigLoaded] Error finding class and create new " + s.getAsString());
+                print("ConfigLoad","Error finding class and create new " + s.getAsString());
             }
 
         }
     }
 
-    public void showError(Plugin plugin, PluginPhaseResult pluginPhaseResult) {
+    public static void showError(Plugin plugin, PluginPhaseResult pluginPhaseResult) {
         System.out.println("[PluginManager]["+plugin.getClass().getName()+"] Errors: " + pluginPhaseResult.getErrors());
     }
     public void unLoadAllPlugins() {
         for (Plugin plugin: this.pluginList) {
+            while (plugin.getHealthChecker().isAlive()) {
+                try {
+                    plugin.getHealthChecker().join(50);
+                } catch (InterruptedException e) {
+                    print("UnloadPlugins","Error join of healthchecker of "+ plugin.getClass().getName());
+                }
+            }
             plugin.UnloadPlugin();
+            print("UnloadPlugin", plugin.getClass().getName()+ " unloaded");
         }
     }
-
+    private void print(String subalias, String message) {
+        System.out.println("[PluginManager]["+subalias+"] "+ message);
+    }
     public boolean AddPlugin(Plugin plugin) {
         this.pluginList.add(plugin);
         return true;

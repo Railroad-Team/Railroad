@@ -23,6 +23,7 @@ public class Discord extends Plugin {
             this.DISCORD = discord;
 
         } catch (Exception e) {
+            this.UpdateStatus(PluginStates.ERROR_INIT);
             phaseResult.AddError(new Error(e.getMessage()));
             return phaseResult;
         }
