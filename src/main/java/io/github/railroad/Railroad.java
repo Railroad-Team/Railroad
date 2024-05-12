@@ -5,8 +5,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.railroad.PluginManager.PluginManager;
 import io.github.railroad.Plugins.Discord;
-import io.github.railroad.discord.DiscordCore;
-import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.discord.activity.RailroadActivities.RailroadActivityTypes;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
