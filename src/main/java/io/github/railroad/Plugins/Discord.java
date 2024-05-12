@@ -49,6 +49,7 @@ public class Discord extends Plugin {
             return this.getNewPhase();
         }
         try {
+            this.UpdateStatus(PluginStates.ACTIVITY_UPDATE_START);
             var activity = new DiscordActivity();
             switch(railroadActivityTypes) {
                 case RAILROAD_DEFAULT:
@@ -75,9 +76,11 @@ public class Discord extends Plugin {
             }
             this.DISCORD.getActivityManager().updateActivity(activity);
         } catch (Exception e) {
+            this.UpdateStatus(PluginStates.ACTIVITY_UPDATE_ERROR);
             PluginPhaseResult phaseResult = new PluginPhaseResult();
             phaseResult.AddError(new Error(e.getMessage()));
         }
+        this.UpdateStatus(PluginStates.ACTIVITY_UPDATE_FINSIHED);
         return new PluginPhaseResult();
     }
 

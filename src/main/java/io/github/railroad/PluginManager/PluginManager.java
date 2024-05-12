@@ -71,6 +71,11 @@ public class PluginManager {
         return true;
     }
     public void NotifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
-
+        for (Plugin plugin: this.pluginList) {
+            PluginPhaseResult phaseResult = plugin.RaildraodActivityChange(railroadActivityTypes);
+            if (plugin.getState() != PluginStates.ACTIVITY_UPDATE_FINSIHED) {
+                showError(plugin, phaseResult);
+            }
+        }
     }
 }
