@@ -4,8 +4,8 @@ import atlantafx.base.theme.PrimerDark;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.railroad.discord.DiscordCore;
-import io.github.railroad.discord.activity.DiscordActivity;
 import io.github.railroad.discord.activity.RailroadActivities;
+import io.github.railroad.discord.activity.RailroadActivities.RailroadActivityTypes;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
@@ -20,7 +20,6 @@ import okhttp3.OkHttpClient;
 
 import java.io.InputStream;
 import java.net.URL;
-import java.time.Instant;
 
 public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
@@ -119,6 +118,6 @@ public class Railroad extends Application {
         DISCORD = setupDiscord();
 
         //Setup main menu RP
-        RailroadActivities.setActivity(RailroadActivities.RailroadActivityTypes.PROJECT_SELECTION);
+        RailroadActivities.setActivity(RailroadActivityTypes.RAILROAD_DEFAULT);
     }
 }
