@@ -26,7 +26,6 @@ public class RailroadActivities {
                 activity.getAssets().setLargeImage("logo");
                 break;
             case EDIT_FILE:
-                //TODO Allow input of current file and/or project being edited
                 activity.setDetails("Editing FILE");
                 activity.setType(DiscordActivity.ActivityType.PLAYING);
                 activity.setState("v0.1.0");
