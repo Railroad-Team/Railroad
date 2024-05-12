@@ -5,11 +5,10 @@ import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -41,7 +40,6 @@ public class ProjectListCell extends ListCell<Project> {
         private final Label label;
         private final Label pathLabel;
         private final Label lastOpened;
-        private final Button settingsButton;
 
         public ProjectListNode() {
             getStyleClass().add("project-list-node");
@@ -72,18 +70,35 @@ public class ProjectListCell extends ListCell<Project> {
             lastOpened.setStyle("-fx-font-size: 14px; -fx-text-fill: #808080;");
             this.lastOpened = lastOpened;
 
+            String settingsComboBoxOptions[] = {"Update project", "Delete project", "Edit project"};
+
+            var settingsVbox = new RRVBox();
+            settingsVbox.setAlignment(Pos.TOP_RIGHT);
+            settingsVbox.setVisible(true);
+
+            var settingsDropdown = new RRVBox();
+            settingsDropdown.setAlignment(Pos.TOP_RIGHT);
+            settingsDropdown.setVisible(false);
+
             var settingsButton = new Button();
             settingsButton.setText("...");
-            settingsButton.setStyle("-fx-font-size: 24px;");
-            settingsButton.setAlignment(Pos.BOTTOM_RIGHT);
-            this.settingsButton = settingsButton;
+            settingsButton.setOnAction(e ->
+                    settingsDropdown.setVisible(!settingsDropdown.isVisible())
+                    );
 
+            var deleteProjectButton = new Button();
+            deleteProjectButton.setText("Delete Project");
+
+            var editProjectButton = new Button();
+            editProjectButton.setText("Edit Project");
 
             var nameBox = new RRHBox(5);
             nameBox.getChildren().addAll(icon, nameLabel);
             nameBox.setAlignment(Pos.CENTER_LEFT);
 
-            getChildren().addAll(nameBox, pathLabel, lastOpened, settingsButton);
+            settingsVbox.getChildren().addAll(settingsButton, settingsDropdown);
+            settingsDropdown.getChildren().addAll(deleteProjectButton, editProjectButton);
+            getChildren().addAll(nameBox, pathLabel, lastOpened, settingsVbox);
         }
 
         public ProjectListNode(Project project) {
