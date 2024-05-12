@@ -9,6 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+// FIXME handle config as an class instance and not JSONs
+// FIXME it will help to prevent null values in case of updates
+
 public final class ConfigHandler {
     private ConfigHandler() {}
 
@@ -27,8 +30,15 @@ public final class ConfigHandler {
         if (Files.notExists(projectsJsonPath)) {
             try {
                 var initialData = new JsonObject();
+
+                // Settings
+                var discordRPC = false;
+                initialData.addProperty("discordRPC", discordRPC);
+
+                // Projects
                 var projectsArray = new JsonArray();
                 initialData.add("projects", projectsArray);
+
                 Files.writeString(projectsJsonPath, Railroad.GSON.toJson(initialData));
             } catch (IOException exception) {
                 throw new IllegalStateException("Error creating config.json", exception);

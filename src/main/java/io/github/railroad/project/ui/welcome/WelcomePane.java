@@ -3,8 +3,10 @@ package io.github.railroad.project.ui.welcome;
 import io.github.railroad.Railroad;
 import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.settings.ui.SettingsPane;
+import io.github.railroad.ui.defaults.RRSeparator;
 import io.github.railroad.ui.defaults.RRSplitPane;
 import io.github.railroad.ui.defaults.RRVBox;
+import javafx.application.Platform;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
@@ -14,6 +16,8 @@ import javafx.scene.layout.VBox;
 import javax.swing.filechooser.FileSystemView;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static io.github.railroad.project.ui.BrowseButton.folderBrowser;
 
 public class WelcomePane extends RRSplitPane {
     private final WelcomeLeftPane leftPane;
@@ -32,7 +36,7 @@ public class WelcomePane extends RRSplitPane {
         headerPane.setPrefHeight(80);
 
         var rightPane = new RRVBox();
-        rightPane.getChildren().addAll(headerPane, new Separator(), projectsPane);
+        rightPane.getChildren().addAll(headerPane, new RRSeparator(), projectsPane);
         VBox.setVgrow(projectsPane, Priority.ALWAYS);
 
         setOrientation(Orientation.HORIZONTAL);
@@ -51,8 +55,7 @@ public class WelcomePane extends RRSplitPane {
                 .getSelectionModel()
                 .selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> {
-                    if(newValue == null)
-                        return;
+                    if(newValue == null) return;
 
                     Platform.runLater(() -> {
                         switch (newValue) {
@@ -66,7 +69,7 @@ public class WelcomePane extends RRSplitPane {
                             case OPEN_PROJECT -> {
                                 var directoryChooser = folderBrowser(FileSystemView.getFileSystemView().getHomeDirectory(), "Open Project");
                                 //TODO Create/import/whatever with the selected folder here
-                                System.out.println(String.format("Dir Selected: %s", directoryChooser.showDialog(getScene().getWindow())));
+                                System.out.printf("Dir Selected: %s%n", directoryChooser.showDialog(getScene().getWindow()));
                             }
                             case IMPORT_PROJECT -> {
                                 System.out.println("[Import project] is still not implemented!");

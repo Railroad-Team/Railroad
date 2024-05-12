@@ -1,0 +1,15 @@
+/* reference: https://github.com/mkpaz/atlantafx/blob/master/styles/src/primer-dark.scss */
+
+.Railroad {
+
+    -bg-color-1: #0d1117; /* l 20 */
+    -bg-color-2: #161b22; /* l 19 */
+    -bg-color-3: #21262d; /* l 18 */
+    -bg-color-4: #30363d; /* l 17 */
+
+    -contrast-color-1: #f0f6fc; /* l 11 */
+    -contrast-color-2: #c9d1d9; /* l 12 */
+    -contrast-color-3: #b1bac4; /* l 13 */
+    -contrast-color-4: #8b949e; /* l 14 */
+
+}

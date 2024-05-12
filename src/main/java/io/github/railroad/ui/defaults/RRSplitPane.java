@@ -5,6 +5,6 @@ import javafx.scene.control.SplitPane;
 public class RRSplitPane extends SplitPane {
     public RRSplitPane() {
         super();
-        getStyleClass().addAll("Railroad", "Pane", "SplitPane", "contrast-3", "background-2");
+        getStyleClass().addAll("Railroad", "Pane", "SplitPane", "contrast-4", "background-2");
     }
 }

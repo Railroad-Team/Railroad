@@ -1,7 +1,8 @@
 package io.github.railroad.settings.ui;
 
 import io.github.railroad.settings.SettingsCategory;
-import io.github.railroad.settings.ui.general.SettingsGeneralPane;
+import io.github.railroad.settings.ui.categories.*;
+import io.github.railroad.settings.ui.categories.general.*;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;

@@ -3,13 +3,13 @@ package io.github.railroad.project.ui.welcome;
 import io.github.railroad.project.ui.project.ProjectSearchField;
 import io.github.railroad.project.ui.project.ProjectSortComboBox;
 import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.defaults.RRTitle;
 import io.github.railroad.ui.defaults.RRVBox;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
 
 public class WelcomeHeaderPane extends RRHBox {
     private final ProjectSearchField searchField;
@@ -17,9 +17,7 @@ public class WelcomeHeaderPane extends RRHBox {
 
     public WelcomeHeaderPane() {
         // Creating and styling children
-        var title = new Text();
-        title.setText("Projects List");
-        title.setStyle("-fx-font-size: 20px;");
+        var title = new RRTitle("Projects List");
 
         searchField = new ProjectSearchField();
         sortComboBox = new ProjectSortComboBox();

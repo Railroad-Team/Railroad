@@ -1,14 +1,9 @@
 package io.github.railroad.project.ui.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.ui.defaults.RRHBox;
-import io.github.railroad.ui.defaults.RRListView;
-import io.github.railroad.ui.defaults.RRSeparator;
-import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.defaults.*;
 import javafx.geometry.Pos;
-import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
-import javafx.scene.control.Separator;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Priority;
@@ -32,8 +27,10 @@ public class WelcomeLeftPane extends RRVBox {
 
         var rightVbox = new RRVBox();
         rightVbox.setAlignment(Pos.CENTER);
-        rightVbox.getChildren().add(new Label("Railroad IDE"));
-        rightVbox.getChildren().add(new Label("1.0.0(dev)"));
+        rightVbox.getChildren().addAll(
+                new RRLabel("Railroad IDE"),
+                new RRLabel(Railroad.getVersion())
+        );
 
         hbox.getChildren().add(rightVbox);
         topBox.getChildren().add(hbox);
@@ -89,7 +86,7 @@ public class WelcomeLeftPane extends RRVBox {
         }
     }
 
-    public static class MenuTypeCell extends ListCell<MenuType> {
+    public static class MenuTypeCell extends RRListCell<MenuType> {
         private final FontIcon icon = new FontIcon();
 
         public MenuTypeCell() {

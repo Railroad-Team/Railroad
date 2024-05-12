@@ -1,4 +1,4 @@
-package io.github.railroad.settings.ui;
+package io.github.railroad.settings.ui.categories;
 
 import javafx.scene.layout.BorderPane;
 
