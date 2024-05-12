@@ -5,6 +5,8 @@ import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import io.github.railroad.Railroad;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.data.ForgeProjectData;
+import io.github.railroad.ui.defaults.RRBorderPane;
+import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.FileHandler;
 import javafx.application.Platform;
 import javafx.beans.property.ListProperty;
@@ -15,8 +17,6 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -26,7 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public class ForgeProjectCreationPane extends BorderPane {
+public class ForgeProjectCreationPane extends RRBorderPane {
     private final ForgeProjectData data;
     private final MFXProgressSpinner progressSpinner = new MFXProgressSpinner();
     private final Label progressPercentageLabel = new Label("0%");
@@ -122,8 +122,9 @@ public class ForgeProjectCreationPane extends BorderPane {
         progressPercentageLabel.textProperty().bind(progressBar.progressProperty().multiply(100).asString("%.0f%%"));
         setCenter(progressSpinner);
 
-        var progressBox = new VBox(10, progressPercentageLabel, progressBar, progressLabel, taskLabel);
+        var progressBox = new RRVBox(10);
         progressBox.setAlignment(Pos.CENTER);
+        progressBox.getChildren().addAll(progressPercentageLabel, progressBar, progressLabel, taskLabel);
         setBottom(progressBox);
 
         var errorIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);

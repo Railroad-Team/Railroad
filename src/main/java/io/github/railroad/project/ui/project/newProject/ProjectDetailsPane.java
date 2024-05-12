@@ -19,6 +19,8 @@ public class ProjectDetailsPane extends ScrollPane {
     private final ObjectProperty<ProjectType> projectType = new SimpleObjectProperty<>(ProjectType.FORGE);
 
     public ProjectDetailsPane() {
+        setFitToWidth(true);
+        setFitToHeight(true);
         setContent(getProjectDetailsPane(ProjectType.FORGE));
 
         this.projectType.addListener((observable, oldValue, newValue) -> {

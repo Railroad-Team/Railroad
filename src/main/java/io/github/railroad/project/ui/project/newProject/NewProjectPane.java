@@ -10,10 +10,7 @@ public class NewProjectPane extends SplitPane {
 
     public NewProjectPane() {
         projectTypePane = new ProjectTypePane();
-        projectTypePane.setMinWidth(200);
-
         projectDetailsPane = new ProjectDetailsPane();
-        projectDetailsPane.setMinWidth(600);
 
         getItems().addAll(projectTypePane, projectDetailsPane);
 
