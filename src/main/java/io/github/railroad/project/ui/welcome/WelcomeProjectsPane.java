@@ -22,7 +22,6 @@ public class WelcomeProjectsPane extends ScrollPane {
 
     public WelcomeProjectsPane(ProjectSearchField searchField) {
         Railroad.PROJECT_MANAGER.loadProjects();
-        setStyle("-fx-background-color: #f0f0f0;");
         setFitToWidth(true);
         setFitToHeight(true);
         setHbarPolicy(ScrollBarPolicy.NEVER);

@@ -8,6 +8,7 @@ import javafx.scene.control.TextField;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -19,6 +20,35 @@ public class BrowseButton extends Button {
     private final ObjectProperty<BrowseSelectionMode> selectionMode = new SimpleObjectProperty<>(BrowseSelectionMode.SINGLE);
     private final ObjectProperty<Path> defaultLocation = new SimpleObjectProperty<>(Path.of(System.getProperty("user.home")));
 
+    public static DirectoryChooser folderBrowser(File defaultPath, String title){
+        var directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle(title);
+        directoryChooser.setInitialDirectory(defaultPath);
+
+        return directoryChooser;
+    }
+
+    public static FileChooser fileBrowser(File defaultPath, String title, @Nullable FileChooser.ExtensionFilter filter){
+        var fileChooser = new FileChooser();
+        fileChooser.setTitle(title);
+        fileChooser.setInitialDirectory(defaultPath);
+        if(filter != null){
+            fileChooser.setSelectedExtensionFilter(filter);
+        }
+
+        return fileChooser;
+    }
+
+    public static FileChooser imageBrowser(File defaultPath, String title){
+        var filter = new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif");
+
+        var fileChooser = new FileChooser();
+        fileChooser.setTitle(title);
+        fileChooser.setInitialDirectory(defaultPath);
+        fileChooser.setSelectedExtensionFilter(filter);
+
+        return fileChooser;
+    }
     public BrowseButton() {
         setText("Browse");
         setOnAction(event -> {
@@ -36,9 +66,7 @@ public class BrowseButton extends Button {
 
             switch (browseType.getValue()) {
                 case FILE -> {
-                    var fileChooser = new FileChooser();
-                    fileChooser.setTitle("Select File");
-                    fileChooser.setInitialDirectory(defaultLocation.toFile());
+                    var fileChooser = fileBrowser(defaultLocation.toFile(), "Select File", null);
                     if (selectionMode == BrowseSelectionMode.SINGLE) {
                         textField.setText(fileChooser.showOpenDialog(parentWindow.get()).getAbsolutePath());
                     } else {
@@ -49,20 +77,15 @@ public class BrowseButton extends Button {
                     }
                 }
                 case DIRECTORY -> {
-                    var directoryChooser = new DirectoryChooser();
-                    directoryChooser.setTitle("Select Directory");
-                    directoryChooser.setInitialDirectory(defaultLocation.toFile());
-                    textField.setText(directoryChooser.showDialog(parentWindow.get()).getAbsolutePath());
+                    var folderBrowser = folderBrowser(defaultLocation.toFile(), "Select Directory");
+                    textField.setText(folderBrowser.showDialog(parentWindow.get()).getAbsolutePath());
                 }
                 case IMAGE -> {
-                    var fileChooser = new FileChooser();
-                    fileChooser.setTitle("Select Image");
-                    fileChooser.setInitialDirectory(defaultLocation.toFile());
-                    fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif"));
+                    var imageChooser = imageBrowser(defaultLocation.toFile(), "Select Image");
                     if (selectionMode == BrowseSelectionMode.SINGLE) {
-                        textField.setText(fileChooser.showOpenDialog(parentWindow.get()).getAbsolutePath());
+                        textField.setText(imageChooser.showOpenDialog(parentWindow.get()).getAbsolutePath());
                     } else {
-                        textField.setText(fileChooser.showOpenMultipleDialog(parentWindow.get()).stream()
+                        textField.setText(imageChooser.showOpenMultipleDialog(parentWindow.get()).stream()
                                 .map(File::getAbsolutePath)
                                 .reduce((a, b) -> a + ", " + b)
                                 .orElse(""));

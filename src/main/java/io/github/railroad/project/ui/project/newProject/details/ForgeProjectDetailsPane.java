@@ -10,6 +10,8 @@ import io.github.railroad.project.License;
 import io.github.railroad.project.ProjectType;
 import io.github.railroad.project.data.ForgeProjectData;
 import io.github.railroad.project.ui.BrowseButton;
+import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ClassNameValidator;
 import javafx.beans.binding.BooleanBinding;
 import javafx.geometry.Insets;
@@ -17,8 +19,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.Border;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class ForgeProjectDetailsPane extends VBox {
+public class ForgeProjectDetailsPane extends RRVBox {
     private final TextField projectNameField = new TextField();
     private final TextField projectPathField = new TextField();
     private final CheckBox createGitCheckBox = new CheckBox();
@@ -69,15 +69,15 @@ public class ForgeProjectDetailsPane extends VBox {
 
     public ForgeProjectDetailsPane() {
         // Project Section
-        var projectSection = new VBox(10);
+        var projectSection = new RRVBox(10);
 
-        var projectNameBox = new HBox(10);
+        var projectNameBox = new RRHBox(10);
         projectNameBox.setAlignment(Pos.CENTER_LEFT);
         var projectNameLabel = new Label("Name:");
         projectNameLabel.setLabelFor(projectNameField);
         projectNameBox.getChildren().addAll(projectNameLabel, projectNameField);
 
-        var projectPathVBox = new VBox(10);
+        var projectPathVBox = new RRVBox(10);
         projectPathVBox.setAlignment(Pos.CENTER_LEFT);
 
         var createdAtLabel = new Label("This will be created at: " + System.getProperty("user.home"));
@@ -85,7 +85,7 @@ public class ForgeProjectDetailsPane extends VBox {
         createdAtLabel.setTooltip(new Tooltip("The project will be created in this directory."));
         createdAtLabel.setTextFill(Color.SLATEGRAY);
 
-        var projectPathBox = new HBox(10);
+        var projectPathBox = new RRHBox(10);
         projectPathBox.setAlignment(Pos.CENTER_LEFT);
         var projectPathLabel = new Label("Location:");
         projectPathLabel.setLabelFor(projectPathField);
@@ -142,15 +142,15 @@ public class ForgeProjectDetailsPane extends VBox {
 
         projectPathVBox.getChildren().addAll(projectPathBox, createdAtLabel);
 
-        var gitBox = new HBox(10);
+        var gitBox = new RRHBox(10);
         gitBox.setAlignment(Pos.CENTER_LEFT);
         var createGitLabel = new Label("Create Git Repository:");
         createGitLabel.setLabelFor(createGitCheckBox);
         gitBox.getChildren().addAll(createGitLabel, createGitCheckBox);
 
-        var licenseVBox = new VBox(10);
+        var licenseVBox = new RRVBox(10);
         licenseVBox.setAlignment(Pos.CENTER_LEFT);
-        var licenseBox = new HBox(10);
+        var licenseBox = new RRHBox(10);
         licenseBox.setAlignment(Pos.CENTER_LEFT);
         var licenseLabel = new Label("License:");
         licenseLabel.setLabelFor(licenseComboBox);
@@ -180,10 +180,10 @@ public class ForgeProjectDetailsPane extends VBox {
         projectSection.getChildren().addAll(projectNameBox, projectPathVBox, gitBox, licenseVBox);
 
         // Minecraft Section
-        var minecraftSection = new VBox(10);
+        var minecraftSection = new RRVBox(10);
         minecraftSection.setAlignment(Pos.CENTER_LEFT);
 
-        var minecraftVersionBox = new HBox(10);
+        var minecraftVersionBox = new RRHBox(10);
         minecraftVersionBox.setAlignment(Pos.CENTER_LEFT);
         var minecraftVersionLabel = new Label("Minecraft Version:");
         minecraftVersionLabel.setLabelFor(minecraftVersionComboBox);
@@ -202,7 +202,7 @@ public class ForgeProjectDetailsPane extends VBox {
         });
         minecraftVersionBox.getChildren().addAll(minecraftVersionLabel, minecraftVersionComboBox);
 
-        var forgeVersionBox = new HBox(10);
+        var forgeVersionBox = new RRHBox(10);
         forgeVersionBox.setAlignment(Pos.CENTER_LEFT);
         var forgeVersionLabel = new Label("Forge Version:");
         forgeVersionLabel.setLabelFor(forgeVersionComboBox);
@@ -225,7 +225,7 @@ public class ForgeProjectDetailsPane extends VBox {
         forgeVersionComboBox.setValue(ForgeVersion.getLatestVersion(MinecraftVersion.getLatestStableVersion()));
         forgeVersionBox.getChildren().addAll(forgeVersionLabel, forgeVersionComboBox);
 
-        var modIdBox = new HBox(10);
+        var modIdBox = new RRHBox(10);
         modIdBox.setAlignment(Pos.CENTER_LEFT);
         var modIdLabel = new Label("Mod ID:");
         modIdLabel.setLabelFor(modIdField);
@@ -283,7 +283,7 @@ public class ForgeProjectDetailsPane extends VBox {
         });
         modIdBox.getChildren().addAll(modIdLabel, modIdField);
 
-        var modNameBox = new HBox(10);
+        var modNameBox = new RRHBox(10);
         modNameBox.setAlignment(Pos.CENTER_LEFT);
         var modNameLabel = new Label("Mod Name:");
         modNameLabel.setLabelFor(modNameField);
@@ -301,7 +301,7 @@ public class ForgeProjectDetailsPane extends VBox {
         });
         modNameBox.getChildren().addAll(modNameLabel, modNameField);
 
-        var mainClassBox = new HBox(10);
+        var mainClassBox = new RRHBox(10);
         mainClassBox.setAlignment(Pos.CENTER_LEFT);
         var mainClassLabel = new Label("Main Class:");
         mainClassLabel.setLabelFor(mainClassField);
@@ -319,13 +319,13 @@ public class ForgeProjectDetailsPane extends VBox {
         });
         mainClassBox.getChildren().addAll(mainClassLabel, mainClassField);
 
-        var useMixinsBox = new HBox(10);
+        var useMixinsBox = new RRHBox(10);
         useMixinsBox.setAlignment(Pos.CENTER_LEFT);
         var useMixinsLabel = new Label("Use Mixins:");
         useMixinsLabel.setLabelFor(useMixinsCheckBox);
         useMixinsBox.getChildren().addAll(useMixinsLabel, useMixinsCheckBox);
 
-        var useAccessTransformerBox = new HBox(10);
+        var useAccessTransformerBox = new RRHBox(10);
         useAccessTransformerBox.setAlignment(Pos.CENTER_LEFT);
         var useAccessTransformerLabel = new Label("Use Access Transformer:");
         useAccessTransformerLabel.setLabelFor(useAccessTransformerCheckBox);
@@ -335,10 +335,10 @@ public class ForgeProjectDetailsPane extends VBox {
                 modIdBox, modNameBox, mainClassBox, useMixinsBox, useAccessTransformerBox);
 
         // Mapping Section
-        var mappingSection = new VBox(10);
+        var mappingSection = new RRVBox(10);
         mappingSection.setAlignment(Pos.CENTER_LEFT);
 
-        var mappingChannelBox = new HBox(10);
+        var mappingChannelBox = new RRHBox(10);
         mappingChannelBox.setAlignment(Pos.CENTER_LEFT);
         var mappingChannelLabel = new Label("Mapping Channel:");
         mappingChannelLabel.setLabelFor(mappingChannelComboBox);
@@ -364,7 +364,7 @@ public class ForgeProjectDetailsPane extends VBox {
         });
         mappingChannelBox.getChildren().addAll(mappingChannelLabel, mappingChannelComboBox);
 
-        var mappingVersionBox = new HBox(10);
+        var mappingVersionBox = new RRHBox(10);
         mappingVersionBox.setAlignment(Pos.CENTER_LEFT);
         var mappingVersionLabel = new Label("Mapping Version:");
         mappingVersionLabel.setLabelFor(mappingVersionComboBox);
@@ -383,10 +383,10 @@ public class ForgeProjectDetailsPane extends VBox {
         mappingSection.getChildren().addAll(mappingChannelBox, mappingVersionBox);
 
         // Optional Section
-        var optionalSection = new VBox(10);
+        var optionalSection = new RRVBox(10);
         optionalSection.setAlignment(Pos.CENTER_LEFT);
 
-        var authorBox = new HBox(10);
+        var authorBox = new RRHBox(10);
         authorBox.setAlignment(Pos.CENTER_LEFT);
         var authorLabel = new Label("Author:");
         authorLabel.setLabelFor(authorField);
@@ -397,7 +397,7 @@ public class ForgeProjectDetailsPane extends VBox {
         });
         authorBox.getChildren().addAll(authorLabel, authorField);
 
-        var descriptionBox = new HBox(10);
+        var descriptionBox = new RRHBox(10);
         descriptionBox.setAlignment(Pos.CENTER_LEFT);
         var descriptionLabel = new Label("Description:");
         descriptionLabel.setLabelFor(descriptionArea);
@@ -410,13 +410,13 @@ public class ForgeProjectDetailsPane extends VBox {
         });
         descriptionBox.getChildren().addAll(descriptionLabel, descriptionArea);
 
-        var issuesBox = new HBox(10);
+        var issuesBox = new RRHBox(10);
         issuesBox.setAlignment(Pos.CENTER_LEFT);
         var issuesLabel = new Label("Issues:");
         issuesLabel.setLabelFor(issuesField);
         issuesBox.getChildren().addAll(issuesLabel, issuesField);
 
-        var updateJsonUrlBox = new HBox(10);
+        var updateJsonUrlBox = new RRHBox(10);
         updateJsonUrlBox.setAlignment(Pos.CENTER_LEFT);
         var updateJsonUrlLabel = new Label("Update JSON URL:");
         updateJsonUrlLabel.setLabelFor(updateJsonUrlField);
@@ -425,22 +425,22 @@ public class ForgeProjectDetailsPane extends VBox {
         optionalSection.getChildren().addAll(authorBox, descriptionBox, issuesBox, updateJsonUrlBox);
 
         // Maven Section
-        var mavenSection = new VBox(10);
+        var mavenSection = new RRVBox(10);
         mavenSection.setAlignment(Pos.CENTER_LEFT);
 
-        var groupIdBox = new HBox(10);
+        var groupIdBox = new RRHBox(10);
         groupIdBox.setAlignment(Pos.CENTER_LEFT);
         var groupIdLabel = new Label("Group ID:");
         groupIdLabel.setLabelFor(groupIdField);
         groupIdBox.getChildren().addAll(groupIdLabel, groupIdField);
 
-        var artifactIdBox = new HBox(10);
+        var artifactIdBox = new RRHBox(10);
         artifactIdBox.setAlignment(Pos.CENTER_LEFT);
         var artifactIdLabel = new Label("Artifact ID:");
         artifactIdLabel.setLabelFor(artifactIdField);
         artifactIdBox.getChildren().addAll(artifactIdLabel, artifactIdField);
 
-        var versionBox = new HBox(10);
+        var versionBox = new RRHBox(10);
         versionBox.setAlignment(Pos.CENTER_LEFT);
         var versionLabel = new Label("Version:");
         versionLabel.setLabelFor(versionField);
@@ -454,7 +454,7 @@ public class ForgeProjectDetailsPane extends VBox {
                 new Separator(), optionalSection,
                 new Separator(), mavenSection);
         setSpacing(20);
-        setPadding(new Insets(10));
+        setPadding(new Insets(20));
 
         Border projectNameFieldBorder = projectNameField.getBorder();
         projectNameField.textProperty().addListener((observable, oldValue, newValue) -> {

@@ -3,14 +3,19 @@ package io.github.railroad.project.ui.welcome;
 import io.github.railroad.Railroad;
 import io.github.railroad.project.ui.project.newProject.NewProjectPane;
 import io.github.railroad.settings.ui.SettingsPane;
+import io.github.railroad.ui.defaults.RRVBox;
+import javafx.application.Platform;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import javax.swing.filechooser.FileSystemView;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static io.github.railroad.project.ui.BrowseButton.folderBrowser;
 
 public class WelcomePane extends SplitPane {
     private final WelcomeLeftPane leftPane;
@@ -28,7 +33,8 @@ public class WelcomePane extends SplitPane {
 
         headerPane.setPrefHeight(80);
 
-        var rightPane = new VBox(headerPane, new Separator(), projectsPane);
+        var rightPane = new RRVBox();
+        rightPane.getChildren().addAll(headerPane, new Separator(), projectsPane);
         VBox.setVgrow(projectsPane, Priority.ALWAYS);
 
         setOrientation(Orientation.HORIZONTAL);
@@ -40,37 +46,49 @@ public class WelcomePane extends SplitPane {
         leftPane.setMinWidth(100);
         rightPane.setMinWidth(300);
 
-        setDividerPositions((1.0/3));
+        setDividerPositions(1.0 / 3);
 
         // Setup buttons
         leftPane.getListView()
                 .getSelectionModel()
                 .selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> {
-            switch (newValue) {
-                case NEW_PROJECT -> {
-                    var newProjectPane = this.newProjectPane.updateAndGet(
-                            pane -> Objects.requireNonNullElseGet(pane, NewProjectPane::new));
-                    Railroad.getScene().setRoot(newProjectPane);
-                    newProjectPane.getBackButton().setOnAction(e ->
-                            Railroad.getScene().setRoot(WelcomePane.this));
-                }
-                case OPEN_PROJECT -> System.out.println("[Open Project] is still not implemented!");
-                case IMPORT_PROJECT -> System.out.println("[Import project] is still not implemented!");
+                    if(newValue == null)
+                        return;
 
-                case SETTINGS -> {
-                    var settingsPane = this.settingsPane.updateAndGet(
-                            pane -> Objects.requireNonNullElseGet(pane, SettingsPane::new));
-                    Railroad.getScene().setRoot(settingsPane);
-                    settingsPane.getBackButton().setOnAction(e ->
-                            Railroad.getScene().setRoot(WelcomePane.this));
-                }
+                    Platform.runLater(() -> {
+                        switch (newValue) {
+                            case NEW_PROJECT -> {
+                                var newProjectPane = this.newProjectPane.updateAndGet(
+                                        pane -> Objects.requireNonNullElseGet(pane, NewProjectPane::new));
+                                Railroad.getScene().setRoot(newProjectPane);
+                                newProjectPane.getBackButton().setOnAction(e ->
+                                        Railroad.getScene().setRoot(WelcomePane.this));
+                            }
+                            case OPEN_PROJECT -> {
+                                var directoryChooser = folderBrowser(FileSystemView.getFileSystemView().getHomeDirectory(), "Open Project");
+                                //TODO Create/import/whatever with the selected folder here
+                                System.out.println(String.format("Dir Selected: %s", directoryChooser.showDialog(getScene().getWindow())));
+                            }
+                            case IMPORT_PROJECT -> {
+                                System.out.println("[Import project] is still not implemented!");
+                                //TODO Either create an import pane with options for java ver, mc ver, forge/fabric etc OR have open dir & automagically work it out and maybe check with the user
+                                //TODO That all of the values are correct?
+                            }
 
-                default -> throw new IllegalStateException("Unexpected value: " + newValue);
-            }
-            leftPane.getListView().getSelectionModel().clearSelection();
-        });
+                            case SETTINGS -> {
+                                var settingsPane = this.settingsPane.updateAndGet(
+                                        pane -> Objects.requireNonNullElseGet(pane, SettingsPane::new));
+                                Railroad.getScene().setRoot(settingsPane);
+                                settingsPane.getBackButton().setOnAction(e ->
+                                        Railroad.getScene().setRoot(WelcomePane.this));
+                            }
 
+                            default -> throw new IllegalStateException("Unexpected value: " + newValue);
+                        }
+                        leftPane.getListView().getSelectionModel().clearSelection();
+                    });
+                });
     }
 
     public WelcomeProjectsPane getProjectsPane() {
