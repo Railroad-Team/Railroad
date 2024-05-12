@@ -3,6 +3,8 @@ package io.github.railroad;
 import atlantafx.base.theme.PrimerDark;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.github.railroad.PluginManager.PluginManager;
+import io.github.railroad.Plugins.Discord;
 import io.github.railroad.discord.DiscordCore;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.discord.activity.RailroadActivities.RailroadActivityTypes;
@@ -25,9 +27,10 @@ public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
+    public static final PluginManager PLUGIN_MANAGER = new PluginManager();
 
     private static boolean DEBUG = false;
-    private static DiscordCore DISCORD;
+    ;
     private static Scene scene;
     private static Stage window;
 
@@ -37,10 +40,6 @@ public class Railroad extends Application {
 
     public static Stage getWindow() {
         return window;
-    }
-
-    public static DiscordCore getDiscord() {
-        return DISCORD;
     }
 
     private static void handleStyles(Scene scene) {
@@ -64,14 +63,6 @@ public class Railroad extends Application {
         scene.getStylesheets().add(baseTheme);
     }
 
-    private static DiscordCore setupDiscord() {
-        var discord = new DiscordCore("853387211897700394");
-
-        Runtime.getRuntime().addShutdownHook(new Thread(discord::close));
-
-        return discord;
-    }
-
     public static URL getResource(String path) {
         return Railroad.class.getResource("/io/github/railroad/" + path);
     }
@@ -82,9 +73,10 @@ public class Railroad extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        PLUGIN_MANAGER.AddPlugin(new Discord());
         MinecraftVersion.load();
         ForgeVersion.load();
-
+        PLUGIN_MANAGER.LoadAllPlugins();
         window = primaryStage;
 
         // Calculate the primary screen size to better fit the window
@@ -113,13 +105,11 @@ public class Railroad extends Application {
         primaryStage.show();
         // FIXME window is not being focused when it open
 
-        DISCORD = setupDiscord();
-
-        //Setup main menu RP
-        RailroadActivities.setActivity(RailroadActivityTypes.RAILROAD_DEFAULT);
+        PLUGIN_MANAGER.NotifyPluginsOfActivity(RailroadActivityTypes.RAILROAD_DEFAULT);
     }
     @Override
     public void stop() throws Exception {
+        PLUGIN_MANAGER.unLoadAllPlugins();
         System.out.println("Stopping Railroad");
         System.exit(0);
     }
