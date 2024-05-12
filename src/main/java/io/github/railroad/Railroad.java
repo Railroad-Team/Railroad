@@ -4,12 +4,12 @@ import atlantafx.base.theme.PrimerDark;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.railroad.PluginManager.PluginManager;
-import io.github.railroad.Plugins.Discord;
 import io.github.railroad.discord.activity.RailroadActivities.RailroadActivityTypes;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ui.welcome.WelcomePane;
+import io.github.railroad.utility.ConfigHandler;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
@@ -71,7 +71,8 @@ public class Railroad extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        PLUGIN_MANAGER.AddPlugin(new Discord());
+        ConfigHandler.updateConfig(ConfigHandler.getConfigJson());
+        PLUGIN_MANAGER.loadPluginsFromConfig();
         MinecraftVersion.load();
         ForgeVersion.load();
         PLUGIN_MANAGER.LoadAllPlugins();

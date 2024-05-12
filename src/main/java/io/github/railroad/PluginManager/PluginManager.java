@@ -1,6 +1,11 @@
 package io.github.railroad.PluginManager;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import io.github.railroad.Railroad;
 import io.github.railroad.discord.activity.RailroadActivities;
+import io.github.railroad.utility.ConfigHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +27,21 @@ public class PluginManager {
                 }
             } else {
                 this.showError(plugin, initphaseResult);
+            }
+
+        }
+    }
+
+    public void loadPluginsFromConfig() {
+        JsonObject object = ConfigHandler.getConfigJson();
+        JsonArray plugins = object.getAsJsonObject("railroadsettings").getAsJsonArray("plugins");
+        for (JsonElement s: plugins) {
+            System.out.println("Found Plugin in the config: " + s.getAsString());
+            try {
+                Object o = Class.forName("io.github.railroad.Plugins."+s.getAsString()).newInstance();
+                this.AddPlugin((Plugin) o);
+            } catch (Exception e) {
+                System.out.println("[PluginManager][ConfigLoaded] Error finding class and create new " + s.getAsString());
             }
 
         }

@@ -12,6 +12,24 @@ import java.nio.file.Paths;
 public final class ConfigHandler {
     private ConfigHandler() {}
 
+    public static void CheckAndCreateDefaultJsonObjects(JsonObject object) {
+        if (!object.has("projects")) {
+            var projectsArray = new JsonArray();
+            object.add("projects", projectsArray);
+        };
+        if (!object.has("railroadsettings")) {
+            JsonObject railroadsettings = new JsonObject();
+            object.add("railroadsettings", railroadsettings);
+        }
+        if (object.has("railroadsettings")) {
+            JsonObject railroadsettings = object.getAsJsonObject("railroadsettings");
+            if (!railroadsettings.has("plugins")) {
+                JsonArray railroadplugins = new JsonArray();
+                railroadsettings.add("plugins", railroadplugins);
+            }
+        }
+    }
+
     public static void createDefaultConfigs() {
         try {
             Files.createDirectories(getConfigPath());
@@ -27,8 +45,7 @@ public final class ConfigHandler {
         if (Files.notExists(projectsJsonPath)) {
             try {
                 var initialData = new JsonObject();
-                var projectsArray = new JsonArray();
-                initialData.add("projects", projectsArray);
+                CheckAndCreateDefaultJsonObjects(initialData);
                 Files.writeString(projectsJsonPath, Railroad.GSON.toJson(initialData));
             } catch (IOException exception) {
                 throw new IllegalStateException("Error creating config.json", exception);
@@ -43,7 +60,9 @@ public final class ConfigHandler {
                 createProjectsJsonIfNotExists();
             }
 
-            return Railroad.GSON.fromJson(Files.readString(projectsJsonPath), JsonObject.class);
+            JsonObject obj = Railroad.GSON.fromJson(Files.readString(projectsJsonPath), JsonObject.class);
+            CheckAndCreateDefaultJsonObjects(obj);
+            return obj;
         } catch (IOException exception) {
             throw new IllegalStateException("Error reading config.json", exception);
         }
