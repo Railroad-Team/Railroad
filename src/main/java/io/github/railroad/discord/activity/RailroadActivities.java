@@ -6,8 +6,8 @@ import java.time.Instant;
 
 public class RailroadActivities {
     public enum RailroadActivityTypes{
-        RAILROAD_DEFAULT(),
-        EDIT_FILE();
+        RAILROAD_DEFAULT,
+        EDIT_FILE;
     }
 
     public static void setActivity(DiscordActivity activity) {
