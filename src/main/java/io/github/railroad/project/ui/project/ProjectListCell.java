@@ -7,6 +7,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.image.ImageView;
@@ -70,11 +71,14 @@ public class ProjectListCell extends ListCell<Project> {
             lastOpened.setStyle("-fx-font-size: 14px; -fx-text-fill: #808080;");
             this.lastOpened = lastOpened;
 
+            var settingsButton = new Button();
+            settingsButton.setText("Project Settings");
+
             var nameBox = new RRHBox(5);
             nameBox.getChildren().addAll(icon, nameLabel);
             nameBox.setAlignment(Pos.CENTER_LEFT);
 
-            getChildren().addAll(nameBox, pathLabel, lastOpened);
+            getChildren().addAll(nameBox, pathLabel, lastOpened, settingsButton);
         }
 
         public ProjectListNode(Project project) {
