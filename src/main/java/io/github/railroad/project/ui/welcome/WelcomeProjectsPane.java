@@ -55,7 +55,7 @@ public class WelcomeProjectsPane extends ScrollPane {
             } else if (event.getCode() == KeyCode.DELETE) {
                 Project project = projectsList.getSelectionModel().getSelectedItem();
                 if (project != null) {
-                    Railroad.PROJECT_MANAGER.removeProject(project);
+                    Railroad.PROJECT_MANAGER.removeProject(project, true);
                     filterProjects("");
                 }
 

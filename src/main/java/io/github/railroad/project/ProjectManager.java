@@ -3,6 +3,7 @@ package io.github.railroad.project;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.github.railroad.project.ui.project.ProjectListCell;
 import io.github.railroad.utility.ConfigHandler;
 
 import java.io.File;
@@ -53,6 +54,7 @@ public class ProjectManager {
 
     public void updateProjectInfo(Project project) {
         updateProjectInfo(project, false, false);
+
     }
 
     public void updateProjectInfo(Project project, boolean removeProject, boolean deleteProject) {
@@ -101,9 +103,9 @@ public class ProjectManager {
         return project;
     }
 
-    public boolean removeProject(Project project) {
+    public boolean removeProject(Project project, boolean delete) {
         this.projectCollection.remove(project);
-        updateProjectInfo(project, true, false);
+        updateProjectInfo(project, true, delete);
 
         return true;
     }
