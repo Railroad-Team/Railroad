@@ -61,7 +61,7 @@ public class ProjectListCell extends ListCell<Project> {
             this.label = nameLabel;
 
             var pathLabel = new Label();
-            pathLabel.textProperty().bind(project.map(Project::getPathStr));
+            pathLabel.textProperty().bind(project.map(Project::getPathString));
             pathLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #808080;");
             this.pathLabel = pathLabel;
 

@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.railroad.utility.ConfigHandler;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +15,16 @@ public class ProjectManager {
 
     public ProjectManager() {
         ConfigHandler.createDefaultConfigs();
+    }
+
+    private static void deleteDirectory(File dir){
+        for (File subfile : dir.listFiles()){
+            if(subfile.isDirectory()){
+                deleteDirectory(subfile);
+            }
+
+            subfile.delete();
+        }
     }
 
     public List<Project> loadProjects() {
@@ -44,7 +55,7 @@ public class ProjectManager {
         updateProjectInfo(project, false);
     }
 
-    public void updateProjectInfo(Project project, boolean removeProject) {
+    public void updateProjectInfo(Project project, boolean removeProject, boolean deleteProject) {
         JsonObject object = ConfigHandler.getConfigJson();
         JsonArray projects = object.getAsJsonArray("projects");
         System.out.println("Starting project update: "+ project.getId());
@@ -54,6 +65,9 @@ public class ProjectManager {
             if (projectObject.get("uuid").getAsString().equals(project.getId())) {
                 if (removeProject) {
                     projects.remove(projectElement);
+                    if(deleteProject){
+                        deleteProjectFiles(project);
+                    }
                     break;
                 } else {
                     found = true;
@@ -89,9 +103,15 @@ public class ProjectManager {
 
     public boolean removeProject(Project project) {
         this.projectCollection.remove(project);
-        updateProjectInfo(project, true);
+        updateProjectInfo(project, true, false);
 
         return true;
+    }
+
+    public static void deleteProjectFiles(Project project) {
+        File projectdir = new File(project.getPathString());
+
+        deleteDirectory(projectdir);
     }
 
     public void setProjectCollection(List<Project> projectCollection) {
