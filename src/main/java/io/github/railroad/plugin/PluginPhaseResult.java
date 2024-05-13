@@ -1,14 +1,10 @@
-package io.github.railroad.PluginManager;
+package io.github.railroad.plugin;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class PluginPhaseResult {
-    private List<Error> errors;
-
-    public PluginPhaseResult() {
-        this.errors = new ArrayList<Error>();
-    }
+    private final List<Error> errors = new ArrayList<>();
 
     public List<Error> getErrors() {
         return this.errors;

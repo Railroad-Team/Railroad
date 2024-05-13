@@ -1,55 +1,56 @@
-package io.github.railroad.Plugins;
+package io.github.railroad.plugin.defaults;
 
-import io.github.railroad.PluginManager.Plugin;
-import io.github.railroad.PluginManager.PluginPhaseResult;
-import io.github.railroad.PluginManager.PluginStates;
 import io.github.railroad.discord.DiscordCore;
 import io.github.railroad.discord.activity.DiscordActivity;
 import io.github.railroad.discord.activity.RailroadActivities;
+import io.github.railroad.plugin.Plugin;
+import io.github.railroad.plugin.PluginPhaseResult;
+import io.github.railroad.plugin.PluginStates;
 
 import java.time.Instant;
 
 public class Discord extends Plugin {
-    private DiscordCore DISCORD;
+    private DiscordCore discord;
 
     @Override
     public PluginPhaseResult initPlugin() {
         updateStatus(PluginStates.STARTING_INIT);
-        PluginPhaseResult phaseResult = this.getNewPhase();
+        PluginPhaseResult phaseResult = getNewPhase();
+
         try {
             var discord = new DiscordCore("853387211897700394");
-
             Runtime.getRuntime().addShutdownHook(new Thread(discord::close));
-            this.DISCORD = discord;
-
+            this.discord = discord;
         } catch (Exception exception) {
-            this.updateStatus(PluginStates.ERROR_INIT);
+            updateStatus(PluginStates.ERROR_INIT);
             phaseResult.addError(new Error(exception.getMessage()));
             return phaseResult;
         }
-        updateStatus(PluginStates.FINSIHED_INIT);
+
+        updateStatus(PluginStates.FINISHED_INIT);
         return phaseResult;
     }
 
     @Override
     public PluginPhaseResult loadPlugin() {
         updateStatus(PluginStates.LOADED);
-        return this.getNewPhase();
+        return getNewPhase();
     }
 
     @Override
     public PluginPhaseResult unloadPlugin() {
-        return this.getNewPhase();
+        return getNewPhase();
     }
 
     @Override
     public PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
-        if (this.getState() != PluginStates.LOADED) {
+        if (getState() != PluginStates.LOADED) {
             System.out.println("Plugin not loaded, unable to send the update");
-            return this.getNewPhase();
+            return getNewPhase();
         }
+
         try {
-            this.updateStatus(PluginStates.ACTIVITY_UPDATE_START);
+            updateStatus(PluginStates.ACTIVITY_UPDATE_START);
             var activity = new DiscordActivity();
             switch (railroadActivityTypes) {
                 case RAILROAD_DEFAULT:
@@ -74,19 +75,21 @@ public class Discord extends Plugin {
                     activity.getAssets().setLargeImage("logo");
                     break;
             }
-            this.DISCORD.getActivityManager().updateActivity(activity);
-        } catch (Exception e) {
-            this.updateStatus(PluginStates.ACTIVITY_UPDATE_ERROR);
-            PluginPhaseResult phaseResult = new PluginPhaseResult();
-            phaseResult.addError(new Error(e.getMessage()));
+
+            discord.getActivityManager().updateActivity(activity);
+        } catch (Exception exception) {
+            updateStatus(PluginStates.ACTIVITY_UPDATE_ERROR);
+            var phaseResult = new PluginPhaseResult();
+            phaseResult.addError(new Error(exception.getMessage()));
         }
-        this.updateStatus(PluginStates.ACTIVITY_UPDATE_FINSIHED);
+
+        this.updateStatus(PluginStates.ACTIVITY_UPDATE_FINISHED);
         this.updateStatus(PluginStates.LOADED);
         return new PluginPhaseResult();
     }
 
     @Override
     public PluginPhaseResult reloadPlugin() {
-        return this.getNewPhase();
+        return getNewPhase();
     }
 }

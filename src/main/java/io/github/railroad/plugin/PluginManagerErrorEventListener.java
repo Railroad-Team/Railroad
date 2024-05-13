@@ -1,4 +1,4 @@
-package io.github.railroad.PluginManager;
+package io.github.railroad.plugin;
 
 import java.util.EventListener;
 
