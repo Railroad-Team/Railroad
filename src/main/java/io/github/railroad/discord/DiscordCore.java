@@ -48,7 +48,7 @@ public class DiscordCore implements AutoCloseable {
             runCallbacks();
             this.ipcChannel.configureBlocking(false);
         } catch (IOException exception) {
-            Railroad.showErrorAlert("Failed to connect to Discord", "Failed to connect to Discord IPC channel", null);
+            //Railroad.showErrorAlert("Failed to connect to Discord", "Failed to connect to Discord IPC channel", null);
             throw new DiscordException(DiscordResult.SERVICE_UNAVAILABLE);
         }
 
