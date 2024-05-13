@@ -3,10 +3,10 @@ package io.github.railroad.PluginManager;
 import java.util.ArrayList;
 import java.util.List;
 
-public class pluginPhaseResult {
+public class PluginPhaseResult {
     private List<Error> errors;
 
-    public pluginPhaseResult() {
+    public PluginPhaseResult() {
         this.errors = new ArrayList<Error>();
     }
 

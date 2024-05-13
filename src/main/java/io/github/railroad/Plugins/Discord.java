@@ -1,7 +1,7 @@
 package io.github.railroad.Plugins;
 
 import io.github.railroad.PluginManager.Plugin;
-import io.github.railroad.PluginManager.pluginPhaseResult;
+import io.github.railroad.PluginManager.PluginPhaseResult;
 import io.github.railroad.PluginManager.PluginStates;
 import io.github.railroad.discord.DiscordCore;
 import io.github.railroad.discord.activity.DiscordActivity;
@@ -13,9 +13,9 @@ public class Discord extends Plugin {
     private DiscordCore DISCORD;
 
     @Override
-    public pluginPhaseResult initPlugin() {
+    public PluginPhaseResult initPlugin() {
         updateStatus(PluginStates.STARTING_INIT);
-        pluginPhaseResult phaseResult = this.getNewPhase();
+        PluginPhaseResult phaseResult = this.getNewPhase();
         try {
             var discord = new DiscordCore("853387211897700394");
 
@@ -32,18 +32,18 @@ public class Discord extends Plugin {
     }
 
     @Override
-    public pluginPhaseResult loadPlugin() {
+    public PluginPhaseResult loadPlugin() {
         updateStatus(PluginStates.LOADED);
         return this.getNewPhase();
     }
 
     @Override
-    public pluginPhaseResult unloadPlugin() {
+    public PluginPhaseResult unloadPlugin() {
         return this.getNewPhase();
     }
 
     @Override
-    public pluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
+    public PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
         if (this.getState() != PluginStates.LOADED) {
             System.out.println("Plugin not loaded, unable to send the update");
             return this.getNewPhase();
@@ -77,16 +77,16 @@ public class Discord extends Plugin {
             this.DISCORD.getActivityManager().updateActivity(activity);
         } catch (Exception e) {
             this.updateStatus(PluginStates.ACTIVITY_UPDATE_ERROR);
-            pluginPhaseResult phaseResult = new pluginPhaseResult();
+            PluginPhaseResult phaseResult = new PluginPhaseResult();
             phaseResult.addError(new Error(e.getMessage()));
         }
         this.updateStatus(PluginStates.ACTIVITY_UPDATE_FINSIHED);
         this.updateStatus(PluginStates.LOADED);
-        return new pluginPhaseResult();
+        return new PluginPhaseResult();
     }
 
     @Override
-    public pluginPhaseResult reloadPlugin() {
+    public PluginPhaseResult reloadPlugin() {
         return this.getNewPhase();
     }
 }

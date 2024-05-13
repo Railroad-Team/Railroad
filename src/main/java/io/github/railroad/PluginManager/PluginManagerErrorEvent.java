@@ -4,10 +4,10 @@ import java.util.EventObject;
 
 public class PluginManagerErrorEvent extends EventObject {
     private Plugin plugin;
-    private pluginPhaseResult phaseResult;
+    private PluginPhaseResult phaseResult;
     private String message;
 
-    public PluginManagerErrorEvent(Object source, Plugin plugin, String message, pluginPhaseResult phaseResult) {
+    public PluginManagerErrorEvent(Object source, Plugin plugin, String message, PluginPhaseResult phaseResult) {
         super(source);
         this.message = message;
         this.plugin = plugin;
@@ -22,7 +22,7 @@ public class PluginManagerErrorEvent extends EventObject {
         return plugin;
     }
 
-    public pluginPhaseResult getPhaseResult() {
+    public PluginPhaseResult getPhaseResult() {
         return phaseResult;
     }
 }
