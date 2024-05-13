@@ -22,9 +22,9 @@ public class Discord extends Plugin {
             Runtime.getRuntime().addShutdownHook(new Thread(discord::close));
             this.DISCORD = discord;
 
-        } catch (Exception e) {
+        } catch (Exception exception) {
             this.updateStatus(PluginStates.ERROR_INIT);
-            phaseResult.AddError(new Error(e.getMessage()));
+            phaseResult.AddError(new Error(exception.getMessage()));
             return phaseResult;
         }
         updateStatus(PluginStates.FINSIHED_INIT);

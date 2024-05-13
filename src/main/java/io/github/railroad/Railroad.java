@@ -32,7 +32,6 @@ public class Railroad extends Application {
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
 
     private static boolean DEBUG = false;
-    ;
     private static Scene scene;
     private static Stage window;
 

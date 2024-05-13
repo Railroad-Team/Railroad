@@ -10,7 +10,7 @@ public abstract class Plugin {
         this.healthChecker.start();
     }
 
-    private PluginStates state = PluginStates.NOTLOADED;
+    private PluginStates state = PluginStates.NOT_LOADED;
     private PluginHealthChecker healthChecker;
 
     public abstract PluginPhaseResult initPlugin();

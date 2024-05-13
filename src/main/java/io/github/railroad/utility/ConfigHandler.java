@@ -12,7 +12,7 @@ import java.nio.file.Paths;
 public final class ConfigHandler {
     private ConfigHandler() {}
 
-    public static void CheckAndCreateDefaultJsonObjects(JsonObject object) {
+    public static void checkAndCreateDefaultJsonObjects(JsonObject object) {
         if (!object.has("projects")) {
             var projectsArray = new JsonArray();
             object.add("projects", projectsArray);
@@ -45,7 +45,7 @@ public final class ConfigHandler {
         if (Files.notExists(projectsJsonPath)) {
             try {
                 var initialData = new JsonObject();
-                CheckAndCreateDefaultJsonObjects(initialData);
+                checkAndCreateDefaultJsonObjects(initialData);
                 Files.writeString(projectsJsonPath, Railroad.GSON.toJson(initialData));
             } catch (IOException exception) {
                 throw new IllegalStateException("Error creating config.json", exception);
@@ -61,7 +61,7 @@ public final class ConfigHandler {
             }
 
             JsonObject obj = Railroad.GSON.fromJson(Files.readString(projectsJsonPath), JsonObject.class);
-            CheckAndCreateDefaultJsonObjects(obj);
+            checkAndCreateDefaultJsonObjects(obj);
             return obj;
         } catch (IOException exception) {
             throw new IllegalStateException("Error reading config.json", exception);
