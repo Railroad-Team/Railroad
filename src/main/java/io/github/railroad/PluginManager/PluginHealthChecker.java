@@ -12,15 +12,15 @@ public class PluginHealthChecker extends Thread {
         while (this.isAlive()) {
             try {
                 if (plugin.getState() == PluginStates.ERROR_INIT) {
-                    PluginPhaseResult result = plugin.initPlugin();
+                    pluginPhaseResult result = plugin.initPlugin();
                     if (plugin.getState() != PluginStates.FINSIHED_INIT) {
                         plugin.getPluginManager().showError(plugin, result, "Failed to load plugin");
                     }
                 }
                 sleep(10000);
             } catch (InterruptedException e) {
-                PluginPhaseResult result = new PluginPhaseResult();
-                result.AddError(new Error(e.getMessage()));
+                pluginPhaseResult result = new pluginPhaseResult();
+                result.addError(new Error(e.getMessage()));
                 plugin.getPluginManager().showError(plugin, result, "Health check loop error");
             }
         }

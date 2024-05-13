@@ -32,9 +32,9 @@ public class PluginManager extends Thread {
     private void loadAllPlugins() {
         for (Plugin plugin : this.pluginList) {
             if (plugin.getState() == PluginStates.LOADED) continue;
-            PluginPhaseResult initphaseResult = plugin.initPlugin();
+            pluginPhaseResult initphaseResult = plugin.initPlugin();
             if (plugin.getState() == PluginStates.FINSIHED_INIT) {
-                PluginPhaseResult loadphaseResult = plugin.loadPlugin();
+                pluginPhaseResult loadphaseResult = plugin.loadPlugin();
                 if (plugin.getState() == PluginStates.LOADED) {
                 } else {
                     showError(plugin, loadphaseResult, "LoadPlugin");
@@ -54,8 +54,8 @@ public class PluginManager extends Thread {
                 Object o = Class.forName("io.github.railroad.Plugins." + s.getAsString()).newInstance();
                 this.addPlugin((Plugin) o);
             } catch (Exception e) {
-                PluginPhaseResult phase = new PluginPhaseResult();
-                phase.AddError(new Error(e.getMessage()));
+                pluginPhaseResult phase = new pluginPhaseResult();
+                phase.addError(new Error(e.getMessage()));
                 showError(null, phase, "Error finding class and create new " + s.getAsString());
             }
 
@@ -63,11 +63,11 @@ public class PluginManager extends Thread {
     }
 
 
-    public void showError(Plugin plugin, PluginPhaseResult pluginPhaseResult, String message) {
+    public void showError(Plugin plugin, pluginPhaseResult pluginPhaseResult, String message) {
         showError(plugin, pluginPhaseResult, message, "PluginManager");
     }
 
-    public void showError(Plugin plugin, PluginPhaseResult pluginPhaseResult, String message, String topic) {
+    public void showError(Plugin plugin, pluginPhaseResult pluginPhaseResult, String message, String topic) {
         if (plugin != null) {
             System.out.println("[Error][" + topic + "][" + plugin.getClass().getName() + "] Phase: " + message + " State: " + plugin.getState() + " Errors: " + pluginPhaseResult.getErrors());
         } else {
@@ -112,7 +112,7 @@ public class PluginManager extends Thread {
 
     public void notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
         for (Plugin plugin : this.pluginList) {
-            PluginPhaseResult phaseResult = plugin.railroadActivityChange(railroadActivityTypes);
+            pluginPhaseResult phaseResult = plugin.railroadActivityChange(railroadActivityTypes);
             if (plugin.getState() == PluginStates.ACTIVITY_UPDATE_ERROR) {
                 showError(plugin, phaseResult, "Update Activity");
             }

@@ -1,7 +1,7 @@
 package io.github.railroad.Plugins;
 
 import io.github.railroad.PluginManager.Plugin;
-import io.github.railroad.PluginManager.PluginPhaseResult;
+import io.github.railroad.PluginManager.pluginPhaseResult;
 import io.github.railroad.PluginManager.PluginStates;
 import io.github.railroad.discord.DiscordCore;
 import io.github.railroad.discord.activity.DiscordActivity;
@@ -13,9 +13,9 @@ public class Discord extends Plugin {
     private DiscordCore DISCORD;
 
     @Override
-    public PluginPhaseResult initPlugin() {
+    public pluginPhaseResult initPlugin() {
         updateStatus(PluginStates.STARTING_INIT);
-        PluginPhaseResult phaseResult = this.getNewPhase();
+        pluginPhaseResult phaseResult = this.getNewPhase();
         try {
             var discord = new DiscordCore("853387211897700394");
 
@@ -24,7 +24,7 @@ public class Discord extends Plugin {
 
         } catch (Exception exception) {
             this.updateStatus(PluginStates.ERROR_INIT);
-            phaseResult.AddError(new Error(exception.getMessage()));
+            phaseResult.addError(new Error(exception.getMessage()));
             return phaseResult;
         }
         updateStatus(PluginStates.FINSIHED_INIT);
@@ -32,18 +32,18 @@ public class Discord extends Plugin {
     }
 
     @Override
-    public PluginPhaseResult loadPlugin() {
+    public pluginPhaseResult loadPlugin() {
         updateStatus(PluginStates.LOADED);
         return this.getNewPhase();
     }
 
     @Override
-    public PluginPhaseResult unloadPlugin() {
+    public pluginPhaseResult unloadPlugin() {
         return this.getNewPhase();
     }
 
     @Override
-    public PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
+    public pluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
         if (this.getState() != PluginStates.LOADED) {
             System.out.println("Plugin not loaded, unable to send the update");
             return this.getNewPhase();
@@ -77,16 +77,16 @@ public class Discord extends Plugin {
             this.DISCORD.getActivityManager().updateActivity(activity);
         } catch (Exception e) {
             this.updateStatus(PluginStates.ACTIVITY_UPDATE_ERROR);
-            PluginPhaseResult phaseResult = new PluginPhaseResult();
-            phaseResult.AddError(new Error(e.getMessage()));
+            pluginPhaseResult phaseResult = new pluginPhaseResult();
+            phaseResult.addError(new Error(e.getMessage()));
         }
         this.updateStatus(PluginStates.ACTIVITY_UPDATE_FINSIHED);
         this.updateStatus(PluginStates.LOADED);
-        return new PluginPhaseResult();
+        return new pluginPhaseResult();
     }
 
     @Override
-    public PluginPhaseResult reloadPlugin() {
+    public pluginPhaseResult reloadPlugin() {
         return this.getNewPhase();
     }
 }
