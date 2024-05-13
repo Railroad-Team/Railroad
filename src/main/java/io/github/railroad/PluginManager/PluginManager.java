@@ -48,7 +48,7 @@ public class PluginManager extends Thread {
 
     private void PrepareluginsFromConfig() {
         JsonObject object = ConfigHandler.getConfigJson();
-        JsonArray plugins = object.getAsJsonObject("railroadsettings").getAsJsonArray("plugins");
+        JsonArray plugins = object.getAsJsonObject("settings").getAsJsonArray("plugins");
         for (JsonElement s : plugins) {
             try {
                 Object o = Class.forName("io.github.railroad.Plugins." + s.getAsString()).newInstance();

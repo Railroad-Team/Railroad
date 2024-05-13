@@ -17,12 +17,12 @@ public final class ConfigHandler {
             var projectsArray = new JsonArray();
             object.add("projects", projectsArray);
         };
-        if (!object.has("settins")) {
+        if (!object.has("settings")) {
             JsonObject railroadsettings = new JsonObject();
-            object.add("settins", railroadsettings);
+            object.add("settings", railroadsettings);
         }
-        if (object.has("settins")) {
-            JsonObject railroadsettings = object.getAsJsonObject("settins");
+        if (object.has("settings")) {
+            JsonObject railroadsettings = object.getAsJsonObject("settings");
             if (!railroadsettings.has("plugins")) {
                 JsonArray railroadplugins = new JsonArray();
                 railroadsettings.add("plugins", railroadplugins);
