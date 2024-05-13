@@ -94,7 +94,6 @@ public class Railroad extends Application {
 
         // Calculate the primary screen size to better fit the window
         Screen screen = Screen.getPrimary();
-        ObservableList<Screen> screens = Screen.getScreens();
 
         double screenW = screen.getBounds().getWidth();
         double screenH = screen.getBounds().getHeight();
