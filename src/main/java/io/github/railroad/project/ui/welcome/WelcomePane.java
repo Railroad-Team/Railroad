@@ -43,7 +43,6 @@ public class WelcomePane extends SplitPane {
         SplitPane.setResizableWithParent(leftPane, false);
         SplitPane.setResizableWithParent(rightPane, true);
 
-        leftPane.setMinWidth(100);
         rightPane.setMinWidth(300);
 
         setDividerPositions(1.0 / 3);

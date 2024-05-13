@@ -17,10 +17,10 @@ public class SettingsCategoriesPane extends VBox {
     public SettingsCategoriesPane(SettingsPane parent) {
         this.backButton = new Button("Back");
         this.backButton.setGraphic(new FontIcon(FontAwesomeSolid.BACKSPACE));
-        this.backButton.setPrefWidth(200);
+        this.backButton.prefWidthProperty().bind(widthProperty());
 
         this.listView.getItems().addAll(SettingsCategory.values());
-        this.listView.setPrefHeight(500);
+        this.listView.prefHeightProperty().bind(heightProperty());
         this.listView.getSelectionModel().selectFirst();
         this.listView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) ->
                 parent.settingsCategoryProperty().set(newValue));

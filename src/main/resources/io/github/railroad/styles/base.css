@@ -4,9 +4,17 @@
 }
 
 .project-list-cell {
-    -fx-background-color: -color-bg-inset;
+    -fx-padding: 2px;
+    -fx-background-color: transparent, -color-bg-inset;
+    -fx-background-insets: 0px, 2px;
 }
 
-.project-list-node {
+.project-list-cell:empty {
+    -fx-padding: 2px;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.project-list-node, .project-list-node .Pane {
     -fx-background-color: -color-bg-subtle;
 }
