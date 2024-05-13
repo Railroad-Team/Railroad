@@ -10,7 +10,6 @@ import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ui.welcome.WelcomePane;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.application.Application;
-import javafx.collections.ObservableList;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -116,7 +115,7 @@ public class Railroad extends Application {
         primaryStage.setTitle("Railroad - 1.0.0(dev)");
         primaryStage.show();
         primaryStage.requestFocus();
-        
+
         PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
     }
 
