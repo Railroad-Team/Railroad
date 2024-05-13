@@ -102,7 +102,7 @@ public class Railroad extends Application {
         // TODO: Find a better way to calculate these because it makes it weird on different sized monitors
         double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
         double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
-        
+
         //TODO Possible start to a better way?
         //double windowW = screen.getOutputScaleX() * (screenW * 0.50);
         //double windowH = screen.getOutputScaleY() * (screenH * 0.55);
