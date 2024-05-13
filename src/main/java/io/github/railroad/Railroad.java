@@ -1,10 +1,8 @@
 package io.github.railroad;
 
-import atlantafx.base.theme.PrimerDark;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.railroad.PluginManager.PluginManager;
-import io.github.railroad.discord.activity.RailroadActivities.RailroadActivityTypes;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
@@ -12,6 +10,8 @@ import io.github.railroad.project.ui.welcome.WelcomePane;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
 import javafx.stage.Screen;
@@ -20,6 +20,8 @@ import okhttp3.OkHttpClient;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
@@ -41,7 +43,7 @@ public class Railroad extends Application {
     }
 
     private static void handleStyles(Scene scene) {
-        Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
+        Application.setUserAgentStylesheet(getResource("styles/themes/nord-dark.css").toExternalForm());
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();
@@ -102,7 +104,6 @@ public class Railroad extends Application {
         primaryStage.setTitle("Railroad - 1.0.0(dev)");
         primaryStage.show();
         // FIXME window is not being focused when it open
-
         PLUGIN_MANAGER.NotifyPluginsOfActivity(RailroadActivityTypes.RAILROAD_DEFAULT);
     }
     @Override
@@ -110,5 +111,21 @@ public class Railroad extends Application {
         PLUGIN_MANAGER.unLoadAllPlugins();
         System.out.println("Stopping Railroad");
         System.exit(0);
+    }
+
+    public static void showErrorAlert(String title, String header, String content, Consumer<ButtonType> action) {
+        var alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            action.accept(result.get());
+        }
+    }
+
+    public static void showErrorAlert(String title, String header, String content) {
+        showErrorAlert(title, header, content, buttonType -> {});
     }
 }
