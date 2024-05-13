@@ -51,7 +51,7 @@ public class Discord extends Plugin {
         try {
             this.UpdateStatus(PluginStates.ACTIVITY_UPDATE_START);
             var activity = new DiscordActivity();
-            switch(railroadActivityTypes) {
+            switch (railroadActivityTypes) {
                 case RAILROAD_DEFAULT:
                     activity.setDetails("Modding Minecraft");
                     activity.setType(DiscordActivity.ActivityType.PLAYING);

@@ -8,11 +8,12 @@ public class PluginPhaseResult {
 
     public PluginPhaseResult() {
         this.errors = new ArrayList<Error>();
-    };
+    }
 
     public List<Error> getErrors() {
         return this.errors;
     }
+
     public void AddError(Error error) {
         this.errors.add(error);
     }

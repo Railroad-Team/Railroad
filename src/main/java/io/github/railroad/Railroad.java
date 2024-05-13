@@ -3,6 +3,8 @@ package io.github.railroad;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.railroad.PluginManager.PluginManager;
+import io.github.railroad.PluginManager.PluginManagerErrorEvent;
+import io.github.railroad.PluginManager.PluginManagerErrorEventListener;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
@@ -75,6 +77,13 @@ public class Railroad extends Application {
     @Override
     public void start(Stage primaryStage) {
         ConfigHandler.updateConfig(ConfigHandler.getConfigJson());
+        PLUGIN_MANAGER.addCustomEventListener(new PluginManagerErrorEventListener() {
+            @Override
+            public void onCustomEvent(PluginManagerErrorEvent event) {
+                Railroad.showErrorAlert("Plugin", "Error", event.getPhaseResult().getErrors().toString());
+                //System.out.println("!!!LISTEN!!!" + event.getMessage());
+            }
+        });
         PLUGIN_MANAGER.start();
         MinecraftVersion.load();
         ForgeVersion.load();
@@ -107,6 +116,7 @@ public class Railroad extends Application {
         // FIXME window is not being focused when it open
         PLUGIN_MANAGER.NotifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
     }
+
     @Override
     public void stop() throws Exception {
         PLUGIN_MANAGER.unLoadAllPlugins();
@@ -127,6 +137,7 @@ public class Railroad extends Application {
     }
 
     public static void showErrorAlert(String title, String header, String content) {
-        showErrorAlert(title, header, content, buttonType -> {});
+        showErrorAlert(title, header, content, buttonType -> {
+        });
     }
 }
