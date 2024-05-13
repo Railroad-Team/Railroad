@@ -25,5 +25,4 @@ public class PluginHealthChecker extends Thread {
             }
         }
     }
-
 }
