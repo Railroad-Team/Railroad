@@ -100,10 +100,12 @@ public class Railroad extends Application {
         double screenH = screen.getBounds().getHeight();
 
         // TODO: Find a better way to calculate these because it makes it weird on different sized monitors
-        //double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
-        //double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
-        double windowW = screen.getOutputScaleX() * (screenW * 0.50);
-        double windowH = screen.getOutputScaleY() * (screenH * 0.55);
+        double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
+        double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
+        
+        //TODO Possible start to a better way?
+        //double windowW = screen.getOutputScaleX() * (screenW * 0.50);
+        //double windowH = screen.getOutputScaleY() * (screenH * 0.55);
 
         // Start the welcome screen and window
         scene = new Scene(new Pane(), windowW, windowH);
