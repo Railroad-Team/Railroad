@@ -76,14 +76,6 @@ public class Railroad extends Application {
             isShifting.setValue(event.isShiftDown());
         });
     }
-
-    private static DiscordCore setupDiscord() throws DiscordException {
-        var discord = new DiscordCore("853387211897700394");
-
-        Runtime.getRuntime().addShutdownHook(new Thread(discord::close));
-
-        return discord;
-    }
     
     public static URL getResource(String path) {
         return Railroad.class.getResource("/io/github/railroad/" + path);
@@ -133,13 +125,6 @@ public class Railroad extends Application {
         primaryStage.setTitle("Railroad - 1.0.0(dev)");
         primaryStage.show();
         primaryStage.requestFocus();
-
-        try {
-            DISCORD = setupDiscord();
-
-            //Setup main menu RP
-            RailroadActivities.setActivity(RailroadActivityTypes.RAILROAD_DEFAULT);
-        } catch (DiscordException ignored) {}
 
         PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
 
