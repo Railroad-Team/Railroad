@@ -25,16 +25,16 @@ public class PluginManager extends Thread {
     }
 
     public void run() {
-        PrepareluginsFromConfig();
-        LoadAllPlugins();
+        preparePluginsFromConfig();
+        loadAllPlugins();
     }
 
-    private void LoadAllPlugins() {
+    private void loadAllPlugins() {
         for (Plugin plugin : this.pluginList) {
             if (plugin.getState() == PluginStates.LOADED) continue;
-            PluginPhaseResult initphaseResult = plugin.InitPlugin();
+            PluginPhaseResult initphaseResult = plugin.initPlugin();
             if (plugin.getState() == PluginStates.FINSIHED_INIT) {
-                PluginPhaseResult loadphaseResult = plugin.LoadPlugin();
+                PluginPhaseResult loadphaseResult = plugin.loadPlugin();
                 if (plugin.getState() == PluginStates.LOADED) {
                 } else {
                     showError(plugin, loadphaseResult, "LoadPlugin");
@@ -46,13 +46,13 @@ public class PluginManager extends Thread {
         }
     }
 
-    private void PrepareluginsFromConfig() {
+    private void preparePluginsFromConfig() {
         JsonObject object = ConfigHandler.getConfigJson();
         JsonArray plugins = object.getAsJsonObject("settings").getAsJsonArray("plugins");
         for (JsonElement s : plugins) {
             try {
                 Object o = Class.forName("io.github.railroad.Plugins." + s.getAsString()).newInstance();
-                this.AddPlugin((Plugin) o);
+                this.addPlugin((Plugin) o);
             } catch (Exception e) {
                 PluginPhaseResult phase = new PluginPhaseResult();
                 phase.AddError(new Error(e.getMessage()));
@@ -97,22 +97,22 @@ public class PluginManager extends Thread {
                     //throw new RuntimeException(e);
                 }
             }
-            plugin.UnloadPlugin();
+            plugin.unloadPlugin();
             showLog(plugin, "Unloaded");
         }
     }
 
 
-    public boolean AddPlugin(Plugin plugin) {
+    public boolean addPlugin(Plugin plugin) {
         plugin.setPluginManager(this);
         this.pluginList.add(plugin);
         showLog(plugin, "Added plugin");
         return true;
     }
 
-    public void NotifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
+    public void notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
         for (Plugin plugin : this.pluginList) {
-            PluginPhaseResult phaseResult = plugin.RaildraodActivityChange(railroadActivityTypes);
+            PluginPhaseResult phaseResult = plugin.railroadActivityChange(railroadActivityTypes);
             if (plugin.getState() == PluginStates.ACTIVITY_UPDATE_ERROR) {
                 showError(plugin, phaseResult, "Update Activity");
             }

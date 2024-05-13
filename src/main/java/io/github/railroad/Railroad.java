@@ -112,7 +112,7 @@ public class Railroad extends Application {
         primaryStage.setTitle("Railroad - 1.0.0(dev)");
         primaryStage.show();
         // FIXME window is not being focused when it open
-        PLUGIN_MANAGER.NotifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
+        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
     }
 
     @Override

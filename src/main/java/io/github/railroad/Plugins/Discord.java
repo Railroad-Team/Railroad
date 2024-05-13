@@ -13,8 +13,8 @@ public class Discord extends Plugin {
     private DiscordCore DISCORD;
 
     @Override
-    public PluginPhaseResult InitPlugin() {
-        UpdateStatus(PluginStates.STARTING_INIT);
+    public PluginPhaseResult initPlugin() {
+        updateStatus(PluginStates.STARTING_INIT);
         PluginPhaseResult phaseResult = this.getNewPhase();
         try {
             var discord = new DiscordCore("853387211897700394");
@@ -23,33 +23,33 @@ public class Discord extends Plugin {
             this.DISCORD = discord;
 
         } catch (Exception e) {
-            this.UpdateStatus(PluginStates.ERROR_INIT);
+            this.updateStatus(PluginStates.ERROR_INIT);
             phaseResult.AddError(new Error(e.getMessage()));
             return phaseResult;
         }
-        UpdateStatus(PluginStates.FINSIHED_INIT);
+        updateStatus(PluginStates.FINSIHED_INIT);
         return phaseResult;
     }
 
     @Override
-    public PluginPhaseResult LoadPlugin() {
-        UpdateStatus(PluginStates.LOADED);
+    public PluginPhaseResult loadPlugin() {
+        updateStatus(PluginStates.LOADED);
         return this.getNewPhase();
     }
 
     @Override
-    public PluginPhaseResult UnloadPlugin() {
+    public PluginPhaseResult unloadPlugin() {
         return this.getNewPhase();
     }
 
     @Override
-    public PluginPhaseResult RaildraodActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
+    public PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
         if (this.getState() != PluginStates.LOADED) {
             System.out.println("Plugin not loaded, unable to send the update");
             return this.getNewPhase();
         }
         try {
-            this.UpdateStatus(PluginStates.ACTIVITY_UPDATE_START);
+            this.updateStatus(PluginStates.ACTIVITY_UPDATE_START);
             var activity = new DiscordActivity();
             switch (railroadActivityTypes) {
                 case RAILROAD_DEFAULT:
@@ -76,17 +76,17 @@ public class Discord extends Plugin {
             }
             this.DISCORD.getActivityManager().updateActivity(activity);
         } catch (Exception e) {
-            this.UpdateStatus(PluginStates.ACTIVITY_UPDATE_ERROR);
+            this.updateStatus(PluginStates.ACTIVITY_UPDATE_ERROR);
             PluginPhaseResult phaseResult = new PluginPhaseResult();
             phaseResult.AddError(new Error(e.getMessage()));
         }
-        this.UpdateStatus(PluginStates.ACTIVITY_UPDATE_FINSIHED);
-        this.UpdateStatus(PluginStates.LOADED);
+        this.updateStatus(PluginStates.ACTIVITY_UPDATE_FINSIHED);
+        this.updateStatus(PluginStates.LOADED);
         return new PluginPhaseResult();
     }
 
     @Override
-    public PluginPhaseResult ReloadPlugin() {
+    public PluginPhaseResult reloadPlugin() {
         return this.getNewPhase();
     }
 }

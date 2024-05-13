@@ -13,17 +13,17 @@ public abstract class Plugin {
     private PluginStates state = PluginStates.NOTLOADED;
     private PluginHealthChecker healthChecker;
 
-    public abstract PluginPhaseResult InitPlugin();
+    public abstract PluginPhaseResult initPlugin();
 
-    public abstract PluginPhaseResult LoadPlugin();
+    public abstract PluginPhaseResult loadPlugin();
 
-    public abstract PluginPhaseResult UnloadPlugin();
+    public abstract PluginPhaseResult unloadPlugin();
 
-    public abstract PluginPhaseResult RaildraodActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes);
+    public abstract PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes);
 
-    public abstract PluginPhaseResult ReloadPlugin();
+    public abstract PluginPhaseResult reloadPlugin();
 
-    public void UpdateStatus(PluginStates state) {
+    public void updateStatus(PluginStates state) {
         getPluginManager().showLog(this, "Change state from: " + this.state + " to: " + state);
         this.state = state;
     }
@@ -35,7 +35,6 @@ public abstract class Plugin {
     public PluginPhaseResult getNewPhase() {
         return new PluginPhaseResult();
     }
-
 
     public PluginHealthChecker getHealthChecker() {
         return healthChecker;

@@ -9,11 +9,10 @@ public class PluginHealthChecker extends Thread {
     }
 
     public void run() {
-
         while (this.isAlive()) {
             try {
                 if (plugin.getState() == PluginStates.ERROR_INIT) {
-                    PluginPhaseResult result = plugin.InitPlugin();
+                    PluginPhaseResult result = plugin.initPlugin();
                     if (plugin.getState() != PluginStates.FINSIHED_INIT) {
                         plugin.getPluginManager().showError(plugin, result, "Failed to load plugin");
                     }
