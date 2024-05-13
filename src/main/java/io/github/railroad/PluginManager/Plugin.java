@@ -24,7 +24,7 @@ public abstract class Plugin {
     public abstract PluginPhaseResult ReloadPlugin();
 
     public void UpdateStatus(PluginStates state) {
-        getPluginManager().showLog(this, "Change state from: " + this.state + " to: " + state); ;
+        getPluginManager().showLog(this, "Change state from: " + this.state + " to: " + state);
         this.state = state;
     }
 

@@ -5,7 +5,7 @@ public class PluginHealthChecker extends Thread {
 
     public PluginHealthChecker(Plugin plugin) {
         this.plugin = plugin;
-        this.setName("HC_"+plugin.getClass().getName());
+        this.setName("HC_" + plugin.getClass().getName());
     }
 
     public void run() {
