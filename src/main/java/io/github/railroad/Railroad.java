@@ -11,6 +11,8 @@ import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ui.welcome.WelcomePane;
 import javafx.application.Application;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -29,6 +31,7 @@ public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
+    public static BooleanProperty isShifting = new SimpleBooleanProperty();
 
     private static boolean DEBUG = false;
     private static DiscordCore DISCORD;
@@ -66,6 +69,16 @@ public class Railroad extends Application {
 
         String baseTheme = getResource("styles/base.css").toExternalForm();
         scene.getStylesheets().add(baseTheme);
+    }
+
+    private static void handleInputs(Scene scene) {
+        scene.setOnKeyPressed(event -> {
+            isShifting.setValue(event.isShiftDown());
+        });
+
+        scene.setOnKeyReleased(event -> {
+            isShifting.setValue(event.isShiftDown());
+        });
     }
 
     private static DiscordCore setupDiscord() throws DiscordException {
@@ -108,6 +121,7 @@ public class Railroad extends Application {
         scene.setRoot(welcomePane);
 
         handleStyles(scene);
+        handleInputs(scene);
 
         // Open setup and show the window
         primaryStage.setMinWidth(scene.getWidth() + 10);
