@@ -75,7 +75,7 @@ public class PluginManager extends Thread {
         }
         if (listener != null) {
             PluginManagerErrorEvent event = new PluginManagerErrorEvent(this, plugin, message, pluginPhaseResult);
-            listener.onCustomEvent(event);
+            listener.onPluginManagerError(event);
         }
     }
 
@@ -94,7 +94,7 @@ public class PluginManager extends Thread {
                 try {
                     plugin.getHealthChecker().join(50);
                 } catch (InterruptedException e) {
-                    showLog(plugin, "Error join of healthchecker");
+                    //throw new RuntimeException(e);
                 }
             }
             plugin.UnloadPlugin();

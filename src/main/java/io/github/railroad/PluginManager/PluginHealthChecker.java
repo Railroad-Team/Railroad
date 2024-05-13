@@ -5,9 +5,11 @@ public class PluginHealthChecker extends Thread {
 
     public PluginHealthChecker(Plugin plugin) {
         this.plugin = plugin;
+        this.setName("HC_"+plugin.getClass().getName());
     }
 
     public void run() {
+
         while (this.isAlive()) {
             try {
                 if (plugin.getState() == PluginStates.ERROR_INIT) {
@@ -24,4 +26,5 @@ public class PluginHealthChecker extends Thread {
             }
         }
     }
+
 }

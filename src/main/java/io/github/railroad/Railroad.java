@@ -3,8 +3,6 @@ package io.github.railroad;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.railroad.PluginManager.PluginManager;
-import io.github.railroad.PluginManager.PluginManagerErrorEvent;
-import io.github.railroad.PluginManager.PluginManagerErrorEventListener;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
@@ -12,6 +10,7 @@ import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ui.welcome.WelcomePane;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -77,14 +76,13 @@ public class Railroad extends Application {
     @Override
     public void start(Stage primaryStage) {
         ConfigHandler.updateConfig(ConfigHandler.getConfigJson());
-        PLUGIN_MANAGER.addCustomEventListener(new PluginManagerErrorEventListener() {
-            @Override
-            public void onCustomEvent(PluginManagerErrorEvent event) {
-                Railroad.showErrorAlert("Plugin", "Error", event.getPhaseResult().getErrors().toString());
-                //System.out.println("!!!LISTEN!!!" + event.getMessage());
-            }
-        });
         PLUGIN_MANAGER.start();
+        PLUGIN_MANAGER.addCustomEventListener(event -> {
+            Platform.runLater(() -> {
+                Railroad.showErrorAlert("Plugin", event.getPlugin().getClass().getName(), event.getPhaseResult().getErrors().toString());
+            });
+        });
+
         MinecraftVersion.load();
         ForgeVersion.load();
         window = primaryStage;
