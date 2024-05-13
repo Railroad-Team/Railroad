@@ -19,7 +19,6 @@ public class PluginManager extends Thread {
 
     private PluginManagerErrorEventListener listener;
 
-    // Method to register listener
     public void addCustomEventListener(PluginManagerErrorEventListener listener) {
         this.listener = listener;
     }
@@ -62,7 +61,6 @@ public class PluginManager extends Thread {
         }
     }
 
-
     public void showError(Plugin plugin, PluginPhaseResult pluginPhaseResult, String message) {
         showError(plugin, pluginPhaseResult, message, "PluginManager");
     }
@@ -78,7 +76,6 @@ public class PluginManager extends Thread {
             listener.onPluginManagerError(event);
         }
     }
-
 
     public void showLog(Plugin plugin, String message) {
         showLog(plugin, message, "PluginManager");
@@ -101,7 +98,6 @@ public class PluginManager extends Thread {
             showLog(plugin, "Unloaded");
         }
     }
-
 
     public boolean addPlugin(Plugin plugin) {
         plugin.setPluginManager(this);
