@@ -14,6 +14,7 @@ import javafx.util.Pair;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ClosedChannelException;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -74,6 +75,8 @@ public class DiscordCore implements AutoCloseable {
 
                     handleCommand(command);
                     Thread.sleep(100);
+                } catch (ClosedChannelException exception) {
+                    break;
                 } catch (IOException | InterruptedException exception) {
                     throw new RuntimeException("Failed to receive command from Discord IPC channel", exception);
                 }
