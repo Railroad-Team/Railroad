@@ -31,8 +31,6 @@ public class ProjectManager {
         }
     }
 
-    public List<Project> loadProjects() {
-
     public void loadProjects() {
         List<Project> projects = new ArrayList<>();
 
@@ -58,7 +56,6 @@ public class ProjectManager {
 
     public void updateProjectInfo(Project project) {
         updateProjectInfo(project, false, false);
-
     }
 
     public void updateProjectInfo(Project project, boolean removeProject, boolean deleteProject) {
@@ -108,7 +105,7 @@ public class ProjectManager {
     }
 
     public boolean removeProject(Project project, boolean delete) {
-        this.projectCollection.remove(project);
+        this.projects.remove(project);
         updateProjectInfo(project, true, delete);
 
         return true;
@@ -120,9 +117,6 @@ public class ProjectManager {
         deleteDirectory(projectdir);
     }
 
-    public void setProjectCollection(List<Project> projectCollection) {
-            this.projectCollection = projectCollection;
-        }
     public void setProjects(List<Project> projectCollection) {
         this.projects.setAll(projectCollection);
     }
