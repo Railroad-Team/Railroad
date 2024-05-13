@@ -11,6 +11,7 @@ import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ui.welcome.WelcomePane;
 import javafx.application.Application;
+import javafx.collections.ObservableList;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -93,13 +94,16 @@ public class Railroad extends Application {
 
         // Calculate the primary screen size to better fit the window
         Screen screen = Screen.getPrimary();
+        ObservableList<Screen> screens = Screen.getScreens();
 
         double screenW = screen.getBounds().getWidth();
         double screenH = screen.getBounds().getHeight();
 
         // TODO: Find a better way to calculate these because it makes it weird on different sized monitors
-        double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
-        double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
+        //double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
+        //double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
+        double windowW = screen.getOutputScaleX() * (screenW * 0.50);
+        double windowH = screen.getOutputScaleY() * (screenH * 0.55);
 
         // Start the welcome screen and window
         scene = new Scene(new Pane(), windowW, windowH);
