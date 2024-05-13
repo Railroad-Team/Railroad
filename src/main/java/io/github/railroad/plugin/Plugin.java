@@ -1,30 +1,25 @@
-package io.github.railroad.PluginManager;
+package io.github.railroad.plugin;
 
 import io.github.railroad.discord.activity.RailroadActivities;
 
 public abstract class Plugin {
     private PluginManager pluginManager;
+    private PluginStates state = PluginStates.NOT_LOADED;
+    private PluginHealthChecker healthChecker;
 
     public Plugin() {
         this.healthChecker = new PluginHealthChecker(this);
         this.healthChecker.start();
     }
 
-    private PluginStates state = PluginStates.NOT_LOADED;
-    private PluginHealthChecker healthChecker;
-
     public abstract PluginPhaseResult initPlugin();
-
     public abstract PluginPhaseResult loadPlugin();
-
     public abstract PluginPhaseResult unloadPlugin();
-
     public abstract PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes);
-
     public abstract PluginPhaseResult reloadPlugin();
 
     public void updateStatus(PluginStates state) {
-        getPluginManager().showLog(this, "Change state from: " + this.state + " to: " + state);
+        this.pluginManager.showLog(this, "Change state from: " + this.state + " to: " + state);
         this.state = state;
     }
 
