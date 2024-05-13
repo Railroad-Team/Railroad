@@ -8,12 +8,12 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 public enum SettingsCategory {
     GENERAL("General", FontAwesomeSolid.COG),
-    APPEARANCE("Appearance", FontAwesomeSolid.PAINT_BRUSH, Color.BLUE),
-    BEHAVIOR("Behavior", FontAwesomeSolid.COGS, Color.RED),
-    KEYMAPS("Keymaps", FontAwesomeSolid.KEYBOARD, Color.GREEN),
-    PLUGINS("Plugins", FontAwesomeSolid.PLUG, Color.ORANGE),
-    PROJECTS("Projects", FontAwesomeSolid.FOLDER, Color.PURPLE),
-    TOOLS("Tools", FontAwesomeSolid.TOOLBOX, Color.YELLOW);
+    APPEARANCE("Appearance", FontAwesomeSolid.PAINT_BRUSH),
+    BEHAVIOR("Behavior", FontAwesomeSolid.COGS),
+    KEYMAPS("Keymaps", FontAwesomeSolid.KEYBOARD),
+    PLUGINS("Plugins", FontAwesomeSolid.PLUG),
+    PROJECTS("Projects", FontAwesomeSolid.FOLDER),
+    TOOLS("Tools", FontAwesomeSolid.TOOLBOX);
 
     private final String name;
     private final Ikon icon;
@@ -26,7 +26,7 @@ public enum SettingsCategory {
     }
 
     SettingsCategory(String name, Ikon icon) {
-        this(name, icon, Color.BLACK);
+        this(name, icon, Color.WHITE);
     }
 
     public String getName() {

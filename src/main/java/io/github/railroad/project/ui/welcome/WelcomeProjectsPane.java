@@ -21,7 +21,6 @@ public class WelcomeProjectsPane extends ScrollPane {
     private ObservableValue<ProjectSort> sortProperty;
 
     public WelcomeProjectsPane(ProjectSearchField searchField) {
-        Railroad.PROJECT_MANAGER.loadProjects();
         setFitToWidth(true);
         setFitToHeight(true);
         setHbarPolicy(ScrollBarPolicy.NEVER);
@@ -63,6 +62,17 @@ public class WelcomeProjectsPane extends ScrollPane {
             }
         });
 
+        this.projectsList.getItems().addAll(Railroad.PROJECT_MANAGER.getProjects());
+        Railroad.PROJECT_MANAGER.getProjects().addListener((ListChangeListener<Project>) c -> {
+            while (c.next()) {
+                if (c.wasAdded()) {
+                    projectsList.getItems().addAll(c.getAddedSubList());
+                } else if (c.wasRemoved()) {
+                    projectsList.getItems().removeAll(c.getRemoved());
+                }
+            }
+        });
+
         filterProjects("");
         setContent(projectsList);
     }
@@ -75,12 +85,12 @@ public class WelcomeProjectsPane extends ScrollPane {
         projectsList.getItems().clear();
 
         if (value == null || value.isEmpty()) {
-            projectsList.getItems().addAll(Railroad.PROJECT_MANAGER.getProjectCollection());
+            projectsList.getItems().addAll(Railroad.PROJECT_MANAGER.getProjects());
             return;
         }
 
         List<Project> filteredProjects = new ArrayList<>();
-        for (Project project : Railroad.PROJECT_MANAGER.getProjectCollection()) {
+        for (Project project : Railroad.PROJECT_MANAGER.getProjects()) {
             if (project.getAlias().toLowerCase(Locale.ROOT).contains(value.toLowerCase(Locale.ROOT))) {
                 filteredProjects.add(project);
             }
