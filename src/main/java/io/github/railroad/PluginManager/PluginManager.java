@@ -57,7 +57,6 @@ public class PluginManager extends Thread {
                 phase.addError(new Error(e.getMessage()));
                 showError(null, phase, "Error finding class and create new " + s.getAsString());
             }
-
         }
     }
 

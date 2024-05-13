@@ -134,7 +134,6 @@ public class Railroad extends Application {
     }
 
     public static void showErrorAlert(String title, String header, String content) {
-        showErrorAlert(title, header, content, buttonType -> {
-        });
+        showErrorAlert(title, header, content, buttonType -> {});
     }
 }
