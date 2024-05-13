@@ -3,6 +3,7 @@ package io.github.railroad;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.railroad.PluginManager.PluginManager;
+import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
@@ -104,7 +105,7 @@ public class Railroad extends Application {
         primaryStage.setTitle("Railroad - 1.0.0(dev)");
         primaryStage.show();
         // FIXME window is not being focused when it open
-        PLUGIN_MANAGER.NotifyPluginsOfActivity(RailroadActivityTypes.RAILROAD_DEFAULT);
+        PLUGIN_MANAGER.NotifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
     }
     @Override
     public void stop() throws Exception {
