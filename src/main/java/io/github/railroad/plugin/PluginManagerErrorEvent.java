@@ -1,11 +1,11 @@
-package io.github.railroad.PluginManager;
+package io.github.railroad.plugin;
 
 import java.util.EventObject;
 
 public class PluginManagerErrorEvent extends EventObject {
-    private Plugin plugin;
-    private PluginPhaseResult phaseResult;
-    private String message;
+    private final Plugin plugin;
+    private final PluginPhaseResult phaseResult;
+    private final String message;
 
     public PluginManagerErrorEvent(Object source, Plugin plugin, String message, PluginPhaseResult phaseResult) {
         super(source);

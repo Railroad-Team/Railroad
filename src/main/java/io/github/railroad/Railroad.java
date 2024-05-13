@@ -2,7 +2,7 @@ package io.github.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.github.railroad.PluginManager.PluginManager;
+import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;

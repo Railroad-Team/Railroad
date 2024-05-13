@@ -1,4 +1,4 @@
-package io.github.railroad.PluginManager;
+package io.github.railroad.plugin;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -9,14 +9,8 @@ import io.github.railroad.utility.ConfigHandler;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class PluginManager extends Thread {
-    private List<Plugin> pluginList;
-
-    public PluginManager() {
-        this.pluginList = new ArrayList<Plugin>();
-    }
-
+    private final List<Plugin> pluginList = new ArrayList<>();
     private PluginManagerErrorEventListener listener;
 
     public void addCustomEventListener(PluginManagerErrorEventListener listener) {
@@ -30,32 +24,36 @@ public class PluginManager extends Thread {
 
     private void loadAllPlugins() {
         for (Plugin plugin : this.pluginList) {
-            if (plugin.getState() == PluginStates.LOADED) continue;
-            PluginPhaseResult initphaseResult = plugin.initPlugin();
-            if (plugin.getState() == PluginStates.FINSIHED_INIT) {
-                PluginPhaseResult loadphaseResult = plugin.loadPlugin();
+            if (plugin.getState() == PluginStates.LOADED)
+                continue;
+
+            PluginPhaseResult initPhaseResult = plugin.initPlugin();
+            if (plugin.getState() == PluginStates.FINISHED_INIT) {
+                PluginPhaseResult loadPhaseResult = plugin.loadPlugin();
                 if (plugin.getState() == PluginStates.LOADED) {
+                    showLog(plugin, "Loaded");
                 } else {
-                    showError(plugin, loadphaseResult, "LoadPlugin");
+                    showError(plugin, loadPhaseResult, "LoadPlugin");
                 }
             } else {
-                showError(plugin, initphaseResult, "InitPlugin");
+                showError(plugin, initPhaseResult, "InitPlugin");
             }
-
         }
     }
 
     private void preparePluginsFromConfig() {
         JsonObject object = ConfigHandler.getConfigJson();
         JsonArray plugins = object.getAsJsonObject("settings").getAsJsonArray("plugins");
-        for (JsonElement s : plugins) {
+        for (JsonElement element : plugins) {
             try {
-                Object o = Class.forName("io.github.railroad.Plugins." + s.getAsString()).newInstance();
-                this.addPlugin((Plugin) o);
-            } catch (Exception e) {
+                // TODO: Don't do this because it's really fucking jank
+                var plugin = (Plugin) Class.forName("io.github.railroad.plugins.defaults" + element.getAsString())
+                        .getDeclaredConstructor().newInstance();
+                addPlugin(plugin);
+            } catch (Exception exception) {
                 PluginPhaseResult phase = new PluginPhaseResult();
-                phase.addError(new Error(e.getMessage()));
-                showError(null, phase, "Error finding class and create new " + s.getAsString());
+                phase.addError(new Error(exception.getMessage()));
+                showError(null, phase, "Error finding class and create new " + element.getAsString());
             }
         }
     }
@@ -89,10 +87,11 @@ public class PluginManager extends Thread {
             while (plugin.getHealthChecker().isAlive()) {
                 try {
                     plugin.getHealthChecker().join(50);
-                } catch (InterruptedException e) {
+                } catch (InterruptedException ignored) {
                     //throw new RuntimeException(e);
                 }
             }
+
             plugin.unloadPlugin();
             showLog(plugin, "Unloaded");
         }
