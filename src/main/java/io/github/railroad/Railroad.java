@@ -98,8 +98,8 @@ public class Railroad extends Application {
         // TODO: Find a better way to calculate these because it makes it weird on different sized monitors
         SettingsAppearancePane.changeScreen(screen.getBounds(), primaryStage, screenIndex);
 
-        double windowW = Math.max(500, Math.min(screenW * 0.75, 1024)) * screen.getOutputScaleX();
-        double windowH = Math.max(500, Math.min(screenH * 0.75, 768)) * screen.getOutputScaleY();
+        double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
+        double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
 
         // Start the welcome screen and window
         scene = new Scene(new Pane(), windowW, windowH);

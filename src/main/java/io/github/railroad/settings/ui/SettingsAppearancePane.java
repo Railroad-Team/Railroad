@@ -21,14 +21,11 @@ public class SettingsAppearancePane extends VBox {
     private final Label selectScreen = new Label("Select Screen");
 
     private static void resizeScreen(Rectangle2D bounds, Stage stage) {
-        double windowW = Math.max(500, Math.min(bounds.getWidth() * 0.75, 1024)) * stage.getOutputScaleX();
-        double windowH = Math.max(500, Math.min(bounds.getHeight() * 0.75, 768)) * stage.getOutputScaleY();
-
-        System.out.println(stage.getOutputScaleX());
+        double windowW = Math.max(500, Math.min(bounds.getWidth() * 0.75, 1024));
+        double windowH = Math.max(500, Math.min(bounds.getHeight() * 0.75, 768));
 
         stage.setWidth(windowW);
         stage.setHeight(windowH);
-
     }
 
     public static void changeScreen(Rectangle2D bounds, Stage stage, Number screen) {
@@ -37,8 +34,8 @@ public class SettingsAppearancePane extends VBox {
         stage.setY(bounds.getMinY());
 
         //Center on that monitor/screen
-        stage.centerOnScreen();
         resizeScreen(bounds, stage);
+        stage.centerOnScreen();
 
         JsonObject config = ConfigHandler.getConfigJson();
         config.get("settings").getAsJsonObject().addProperty("defaultScreen", screen);
