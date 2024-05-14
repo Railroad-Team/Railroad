@@ -1,6 +1,7 @@
 package io.github.railroad.utility;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 
@@ -26,6 +27,9 @@ public final class ConfigHandler {
             if (!railroadsettings.has("plugins")) {
                 JsonArray railroadplugins = new JsonArray();
                 railroadsettings.add("plugins", railroadplugins);
+            }
+            if (!railroadsettings.has("defaultScreen")) {
+                railroadsettings.addProperty("defaultScreen", 0);
             }
         }
     }

@@ -8,6 +8,7 @@ import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ui.welcome.WelcomePane;
+import io.github.railroad.settings.ui.SettingsAppearancePane;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -87,18 +88,18 @@ public class Railroad extends Application {
         window = primaryStage;
 
         // Calculate the primary screen size to better fit the window
-        Screen screen = Screen.getPrimary();
+        int screenIndex = ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("defaultScreen").getAsInt();
+
+        Screen screen = Screen.getScreens().get(screenIndex);
 
         double screenW = screen.getBounds().getWidth();
         double screenH = screen.getBounds().getHeight();
 
         // TODO: Find a better way to calculate these because it makes it weird on different sized monitors
-        double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
-        double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
+        double windowW = Math.max(500, Math.min(screenW * 0.75, 1024)) * screen.getOutputScaleX();
+        double windowH = Math.max(500, Math.min(screenH * 0.75, 768)) * screen.getOutputScaleY();
 
-        //TODO Possible start to a better way?
-        //double windowW = screen.getOutputScaleX() * (screenW * 0.50);
-        //double windowH = screen.getOutputScaleY() * (screenH * 0.55);
+        SettingsAppearancePane.changeScreen(screen.getBounds(), primaryStage, screenIndex);
 
         // Start the welcome screen and window
         scene = new Scene(new Pane(), windowW, windowH);
