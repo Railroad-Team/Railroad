@@ -24,8 +24,11 @@ public class SettingsAppearancePane extends VBox {
         double windowW = Math.max(500, Math.min(bounds.getWidth() * 0.75, 1024)) * stage.getOutputScaleX();
         double windowH = Math.max(500, Math.min(bounds.getHeight() * 0.75, 768)) * stage.getOutputScaleY();
 
+        System.out.println(stage.getOutputScaleX());
+
         stage.setWidth(windowW);
         stage.setHeight(windowH);
+
     }
 
     public static void changeScreen(Rectangle2D bounds, Stage stage, Number screen) {
@@ -35,8 +38,7 @@ public class SettingsAppearancePane extends VBox {
 
         //Center on that monitor/screen
         stage.centerOnScreen();
-
-        resizeScreen(bounds, Railroad.getWindow());
+        resizeScreen(bounds, stage);
 
         JsonObject config = ConfigHandler.getConfigJson();
         config.get("settings").getAsJsonObject().addProperty("defaultScreen", screen);
@@ -55,10 +57,10 @@ public class SettingsAppearancePane extends VBox {
         for (Screen screen : Screen.getScreens()){
             var currLength = screenSizes.size();
 
-            String string = String.format("%s: %1s, %2s", currLength, screen.getBounds().getWidth(), screen.getBounds().getHeight());
+            String string = String.format("%s: %1s, %2s", currLength, screen.getBounds().getWidth() * screen.getOutputScaleX(), screen.getBounds().getHeight() * screen.getOutputScaleY());
 
             screenSizes.add(string);
-            screenBounds.add(screen.getVisualBounds());
+            screenBounds.add(screen.getBounds());
         }
 
         screenSelect.setItems(screenSizes);
@@ -69,7 +71,6 @@ public class SettingsAppearancePane extends VBox {
             var selectedBounds = screenBounds.get(selectedNum);
 
             changeScreen(selectedBounds, Railroad.getWindow(), selectedNum);
-            //TODO Update config && Resize screen
         });
 
         getChildren().addAll(selectScreen, screenSelect);
