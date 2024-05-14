@@ -1,11 +1,9 @@
 package io.github.railroad;
 
-import atlantafx.base.theme.PrimerDark;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.github.railroad.discord.DiscordCore;
+import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.discord.activity.RailroadActivities;
-import io.github.railroad.discord.activity.RailroadActivities.RailroadActivityTypes;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
@@ -13,8 +11,12 @@ import io.github.railroad.project.ui.welcome.WelcomePane;
 import io.github.railroad.vcs.RepositoryManager;
 import io.github.railroad.vcs.connections.Profile;
 import io.github.railroad.vcs.connections.github.GithubConnection;
+import io.github.railroad.utility.ConfigHandler;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
 import javafx.stage.Screen;
@@ -23,14 +25,16 @@ import okhttp3.OkHttpClient;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
+    public static final PluginManager PLUGIN_MANAGER = new PluginManager();
 
     private static boolean DEBUG = false;
-    private static DiscordCore DISCORD;
     private static Scene scene;
     private static Stage window;
 
@@ -42,12 +46,8 @@ public class Railroad extends Application {
         return window;
     }
 
-    public static DiscordCore getDiscord() {
-        return DISCORD;
-    }
-
     private static void handleStyles(Scene scene) {
-        Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
+        Application.setUserAgentStylesheet(getResource("styles/themes/nord-dark.css").toExternalForm());
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();
@@ -67,14 +67,6 @@ public class Railroad extends Application {
         scene.getStylesheets().add(baseTheme);
     }
 
-    private static DiscordCore setupDiscord() {
-        var discord = new DiscordCore("853387211897700394");
-
-        Runtime.getRuntime().addShutdownHook(new Thread(discord::close));
-
-        return discord;
-    }
-
     public static URL getResource(String path) {
         return Railroad.class.getResource("/io/github/railroad/" + path);
     }
@@ -86,12 +78,17 @@ public class Railroad extends Application {
     private static final Profile PROFILE = new Profile();
     @Override
     public void start(Stage primaryStage) {
-
         REPOSITORY_MANAGER.addConnection(new GithubConnection(PROFILE));
         REPOSITORY_MANAGER.updateRepositories();
+        ConfigHandler.updateConfig(ConfigHandler.getConfigJson());
+        PLUGIN_MANAGER.start();
+        PLUGIN_MANAGER.addCustomEventListener(event -> {
+            Platform.runLater(() -> {
+                Railroad.showErrorAlert("Plugin", event.getPlugin().getClass().getName(), event.getPhaseResult().getErrors().toString());
+            });
+        });
         MinecraftVersion.load();
         ForgeVersion.load();
-
         window = primaryStage;
 
         // Calculate the primary screen size to better fit the window
@@ -119,15 +116,29 @@ public class Railroad extends Application {
         primaryStage.setTitle("Railroad - 1.0.0(dev)");
         primaryStage.show();
         // FIXME window is not being focused when it open
-
-        DISCORD = setupDiscord();
-
-        //Setup main menu RP
-        RailroadActivities.setActivity(RailroadActivityTypes.RAILROAD_DEFAULT);
+        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
     }
+
     @Override
     public void stop() throws Exception {
+        PLUGIN_MANAGER.unLoadAllPlugins();
         System.out.println("Stopping Railroad");
         System.exit(0);
+    }
+
+    public static void showErrorAlert(String title, String header, String content, Consumer<ButtonType> action) {
+        var alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            action.accept(result.get());
+        }
+    }
+
+    public static void showErrorAlert(String title, String header, String content) {
+        showErrorAlert(title, header, content, buttonType -> {});
     }
 }
