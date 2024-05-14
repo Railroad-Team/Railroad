@@ -26,15 +26,22 @@ public class SettingsAppearancePane extends VBox {
 
         stage.setWidth(windowW);
         stage.setHeight(windowH);
+
+        stage.setMinWidth(stage.getWidth() + 10);
+        stage.setMinHeight(stage.getHeight() + 10);
+
+        stage.centerOnScreen();
     }
 
-    public static void changeScreen(Rectangle2D bounds, Stage stage, Number screen) {
+    public static void changeScreen(Rectangle2D bounds, Stage stage, Number screen, boolean resize) {
         //Move to different monitor/screen
         stage.setX(bounds.getMinX());
         stage.setY(bounds.getMinY());
-
+        
         //Center on that monitor/screen
-        resizeScreen(bounds, stage);
+        if(resize)
+            resizeScreen(bounds, stage);
+
         stage.centerOnScreen();
 
         JsonObject config = ConfigHandler.getConfigJson();
@@ -67,7 +74,9 @@ public class SettingsAppearancePane extends VBox {
             var selectedNum = Integer.parseInt(String.valueOf(selected.toString().charAt(0)));
             var selectedBounds = screenBounds.get(selectedNum);
 
-            changeScreen(selectedBounds, Railroad.getWindow(), selectedNum);
+            Stage window = Railroad.getWindow();
+
+            changeScreen(selectedBounds, window, selectedNum, true);
         });
 
         getChildren().addAll(selectScreen, screenSelect);
