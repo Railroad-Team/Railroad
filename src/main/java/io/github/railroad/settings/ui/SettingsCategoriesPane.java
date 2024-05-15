@@ -18,11 +18,13 @@ public class SettingsCategoriesPane extends VBox {
 
     public SettingsCategoriesPane(SettingsPane parent) {
         this.backButton = new Button("Back");
+
         this.backButton.setGraphic(new FontIcon(FontAwesomeSolid.ARROW_LEFT));
         HBox.setHgrow(this.backButton, Priority.ALWAYS);
 
         this.listView.getItems().addAll(SettingsCategory.values());
         VBox.setVgrow(this.listView, Priority.ALWAYS);
+
         this.listView.getSelectionModel().selectFirst();
 
         this.listView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) ->

@@ -38,7 +38,8 @@ public class WelcomeLeftPane extends RRVBox {
         listView.getItems().addAll(MenuType.values());
         listView.setCellFactory(param -> new MenuTypeCell());
 
-        setPrefWidth(200);
+        setMinWidth(200);
+        setMaxWidth(200);
         setAlignment(Pos.TOP_CENTER);
         RRVBox.setVgrow(listView, Priority.ALWAYS);
 
@@ -54,10 +55,10 @@ public class WelcomeLeftPane extends RRVBox {
     }
 
     public enum MenuType {
-        NEW_PROJECT("New Project", FontAwesomeSolid.PLUS, Color.BLACK),
-        OPEN_PROJECT("Open Project", FontAwesomeSolid.FOLDER_OPEN, Color.BLACK),
-        IMPORT_PROJECT("Import Project", FontAwesomeSolid.FILE_IMPORT, Color.BLACK),
-        SETTINGS("Settings", FontAwesomeSolid.COG, Color.BLACK);
+        NEW_PROJECT("New Project", FontAwesomeSolid.PLUS),
+        OPEN_PROJECT("Open Project", FontAwesomeSolid.FOLDER_OPEN),
+        IMPORT_PROJECT("Import Project", FontAwesomeSolid.FILE_IMPORT),
+        SETTINGS("Settings", FontAwesomeSolid.COG);
 
         private final String name;
         private final Ikon icon;
@@ -70,7 +71,7 @@ public class WelcomeLeftPane extends RRVBox {
         }
 
         MenuType(String name, Ikon icon) {
-            this(name, icon, Color.BLACK);
+            this(name, icon, Color.WHITE);
         }
 
         public String getName() {

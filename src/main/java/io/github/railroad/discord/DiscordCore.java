@@ -8,11 +8,13 @@ import io.github.railroad.discord.event.DiscordEventHandler;
 import io.github.railroad.discord.event.DiscordEvents;
 import io.github.railroad.discord.impl.UnixDiscordIPCChannel;
 import io.github.railroad.discord.impl.WindowsDiscordIPCChannel;
+import io.github.railroad.project.ui.project.newProject.details.ForgeProjectCreationPane;
 import javafx.util.Pair;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ClosedChannelException;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -34,7 +36,7 @@ public class DiscordCore implements AutoCloseable {
     private DiscordUser currentUser;
     private long pid = ProcessHandle.current().pid();
 
-    public DiscordCore(String clientId) {
+    public DiscordCore(String clientId) throws DiscordException {
         this.clientId = clientId;
 
         this.connectionState = DiscordConnectionState.HANDSHAKE;
@@ -47,7 +49,8 @@ public class DiscordCore implements AutoCloseable {
             runCallbacks();
             this.ipcChannel.configureBlocking(false);
         } catch (IOException exception) {
-            throw new RuntimeException("Failed to initialize Discord IPC channel", exception);
+            //Railroad.showErrorAlert("Failed to connect to Discord", "Failed to connect to Discord IPC channel", null);
+            throw new DiscordException(DiscordResult.SERVICE_UNAVAILABLE);
         }
 
         this.activityManager = new DiscordActivityManager(this);
@@ -72,6 +75,8 @@ public class DiscordCore implements AutoCloseable {
 
                     handleCommand(command);
                     Thread.sleep(100);
+                } catch (ClosedChannelException exception) {
+                    break;
                 } catch (IOException | InterruptedException exception) {
                     throw new RuntimeException("Failed to receive command from Discord IPC channel", exception);
                 }

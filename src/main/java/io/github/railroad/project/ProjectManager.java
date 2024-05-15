@@ -4,19 +4,22 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.railroad.utility.ConfigHandler;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ProjectManager {
-    private List<Project> projectCollection;
+    private final ObservableList<Project> projects = FXCollections.observableArrayList();
 
     public ProjectManager() {
         ConfigHandler.createDefaultConfigs();
+        loadProjects();
     }
 
-    public List<Project> loadProjects() {
+    public void loadProjects() {
         List<Project> projects = new ArrayList<>();
 
         JsonArray projectsJsonArray = ConfigHandler.getProjectsConfig();
@@ -36,8 +39,7 @@ public class ProjectManager {
             projects.add(project);
         }
 
-        setProjectCollection(projects);
-        return projects;
+        setProjects(projects);
     }
 
     public void updateProjectInfo(Project project) {
@@ -47,7 +49,7 @@ public class ProjectManager {
     public void updateProjectInfo(Project project, boolean removeProject) {
         JsonObject object = ConfigHandler.getConfigJson();
         JsonArray projects = object.getAsJsonArray("projects");
-        System.out.println("Starting project update: "+ project.getId());
+        System.out.println("Starting project update: " + project.getId());
         boolean found = false;
         for (JsonElement projectElement : projects) {
             JsonObject projectObject = projectElement.getAsJsonObject();
@@ -58,11 +60,11 @@ public class ProjectManager {
                 } else {
                     found = true;
                     projectObject.addProperty("lastOpened", project.getLastOpened());
-                    System.out.println("Starting update project: " +project.getId()+ " last opened to: "+ project.getLastOpened());
+                    System.out.println("Starting update project: " + project.getId() + " last opened to: " + project.getLastOpened());
                 }
-
             }
         }
+
         if (!found && !removeProject) {
             System.out.println("Create new Project");
             var newProject = new JsonObject();
@@ -75,26 +77,26 @@ public class ProjectManager {
         ConfigHandler.updateConfig(object);
     }
 
-    public List<Project> getProjectCollection() {
-        return projectCollection;
+    public ObservableList<Project> getProjects() {
+        return projects;
     }
 
     public Project newProject(Project project) {
         updateProjectInfo(project);
         project.setManager(this);
-        this.projectCollection.add(project);
+        this.projects.add(project);
 
         return project;
     }
 
     public boolean removeProject(Project project) {
-        this.projectCollection.remove(project);
+        this.projects.remove(project);
         updateProjectInfo(project, true);
 
         return true;
     }
 
-    public void setProjectCollection(List<Project> projectCollection) {
-        this.projectCollection = projectCollection;
+    public void setProjects(List<Project> projectCollection) {
+        this.projects.setAll(projectCollection);
     }
 }

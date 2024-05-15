@@ -29,7 +29,9 @@ public class SettingsPane extends RRBorderPane {
         this.rightPane = new ScrollPane(new SettingsGeneralPane());
 
         leftPane.setMinWidth(200);
-        rightPane.setMinWidth(600);
+        leftPane.setMaxWidth(200);
+
+        rightPane.setMinWidth(400);
 
         rightPane.setFitToWidth(true);
         rightPane.setFitToHeight(true);

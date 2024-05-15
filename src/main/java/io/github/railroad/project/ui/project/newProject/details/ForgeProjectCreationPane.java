@@ -14,8 +14,6 @@ import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
@@ -24,7 +22,6 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 
 public class ForgeProjectCreationPane extends RRBorderPane {
     private final ForgeProjectData data;
@@ -107,7 +104,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 updateProgress(10, 10);
             } catch (IOException exception) {
                 // Handle errors
-                Platform.runLater(() -> showErrorAlert("Error", "An error occurred while creating the project.", exception.getMessage()));
+                Platform.runLater(() -> Railroad.showErrorAlert("Error", "An error occurred while creating the project.", exception.getMessage()));
             }
 
             return null;
@@ -155,17 +152,5 @@ public class ForgeProjectCreationPane extends RRBorderPane {
         });
 
         new Thread(task).start();
-    }
-
-    private static void showErrorAlert(String title, String header, String content) {
-        var alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(header);
-        alert.setContentText(content);
-
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            // Handle OK button action if needed
-        }
     }
 }

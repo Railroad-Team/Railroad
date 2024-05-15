@@ -42,6 +42,7 @@
 }
 .Separator.contrast-1 > .line {
     -fx-background-color: -contrast-color-1;
+
 }
 .ListCell .contrast-1 {
     -fx-text-fill: -contrast-color-1;
@@ -68,7 +69,6 @@
 .Separator.contrast-3 > .line {
     -fx-background-color: -contrast-color-3;
 }
-
 
 /* Inheritance */
 .background-none .background-1,

@@ -1,5 +1,6 @@
 package io.github.railroad.project.ui.project;
 
+import io.github.railroad.Railroad;
 import io.github.railroad.project.Project;
 import io.github.railroad.ui.defaults.*;
 import javafx.beans.property.ObjectProperty;
@@ -13,6 +14,43 @@ import javafx.scene.paint.Color;
 public class ProjectListCell extends RRListCell<Project> {
     private final ProjectListNode node = new ProjectListNode();
 
+    private final StackPane node = new StackPane();
+    private final ProjectListNode projectListNode = new ProjectListNode();
+
+    public ProjectListCell() {
+        node.getChildren().add(projectListNode);
+
+        var ellipseButton = new Button("...");
+        ellipseButton.setBackground(null);
+        StackPane.setAlignment(ellipseButton, Pos.TOP_RIGHT);
+
+        var dropdown = new ContextMenu();
+        var openItem = new MenuItem("Open");
+        var removeItem = new MenuItem("Remove");
+
+        openItem.setOnAction(e -> {
+            Project project = projectListNode.projectProperty().get();
+            if (project != null) {
+                project.open();
+            }
+        });
+
+        removeItem.setOnAction(e -> {
+            Project project = projectListNode.projectProperty().get();
+            if (project != null) {
+                Railroad.PROJECT_MANAGER.removeProject(project);
+            }
+        });
+
+        dropdown.getItems().addAll(openItem, removeItem);
+
+        ellipseButton.setOnMouseClicked(e -> {
+            dropdown.show(ellipseButton, e.getScreenX(), e.getScreenY());
+        });
+
+        node.getChildren().add(ellipseButton);
+    }
+
     @Override
     protected void updateItem(Project project, boolean empty) {
         super.updateItem(project, empty);
@@ -20,9 +58,9 @@ public class ProjectListCell extends RRListCell<Project> {
         if (empty || project == null) {
             setText(null);
             setGraphic(null);
-            node.projectProperty().set(null);
+            projectListNode.projectProperty().set(null);
         } else {
-            node.projectProperty().set(project);
+            projectListNode.projectProperty().set(project);
             setGraphic(node);
         }
     }
