@@ -28,6 +28,8 @@ public class WelcomePane extends RRSplitPane {
     private final AtomicReference<SettingsPane> settingsPane = new AtomicReference<>();
 
     public WelcomePane() {
+        super(1);
+
         leftPane = new WelcomeLeftPane();
         headerPane = new WelcomeHeaderPane();
         projectsPane = new WelcomeProjectsPane(headerPane.getSearchField());
@@ -36,7 +38,10 @@ public class WelcomePane extends RRSplitPane {
         headerPane.setPrefHeight(80);
 
         var rightPane = new RRVBox();
-        rightPane.getChildren().addAll(headerPane, new RRSeparator(), projectsPane);
+        rightPane.getChildren().addAll(
+                headerPane,
+                projectsPane
+        );
         VBox.setVgrow(projectsPane, Priority.ALWAYS);
 
         setOrientation(Orientation.HORIZONTAL);

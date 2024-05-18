@@ -4,6 +4,8 @@ import io.github.railroad.settings.SettingsCategory;
 import io.github.railroad.settings.ui.categories.*;
 import io.github.railroad.settings.ui.categories.general.*;
 import io.github.railroad.ui.defaults.RRBorderPane;
+import io.github.railroad.ui.defaults.RRScrollPane;
+import io.github.railroad.ui.defaults.RRSplitPane;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Orientation;
@@ -26,7 +28,8 @@ public class SettingsPane extends RRBorderPane {
         BorderPane.setAlignment(searchBox, Pos.CENTER);
 
         this.leftPane = new SettingsCategoriesPane(this);
-        this.rightPane = new ScrollPane(new SettingsGeneralPane());
+        this.rightPane = new RRScrollPane(2);
+        this.rightPane.setContent(new SettingsGeneralPane());
 
         leftPane.setMinWidth(200);
         leftPane.setMaxWidth(200);
@@ -39,7 +42,8 @@ public class SettingsPane extends RRBorderPane {
         rightPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         rightPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
-        var splitPane = new SplitPane(leftPane, rightPane);
+        var splitPane = new RRSplitPane();
+        splitPane.getItems().addAll(leftPane, rightPane);
 
         splitPane.setOrientation(Orientation.HORIZONTAL);
 
@@ -59,6 +63,7 @@ public class SettingsPane extends RRBorderPane {
                 case PLUGINS -> new SettingsPluginsPane();
                 case PROJECTS -> new SettingsProjectsPane();
                 case TOOLS -> new SettingsToolsPane();
+
                 default -> throw new IllegalStateException("Unexpected value: " + newValue);
             };
 

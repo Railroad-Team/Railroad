@@ -21,6 +21,10 @@ public class WelcomeProjectsPane extends RRScrollPane {
     private ObservableValue<ProjectSort> sortProperty;
 
     public WelcomeProjectsPane(ProjectSearchField searchField) {
+        super(2);
+        isMainContainer(true);
+
+        Railroad.PROJECT_MANAGER.loadProjects();
         setFitToWidth(true);
         setFitToHeight(true);
         setHbarPolicy(ScrollBarPolicy.NEVER);

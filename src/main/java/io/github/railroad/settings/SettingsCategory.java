@@ -13,9 +13,9 @@ public enum SettingsCategory {
     TOOLS("Tools", FontAwesomeSolid.TOOLBOX);
 
     private final String name;
-    private final Ikon icon;
+    private final FontAwesomeSolid icon;
 
-    SettingsCategory(String name, Ikon icon) {
+    SettingsCategory(String name, FontAwesomeSolid icon) {
         this.name = name;
         this.icon = icon;
     }
@@ -24,7 +24,7 @@ public enum SettingsCategory {
         return name;
     }
 
-    public Ikon getIcon() {
+    public FontAwesomeSolid getIcon() {
         return icon;
     }
 

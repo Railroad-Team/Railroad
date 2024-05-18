@@ -16,6 +16,8 @@ public class WelcomeHeaderPane extends RRHBox {
     private final ProjectSortComboBox sortComboBox;
 
     public WelcomeHeaderPane() {
+        isMainContainer(true);
+
         // Creating and styling children
         var title = new RRTitle("Projects List");
 

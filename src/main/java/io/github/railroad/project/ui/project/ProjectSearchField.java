@@ -1,9 +1,9 @@
 package io.github.railroad.project.ui.project;
 
-import javafx.scene.control.TextField;
+import io.github.railroad.ui.defaults.RRTextField;
 
-public class ProjectSearchField extends TextField {
+public class ProjectSearchField extends RRTextField {
     public ProjectSearchField() {
-        setPromptText("Search projects...");
+        super("Search projects");
     }
 }

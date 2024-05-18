@@ -7,14 +7,14 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.image.ImageView;
-import javafx.scene.paint.Color;
 
 public class ProjectListCell extends RRListCell<Project> {
-    private final ProjectListNode node = new ProjectListNode();
-
-    private final StackPane node = new StackPane();
+    private final RRStackPane node = new RRStackPane();
     private final ProjectListNode projectListNode = new ProjectListNode();
 
     public ProjectListCell() {
@@ -22,7 +22,7 @@ public class ProjectListCell extends RRListCell<Project> {
 
         var ellipseButton = new Button("...");
         ellipseButton.setBackground(null);
-        StackPane.setAlignment(ellipseButton, Pos.TOP_RIGHT);
+        RRStackPane.setAlignment(ellipseButton, Pos.TOP_RIGHT);
 
         var dropdown = new ContextMenu();
         var openItem = new MenuItem("Open");
@@ -44,9 +44,7 @@ public class ProjectListCell extends RRListCell<Project> {
 
         dropdown.getItems().addAll(openItem, removeItem);
 
-        ellipseButton.setOnMouseClicked(e -> {
-            dropdown.show(ellipseButton, e.getScreenX(), e.getScreenY());
-        });
+        ellipseButton.setOnMouseClicked(e -> dropdown.show(ellipseButton, e.getScreenX(), e.getScreenY()));
 
         node.getChildren().add(ellipseButton);
     }
@@ -63,13 +61,6 @@ public class ProjectListCell extends RRListCell<Project> {
             projectListNode.projectProperty().set(project);
             setGraphic(node);
         }
-    }
-
-    @Override
-    public void updateSelected(boolean selected) {
-        super.updateSelected(selected);
-        node.setStyle(selected ? "-fx-background-color: #f0f0f0;" : "-fx-background-color: #ffffff;");
-        node.getLabel().setTextFill(Color.BLACK);
     }
 
     public static class ProjectListNode extends RRHBox {

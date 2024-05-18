@@ -3,20 +3,17 @@ package io.github.railroad.project.ui.welcome;
 import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.*;
 import javafx.geometry.Pos;
-import javafx.scene.control.ListCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Priority;
-import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
-import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import org.kordamp.ikonli.javafx.FontIcon;
 
 public class WelcomeLeftPane extends RRVBox {
     private final RRListView<MenuType> listView = new RRListView<>();
 
     public WelcomeLeftPane() {
+        isMainContainer(true);
+
         var topBox = new RRVBox();
         topBox.setPrefHeight(80);
 
@@ -61,38 +58,24 @@ public class WelcomeLeftPane extends RRVBox {
         SETTINGS("Settings", FontAwesomeSolid.COG);
 
         private final String name;
-        private final Ikon icon;
-        private final Paint color;
+        private final FontAwesomeSolid icon;
 
-        MenuType(String name, Ikon icon, Paint color) {
+        MenuType(String name, FontAwesomeSolid icon) {
             this.name = name;
             this.icon = icon;
-            this.color = color;
-        }
-
-        MenuType(String name, Ikon icon) {
-            this(name, icon, Color.WHITE);
         }
 
         public String getName() {
             return this.name;
         }
 
-        public Ikon getIcon() {
+        public FontAwesomeSolid getIcon() {
             return this.icon;
-        }
-
-        public Paint getColor() {
-            return this.color;
         }
     }
 
     public static class MenuTypeCell extends RRListCell<MenuType> {
-        private final FontIcon icon = new FontIcon();
-
-        public MenuTypeCell() {
-            icon.setIconSize(24);
-        }
+        private final RRIcon icon = new RRIcon();
 
         @Override
         protected void updateItem(MenuType item, boolean empty) {
@@ -100,12 +83,13 @@ public class WelcomeLeftPane extends RRVBox {
             if (empty || item == null) {
                 setText(null);
                 setGraphic(null);
+                disableHovering();
             } else {
-                icon.setIconCode(item.getIcon());
-                icon.setIconColor(item.getColor());
+                icon.setIcon(item.getIcon());
                 setGraphic(icon);
 
                 setText(item.getName());
+                enableHovering();
             }
         }
     }

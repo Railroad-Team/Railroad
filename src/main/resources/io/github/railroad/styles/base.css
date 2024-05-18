@@ -1,10 +1,14 @@
 /* Styles: */
 
 /* Background */
-.background-none,
-.List:even.background-none,
-.List:odd.background-none {
+.background-0, .background-none,
+.List:even.background-0, .List:even.background-none,
+.List:odd.background-0, .List:odd.background-none {
    -fx-background-color: transparent;
+}
+.background-0 .ListItem.hoverable:hover,
+.background-0.ListItem.hoverable:hover {
+    -fx-background-color: -highlight-color-1;
 }
 
 .background-1,
@@ -12,17 +16,39 @@
 .List:odd.background-1 {
    -fx-background-color: -bg-color-1;
 }
+.background-1 .ListItem.hoverable:hover,
+.background-1.ListItem.hoverable:hover {
+    -fx-background-color: -highlight-color-1;
+}
 
 .background-2,
 .List:even.background-2,
-.List:odd.background-2, {
+.List:odd.background-2 {
    -fx-background-color: -bg-color-2;
+}
+.background-2 .ListItem.hoverable:hover,
+.background-2.ListItem.hoverable:hover {
+    -fx-background-color: -highlight-color-2;
 }
 
 .background-3,
 .List:even.background-3,
-.List:odd.background-3, {
+.List:odd.background-3 {
    -fx-background-color: -bg-color-3;
+}
+.background-3 .ListItem.hoverable:hover,
+.background-3.ListItem.hoverable:hover {
+    -fx-background-color: -highlight-color-3;
+}
+
+.background-4,
+.List:even.background-4,
+.List:odd.background-4 {
+   -fx-background-color: -bg-color-4;
+}
+.background-4 .ListItem.hoverable:hover,
+.background-4.ListItem.hoverable:hover {
+    -fx-background-color: -highlight-color-4;
 }
 
 /* Foreground */
@@ -31,27 +57,34 @@
 .foreground-1 .Text {
     -fx-text-fill: -contrast-color-1;
 }
+.Text.foreground-2,
+.ListCell.foreground-2,
+.foreground-2 .Text {
+    -fx-text-fill: -contrast-color-2;
+}
 
 /* Contrast */
-.Pane.contrast-1 {
-    -fx-text-fill: -contrast-color-1;
+.Pane.contrast-1,
+.contrast-1 .ComboBox, .ComboBox.contrast-1 {
+   -fx-text-fill: -contrast-color-1;
 }
-.SplitPane.contrast-1 > .split-pane-divider {
+.contrast-1 .SplitPane > .split-pane-divider:hover,
+.contrast-1 .SplitPane > .split-pane-divider:hover,
+.SplitPane.contrast-1 > .split-pane-divider:hover {
     -fx-text-fill: null;
     -fx-background-color: -contrast-color-1;
 }
 .Separator.contrast-1 > .line {
     -fx-background-color: -contrast-color-1;
-
-}
-.ListCell .contrast-1 {
-    -fx-text-fill: -contrast-color-1;
 }
 
-.Pane.contrast-2 {
+.Pane.contrast-2,
+.contrast-2 .ComboBox, .ComboBox.contrast-2 {
     -fx-text-fill: -contrast-color-2;
 }
-.SplitPane.contrast-2 > .split-pane-divider {
+.contrast-2 .SplitPane > .split-pane-divider:hover,
+.contrast-2 .SplitPane > .split-pane-divider:hover,
+.SplitPane.contrast-2 > .split-pane-divider:hover {
     -fx-text-fill: null;
     -fx-background-color: -contrast-color-2;
 }
@@ -59,10 +92,13 @@
     -fx-background-color: -contrast-color-2;
 }
 
-.Pane.contrast-3 {
+.Pane.contrast-3,
+.contrast-2 .ComboBox, .ComboBox.contrast-2 {
     -fx-text-fill: -contrast-color-3;
 }
-.SplitPane.contrast-3 > .split-pane-divider {
+.contrast-3 .SplitPane > .split-pane-divider:hover,
+.contrast-3 .SplitPane > .split-pane-divider:hover,
+.SplitPane.contrast-3 > .split-pane-divider:hover {
     -fx-text-fill: null;
     -fx-background-color: -contrast-color-3;
 }
@@ -70,22 +106,46 @@
     -fx-background-color: -contrast-color-3;
 }
 
+.Pane.contrast-4,
+.contrast-4 .ComboBox, .ComboBox.contrast-4 {
+    -fx-text-fill: -contrast-color-3;
+}
+.contrast-4 .SplitPane > .split-pane-divider:hover,
+.contrast-4 .SplitPane > .split-pane-divider:hover,
+.SplitPane.contrast-4 > .split-pane-divider:hover {
+    -fx-text-fill: null;
+    -fx-background-color: -contrast-color-4;
+}
+.Separator.contrast-4 > .line {
+    -fx-background-color: -contrast-color-4;
+}
+
+/* Borders */
+.Pane.background-1.border,
+.background-1 .Pane.border {
+    -fx-border-color: -border-color-1;
+}
+.Pane.background-2.border,
+.background-2 .Pane.border {
+    -fx-border-color: -border-color-2;
+}
+.Pane.background-3.border,
+.background-3 .Pane.border {
+    -fx-border-color: -border-color-3;
+}
+.Pane.background-4.border,
+.background-4 .Pane.border {
+    -fx-border-color: -border-color-4;
+}
+
+
 /* Inheritance */
-.background-none .background-1,
-.background-none .background-2,
-.background-none .background-3,
-.background-none .background-4,
-
-.background-1 .background-2,
-.background-1 .background-3,
-.background-1 .background-4,
-
-.background-2 .background-3,
-.background-2 .background-4,
-
-.background-3 .background-4
+.background-1 .background-none,
+.background-2 .background-none,
+.background-3 .background-none,
+.background-4 .background-none,
 {
-    -fx-background-color: null;
+    -fx-background-color: inherit;
 }
 
 /* Standardization */
@@ -95,8 +155,14 @@
 .SplitPane:vertical > .split-pane-divider {
     -fx-padding: 100% 4 100% 4;
 }
-.SplitPane > .split-pane-divider:hover {
-    -fx-background-color: -bg-color-4;
+.SplitPane > .split-pane-divider {
+    -fx-background-color: transparent;
+}
+.Separator {
+    -fx-padding: 0 20 0 20;
+}
+.Separator.full {
+    -fx-padding: 0;
 }
 .Separator > .line {
     -fx-border-color: null;
@@ -109,24 +175,42 @@
     -fx-background-color: transparent;
     -fx-graphic-text-gap: 10;
 }
-.Text.Title {
+.Text.Header-1 {
     -fx-font-size: 20;
+    -fx-font-weight: bold;
+}
+.Text.Header-2 {
+    -fx-font-size: 16;
+    -fx-font-weight: bold;
+}
+.hoverable:hover {
+    -fx-cursor: hand;
+}
+.TextField {
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+}
+.background-1 .TextField { -fx-border-color: -border-color-3; }
+.background-2 .TextField { -fx-border-color: -border-color-4; }
+.background-3 .TextField { -fx-border-color: -border-color-5; }
+.background-4 .TextField { -fx-border-color: -border-color-6; }
+.TextField:hover {
+    -fx-background-color: -highlight-color-4;
 }
 
+.ComboBox {
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+}
+.background-1 .ComboBox { -fx-border-color: -border-color-3; }
+.background-2 .ComboBox { -fx-border-color: -border-color-4; }
+.background-3 .ComboBox { -fx-border-color: -border-color-5; }
+.background-4 .ComboBox { -fx-border-color: -border-color-6; }
+.ComboBox:hover {
+    -fx-background-color: -highlight-color-4;
+}
+.ComboBox > .text-input { -fx-text-fill: inherit; }
 
-/*
-.Railroad.List:even,
-.Railroad.List:odd, {
-    -fx-text-fill: green;
-    -fx-background-color: red;
-}
-.Railroad.Separator > .line {
-    -fx-background-color: blue;
-    -fx-border-color: null;
-}
-.Railroad.Separator:horizontal > .line { -fx-pref-height: 2; }
-.Railroad.Separator:vertical > .line { -fx-pref-width: 2; }
-*/
 
 /* Default theme */
 .Railroad {
@@ -135,6 +219,18 @@
        -bg-color-2: #e6e6e6;
        -bg-color-3: #cccccc;
        -bg-color-4: #b3b3b3;
+
+       -border-color-1: #e6e6e6;
+       -border-color-2: #cccccc;
+       -border-color-3: #b3b3b3;
+       -border-color-4: #999999;
+       -border-color-5: #7f7f7f;
+       -border-color-6: #656565;
+
+       -highlight-color-1: #ffffaa;
+       -highlight-color-2: #e6e691;
+       -highlight-color-3: #cccc77;
+       -highlight-color-4: #b3b35e;
 
        -contrast-color-1: #000000;
        -contrast-color-2: #1a1a1a;

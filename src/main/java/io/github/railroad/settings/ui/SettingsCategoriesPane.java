@@ -1,6 +1,7 @@
 package io.github.railroad.settings.ui;
 
 import io.github.railroad.settings.SettingsCategory;
+import io.github.railroad.ui.defaults.RRIcon;
 import io.github.railroad.ui.defaults.RRListCell;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRSeparator;
@@ -9,6 +10,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeRegular;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -19,7 +21,7 @@ public class SettingsCategoriesPane extends VBox {
     public SettingsCategoriesPane(SettingsPane parent) {
         this.backButton = new Button("Back");
 
-        this.backButton.setGraphic(new FontIcon(FontAwesomeSolid.ARROW_LEFT));
+        this.backButton.setGraphic(new RRIcon(FontAwesomeSolid.ARROW_LEFT));
         HBox.setHgrow(this.backButton, Priority.ALWAYS);
 
         this.listView.getItems().addAll(SettingsCategory.values());
@@ -47,11 +49,7 @@ public class SettingsCategoriesPane extends VBox {
     }
 
     public static class SettingsCategoryCell extends RRListCell<SettingsCategory> {
-        private final FontIcon icon = new FontIcon();
-
-        public SettingsCategoryCell() {
-            icon.setIconSize(24);
-        }
+        private final RRIcon icon = new RRIcon();
 
         @Override
         protected void updateItem(SettingsCategory item, boolean empty) {
@@ -61,8 +59,7 @@ public class SettingsCategoriesPane extends VBox {
                 setText(null);
                 setGraphic(null);
             } else {
-                icon.setIconCode(item.getIcon());
-                icon.getStyleClass().add("foreground-2");
+                icon.setIcon(item.getIcon());
                 setGraphic(icon);
                 setText(item.getName());
             }

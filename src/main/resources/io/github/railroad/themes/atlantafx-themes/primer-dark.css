@@ -7,6 +7,18 @@
     -bg-color-3: #21262d; /* l 18 */
     -bg-color-4: #30363d; /* l 17 */
 
+    -border-color-1: #21262d; /* l. 18 */
+    -border-color-2: #30363d; /* l. 17 */
+    -border-color-3: #484f58; /* l. 16 */
+    -border-color-4: #6e7681; /* l. 15 */
+    -border-color-5: #8b949e; /* l. 14 */
+    -border-color-6: #b1bac4; /* l. 13 */
+
+    -highlight-color-1: #ffffff44;
+    -highlight-color-2: #ffffff33;
+    -highlight-color-3: #ffffff22;
+    -highlight-color-4: #ffffff11;
+
     -contrast-color-1: #f0f6fc; /* l 11 */
     -contrast-color-2: #c9d1d9; /* l 12 */
     -contrast-color-3: #b1bac4; /* l 13 */

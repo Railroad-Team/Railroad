@@ -1,6 +1,9 @@
 package io.github.railroad.settings.ui.categories.general;
 
 import io.github.railroad.github.GithubAccount;
+import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.defaults.RRLabel;
+import io.github.railroad.ui.defaults.RRVBox;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
@@ -11,17 +14,17 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-public class GithubConnectionPane extends HBox {
+public class GithubConnectionPane extends RRHBox {
     private final ImageView profileImage = new ImageView();
-    private final Label profileUsername = new Label();
-    private final Label profileEmail = new Label();
+    private final Label profileUsername = new RRLabel();
+    private final Label profileEmail = new RRLabel();
     private final Button connectButton = new Button("Connect");
     private final Button disconnectButton = new Button("Disconnect");
 
     private final ObjectProperty<GithubAccount> githubAccount = new SimpleObjectProperty<>();
 
     public GithubConnectionPane() {
-        super(10);
+        setSpacing(10);
 
         this.githubAccount.set(GithubAccount.loadExisting());
         profileImage.setPreserveRatio(true);
@@ -45,7 +48,9 @@ public class GithubConnectionPane extends HBox {
             githubAccount.set(null);
         });
 
-        var detailsPane = new VBox(5, profileUsername, profileEmail);
+        var detailsPane = new RRVBox();
+        detailsPane.setSpacing(10);
+        detailsPane.getChildren().addAll(profileUsername, profileEmail);
         detailsPane.setAlignment(Pos.CENTER);
 
         if (githubAccount.get() == null) {

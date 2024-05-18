@@ -1,8 +1,8 @@
 package io.github.railroad.project.ui.project;
 
 import io.github.railroad.project.ProjectSort;
+import io.github.railroad.ui.defaults.RRComboBox;
 import javafx.collections.FXCollections;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListCell;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
@@ -10,7 +10,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.Locale;
 
-public class ProjectSortComboBox extends ComboBox<ProjectSort> {
+public class ProjectSortComboBox extends RRComboBox<ProjectSort> {
     private static final FontIcon ICON = FontIcon.of(FontAwesomeSolid.FILTER);
 
     public ProjectSortComboBox() {
