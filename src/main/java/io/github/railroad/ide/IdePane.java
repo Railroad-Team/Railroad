@@ -7,6 +7,7 @@ import io.github.railroad.layout.LayoutParseException;
 import io.github.railroad.layout.LayoutParser;
 import io.github.railroad.ui.defaults.*;
 import io.github.railroad.utility.NodeTree;
+import javafx.beans.binding.Bindings;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
 import javafx.scene.layout.*;
@@ -22,13 +23,17 @@ public class IdePane extends Pane {
         try {
             Layout layout = LayoutParser.parse(Path.of("template.railayout"));
             Pane parent = parseItem(layout.getTree().getRoot().getValue(), this);
-            parent.setMinHeight(Railroad.getWindow().getHeight());
-            parent.setMinWidth(Railroad.getWindow().getWidth());
+            bindParentSize(parent);
             getChildren().add(parent);
             parseAndAddChildren(layout.getTree().getRoot().getChildren(), parent);
         } catch (LayoutParseException exception) {
             throw new RuntimeException(exception);
         }
+    }
+
+    private void bindParentSize(Pane parent) {
+        parent.minHeightProperty().bind(Railroad.getWindow().heightProperty());
+        parent.minWidthProperty().bind(Railroad.getWindow().widthProperty());
     }
 
     private void parseAndAddChildren(List<NodeTree.Node<LayoutItem>> children, Pane parent) {
@@ -40,91 +45,73 @@ public class IdePane extends Pane {
                 } else {
                     parent.getChildren().add(child);
                 }
-
-            } else {
-                return;
-            }
-            if (!item.getChildren().isEmpty()) {
-                parseAndAddChildren(item.getChildren(), child);
+                if (!item.getChildren().isEmpty()) {
+                    parseAndAddChildren(item.getChildren(), child);
+                }
             }
         }
     }
 
-
     private Pane parseItem(LayoutItem node, Pane parent) {
-        System.out.println("[LAYOUTBUILDER] Adding new Item: " +node.getName());
+        System.out.println("[LAYOUTBUILDER] Adding new Item: " + node.getName());
+        Pane pane = createPaneForItem(node);
+        if (pane != null) {
+            bindChildSize(pane, node, parent);
+        }
+        return pane;
+    }
+
+    private Pane createPaneForItem(LayoutItem node) {
         switch (node.getName().toUpperCase()) {
-            case "HSPLIT": {
-                var xBox = new RRHBox();
-                if (node.hasProperty("size")) {
-                    xBox.setMinHeight(parent.getHeight() * (parseDouble(node.getProperty("size").toString().replace("%", "")) / 100));
-                    xBox.setMinWidth(parent.getWidth());
-                }
-                //xBox.getChildren().add(new Text("HSPLIT - " + node.getName()));
-                return xBox;
-            }
-            case "VSPLIT": {
-                var xBox = new RRVBox();
-
-                if (node.hasProperty("size")) {
-                    xBox.setMinWidth(parent.getWidth() * (parseDouble(node.getProperty("size").toString().replace("%", "")) / 100));
-                    xBox.setMinHeight(parent.getHeight());
-                }
-                //xBox.getChildren().add(new Text("VSPLIT - " + node.getName()));
-                return xBox;
-            }
-            case "MENU": {
-                var xBox = new RRMainMenu();
-                if (node.hasProperty("size")) {
-                    xBox.setMinHeight(parent.getHeight() * (parseDouble(node.getProperty("size").toString().replace("%", "")) / 100));
-                    xBox.setMinWidth(parent.getWidth());
-                }
-                return xBox;
-            }
-            case "QUICKRUN": {
-                var xBox = new RRQuickRun();
-                if (node.hasProperty("size")) {
-                    xBox.setMinWidth(parent.getWidth() * (parseDouble(node.getProperty("size").toString().replace("%", "")) / 100));
-                }
-                return xBox;
-            }
-            case "FILEEXPLORER": {
-                var xBox = new RRVBox();
-                xBox.getChildren().add(new Text("Files"));
-                if (node.hasProperty("size")) {
-                    xBox.setMinWidth(parent.getWidth() * (parseDouble(node.getProperty("size").toString().replace("%", "")) / 100));
-                }
-                return xBox;
-            }
-
-            case "TEXTEDITOR": {
-                var xBox = new RRTexteditor();
-                xBox.getChildren().add(new Text("TEXT"));
-                if (node.hasProperty("size")) {
-                    xBox.setMinWidth(parent.getWidth() * (parseDouble(node.getProperty("size").toString().replace("%", "")) / 100));
-                }
-                return xBox;
-            }
-            case "TERMINAL": {
-                var xBox = new RRTerminal();
-                xBox.getChildren().add(new Text("TERMINAL"));
-                return xBox;
-            }
-            case "GRADLETASKS": {
-                var xBox = new RRVBox();
-                xBox.getChildren().add(new Text("GRADLE"));
-                return xBox;
-            }
-            case "TABS": {
-                var xBox = new RRTabPane();
-                if (node.hasProperty("size")) {
-                    xBox.setMinWidth(parent.getWidth() * (parseDouble(node.getProperty("size").toString().replace("%", "")) / 100));
-                }
-                return xBox;
-            }
-            default: {
+            case "HSPLIT":
+                return new RRHBox();
+            case "VSPLIT":
+                return new RRVBox();
+            case "MENU":
+                return new RRMainMenu();
+            case "QUICKRUN":
+                return new RRQuickRun();
+            case "FILEEXPLORER":
+                RRVBox fileExplorer = new RRVBox();
+                fileExplorer.getChildren().add(new Text("Files"));
+                return fileExplorer;
+            case "TEXTEDITOR":
+                RRTexteditor textEditor = new RRTexteditor();
+                textEditor.getChildren().add(new Text("TEXTEDITOR"));
+                return textEditor;
+            case "TERMINAL":
+                RRTerminal terminal = new RRTerminal();
+                terminal.getChildren().add(new Text("TERMINAL"));
+                return terminal;
+            case "GRADLETASKS":
+                RRVBox gradleTasks = new RRVBox();
+                gradleTasks.getChildren().add(new Text("GRADLE"));
+                return gradleTasks;
+            case "TABS":
+                return new RRTabPane();
+            default:
                 throw new IllegalArgumentException("Unknown layout item: " + node.getName());
+        }
+    }
+
+    private void bindChildSize(Pane child, LayoutItem node, Pane parent) {
+        if (node.hasProperty("size")) {
+            String size = node.getProperty("size").toString().replace("%", "");
+            double sizePercentage = parseDouble(size) / 100;
+
+            if (child instanceof RRHBox || child instanceof RRMainMenu) {
+                child.minHeightProperty().bind(Bindings.multiply(parent.heightProperty(), sizePercentage));
+                child.minWidthProperty().bind(parent.widthProperty());
+            } else if (child instanceof RRVBox || child instanceof RRQuickRun || child instanceof RRTabPane) {
+                child.minWidthProperty().bind(Bindings.multiply(parent.widthProperty(), sizePercentage));
+                child.minHeightProperty().bind(parent.heightProperty());
+            } else {
+                child.minWidthProperty().bind(parent.widthProperty());
+                child.minHeightProperty().bind(parent.heightProperty());
             }
+        } else {
+            child.minWidthProperty().bind(parent.widthProperty());
+            child.minHeightProperty().bind(parent.heightProperty());
         }
     }
 }
