@@ -1,5 +1,5 @@
-HSplit {
-    VSplit {
+VSplit {
+    HSplit {
        75%,
        FileExplorer {
            15%,
@@ -13,17 +13,29 @@ HSplit {
                 "Test.java"
            ]
        },
-       GradleTasks {
-           20%,
-           tasks: [
-               "build",
-               "clean",
-               "test"
-           ]
-       }
     },
-    Terminal {
-       25%,
-       content: "gradle build"
+    Hsplit {
+        25%
+        QuickRun {
+            2%
+        },
+        Tabs {
+            98%,
+            GradleTasks {
+               20%,
+               tabname: "Tasks",
+               tasks: [
+                   "build",
+                   "clean",
+                   "test"
+               ]
+            },
+            Terminal {
+                25%,
+                tabname: "Terminal",
+                content: "gradle build"
+            }
+        }
     }
+
 }
