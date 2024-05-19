@@ -1,5 +1,7 @@
 package io.github.railroad.project;
 
+import io.github.railroad.Railroad;
+import io.github.railroad.ide.IdePane;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 
@@ -152,6 +154,8 @@ public class Project {
     public void open() {
         System.out.println("Opening project: " + path);
         setLastOpened(System.currentTimeMillis());
+        var idePane = new IdePane();
+        Railroad.getScene().setRoot(idePane);
     }
 
     @Override

@@ -12,4 +12,8 @@ public class Layout {
     public void print() {
         tree.print();
     }
+
+    public NodeTree<LayoutItem> getTree() {
+        return tree;
+    }
 }
