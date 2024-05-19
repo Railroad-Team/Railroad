@@ -83,8 +83,8 @@ public class Discord extends Plugin {
             phaseResult.addError(new Error(exception.getMessage()));
         }
 
-        this.updateStatus(PluginStates.ACTIVITY_UPDATE_FINISHED);
-        this.updateStatus(PluginStates.LOADED);
+        updateStatus(PluginStates.ACTIVITY_UPDATE_FINISHED);
+        updateStatus(PluginStates.LOADED);
         return new PluginPhaseResult();
     }
 

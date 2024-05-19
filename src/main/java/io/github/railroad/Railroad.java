@@ -115,7 +115,7 @@ public class Railroad extends Application {
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         PLUGIN_MANAGER.unLoadAllPlugins();
         System.out.println("Stopping Railroad");
         System.exit(0);
