@@ -14,7 +14,7 @@ VSplit {
            ]
        },
     },
-    Hsplit {
+    HSplit {
         25%
         QuickRun {
             2%
