@@ -18,7 +18,7 @@ import java.util.List;
 
 import static java.lang.Double.parseDouble;
 
-public class IdePane extends Pane {
+public class IdePane extends VBox {
     public IdePane() {
         try {
             Layout layout = LayoutParser.parse(Path.of("template.railayout"));
@@ -41,7 +41,9 @@ public class IdePane extends Pane {
             Pane child = parseItem(item.getValue(), parent);
             if (child != null) {
                 if (parent instanceof RRTabPane) {
-                    ((RRTabPane) parent).getTabs().add(new Tab(item.getValue().getProperty("tabname").toString(), child));
+                    Tab tab = new Tab(item.getValue().getProperty("tabname").toString(), child);
+                    tab.setClosable(false);
+                    ((RRTabPane) parent).getTabs().add(tab);
                 } else {
                     parent.getChildren().add(child);
                 }
