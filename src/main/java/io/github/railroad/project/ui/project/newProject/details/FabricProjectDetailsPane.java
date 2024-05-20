@@ -1,6 +1,7 @@
 package io.github.railroad.project.ui.project.newProject.details;
 
-import io.github.railroad.minecraft.FabricVersion;
+import io.github.railroad.minecraft.FabricAPIVersion;
+import io.github.railroad.minecraft.FabricLoaderVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.minecraft.RecommendableVersion;
 import io.github.railroad.minecraft.mapping.MappingChannel;
@@ -40,11 +41,14 @@ public class FabricProjectDetailsPane extends RRVBox {
     private final TextField licenseCustomField = new TextField();
 
     private final ComboBox<MinecraftVersion> minecraftVersionComboBox = new ComboBox<>();
-    private final ComboBox<FabricVersion> fabricVersionComboBox = new ComboBox<>();
+    private final ComboBox<FabricLoaderVersion> fabricLoaderVersionComboBox = new ComboBox<>();
+    private final CheckBox includeFapiCheckBox = new CheckBox();
+    private final ComboBox<FabricAPIVersion> fapiVersionComboBox = new ComboBox<>();
     private final TextField modIdField = new TextField();
     private final TextField modNameField = new TextField();
     private final TextField mainClassField = new TextField();
     private final CheckBox useAccessWidenerCheckBox = new CheckBox();
+    private final CheckBox splitSourcesCheckBox = new CheckBox();
 
     private final ComboBox<MappingChannel> mappingChannelComboBox = new ComboBox<>();
     private final ComboBox<MappingVersion> mappingVersionComboBox = new ComboBox<>();
@@ -199,29 +203,61 @@ public class FabricProjectDetailsPane extends RRVBox {
         });
         minecraftVersionBox.getChildren().addAll(minecraftVersionLabel, minecraftVersionComboBox);
 
-        // TODO: Currently this is just the loader version, not the actual fabric api version
-        var fabricVersionBox = new RRHBox(10);
-        fabricVersionBox.setAlignment(Pos.CENTER_LEFT);
-        var fabricVersionLabel = new Label("Fabric Version:");
-        fabricVersionLabel.setLabelFor(fabricVersionComboBox);
+        var fabricLoaderVersionBox = new RRHBox(10);
+        fabricLoaderVersionBox.setAlignment(Pos.CENTER_LEFT);
+        var fabricLoaderVersionLabel = new Label("Loader Version:");
+        fabricLoaderVersionLabel.setLabelFor(fabricLoaderVersionComboBox);
+        fabricLoaderVersionComboBox.setCellFactory(param -> new StarableListCell<>(
+                version -> Objects.equals(version.loaderVersion().version(), FabricLoaderVersion.getLatestVersion(minecraftVersionComboBox.getValue()).loaderVersion().version()),
+                version -> false,
+                fabricLoaderVersion -> fabricLoaderVersion.loaderVersion().version()));
+        fabricLoaderVersionComboBox.setButtonCell(new StarableListCell<>(
+                version -> Objects.equals(version.loaderVersion().version(), FabricLoaderVersion.getLatestVersion(minecraftVersionComboBox.getValue()).loaderVersion().version()),
+                version -> false,
+                fabricLoaderVersion -> fabricLoaderVersion.loaderVersion().version()));
+        fabricLoaderVersionComboBox.getItems().addAll(FabricLoaderVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
+        fabricLoaderVersionComboBox.setValue(FabricLoaderVersion.getLatestVersion(MinecraftVersion.getLatestStableVersion()));
+        fabricLoaderVersionBox.getChildren().addAll(fabricLoaderVersionLabel, fabricLoaderVersionComboBox);
+
+        var fapiBox = new RRVBox(10);
+        fapiBox.setAlignment(Pos.CENTER_LEFT);
+        var includeFapiBox = new RRHBox(10);
+        includeFapiBox.setAlignment(Pos.CENTER_LEFT);
+        var includeFapiLabel = new Label("Include Fabric API:");
+        includeFapiLabel.setLabelFor(includeFapiCheckBox);
+        includeFapiCheckBox.setSelected(true);
+        includeFapiCheckBox.setOnAction(event -> {
+            fapiVersionComboBox.setDisable(!includeFapiCheckBox.isSelected());
+        });
+        var fapiVersionBox = new RRHBox(10);
+        fapiVersionBox.setAlignment(Pos.CENTER_LEFT);
+        var fapiVersionLabel = new Label("Fabric API Version:");
+        fapiVersionLabel.setLabelFor(fapiVersionComboBox);
+        fapiVersionComboBox.setDisable(!includeFapiCheckBox.isSelected());
+        fapiVersionComboBox.setCellFactory(param -> new StarableListCell<>(
+                version -> Objects.equals(version, FabricAPIVersion.getLatest()),
+                version -> false,
+                FabricAPIVersion::version));
+        fapiVersionComboBox.setButtonCell(new StarableListCell<>(
+                version -> Objects.equals(version, FabricAPIVersion.getLatest()),
+                version -> false,
+                FabricAPIVersion::version));
+        fapiVersionComboBox.getItems().addAll(FabricAPIVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
+        fapiVersionComboBox.setValue(FabricAPIVersion.getLatest());
+        includeFapiBox.getChildren().addAll(includeFapiLabel, includeFapiCheckBox);
+        fapiVersionBox.getChildren().addAll(fapiVersionLabel, fapiVersionComboBox);
+        fapiBox.getChildren().addAll(includeFapiBox, fapiVersionBox);
+
         minecraftVersionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-            fabricVersionComboBox.getItems().setAll(FabricVersion.getVersions(newValue));
-            fabricVersionComboBox.setValue(FabricVersion.getLatestVersion(newValue));
+            fabricLoaderVersionComboBox.getItems().setAll(FabricLoaderVersion.getVersions(newValue));
+            fabricLoaderVersionComboBox.setValue(FabricLoaderVersion.getLatestVersion(newValue));
 
             MappingHelper.loadMappings(mappingChannelComboBox.getItems(), newValue);
             mappingChannelComboBox.setValue(mappingChannelComboBox.getItems().getFirst());
+
+            fapiVersionComboBox.getItems().setAll(FabricAPIVersion.getVersions(newValue));
+            fapiVersionComboBox.setValue(FabricAPIVersion.getLatest());
         });
-        fabricVersionComboBox.setCellFactory(param -> new StarableListCell<>(
-                version -> Objects.equals(version.loaderVersion().version(), FabricVersion.getLatestVersion(minecraftVersionComboBox.getValue()).loaderVersion().version()),
-                version -> false,
-                fabricVersion -> fabricVersion.loaderVersion().version()));
-        fabricVersionComboBox.setButtonCell(new StarableListCell<>(
-                version -> Objects.equals(version.loaderVersion().version(), FabricVersion.getLatestVersion(minecraftVersionComboBox.getValue()).loaderVersion().version()),
-                version -> false,
-                fabricVersion -> fabricVersion.loaderVersion().version()));
-        fabricVersionComboBox.getItems().addAll(FabricVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
-        fabricVersionComboBox.setValue(FabricVersion.getLatestVersion(MinecraftVersion.getLatestStableVersion()));
-        fabricVersionBox.getChildren().addAll(fabricVersionLabel, fabricVersionComboBox);
 
         var modIdBox = new RRHBox(10);
         modIdBox.setAlignment(Pos.CENTER_LEFT);
@@ -323,8 +359,15 @@ public class FabricProjectDetailsPane extends RRVBox {
         useAccessWidenerLabel.setLabelFor(useAccessWidenerCheckBox);
         useAccessWidenerBox.getChildren().addAll(useAccessWidenerLabel, useAccessWidenerCheckBox);
 
-        minecraftSection.getChildren().addAll(minecraftVersionBox, fabricVersionBox,
-                modIdBox, modNameBox, mainClassBox, useAccessWidenerBox);
+        var splitSourcesBox = new RRHBox(10);
+        splitSourcesBox.setAlignment(Pos.CENTER_LEFT);
+        var splitSourcesLabel = new Label("Split Sources:");
+        splitSourcesLabel.setLabelFor(splitSourcesCheckBox);
+        splitSourcesCheckBox.setSelected(true);
+        splitSourcesBox.getChildren().addAll(splitSourcesLabel, splitSourcesCheckBox);
+
+        minecraftSection.getChildren().addAll(minecraftVersionBox, fabricLoaderVersionBox, fapiBox,
+                modIdBox, modNameBox, mainClassBox, useAccessWidenerBox, splitSourcesBox);
 
         // Mapping Section
         var mappingSection = new RRVBox(10);
@@ -735,11 +778,13 @@ public class FabricProjectDetailsPane extends RRVBox {
         License license = licenseComboBox.getValue();
         String licenseCustom = license == License.CUSTOM ? licenseCustomField.getText().trim() : null;
         MinecraftVersion minecraftVersion = minecraftVersionComboBox.getValue();
-        FabricVersion fabricVersion = fabricVersionComboBox.getValue();
+        FabricLoaderVersion fabricLoaderVersion = fabricLoaderVersionComboBox.getValue();
+        Optional<FabricAPIVersion> fapiVersion = Optional.ofNullable(includeFapiCheckBox.isSelected() ? fapiVersionComboBox.getValue() : null);
         String modId = modIdField.getText().trim();
         String modName = modNameField.getText().trim();
         String mainClass = mainClassField.getText().trim();
         boolean useAccessWidener = useAccessWidenerCheckBox.isSelected();
+        boolean splitSources = splitSourcesCheckBox.isSelected();
         MappingChannel mappingChannel = mappingChannelComboBox.getValue();
         MappingVersion mappingVersion = mappingVersionComboBox.getValue();
         Optional<String> author = Optional.of(authorField.getText().trim()).filter(s -> !s.isBlank());
@@ -750,7 +795,8 @@ public class FabricProjectDetailsPane extends RRVBox {
         String version = versionField.getText().trim();
 
         return new FabricProjectData(projectName, projectPath, createGit, license, licenseCustom,
-                minecraftVersion, fabricVersion, modId, modName, mainClass, useAccessWidener,
+                minecraftVersion, fabricLoaderVersion, fapiVersion,
+                modId, modName, mainClass, useAccessWidener, splitSources,
                 mappingChannel, mappingVersion,
                 author, description, issues,
                 groupId, artifactId, version);

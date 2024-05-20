@@ -19,7 +19,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandle;
 import java.util.Map;
 import java.util.Optional;
 

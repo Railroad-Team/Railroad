@@ -3,6 +3,7 @@ package io.github.railroad.minecraft;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.annotations.SerializedName;
 import io.github.railroad.Railroad;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -19,19 +20,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public record FabricVersion(LoaderVersion loaderVersion, IntermediaryVersion intermediaryVersion,
-                            LauncherMeta launcherMeta) {
-    private static final ObservableMap<MinecraftVersion, ObservableList<FabricVersion>> VERSIONS = FXCollections.observableHashMap();
-    private static final ObjectProperty<FabricVersion> LATEST = new SimpleObjectProperty<>();
+public record FabricLoaderVersion(LoaderVersion loaderVersion, IntermediaryVersion intermediaryVersion,
+                                  LauncherMeta launcherMeta) {
+    private static final ObservableMap<MinecraftVersion, ObservableList<FabricLoaderVersion>> VERSIONS = FXCollections.observableHashMap();
+    private static final ObjectProperty<FabricLoaderVersion> LATEST = new SimpleObjectProperty<>();
     private static final String LOADER_VERSIONS_URL = "https://meta.fabricmc.net/v2/versions/loader/%s";
     private static final String LOADER_VERSION_URL = "https://meta.fabricmc.net/v2/versions/loader/%s/%s";
 
-    public static List<FabricVersion> getVersions(MinecraftVersion minecraftVersion) {
+    public static List<FabricLoaderVersion> getVersions(MinecraftVersion minecraftVersion) {
         if (VERSIONS.containsKey(minecraftVersion))
             return VERSIONS.get(minecraftVersion);
 
         try {
-            List<FabricVersion> versions = new ArrayList<>();
+            List<FabricLoaderVersion> versions = new ArrayList<>();
 
             JsonArray jsonVersions = Railroad.GSON.fromJson(new InputStreamReader(new URI(LOADER_VERSIONS_URL.formatted(minecraftVersion.id())).toURL().openStream()), JsonArray.class);
             for (JsonElement versionElement : jsonVersions) {
@@ -45,7 +46,7 @@ public record FabricVersion(LoaderVersion loaderVersion, IntermediaryVersion int
                 LoaderVersion loaderVersion = Railroad.GSON.fromJson(versionObject.get("loader"), LoaderVersion.class);
                 IntermediaryVersion intermediaryVersion = Railroad.GSON.fromJson(versionObject.get("intermediary"), IntermediaryVersion.class);
                 LauncherMeta launcherMeta = Railroad.GSON.fromJson(versionObject.get("launcherMeta"), LauncherMeta.class);
-                var fabricVersion = new FabricVersion(loaderVersion, intermediaryVersion, launcherMeta);
+                var fabricVersion = new FabricLoaderVersion(loaderVersion, intermediaryVersion, launcherMeta);
                 versions.add(fabricVersion);
                 VERSIONS.computeIfAbsent(minecraftVersion, key -> FXCollections.observableArrayList()).add(fabricVersion);
             }
@@ -58,14 +59,14 @@ public record FabricVersion(LoaderVersion loaderVersion, IntermediaryVersion int
         }
     }
 
-    public static FabricVersion latest() {
+    public static FabricLoaderVersion latest() {
         if (LATEST.getValue() != null)
             return LATEST.getValue();
 
         List<MinecraftVersion> minecraftVersions = MinecraftVersion.getVersions();
         for (int i = minecraftVersions.size() - 1; i >= 0; i--) {
             MinecraftVersion minecraftVersion = minecraftVersions.get(i);
-            FabricVersion latestVersion = getLatestVersion(minecraftVersion);
+            FabricLoaderVersion latestVersion = getLatestVersion(minecraftVersion);
             if (latestVersion != null) {
                 LATEST.setValue(latestVersion);
                 return latestVersion;
@@ -75,19 +76,19 @@ public record FabricVersion(LoaderVersion loaderVersion, IntermediaryVersion int
         return null;
     }
 
-    public static FabricVersion getLatestVersion(MinecraftVersion minecraftVersion) {
+    public static FabricLoaderVersion getLatestVersion(MinecraftVersion minecraftVersion) {
         return getVersions(minecraftVersion).stream().findFirst().orElse(null);
     }
 
-    public static Optional<FabricVersion> fromId(MinecraftVersion minecraftVersion, String version) {
+    public static Optional<FabricLoaderVersion> fromId(MinecraftVersion minecraftVersion, String version) {
         if (version == null || version.isEmpty())
             return Optional.empty();
 
-        for (Map.Entry<MinecraftVersion, ObservableList<FabricVersion>> entry : VERSIONS.entrySet()) {
+        for (Map.Entry<MinecraftVersion, ObservableList<FabricLoaderVersion>> entry : VERSIONS.entrySet()) {
             if (entry.getKey().equals(minecraftVersion)) {
-                for (FabricVersion fabricVersion : entry.getValue()) {
-                    if (fabricVersion.loaderVersion().version().equals(version))
-                        return Optional.of(fabricVersion);
+                for (FabricLoaderVersion fabricLoaderVersion : entry.getValue()) {
+                    if (fabricLoaderVersion.loaderVersion().version().equals(version))
+                        return Optional.of(fabricLoaderVersion);
                 }
             }
         }
@@ -100,7 +101,7 @@ public record FabricVersion(LoaderVersion loaderVersion, IntermediaryVersion int
             LoaderVersion loaderVersion = Railroad.GSON.fromJson(versionObject.get("loader"), LoaderVersion.class);
             IntermediaryVersion intermediaryVersion = Railroad.GSON.fromJson(versionObject.get("intermediary"), IntermediaryVersion.class);
             LauncherMeta launcherMeta = Railroad.GSON.fromJson(versionObject.get("launcherMeta"), LauncherMeta.class);
-            return Optional.of(new FabricVersion(loaderVersion, intermediaryVersion, launcherMeta));
+            return Optional.of(new FabricLoaderVersion(loaderVersion, intermediaryVersion, launcherMeta));
         } catch (IOException | URISyntaxException exception) {
             System.err.println("Failed to load Fabric version " + version + " for Minecraft " + minecraftVersion.id());
             exception.printStackTrace();
@@ -114,7 +115,7 @@ public record FabricVersion(LoaderVersion loaderVersion, IntermediaryVersion int
     public record IntermediaryVersion(String version, String maven, boolean stable) {
     }
 
-    public record LauncherMeta(String version, int minJavaVersion, Libraries libraries) {
+    public record LauncherMeta(String version, @SerializedName("min_java_version") int minJavaVersion, Libraries libraries) {
         public record Libraries(List<Library> client, List<Library> common, List<Library> server,
                                 List<Library> development) {
             public record Library(String name, String url, String md5, String sha1, String sha256, String sha512,

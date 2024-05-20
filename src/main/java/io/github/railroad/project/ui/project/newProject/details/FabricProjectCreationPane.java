@@ -1,13 +1,18 @@
 package io.github.railroad.project.ui.project.newProject.details;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import io.github.palexdev.materialfx.controls.MFXProgressBar;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import io.github.railroad.Railroad;
+import io.github.railroad.minecraft.FabricAPIVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
+import io.github.railroad.minecraft.mapping.MappingChannel;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.data.FabricProjectData;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.utility.ExceptionlessRunnable;
 import io.github.railroad.utility.FileHandler;
 import javafx.application.Platform;
 import javafx.beans.property.ListProperty;
@@ -131,12 +136,15 @@ public class FabricProjectCreationPane extends RRBorderPane {
                         LocalDateTime releaseDate = version.releaseTime();
 
                         List<MinecraftVersion> versions = MinecraftVersion.getVersions();
-                        // find version with closest release date
+                        // find version with the closest release date
                         MinecraftVersion closest = null;
-                        for (MinecraftVersion v : versions) {
-                            if (v.type() == MinecraftVersion.VersionType.RELEASE) {
-                                if (closest == null || Math.abs(v.releaseTime().toEpochSecond(ZoneOffset.UTC) - releaseDate.toEpochSecond(ZoneOffset.UTC)) < Math.abs(closest.releaseTime().toEpochSecond(ZoneOffset.UTC) - releaseDate.toEpochSecond(ZoneOffset.UTC))) {
-                                    closest = v;
+                        for (MinecraftVersion mcVersion : versions) {
+                            if (mcVersion.type() == MinecraftVersion.VersionType.RELEASE) {
+                                long releaseTime = releaseDate.toEpochSecond(ZoneOffset.UTC);
+                                if (closest == null ||
+                                        Math.abs(mcVersion.releaseTime().toEpochSecond(ZoneOffset.UTC) - releaseTime) <
+                                                Math.abs(closest.releaseTime().toEpochSecond(ZoneOffset.UTC) - releaseTime)) {
+                                    closest = mcVersion;
                                 }
                             }
                         }
@@ -158,80 +166,168 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 String modUrl = String.format(EXAMPLE_MOD_URL, minecraftId);
 
                 Files.createDirectories(projectPath);
-                updateProgress(1, 10);
+                updateProgress(1, 13);
                 Thread.sleep(500);
+                System.out.println("Project directory created successfully.");
 
                 FileHandler.copyUrlToFile(modUrl, Path.of(projectPath.resolve("example-mod.zip").toString()));
-                updateProgress(3, 10);
+                updateProgress(3, 13);
                 Thread.sleep(500);
+                System.out.println("Example mod downloaded successfully.");
 
                 FileHandler.unzipFile(Path.of(projectPath.resolve("example-mod.zip").toString()).toString(), projectPath.toString());
-                updateProgress(5, 10);
+                updateProgress(5, 13);
                 Thread.sleep(500);
+                System.out.println("Example mod extracted successfully.");
 
                 Files.delete(Path.of(projectPath.resolve("example-mod.zip").toString()));
-                updateProgress(6, 10);
+                updateProgress(6, 13);
                 Thread.sleep(500);
-
-                Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
-                updateProgress(7, 10);
-                Thread.sleep(500);
+                System.out.println("Example mod zip deleted successfully.");
 
                 Path folder = projectPath.resolve("fabric-example-mod-" + minecraftId);
                 FileHandler.copyFolder(folder, projectPath);
                 FileHandler.deleteFolder(folder);
-                updateProgress(8, 10);
+                updateProgress(7, 13);
                 Thread.sleep(500);
+                System.out.println("Project copied successfully.");
 
                 Path gradlePropertiesFile = projectPath.resolve("gradle.properties");
                 FileHandler.updateKeyValuePairByLine("org.gradle.jvmargs", "-Xmx4G", gradlePropertiesFile);
                 FileHandler.updateKeyValuePairByLine("minecraft_version", version.id(), gradlePropertiesFile);
-                FileHandler.updateKeyValuePairByLine("loader_version", data.fabricVersion().loaderVersion().version(), gradlePropertiesFile);
-                // TODO: Mappings and api version
+                FileHandler.updateKeyValuePairByLine("loader_version", data.fabricLoaderVersion().loaderVersion().version(), gradlePropertiesFile);
+                FileHandler.updateKeyValuePairByLine("fabric_version", data.fapiVersion().map(FabricAPIVersion::fullVersion).orElse(""), gradlePropertiesFile);
+                if (data.mappingChannel() == MappingChannel.YARN) {
+                    FileHandler.updateKeyValuePairByLine("yarn_mappings", data.mappingVersion().getId(), gradlePropertiesFile);
+                }
                 FileHandler.updateKeyValuePairByLine("mod_version", data.version(), gradlePropertiesFile);
                 FileHandler.updateKeyValuePairByLine("maven_group", data.groupId(), gradlePropertiesFile);
                 FileHandler.updateKeyValuePairByLine("archives_base_name", data.modId(), gradlePropertiesFile);
                 System.out.println("gradle.properties updated successfully.");
-                updateProgress(9, 10);
+                updateProgress(8, 13);
                 Thread.sleep(500);
 
-                Path mainExample = projectPath
-                        .resolve("src")
-                        .resolve("main")
-                        .resolve("java")
-                        .resolve("com")
-                        .resolve("example");
-                Path clientExample = projectPath
-                        .resolve("src")
-                        .resolve("client")
-                        .resolve("java")
-                        .resolve("com")
-                        .resolve("example");
+                // rename "com/example" to data.groupId() + "/" + data.modId()
+                Path mainJava = projectPath.resolve("src/main/java/");
+                Path clientJava = projectPath.resolve("src/client/java/");
 
-                Path exampleModClass = mainExample.resolve("ExampleMod.java");
-                Path mainMixin = clientExample.resolve("mixin");
-                Path clientMixin = clientExample.resolve("mixin");
-                Path exampleModClientClass = clientExample.resolve("ExampleModClient.java");
+                Path oldPath = mainJava.resolve("com/example/");
+                String newFolderPath = data.groupId().replace(".", "/") + "/" + data.modId();
+                Path newPath = mainJava.resolve(newFolderPath);
+                Files.createDirectories(newPath.getParent());
+                Files.move(oldPath, newPath);
 
-                String groupId = data.groupId().replace(".", "/");
-                Path mainGroupPath = mainExample.resolve("../../").resolve(groupId);
-                Path clientGroupPath = clientExample.resolve("../../").resolve(groupId);
+                // Delete 'com' directory if it's empty
+                final Path comDir = mainJava.resolve("com");
+                FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> Files.deleteIfExists(comDir));
 
-                Files.createDirectories(mainGroupPath);
-                Files.createDirectories(clientGroupPath);
+                oldPath = clientJava.resolve("com/example/");
+                newPath = clientJava.resolve(newFolderPath);
+                Files.createDirectories(newPath.getParent());
+                Files.move(oldPath, newPath);
 
-                Files.copy(exampleModClass, mainGroupPath.resolve("ExampleMod.java"));
-                Files.copy(mainMixin, mainGroupPath.resolve("mixin"));
-                Files.copy(clientMixin, clientGroupPath.resolve("mixin"));
-                Files.copy(exampleModClientClass, clientGroupPath.resolve("ExampleModClient.java"));
+                // Delete 'com' directory if it's empty
+                final Path comDir2 = clientJava.resolve("com");
+                FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> Files.deleteIfExists(comDir2));
 
-                FileHandler.deleteFolder(mainExample);
-                FileHandler.deleteFolder(clientExample);
+                updateProgress(9, 13);
+                Thread.sleep(500);
+                System.out.println("Package renamed successfully.");
 
-                updateProgress(10, 10);
+                Path resources = projectPath.resolve("src/main/resources");
+                FileHandler.deleteFolder(resources.resolve("assets"));
+
+                // TODO: Change based on schema version
+                Path fabricModJson = resources.resolve("fabric.mod.json");
+                String fabricModJsonContent = Files.readString(fabricModJson);
+                JsonObject fabricModJsonObj = Railroad.GSON.fromJson(fabricModJsonContent, JsonObject.class);
+                fabricModJsonObj.addProperty("id", data.modId());
+                fabricModJsonObj.addProperty("name", data.modName());
+                data.description().ifPresent(description -> fabricModJsonObj.addProperty("description", description));
+                data.author().ifPresent(author -> {
+                    var authors = new JsonArray();
+                    String[] split = author.split(",");
+                    for (String s : split) {
+                        authors.add(s.trim());
+                    }
+
+                    if(split.length == 0) {
+                        authors.add(author);
+                    }
+
+                    fabricModJsonObj.add("authors", authors);
+                });
+                fabricModJsonObj.addProperty("license", data.license().getName());
+
+                JsonObject entrypoints = fabricModJsonObj.getAsJsonObject("entrypoints");
+                entrypoints.addProperty("main", data.groupId() + "." + data.modId() + "." + data.mainClass());
+                entrypoints.addProperty("client", data.groupId() + "." + data.modId() + "." + data.mainClass() + "Client");
+
+                var mixins = new JsonArray();
+                mixins.add(data.modId() + ".mixins.json");
+                var clientMixin = new JsonObject();
+                clientMixin.addProperty("config", data.modId() + ".client.mixins.json");
+                clientMixin.addProperty("environment", "client");
+                mixins.add(clientMixin);
+                fabricModJsonObj.add("mixins", mixins);
+
+                var depends = new JsonObject();
+                depends.addProperty("fabricloader", ">=" + data.fabricLoaderVersion().loaderVersion().version());
+                depends.addProperty("minecraft", "~" + version.id());
+                depends.addProperty("java", ">=" + fabricModJsonObj.get("depends").getAsJsonObject().get("java").getAsString());
+                data.fapiVersion().ifPresentOrElse(
+                        fabricAPIVersion -> depends.addProperty("fabric-api", ">=" + fabricAPIVersion.fullVersion()),
+                        () -> depends.addProperty("fabric-api", "*")
+                );
+                fabricModJsonObj.add("depends", depends);
+
+                fabricModJsonObj.remove("suggests");
+
+                Files.writeString(fabricModJson, Railroad.GSON.toJson(fabricModJsonObj));
+                updateProgress(10, 13);
+                Thread.sleep(500);
+                System.out.println("fabric.mod.json updated successfully.");
+
+                Files.move(resources.resolve("modid.mixins.json"), resources.resolve(data.modId() + ".mixins.json"));
+                String content = Files.readString(resources.resolve(data.modId() + ".mixins.json"));
+                content = content.replace("com.example", data.groupId() + "." + data.modId());
+                Files.writeString(resources.resolve(data.modId() + ".mixins.json"), content);
+
+                Path clientResources = projectPath.resolve("src/client/resources");
+                Files.move(clientResources.resolve("modid.client.mixins.json"), clientResources.resolve(data.modId() + ".client.mixins.json"));
+                content = Files.readString(clientResources.resolve(data.modId() + ".client.mixins.json"));
+                content = content.replace("com.example", data.groupId() + "." + data.modId());
+                Files.writeString(clientResources.resolve(data.modId() + ".client.mixins.json"), content);
+                updateProgress(11, 13);
+                Thread.sleep(500);
+                System.out.println("Mixins files renamed successfully.");
+
+                // Rename ExampleMod.java and ExampleModClient.java
+                Path mainClass = mainJava.resolve(newFolderPath).resolve("ExampleMod.java");
+                Files.move(mainClass, mainClass.resolveSibling(data.mainClass() + ".java"));
+                String mainClassContent = Files.readString(mainClass.resolveSibling(data.mainClass() + ".java"));
+                mainClassContent = mainClassContent.replace("com.example", data.groupId() + "." + data.modId());
+                mainClassContent = mainClassContent.replace("ExampleMod", data.mainClass());
+                Files.writeString(mainClass.resolveSibling(data.mainClass() + ".java"), mainClassContent);
+
+                mainClass = clientJava.resolve(newFolderPath).resolve("ExampleModClient.java");
+                Files.move(mainClass, mainClass.resolveSibling(data.mainClass() + "Client.java"));
+                mainClassContent = Files.readString(mainClass.resolveSibling(data.mainClass() + "Client.java"));
+                mainClassContent = mainClassContent.replace("com.example", data.groupId() + "." + data.modId());
+                mainClassContent = mainClassContent.replace("ExampleMod", data.mainClass());
+                Files.writeString(mainClass.resolveSibling(data.mainClass() + "Client.java"), mainClassContent);
+                updateProgress(12, 13);
+                Thread.sleep(500);
+                System.out.println("Main classes renamed successfully.");
+
+                Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
+                updateProgress(13, 13);
+                Thread.sleep(500);
+
+                System.out.println("Project created successfully.");
             } catch (IOException exception) {
                 // Handle errors
-                Platform.runLater(() -> showErrorAlert("Error", "An error occurred while creating the project.", exception.getMessage()));
+                Platform.runLater(() -> showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage()));
                 exception.printStackTrace();
             }
 

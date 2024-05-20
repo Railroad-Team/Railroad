@@ -108,15 +108,39 @@ public class FileHandler {
         try (Stream<Path> paths = Files.walk(folder)) {
             paths.sorted(Comparator.reverseOrder()).forEach(path -> {
                 try {
-                    Files.delete(path);
+                    Files.deleteIfExists(path);
                 } catch (IOException exception) {
                     throw new RuntimeException("Failed to delete folder", exception);
                 }
             });
-
-            Files.delete(folder);
         } catch (IOException exception) {
             throw new RuntimeException("Failed to delete folder", exception);
         }
+    }
+
+    public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty, Runnable onNotEmpty) throws IOException {
+        if(Files.notExists(directory)) {
+            directory.toFile().mkdirs();
+            onEmpty.run();
+            return true;
+        }
+
+        try (Stream<Path> paths = Files.list(directory)) {
+            if(paths.findFirst().isEmpty()) {
+                onEmpty.run();
+                return true;
+            } else {
+                onNotEmpty.run();
+                return false;
+            }
+        }
+    }
+
+    public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty) throws IOException {
+        return isDirectoryEmpty(directory, onEmpty, () -> {});
+    }
+
+    public static boolean isDirectoryEmpty(Path directory) throws IOException {
+        return isDirectoryEmpty(directory, () -> {});
     }
 }
