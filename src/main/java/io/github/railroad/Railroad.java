@@ -25,6 +25,9 @@ import java.net.URL;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+import static io.github.railroad.Startup.LOGGER;
+
+
 public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -110,14 +113,16 @@ public class Railroad extends Application {
         primaryStage.setScene(scene);
         primaryStage.setTitle("Railroad - 1.0.0(dev)");
         primaryStage.show();
-        // FIXME window is not being focused when it open
+        // FIXME window is not being focused when it opens
+
+        LOGGER.info("Railroad started");
         PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
     }
 
     @Override
     public void stop() {
         PLUGIN_MANAGER.unLoadAllPlugins();
-        System.out.println("Stopping Railroad");
+        LOGGER.info("Stopping Railroad");
         System.exit(0);
     }
 

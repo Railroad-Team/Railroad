@@ -4,10 +4,13 @@ import io.github.railroad.layout.Layout;
 import io.github.railroad.layout.LayoutParseException;
 import io.github.railroad.layout.LayoutParser;
 import javafx.application.Application;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 
 public class Startup {
+    public static final Logger LOGGER = LoggerFactory.getLogger(Startup.class);
     private static final boolean TEST = false;
 
     public static void main(String[] args) {
