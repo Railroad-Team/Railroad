@@ -19,14 +19,13 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import okhttp3.OkHttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Optional;
 import java.util.function.Consumer;
-
-import static io.github.railroad.Startup.LOGGER;
-
 
 public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
@@ -34,6 +33,7 @@ public class Railroad extends Application {
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
     private static boolean DEBUG = false;
     private static Scene scene;
     private static Stage window;
