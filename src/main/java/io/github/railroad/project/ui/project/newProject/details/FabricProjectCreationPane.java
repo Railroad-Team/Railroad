@@ -37,6 +37,7 @@ import java.util.Optional;
 
 public class FabricProjectCreationPane extends RRBorderPane {
     private static final String EXAMPLE_MOD_URL = "https://github.com/FabricMC/fabric-example-mod/archive/refs/heads/%s.zip";
+    private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/fabric-project-creation/templates/fabric/%s/template_build.gradle";
 
     private final FabricProjectData data;
     private final MFXProgressSpinner progressSpinner = new MFXProgressSpinner();
@@ -166,29 +167,29 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 String modUrl = String.format(EXAMPLE_MOD_URL, minecraftId);
 
                 Files.createDirectories(projectPath);
-                updateProgress(1, 13);
+                updateProgress(1, 14);
                 Thread.sleep(500);
                 System.out.println("Project directory created successfully.");
 
                 FileHandler.copyUrlToFile(modUrl, Path.of(projectPath.resolve("example-mod.zip").toString()));
-                updateProgress(3, 13);
+                updateProgress(3, 14);
                 Thread.sleep(500);
                 System.out.println("Example mod downloaded successfully.");
 
                 FileHandler.unzipFile(Path.of(projectPath.resolve("example-mod.zip").toString()).toString(), projectPath.toString());
-                updateProgress(5, 13);
+                updateProgress(5, 14);
                 Thread.sleep(500);
                 System.out.println("Example mod extracted successfully.");
 
                 Files.delete(Path.of(projectPath.resolve("example-mod.zip").toString()));
-                updateProgress(6, 13);
+                updateProgress(6, 14);
                 Thread.sleep(500);
                 System.out.println("Example mod zip deleted successfully.");
 
                 Path folder = projectPath.resolve("fabric-example-mod-" + minecraftId);
                 FileHandler.copyFolder(folder, projectPath);
                 FileHandler.deleteFolder(folder);
-                updateProgress(7, 13);
+                updateProgress(7, 14);
                 Thread.sleep(500);
                 System.out.println("Project copied successfully.");
 
@@ -204,7 +205,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 FileHandler.updateKeyValuePairByLine("maven_group", data.groupId(), gradlePropertiesFile);
                 FileHandler.updateKeyValuePairByLine("archives_base_name", data.modId(), gradlePropertiesFile);
                 System.out.println("gradle.properties updated successfully.");
-                updateProgress(8, 13);
+                updateProgress(8, 14);
                 Thread.sleep(500);
 
                 // rename "com/example" to data.groupId() + "/" + data.modId()
@@ -230,7 +231,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 final Path comDir2 = clientJava.resolve("com");
                 FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> Files.deleteIfExists(comDir2));
 
-                updateProgress(9, 13);
+                updateProgress(9, 14);
                 Thread.sleep(500);
                 System.out.println("Package renamed successfully.");
 
@@ -284,7 +285,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 fabricModJsonObj.remove("suggests");
 
                 Files.writeString(fabricModJson, Railroad.GSON.toJson(fabricModJsonObj));
-                updateProgress(10, 13);
+                updateProgress(10, 14);
                 Thread.sleep(500);
                 System.out.println("fabric.mod.json updated successfully.");
 
@@ -298,7 +299,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 content = Files.readString(clientResources.resolve(data.modId() + ".client.mixins.json"));
                 content = content.replace("com.example", data.groupId() + "." + data.modId());
                 Files.writeString(clientResources.resolve(data.modId() + ".client.mixins.json"), content);
-                updateProgress(11, 13);
+                updateProgress(11, 14);
                 Thread.sleep(500);
                 System.out.println("Mixins files renamed successfully.");
 
@@ -316,12 +317,18 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 mainClassContent = mainClassContent.replace("com.example", data.groupId() + "." + data.modId());
                 mainClassContent = mainClassContent.replace("ExampleMod", data.mainClass());
                 Files.writeString(mainClass.resolveSibling(data.mainClass() + "Client.java"), mainClassContent);
-                updateProgress(12, 13);
+                updateProgress(12, 14);
                 Thread.sleep(500);
                 System.out.println("Main classes renamed successfully.");
 
+                // Download template build.gradle
+                String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(mdkVersion.id().split("\\.")[1]);
+                FileHandler.copyUrlToFile(templateBuildGradleUrl, projectPath.resolve("build.gradle"));
+                String buildGradleContent = Files.readString(projectPath.resolve("build.gradle"));
+                
+
                 Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
-                updateProgress(13, 13);
+                updateProgress(13, 14);
                 Thread.sleep(500);
 
                 System.out.println("Project created successfully.");
