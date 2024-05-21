@@ -2,6 +2,9 @@ package io.github.railroad.project.ui.project.newProject.details;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
+import groovy.text.StreamingTemplateEngine;
 import io.github.palexdev.materialfx.controls.MFXProgressBar;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import io.github.railroad.Railroad;
@@ -24,16 +27,22 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
+import org.codehaus.groovy.runtime.StringBufferWriter;
+import org.gradle.tooling.GradleConnector;
+import org.gradle.tooling.ProjectConnection;
+import org.gradle.tooling.model.ProjectModel;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class FabricProjectCreationPane extends RRBorderPane {
     private static final String EXAMPLE_MOD_URL = "https://github.com/FabricMC/fabric-example-mod/archive/refs/heads/%s.zip";
@@ -98,10 +107,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         alert.setHeaderText(header);
         alert.setContentText(content);
 
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            // Handle OK button action if needed
-        }
+        alert.showAndWait();
     }
 
     private static class ProjectCreationTask extends Task<Void> {
@@ -112,7 +118,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         }
 
         @Override
-        protected Void call() throws Exception {
+        protected Void call() {
             try {
                 Path projectPath = data.projectPath().resolve(data.projectName());
 
@@ -200,7 +206,10 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 FileHandler.updateKeyValuePairByLine("fabric_version", data.fapiVersion().map(FabricAPIVersion::fullVersion).orElse(""), gradlePropertiesFile);
                 if (data.mappingChannel() == MappingChannel.YARN) {
                     FileHandler.updateKeyValuePairByLine("yarn_mappings", data.mappingVersion().getId(), gradlePropertiesFile);
+                } else if(data.mappingChannel() == MappingChannel.PARCHMENT) {
+                    Files.writeString(gradlePropertiesFile, "parchment_version=" + data.mappingVersion().getId() + "\n", StandardOpenOption.APPEND);
                 }
+
                 FileHandler.updateKeyValuePairByLine("mod_version", data.version(), gradlePropertiesFile);
                 FileHandler.updateKeyValuePairByLine("maven_group", data.groupId(), gradlePropertiesFile);
                 FileHandler.updateKeyValuePairByLine("archives_base_name", data.modId(), gradlePropertiesFile);
@@ -322,23 +331,67 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 System.out.println("Main classes renamed successfully.");
 
                 // Download template build.gradle
-                String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(mdkVersion.id().split("\\.")[1]);
-                FileHandler.copyUrlToFile(templateBuildGradleUrl, projectPath.resolve("build.gradle"));
-                String buildGradleContent = Files.readString(projectPath.resolve("build.gradle"));
-                
+                Path buildGradle = projectPath.resolve("build.gradle");
+//                String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(mdkVersion.id().split("\\.")[1]);
+//                FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
+                Files.writeString(buildGradle, Files.readString(Path.of("templates/fabric/%s/template_build.gradle".formatted(mdkVersion.id().split("\\.")[1]))));
+                String buildGradleContent = Files.readString(buildGradle);
+                if(!buildGradleContent.startsWith("// fileName:")) {
+                    showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
+                    return null;
+                }
 
-                Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
+                int newLineIndex = buildGradleContent.indexOf('\n');
+
+                Map<String, Object> args = createArgs(data);
+                var binding = new Binding(args);
+                binding.setVariable("defaultName", projectPath.relativize(buildGradle.toAbsolutePath()).toString());
+
+                var shell = new GroovyShell();
+                Object result = shell.parse(buildGradleContent.substring("// fileName:".length() + 1, newLineIndex), binding).run();
+                if(result == null) {
+                    showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
+                    return null;
+                }
+
+                var buffer = new StringBuffer();
+                var templateEngine = new StreamingTemplateEngine();
+                templateEngine.createTemplate(new StringReader(buildGradleContent))
+                                .make(args)
+                                .writeTo(new StringBufferWriter(buffer));
+                Files.writeString(buildGradle, buffer);
                 updateProgress(13, 14);
                 Thread.sleep(500);
 
+                Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
+                updateProgress(14, 14);
+                Thread.sleep(500);
+
                 System.out.println("Project created successfully.");
-            } catch (IOException exception) {
+            } catch (Exception exception) {
                 // Handle errors
                 Platform.runLater(() -> showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage()));
                 exception.printStackTrace();
+                // Railroad.LOGGER.error("An error occurred while creating the project.", exception);
             }
 
             return null;
         }
+    }
+
+    private static Map<String, Object> createArgs(FabricProjectData data) {
+        final Map<String, Object> args = new HashMap<>();
+        args.put("mappings", Map.of(
+                "channel", data.mappingChannel().getName().toLowerCase(Locale.ROOT),
+                "version", data.mappingVersion().getId()
+        ));
+
+        args.put("props", Map.of(
+                "splitSourceSets", data.splitSources(),
+                "includeFabricApi", data.fapiVersion().isPresent(),
+                "modId", data.modId()
+        ));
+
+        return args;
     }
 }
