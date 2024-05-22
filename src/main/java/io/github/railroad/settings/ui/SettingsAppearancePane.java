@@ -3,6 +3,8 @@ package io.github.railroad.settings.ui;
 import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ConfigHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 
@@ -10,11 +12,21 @@ import java.io.File;
 import java.util.Arrays;
 
 public class SettingsAppearancePane extends RRVBox {
+    private final Label title = new Label("Appearance");
+
     private static ChoiceBox themeSelector = new ChoiceBox<String>();
-    private final Label title = new Label("Select a theme:");
+    private final Label themeOption = new Label("Select a theme:");
 
     public SettingsAppearancePane() {
         super();
+
+        var themeBox = new RRVBox();
+
+        title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");
+        title.prefWidthProperty().bind(widthProperty());
+        title.setAlignment(Pos.CENTER);
+
+        themeBox.setStyle("-fx-padding: 0 0 0 10");
 
         var themesDir = new File("themes").listFiles();
         themeSelector.setPrefWidth(180);
@@ -31,9 +43,11 @@ public class SettingsAppearancePane extends RRVBox {
 
             var config = ConfigHandler.getConfigJson();
             var theme = config.get("settings").getAsJsonObject().get("theme").getAsString();
+
+            themeSelector.getItems().remove(theme);
+            themeSelector.getItems().addFirst(theme);
             themeSelector.setValue(theme);
         }
-
 
         themeSelector.setOnAction(event -> {
             var theme = themeSelector.getValue().toString();
@@ -57,7 +71,8 @@ public class SettingsAppearancePane extends RRVBox {
             getScene().getStylesheets().add(themePath);
         });
 
+        themeBox.getChildren().addAll(themeOption, themeSelector);
 
-        getChildren().addAll(title, themeSelector);
+        getChildren().addAll(title, themeBox);
     }
 }
