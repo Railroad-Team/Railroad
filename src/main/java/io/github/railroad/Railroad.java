@@ -22,6 +22,7 @@ import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Optional;
@@ -47,7 +48,16 @@ public class Railroad extends Application {
     }
 
     private static void handleStyles(Scene scene) {
-        Application.setUserAgentStylesheet(getResource("styles/themes/nord-dark.css").toExternalForm());
+
+        var selectedTheme = ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("theme").getAsString();
+        LOGGER.info("Selected theme: " + selectedTheme);
+
+        if(selectedTheme.startsWith("default")){
+            Application.setUserAgentStylesheet(getResource("styles/" + selectedTheme + ".css").toExternalForm());
+        } else {
+            Application.setUserAgentStylesheet(new File("themes/" + selectedTheme + ".css").toURI().toString());
+        }
+
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();

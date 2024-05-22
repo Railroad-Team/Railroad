@@ -27,6 +27,9 @@ public final class ConfigHandler {
                 JsonArray railroadplugins = new JsonArray();
                 railroadsettings.add("plugins", railroadplugins);
             }
+            if (!railroadsettings.has("theme")) {
+                railroadsettings.addProperty("theme", "default-dark");
+            }
         }
     }
 
