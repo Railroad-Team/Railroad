@@ -47,17 +47,23 @@ public class Railroad extends Application {
         return window;
     }
 
+    public static void setStyle(String theme) {
+        getScene().getStylesheets().clear();
+
+        if(theme.startsWith("default")) {
+            Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
+        } else {
+            Application.setUserAgentStylesheet(new File("themes/" + theme + ".css").toURI().toString());
+        }
+
+        getScene().getStylesheets().add(getResource("styles/base.css").toExternalForm());
+    }
+
     private static void handleStyles(Scene scene) {
 
         var selectedTheme = ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("theme").getAsString();
-        LOGGER.info("Selected theme: " + selectedTheme);
 
-        if(selectedTheme.startsWith("default")){
-            Application.setUserAgentStylesheet(getResource("styles/" + selectedTheme + ".css").toExternalForm());
-        } else {
-            Application.setUserAgentStylesheet(new File("themes/" + selectedTheme + ".css").toURI().toString());
-        }
-
+        setStyle(selectedTheme);
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();

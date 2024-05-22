@@ -60,15 +60,8 @@ public class SettingsAppearancePane extends RRVBox {
             themeSelector.getItems().remove(theme);
             themeSelector.getItems().addFirst(theme);
 
-            String themePath;
-            if(theme.startsWith("default")){
-                themePath = Railroad.getResource("styles/" + theme + ".css").toExternalForm().toString();
-            } else {
-                themePath = new File("themes/" + theme + ".css").toURI().toString();
-            }
 
-            getScene().getStylesheets().clear();
-            getScene().getStylesheets().add(themePath);
+            Railroad.setStyle(theme);
         });
 
         themeBox.getChildren().addAll(themeOption, themeSelector);
