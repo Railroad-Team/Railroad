@@ -42,6 +42,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.14'
     implementation 'org.json:json:20240303'
     implementation 'io.github.palexdev:materialfx:11.17.0'
+    implementation 'ch.qos.logback:logback-classic:1.5.6'
 }
 
 jlink {

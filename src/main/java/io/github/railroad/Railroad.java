@@ -22,6 +22,8 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import okhttp3.OkHttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.net.URL;
@@ -34,6 +36,7 @@ public class Railroad extends Application {
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
     private static boolean DEBUG = false;
     private static Scene scene;
     private static Stage window;
@@ -115,14 +118,16 @@ public class Railroad extends Application {
         primaryStage.setScene(scene);
         primaryStage.setTitle("Railroad - 1.0.0(dev)");
         primaryStage.show();
-        // FIXME window is not being focused when it open
+        // FIXME window is not being focused when it opens
+
+        LOGGER.info("Railroad started");
         PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         PLUGIN_MANAGER.unLoadAllPlugins();
-        System.out.println("Stopping Railroad");
+        LOGGER.info("Stopping Railroad");
         System.exit(0);
     }
 

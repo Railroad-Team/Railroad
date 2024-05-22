@@ -17,6 +17,7 @@ public class PluginManager extends Thread {
         this.listener = listener;
     }
 
+    @Override
     public void run() {
         preparePluginsFromConfig();
         loadAllPlugins();
@@ -47,7 +48,7 @@ public class PluginManager extends Thread {
         for (JsonElement element : plugins) {
             try {
                 // TODO: Don't do this because it's really fucking jank
-                var plugin = (Plugin) Class.forName("io.github.railroad.plugins.defaults" + element.getAsString())
+                var plugin = (Plugin) Class.forName("io.github.railroad.plugin.defaults." + element.getAsString())
                         .getDeclaredConstructor().newInstance();
                 addPlugin(plugin);
             } catch (Exception exception) {
