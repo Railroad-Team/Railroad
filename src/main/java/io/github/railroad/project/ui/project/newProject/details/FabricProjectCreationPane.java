@@ -5,7 +5,6 @@ import com.google.gson.JsonObject;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.text.StreamingTemplateEngine;
-import io.github.palexdev.materialfx.controls.MFXProgressBar;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import io.github.railroad.Railroad;
 import io.github.railroad.minecraft.FabricAPIVersion;
@@ -17,6 +16,7 @@ import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ExceptionlessRunnable;
 import io.github.railroad.utility.FileHandler;
+import io.github.railroad.utility.TextAreaOutputStream;
 import javafx.application.Platform;
 import javafx.beans.property.ListProperty;
 import javafx.beans.property.SimpleListProperty;
@@ -24,18 +24,21 @@ import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
+import javafx.scene.text.TextFlow;
 import org.codehaus.groovy.runtime.StringBufferWriter;
+import org.gradle.api.GradleException;
+import org.gradle.tooling.BuildException;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
-import org.gradle.tooling.model.ProjectModel;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,74 +46,95 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class FabricProjectCreationPane extends RRBorderPane {
     private static final String EXAMPLE_MOD_URL = "https://github.com/FabricMC/fabric-example-mod/archive/refs/heads/%s.zip";
     private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/fabric-project-creation/templates/fabric/%s/template_build.gradle";
 
+    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private final FabricProjectData data;
     private final MFXProgressSpinner progressSpinner = new MFXProgressSpinner();
-    private final Label progressPercentageLabel = new Label("0%");
-    private final MFXProgressBar progressBar = new MFXProgressBar();
-    private final Label progressLabel = new Label("");
+    private final RRVBox progressBox = new RRVBox(10), centerBox = new RRVBox(10);
+    private final Label timeElapsedLabel = new Label("");
     private final Label taskLabel = new Label();
-    private final Label errorLabel = new Label();
-
-    private final ListProperty<Throwable> errors = new SimpleListProperty<>(FXCollections.observableArrayList());
+    private final long startTime = System.currentTimeMillis();
+    private final TextArea outputArea = new TextArea();
 
     public FabricProjectCreationPane(FabricProjectData data) {
         this.data = data;
 
-        progressSpinner.progressProperty().bind(progressBar.progressProperty());
+        centerBox.setAlignment(Pos.CENTER);
+        centerBox.getChildren().addAll(progressSpinner);
         progressSpinner.setRadius(50);
-        progressPercentageLabel.textProperty().bind(progressBar.progressProperty().multiply(100).asString("%.0f%%"));
-        setCenter(progressSpinner);
+        setCenter(centerBox);
 
-        var progressBox = new RRVBox(10);
-        progressBox.setAlignment(Pos.CENTER);
-        progressBox.getChildren().addAll(progressPercentageLabel, progressBar, progressLabel, taskLabel);
-        setBottom(progressBox);
-
-        var errorIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
-        errorIcon.setIconSize(24);
-        errorIcon.setIconColor(Color.ORANGERED);
-        errorLabel.setGraphic(errorIcon);
-        errorLabel.textProperty().bind(errors.sizeProperty().asString().concat(" errors"));
-        errorLabel.visibleProperty().bind(errors.sizeProperty().greaterThan(0));
-        errorLabel.managedProperty().bind(errorLabel.visibleProperty());
-
-        errors.addListener((observable, oldValue, newValue) -> {
-            if (!newValue.isEmpty()) {
-                progressBox.getChildren().add(errorLabel);
-            } else {
-                progressBox.getChildren().remove(errorLabel);
-            }
+        outputArea.setEditable(false);
+        outputArea.setWrapText(true);
+        outputArea.setStyle("-fx-font-family: 'Consolas', monospace;");
+        outputArea.textProperty().addListener((observable, oldValue, newValue) -> {
+            outputArea.setScrollTop(Double.MAX_VALUE);
         });
+
+        progressBox.setAlignment(Pos.CENTER);
+        progressBox.getChildren().addAll(timeElapsedLabel, taskLabel);
+        setBottom(progressBox);
 
         setTop(new Label("Creating project..."));
         setAlignment(getTop(), Pos.CENTER);
-        progressBar.setProgress(0);
+        progressSpinner.setProgress(0);
 
         var task = new ProjectCreationTask(data);
-        progressBar.progressProperty().bind(task.progressProperty());
+        progressSpinner.progressProperty().bind(task.progressProperty());
         task.setOnSucceeded(event -> {
-            // Update UI or perform any final operations
-            //progressBar.setProgress(1.0); // Update progress to 100%
+            try {
+                if (!executor.awaitTermination(1, TimeUnit.SECONDS))
+                    executor.shutdownNow();
+            } catch (InterruptedException exception) {
+                System.err.println("An error occurred while waiting for the executor to terminate.");
+                exception.printStackTrace(); // TODO: Replace with logger
+            }
+
+            // Open project in IDE
         });
 
         new Thread(task).start();
+
+        executor.scheduleAtFixedRate(() -> {
+            long timeElapsed = System.currentTimeMillis() - startTime;
+            long seconds = timeElapsed / 1000;
+            long minutes = seconds / 60;
+            long hours = minutes / 60;
+            seconds %= 60;
+
+            String timeElapsedString = "%d seconds".formatted(seconds);
+            if (minutes > 0) {
+                timeElapsedString = "%d minutes, ".formatted(minutes) + timeElapsedString;
+            }
+
+            if (hours > 0) {
+                timeElapsedString = "%d hours, ".formatted(hours) + timeElapsedString;
+            }
+
+            final String finalTimeElapsedString = timeElapsedString;
+            Platform.runLater(() -> timeElapsedLabel.setText("Time elapsed: " + finalTimeElapsedString));
+        }, 1, 1, TimeUnit.SECONDS);
     }
 
     private static void showErrorAlert(String title, String header, String content) {
-        var alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(header);
-        alert.setContentText(content);
+        Platform.runLater(() -> {
+            var alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle(title);
+            alert.setHeaderText(header);
+            alert.setContentText(content);
 
-        alert.showAndWait();
+            alert.showAndWait();
+        });
     }
 
-    private static class ProjectCreationTask extends Task<Void> {
+    private class ProjectCreationTask extends Task<Void> {
         private final FabricProjectData data;
 
         public ProjectCreationTask(FabricProjectData data) {
@@ -120,6 +144,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         @Override
         protected Void call() {
             try {
+                updateLabel("Creating project directory...");
                 Path projectPath = data.projectPath().resolve(data.projectName());
 
                 MinecraftVersion version = data.minecraftVersion();
@@ -173,49 +198,54 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 String modUrl = String.format(EXAMPLE_MOD_URL, minecraftId);
 
                 Files.createDirectories(projectPath);
-                updateProgress(1, 14);
-                Thread.sleep(500);
+                updateProgress(1, 16);
                 System.out.println("Project directory created successfully.");
 
+                updateLabel("Downloading example mod...");
                 FileHandler.copyUrlToFile(modUrl, Path.of(projectPath.resolve("example-mod.zip").toString()));
-                updateProgress(3, 14);
-                Thread.sleep(500);
+                updateProgress(2, 16);
                 System.out.println("Example mod downloaded successfully.");
 
+                updateLabel("Extracting example mod...");
                 FileHandler.unzipFile(Path.of(projectPath.resolve("example-mod.zip").toString()).toString(), projectPath.toString());
-                updateProgress(5, 14);
-                Thread.sleep(500);
+                updateProgress(3, 16);
                 System.out.println("Example mod extracted successfully.");
 
+                updateLabel("Deleting example mod zip...");
                 Files.delete(Path.of(projectPath.resolve("example-mod.zip").toString()));
-                updateProgress(6, 14);
-                Thread.sleep(500);
+                updateProgress(4, 16);
                 System.out.println("Example mod zip deleted successfully.");
 
+                updateLabel("Copying project...");
                 Path folder = projectPath.resolve("fabric-example-mod-" + minecraftId);
                 FileHandler.copyFolder(folder, projectPath);
                 FileHandler.deleteFolder(folder);
-                updateProgress(7, 14);
-                Thread.sleep(500);
+                updateProgress(5, 16);
                 System.out.println("Project copied successfully.");
 
+                updateLabel("Updating project files...");
                 Path gradlePropertiesFile = projectPath.resolve("gradle.properties");
                 FileHandler.updateKeyValuePairByLine("org.gradle.jvmargs", "-Xmx4G", gradlePropertiesFile);
                 FileHandler.updateKeyValuePairByLine("minecraft_version", version.id(), gradlePropertiesFile);
                 FileHandler.updateKeyValuePairByLine("loader_version", data.fabricLoaderVersion().loaderVersion().version(), gradlePropertiesFile);
                 FileHandler.updateKeyValuePairByLine("fabric_version", data.fapiVersion().map(FabricAPIVersion::fullVersion).orElse(""), gradlePropertiesFile);
                 if (data.mappingChannel() == MappingChannel.YARN) {
-                    FileHandler.updateKeyValuePairByLine("yarn_mappings", data.mappingVersion().getId(), gradlePropertiesFile);
-                } else if(data.mappingChannel() == MappingChannel.PARCHMENT) {
+                    FileHandler.updateKeyValuePairByLine("yarn_mappings", version.id() + "+" + data.mappingVersion().getId(), gradlePropertiesFile);
+                } else if (data.mappingChannel() == MappingChannel.PARCHMENT) {
                     Files.writeString(gradlePropertiesFile, "parchment_version=" + data.mappingVersion().getId() + "\n", StandardOpenOption.APPEND);
                 }
 
                 FileHandler.updateKeyValuePairByLine("mod_version", data.version(), gradlePropertiesFile);
                 FileHandler.updateKeyValuePairByLine("maven_group", data.groupId(), gradlePropertiesFile);
                 FileHandler.updateKeyValuePairByLine("archives_base_name", data.modId(), gradlePropertiesFile);
+
+                updateProgress(6, 16);
                 System.out.println("gradle.properties updated successfully.");
-                updateProgress(8, 14);
-                Thread.sleep(500);
+
+                updateLabel("Renaming packages...");
+                if (!data.splitSources()) {
+                    FileHandler.deleteFolder(projectPath.resolve("src/client/"));
+                }
 
                 // rename "com/example" to data.groupId() + "/" + data.modId()
                 Path mainJava = projectPath.resolve("src/main/java/");
@@ -231,19 +261,21 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 final Path comDir = mainJava.resolve("com");
                 FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> Files.deleteIfExists(comDir));
 
-                oldPath = clientJava.resolve("com/example/");
-                newPath = clientJava.resolve(newFolderPath);
-                Files.createDirectories(newPath.getParent());
-                Files.move(oldPath, newPath);
+                if (data.splitSources()) {
+                    oldPath = clientJava.resolve("com/example/");
+                    newPath = clientJava.resolve(newFolderPath);
+                    Files.createDirectories(newPath.getParent());
+                    Files.move(oldPath, newPath);
 
-                // Delete 'com' directory if it's empty
-                final Path comDir2 = clientJava.resolve("com");
-                FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> Files.deleteIfExists(comDir2));
+                    // Delete 'com' directory if it's empty
+                    final Path comDir2 = clientJava.resolve("com");
+                    FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> Files.deleteIfExists(comDir2));
+                }
 
-                updateProgress(9, 14);
-                Thread.sleep(500);
+                updateProgress(7, 16);
                 System.out.println("Package renamed successfully.");
 
+                updateLabel("Updating fabric.mod.json...");
                 Path resources = projectPath.resolve("src/main/resources");
                 FileHandler.deleteFolder(resources.resolve("assets"));
 
@@ -261,7 +293,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
                         authors.add(s.trim());
                     }
 
-                    if(split.length == 0) {
+                    if (split.length == 0) {
                         authors.add(author);
                     }
 
@@ -271,14 +303,18 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
                 JsonObject entrypoints = fabricModJsonObj.getAsJsonObject("entrypoints");
                 entrypoints.addProperty("main", data.groupId() + "." + data.modId() + "." + data.mainClass());
-                entrypoints.addProperty("client", data.groupId() + "." + data.modId() + "." + data.mainClass() + "Client");
+                if (data.splitSources()) {
+                    entrypoints.addProperty("client", data.groupId() + "." + data.modId() + "." + data.mainClass() + "Client");
+                }
 
                 var mixins = new JsonArray();
                 mixins.add(data.modId() + ".mixins.json");
-                var clientMixin = new JsonObject();
-                clientMixin.addProperty("config", data.modId() + ".client.mixins.json");
-                clientMixin.addProperty("environment", "client");
-                mixins.add(clientMixin);
+                if (data.splitSources()) {
+                    var clientMixin = new JsonObject();
+                    clientMixin.addProperty("config", data.modId() + ".client.mixins.json");
+                    clientMixin.addProperty("environment", "client");
+                    mixins.add(clientMixin);
+                }
                 fabricModJsonObj.add("mixins", mixins);
 
                 var depends = new JsonObject();
@@ -292,26 +328,36 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 fabricModJsonObj.add("depends", depends);
 
                 fabricModJsonObj.remove("suggests");
+                if (data.useAccessWidener()) {
+                    fabricModJsonObj.addProperty("accessWidener", data.modId() + ".accesswidener");
+                }
+
+                JsonObject contact = fabricModJsonObj.getAsJsonObject("contact");
+                data.issues().ifPresent(issues -> contact.addProperty("issues", issues));
 
                 Files.writeString(fabricModJson, Railroad.GSON.toJson(fabricModJsonObj));
-                updateProgress(10, 14);
-                Thread.sleep(500);
+
+                updateProgress(8, 16);
                 System.out.println("fabric.mod.json updated successfully.");
 
+                updateLabel("Renaming mixins files...");
                 Files.move(resources.resolve("modid.mixins.json"), resources.resolve(data.modId() + ".mixins.json"));
                 String content = Files.readString(resources.resolve(data.modId() + ".mixins.json"));
                 content = content.replace("com.example", data.groupId() + "." + data.modId());
                 Files.writeString(resources.resolve(data.modId() + ".mixins.json"), content);
 
-                Path clientResources = projectPath.resolve("src/client/resources");
-                Files.move(clientResources.resolve("modid.client.mixins.json"), clientResources.resolve(data.modId() + ".client.mixins.json"));
-                content = Files.readString(clientResources.resolve(data.modId() + ".client.mixins.json"));
-                content = content.replace("com.example", data.groupId() + "." + data.modId());
-                Files.writeString(clientResources.resolve(data.modId() + ".client.mixins.json"), content);
-                updateProgress(11, 14);
-                Thread.sleep(500);
+                if (data.splitSources()) {
+                    Path clientResources = projectPath.resolve("src/client/resources");
+                    Files.move(clientResources.resolve("modid.client.mixins.json"), clientResources.resolve(data.modId() + ".client.mixins.json"));
+                    content = Files.readString(clientResources.resolve(data.modId() + ".client.mixins.json"));
+                    content = content.replace("com.example", data.groupId() + "." + data.modId());
+                    Files.writeString(clientResources.resolve(data.modId() + ".client.mixins.json"), content);
+                }
+
+                updateProgress(9, 16);
                 System.out.println("Mixins files renamed successfully.");
 
+                updateLabel("Renaming main classes...");
                 // Rename ExampleMod.java and ExampleModClient.java
                 Path mainClass = mainJava.resolve(newFolderPath).resolve("ExampleMod.java");
                 Files.move(mainClass, mainClass.resolveSibling(data.mainClass() + ".java"));
@@ -320,23 +366,42 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 mainClassContent = mainClassContent.replace("ExampleMod", data.mainClass());
                 Files.writeString(mainClass.resolveSibling(data.mainClass() + ".java"), mainClassContent);
 
-                mainClass = clientJava.resolve(newFolderPath).resolve("ExampleModClient.java");
-                Files.move(mainClass, mainClass.resolveSibling(data.mainClass() + "Client.java"));
-                mainClassContent = Files.readString(mainClass.resolveSibling(data.mainClass() + "Client.java"));
-                mainClassContent = mainClassContent.replace("com.example", data.groupId() + "." + data.modId());
-                mainClassContent = mainClassContent.replace("ExampleMod", data.mainClass());
-                Files.writeString(mainClass.resolveSibling(data.mainClass() + "Client.java"), mainClassContent);
-                updateProgress(12, 14);
-                Thread.sleep(500);
+                if (data.splitSources()) {
+                    mainClass = clientJava.resolve(newFolderPath).resolve("ExampleModClient.java");
+                    Files.move(mainClass, mainClass.resolveSibling(data.mainClass() + "Client.java"));
+                    mainClassContent = Files.readString(mainClass.resolveSibling(data.mainClass() + "Client.java"));
+                    mainClassContent = mainClassContent.replace("com.example", data.groupId() + "." + data.modId());
+                    mainClassContent = mainClassContent.replace("ExampleMod", data.mainClass());
+                    Files.writeString(mainClass.resolveSibling(data.mainClass() + "Client.java"), mainClassContent);
+                }
+
+                updateProgress(10, 16);
                 System.out.println("Main classes renamed successfully.");
 
+                updateLabel("Refactoring mixins...");
+                // Refactor ExampleMixin.java and ExampleClientMixin.java to be in the correct package
+                Path mainMixin = mainJava.resolve(newFolderPath).resolve("mixin").resolve("ExampleMixin.java");
+                String mainMixinContent = Files.readString(mainMixin);
+                mainMixinContent = mainMixinContent.replace("com.example", data.groupId() + "." + data.modId());
+                Files.writeString(mainMixin, mainMixinContent);
+
+                if (data.splitSources()) {
+                    Path clientMixin = clientJava.resolve(newFolderPath).resolve("mixin/client").resolve("ExampleClientMixin.java");
+                    String clientMixinContent = Files.readString(clientMixin);
+                    clientMixinContent = clientMixinContent.replace("com.example", data.groupId() + "." + data.modId());
+                    Files.writeString(clientMixin, clientMixinContent);
+                }
+
+                updateProgress(11, 16);
+                System.out.println("Mixins refactored successfully.");
+
+                updateLabel("Updating build.gradle...");
                 // Download template build.gradle
                 Path buildGradle = projectPath.resolve("build.gradle");
-//                String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(mdkVersion.id().split("\\.")[1]);
-//                FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
-                Files.writeString(buildGradle, Files.readString(Path.of("templates/fabric/%s/template_build.gradle".formatted(mdkVersion.id().split("\\.")[1]))));
+                String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(mdkVersion.id().split("\\.")[1]);
+                FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
                 String buildGradleContent = Files.readString(buildGradle);
-                if(!buildGradleContent.startsWith("// fileName:")) {
+                if (!buildGradleContent.startsWith("// fileName:")) {
                     showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
                     return null;
                 }
@@ -349,7 +414,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
                 var shell = new GroovyShell();
                 Object result = shell.parse(buildGradleContent.substring("// fileName:".length() + 1, newLineIndex), binding).run();
-                if(result == null) {
+                if (result == null) {
                     showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
                     return null;
                 }
@@ -357,17 +422,60 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 var buffer = new StringBuffer();
                 var templateEngine = new StreamingTemplateEngine();
                 templateEngine.createTemplate(new StringReader(buildGradleContent))
-                                .make(args)
-                                .writeTo(new StringBufferWriter(buffer));
+                        .make(args)
+                        .writeTo(new StringBufferWriter(buffer));
                 Files.writeString(buildGradle, buffer);
-                updateProgress(13, 14);
-                Thread.sleep(500);
 
+                updateProgress(12, 16);
+                System.out.println("build.gradle updated successfully.");
+
+                updateLabel("Creating project...");
                 Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
-                updateProgress(14, 14);
-                Thread.sleep(500);
-
+                updateProgress(13, 16);
                 System.out.println("Project created successfully.");
+
+                updateLabel("Running genSources task...");
+                // Run gradlew genSources
+                var connector = GradleConnector.newConnector();
+                connector.forProjectDirectory(projectPath.toFile());
+                try (ProjectConnection connection = connector.connect()) {
+                    Platform.runLater(() -> centerBox.getChildren().add(outputArea));
+
+                    var outputStream = new TextAreaOutputStream(outputArea);
+                    connection.newBuild()
+                            .forTasks("genSources")
+                            .setStandardOutput(outputStream)
+                            .setStandardError(outputStream)
+                            .run();
+
+                    updateProgress(14, 16);
+                    System.out.println("genSources task completed successfully.");
+                    Platform.runLater(() -> centerBox.getChildren().remove(outputArea));
+                } catch (BuildException exception) {
+                    showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
+                    exception.printStackTrace();
+                }
+
+                updateLabel("Creating git repository...");
+                // Create git repository
+                if (data.createGit()) {
+                    try {
+                        var processBuilder = new ProcessBuilder("git", "init");
+                        processBuilder.directory(projectPath.toFile());
+                        var process = processBuilder.start();
+                        process.waitFor();
+
+                        updateProgress(15, 16);
+                        System.out.println("Git repository created successfully.");
+                    } catch (IOException | InterruptedException exception) {
+                        showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
+                        exception.printStackTrace();
+                    }
+                }
+
+                updateProgress(16, 16);
+                System.out.println("Project creation completed successfully.");
+                updateLabel("Project created successfully.");
             } catch (Exception exception) {
                 // Handle errors
                 Platform.runLater(() -> showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage()));
@@ -376,6 +484,10 @@ public class FabricProjectCreationPane extends RRBorderPane {
             }
 
             return null;
+        }
+
+        public void updateLabel(String text) {
+            Platform.runLater(() -> taskLabel.setText(text));
         }
     }
 
@@ -389,8 +501,11 @@ public class FabricProjectCreationPane extends RRBorderPane {
         args.put("props", Map.of(
                 "splitSourceSets", data.splitSources(),
                 "includeFabricApi", data.fapiVersion().isPresent(),
+                "useAccessWidener", data.useAccessWidener(),
                 "modId", data.modId()
         ));
+
+        System.out.println(args);
 
         return args;
     }

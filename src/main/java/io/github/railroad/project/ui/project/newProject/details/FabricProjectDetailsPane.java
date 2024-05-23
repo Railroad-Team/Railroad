@@ -226,14 +226,10 @@ public class FabricProjectDetailsPane extends RRVBox {
         var includeFapiLabel = new Label("Include Fabric API:");
         includeFapiLabel.setLabelFor(includeFapiCheckBox);
         includeFapiCheckBox.setSelected(true);
-        includeFapiCheckBox.setOnAction(event -> {
-            fapiVersionComboBox.setDisable(!includeFapiCheckBox.isSelected());
-        });
         var fapiVersionBox = new RRHBox(10);
         fapiVersionBox.setAlignment(Pos.CENTER_LEFT);
         var fapiVersionLabel = new Label("Fabric API Version:");
         fapiVersionLabel.setLabelFor(fapiVersionComboBox);
-        fapiVersionComboBox.setDisable(!includeFapiCheckBox.isSelected());
         fapiVersionComboBox.setCellFactory(param -> new StarableListCell<>(
                 version -> Objects.equals(version, FabricAPIVersion.getLatest()),
                 version -> false,
@@ -247,6 +243,14 @@ public class FabricProjectDetailsPane extends RRVBox {
         includeFapiBox.getChildren().addAll(includeFapiLabel, includeFapiCheckBox);
         fapiVersionBox.getChildren().addAll(fapiVersionLabel, fapiVersionComboBox);
         fapiBox.getChildren().addAll(includeFapiBox, fapiVersionBox);
+
+        includeFapiCheckBox.setOnAction(event -> {
+            if(fapiBox.getChildren().contains(fapiVersionBox)) {
+                fapiBox.getChildren().remove(fapiVersionBox);
+            } else {
+                fapiBox.getChildren().add(fapiVersionBox);
+            }
+        });
 
         minecraftVersionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             fabricLoaderVersionComboBox.getItems().setAll(FabricLoaderVersion.getVersions(newValue));

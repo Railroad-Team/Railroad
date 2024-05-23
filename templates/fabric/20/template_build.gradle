@@ -28,14 +28,17 @@ loom {
     } %>
 
     mods {
-        <% out.print("""
-        \"\${project.archives_base_name}\" {
+        <% out.print("""\"\${project.archives_base_name}\" {
             sourceSet sourceSets.main\n""")
         if(props.splitSourceSets) {
             out.print("\n            sourceSet sourceSets.client")
         }
         out.print("\n        }") %>
     }
+
+    <% if(props.useAccessWidener) {
+        out.print("\n    accessWidenerPath = file(\"src/main/resources/\${project.archives_base_name}.accesswidener\")")
+    } %>
 }
 
 dependencies {
@@ -43,7 +46,7 @@ dependencies {
 
     <% if(mappings.channel == 'yarn') {
         out.print("\n    mappings \"net.fabricmc:yarn:\${project.yarn_mappings}:v2\"")
-    } else if (mappings.channel == 'official') {
+    } else if (mappings.channel == 'mojmap') {
         out.print("\n    mappings loom.officialMojangMappings()")
     } else if(mappings.channel == 'parchment') {
         out.print("""\n    mappings loom.layered() {
@@ -53,7 +56,6 @@ dependencies {
     } %>
 
     modImplementation "net.fabricmc:fabric-loader:\${project.loader_version}"
-
     <% if(props.includeFabricApi) {
         out.print("\n    modImplementation \"net.fabricmc.fabric-api:fabric-api:\${project.fabric_version}\"")
     } %>
