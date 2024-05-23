@@ -40,12 +40,12 @@ public class SettingsAppearancePane extends RRVBox {
         }
         themeSelector.setPrefWidth(180);
 
-        if(themeSelector.getItems().size() < themes.size() + 2){
+        if(themeSelector.getItems().size() < themes.size() + 2) {
             themeSelector.getItems().clear();
 
             themeSelector.getItems().addAll("default-dark", "default-light");
 
-            for (var theme : themes) {
+            for (Path theme : themes) {
                 String name = theme.getFileName().toString().replace(".css", "");;
                 themeSelector.getItems().add(name);
             }
