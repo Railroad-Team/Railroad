@@ -3,13 +3,13 @@ package io.github.railroad.settings.ui;
 import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ConfigHandler;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 
 import java.io.File;
-import java.util.Arrays;
+import java.io.IOException;
+import java.nio.file.Files;
 
 public class SettingsAppearancePane extends RRVBox {
     private final Label title = new Label("Appearance");
@@ -28,15 +28,22 @@ public class SettingsAppearancePane extends RRVBox {
 
         themeBox.setStyle("-fx-padding: 0 0 0 10");
 
-        var themesDir = new File("themes").listFiles();
+        File[] themes = new File[0];
+        try {
+             themes = Files.list(new File("themes").toPath())
+                    .filter(file -> file.toString().endsWith(".css"))
+                    .map(file -> file.toFile()).toArray(File[]::new);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         themeSelector.setPrefWidth(180);
 
-        if(themeSelector.getItems().size() < themesDir.length){
+        if(themeSelector.getItems().size() < themes.length + 2){
             themeSelector.getItems().clear();
 
             themeSelector.getItems().addAll("default-dark", "default-light");
 
-            for (var theme : Arrays.stream(themesDir).filter(file -> file.getName().endsWith(".css")).toArray(File[]::new)) {
+            for (var theme : themes) {
                 String name = theme.getName().replace(".css", "");
                 themeSelector.getItems().add(name);
             }
@@ -50,6 +57,7 @@ public class SettingsAppearancePane extends RRVBox {
         }
 
         themeSelector.setOnAction(event -> {
+            if(themeSelector.getValue() == null) return;
             var theme = themeSelector.getValue().toString();
 
             var config = ConfigHandler.getConfigJson();
