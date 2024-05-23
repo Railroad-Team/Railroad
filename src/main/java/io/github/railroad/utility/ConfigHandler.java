@@ -49,7 +49,7 @@ public final class ConfigHandler {
                 if (setting.getAsJsonObject().get("name").getAsString().equals(plugin_name)) {
                     return setting.getAsJsonObject();
                 }
-
+            }
         }
         JsonObject new_obj = new JsonObject();
         new_obj.addProperty("name", plugin_name);
