@@ -22,8 +22,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
-public record ForgeVersion(MinecraftVersion minecraftVersion, String id,
-                           boolean recommended) implements RecommendableVersion {
+public record ForgeVersion(MinecraftVersion minecraftVersion, String id, boolean recommended) implements RecommendableVersion {
     private static final String FORGE_PROMOS_URL = "https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json";
     private static final String FORGE_VERSIONS_URL = "https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml";
     private static final ObservableMap<MinecraftVersion, ObservableList<ForgeVersion>> FORGE_VERSIONS = FXCollections.observableHashMap();

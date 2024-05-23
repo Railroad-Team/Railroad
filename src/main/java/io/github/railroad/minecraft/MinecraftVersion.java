@@ -119,6 +119,10 @@ public record MinecraftVersion(String id, VersionType type, String url, LocalDat
         return fromId(majorVersion);
     }
 
+    public static List<MinecraftVersion> getVersions() {
+        return List.copyOf(MINECRAFT_VERSIONS);
+    }
+
     public enum VersionType {
         RELEASE,
         SNAPSHOT,

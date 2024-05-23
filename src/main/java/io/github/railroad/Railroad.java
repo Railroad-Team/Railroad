@@ -2,6 +2,7 @@ package io.github.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.github.railroad.minecraft.FabricAPIVersion;
 import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.minecraft.ForgeVersion;
@@ -105,6 +106,7 @@ public class Railroad extends Application {
 
         MinecraftVersion.load();
         ForgeVersion.load();
+        FabricAPIVersion.load();
         window = primaryStage;
 
         // Calculate the primary screen size to better fit the window

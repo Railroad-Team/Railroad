@@ -11,16 +11,15 @@ version '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
+    maven { url 'https://repo.gradle.org/gradle/libs-releases' }
 }
 
-ext {
-    junitVersion = '5.10.0'
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
-sourceCompatibility = '21'
-targetCompatibility = '21'
-
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
@@ -43,10 +42,12 @@ dependencies {
     implementation 'org.json:json:20240303'
     implementation 'io.github.palexdev:materialfx:11.17.0'
     implementation 'ch.qos.logback:logback-classic:1.5.6'
+    implementation 'org.apache.groovy:groovy-all:5.0.0-alpha-8'
+    implementation 'org.gradle:gradle-tooling-api:7.3-20210825160000+0000'
 }
 
 jlink {
-    imageZip = project.file("${buildDir}/distributions/app-${javafx.platform.classifier}.zip")
+    imageZip = project.file("${layout.buildDirectory}/distributions/app-${javafx.platform.classifier}.zip")
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
     launcher {
         name = 'app'
