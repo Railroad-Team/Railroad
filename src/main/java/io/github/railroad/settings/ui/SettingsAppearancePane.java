@@ -65,7 +65,7 @@ public class SettingsAppearancePane extends RRVBox {
             var config = ConfigHandler.getConfigJson();
             config.get("settings").getAsJsonObject().addProperty("theme", theme);
 
-            ConfigHandler.updateConfig(config);
+            ConfigHandler.updateConfig();
 
             themeSelector.getItems().remove(theme);
             themeSelector.getItems().addFirst(theme);
