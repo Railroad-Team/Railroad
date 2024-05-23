@@ -1,6 +1,7 @@
 package io.github.railroad.utility;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 
@@ -10,6 +11,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public final class ConfigHandler {
+    private static JsonObject setting_obj;
+
     private ConfigHandler() {}
 
     public static void checkAndCreateDefaultJsonObjects(JsonObject object) {
@@ -27,8 +30,30 @@ public final class ConfigHandler {
                 JsonArray railroadplugins = new JsonArray();
                 railroadsettings.add("plugins", railroadplugins);
             }
+            if (!railroadsettings.has("plugin_settings")) {
+                JsonArray plugin_settings = new JsonArray();
+                railroadsettings.add("plugin_settings", plugin_settings);
+            }
         }
     }
+
+    public static JsonObject getPluginSettings(String plugin_name, boolean create_if_not_exists) {
+        JsonObject object = getConfigJson();
+        JsonArray plugin_settings = object.get("settings").getAsJsonObject().get("plugin_settings").getAsJsonArray();
+        for (JsonElement setting: plugin_settings) {
+            if (setting.isJsonObject()) {
+                if (setting.getAsJsonObject().get("name").getAsString().equals(plugin_name)) {
+                    return setting.getAsJsonObject();
+                }
+            }
+        }
+        JsonObject new_obj = new JsonObject();
+        new_obj.addProperty("name", plugin_name);
+        plugin_settings.add(new_obj);
+        return new_obj;
+    }
+
+
 
     public static void createDefaultConfigs() {
         try {
@@ -54,18 +79,24 @@ public final class ConfigHandler {
     }
 
     public static JsonObject getConfigJson() {
-        try {
-            Path projectsJsonPath = getConfigPath().resolve("config.json");
-            if (Files.notExists(projectsJsonPath)) {
-                createProjectsJsonIfNotExists();
-            }
+        if (setting_obj != null) {
+            return setting_obj;
+        } else {
+            try {
+                Path projectsJsonPath = getConfigPath().resolve("config.json");
+                if (Files.notExists(projectsJsonPath)) {
+                    createProjectsJsonIfNotExists();
+                }
 
-            JsonObject obj = Railroad.GSON.fromJson(Files.readString(projectsJsonPath), JsonObject.class);
-            checkAndCreateDefaultJsonObjects(obj);
-            return obj;
-        } catch (IOException exception) {
-            throw new IllegalStateException("Error reading config.json", exception);
+                JsonObject obj = Railroad.GSON.fromJson(Files.readString(projectsJsonPath), JsonObject.class);
+                checkAndCreateDefaultJsonObjects(obj);
+                setting_obj = obj;
+                return setting_obj;
+            } catch (IOException exception) {
+                throw new IllegalStateException("Error reading config.json", exception);
+            }
         }
+
     }
 
     public static JsonArray getProjectsConfig() {
@@ -85,7 +116,7 @@ public final class ConfigHandler {
         }
     }
 
-    public static void updateConfig(JsonObject obj) {
+    public static void updateConfig() {
         System.out.println("Updating config file");
 
         Path projectsJsonPath = getConfigPath().resolve("config.json");
@@ -94,7 +125,7 @@ public final class ConfigHandler {
         }
 
         try {
-            Files.writeString(projectsJsonPath, Railroad.GSON.toJson(obj));
+            Files.writeString(projectsJsonPath, Railroad.GSON.toJson(getConfigJson()));
         } catch (IOException exception) {
             throw new IllegalStateException("Error updating config.json", exception);
         }

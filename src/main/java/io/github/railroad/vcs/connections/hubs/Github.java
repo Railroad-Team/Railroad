@@ -1,4 +1,4 @@
-package io.github.railroad.vcs.connections.github;
+package io.github.railroad.vcs.connections.hubs;
 
 import io.github.railroad.vcs.Repository;
 import io.github.railroad.vcs.connections.AbstractConnection;
@@ -11,9 +11,9 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.util.List;
 
-public class GithubConnection extends AbstractConnection {
+public class Github extends AbstractConnection {
     private Profile account;
-    public GithubConnection(Profile profile) {
+    public Github(Profile profile) {
         this.account = profile;
     };
     private String ReadHTTP(String method, String postixurl, String body) {

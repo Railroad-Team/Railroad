@@ -29,16 +29,20 @@ public class PluginManager extends Thread {
                 continue;
 
             PluginPhaseResult initPhaseResult = plugin.initPlugin();
-            if (plugin.getState() == PluginStates.FINISHED_INIT) {
-                PluginPhaseResult loadPhaseResult = plugin.loadPlugin();
-                if (plugin.getState() == PluginStates.LOADED) {
-                    showLog(plugin, "Loaded");
+            if (initPhaseResult != null) {
+                if (plugin.getState() == PluginStates.FINISHED_INIT) {
+                    PluginPhaseResult loadPhaseResult = plugin.loadPlugin();
+                    if (loadPhaseResult != null) {
+                        if (plugin.getState() == PluginStates.LOADED) {
+                            showLog(plugin, "Loaded");
+                        } else {
+                            showError(plugin, loadPhaseResult, "LoadPlugin");
+                        }
+                    } else showError(plugin, null, "No Phase result");
                 } else {
-                    showError(plugin, loadPhaseResult, "LoadPlugin");
+                    showError(plugin, initPhaseResult, "InitPlugin");
                 }
-            } else {
-                showError(plugin, initPhaseResult, "InitPlugin");
-            }
+            } else showError(plugin, null, "No Phase result");
         }
     }
 
@@ -112,5 +116,9 @@ public class PluginManager extends Thread {
                 showError(plugin, phaseResult, "Update Activity");
             }
         }
+    }
+
+    public List<Plugin> getPluginList() {
+        return this.pluginList;
     }
 }

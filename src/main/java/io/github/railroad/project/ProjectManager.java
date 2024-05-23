@@ -73,8 +73,7 @@ public class ProjectManager {
             newProject.addProperty("alias", project.getAlias());
             projects.add(newProject);
         }
-
-        ConfigHandler.updateConfig(object);
+        ConfigHandler.updateConfig();
     }
 
     public ObservableList<Project> getProjects() {

@@ -1,11 +1,13 @@
 package io.github.railroad.plugin;
 
 import io.github.railroad.discord.activity.RailroadActivities;
+import javafx.scene.control.ScrollPane;
 
 public abstract class Plugin {
     private PluginManager pluginManager;
     private PluginStates state = PluginStates.NOT_LOADED;
     private PluginHealthChecker healthChecker;
+    private String pluiginName;
 
     public Plugin() {
         this.healthChecker = new PluginHealthChecker(this);
@@ -13,10 +15,16 @@ public abstract class Plugin {
     }
 
     public abstract PluginPhaseResult initPlugin();
+
     public abstract PluginPhaseResult loadPlugin();
+
     public abstract PluginPhaseResult unloadPlugin();
+
     public abstract PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes);
+
     public abstract PluginPhaseResult reloadPlugin();
+
+    public abstract ScrollPane showSettings();
 
     public void updateStatus(PluginStates state) {
         this.pluginManager.showLog(this, "Change state from: " + this.state + " to: " + state);
@@ -45,5 +53,17 @@ public abstract class Plugin {
 
     public void setPluginManager(PluginManager pluginManager) {
         this.pluginManager = pluginManager;
+    }
+
+    public String getName() {
+        return this.getClass().getName().toString();
+    }
+
+    public String getPluiginName() {
+        return pluiginName;
+    }
+
+    public void setPluiginName(String pluiginName) {
+        this.pluiginName = pluiginName;
     }
 }
