@@ -10,6 +10,7 @@ import io.github.railroad.project.License;
 import io.github.railroad.project.ProjectType;
 import io.github.railroad.project.data.ForgeProjectData;
 import io.github.railroad.project.ui.BrowseButton;
+import io.github.railroad.project.ui.project.newProject.StarableListCell;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ClassNameValidator;
@@ -47,6 +48,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
     private final TextField mainClassField = new TextField();
     private final CheckBox useMixinsCheckBox = new CheckBox();
     private final CheckBox useAccessTransformerCheckBox = new CheckBox();
+    private final CheckBox genRunFoldersCheckBox = new CheckBox();
 
     private final ComboBox<MappingChannel> mappingChannelComboBox = new ComboBox<>();
     private final ComboBox<MappingVersion> mappingVersionComboBox = new ComboBox<>();
@@ -331,8 +333,14 @@ public class ForgeProjectDetailsPane extends RRVBox {
         useAccessTransformerLabel.setLabelFor(useAccessTransformerCheckBox);
         useAccessTransformerBox.getChildren().addAll(useAccessTransformerLabel, useAccessTransformerCheckBox);
 
+        var genRunFoldersBox = new RRHBox(10);
+        genRunFoldersBox.setAlignment(Pos.CENTER_LEFT);
+        var genRunFoldersLabel = new Label("Generate Run Folders:");
+        genRunFoldersLabel.setLabelFor(genRunFoldersCheckBox);
+        genRunFoldersBox.getChildren().addAll(genRunFoldersLabel, genRunFoldersCheckBox);
+
         minecraftSection.getChildren().addAll(minecraftVersionBox, forgeVersionBox,
-                modIdBox, modNameBox, mainClassBox, useMixinsBox, useAccessTransformerBox);
+                modIdBox, modNameBox, mainClassBox, useMixinsBox, useAccessTransformerBox, genRunFoldersBox);
 
         // Mapping Section
         var mappingSection = new RRVBox(10);
@@ -489,6 +497,9 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 String[] words = newValue.split("[ _-]+");
                 var pascalCase = new StringBuilder();
                 for (String word : words) {
+                    if(word.isBlank())
+                        continue;
+
                     pascalCase.append(word.substring(0, 1).toUpperCase(Locale.ROOT)).append(word.substring(1));
                 }
 
@@ -752,6 +763,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
         String mainClass = mainClassField.getText().trim();
         boolean useMixins = useMixinsCheckBox.isSelected();
         boolean useAccessTransformer = useAccessTransformerCheckBox.isSelected();
+        boolean genRunFolders = genRunFoldersCheckBox.isSelected();
         MappingChannel mappingChannel = mappingChannelComboBox.getValue();
         MappingVersion mappingVersion = mappingVersionComboBox.getValue();
         Optional<String> author = Optional.of(authorField.getText().trim()).filter(s -> !s.isBlank());
@@ -763,42 +775,9 @@ public class ForgeProjectDetailsPane extends RRVBox {
         String version = versionField.getText().trim();
 
         return new ForgeProjectData(projectName, projectPath, createGit, license, licenseCustom,
-                minecraftVersion, forgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer,
+                minecraftVersion, forgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer, genRunFolders,
                 mappingChannel, mappingVersion,
                 author, description, issues, updateJsonUrl,
                 groupId, artifactId, version);
-    }
-
-    public static class StarableListCell<T> extends ListCell<T> {
-        private final FontIcon starIcon = new FontIcon(FontAwesomeSolid.STAR);
-        private final FontIcon halfStarIcon = new FontIcon(FontAwesomeSolid.STAR_HALF_ALT);
-
-        private final Predicate<T> isRecommended;
-        private final Predicate<T> isLatest;
-        private final Function<T, String> stringConverter;
-
-        public StarableListCell(Predicate<T> isRecommended, Predicate<T> isLatest, Function<T, String> stringConverter) {
-            this.isRecommended = isRecommended;
-            this.isLatest = isLatest;
-            this.stringConverter = stringConverter;
-
-            this.starIcon.setIconSize(16);
-            this.starIcon.setIconColor(Color.GOLD);
-
-            this.halfStarIcon.setIconSize(16);
-            this.halfStarIcon.setIconColor(Color.GOLD);
-        }
-
-        @Override
-        protected void updateItem(T item, boolean empty) {
-            super.updateItem(item, empty);
-            if (empty || item == null) {
-                setText(null);
-                setGraphic(null);
-            } else {
-                setText(stringConverter.apply(item));
-                setGraphic(isRecommended.test(item) ? starIcon : isLatest.test(item) ? halfStarIcon : null);
-            }
-        }
     }
 }

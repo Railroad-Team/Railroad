@@ -9,7 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -81,5 +83,79 @@ public class FileHandler {
             throw new IOException("Bad zip entry: " + zipEntry.getName());
 
         return destFile;
+    }
+
+    public static void copyFolder(Path src, Path dst) {
+        try (Stream<Path> files = Files.walk(src)) {
+            files.forEach(source -> {
+                try {
+                    Path destination = dst.resolve(src.relativize(source));
+                    if (Files.isDirectory(source)) {
+                        Files.createDirectories(destination);
+                    } else {
+                        Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                } catch (IOException exception) {
+                    throw new RuntimeException("Failed to copy folder", exception);
+                }
+            });
+        } catch (IOException exception) {
+            throw new RuntimeException("Failed to copy folder", exception);
+        }
+    }
+
+    public static void deleteFolder(Path folder) {
+        try (Stream<Path> paths = Files.walk(folder)) {
+            paths.sorted(Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException exception) {
+                    throw new RuntimeException("Failed to delete folder", exception);
+                }
+            });
+        } catch (IOException exception) {
+            throw new RuntimeException("Failed to delete folder", exception);
+        }
+    }
+
+    public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty, Runnable onNotEmpty) throws IOException {
+        if (Files.notExists(directory)) {
+            directory.toFile().mkdirs(); // We use IO instead of NIO so that we block the thread until it's created
+            onEmpty.run();
+            return true;
+        }
+
+        try (Stream<Path> paths = Files.list(directory)) {
+            List<Path> pathList = paths.toList();
+            if (pathList.isEmpty()) {
+                onEmpty.run();
+                return true;
+            } else {
+                for (Path path : pathList) {
+                    if (Files.isDirectory(path)) {
+                        if (!isDirectoryEmpty(path)) {
+                            onNotEmpty.run();
+                            return false;
+                        }
+                    } else {
+                        onNotEmpty.run();
+                        return false;
+                    }
+                }
+            }
+        }
+
+        onEmpty.run();
+        return true;
+    }
+
+    public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty) throws IOException {
+        return isDirectoryEmpty(directory, onEmpty, () -> {
+        });
+    }
+
+    public static boolean isDirectoryEmpty(Path directory) throws IOException {
+        return isDirectoryEmpty(directory, () -> {
+        });
     }
 }

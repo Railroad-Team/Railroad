@@ -2,6 +2,7 @@ package io.github.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.github.railroad.minecraft.FabricAPIVersion;
 import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.minecraft.ForgeVersion;
@@ -25,9 +26,11 @@ import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class Railroad extends Application {
@@ -35,8 +38,9 @@ public class Railroad extends Application {
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
+    public static final AtomicReference<String> THEME = new AtomicReference<>("default-dark");
+    public static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
     private static boolean DEBUG = false;
     private static Scene scene;
     private static Stage window;
@@ -49,8 +53,23 @@ public class Railroad extends Application {
         return window;
     }
 
+    public static void setStyle(String theme) {
+        getScene().getStylesheets().remove(THEME.get() + ".css");
+
+        if(theme.startsWith("default")) {
+            Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
+        } else {
+            Application.setUserAgentStylesheet(new File("themes/" + theme + ".css").toURI().toString());
+        }
+
+        THEME.set(theme);
+    }
+
     private static void handleStyles(Scene scene) {
-        Application.setUserAgentStylesheet(getResource("styles/themes/nord-dark.css").toExternalForm());
+
+        var selectedTheme = ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("theme").getAsString();
+
+        setStyle(selectedTheme);
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();
@@ -92,6 +111,7 @@ public class Railroad extends Application {
         });
         MinecraftVersion.load();
         ForgeVersion.load();
+        FabricAPIVersion.load();
         window = primaryStage;
 
         // Calculate the primary screen size to better fit the window

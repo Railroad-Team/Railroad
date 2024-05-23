@@ -34,6 +34,10 @@ public final class ConfigHandler {
                 JsonArray plugin_settings = new JsonArray();
                 railroadsettings.add("plugin_settings", plugin_settings);
             }
+            if (!railroadsettings.has("theme")) {
+                railroadsettings.addProperty("theme", "default-dark");
+            }
+
         }
     }
 
@@ -45,7 +49,7 @@ public final class ConfigHandler {
                 if (setting.getAsJsonObject().get("name").getAsString().equals(plugin_name)) {
                     return setting.getAsJsonObject();
                 }
-            }
+
         }
         JsonObject new_obj = new JsonObject();
         new_obj.addProperty("name", plugin_name);
