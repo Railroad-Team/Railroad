@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit;
 
 public class FabricProjectCreationPane extends RRBorderPane {
     private static final String EXAMPLE_MOD_URL = "https://github.com/FabricMC/fabric-example-mod/archive/refs/heads/%s.zip";
-    private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/fabric-project-creation/templates/fabric/%s/template_build.gradle";
+    private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/fabric/%s/template_build.gradle";
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private final FabricProjectData data;
@@ -259,7 +259,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
                 // Delete 'com' directory if it's empty
                 final Path comDir = mainJava.resolve("com");
-                FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> Files.deleteIfExists(comDir));
+                FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileHandler.deleteFolder(comDir));
 
                 if (data.splitSources()) {
                     oldPath = clientJava.resolve("com/example/");
@@ -269,7 +269,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
                     // Delete 'com' directory if it's empty
                     final Path comDir2 = clientJava.resolve("com");
-                    FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> Files.deleteIfExists(comDir2));
+                    FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileHandler.deleteFolder(comDir2));
                 }
 
                 updateProgress(7, 16);
@@ -330,6 +330,9 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 fabricModJsonObj.remove("suggests");
                 if (data.useAccessWidener()) {
                     fabricModJsonObj.addProperty("accessWidener", data.modId() + ".accesswidener");
+
+                    // Create access widener file
+                    Files.writeString(resources.resolve(data.modId() + ".accesswidener"), "accessWidener v2 named");
                 }
 
                 JsonObject contact = fabricModJsonObj.getAsJsonObject("contact");
@@ -456,9 +459,9 @@ public class FabricProjectCreationPane extends RRBorderPane {
                     exception.printStackTrace();
                 }
 
-                updateLabel("Creating git repository...");
                 // Create git repository
                 if (data.createGit()) {
+                    updateLabel("Creating git repository...");
                     try {
                         var processBuilder = new ProcessBuilder("git", "init");
                         processBuilder.directory(projectPath.toFile());
@@ -504,8 +507,6 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 "useAccessWidener", data.useAccessWidener(),
                 "modId", data.modId()
         ));
-
-        System.out.println(args);
 
         return args;
     }

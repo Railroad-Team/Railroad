@@ -48,6 +48,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
     private final TextField mainClassField = new TextField();
     private final CheckBox useMixinsCheckBox = new CheckBox();
     private final CheckBox useAccessTransformerCheckBox = new CheckBox();
+    private final CheckBox genRunFoldersCheckBox = new CheckBox();
 
     private final ComboBox<MappingChannel> mappingChannelComboBox = new ComboBox<>();
     private final ComboBox<MappingVersion> mappingVersionComboBox = new ComboBox<>();
@@ -332,8 +333,14 @@ public class ForgeProjectDetailsPane extends RRVBox {
         useAccessTransformerLabel.setLabelFor(useAccessTransformerCheckBox);
         useAccessTransformerBox.getChildren().addAll(useAccessTransformerLabel, useAccessTransformerCheckBox);
 
+        var genRunFoldersBox = new RRHBox(10);
+        genRunFoldersBox.setAlignment(Pos.CENTER_LEFT);
+        var genRunFoldersLabel = new Label("Generate Run Folders:");
+        genRunFoldersLabel.setLabelFor(genRunFoldersCheckBox);
+        genRunFoldersBox.getChildren().addAll(genRunFoldersLabel, genRunFoldersCheckBox);
+
         minecraftSection.getChildren().addAll(minecraftVersionBox, forgeVersionBox,
-                modIdBox, modNameBox, mainClassBox, useMixinsBox, useAccessTransformerBox);
+                modIdBox, modNameBox, mainClassBox, useMixinsBox, useAccessTransformerBox, genRunFoldersBox);
 
         // Mapping Section
         var mappingSection = new RRVBox(10);
@@ -756,6 +763,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
         String mainClass = mainClassField.getText().trim();
         boolean useMixins = useMixinsCheckBox.isSelected();
         boolean useAccessTransformer = useAccessTransformerCheckBox.isSelected();
+        boolean genRunFolders = genRunFoldersCheckBox.isSelected();
         MappingChannel mappingChannel = mappingChannelComboBox.getValue();
         MappingVersion mappingVersion = mappingVersionComboBox.getValue();
         Optional<String> author = Optional.of(authorField.getText().trim()).filter(s -> !s.isBlank());
@@ -767,7 +775,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
         String version = versionField.getText().trim();
 
         return new ForgeProjectData(projectName, projectPath, createGit, license, licenseCustom,
-                minecraftVersion, forgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer,
+                minecraftVersion, forgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer, genRunFolders,
                 mappingChannel, mappingVersion,
                 author, description, issues, updateJsonUrl,
                 groupId, artifactId, version);

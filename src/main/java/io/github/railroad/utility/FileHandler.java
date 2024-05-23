@@ -119,28 +119,43 @@ public class FileHandler {
     }
 
     public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty, Runnable onNotEmpty) throws IOException {
-        if(Files.notExists(directory)) {
-            directory.toFile().mkdirs();
+        if (Files.notExists(directory)) {
+            directory.toFile().mkdirs(); // We use IO instead of NIO so that we block the thread until it's created
             onEmpty.run();
             return true;
         }
 
         try (Stream<Path> paths = Files.list(directory)) {
-            if(paths.findFirst().isEmpty()) {
+            List<Path> pathList = paths.toList();
+            if (pathList.isEmpty()) {
                 onEmpty.run();
                 return true;
             } else {
-                onNotEmpty.run();
-                return false;
+                for (Path path : pathList) {
+                    if (Files.isDirectory(path)) {
+                        if (!isDirectoryEmpty(path)) {
+                            onNotEmpty.run();
+                            return false;
+                        }
+                    } else {
+                        onNotEmpty.run();
+                        return false;
+                    }
+                }
             }
         }
+
+        onEmpty.run();
+        return true;
     }
 
     public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty) throws IOException {
-        return isDirectoryEmpty(directory, onEmpty, () -> {});
+        return isDirectoryEmpty(directory, onEmpty, () -> {
+        });
     }
 
     public static boolean isDirectoryEmpty(Path directory) throws IOException {
-        return isDirectoryEmpty(directory, () -> {});
+        return isDirectoryEmpty(directory, () -> {
+        });
     }
 }
