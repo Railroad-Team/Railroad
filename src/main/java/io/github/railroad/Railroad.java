@@ -22,9 +22,11 @@ import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class Railroad extends Application {
@@ -32,6 +34,7 @@ public class Railroad extends Application {
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
+    public static final AtomicReference<String> THEME = new AtomicReference<>("default-dark");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
     private static boolean DEBUG = false;
@@ -46,8 +49,23 @@ public class Railroad extends Application {
         return window;
     }
 
+    public static void setStyle(String theme) {
+        getScene().getStylesheets().remove(THEME.get() + ".css");
+
+        if(theme.startsWith("default")) {
+            Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
+        } else {
+            Application.setUserAgentStylesheet(new File("themes/" + theme + ".css").toURI().toString());
+        }
+
+        THEME.set(theme);
+    }
+
     private static void handleStyles(Scene scene) {
-        Application.setUserAgentStylesheet(getResource("styles/themes/nord-dark.css").toExternalForm());
+
+        var selectedTheme = ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("theme").getAsString();
+
+        setStyle(selectedTheme);
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();
