@@ -29,7 +29,7 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+println "Java: \${System.getProperty 'java.version'}, JVM: \${System.getProperty 'java.vm.version'} (\${System.getProperty 'java.vendor'}), Arch: \${System.getProperty 'os.arch'}"
 minecraft {
     mappings channel: mapping_channel, version: mapping_version
     
@@ -87,7 +87,7 @@ repositories {
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    minecraft "net.minecraftforge:forge:\${minecraft_version}-\${forge_version}"
 
     // Example mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
@@ -134,7 +134,7 @@ tasks.named('jar', Jar).configure {
     ]
 
     <% if(props.useMixins) {
-        out.println("manifestAttributes.put('MixinConfigs', '${archivesName}.mixins.json')")
+        out.println("manifestAttributes.put('MixinConfigs', '\${archivesName}.mixins.json')")
     } %>
 
     manifest {
@@ -150,7 +150,7 @@ publishing {
     }
     repositories {
         maven {
-            url "file://${project.projectDir}/mcmodsrepo"
+            url "file://\${project.projectDir}/mcmodsrepo"
         }
     }
 }
@@ -165,7 +165,7 @@ eclipse {
 
 // This will eventually be migrated to ForgeGradle so modders don't need to manually do it.
 sourceSets.each {
-    def dir = layout.buildDirectory.dir("sourcesSets/$it.name")
+    def dir = layout.buildDirectory.dir("sourcesSets/\$it.name")
     it.output.resourcesDir = dir
     it.java.destinationDirectory = dir
 }
