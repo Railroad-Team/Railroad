@@ -68,10 +68,17 @@ public class PluginManager extends Thread {
     }
 
     public void showError(Plugin plugin, PluginPhaseResult pluginPhaseResult, String message, String topic) {
-        if (plugin != null) {
-            System.out.println("[Error][" + topic + "][" + plugin.getClass().getName() + "] Phase: " + message + " State: " + plugin.getState() + " Errors: " + pluginPhaseResult.getErrors());
+        String phaseErrors = "";
+        if (pluginPhaseResult != null) {
+            phaseErrors = pluginPhaseResult.getErrors().toString();
         } else {
-            System.out.println("[Error][" + topic + "][Missing] Phase: " + message + " State: Missing Errors: " + pluginPhaseResult.getErrors());
+            phaseErrors = "Missing phase";
+            pluginPhaseResult = new PluginPhaseResult();
+        }
+        if (plugin != null) {
+            System.out.println("[Error][" + topic + "][" + plugin.getClass().getName() + "] Phase: " + message + " State: " + plugin.getState() + " Errors: " + phaseErrors);
+        } else {
+            System.out.println("[Error][" + topic + "][Missing] Phase: " + message + " State: Missing Errors: " + phaseErrors);
         }
         if (listener != null) {
             PluginManagerErrorEvent event = new PluginManagerErrorEvent(this, plugin, message, pluginPhaseResult);

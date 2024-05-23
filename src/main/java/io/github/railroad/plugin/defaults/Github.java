@@ -3,6 +3,7 @@ package io.github.railroad.plugin.defaults;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.plugin.Plugin;
 import io.github.railroad.plugin.PluginPhaseResult;
+import io.github.railroad.plugin.PluginStates;
 import io.github.railroad.plugin.defaults.github.ui.GithubAccounts;
 import io.github.railroad.ui.defaults.RRVBox;
 import javafx.scene.control.ScrollPane;
@@ -12,12 +13,14 @@ public class Github extends Plugin {
     @Override
     public PluginPhaseResult initPlugin() {
         this.setPluiginName("Github");
-        return null;
+        this.updateStatus(PluginStates.FINISHED_INIT);
+        return new PluginPhaseResult();
     }
 
     @Override
     public PluginPhaseResult loadPlugin() {
-        return null;
+        this.updateStatus(PluginStates.LOADED);
+        return new PluginPhaseResult();
     }
 
     @Override
@@ -37,14 +40,6 @@ public class Github extends Plugin {
 
     @Override
     public ScrollPane showSettings() {
-        /*final Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.initOwner(Railroad.getWindow());
-        VBox dialogVbox = new VBox(20);
-        dialogVbox.getChildren().add(new Text("This is a Dialog"));
-        Scene dialogScene = new Scene(dialogVbox, 300, 200);
-        dialog.setScene(dialogScene);
-        dialog.show();*/
         GithubAccounts accounts = new GithubAccounts();
         return accounts;
     }

@@ -1,5 +1,6 @@
 package io.github.railroad.vcs;
 
+import io.github.railroad.Railroad;
 import io.github.railroad.vcs.connections.AbstractConnection;
 
 import java.util.ArrayList;
@@ -11,13 +12,19 @@ public class RepositoryManager {
 
     public RepositoryManager() {
         this.connections = new ArrayList<AbstractConnection>();
+        this.repositoryList = new ArrayList<Repository>();
     }
     public List<Repository> getRepositoryList() {
         return repositoryList;
     }
     public void updateRepositories() {
-        for (AbstractConnection abstractConnection : connections) {
-            abstractConnection.getRepositories();
+        try {
+            for (AbstractConnection abstractConnection : connections) {
+                this.repositoryList.addAll(abstractConnection.getRepositories());
+            }
+            System.out.println(repositoryList);
+        } catch (Exception exception) {
+            Railroad.LOGGER.error(exception.getMessage());
         }
     }
 

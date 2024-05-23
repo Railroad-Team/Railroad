@@ -11,7 +11,7 @@ import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ui.welcome.WelcomePane;
 import io.github.railroad.vcs.RepositoryManager;
 import io.github.railroad.vcs.connections.Profile;
-import io.github.railroad.vcs.connections.github.GithubConnection;
+import io.github.railroad.vcs.connections.hubs.Github;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -100,9 +100,9 @@ public class Railroad extends Application {
     private static final Profile PROFILE = new Profile();
     @Override
     public void start(Stage primaryStage) {
-        REPOSITORY_MANAGER.addConnection(new GithubConnection(PROFILE));
+        REPOSITORY_MANAGER.addConnection(new Github(PROFILE));
         REPOSITORY_MANAGER.updateRepositories();
-        ConfigHandler.updateConfig(ConfigHandler.getConfigJson());
+        ConfigHandler.updateConfig();
         PLUGIN_MANAGER.start();
         PLUGIN_MANAGER.addCustomEventListener(event -> {
             Platform.runLater(() -> {

@@ -21,7 +21,7 @@ public class WelcomePane extends SplitPane {
     private final WelcomeLeftPane leftPane;
     private final WelcomeHeaderPane headerPane;
     private final WelcomeProjectsPane projectsPane;
-    private WelcomeImportProjectsPane importProjectsPane;
+    private final WelcomeImportProjectsPane importProjectsPane;
 
     private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
     private final AtomicReference<SettingsPane> settingsPane = new AtomicReference<>();
@@ -37,6 +37,8 @@ public class WelcomePane extends SplitPane {
         var rightPane = new RRVBox();
         rightPane.getChildren().addAll(headerPane, new Separator(), projectsPane);
         VBox.setVgrow(projectsPane, Priority.ALWAYS);
+        VBox.setVgrow(importProjectsPane, Priority.ALWAYS);
+
 
         setOrientation(Orientation.HORIZONTAL);
         getItems().addAll(leftPane, rightPane);
