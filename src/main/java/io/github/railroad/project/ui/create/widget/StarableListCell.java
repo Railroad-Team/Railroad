@@ -1,4 +1,4 @@
-package io.github.railroad.project.ui.project.newProject;
+package io.github.railroad.project.ui.create.widget;
 
 import javafx.scene.control.ListCell;
 import javafx.scene.paint.Color;

@@ -20,11 +20,6 @@ public class MCPVersion extends MappingVersion implements RecommendableVersion {
         this.isRecommended = isRecommended;
     }
 
-    @Override
-    public boolean isRecommended() {
-        return isRecommended;
-    }
-
     public static Map<MinecraftVersion, List<MCPVersion>> getMCPVersions() {
         final Map<MinecraftVersion, List<MCPVersion>> versions = new HashMap<>();
 
@@ -82,5 +77,10 @@ public class MCPVersion extends MappingVersion implements RecommendableVersion {
 
     public static List<MCPVersion> getRecommendedMCPVersions(MinecraftVersion minecraftVersion) {
         return getMCPVersions(minecraftVersion).stream().filter(MCPVersion::isRecommended).toList();
+    }
+
+    @Override
+    public boolean isRecommended() {
+        return isRecommended;
     }
 }

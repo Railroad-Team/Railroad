@@ -1,4 +1,4 @@
-package io.github.railroad.project.ui.project.newProject.details;
+package io.github.railroad.project.ui.create.details;
 
 import io.github.railroad.ui.defaults.RRBorderPane;
 

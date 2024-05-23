@@ -1,4 +1,4 @@
-package io.github.railroad.project.ui.project.newProject;
+package io.github.railroad.project.ui.create;
 
 import io.github.railroad.project.ProjectType;
 import javafx.scene.control.Button;

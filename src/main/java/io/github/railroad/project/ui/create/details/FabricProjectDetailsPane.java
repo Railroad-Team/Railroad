@@ -1,4 +1,4 @@
-package io.github.railroad.project.ui.project.newProject.details;
+package io.github.railroad.project.ui.create.details;
 
 import io.github.railroad.minecraft.FabricAPIVersion;
 import io.github.railroad.minecraft.FabricLoaderVersion;
@@ -10,8 +10,8 @@ import io.github.railroad.minecraft.mapping.MappingVersion;
 import io.github.railroad.project.License;
 import io.github.railroad.project.ProjectType;
 import io.github.railroad.project.data.FabricProjectData;
-import io.github.railroad.project.ui.BrowseButton;
-import io.github.railroad.project.ui.project.newProject.StarableListCell;
+import io.github.railroad.project.ui.create.widget.StarableListCell;
+import io.github.railroad.ui.BrowseButton;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ClassNameValidator;
@@ -67,7 +67,7 @@ public class FabricProjectDetailsPane extends RRVBox {
     private final AtomicBoolean hasTypedInModName = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInMainClass = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInArtifactId = new AtomicBoolean(false);
-    
+
     public FabricProjectDetailsPane() {
         // Project Section
         var projectSection = new RRVBox(10);
@@ -245,7 +245,7 @@ public class FabricProjectDetailsPane extends RRVBox {
         fapiBox.getChildren().addAll(includeFapiBox, fapiVersionBox);
 
         includeFapiCheckBox.setOnAction(event -> {
-            if(fapiBox.getChildren().contains(fapiVersionBox)) {
+            if (fapiBox.getChildren().contains(fapiVersionBox)) {
                 fapiBox.getChildren().remove(fapiVersionBox);
             } else {
                 fapiBox.getChildren().add(fapiVersionBox);
@@ -522,7 +522,7 @@ public class FabricProjectDetailsPane extends RRVBox {
                 String[] words = newValue.split("[ _-]+");
                 var pascalCase = new StringBuilder();
                 for (String word : words) {
-                    if(word.isBlank())
+                    if (word.isBlank())
                         continue;
 
                     pascalCase.append(word.substring(0, 1).toUpperCase(Locale.ROOT)).append(word.substring(1));

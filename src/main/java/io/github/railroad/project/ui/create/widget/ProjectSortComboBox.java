@@ -1,4 +1,4 @@
-package io.github.railroad.project.ui.project;
+package io.github.railroad.project.ui.create.widget;
 
 import io.github.railroad.project.ProjectSort;
 import javafx.collections.FXCollections;

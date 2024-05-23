@@ -1,39 +1,29 @@
-package io.github.railroad.project.ui.project.newProject.details;
+package io.github.railroad.project.ui.create.details;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.text.StreamingTemplateEngine;
-import io.github.palexdev.materialfx.controls.MFXProgressBar;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import io.github.railroad.Railroad;
-import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.minecraft.mapping.MappingChannel;
-import io.github.railroad.project.Project;
-import io.github.railroad.project.data.FabricProjectData;
 import io.github.railroad.project.data.ForgeProjectData;
+import io.github.railroad.project.data.Project;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ExceptionlessRunnable;
 import io.github.railroad.utility.FileHandler;
 import io.github.railroad.utility.TextAreaOutputStream;
 import javafx.application.Platform;
-import javafx.beans.property.ListProperty;
-import javafx.beans.property.SimpleListProperty;
-import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
-import javafx.scene.paint.Color;
 import org.codehaus.groovy.runtime.StringBufferWriter;
 import org.gradle.tooling.BuildException;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
@@ -43,7 +33,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class ForgeProjectCreationPane extends RRBorderPane {
     private static final Pattern TOML_COMMENT_PATTERN = Pattern.compile("^#(\\w+=)|(\\[.+\\])");
@@ -128,6 +117,22 @@ public class ForgeProjectCreationPane extends RRBorderPane {
 
             alert.showAndWait();
         });
+    }
+
+    private static Map<String, Object> createArgs(ForgeProjectData data) {
+        final Map<String, Object> args = new HashMap<>();
+        args.put("mappings", Map.of(
+                "channel", data.mappingChannel().getName().toLowerCase(Locale.ROOT),
+                "version", data.mappingVersion().getId()
+        ));
+
+        args.put("props", Map.of(
+                "useMixins", data.useMixins(),
+                "useAccessTransformer", data.useAccessTransformer(),
+                "genRunFolders", data.genRunFolders()
+        ));
+
+        return args;
     }
 
     private class ProjectCreationTask extends Task<Void> {
@@ -253,11 +258,11 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(data.minecraftVersion().id().substring(2));
                 FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
                 String buildGradleContent = Files.readString(buildGradle);
-                if(!buildGradleContent.startsWith("// fileName:")) {
+                if (!buildGradleContent.startsWith("// fileName:")) {
                     showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
                     return null;
                 }
-                
+
                 int newLineIndex = buildGradleContent.indexOf("\n");
 
                 Map<String, Object> args = createArgs(data);
@@ -266,7 +271,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
 
                 var shell = new GroovyShell();
                 Object result = shell.parse(buildGradleContent.substring("// fileName:".length() + 1, newLineIndex), binding).run();
-                if(result == null) {
+                if (result == null) {
                     showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
                     return null;
                 }
@@ -285,7 +290,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 String templateSettingsGradleUrl = TEMPLATE_SETTINGS_GRADLE_URL.formatted(data.minecraftVersion().id().substring(2));
                 FileHandler.copyUrlToFile(templateSettingsGradleUrl, settingsGradle);
                 String settingsGradleContent = Files.readString(settingsGradle);
-                if(!settingsGradleContent.startsWith("// fileName:")) {
+                if (!settingsGradleContent.startsWith("// fileName:")) {
                     showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
                     return null;
                 }
@@ -297,7 +302,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
 
                 shell = new GroovyShell();
                 result = shell.parse(settingsGradleContent.substring("// fileName:".length() + 1, newLineIndex), binding).run();
-                if(result == null) {
+                if (result == null) {
                     showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
                     return null;
                 }
@@ -318,7 +323,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 updateLabel("Running Gradle tasks...");
                 var connector = GradleConnector.newConnector();
                 connector.forProjectDirectory(projectPath.toFile());
-                try(ProjectConnection connection = connector.connect()) {
+                try (ProjectConnection connection = connector.connect()) {
                     Platform.runLater(() -> centerBox.getChildren().add(outputArea));
 
                     var outputStream = new TextAreaOutputStream(outputArea);
@@ -337,7 +342,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 }
 
                 // Create git repository
-                if(data.createGit()) {
+                if (data.createGit()) {
                     updateLabel("Creating git repository...");
                     try {
                         var processBuilder = new ProcessBuilder("git", "init");
@@ -369,21 +374,5 @@ public class ForgeProjectCreationPane extends RRBorderPane {
         public void updateLabel(String text) {
             Platform.runLater(() -> taskLabel.setText(text));
         }
-    }
-
-    private static Map<String, Object> createArgs(ForgeProjectData data) {
-        final Map<String, Object> args = new HashMap<>();
-        args.put("mappings", Map.of(
-                "channel", data.mappingChannel().getName().toLowerCase(Locale.ROOT),
-                "version", data.mappingVersion().getId()
-        ));
-
-        args.put("props", Map.of(
-                "useMixins", data.useMixins(),
-                "useAccessTransformer", data.useAccessTransformer(),
-                "genRunFolders", data.genRunFolders()
-        ));
-
-        return args;
     }
 }

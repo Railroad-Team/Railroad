@@ -1,4 +1,4 @@
-package io.github.railroad.project.ui.project.newProject.details;
+package io.github.railroad.project.ui.create.details;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -10,42 +10,35 @@ import io.github.railroad.Railroad;
 import io.github.railroad.minecraft.FabricAPIVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.minecraft.mapping.MappingChannel;
-import io.github.railroad.project.Project;
 import io.github.railroad.project.data.FabricProjectData;
+import io.github.railroad.project.data.Project;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ExceptionlessRunnable;
 import io.github.railroad.utility.FileHandler;
 import io.github.railroad.utility.TextAreaOutputStream;
 import javafx.application.Platform;
-import javafx.beans.property.ListProperty;
-import javafx.beans.property.SimpleListProperty;
-import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
-import javafx.scene.paint.Color;
-import javafx.scene.text.TextFlow;
 import org.codehaus.groovy.runtime.StringBufferWriter;
-import org.gradle.api.GradleException;
 import org.gradle.tooling.BuildException;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -132,6 +125,23 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
             alert.showAndWait();
         });
+    }
+
+    private static Map<String, Object> createArgs(FabricProjectData data) {
+        final Map<String, Object> args = new HashMap<>();
+        args.put("mappings", Map.of(
+                "channel", data.mappingChannel().getName().toLowerCase(Locale.ROOT),
+                "version", data.mappingVersion().getId()
+        ));
+
+        args.put("props", Map.of(
+                "splitSourceSets", data.splitSources(),
+                "includeFabricApi", data.fapiVersion().isPresent(),
+                "useAccessWidener", data.useAccessWidener(),
+                "modId", data.modId()
+        ));
+
+        return args;
     }
 
     private class ProjectCreationTask extends Task<Void> {
@@ -492,22 +502,5 @@ public class FabricProjectCreationPane extends RRBorderPane {
         public void updateLabel(String text) {
             Platform.runLater(() -> taskLabel.setText(text));
         }
-    }
-
-    private static Map<String, Object> createArgs(FabricProjectData data) {
-        final Map<String, Object> args = new HashMap<>();
-        args.put("mappings", Map.of(
-                "channel", data.mappingChannel().getName().toLowerCase(Locale.ROOT),
-                "version", data.mappingVersion().getId()
-        ));
-
-        args.put("props", Map.of(
-                "splitSourceSets", data.splitSources(),
-                "includeFabricApi", data.fapiVersion().isPresent(),
-                "useAccessWidener", data.useAccessWidener(),
-                "modId", data.modId()
-        ));
-
-        return args;
     }
 }

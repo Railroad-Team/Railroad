@@ -1,4 +1,4 @@
-package io.github.railroad.project.ui.welcome;
+package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRHBox;

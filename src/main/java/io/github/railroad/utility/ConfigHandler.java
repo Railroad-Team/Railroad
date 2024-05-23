@@ -10,13 +10,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public final class ConfigHandler {
-    private ConfigHandler() {}
+    private ConfigHandler() {
+    }
 
     public static void checkAndCreateDefaultJsonObjects(JsonObject object) {
         if (!object.has("projects")) {
             var projectsArray = new JsonArray();
             object.add("projects", projectsArray);
-        };
+        }
         if (!object.has("settings")) {
             JsonObject railroadsettings = new JsonObject();
             object.add("settings", railroadsettings);

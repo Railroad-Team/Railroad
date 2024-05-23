@@ -13,9 +13,13 @@ public abstract class Plugin {
     }
 
     public abstract PluginPhaseResult initPlugin();
+
     public abstract PluginPhaseResult loadPlugin();
+
     public abstract PluginPhaseResult unloadPlugin();
+
     public abstract PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes);
+
     public abstract PluginPhaseResult reloadPlugin();
 
     public void updateStatus(PluginStates state) {

@@ -7,7 +7,6 @@ import javafx.geometry.Pos;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,9 +15,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class SettingsAppearancePane extends RRVBox {
+    private static final ChoiceBox themeSelector = new ChoiceBox<String>();
     private final Label title = new Label("Appearance");
-
-    private static ChoiceBox themeSelector = new ChoiceBox<String>();
     private final Label themeOption = new Label("Select a theme:");
 
     public SettingsAppearancePane() {
@@ -34,19 +32,19 @@ public class SettingsAppearancePane extends RRVBox {
 
         List<Path> themes = new ArrayList<>();
         try (Stream<Path> files = Files.list(Path.of("themes"))) {
-             files.filter(file -> file.toString().endsWith(".css")).forEach(themes::add);
+            files.filter(file -> file.toString().endsWith(".css")).forEach(themes::add);
         } catch (IOException e) {
             e.printStackTrace();
         }
         themeSelector.setPrefWidth(180);
 
-        if(themeSelector.getItems().size() < themes.size() + 2) {
+        if (themeSelector.getItems().size() < themes.size() + 2) {
             themeSelector.getItems().clear();
 
             themeSelector.getItems().addAll("default-dark", "default-light");
 
             for (Path theme : themes) {
-                String name = theme.getFileName().toString().replace(".css", "");;
+                String name = theme.getFileName().toString().replace(".css", "");
                 themeSelector.getItems().add(name);
             }
 
@@ -59,7 +57,7 @@ public class SettingsAppearancePane extends RRVBox {
         }
 
         themeSelector.setOnAction(event -> {
-            if(themeSelector.getValue() == null) return;
+            if (themeSelector.getValue() == null) return;
             var theme = themeSelector.getValue().toString();
 
             var config = ConfigHandler.getConfigJson();

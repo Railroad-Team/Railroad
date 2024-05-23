@@ -1,4 +1,4 @@
-package io.github.railroad.project.ui.project.newProject.details;
+package io.github.railroad.project.ui.create.details;
 
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
@@ -9,8 +9,8 @@ import io.github.railroad.minecraft.mapping.MappingVersion;
 import io.github.railroad.project.License;
 import io.github.railroad.project.ProjectType;
 import io.github.railroad.project.data.ForgeProjectData;
-import io.github.railroad.project.ui.BrowseButton;
-import io.github.railroad.project.ui.project.newProject.StarableListCell;
+import io.github.railroad.project.ui.create.widget.StarableListCell;
+import io.github.railroad.ui.BrowseButton;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ClassNameValidator;
@@ -31,8 +31,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 public class ForgeProjectDetailsPane extends RRVBox {
     private final TextField projectNameField = new TextField();
@@ -497,7 +495,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 String[] words = newValue.split("[ _-]+");
                 var pascalCase = new StringBuilder();
                 for (String word : words) {
-                    if(word.isBlank())
+                    if (word.isBlank())
                         continue;
 
                     pascalCase.append(word.substring(0, 1).toUpperCase(Locale.ROOT)).append(word.substring(1));

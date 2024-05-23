@@ -74,7 +74,7 @@ public class LayoutParser {
                 }
                 case CLOSE_BRACE -> {
                     stack.pop();
-                    if(stack.isEmpty()) {
+                    if (stack.isEmpty()) {
                         return tree;
                     }
                 }

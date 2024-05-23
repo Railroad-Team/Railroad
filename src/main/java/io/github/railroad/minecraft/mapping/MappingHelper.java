@@ -28,7 +28,8 @@ public class MappingHelper {
         options.clear();
 
         switch (mappingsChannel) {
-            case MOJMAP -> options.add(new MappingVersion(mcVersion, mcVersion.id(), MinecraftVersion.isLatest(mcVersion)));
+            case MOJMAP ->
+                    options.add(new MappingVersion(mcVersion, mcVersion.id(), MinecraftVersion.isLatest(mcVersion)));
             case MCP -> options.addAll(MCPVersion.getMCPVersions(mcVersion));
             case PARCHMENT -> options.addAll(ParchmentVersion.getParchmentVersions(mcVersion));
             case YARN -> options.addAll(YarnVersion.getYarnVersions(mcVersion));

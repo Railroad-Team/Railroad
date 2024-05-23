@@ -1,10 +1,10 @@
-package io.github.railroad.project.ui.welcome;
+package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.project.Project;
 import io.github.railroad.project.ProjectSort;
-import io.github.railroad.project.ui.project.ProjectListCell;
-import io.github.railroad.project.ui.project.ProjectSearchField;
+import io.github.railroad.project.data.Project;
+import io.github.railroad.project.ui.create.widget.ProjectListCell;
+import io.github.railroad.project.ui.create.widget.ProjectSearchField;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.ListView;
@@ -26,7 +26,7 @@ public class WelcomeProjectsPane extends ScrollPane {
         setHbarPolicy(ScrollBarPolicy.NEVER);
         setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
 
-        searchField.textProperty().addListener(obs->{
+        searchField.textProperty().addListener(obs -> {
             String filter = searchField.getText();
             filterProjects(filter);
         });

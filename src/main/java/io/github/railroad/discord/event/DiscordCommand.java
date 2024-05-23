@@ -79,7 +79,7 @@ public class DiscordCommand {
         SEND_ACTIVITY_JOIN_INVITE,
         SET_ACTIVITY,
         SET_OVERLAY_LOCKED,
-        SUBSCRIBE;
+        SUBSCRIBE
     }
 
     public enum Event {
@@ -100,6 +100,6 @@ public class DiscordCommand {
         RELATIONSHIP_UPDATE,
         SPEAKING_START,
         SPEAKING_STOP,
-        VOICE_SETTINGS_UPDATE_2;
+        VOICE_SETTINGS_UPDATE_2
     }
 }

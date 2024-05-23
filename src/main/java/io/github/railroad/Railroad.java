@@ -2,14 +2,14 @@ package io.github.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.github.railroad.minecraft.FabricAPIVersion;
-import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.discord.activity.RailroadActivities;
+import io.github.railroad.minecraft.FabricAPIVersion;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
+import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.project.ProjectManager;
-import io.github.railroad.project.ui.welcome.WelcomePane;
 import io.github.railroad.utility.ConfigHandler;
+import io.github.railroad.welcome.WelcomePane;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -53,7 +53,7 @@ public class Railroad extends Application {
     public static void setStyle(String theme) {
         getScene().getStylesheets().remove(THEME.get() + ".css");
 
-        if(theme.startsWith("default")) {
+        if (theme.startsWith("default")) {
             Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
         } else {
             Application.setUserAgentStylesheet(new File("themes/" + theme + ".css").toURI().toString());
@@ -92,6 +92,23 @@ public class Railroad extends Application {
 
     public static InputStream getResourceAsStream(String path) {
         return Railroad.class.getResourceAsStream("/io/github/railroad/" + path);
+    }
+
+    public static void showErrorAlert(String title, String header, String content, Consumer<ButtonType> action) {
+        var alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            action.accept(result.get());
+        }
+    }
+
+    public static void showErrorAlert(String title, String header, String content) {
+        showErrorAlert(title, header, content, buttonType -> {
+        });
     }
 
     @Override
@@ -144,21 +161,5 @@ public class Railroad extends Application {
         PLUGIN_MANAGER.unLoadAllPlugins();
         LOGGER.info("Stopping Railroad");
         System.exit(0);
-    }
-
-    public static void showErrorAlert(String title, String header, String content, Consumer<ButtonType> action) {
-        var alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(header);
-        alert.setContentText(content);
-
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            action.accept(result.get());
-        }
-    }
-
-    public static void showErrorAlert(String title, String header, String content) {
-        showErrorAlert(title, header, content, buttonType -> {});
     }
 }

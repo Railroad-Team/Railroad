@@ -115,7 +115,8 @@ public record FabricLoaderVersion(LoaderVersion loaderVersion, IntermediaryVersi
     public record IntermediaryVersion(String version, String maven, boolean stable) {
     }
 
-    public record LauncherMeta(String version, @SerializedName("min_java_version") int minJavaVersion, Libraries libraries) {
+    public record LauncherMeta(String version, @SerializedName("min_java_version") int minJavaVersion,
+                               Libraries libraries) {
         public record Libraries(List<Library> client, List<Library> common, List<Library> server,
                                 List<Library> development) {
             public record Library(String name, String url, String md5, String sha1, String sha256, String sha512,

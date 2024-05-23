@@ -1,7 +1,7 @@
-package io.github.railroad.project.ui.welcome;
+package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.project.ui.project.newProject.NewProjectPane;
+import io.github.railroad.project.ui.create.NewProjectPane;
 import io.github.railroad.settings.ui.SettingsPane;
 import io.github.railroad.ui.defaults.RRVBox;
 import javafx.application.Platform;
@@ -15,7 +15,7 @@ import javax.swing.filechooser.FileSystemView;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.github.railroad.project.ui.BrowseButton.folderBrowser;
+import static io.github.railroad.ui.BrowseButton.folderBrowser;
 
 public class WelcomePane extends SplitPane {
     private final WelcomeLeftPane leftPane;
@@ -52,7 +52,7 @@ public class WelcomePane extends SplitPane {
                 .getSelectionModel()
                 .selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> {
-                    if(newValue == null)
+                    if (newValue == null)
                         return;
 
                     Platform.runLater(() -> {
@@ -67,7 +67,7 @@ public class WelcomePane extends SplitPane {
                             case OPEN_PROJECT -> {
                                 var directoryChooser = folderBrowser(FileSystemView.getFileSystemView().getHomeDirectory(), "Open Project");
                                 //TODO Create/import/whatever with the selected folder here
-                                System.out.println(String.format("Dir Selected: %s", directoryChooser.showDialog(getScene().getWindow())));
+                                System.out.printf("Dir Selected: %s%n", directoryChooser.showDialog(getScene().getWindow()));
                             }
                             case IMPORT_PROJECT -> {
                                 System.out.println("[Import project] is still not implemented!");

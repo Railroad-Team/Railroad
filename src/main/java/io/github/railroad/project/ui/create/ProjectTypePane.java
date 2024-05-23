@@ -1,6 +1,8 @@
-package io.github.railroad.project.ui.project.newProject;
+package io.github.railroad.project.ui.create;
 
 import io.github.railroad.project.ProjectType;
+import io.github.railroad.project.ui.create.widget.ProjectTypeCell;
+import io.github.railroad.project.ui.create.widget.ProjectTypeSearchField;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
 import javafx.scene.control.Button;

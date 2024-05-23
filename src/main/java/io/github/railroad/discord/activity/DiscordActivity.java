@@ -150,6 +150,6 @@ public class DiscordActivity {
         LISTENING,
         UNUSED,
         CUSTOM,
-        COMPETING;
+        COMPETING
     }
 }

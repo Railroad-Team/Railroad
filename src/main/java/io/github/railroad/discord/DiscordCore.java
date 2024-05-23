@@ -8,7 +8,6 @@ import io.github.railroad.discord.event.DiscordEventHandler;
 import io.github.railroad.discord.event.DiscordEvents;
 import io.github.railroad.discord.impl.UnixDiscordIPCChannel;
 import io.github.railroad.discord.impl.WindowsDiscordIPCChannel;
-import io.github.railroad.project.ui.project.newProject.details.ForgeProjectCreationPane;
 import javafx.util.Pair;
 
 import java.io.IOException;
@@ -86,7 +85,7 @@ public class DiscordCore implements AutoCloseable {
 
     private void handleCommand(DiscordCommand command) {
         if (command.isError()) {
-            System.err.println("Received error from Discord IPC channel: " + command.toString());
+            System.err.println("Received error from Discord IPC channel: " + command);
             return;
         }
 
@@ -173,7 +172,7 @@ public class DiscordCore implements AutoCloseable {
     }
 
     private void sendCommand(DiscordCommand command, Consumer<DiscordCommand> callback) {
-        if(this.connectionState == DiscordConnectionState.HANDSHAKE && command.getEvt() != DiscordCommand.Event.READY) {
+        if (this.connectionState == DiscordConnectionState.HANDSHAKE && command.getEvt() != DiscordCommand.Event.READY) {
             this.commandQueue.add(new Pair<>(command, callback));
             return;
         }
@@ -198,16 +197,16 @@ public class DiscordCore implements AutoCloseable {
         return DiscordResult.OK;
     }
 
-    public void setCurrentUser(DiscordUser user) {
-        this.currentUser = user;
-    }
-
     public long getPID() {
         return this.pid;
     }
 
     public DiscordUser getCurrentUser() {
         return this.currentUser;
+    }
+
+    public void setCurrentUser(DiscordUser user) {
+        this.currentUser = user;
     }
 
     public DiscordActivityManager getActivityManager() {
