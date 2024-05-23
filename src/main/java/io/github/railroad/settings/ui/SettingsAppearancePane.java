@@ -10,6 +10,10 @@ import javafx.scene.control.Label;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 public class SettingsAppearancePane extends RRVBox {
     private final Label title = new Label("Appearance");
@@ -28,23 +32,21 @@ public class SettingsAppearancePane extends RRVBox {
 
         themeBox.setStyle("-fx-padding: 0 0 0 10");
 
-        File[] themes = new File[0];
-        try {
-             themes = Files.list(new File("themes").toPath())
-                    .filter(file -> file.toString().endsWith(".css"))
-                    .map(file -> file.toFile()).toArray(File[]::new);
+        List<Path> themes = new ArrayList<>();
+        try (Stream<Path> files = Files.list(Path.of("themes"))) {
+             files.filter(file -> file.toString().endsWith(".css")).forEach(themes::add);
         } catch (IOException e) {
             e.printStackTrace();
         }
         themeSelector.setPrefWidth(180);
 
-        if(themeSelector.getItems().size() < themes.length + 2){
+        if(themeSelector.getItems().size() < themes.size() + 2){
             themeSelector.getItems().clear();
 
             themeSelector.getItems().addAll("default-dark", "default-light");
 
             for (var theme : themes) {
-                String name = theme.getName().replace(".css", "");
+                String name = theme.getFileName().toString().replace(".css", "");;
                 themeSelector.getItems().add(name);
             }
 

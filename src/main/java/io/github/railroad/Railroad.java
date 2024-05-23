@@ -34,7 +34,7 @@ public class Railroad extends Application {
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
-    public static AtomicReference<String> THEME = new AtomicReference<>("default-dark");
+    public static final AtomicReference<String> THEME = new AtomicReference<>("default-dark");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
     private static boolean DEBUG = false;
