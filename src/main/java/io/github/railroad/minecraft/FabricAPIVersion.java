@@ -65,6 +65,6 @@ public record FabricAPIVersion(String version, MinecraftVersion minecraftVersion
     }
 
     public static List<FabricAPIVersion> getVersions(MinecraftVersion mcVersion) {
-        return VERSIONS.computeIfAbsent(mcVersion, k -> FXCollections.observableArrayList());
+        return VERSIONS.computeIfAbsent(mcVersion, k -> FXCollections.observableArrayList()).reversed();
     }
 }

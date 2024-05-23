@@ -239,7 +239,7 @@ public class FabricProjectDetailsPane extends RRVBox {
                 version -> false,
                 FabricAPIVersion::version));
         fapiVersionComboBox.getItems().addAll(FabricAPIVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
-        fapiVersionComboBox.setValue(FabricAPIVersion.getLatest());
+        fapiVersionComboBox.setValue(fapiVersionComboBox.getItems().getFirst());
         includeFapiBox.getChildren().addAll(includeFapiLabel, includeFapiCheckBox);
         fapiVersionBox.getChildren().addAll(fapiVersionLabel, fapiVersionComboBox);
         fapiBox.getChildren().addAll(includeFapiBox, fapiVersionBox);

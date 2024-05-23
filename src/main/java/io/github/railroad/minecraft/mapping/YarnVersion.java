@@ -11,10 +11,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class YarnVersion extends MappingVersion {
@@ -73,8 +70,10 @@ public class YarnVersion extends MappingVersion {
                 List<YarnVersion> yarnVersions = versions.computeIfAbsent(entry.getKey(), k -> new ArrayList<>());
                 for (int index = 0; index < entry.getValue().size(); index++) {
                     String version = entry.getValue().get(index);
-                    yarnVersions.add(new YarnVersion(entry.getKey(), version, index == 0));
+                    yarnVersions.add(new YarnVersion(entry.getKey(), version, index == entry.getValue().size() - 1));
                 }
+
+                versions.put(entry.getKey(), yarnVersions.reversed());
             }
         } catch (final IOException exception) {
             throw new IllegalStateException("Unable to read Yarn versions!", exception);
