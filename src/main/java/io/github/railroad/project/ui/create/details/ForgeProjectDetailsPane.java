@@ -1,5 +1,6 @@
 package io.github.railroad.project.ui.create.details;
 
+import io.github.railroad.Railroad;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.minecraft.RecommendableVersion;
@@ -15,12 +16,15 @@ import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ClassNameValidator;
 import javafx.beans.binding.BooleanBinding;
+import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.Border;
+import javafx.scene.layout.Priority;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -52,9 +56,13 @@ public class ForgeProjectDetailsPane extends RRVBox {
     private final ComboBox<MappingVersion> mappingVersionComboBox = new ComboBox<>();
 
     private final TextField authorField = new TextField(System.getProperty("user.name")); // optional
+    private final TextField creditsField = new TextField(); // optional
     private final TextArea descriptionArea = new TextArea(); // optional
     private final TextField issuesField = new TextField(); // optional
     private final TextField updateJsonUrlField = new TextField(); // optional
+    private final TextField displayUrlField = new TextField(); // optional
+    private final ComboBox<ForgeProjectData.DisplayTest> displayTestComboBox = new ComboBox<>(); // optional
+    private final CheckBox clientSideOnlyCheckBox = new CheckBox(); // optional
 
     private final TextField groupIdField = new TextField();
     private final TextField artifactIdField = new TextField();
@@ -75,7 +83,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
         projectNameBox.setAlignment(Pos.CENTER_LEFT);
         var projectNameLabel = new Label("Name:");
         projectNameLabel.setLabelFor(projectNameField);
-        projectNameBox.getChildren().addAll(projectNameLabel, projectNameField);
+        projectNameBox.getChildren().addAll(projectNameLabel, createAsterisk(), projectNameField);
 
         var projectPathVBox = new RRVBox(10);
         projectPathVBox.setAlignment(Pos.CENTER_LEFT);
@@ -138,7 +146,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
         browseButton.browseTypeProperty().set(BrowseButton.BrowseType.DIRECTORY);
         browseButton.setGraphic(browseButtonIcon);
         browseButton.setTooltip(new Tooltip("Browse"));
-        projectPathBox.getChildren().addAll(projectPathLabel, projectPathField, browseButton);
+        projectPathBox.getChildren().addAll(projectPathLabel, createAsterisk(), projectPathField, browseButton);
 
         projectPathVBox.getChildren().addAll(projectPathBox, createdAtLabel);
 
@@ -174,10 +182,10 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 licenseVBox.getChildren().remove(licenseCustomField);
             }
         });
-        licenseBox.getChildren().addAll(licenseLabel, licenseComboBox);
+        licenseBox.getChildren().addAll(licenseLabel, createAsterisk(), licenseComboBox);
         licenseVBox.getChildren().add(licenseBox);
 
-        projectSection.getChildren().addAll(projectNameBox, projectPathVBox, gitBox, licenseVBox);
+        projectSection.getChildren().addAll(createTitle("Project"), projectNameBox, projectPathVBox, gitBox, licenseVBox);
 
         // Minecraft Section
         var minecraftSection = new RRVBox(10);
@@ -200,7 +208,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 return MinecraftVersion.fromId(string).orElse(null);
             }
         });
-        minecraftVersionBox.getChildren().addAll(minecraftVersionLabel, minecraftVersionComboBox);
+        minecraftVersionBox.getChildren().addAll(minecraftVersionLabel, createAsterisk(), minecraftVersionComboBox);
 
         var forgeVersionBox = new RRHBox(10);
         forgeVersionBox.setAlignment(Pos.CENTER_LEFT);
@@ -223,7 +231,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 ForgeVersion::id));
         forgeVersionComboBox.getItems().addAll(ForgeVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
         forgeVersionComboBox.setValue(ForgeVersion.getLatestVersion(MinecraftVersion.getLatestStableVersion()));
-        forgeVersionBox.getChildren().addAll(forgeVersionLabel, forgeVersionComboBox);
+        forgeVersionBox.getChildren().addAll(forgeVersionLabel, createAsterisk(), forgeVersionComboBox);
 
         var modIdBox = new RRHBox(10);
         modIdBox.setAlignment(Pos.CENTER_LEFT);
@@ -275,13 +283,13 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 artifactIdField.setText(newValue.replaceAll("[^a-z0-9-]", ""));
         });
         modIdField.setOnKeyTyped(event -> {
-            // If the user has typed in the mod ID and it is not empty, set the hasTypedInModid flag to true
+            // If the user has typed in the mod ID, and it is not empty, set the hasTypedInModid flag to true
             if (!hasTypedInModid.get() && !modIdField.getText().isBlank())
                 hasTypedInModid.set(true);
             else if (hasTypedInModid.get() && modIdField.getText().isBlank())
                 hasTypedInModid.set(false);
         });
-        modIdBox.getChildren().addAll(modIdLabel, modIdField);
+        modIdBox.getChildren().addAll(modIdLabel, createAsterisk(), modIdField);
 
         var modNameBox = new RRHBox(10);
         modNameBox.setAlignment(Pos.CENTER_LEFT);
@@ -299,7 +307,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
             else if (hasTypedInModName.get() && modNameField.getText().isBlank())
                 hasTypedInModName.set(false);
         });
-        modNameBox.getChildren().addAll(modNameLabel, modNameField);
+        modNameBox.getChildren().addAll(modNameLabel, createAsterisk(), modNameField);
 
         var mainClassBox = new RRHBox(10);
         mainClassBox.setAlignment(Pos.CENTER_LEFT);
@@ -311,13 +319,13 @@ public class ForgeProjectDetailsPane extends RRVBox {
             }
         });
         mainClassField.setOnKeyTyped(event -> {
-            // If the user has typed in the main class and it is not empty, set the hasTypedInMainClass flag to true
+            // If the user has typed in the main class, and it is not empty, set the hasTypedInMainClass flag to true
             if (!hasTypedInMainClass.get() && !mainClassField.getText().isBlank())
                 hasTypedInMainClass.set(true);
             else if (hasTypedInMainClass.get() && mainClassField.getText().isBlank())
                 hasTypedInMainClass.set(false);
         });
-        mainClassBox.getChildren().addAll(mainClassLabel, mainClassField);
+        mainClassBox.getChildren().addAll(mainClassLabel, createAsterisk(), mainClassField);
 
         var useMixinsBox = new RRHBox(10);
         useMixinsBox.setAlignment(Pos.CENTER_LEFT);
@@ -337,7 +345,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
         genRunFoldersLabel.setLabelFor(genRunFoldersCheckBox);
         genRunFoldersBox.getChildren().addAll(genRunFoldersLabel, genRunFoldersCheckBox);
 
-        minecraftSection.getChildren().addAll(minecraftVersionBox, forgeVersionBox,
+        minecraftSection.getChildren().addAll(createTitle("Minecraft"), minecraftVersionBox, forgeVersionBox,
                 modIdBox, modNameBox, mainClassBox, useMixinsBox, useAccessTransformerBox, genRunFoldersBox);
 
         // Mapping Section
@@ -368,7 +376,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
             MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.getValue(), newValue);
             mappingVersionComboBox.setValue(mappingVersionComboBox.getItems().getFirst());
         });
-        mappingChannelBox.getChildren().addAll(mappingChannelLabel, mappingChannelComboBox);
+        mappingChannelBox.getChildren().addAll(mappingChannelLabel, createAsterisk(), mappingChannelComboBox);
 
         var mappingVersionBox = new RRHBox(10);
         mappingVersionBox.setAlignment(Pos.CENTER_LEFT);
@@ -384,9 +392,9 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 MappingVersion::getId));
         MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.getValue(), mappingChannelComboBox.getValue());
         mappingVersionComboBox.setValue(mappingVersionComboBox.getItems().getFirst());
-        mappingVersionBox.getChildren().addAll(mappingVersionLabel, mappingVersionComboBox);
+        mappingVersionBox.getChildren().addAll(mappingVersionLabel, createAsterisk(), mappingVersionComboBox);
 
-        mappingSection.getChildren().addAll(mappingChannelBox, mappingVersionBox);
+        mappingSection.getChildren().addAll(createTitle("Mappings"), mappingChannelBox, mappingVersionBox);
 
         // Optional Section
         var optionalSection = new RRVBox(10);
@@ -403,11 +411,21 @@ public class ForgeProjectDetailsPane extends RRVBox {
         });
         authorBox.getChildren().addAll(authorLabel, authorField);
 
+        var creditsBox = new RRHBox(10);
+        creditsBox.setAlignment(Pos.CENTER_LEFT);
+        var creditsLabel = new Label("Credits:");
+        creditsLabel.setLabelFor(creditsField);
+        creditsField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue.length() > 256) {
+                creditsField.setText(newValue.substring(0, 256));
+            }
+        });
+        creditsBox.getChildren().addAll(creditsLabel, creditsField);
+
         var descriptionBox = new RRHBox(10);
         descriptionBox.setAlignment(Pos.CENTER_LEFT);
         var descriptionLabel = new Label("Description:");
         descriptionLabel.setLabelFor(descriptionArea);
-        descriptionArea.setPrefHeight(100);
         descriptionArea.setWrapText(true);
         descriptionArea.textProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue.length() > 1028) {
@@ -428,7 +446,45 @@ public class ForgeProjectDetailsPane extends RRVBox {
         updateJsonUrlLabel.setLabelFor(updateJsonUrlField);
         updateJsonUrlBox.getChildren().addAll(updateJsonUrlLabel, updateJsonUrlField);
 
-        optionalSection.getChildren().addAll(authorBox, descriptionBox, issuesBox, updateJsonUrlBox);
+        var displayUrlBox = new RRHBox(10);
+        displayUrlBox.setAlignment(Pos.CENTER_LEFT);
+        var displayUrlLabel = new Label("Display URL:");
+        displayUrlLabel.setLabelFor(displayUrlField);
+        displayUrlBox.getChildren().addAll(displayUrlLabel, displayUrlField);
+
+        var displayTestBox = new RRHBox(10);
+        displayTestBox.setAlignment(Pos.CENTER_LEFT);
+        var displayTestLabel = new Label("Display Test:");
+        displayTestLabel.setLabelFor(displayTestComboBox);
+        displayTestComboBox.getItems().addAll(ForgeProjectData.DisplayTest.values());
+        displayTestComboBox.setValue(ForgeProjectData.DisplayTest.MATCH_VERSION);
+        displayTestComboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(ForgeProjectData.DisplayTest object) {
+                return object.name();
+            }
+
+            @Override
+            public ForgeProjectData.DisplayTest fromString(String string) {
+                return ForgeProjectData.DisplayTest.valueOf(string);
+            }
+        });
+        displayTestBox.getChildren().addAll(displayTestLabel, createAsterisk(), displayTestComboBox);
+
+        var clientSideOnlyBox = new RRHBox(10);
+        clientSideOnlyBox.setAlignment(Pos.CENTER_LEFT);
+        var clientSideOnlyLabel = new Label("Client Side Only:");
+        clientSideOnlyLabel.setLabelFor(clientSideOnlyCheckBox);
+        clientSideOnlyCheckBox.setSelected(false);
+        clientSideOnlyCheckBox.setTooltip(new Tooltip("If checked, the mod will only run on the client side."));
+        clientSideOnlyCheckBox.setOnAction(event -> {
+            displayTestComboBox.setValue(clientSideOnlyCheckBox.isSelected() ?
+                    ForgeProjectData.DisplayTest.IGNORE_ALL_VERSION : ForgeProjectData.DisplayTest.MATCH_VERSION);
+        });
+        clientSideOnlyBox.getChildren().addAll(clientSideOnlyLabel, clientSideOnlyCheckBox);
+
+        optionalSection.getChildren().addAll(createTitle("Details (Optional)"), authorBox, creditsBox, descriptionBox, issuesBox, updateJsonUrlBox,
+                displayUrlBox, displayTestBox, clientSideOnlyBox);
 
         // Maven Section
         var mavenSection = new RRVBox(10);
@@ -438,21 +494,21 @@ public class ForgeProjectDetailsPane extends RRVBox {
         groupIdBox.setAlignment(Pos.CENTER_LEFT);
         var groupIdLabel = new Label("Group ID:");
         groupIdLabel.setLabelFor(groupIdField);
-        groupIdBox.getChildren().addAll(groupIdLabel, groupIdField);
+        groupIdBox.getChildren().addAll(groupIdLabel, createAsterisk(), groupIdField);
 
         var artifactIdBox = new RRHBox(10);
         artifactIdBox.setAlignment(Pos.CENTER_LEFT);
         var artifactIdLabel = new Label("Artifact ID:");
         artifactIdLabel.setLabelFor(artifactIdField);
-        artifactIdBox.getChildren().addAll(artifactIdLabel, artifactIdField);
+        artifactIdBox.getChildren().addAll(artifactIdLabel, createAsterisk(), artifactIdField);
 
         var versionBox = new RRHBox(10);
         versionBox.setAlignment(Pos.CENTER_LEFT);
         var versionLabel = new Label("Version:");
         versionLabel.setLabelFor(versionField);
-        versionBox.getChildren().addAll(versionLabel, versionField);
+        versionBox.getChildren().addAll(versionLabel, createAsterisk(), versionField);
 
-        mavenSection.getChildren().addAll(groupIdBox, artifactIdBox, versionBox);
+        mavenSection.getChildren().addAll(createTitle("Maven"), groupIdBox, artifactIdBox, versionBox);
 
         getChildren().addAll(projectSection,
                 new Separator(), minecraftSection,
@@ -539,6 +595,19 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 event.consume();
             }
         });
+    }
+
+    private static Text createAsterisk() {
+        var asterisk = new Text("*");
+        asterisk.setFill(Color.RED);
+        Tooltip.install(asterisk, new Tooltip("Required"));
+        return asterisk;
+    }
+
+    private static Text createTitle(String title) {
+        var text = new Text(title);
+        text.setStyle("-fx-font-size: 1.5em;");
+        return text;
     }
 
     private static BooleanBinding isInvalid(TextField textField) {
@@ -745,6 +814,31 @@ public class ForgeProjectDetailsPane extends RRVBox {
             return false;
         }
 
+        // Validate issues, update json and display URL
+        if (!issuesField.getText().isBlank() && !issuesField.getText().matches(Railroad.URL_REGEX)) {
+            issuesField.setStyle("-fx-border-color: red;");
+            issuesField.requestFocus();
+
+            createAlert("Invalid Issues URL", "The issues URL must be a valid URL.");
+            return false;
+        }
+
+        if (!updateJsonUrlField.getText().isBlank() && !updateJsonUrlField.getText().matches(Railroad.URL_REGEX) && !updateJsonUrlField.getText().endsWith(".json")) {
+            updateJsonUrlField.setStyle("-fx-border-color: red;");
+            updateJsonUrlField.requestFocus();
+
+            createAlert("Invalid Update JSON URL", "The update JSON URL must be a valid URL.");
+            return false;
+        }
+
+        if (!displayUrlField.getText().isBlank() && !displayUrlField.getText().matches(Railroad.URL_REGEX)) {
+            displayUrlField.setStyle("-fx-border-color: red;");
+            displayUrlField.requestFocus();
+
+            createAlert("Invalid Display URL", "The display URL must be a valid URL.");
+            return false;
+        }
+
         return true;
     }
 
@@ -765,9 +859,13 @@ public class ForgeProjectDetailsPane extends RRVBox {
         MappingChannel mappingChannel = mappingChannelComboBox.getValue();
         MappingVersion mappingVersion = mappingVersionComboBox.getValue();
         Optional<String> author = Optional.of(authorField.getText().trim()).filter(s -> !s.isBlank());
+        Optional<String> credits = Optional.of(creditsField.getText().trim()).filter(s -> !s.isBlank());
         Optional<String> description = Optional.of(descriptionArea.getText().trim()).filter(s -> !s.isBlank());
         Optional<String> issues = Optional.of(issuesField.getText().trim()).filter(s -> !s.isBlank());
         Optional<String> updateJsonUrl = Optional.of(updateJsonUrlField.getText().trim()).filter(s -> !s.isBlank());
+        Optional<String> displayUrl = Optional.of(displayUrlField.getText().trim()).filter(s -> !s.isBlank());
+        ForgeProjectData.DisplayTest displayTest = displayTestComboBox.getValue();
+        boolean clientSideOnly = clientSideOnlyCheckBox.isSelected();
         String groupId = groupIdField.getText().trim();
         String artifactId = artifactIdField.getText().trim();
         String version = versionField.getText().trim();
@@ -775,7 +873,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
         return new ForgeProjectData(projectName, projectPath, createGit, license, licenseCustom,
                 minecraftVersion, forgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer, genRunFolders,
                 mappingChannel, mappingVersion,
-                author, description, issues, updateJsonUrl,
+                author, credits, description, issues, updateJsonUrl, displayUrl, displayTest, clientSideOnly,
                 groupId, artifactId, version);
     }
 }

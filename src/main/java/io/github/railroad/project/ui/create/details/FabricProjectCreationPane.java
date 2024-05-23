@@ -347,6 +347,8 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
                 JsonObject contact = fabricModJsonObj.getAsJsonObject("contact");
                 data.issues().ifPresent(issues -> contact.addProperty("issues", issues));
+                data.homepage().ifPresent(homepage -> contact.addProperty("homepage", homepage));
+                data.sources().ifPresent(sources -> contact.addProperty("sources", sources));
 
                 Files.writeString(fabricModJson, Railroad.GSON.toJson(fabricModJsonObj));
 

@@ -19,5 +19,6 @@ public record FabricProjectData(String projectName, Path projectPath, boolean cr
                                 boolean splitSources,
                                 MappingChannel mappingChannel, MappingVersion mappingVersion,
                                 Optional<String> author, Optional<String> description, Optional<String> issues,
+                                Optional<String> homepage, Optional<String> sources,
                                 String groupId, String artifactId, String version) {
 }

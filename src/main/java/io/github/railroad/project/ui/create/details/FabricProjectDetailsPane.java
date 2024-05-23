@@ -1,5 +1,6 @@
 package io.github.railroad.project.ui.create.details;
 
+import io.github.railroad.Railroad;
 import io.github.railroad.minecraft.FabricAPIVersion;
 import io.github.railroad.minecraft.FabricLoaderVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
@@ -22,6 +23,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.Border;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -56,6 +58,8 @@ public class FabricProjectDetailsPane extends RRVBox {
     private final TextField authorField = new TextField(System.getProperty("user.name")); // optional
     private final TextArea descriptionArea = new TextArea(); // optional
     private final TextField issuesField = new TextField(); // optional
+    private final TextField homepageField = new TextField(); // optional
+    private final TextField sourcesField = new TextField(); // optional
 
     private final TextField groupIdField = new TextField();
     private final TextField artifactIdField = new TextField();
@@ -76,7 +80,7 @@ public class FabricProjectDetailsPane extends RRVBox {
         projectNameBox.setAlignment(Pos.CENTER_LEFT);
         var projectNameLabel = new Label("Name:");
         projectNameLabel.setLabelFor(projectNameField);
-        projectNameBox.getChildren().addAll(projectNameLabel, projectNameField);
+        projectNameBox.getChildren().addAll(projectNameLabel, createAsterisk(), projectNameField);
 
         var projectPathVBox = new RRVBox(10);
         projectPathVBox.setAlignment(Pos.CENTER_LEFT);
@@ -139,7 +143,7 @@ public class FabricProjectDetailsPane extends RRVBox {
         browseButton.browseTypeProperty().set(BrowseButton.BrowseType.DIRECTORY);
         browseButton.setGraphic(browseButtonIcon);
         browseButton.setTooltip(new Tooltip("Browse"));
-        projectPathBox.getChildren().addAll(projectPathLabel, projectPathField, browseButton);
+        projectPathBox.getChildren().addAll(projectPathLabel, createAsterisk(), projectPathField, browseButton);
 
         projectPathVBox.getChildren().addAll(projectPathBox, createdAtLabel);
 
@@ -175,10 +179,10 @@ public class FabricProjectDetailsPane extends RRVBox {
                 licenseVBox.getChildren().remove(licenseCustomField);
             }
         });
-        licenseBox.getChildren().addAll(licenseLabel, licenseComboBox);
+        licenseBox.getChildren().addAll(licenseLabel, createAsterisk(), licenseComboBox);
         licenseVBox.getChildren().add(licenseBox);
 
-        projectSection.getChildren().addAll(projectNameBox, projectPathVBox, gitBox, licenseVBox);
+        projectSection.getChildren().addAll(createTitle("Project"), projectNameBox, projectPathVBox, gitBox, licenseVBox);
 
         // Minecraft Section
         var minecraftSection = new RRVBox(10);
@@ -201,7 +205,7 @@ public class FabricProjectDetailsPane extends RRVBox {
                 return MinecraftVersion.fromId(string).orElse(null);
             }
         });
-        minecraftVersionBox.getChildren().addAll(minecraftVersionLabel, minecraftVersionComboBox);
+        minecraftVersionBox.getChildren().addAll(minecraftVersionLabel, createAsterisk(), minecraftVersionComboBox);
 
         var fabricLoaderVersionBox = new RRHBox(10);
         fabricLoaderVersionBox.setAlignment(Pos.CENTER_LEFT);
@@ -217,7 +221,7 @@ public class FabricProjectDetailsPane extends RRVBox {
                 fabricLoaderVersion -> fabricLoaderVersion.loaderVersion().version()));
         fabricLoaderVersionComboBox.getItems().addAll(FabricLoaderVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
         fabricLoaderVersionComboBox.setValue(FabricLoaderVersion.getLatestVersion(MinecraftVersion.getLatestStableVersion()));
-        fabricLoaderVersionBox.getChildren().addAll(fabricLoaderVersionLabel, fabricLoaderVersionComboBox);
+        fabricLoaderVersionBox.getChildren().addAll(fabricLoaderVersionLabel, createAsterisk(), fabricLoaderVersionComboBox);
 
         var fapiBox = new RRVBox(10);
         fapiBox.setAlignment(Pos.CENTER_LEFT);
@@ -241,7 +245,7 @@ public class FabricProjectDetailsPane extends RRVBox {
         fapiVersionComboBox.getItems().addAll(FabricAPIVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
         fapiVersionComboBox.setValue(fapiVersionComboBox.getItems().getFirst());
         includeFapiBox.getChildren().addAll(includeFapiLabel, includeFapiCheckBox);
-        fapiVersionBox.getChildren().addAll(fapiVersionLabel, fapiVersionComboBox);
+        fapiVersionBox.getChildren().addAll(fapiVersionLabel, createAsterisk(), fapiVersionComboBox);
         fapiBox.getChildren().addAll(includeFapiBox, fapiVersionBox);
 
         includeFapiCheckBox.setOnAction(event -> {
@@ -319,7 +323,7 @@ public class FabricProjectDetailsPane extends RRVBox {
             else if (hasTypedInModid.get() && modIdField.getText().isBlank())
                 hasTypedInModid.set(false);
         });
-        modIdBox.getChildren().addAll(modIdLabel, modIdField);
+        modIdBox.getChildren().addAll(modIdLabel, createAsterisk(), modIdField);
 
         var modNameBox = new RRHBox(10);
         modNameBox.setAlignment(Pos.CENTER_LEFT);
@@ -337,7 +341,7 @@ public class FabricProjectDetailsPane extends RRVBox {
             else if (hasTypedInModName.get() && modNameField.getText().isBlank())
                 hasTypedInModName.set(false);
         });
-        modNameBox.getChildren().addAll(modNameLabel, modNameField);
+        modNameBox.getChildren().addAll(modNameLabel, createAsterisk(), modNameField);
 
         var mainClassBox = new RRHBox(10);
         mainClassBox.setAlignment(Pos.CENTER_LEFT);
@@ -355,7 +359,7 @@ public class FabricProjectDetailsPane extends RRVBox {
             else if (hasTypedInMainClass.get() && mainClassField.getText().isBlank())
                 hasTypedInMainClass.set(false);
         });
-        mainClassBox.getChildren().addAll(mainClassLabel, mainClassField);
+        mainClassBox.getChildren().addAll(mainClassLabel, createAsterisk(), mainClassField);
 
         var useAccessWidenerBox = new RRHBox(10);
         useAccessWidenerBox.setAlignment(Pos.CENTER_LEFT);
@@ -370,7 +374,7 @@ public class FabricProjectDetailsPane extends RRVBox {
         splitSourcesCheckBox.setSelected(true);
         splitSourcesBox.getChildren().addAll(splitSourcesLabel, splitSourcesCheckBox);
 
-        minecraftSection.getChildren().addAll(minecraftVersionBox, fabricLoaderVersionBox, fapiBox,
+        minecraftSection.getChildren().addAll(createTitle("Minecraft"), minecraftVersionBox, fabricLoaderVersionBox, fapiBox,
                 modIdBox, modNameBox, mainClassBox, useAccessWidenerBox, splitSourcesBox);
 
         // Mapping Section
@@ -401,7 +405,7 @@ public class FabricProjectDetailsPane extends RRVBox {
             MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.getValue(), newValue);
             mappingVersionComboBox.setValue(mappingVersionComboBox.getItems().getFirst());
         });
-        mappingChannelBox.getChildren().addAll(mappingChannelLabel, mappingChannelComboBox);
+        mappingChannelBox.getChildren().addAll(mappingChannelLabel, createAsterisk(), mappingChannelComboBox);
 
         var mappingVersionBox = new RRHBox(10);
         mappingVersionBox.setAlignment(Pos.CENTER_LEFT);
@@ -417,9 +421,9 @@ public class FabricProjectDetailsPane extends RRVBox {
                 MappingVersion::getId));
         MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.getValue(), mappingChannelComboBox.getValue());
         mappingVersionComboBox.setValue(mappingVersionComboBox.getItems().getFirst());
-        mappingVersionBox.getChildren().addAll(mappingVersionLabel, mappingVersionComboBox);
+        mappingVersionBox.getChildren().addAll(mappingVersionLabel, createAsterisk(), mappingVersionComboBox);
 
-        mappingSection.getChildren().addAll(mappingChannelBox, mappingVersionBox);
+        mappingSection.getChildren().addAll(createTitle("Mappings"), mappingChannelBox, mappingVersionBox);
 
         // Optional Section
         var optionalSection = new RRVBox(10);
@@ -455,7 +459,20 @@ public class FabricProjectDetailsPane extends RRVBox {
         issuesLabel.setLabelFor(issuesField);
         issuesBox.getChildren().addAll(issuesLabel, issuesField);
 
-        optionalSection.getChildren().addAll(authorBox, descriptionBox, issuesBox);
+        var homepageBox = new RRHBox(10);
+        homepageBox.setAlignment(Pos.CENTER_LEFT);
+        var homepageLabel = new Label("Homepage:");
+        homepageLabel.setLabelFor(homepageField);
+        homepageBox.getChildren().addAll(homepageLabel, homepageField);
+
+        var sourcesBox = new RRHBox(10);
+        sourcesBox.setAlignment(Pos.CENTER_LEFT);
+        var sourcesLabel = new Label("Sources:");
+        sourcesLabel.setLabelFor(sourcesField);
+        sourcesBox.getChildren().addAll(sourcesLabel, sourcesField);
+
+        optionalSection.getChildren().addAll(createTitle("Details (Optional)"), authorBox, descriptionBox,
+                issuesBox, homepageBox, sourcesBox);
 
         // Maven Section
         var mavenSection = new RRVBox(10);
@@ -465,21 +482,21 @@ public class FabricProjectDetailsPane extends RRVBox {
         groupIdBox.setAlignment(Pos.CENTER_LEFT);
         var groupIdLabel = new Label("Group ID:");
         groupIdLabel.setLabelFor(groupIdField);
-        groupIdBox.getChildren().addAll(groupIdLabel, groupIdField);
+        groupIdBox.getChildren().addAll(groupIdLabel, createAsterisk(), groupIdField);
 
         var artifactIdBox = new RRHBox(10);
         artifactIdBox.setAlignment(Pos.CENTER_LEFT);
         var artifactIdLabel = new Label("Artifact ID:");
         artifactIdLabel.setLabelFor(artifactIdField);
-        artifactIdBox.getChildren().addAll(artifactIdLabel, artifactIdField);
+        artifactIdBox.getChildren().addAll(artifactIdLabel, createAsterisk(), artifactIdField);
 
         var versionBox = new RRHBox(10);
         versionBox.setAlignment(Pos.CENTER_LEFT);
         var versionLabel = new Label("Version:");
         versionLabel.setLabelFor(versionField);
-        versionBox.getChildren().addAll(versionLabel, versionField);
+        versionBox.getChildren().addAll(versionLabel, createAsterisk(), versionField);
 
-        mavenSection.getChildren().addAll(groupIdBox, artifactIdBox, versionBox);
+        mavenSection.getChildren().addAll(createTitle("Maven"), groupIdBox, artifactIdBox, versionBox);
 
         getChildren().addAll(projectSection,
                 new Separator(), minecraftSection,
@@ -566,6 +583,19 @@ public class FabricProjectDetailsPane extends RRVBox {
                 event.consume();
             }
         });
+    }
+
+    private static Text createAsterisk() {
+        var asterisk = new Text("*");
+        asterisk.setFill(Color.RED);
+        Tooltip.install(asterisk, new Tooltip("Required"));
+        return asterisk;
+    }
+
+    private static Text createTitle(String title) {
+        var text = new Text(title);
+        text.setStyle("-fx-font-size: 1.5em;");
+        return text;
     }
 
     private static BooleanBinding isInvalid(TextField textField) {
@@ -772,6 +802,31 @@ public class FabricProjectDetailsPane extends RRVBox {
             return false;
         }
 
+        // Validate issues, homepage, and sources to be URLs
+        if (!issuesField.getText().isBlank() && !issuesField.getText().matches(Railroad.URL_REGEX)) {
+            issuesField.setStyle("-fx-border-color: red;");
+            issuesField.requestFocus();
+
+            createAlert("Invalid Issues URL", "The issues URL must be a valid URL.");
+            return false;
+        }
+
+        if (!homepageField.getText().isBlank() && !homepageField.getText().matches(Railroad.URL_REGEX)) {
+            homepageField.setStyle("-fx-border-color: red;");
+            homepageField.requestFocus();
+
+            createAlert("Invalid Homepage URL", "The homepage URL must be a valid URL.");
+            return false;
+        }
+
+        if (!sourcesField.getText().isBlank() && !sourcesField.getText().matches(Railroad.URL_REGEX)) {
+            sourcesField.setStyle("-fx-border-color: red;");
+            sourcesField.requestFocus();
+
+            createAlert("Invalid Sources URL", "The sources URL must be a valid URL.");
+            return false;
+        }
+
         return true;
     }
 
@@ -794,6 +849,8 @@ public class FabricProjectDetailsPane extends RRVBox {
         Optional<String> author = Optional.of(authorField.getText().trim()).filter(s -> !s.isBlank());
         Optional<String> description = Optional.of(descriptionArea.getText().trim()).filter(s -> !s.isBlank());
         Optional<String> issues = Optional.of(issuesField.getText().trim()).filter(s -> !s.isBlank());
+        Optional<String> homepage = Optional.of(homepageField.getText().trim()).filter(s -> !s.isBlank());
+        Optional<String> sources = Optional.of(sourcesField.getText().trim()).filter(s -> !s.isBlank());
         String groupId = groupIdField.getText().trim();
         String artifactId = artifactIdField.getText().trim();
         String version = versionField.getText().trim();
@@ -802,7 +859,7 @@ public class FabricProjectDetailsPane extends RRVBox {
                 minecraftVersion, fabricLoaderVersion, fapiVersion,
                 modId, modName, mainClass, useAccessWidener, splitSources,
                 mappingChannel, mappingVersion,
-                author, description, issues,
+                author, description, issues, homepage, sources,
                 groupId, artifactId, version);
     }
 }

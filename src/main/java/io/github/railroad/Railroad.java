@@ -37,7 +37,7 @@ public class Railroad extends Application {
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
     public static final AtomicReference<String> THEME = new AtomicReference<>("default-dark");
     public static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
-
+    public static final String URL_REGEX = "(?:http(s)?:\\/\\/)?[\\w.-]+(?:\\.[\\w\\.-]+)+[\\w\\-\\._~:/?#\\[\\]@!\\$&'\\(\\)\\*\\+,;=.]+$";
     private static boolean DEBUG = false;
     private static Scene scene;
     private static Stage window;

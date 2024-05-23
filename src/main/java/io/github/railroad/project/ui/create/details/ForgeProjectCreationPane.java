@@ -177,7 +177,12 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 System.out.println("Unnecessary files deleted successfully.");
 
                 Path gradlePropertiesFile = projectPath.resolve("gradle.properties");
-                FileHandler.updateKeyValuePairByLine("mapping_channel", data.mappingChannel().getName().toLowerCase(Locale.ROOT), gradlePropertiesFile);
+                String mappingChannel = data.mappingChannel().getName().toLowerCase(Locale.ROOT);
+                if(data.mappingChannel() == MappingChannel.MOJMAP) {
+                    mappingChannel = "official";
+                }
+
+                FileHandler.updateKeyValuePairByLine("mapping_channel", mappingChannel, gradlePropertiesFile);
                 String mappingVersion = data.mappingVersion().getId();
                 if (data.mappingChannel() == MappingChannel.YARN) {
                     mappingVersion = data.minecraftVersion().id() + "+" + mappingVersion;
@@ -222,13 +227,18 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 for (int index = 0; index < lines.size(); index++) {
                     String line = lines.get(index);
                     if (line.startsWith("#issueTrackerURL=") && data.issues().isPresent()) {
-                        lines.set(index, "issueTrackerURL=" + data.issues().get());
+                        lines.set(index, "issueTrackerURL=\"" + data.issues().get() + "\"");
                     } else if (line.startsWith("#updateJSONURL=") && data.updateJsonUrl().isPresent()) {
-                        lines.set(index, "updateJSONURL=" + data.updateJsonUrl().get());
+                        lines.set(index, "updateJSONURL=\"" + data.updateJsonUrl().get() + "\"");
+                    } else if(line.startsWith("#displayURL=") && data.updateJsonUrl().isPresent()) {
+                        lines.set(index, "displayURL=\"" + data.updateJsonUrl().get() + "\"");
+                    } else if(line.startsWith("#displayTest=")) {
+                        lines.set(index, "displayTest=\"" + data.displayTest().name() + "\"");
+                    } else if(line.startsWith("#credits=") && data.credits().isPresent()) {
+                        lines.set(index, "credits=\"" + data.credits().orElse("") + "\"");
+                    } else if(line.startsWith("#clientSideOnly=")) {
+                        lines.set(index, "clientSideOnly=" + data.clientSideOnly());
                     }
-//                    else if (line.startsWith("#displayURL=") && data.updateJsonUrl().isPresent()) {
-//                      lines.set(index, "displayURL=" + data.updateJsonUrl().get());
-//                  }
                 }
 
                 Files.write(modsToml, lines);
