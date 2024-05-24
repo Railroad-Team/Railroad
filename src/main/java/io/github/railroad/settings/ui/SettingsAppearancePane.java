@@ -4,7 +4,7 @@ import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.geometry.Pos;
-import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 
 import java.io.IOException;
@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class SettingsAppearancePane extends RRVBox {
-    private static final ChoiceBox themeSelector = new ChoiceBox<String>();
+    private static final ComboBox themeSelector = new ComboBox<String>();
     private final Label title = new Label("Appearance");
     private final Label themeOption = new Label("Select a theme:");
 
@@ -51,8 +51,6 @@ public class SettingsAppearancePane extends RRVBox {
             var config = ConfigHandler.getConfigJson();
             var theme = config.get("settings").getAsJsonObject().get("theme").getAsString();
 
-            themeSelector.getItems().remove(theme);
-            themeSelector.getItems().addFirst(theme);
             themeSelector.setValue(theme);
         }
 
@@ -64,10 +62,6 @@ public class SettingsAppearancePane extends RRVBox {
             config.get("settings").getAsJsonObject().addProperty("theme", theme);
 
             ConfigHandler.updateConfig(config);
-
-            themeSelector.getItems().remove(theme);
-            themeSelector.getItems().addFirst(theme);
-
 
             Railroad.setStyle(theme);
         });
