@@ -444,12 +444,13 @@ public class FabricProjectDetailsPane extends RRVBox {
         descriptionBox.setAlignment(Pos.CENTER_LEFT);
         var descriptionLabel = new Label("Description:");
         descriptionLabel.setLabelFor(descriptionArea);
-        descriptionArea.setPrefHeight(100);
         descriptionArea.setWrapText(true);
         descriptionArea.textProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue.length() > 1028) {
                 descriptionArea.setText(newValue.substring(0, 1028));
             }
+
+            descriptionArea.setMinHeight(newValue.lines().count() * 20 + 40);
         });
         descriptionBox.getChildren().addAll(descriptionLabel, descriptionArea);
 

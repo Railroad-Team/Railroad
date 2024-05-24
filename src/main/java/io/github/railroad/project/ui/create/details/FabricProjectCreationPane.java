@@ -158,335 +158,39 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 Path projectPath = data.projectPath().resolve(data.projectName());
 
                 MinecraftVersion version = data.minecraftVersion();
-
-                MinecraftVersion mdkVersion = version;
-                if (version.type() == MinecraftVersion.VersionType.OLD_ALPHA || version.type() == MinecraftVersion.VersionType.OLD_BETA) {
-                    showErrorAlert("Error", "Unsupported Minecraft version", "Fabric does not support Minecraft versions older than 1.14.");
+                MinecraftVersion mdkVersion = determineMdkVersion(version);
+                if (mdkVersion == null)
                     return null;
-                }
-
-                if (version.type() == MinecraftVersion.VersionType.SNAPSHOT) {
-                    String id = version.id();
-                    if (id.contains("pre") || id.contains("rc")) {
-                        mdkVersion = MinecraftVersion.fromId(id.substring(0, id.indexOf("-")))
-                                .orElse(null);
-                        if (mdkVersion == null) {
-                            showErrorAlert("Error", "Unsupported Minecraft version", "Fabric does not support Minecraft versions older than 1.14.");
-                            return null;
-                        }
-                    } else {
-                        LocalDateTime releaseDate = version.releaseTime();
-
-                        List<MinecraftVersion> versions = MinecraftVersion.getVersions();
-                        // find version with the closest release date
-                        MinecraftVersion closest = null;
-                        for (MinecraftVersion mcVersion : versions) {
-                            if (mcVersion.type() == MinecraftVersion.VersionType.RELEASE) {
-                                long releaseTime = releaseDate.toEpochSecond(ZoneOffset.UTC);
-                                if (closest == null ||
-                                        Math.abs(mcVersion.releaseTime().toEpochSecond(ZoneOffset.UTC) - releaseTime) <
-                                                Math.abs(closest.releaseTime().toEpochSecond(ZoneOffset.UTC) - releaseTime)) {
-                                    closest = mcVersion;
-                                }
-                            }
-                        }
-
-                        mdkVersion = closest;
-                    }
-                }
-
-                if (mdkVersion == null) {
-                    showErrorAlert("Error", "Unsupported Minecraft version", "Fabric does not support Minecraft versions older than 1.14.");
-                    return null;
-                }
 
                 String minecraftId = mdkVersion.id();
                 if (mdkVersion.id().split("\\.").length > 2) {
                     minecraftId = mdkVersion.id().substring(0, mdkVersion.id().lastIndexOf("."));
                 }
 
-                String modUrl = String.format(EXAMPLE_MOD_URL, minecraftId);
+                downloadExampleMod(projectPath, minecraftId);
+                updateGradleProperties(projectPath, version);
 
-                Files.createDirectories(projectPath);
-                updateProgress(1, 16);
-                System.out.println("Project directory created successfully.");
-
-                updateLabel("Downloading example mod...");
-                FileHandler.copyUrlToFile(modUrl, Path.of(projectPath.resolve("example-mod.zip").toString()));
-                updateProgress(2, 16);
-                System.out.println("Example mod downloaded successfully.");
-
-                updateLabel("Extracting example mod...");
-                FileHandler.unzipFile(Path.of(projectPath.resolve("example-mod.zip").toString()).toString(), projectPath.toString());
-                updateProgress(3, 16);
-                System.out.println("Example mod extracted successfully.");
-
-                updateLabel("Deleting example mod zip...");
-                Files.delete(Path.of(projectPath.resolve("example-mod.zip").toString()));
-                updateProgress(4, 16);
-                System.out.println("Example mod zip deleted successfully.");
-
-                updateLabel("Copying project...");
-                Path folder = projectPath.resolve("fabric-example-mod-" + minecraftId);
-                FileHandler.copyFolder(folder, projectPath);
-                FileHandler.deleteFolder(folder);
-                updateProgress(5, 16);
-                System.out.println("Project copied successfully.");
-
-                updateLabel("Updating project files...");
-                Path gradlePropertiesFile = projectPath.resolve("gradle.properties");
-                FileHandler.updateKeyValuePairByLine("org.gradle.jvmargs", "-Xmx4G", gradlePropertiesFile);
-                FileHandler.updateKeyValuePairByLine("minecraft_version", version.id(), gradlePropertiesFile);
-                FileHandler.updateKeyValuePairByLine("loader_version", data.fabricLoaderVersion().loaderVersion().version(), gradlePropertiesFile);
-                FileHandler.updateKeyValuePairByLine("fabric_version", data.fapiVersion().map(FabricAPIVersion::fullVersion).orElse(""), gradlePropertiesFile);
-                if (data.mappingChannel() == MappingChannel.YARN) {
-                    FileHandler.updateKeyValuePairByLine("yarn_mappings", version.id() + "+" + data.mappingVersion().getId(), gradlePropertiesFile);
-                } else if (data.mappingChannel() == MappingChannel.PARCHMENT) {
-                    Files.writeString(gradlePropertiesFile, "parchment_version=" + data.mappingVersion().getId() + "\n", StandardOpenOption.APPEND);
-                }
-
-                FileHandler.updateKeyValuePairByLine("mod_version", data.version(), gradlePropertiesFile);
-                FileHandler.updateKeyValuePairByLine("maven_group", data.groupId(), gradlePropertiesFile);
-                FileHandler.updateKeyValuePairByLine("archives_base_name", data.modId(), gradlePropertiesFile);
-
-                updateProgress(6, 16);
-                System.out.println("gradle.properties updated successfully.");
-
-                updateLabel("Renaming packages...");
-                if (!data.splitSources()) {
-                    FileHandler.deleteFolder(projectPath.resolve("src/client/"));
-                }
-
-                // rename "com/example" to data.groupId() + "/" + data.modId()
                 Path mainJava = projectPath.resolve("src/main/java/");
                 Path clientJava = projectPath.resolve("src/client/java/");
-
-                Path oldPath = mainJava.resolve("com/example/");
                 String newFolderPath = data.groupId().replace(".", "/") + "/" + data.modId();
-                Path newPath = mainJava.resolve(newFolderPath);
-                Files.createDirectories(newPath.getParent());
-                Files.move(oldPath, newPath);
+                renamePackages(projectPath, mainJava, clientJava, newFolderPath);
 
-                // Delete 'com' directory if it's empty
-                final Path comDir = mainJava.resolve("com");
-                FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileHandler.deleteFolder(comDir));
-
-                if (data.splitSources()) {
-                    oldPath = clientJava.resolve("com/example/");
-                    newPath = clientJava.resolve(newFolderPath);
-                    Files.createDirectories(newPath.getParent());
-                    Files.move(oldPath, newPath);
-
-                    // Delete 'com' directory if it's empty
-                    final Path comDir2 = clientJava.resolve("com");
-                    FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileHandler.deleteFolder(comDir2));
-                }
-
-                updateProgress(7, 16);
-                System.out.println("Package renamed successfully.");
-
-                updateLabel("Updating fabric.mod.json...");
                 Path resources = projectPath.resolve("src/main/resources");
-                FileHandler.deleteFolder(resources.resolve("assets"));
+                updateFabricModJson(resources, version);
+                renameMixins(projectPath, resources);
+                renameMainClasses(newFolderPath, mainJava, clientJava);
+                refactorMixins(newFolderPath, mainJava, clientJava);
 
-                // TODO: Change based on schema version
-                Path fabricModJson = resources.resolve("fabric.mod.json");
-                String fabricModJsonContent = Files.readString(fabricModJson);
-                JsonObject fabricModJsonObj = Railroad.GSON.fromJson(fabricModJsonContent, JsonObject.class);
-                fabricModJsonObj.addProperty("id", data.modId());
-                fabricModJsonObj.addProperty("name", data.modName());
-                data.description().ifPresent(description -> fabricModJsonObj.addProperty("description", description));
-                data.author().ifPresent(author -> {
-                    var authors = new JsonArray();
-                    String[] split = author.split(",");
-                    for (String s : split) {
-                        authors.add(s.trim());
-                    }
-
-                    if (split.length == 0) {
-                        authors.add(author);
-                    }
-
-                    fabricModJsonObj.add("authors", authors);
-                });
-                fabricModJsonObj.addProperty("license", data.license().getName());
-
-                JsonObject entrypoints = fabricModJsonObj.getAsJsonObject("entrypoints");
-                entrypoints.addProperty("main", data.groupId() + "." + data.modId() + "." + data.mainClass());
-                if (data.splitSources()) {
-                    entrypoints.addProperty("client", data.groupId() + "." + data.modId() + "." + data.mainClass() + "Client");
-                }
-
-                var mixins = new JsonArray();
-                mixins.add(data.modId() + ".mixins.json");
-                if (data.splitSources()) {
-                    var clientMixin = new JsonObject();
-                    clientMixin.addProperty("config", data.modId() + ".client.mixins.json");
-                    clientMixin.addProperty("environment", "client");
-                    mixins.add(clientMixin);
-                }
-                fabricModJsonObj.add("mixins", mixins);
-
-                var depends = new JsonObject();
-                depends.addProperty("fabricloader", ">=" + data.fabricLoaderVersion().loaderVersion().version());
-                depends.addProperty("minecraft", "~" + version.id());
-                depends.addProperty("java", ">=" + fabricModJsonObj.get("depends").getAsJsonObject().get("java").getAsString());
-                data.fapiVersion().ifPresentOrElse(
-                        fabricAPIVersion -> depends.addProperty("fabric-api", ">=" + fabricAPIVersion.fullVersion()),
-                        () -> depends.addProperty("fabric-api", "*")
-                );
-                fabricModJsonObj.add("depends", depends);
-
-                fabricModJsonObj.remove("suggests");
-                if (data.useAccessWidener()) {
-                    fabricModJsonObj.addProperty("accessWidener", data.modId() + ".accesswidener");
-
-                    // Create access widener file
-                    Files.writeString(resources.resolve(data.modId() + ".accesswidener"), "accessWidener v2 named");
-                }
-
-                JsonObject contact = fabricModJsonObj.getAsJsonObject("contact");
-                data.issues().ifPresent(issues -> contact.addProperty("issues", issues));
-                data.homepage().ifPresent(homepage -> contact.addProperty("homepage", homepage));
-                data.sources().ifPresent(sources -> contact.addProperty("sources", sources));
-
-                Files.writeString(fabricModJson, Railroad.GSON.toJson(fabricModJsonObj));
-
-                updateProgress(8, 16);
-                System.out.println("fabric.mod.json updated successfully.");
-
-                updateLabel("Renaming mixins files...");
-                Files.move(resources.resolve("modid.mixins.json"), resources.resolve(data.modId() + ".mixins.json"));
-                String content = Files.readString(resources.resolve(data.modId() + ".mixins.json"));
-                content = content.replace("com.example", data.groupId() + "." + data.modId());
-                Files.writeString(resources.resolve(data.modId() + ".mixins.json"), content);
-
-                if (data.splitSources()) {
-                    Path clientResources = projectPath.resolve("src/client/resources");
-                    Files.move(clientResources.resolve("modid.client.mixins.json"), clientResources.resolve(data.modId() + ".client.mixins.json"));
-                    content = Files.readString(clientResources.resolve(data.modId() + ".client.mixins.json"));
-                    content = content.replace("com.example", data.groupId() + "." + data.modId());
-                    Files.writeString(clientResources.resolve(data.modId() + ".client.mixins.json"), content);
-                }
-
-                updateProgress(9, 16);
-                System.out.println("Mixins files renamed successfully.");
-
-                updateLabel("Renaming main classes...");
-                // Rename ExampleMod.java and ExampleModClient.java
-                Path mainClass = mainJava.resolve(newFolderPath).resolve("ExampleMod.java");
-                Files.move(mainClass, mainClass.resolveSibling(data.mainClass() + ".java"));
-                String mainClassContent = Files.readString(mainClass.resolveSibling(data.mainClass() + ".java"));
-                mainClassContent = mainClassContent.replace("com.example", data.groupId() + "." + data.modId());
-                mainClassContent = mainClassContent.replace("ExampleMod", data.mainClass());
-                Files.writeString(mainClass.resolveSibling(data.mainClass() + ".java"), mainClassContent);
-
-                if (data.splitSources()) {
-                    mainClass = clientJava.resolve(newFolderPath).resolve("ExampleModClient.java");
-                    Files.move(mainClass, mainClass.resolveSibling(data.mainClass() + "Client.java"));
-                    mainClassContent = Files.readString(mainClass.resolveSibling(data.mainClass() + "Client.java"));
-                    mainClassContent = mainClassContent.replace("com.example", data.groupId() + "." + data.modId());
-                    mainClassContent = mainClassContent.replace("ExampleMod", data.mainClass());
-                    Files.writeString(mainClass.resolveSibling(data.mainClass() + "Client.java"), mainClassContent);
-                }
-
-                updateProgress(10, 16);
-                System.out.println("Main classes renamed successfully.");
-
-                updateLabel("Refactoring mixins...");
-                // Refactor ExampleMixin.java and ExampleClientMixin.java to be in the correct package
-                Path mainMixin = mainJava.resolve(newFolderPath).resolve("mixin").resolve("ExampleMixin.java");
-                String mainMixinContent = Files.readString(mainMixin);
-                mainMixinContent = mainMixinContent.replace("com.example", data.groupId() + "." + data.modId());
-                Files.writeString(mainMixin, mainMixinContent);
-
-                if (data.splitSources()) {
-                    Path clientMixin = clientJava.resolve(newFolderPath).resolve("mixin/client").resolve("ExampleClientMixin.java");
-                    String clientMixinContent = Files.readString(clientMixin);
-                    clientMixinContent = clientMixinContent.replace("com.example", data.groupId() + "." + data.modId());
-                    Files.writeString(clientMixin, clientMixinContent);
-                }
-
-                updateProgress(11, 16);
-                System.out.println("Mixins refactored successfully.");
-
-                updateLabel("Updating build.gradle...");
-                // Download template build.gradle
-                Path buildGradle = projectPath.resolve("build.gradle");
-                String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(mdkVersion.id().split("\\.")[1]);
-                FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
-                String buildGradleContent = Files.readString(buildGradle);
-                if (!buildGradleContent.startsWith("// fileName:")) {
-                    showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
+                if (!updateBuildGradle(projectPath, mdkVersion))
                     return null;
-                }
-
-                int newLineIndex = buildGradleContent.indexOf('\n');
-
-                Map<String, Object> args = createArgs(data);
-                var binding = new Binding(args);
-                binding.setVariable("defaultName", projectPath.relativize(buildGradle.toAbsolutePath()).toString());
-
-                var shell = new GroovyShell();
-                Object result = shell.parse(buildGradleContent.substring("// fileName:".length() + 1, newLineIndex), binding).run();
-                if (result == null) {
-                    showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
-                    return null;
-                }
-
-                var buffer = new StringBuffer();
-                var templateEngine = new StreamingTemplateEngine();
-                templateEngine.createTemplate(new StringReader(buildGradleContent))
-                        .make(args)
-                        .writeTo(new StringBufferWriter(buffer));
-                Files.writeString(buildGradle, buffer);
-
-                updateProgress(12, 16);
-                System.out.println("build.gradle updated successfully.");
 
                 updateLabel("Creating project...");
-                Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
+                Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, data.projectName()));
                 updateProgress(13, 16);
                 System.out.println("Project created successfully.");
 
-                updateLabel("Running genSources task...");
-                // Run gradlew genSources
-                var connector = GradleConnector.newConnector();
-                connector.forProjectDirectory(projectPath.toFile());
-                try (ProjectConnection connection = connector.connect()) {
-                    Platform.runLater(() -> centerBox.getChildren().add(outputArea));
-
-                    var outputStream = new TextAreaOutputStream(outputArea);
-                    connection.newBuild()
-                            .forTasks("genSources")
-                            .setStandardOutput(outputStream)
-                            .setStandardError(outputStream)
-                            .run();
-
-                    updateProgress(14, 16);
-                    System.out.println("genSources task completed successfully.");
-                    Platform.runLater(() -> centerBox.getChildren().remove(outputArea));
-                } catch (BuildException exception) {
-                    showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
-                    exception.printStackTrace();
-                }
-
-                // Create git repository
-                if (data.createGit()) {
-                    updateLabel("Creating git repository...");
-                    try {
-                        var processBuilder = new ProcessBuilder("git", "init");
-                        processBuilder.directory(projectPath.toFile());
-                        var process = processBuilder.start();
-                        process.waitFor();
-
-                        updateProgress(15, 16);
-                        System.out.println("Git repository created successfully.");
-                    } catch (IOException | InterruptedException exception) {
-                        showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
-                        exception.printStackTrace();
-                    }
-                }
+                runGenSources(projectPath);
+                createGitRepository(projectPath);
 
                 updateProgress(16, 16);
                 System.out.println("Project creation completed successfully.");
@@ -503,6 +207,345 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
         public void updateLabel(String text) {
             Platform.runLater(() -> taskLabel.setText(text));
+        }
+
+        private MinecraftVersion determineMdkVersion(MinecraftVersion version) {
+            MinecraftVersion mdkVersion = version;
+            if (version.type() == MinecraftVersion.VersionType.OLD_ALPHA || version.type() == MinecraftVersion.VersionType.OLD_BETA) {
+                showErrorAlert("Error", "Unsupported Minecraft version", "Fabric does not support Minecraft versions older than 1.14.");
+                return null;
+            }
+
+            if (version.type() == MinecraftVersion.VersionType.SNAPSHOT) {
+                String id = version.id();
+                if (id.contains("pre") || id.contains("rc")) {
+                    mdkVersion = MinecraftVersion.fromId(id.substring(0, id.indexOf("-")))
+                            .orElse(null);
+                    if (mdkVersion == null) {
+                        showErrorAlert("Error", "Unsupported Minecraft version", "Fabric does not support Minecraft versions older than 1.14.");
+                        return null;
+                    }
+                } else {
+                    LocalDateTime releaseDate = version.releaseTime();
+
+                    List<MinecraftVersion> versions = MinecraftVersion.getVersions();
+                    // find version with the closest release date
+                    MinecraftVersion closest = null;
+                    for (MinecraftVersion mcVersion : versions) {
+                        if (mcVersion.type() == MinecraftVersion.VersionType.RELEASE) {
+                            long releaseTime = releaseDate.toEpochSecond(ZoneOffset.UTC);
+                            if (closest == null ||
+                                    Math.abs(mcVersion.releaseTime().toEpochSecond(ZoneOffset.UTC) - releaseTime) <
+                                            Math.abs(closest.releaseTime().toEpochSecond(ZoneOffset.UTC) - releaseTime)) {
+                                closest = mcVersion;
+                            }
+                        }
+                    }
+
+                    mdkVersion = closest;
+                }
+            }
+
+            if (mdkVersion == null) {
+                showErrorAlert("Error", "Unsupported Minecraft version", "Fabric does not support Minecraft versions older than 1.14.");
+                return null;
+            }
+
+            return mdkVersion;
+        }
+
+        private void downloadExampleMod(Path projectPath, String minecraftId) throws IOException {
+            Files.createDirectories(projectPath);
+            updateProgress(1, 16);
+            System.out.println("Project directory created successfully.");
+
+            updateLabel("Downloading example mod...");
+            String modUrl = String.format(EXAMPLE_MOD_URL, minecraftId);
+            FileHandler.copyUrlToFile(modUrl, Path.of(projectPath.resolve("example-mod.zip").toString()));
+            updateProgress(2, 16);
+            System.out.println("Example mod downloaded successfully.");
+
+            updateLabel("Extracting example mod...");
+            FileHandler.unzipFile(Path.of(projectPath.resolve("example-mod.zip").toString()).toString(), projectPath.toString());
+            updateProgress(3, 16);
+            System.out.println("Example mod extracted successfully.");
+
+            updateLabel("Deleting example mod zip...");
+            Files.delete(Path.of(projectPath.resolve("example-mod.zip").toString()));
+            updateProgress(4, 16);
+            System.out.println("Example mod zip deleted successfully.");
+
+            updateLabel("Copying project...");
+            Path folder = projectPath.resolve("fabric-example-mod-" + minecraftId);
+            FileHandler.copyFolder(folder, projectPath);
+            FileHandler.deleteFolder(folder);
+            updateProgress(5, 16);
+            System.out.println("Project copied successfully.");
+        }
+
+        private void updateGradleProperties(Path projectPath, MinecraftVersion version) throws IOException {
+            updateLabel("Updating gradle.properties...");
+            Path gradlePropertiesFile = projectPath.resolve("gradle.properties");
+            FileHandler.updateKeyValuePairByLine("org.gradle.jvmargs", "-Xmx4G", gradlePropertiesFile);
+            FileHandler.updateKeyValuePairByLine("minecraft_version", version.id(), gradlePropertiesFile);
+            FileHandler.updateKeyValuePairByLine("loader_version", data.fabricLoaderVersion().loaderVersion().version(), gradlePropertiesFile);
+            FileHandler.updateKeyValuePairByLine("fabric_version", data.fapiVersion().map(FabricAPIVersion::fullVersion).orElse(""), gradlePropertiesFile);
+            if (data.mappingChannel() == MappingChannel.YARN) {
+                FileHandler.updateKeyValuePairByLine("yarn_mappings", version.id() + "+" + data.mappingVersion().getId(), gradlePropertiesFile);
+            } else if (data.mappingChannel() == MappingChannel.PARCHMENT) {
+                Files.writeString(gradlePropertiesFile, "parchment_version=" + data.mappingVersion().getId() + "\n", StandardOpenOption.APPEND);
+            }
+
+            FileHandler.updateKeyValuePairByLine("mod_version", data.version(), gradlePropertiesFile);
+            FileHandler.updateKeyValuePairByLine("maven_group", data.groupId(), gradlePropertiesFile);
+            FileHandler.updateKeyValuePairByLine("archives_base_name", data.modId(), gradlePropertiesFile);
+
+            updateProgress(6, 16);
+            System.out.println("gradle.properties updated successfully.");
+        }
+
+        private void renamePackages(Path projectPath, Path mainJava, Path clientJava, String newFolderPath) throws IOException {
+            updateLabel("Renaming packages...");
+            if (!data.splitSources()) {
+                FileHandler.deleteFolder(projectPath.resolve("src/client/"));
+            }
+
+            // rename "com/example" to data.groupId() + "/" + data.modId()
+            Path newPath = mainJava.resolve(newFolderPath);
+            Files.createDirectories(newPath.getParent());
+
+            Path oldPath = mainJava.resolve("com/example/");
+            Files.move(oldPath, newPath);
+
+            // Delete 'com' directory if it's empty
+            final Path comDir = mainJava.resolve("com");
+            FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileHandler.deleteFolder(comDir));
+
+            if (data.splitSources()) {
+                oldPath = clientJava.resolve("com/example/");
+                newPath = clientJava.resolve(newFolderPath);
+                Files.createDirectories(newPath.getParent());
+                Files.move(oldPath, newPath);
+
+                // Delete 'com' directory if it's empty
+                final Path comDir2 = clientJava.resolve("com");
+                FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileHandler.deleteFolder(comDir2));
+            }
+
+            updateProgress(7, 16);
+            System.out.println("Package renamed successfully.");
+        }
+
+        private void updateFabricModJson(Path resources, MinecraftVersion version) throws IOException {
+            updateLabel("Updating fabric.mod.json...");
+            FileHandler.deleteFolder(resources.resolve("assets"));
+
+            // TODO: Change based on schema version
+            Path fabricModJson = resources.resolve("fabric.mod.json");
+            String fabricModJsonContent = Files.readString(fabricModJson);
+            JsonObject fabricModJsonObj = Railroad.GSON.fromJson(fabricModJsonContent, JsonObject.class);
+            fabricModJsonObj.addProperty("id", data.modId());
+            fabricModJsonObj.addProperty("name", data.modName());
+            data.description().ifPresent(description -> fabricModJsonObj.addProperty("description", description));
+            data.author().ifPresent(author -> {
+                var authors = new JsonArray();
+                String[] split = author.split(",");
+                for (String s : split) {
+                    authors.add(s.trim());
+                }
+
+                if (split.length == 0) {
+                    authors.add(author);
+                }
+
+                fabricModJsonObj.add("authors", authors);
+            });
+            fabricModJsonObj.addProperty("license", data.license().getName());
+
+            JsonObject entrypoints = fabricModJsonObj.getAsJsonObject("entrypoints");
+            entrypoints.addProperty("main", data.groupId() + "." + data.modId() + "." + data.mainClass());
+            if (data.splitSources()) {
+                entrypoints.addProperty("client", data.groupId() + "." + data.modId() + "." + data.mainClass() + "Client");
+            }
+
+            var mixins = new JsonArray();
+            mixins.add(data.modId() + ".mixins.json");
+            if (data.splitSources()) {
+                var clientMixin = new JsonObject();
+                clientMixin.addProperty("config", data.modId() + ".client.mixins.json");
+                clientMixin.addProperty("environment", "client");
+                mixins.add(clientMixin);
+            }
+            fabricModJsonObj.add("mixins", mixins);
+
+            var depends = new JsonObject();
+            depends.addProperty("fabricloader", ">=" + data.fabricLoaderVersion().loaderVersion().version());
+            depends.addProperty("minecraft", "~" + version.id());
+            depends.addProperty("java", ">=" + fabricModJsonObj.get("depends").getAsJsonObject().get("java").getAsString());
+            data.fapiVersion().ifPresentOrElse(
+                    fabricAPIVersion -> depends.addProperty("fabric-api", ">=" + fabricAPIVersion.fullVersion()),
+                    () -> depends.addProperty("fabric-api", "*")
+            );
+            fabricModJsonObj.add("depends", depends);
+
+            fabricModJsonObj.remove("suggests");
+            if (data.useAccessWidener()) {
+                fabricModJsonObj.addProperty("accessWidener", data.modId() + ".accesswidener");
+
+                // Create access widener file
+                Files.writeString(resources.resolve(data.modId() + ".accesswidener"), "accessWidener v2 named");
+            }
+
+            JsonObject contact = fabricModJsonObj.getAsJsonObject("contact");
+            data.issues().ifPresent(issues -> contact.addProperty("issues", issues));
+            data.homepage().ifPresent(homepage -> contact.addProperty("homepage", homepage));
+            data.sources().ifPresent(sources -> contact.addProperty("sources", sources));
+
+            Files.writeString(fabricModJson, Railroad.GSON.toJson(fabricModJsonObj));
+
+            updateProgress(8, 16);
+            System.out.println("fabric.mod.json updated successfully.");
+        }
+
+        private void renameMixins(Path projectPath, Path resources) throws IOException {
+            updateLabel("Renaming mixins files...");
+            Files.move(resources.resolve("modid.mixins.json"), resources.resolve(data.modId() + ".mixins.json"));
+            String content = Files.readString(resources.resolve(data.modId() + ".mixins.json"));
+            content = content.replace("com.example", data.groupId() + "." + data.modId());
+            Files.writeString(resources.resolve(data.modId() + ".mixins.json"), content);
+
+            if (data.splitSources()) {
+                Path clientResources = projectPath.resolve("src/client/resources");
+                Files.move(clientResources.resolve("modid.client.mixins.json"), clientResources.resolve(data.modId() + ".client.mixins.json"));
+                content = Files.readString(clientResources.resolve(data.modId() + ".client.mixins.json"));
+                content = content.replace("com.example", data.groupId() + "." + data.modId());
+                Files.writeString(clientResources.resolve(data.modId() + ".client.mixins.json"), content);
+            }
+
+            updateProgress(9, 16);
+            System.out.println("Mixins files renamed successfully.");
+        }
+
+        private void renameMainClasses(String newFolderPath, Path mainJava, Path clientJava) throws IOException {
+            updateLabel("Renaming main classes...");
+            // Rename ExampleMod.java and ExampleModClient.java
+            Path mainClass = mainJava.resolve(newFolderPath).resolve("ExampleMod.java");
+            Files.move(mainClass, mainClass.resolveSibling(data.mainClass() + ".java"));
+            String mainClassContent = Files.readString(mainClass.resolveSibling(data.mainClass() + ".java"));
+            mainClassContent = mainClassContent.replace("com.example", data.groupId() + "." + data.modId());
+            mainClassContent = mainClassContent.replace("ExampleMod", data.mainClass());
+            Files.writeString(mainClass.resolveSibling(data.mainClass() + ".java"), mainClassContent);
+
+            if (data.splitSources()) {
+                mainClass = clientJava.resolve(newFolderPath).resolve("ExampleModClient.java");
+                Files.move(mainClass, mainClass.resolveSibling(data.mainClass() + "Client.java"));
+                mainClassContent = Files.readString(mainClass.resolveSibling(data.mainClass() + "Client.java"));
+                mainClassContent = mainClassContent.replace("com.example", data.groupId() + "." + data.modId());
+                mainClassContent = mainClassContent.replace("ExampleMod", data.mainClass());
+                Files.writeString(mainClass.resolveSibling(data.mainClass() + "Client.java"), mainClassContent);
+            }
+
+            updateProgress(10, 16);
+            System.out.println("Main classes renamed successfully.");
+        }
+
+        private void refactorMixins(String newFolderPath, Path mainJava, Path clientJava) throws IOException {
+            updateLabel("Refactoring mixins...");
+            // Refactor ExampleMixin.java and ExampleClientMixin.java to be in the correct package
+            Path mainMixin = mainJava.resolve(newFolderPath).resolve("mixin").resolve("ExampleMixin.java");
+            String mainMixinContent = Files.readString(mainMixin);
+            mainMixinContent = mainMixinContent.replace("com.example", data.groupId() + "." + data.modId());
+            Files.writeString(mainMixin, mainMixinContent);
+
+            if (data.splitSources()) {
+                Path clientMixin = clientJava.resolve(newFolderPath).resolve("mixin/client").resolve("ExampleClientMixin.java");
+                String clientMixinContent = Files.readString(clientMixin);
+                clientMixinContent = clientMixinContent.replace("com.example", data.groupId() + "." + data.modId());
+                Files.writeString(clientMixin, clientMixinContent);
+            }
+
+            updateProgress(11, 16);
+            System.out.println("Mixins refactored successfully.");
+        }
+
+        private boolean updateBuildGradle(Path projectPath, MinecraftVersion mdkVersion) throws IOException, ClassNotFoundException {
+            updateLabel("Updating build.gradle...");
+            // Download template build.gradle
+            Path buildGradle = projectPath.resolve("build.gradle");
+            String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(mdkVersion.id().split("\\.")[1]);
+            FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
+            String buildGradleContent = Files.readString(buildGradle);
+            if (!buildGradleContent.startsWith("// fileName:")) {
+                showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
+                return false;
+            }
+
+            int newLineIndex = buildGradleContent.indexOf('\n');
+
+            Map<String, Object> args = createArgs(data);
+            var binding = new Binding(args);
+            binding.setVariable("defaultName", projectPath.relativize(buildGradle.toAbsolutePath()).toString());
+
+            var shell = new GroovyShell();
+            Object result = shell.parse(buildGradleContent.substring("// fileName:".length() + 1, newLineIndex), binding).run();
+            if (result == null) {
+                showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
+                return false;
+            }
+
+            var buffer = new StringBuffer();
+            var templateEngine = new StreamingTemplateEngine();
+            templateEngine.createTemplate(new StringReader(buildGradleContent))
+                    .make(args)
+                    .writeTo(new StringBufferWriter(buffer));
+            Files.writeString(buildGradle, buffer);
+
+            updateProgress(12, 16);
+            System.out.println("build.gradle updated successfully.");
+            return true;
+        }
+
+        private void runGenSources(Path projectPath) {
+            updateLabel("Running genSources task...");
+            // Run gradlew genSources
+            var connector = GradleConnector.newConnector();
+            connector.forProjectDirectory(projectPath.toFile());
+            try (ProjectConnection connection = connector.connect()) {
+                Platform.runLater(() -> centerBox.getChildren().add(outputArea));
+
+                var outputStream = new TextAreaOutputStream(outputArea);
+                connection.newBuild()
+                        .forTasks("genSources")
+                        .setStandardOutput(outputStream)
+                        .setStandardError(outputStream)
+                        .run();
+
+                updateProgress(14, 16);
+                System.out.println("genSources task completed successfully.");
+                Platform.runLater(() -> centerBox.getChildren().remove(outputArea));
+            } catch (BuildException exception) {
+                showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
+                exception.printStackTrace();
+            }
+        }
+
+        private void createGitRepository(Path projectPath) {
+            // Create git repository
+            if (data.createGit()) {
+                updateLabel("Creating git repository...");
+                try {
+                    var processBuilder = new ProcessBuilder("git", "init");
+                    processBuilder.directory(projectPath.toFile());
+                    var process = processBuilder.start();
+                    process.waitFor();
+
+                    updateProgress(15, 16);
+                    System.out.println("Git repository created successfully.");
+                } catch (IOException | InterruptedException exception) {
+                    showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
+                    exception.printStackTrace();
+                }
+            }
         }
     }
 }

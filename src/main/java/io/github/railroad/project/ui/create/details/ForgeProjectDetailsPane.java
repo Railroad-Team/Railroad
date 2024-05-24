@@ -431,6 +431,8 @@ public class ForgeProjectDetailsPane extends RRVBox {
             if (newValue.length() > 1028) {
                 descriptionArea.setText(newValue.substring(0, 1028));
             }
+
+            descriptionArea.setMinHeight(newValue.lines().count() * 20 + 40);
         });
         descriptionBox.getChildren().addAll(descriptionLabel, descriptionArea);
 
