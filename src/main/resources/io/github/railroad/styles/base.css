@@ -18,3 +18,11 @@
 .project-list-node, .project-list-node .Pane {
     -fx-background-color: -color-bg-subtle;
 }
+
+.welcome-left-pane, .welcome-left-pane *, .project-type-pane, .project-type-pane * {
+    -fx-background-color: -color-bg-inset;
+}
+
+.welcome-left-pane-list-view, .welcome-projects-list, .project-type-list-view {
+    -fx-border-width: 0;
+}
