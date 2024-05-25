@@ -19,7 +19,4 @@ public record ForgeProjectData(String projectName, Path projectPath, boolean cre
                                Optional<String> issues, Optional<String> updateJsonUrl, Optional<String> displayUrl,
                                DisplayTest displayTest, boolean clientSideOnly,
                                String groupId, String artifactId, String version) {
-    public enum DisplayTest {
-        MATCH_VERSION, IGNORE_SERVER_VERSION, IGNORE_ALL_VERSION, NONE
-    }
 }

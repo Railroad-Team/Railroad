@@ -6,6 +6,7 @@ import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.minecraft.FabricAPIVersion;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
+import io.github.railroad.minecraft.NeoForgeVersion;
 import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.utility.ConfigHandler;
@@ -124,6 +125,7 @@ public class Railroad extends Application {
         MinecraftVersion.load();
         ForgeVersion.load();
         FabricAPIVersion.load();
+        NeoForgeVersion.load();
         window = primaryStage;
 
         // Calculate the primary screen size to better fit the window

@@ -266,7 +266,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             System.out.println("Example mod downloaded successfully.");
 
             updateLabel("Extracting example mod...");
-            FileHandler.unzipFile(Path.of(projectPath.resolve("example-mod.zip").toString()).toString(), projectPath.toString());
+            FileHandler.unzipFile(projectPath.resolve("example-mod.zip"), projectPath);
             updateProgress(3, 16);
             System.out.println("Example mod extracted successfully.");
 

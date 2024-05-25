@@ -84,9 +84,11 @@ public record MinecraftVersion(String id, VersionType type, String url, LocalDat
         switch (projectType) {
             case FORGE:
                 return MINECRAFT_VERSIONS.filtered(minecraftVersion -> !ForgeVersion.getVersions(minecraftVersion).isEmpty());
-            case FABRIC: // TODO: Implement Fabric support
+            case FABRIC:
+                return MINECRAFT_VERSIONS.filtered(minecraftVersion -> !FabricAPIVersion.getVersions(minecraftVersion).isEmpty());
+            case NEOFORGED:
+                return MINECRAFT_VERSIONS.filtered(minecraftVersion -> !NeoForgeVersion.getVersions(minecraftVersion).isEmpty());
             case QUILT: // TODO: Implement Quilt support
-            case NEOFORGED: // TODO: Implement NeoForged support
         }
 
         return MINECRAFT_VERSIONS;

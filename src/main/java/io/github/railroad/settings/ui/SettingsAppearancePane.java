@@ -1,5 +1,6 @@
 package io.github.railroad.settings.ui;
 
+import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ConfigHandler;
@@ -15,13 +16,11 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class SettingsAppearancePane extends RRVBox {
-    private static final ComboBox themeSelector = new ComboBox<String>();
+    private static final ComboBox<String> themeSelector = new ComboBox<>();
     private final Label title = new Label("Appearance");
     private final Label themeOption = new Label("Select a theme:");
 
     public SettingsAppearancePane() {
-        super();
-
         var themeBox = new RRVBox();
 
         title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");
@@ -33,9 +32,10 @@ public class SettingsAppearancePane extends RRVBox {
         List<Path> themes = new ArrayList<>();
         try (Stream<Path> files = Files.list(Path.of("themes"))) {
             files.filter(file -> file.toString().endsWith(".css")).forEach(themes::add);
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException exception) {
+            exception.printStackTrace();
         }
+
         themeSelector.setPrefWidth(180);
 
         if (themeSelector.getItems().size() < themes.size() + 2) {
@@ -48,17 +48,19 @@ public class SettingsAppearancePane extends RRVBox {
                 themeSelector.getItems().add(name);
             }
 
-            var config = ConfigHandler.getConfigJson();
-            var theme = config.get("settings").getAsJsonObject().get("theme").getAsString();
+            JsonObject config = ConfigHandler.getConfigJson();
+            String theme = config.get("settings").getAsJsonObject().get("theme").getAsString();
 
             themeSelector.setValue(theme);
         }
 
         themeSelector.setOnAction(event -> {
-            if (themeSelector.getValue() == null) return;
-            var theme = themeSelector.getValue().toString();
+            if (themeSelector.getValue() == null)
+                return;
 
-            var config = ConfigHandler.getConfigJson();
+            String theme = themeSelector.getValue();
+
+            JsonObject config = ConfigHandler.getConfigJson();
             config.get("settings").getAsJsonObject().addProperty("theme", theme);
 
             ConfigHandler.updateConfig(config);

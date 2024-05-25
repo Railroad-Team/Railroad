@@ -8,7 +8,7 @@ import groovy.text.StreamingTemplateEngine;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import io.github.railroad.Railroad;
 import io.github.railroad.minecraft.mapping.MappingChannel;
-import io.github.railroad.project.data.ForgeProjectData;
+import io.github.railroad.project.data.NeoForgeProjectData;
 import io.github.railroad.project.data.Project;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRVBox;
@@ -36,13 +36,15 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-public class ForgeProjectCreationPane extends RRBorderPane {
+// TODO: Someone who knows NeoForge will probably need to write the code for this. Right now it's just a near-copy of the ForgeProjectCreationPane
+public class NeoForgeProjectCreationPane extends RRBorderPane {
     private static final Pattern TOML_COMMENT_PATTERN = Pattern.compile("^#(\\w+=)|(\\[.+\\])");
-    private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/forge/%s/template_build.gradle";
-    private static final String TEMPLATE_SETTINGS_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/forge/%s/template_settings.gradle";
+    private static final String MDK_URL = "https://github.com/neoforged/MDK/archive/refs/heads/%s.zip";
+    private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/neoforge/%s/template_build.gradle";
+    private static final String TEMPLATE_SETTINGS_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/neoforge/%s/template_settings.gradle";
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    private final ForgeProjectData data;
+    private final NeoForgeProjectData data;
     private final MFXProgressSpinner progressSpinner = new MFXProgressSpinner();
     private final RRVBox progressBox = new RRVBox(10), centerBox = new RRVBox(10);
     private final Label timeElapsedLabel = new Label("");
@@ -50,7 +52,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
     private final long startTime = System.currentTimeMillis();
     private final TextArea outputArea = new TextArea();
 
-    public ForgeProjectCreationPane(ForgeProjectData data) {
+    public NeoForgeProjectCreationPane(NeoForgeProjectData data) {
         this.data = data;
 
         centerBox.setAlignment(Pos.CENTER);
@@ -121,7 +123,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
         });
     }
 
-    private static Map<String, Object> createArgs(ForgeProjectData data) {
+    private static Map<String, Object> createArgs(NeoForgeProjectData data) {
         final Map<String, Object> args = new HashMap<>();
         args.put("mappings", Map.of(
                 "channel", data.mappingChannel().getName().toLowerCase(Locale.ROOT),
@@ -138,9 +140,9 @@ public class ForgeProjectCreationPane extends RRBorderPane {
     }
 
     private class ProjectCreationTask extends Task<Void> {
-        private final ForgeProjectData data;
+        private final NeoForgeProjectData data;
 
-        public ProjectCreationTask(ForgeProjectData data) {
+        public ProjectCreationTask(NeoForgeProjectData data) {
             this.data = data;
         }
 
@@ -203,28 +205,32 @@ public class ForgeProjectCreationPane extends RRBorderPane {
         }
 
         private void downloadExampleMod(Path projectPath) throws IOException {
-            updateLabel("Downloading Forge MDK...");
-            String fileName = data.minecraftVersion().id() + "-" + data.forgeVersion().id();
-            FileHandler.copyUrlToFile("https://maven.minecraftforge.net/net/minecraftforge/forge/" + fileName + "/forge-" + fileName + "-mdk.zip",
-                    Path.of(projectPath.resolve(fileName) + ".zip"));
+            String branch = data.minecraftVersion().id();
+            if(!FileHandler.urlExists(MDK_URL.formatted(branch))) {
+                branch = "main";
+            }
+
+            Path zipPath = projectPath.resolve(branch + ".zip");
+
+            updateLabel("Downloading NeoForge MDK...");
+            FileHandler.copyUrlToFile(MDK_URL.formatted(branch), zipPath);
             updateProgress(2, 17);
-            System.out.println("Forge MDK downloaded successfully.");
+            System.out.println("NeoForge MDK downloaded successfully.");
 
-            updateLabel("Unzipping Forge MDK...");
-            FileHandler.unzipFile(projectPath.resolve(fileName + ".zip"), projectPath);
+            updateLabel("Unzipping NeoForge MDK...");
+            FileHandler.unzipFile(zipPath, projectPath);
             updateProgress(3, 17);
-            System.out.println("Forge MDK unzipped successfully.");
+            System.out.println("NeoForge MDK unzipped successfully.");
 
-            updateLabel("Deleting Forge MDK zip...");
-            Files.deleteIfExists(Path.of(projectPath.resolve(fileName) + ".zip"));
+            updateLabel("Deleting NeoForge MDK zip...");
+            Files.deleteIfExists(zipPath);
             updateProgress(4, 17);
-            System.out.println("Forge MDK zip deleted successfully.");
+            System.out.println("NeoForge MDK zip deleted successfully.");
 
             updateLabel("Deleting unnecessary files...");
-            Files.deleteIfExists(projectPath.resolve("changelog.txt"));
-            Files.deleteIfExists(projectPath.resolve("CREDITS.txt"));
-            Files.deleteIfExists(projectPath.resolve("LICENSE.txt"));
-            Files.deleteIfExists(projectPath.resolve("README.txt"));
+            FileHandler.deleteFolder(projectPath.resolve(".github"));
+            Files.deleteIfExists(projectPath.resolve("TEMPLATE_LICENSE.txt"));
+            Files.deleteIfExists(projectPath.resolve("README.md"));
             updateProgress(5, 17);
             System.out.println("Unnecessary files deleted successfully.");
         }

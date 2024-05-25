@@ -3,7 +3,7 @@ package io.github.railroad.project.ui.create;
 import io.github.railroad.project.ProjectType;
 import io.github.railroad.project.ui.create.details.FabricProjectDetailsPane;
 import io.github.railroad.project.ui.create.details.ForgeProjectDetailsPane;
-import io.github.railroad.project.ui.create.details.NeoForgedProjectDetailsPane;
+import io.github.railroad.project.ui.create.details.NeoForgeProjectDetailsPane;
 import io.github.railroad.project.ui.create.details.QuiltProjectDetailsPane;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -41,7 +41,7 @@ public class ProjectDetailsPane extends ScrollPane {
         return this.projectDetailsPanes.computeIfAbsent(projectType, k -> switch (projectType) {
             case FORGE -> new ForgeProjectDetailsPane();
             case FABRIC -> new FabricProjectDetailsPane();
-            case NEOFORGED -> new NeoForgedProjectDetailsPane();
+            case NEOFORGED -> new NeoForgeProjectDetailsPane();
             case QUILT -> new QuiltProjectDetailsPane();
         });
     }

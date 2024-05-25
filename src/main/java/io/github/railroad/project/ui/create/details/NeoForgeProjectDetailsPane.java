@@ -1,7 +1,7 @@
 package io.github.railroad.project.ui.create.details;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.minecraft.ForgeVersion;
+import io.github.railroad.minecraft.NeoForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.minecraft.RecommendableVersion;
 import io.github.railroad.minecraft.mapping.MappingChannel;
@@ -10,7 +10,7 @@ import io.github.railroad.minecraft.mapping.MappingVersion;
 import io.github.railroad.project.License;
 import io.github.railroad.project.ProjectType;
 import io.github.railroad.project.data.DisplayTest;
-import io.github.railroad.project.data.ForgeProjectData;
+import io.github.railroad.project.data.NeoForgeProjectData;
 import io.github.railroad.project.ui.create.widget.StarableListCell;
 import io.github.railroad.ui.BrowseButton;
 import io.github.railroad.ui.defaults.RRHBox;
@@ -35,7 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ForgeProjectDetailsPane extends RRVBox {
+public class NeoForgeProjectDetailsPane extends RRVBox {
     private final TextField projectNameField = new TextField();
     private final TextField projectPathField = new TextField();
     private final CheckBox createGitCheckBox = new CheckBox();
@@ -43,7 +43,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
     private final TextField licenseCustomField = new TextField();
 
     private final ComboBox<MinecraftVersion> minecraftVersionComboBox = new ComboBox<>();
-    private final ComboBox<ForgeVersion> forgeVersionComboBox = new ComboBox<>();
+    private final ComboBox<NeoForgeVersion> neoForgeVersionComboBox = new ComboBox<>();
     private final TextField modIdField = new TextField();
     private final TextField modNameField = new TextField();
     private final TextField mainClassField = new TextField();
@@ -74,7 +74,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
     private final AtomicBoolean hasTypedInMainClass = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInArtifactId = new AtomicBoolean(false);
 
-    public ForgeProjectDetailsPane() {
+    public NeoForgeProjectDetailsPane() {
         // Project Section
         var projectSection = new RRVBox(10);
 
@@ -194,7 +194,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
         minecraftVersionBox.setAlignment(Pos.CENTER_LEFT);
         var minecraftVersionLabel = new Label("Minecraft Version:");
         minecraftVersionLabel.setLabelFor(minecraftVersionComboBox);
-        minecraftVersionComboBox.getItems().addAll(MinecraftVersion.getSupportedVersions(ProjectType.FORGE));
+        minecraftVersionComboBox.getItems().addAll(MinecraftVersion.getSupportedVersions(ProjectType.NEOFORGED));
         minecraftVersionComboBox.setValue(MinecraftVersion.getLatestStableVersion());
         minecraftVersionComboBox.setConverter(new StringConverter<>() {
             @Override
@@ -209,28 +209,28 @@ public class ForgeProjectDetailsPane extends RRVBox {
         });
         minecraftVersionBox.getChildren().addAll(minecraftVersionLabel, createAsterisk(), minecraftVersionComboBox);
 
-        var forgeVersionBox = new RRHBox(10);
-        forgeVersionBox.setAlignment(Pos.CENTER_LEFT);
-        var forgeVersionLabel = new Label("Forge Version:");
-        forgeVersionLabel.setLabelFor(forgeVersionComboBox);
+        var neoForgeVersionBox = new RRHBox(10);
+        neoForgeVersionBox.setAlignment(Pos.CENTER_LEFT);
+        var neoForgeVersionLabel = new Label("NeoForge Version:");
+        neoForgeVersionLabel.setLabelFor(neoForgeVersionComboBox);
         minecraftVersionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-            forgeVersionComboBox.getItems().setAll(ForgeVersion.getVersions(newValue));
-            forgeVersionComboBox.setValue(ForgeVersion.getLatestVersion(newValue));
+            neoForgeVersionComboBox.getItems().setAll(NeoForgeVersion.getVersions(newValue));
+            neoForgeVersionComboBox.setValue(NeoForgeVersion.getLatestVersion(newValue));
 
             MappingHelper.loadMappings(mappingChannelComboBox.getItems(), newValue);
             mappingChannelComboBox.setValue(mappingChannelComboBox.getItems().getFirst());
         });
-        forgeVersionComboBox.setCellFactory(param -> new StarableListCell<>(
+        neoForgeVersionComboBox.setCellFactory(param -> new StarableListCell<>(
                 version -> version instanceof RecommendableVersion recommendableVersion && recommendableVersion.isRecommended(),
-                version -> Objects.equals(version.id(), ForgeVersion.getLatestVersion(minecraftVersionComboBox.getValue()).id()),
-                ForgeVersion::id));
-        forgeVersionComboBox.setButtonCell(new StarableListCell<>(
+                version -> Objects.equals(version.id(), NeoForgeVersion.getLatestVersion(minecraftVersionComboBox.getValue()).id()),
+                NeoForgeVersion::id));
+        neoForgeVersionComboBox.setButtonCell(new StarableListCell<>(
                 version -> version instanceof RecommendableVersion recommendableVersion && recommendableVersion.isRecommended(),
-                version -> Objects.equals(version.id(), ForgeVersion.getLatestVersion(minecraftVersionComboBox.getValue()).id()),
-                ForgeVersion::id));
-        forgeVersionComboBox.getItems().addAll(ForgeVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
-        forgeVersionComboBox.setValue(ForgeVersion.getLatestVersion(MinecraftVersion.getLatestStableVersion()));
-        forgeVersionBox.getChildren().addAll(forgeVersionLabel, createAsterisk(), forgeVersionComboBox);
+                version -> Objects.equals(version.id(), NeoForgeVersion.getLatestVersion(minecraftVersionComboBox.getValue()).id()),
+                NeoForgeVersion::id));
+        neoForgeVersionComboBox.getItems().addAll(NeoForgeVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
+        neoForgeVersionComboBox.setValue(NeoForgeVersion.getLatestVersion(MinecraftVersion.getLatestStableVersion()));
+        neoForgeVersionBox.getChildren().addAll(neoForgeVersionLabel, createAsterisk(), neoForgeVersionComboBox);
 
         var modIdBox = new RRHBox(10);
         modIdBox.setAlignment(Pos.CENTER_LEFT);
@@ -344,7 +344,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
         genRunFoldersLabel.setLabelFor(genRunFoldersCheckBox);
         genRunFoldersBox.getChildren().addAll(genRunFoldersLabel, genRunFoldersCheckBox);
 
-        minecraftSection.getChildren().addAll(createTitle("Minecraft"), minecraftVersionBox, forgeVersionBox,
+        minecraftSection.getChildren().addAll(createTitle("Minecraft"), minecraftVersionBox, neoForgeVersionBox,
                 modIdBox, modNameBox, mainClassBox, useMixinsBox, useAccessTransformerBox, genRunFoldersBox);
 
         // Mapping Section
@@ -356,7 +356,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
         var mappingChannelLabel = new Label("Mapping Channel:");
         mappingChannelLabel.setLabelFor(mappingChannelComboBox);
         MappingHelper.loadMappings(mappingChannelComboBox.getItems(), minecraftVersionComboBox.getValue());
-        mappingChannelComboBox.setValue(MappingChannel.MOJMAP);
+        mappingChannelComboBox.setValue(MappingChannel.PARCHMENT);
         mappingChannelComboBox.setConverter(new StringConverter<>() {
             @Override
             public String toString(MappingChannel object) {
@@ -591,8 +591,8 @@ public class ForgeProjectDetailsPane extends RRVBox {
             if (validate()) {
                 Scene scene = getScene();
 
-                ForgeProjectData data = createData();
-                scene.setRoot(new ForgeProjectCreationPane(data));
+                NeoForgeProjectData data = createData();
+                scene.setRoot(new NeoForgeProjectCreationPane(data));
                 event.consume();
             }
         });
@@ -843,14 +843,14 @@ public class ForgeProjectDetailsPane extends RRVBox {
         return true;
     }
 
-    protected ForgeProjectData createData() {
+    protected NeoForgeProjectData createData() {
         String projectName = projectNameField.getText().trim();
         var projectPath = Path.of(projectPathField.getText().trim());
         boolean createGit = createGitCheckBox.isSelected();
         License license = licenseComboBox.getValue();
         String licenseCustom = license == License.CUSTOM ? licenseCustomField.getText().trim() : null;
         MinecraftVersion minecraftVersion = minecraftVersionComboBox.getValue();
-        ForgeVersion forgeVersion = forgeVersionComboBox.getValue();
+        NeoForgeVersion neoForgeVersion = neoForgeVersionComboBox.getValue();
         String modId = modIdField.getText().trim();
         String modName = modNameField.getText().trim();
         String mainClass = mainClassField.getText().trim();
@@ -871,8 +871,8 @@ public class ForgeProjectDetailsPane extends RRVBox {
         String artifactId = artifactIdField.getText().trim();
         String version = versionField.getText().trim();
 
-        return new ForgeProjectData(projectName, projectPath, createGit, license, licenseCustom,
-                minecraftVersion, forgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer, genRunFolders,
+        return new NeoForgeProjectData(projectName, projectPath, createGit, license, licenseCustom,
+                minecraftVersion, neoForgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer, genRunFolders,
                 mappingChannel, mappingVersion,
                 author, credits, description, issues, updateJsonUrl, displayUrl, displayTest, clientSideOnly,
                 groupId, artifactId, version);

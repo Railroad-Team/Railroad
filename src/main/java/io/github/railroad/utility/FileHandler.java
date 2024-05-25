@@ -49,11 +49,11 @@ public class FileHandler {
         Files.writeString(file, stringBuilder.toString());
     }
 
-    public static void unzipFile(String fileZip, String dstDir) throws IOException {
-        try (var zipInputStream = new ZipInputStream(new FileInputStream(fileZip))) {
+    public static void unzipFile(Path fileZip, Path dstDir) throws IOException {
+        try (var zipInputStream = new ZipInputStream(Files.newInputStream(fileZip))) {
             ZipEntry zipEntry = zipInputStream.getNextEntry();
             while (zipEntry != null) {
-                Path newFile = newFile(Path.of(dstDir), zipEntry);
+                Path newFile = newFile(dstDir, zipEntry);
                 if (zipEntry.isDirectory()) {
                     Files.createDirectories(newFile);
                     if (!Files.isDirectory(newFile))
@@ -157,5 +157,13 @@ public class FileHandler {
     public static boolean isDirectoryEmpty(Path directory) throws IOException {
         return isDirectoryEmpty(directory, () -> {
         });
+    }
+
+    public static boolean urlExists(String url) {
+        try {
+            return new URI(url).toURL().openConnection().getContentType() != null;
+        } catch (IOException | URISyntaxException exception) {
+            return false;
+        }
     }
 }
