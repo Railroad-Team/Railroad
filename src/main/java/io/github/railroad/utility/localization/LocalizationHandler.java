@@ -58,6 +58,12 @@ public class LocalizationHandler {
 
     public static String getLocalized(String key) {
         LOGGER.info("Getting localized string for key {}", key);
+        if (LANG_CACHE.get(key) == null) {
+            LOGGER.error("Error finding translations for {} {} Moving to english", key, CURRENT_LANG);
+
+            setLanguage(Languages.ENGLISH);
+            getLocalized(key);
+        }
         return LANG_CACHE.get(key).getAsString();
     }
 }
