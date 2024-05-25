@@ -18,12 +18,12 @@ public class LocalizationHandler {
     }
 
     public static void setLanguage(Languages language) {
+        //Updates the config and calls loadLanguage to update the cache
         LOGGER.debug("Setting language to {}", language);
 
         var updated = ConfigHandler.getConfigJson();
         updated.get("settings").getAsJsonObject().addProperty("language", language.getLocale());
 
-        CURRENT_LANG = language;
         ConfigHandler.updateConfig(updated);
         loadLanguage();
 
@@ -35,6 +35,7 @@ public class LocalizationHandler {
     }
 
     public static void loadLanguage() {
+        //Loads the language into cache and sets the CURRENT_LANG
         LOGGER.info("Loading language file");
         CURRENT_LANG = Languages.fromLocale(ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("language").getAsString());
 
