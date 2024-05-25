@@ -18,6 +18,8 @@ import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import static io.github.railroad.utility.localization.LocalizationHandler.getLocalized;
+
 public class WelcomeLeftPane extends RRVBox {
     private final RRListView<MenuType> listView;
 
@@ -35,7 +37,7 @@ public class WelcomeLeftPane extends RRVBox {
 
         var rightVbox = new RRVBox();
         rightVbox.setAlignment(Pos.CENTER);
-        rightVbox.getChildren().add(new Label("Railroad IDE"));
+        rightVbox.getChildren().add(new Label(getLocalized("railroad.home.welcome.title")));
         rightVbox.getChildren().add(new Label("1.0.0(dev)"));
 
         hbox.getChildren().add(rightVbox);

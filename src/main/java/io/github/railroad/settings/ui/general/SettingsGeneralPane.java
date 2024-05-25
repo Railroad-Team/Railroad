@@ -1,12 +1,17 @@
 package io.github.railroad.settings.ui.general;
 
-import io.github.railroad.utility.ConfigHandler;
-import io.github.railroad.utility.LocalizationHandler;
+import io.github.railroad.Railroad;
+import io.github.railroad.Startup;
+import io.github.railroad.utility.localization.Languages;
+import io.github.railroad.utility.localization.LocalizationHandler;
+import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 public class SettingsGeneralPane extends VBox {
     // GitHub connection
@@ -31,9 +36,11 @@ public class SettingsGeneralPane extends VBox {
 
         var langComboBox = new ComboBox<>();
         langComboBox.getItems().addAll("English", "Español", "Français", "Deutsch");
-        langComboBox.setValue(LocalizationHandler.convertLanguage(LocalizationHandler.getCurrentLanguage(), false));
+        langComboBox.setValue(LocalizationHandler.getCurrentLanguage().getLanguage());
         langComboBox.setOnAction(e -> {
-            LocalizationHandler.setLanguage(langComboBox.getValue().toString().toLowerCase());
+            LocalizationHandler.setLanguage(Languages.fromLanguage(langComboBox.getValue().toString()));
+            //TODO reload the UI
+            Railroad.getWindow().close();
         });
 
         langBox.getChildren().addAll(langTitleLabel, langComboBox);

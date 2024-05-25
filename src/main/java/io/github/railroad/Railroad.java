@@ -10,7 +10,7 @@ import io.github.railroad.minecraft.NeoForgeVersion;
 import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.utility.ConfigHandler;
-import io.github.railroad.utility.LocalizationHandler;
+import io.github.railroad.utility.localization.LocalizationHandler;
 import io.github.railroad.welcome.WelcomePane;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -26,12 +26,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+
+import static io.github.railroad.utility.localization.LocalizationHandler.getLocalized;
 
 public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
@@ -128,6 +129,7 @@ public class Railroad extends Application {
         ForgeVersion.load();
         FabricAPIVersion.load();
         NeoForgeVersion.load();
+        LocalizationHandler.loadLanguage();
         window = primaryStage;
 
         // Calculate the primary screen size to better fit the window
@@ -151,7 +153,7 @@ public class Railroad extends Application {
         primaryStage.setMinWidth(scene.getWidth() + 10);
         primaryStage.setMinHeight(scene.getHeight() + 10);
         primaryStage.setScene(scene);
-        primaryStage.setTitle(LocalizationHandler.getLocalized("railroad.home.title") + " - " + "1.0.0(dev)");
+        primaryStage.setTitle(getLocalized("railroad.home.title") + " - " + "1.0.0(dev)");
         primaryStage.show();
         // FIXME window is not being focused when it opens
 
