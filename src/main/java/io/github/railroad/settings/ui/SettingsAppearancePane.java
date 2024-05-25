@@ -18,17 +18,17 @@ import java.util.stream.Stream;
 
 public class SettingsAppearancePane extends RRVBox {
     private static final ComboBox<String> themeSelector = new ComboBox<>();
-    private final Label title = new Label("Appearance");
-    private final Label themeOption = new Label("Select a theme:");
 
     public SettingsAppearancePane() {
         var themeBox = new RRVBox(10);
 
-        themeOption.setStyle("-fx-font-weight: bold;");
-
+        Label title = new Label("Appearance");
         title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");
         title.prefWidthProperty().bind(widthProperty());
         title.setAlignment(Pos.CENTER);
+
+        Label themeOption = new Label("Select a theme:");
+        themeOption.setStyle("-fx-font-weight: bold;");
 
         List<Path> themes = new ArrayList<>();
         try (Stream<Path> files = Files.list(Path.of("themes"))) {
