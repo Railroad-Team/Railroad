@@ -31,6 +31,9 @@ public final class ConfigHandler {
             if (!railroadsettings.has("theme")) {
                 railroadsettings.addProperty("theme", "default-dark");
             }
+            if (!railroadsettings.has("language")) {
+                railroadsettings.addProperty("language", "en_us");
+            }
         }
     }
 

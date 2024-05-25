@@ -13,7 +13,7 @@ public class Startup {
     private static final Logger LOGGER = LoggerFactory.getLogger(Startup.class);
     private static final boolean TEST = false;
 
-    public static void main(String[] args) {
+    public static void main(String[] args){
         if (TEST) {
             LOGGER.debug("Running tests...");
             try {
