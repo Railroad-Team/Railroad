@@ -39,6 +39,7 @@ public class Railroad extends Application {
     public static final AtomicReference<String> THEME = new AtomicReference<>("default-dark");
     public static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
     public static final String URL_REGEX = "(?:http(s)?:\\/\\/)?[\\w.-]+(?:\\.[\\w\\.-]+)+[\\w\\-\\._~:/?#\\[\\]@!\\$&'\\(\\)\\*\\+,;=.]+$";
+
     private static boolean DEBUG = false;
     private static Scene scene;
     private static Stage window;
@@ -64,7 +65,6 @@ public class Railroad extends Application {
     }
 
     private static void handleStyles(Scene scene) {
-
         var selectedTheme = ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("theme").getAsString();
 
         setStyle(selectedTheme);
@@ -134,7 +134,6 @@ public class Railroad extends Application {
         double screenW = screen.getBounds().getWidth();
         double screenH = screen.getBounds().getHeight();
 
-        // TODO: Find a better way to calculate these because it makes it weird on different sized monitors
         double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
         double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
 
@@ -160,8 +159,8 @@ public class Railroad extends Application {
 
     @Override
     public void stop() {
-        PLUGIN_MANAGER.unLoadAllPlugins();
         LOGGER.info("Stopping Railroad");
+        PLUGIN_MANAGER.unloadPlugins();
         System.exit(0);
     }
 }

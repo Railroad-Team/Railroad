@@ -33,7 +33,7 @@ public class SettingsAppearancePane extends RRVBox {
         try (Stream<Path> files = Files.list(Path.of("themes"))) {
             files.filter(file -> file.toString().endsWith(".css")).forEach(themes::add);
         } catch (IOException exception) {
-            exception.printStackTrace();
+            Railroad.LOGGER.error("Failed to load themes", exception);
         }
 
         themeSelector.setPrefWidth(180);

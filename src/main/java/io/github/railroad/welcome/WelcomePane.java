@@ -67,10 +67,10 @@ public class WelcomePane extends SplitPane {
                             case OPEN_PROJECT -> {
                                 var directoryChooser = folderBrowser(FileSystemView.getFileSystemView().getHomeDirectory(), "Open Project");
                                 //TODO Create/import/whatever with the selected folder here
-                                System.out.printf("Dir Selected: %s%n", directoryChooser.showDialog(getScene().getWindow()));
+                                Railroad.LOGGER.debug("Dir Selected: {}\n", directoryChooser.showDialog(getScene().getWindow()));
                             }
                             case IMPORT_PROJECT -> {
-                                System.out.println("[Import project] is still not implemented!");
+                                Railroad.LOGGER.warn("[Import project] is still not implemented!");
                                 //TODO Either create an import pane with options for java ver, mc ver, forge/fabric etc OR have open dir & automagically work it out and maybe check with the user
                                 //TODO That all of the values are correct?
                             }
