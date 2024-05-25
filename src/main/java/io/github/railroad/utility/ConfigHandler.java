@@ -90,7 +90,7 @@ public final class ConfigHandler {
     }
 
     public static void updateConfig(JsonObject obj) {
-        System.out.println("Updating config file");
+        Railroad.LOGGER.debug("Updating config file");
 
         Path projectsJsonPath = getConfigPath().resolve("config.json");
         if (Files.notExists(projectsJsonPath)) {

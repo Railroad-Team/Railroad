@@ -80,8 +80,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 if (!executor.awaitTermination(1, TimeUnit.SECONDS))
                     executor.shutdownNow();
             } catch (InterruptedException exception) {
-                System.err.println("An error occurred while waiting for the executor to terminate.");
-                exception.printStackTrace(); // TODO: Replace with logger
+                Railroad.LOGGER.error("An error occurred while waiting for the executor to terminate.", exception);
             }
 
             // Open project in IDE
@@ -151,7 +150,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 Path projectPath = data.projectPath().resolve(data.projectName());
                 Files.createDirectories(projectPath);
                 updateProgress(1, 17);
-                System.out.println("Project directory created successfully.");
+                Railroad.LOGGER.info("Project directory created successfully.");
 
                 downloadExampleMod(projectPath);
                 updateGradleProperties(projectPath);
@@ -180,19 +179,18 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 updateLabel("Creating project...");
                 Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
                 updateProgress(14, 17);
-                System.out.println("Project created successfully.");
+                Railroad.LOGGER.info("Project created successfully.");
 
                 setupGradle(projectPath);
                 createGitRepository(projectPath);
 
                 updateProgress(17, 17);
-                System.out.println("Project created successfully.");
+                Railroad.LOGGER.info("Project created successfully.");
                 updateLabel("Project created successfully.");
             } catch (Exception exception) {
                 // Handle errors
                 Platform.runLater(() -> Railroad.showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage()));
-                exception.printStackTrace(); // TODO: Replace with logger
-                // Railroad.LOGGER.error("An error occurred while creating the project.", exception);
+                Railroad.LOGGER.error("An error occurred while creating the project.", exception);
             }
 
             return null;
@@ -208,17 +206,17 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             FileHandler.copyUrlToFile("https://maven.minecraftforge.net/net/minecraftforge/forge/" + fileName + "/forge-" + fileName + "-mdk.zip",
                     Path.of(projectPath.resolve(fileName) + ".zip"));
             updateProgress(2, 17);
-            System.out.println("Forge MDK downloaded successfully.");
+            Railroad.LOGGER.info("Forge MDK downloaded successfully.");
 
             updateLabel("Unzipping Forge MDK...");
             FileHandler.unzipFile(projectPath.resolve(fileName + ".zip"), projectPath);
             updateProgress(3, 17);
-            System.out.println("Forge MDK unzipped successfully.");
+            Railroad.LOGGER.info("Forge MDK unzipped successfully.");
 
             updateLabel("Deleting Forge MDK zip...");
             Files.deleteIfExists(Path.of(projectPath.resolve(fileName) + ".zip"));
             updateProgress(4, 17);
-            System.out.println("Forge MDK zip deleted successfully.");
+            Railroad.LOGGER.info("Forge MDK zip deleted successfully.");
 
             updateLabel("Deleting unnecessary files...");
             Files.deleteIfExists(projectPath.resolve("changelog.txt"));
@@ -226,7 +224,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             Files.deleteIfExists(projectPath.resolve("LICENSE.txt"));
             Files.deleteIfExists(projectPath.resolve("README.txt"));
             updateProgress(5, 17);
-            System.out.println("Unnecessary files deleted successfully.");
+            Railroad.LOGGER.info("Unnecessary files deleted successfully.");
         }
 
         private void updateGradleProperties(Path projectPath) throws IOException {
@@ -253,7 +251,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             FileHandler.updateKeyValuePairByLine("mod_authors", data.author().orElse(""), gradlePropertiesFile);
             FileHandler.updateKeyValuePairByLine("mod_description", data.description().map(s -> "'''" + s + "'''").orElse(""), gradlePropertiesFile);
             updateProgress(6, 17);
-            System.out.println("gradle.properties updated successfully.");
+            Railroad.LOGGER.info("gradle.properties updated successfully.");
         }
 
         private void renamePackages(Path oldPath, Path newPath, Path mainJava) throws IOException {
@@ -266,7 +264,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileHandler.deleteFolder(comDir));
 
             updateProgress(7, 17);
-            System.out.println("Package name updated successfully.");
+            Railroad.LOGGER.info("Package name updated successfully.");
         }
 
         private void updateModsToml(Path projectPath) throws IOException {
@@ -295,7 +293,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
 
             Files.write(modsToml, lines);
             updateProgress(8, 17);
-            System.out.println("mods.toml updated successfully.");
+            Railroad.LOGGER.info("mods.toml updated successfully.");
         }
 
         private void refactorExampleClasses(Path newPath) throws IOException {
@@ -315,7 +313,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             configClassContent = configClassContent.replace("ExampleMod", data.mainClass());
             Files.writeString(configClass, configClassContent);
             updateProgress(9, 17);
-            System.out.println("Example classes refactored successfully.");
+            Railroad.LOGGER.info("Example classes refactored successfully.");
         }
 
         private boolean updateBuildGradle(Path projectPath, Map<String, Object> args, GroovyShell shell, StreamingTemplateEngine templateEngine) throws IOException, ClassNotFoundException {
@@ -346,7 +344,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                     .writeTo(new StringBufferWriter(buffer));
             Files.writeString(buildGradle, buffer);
             updateProgress(10, 17);
-            System.out.println("build.gradle updated successfully.");
+            Railroad.LOGGER.info("build.gradle updated successfully.");
             return true;
         }
 
@@ -379,7 +377,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                     .writeTo(new StringBufferWriter(buffer));
             Files.writeString(settingsGradle, buffer);
             updateProgress(11, 17);
-            System.out.println("settings.gradle updated successfully.");
+            Railroad.LOGGER.info("settings.gradle updated successfully.");
             return true;
         }
 
@@ -402,7 +400,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
 
                 Files.writeString(mixinsJson, Railroad.GSON.toJson(mixins));
                 updateProgress(12, 17);
-                System.out.println(data.modId() + ".mixins.json created successfully.");
+                Railroad.LOGGER.info(data.modId() + ".mixins.json created successfully.");
             }
         }
 
@@ -412,7 +410,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 Path accessTransformer = projectPath.resolve("src/main/resources/META-INF/accesstransformer.cfg");
                 Files.createFile(accessTransformer);
                 updateProgress(13, 17);
-                System.out.println("accesstransformer.cfg created successfully.");
+                Railroad.LOGGER.info("accesstransformer.cfg created successfully.");
             }
         }
 
@@ -431,11 +429,11 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                         .run();
 
                 updateProgress(15, 17);
-                System.out.println("Gradle tasks run successfully.");
+                Railroad.LOGGER.info("Gradle tasks run successfully.");
                 Platform.runLater(() -> centerBox.getChildren().remove(outputArea));
             } catch (BuildException exception) {
                 showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
-                exception.printStackTrace();
+                Railroad.LOGGER.error("An error occurred while running Gradle tasks.", exception);
             }
         }
 
@@ -450,10 +448,10 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                     process.waitFor();
 
                     updateProgress(16, 17);
-                    System.out.println("Git repository created successfully.");
+                    Railroad.LOGGER.info("Git repository created successfully.");
                 } catch (IOException | InterruptedException exception) {
                     showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
-                    exception.printStackTrace();
+                    Railroad.LOGGER.error("An error occurred while creating the git repository.", exception);
                 }
             }
         }

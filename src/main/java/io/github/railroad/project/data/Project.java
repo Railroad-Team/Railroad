@@ -1,5 +1,6 @@
 package io.github.railroad.project.data;
 
+import io.github.railroad.Railroad;
 import io.github.railroad.project.ProjectManager;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
@@ -147,7 +148,7 @@ public class Project {
     }
 
     public void open() {
-        System.out.println("Opening project: " + path);
+        Railroad.LOGGER.debug("Opening project: {}", path);
         setLastOpened(System.currentTimeMillis());
     }
 

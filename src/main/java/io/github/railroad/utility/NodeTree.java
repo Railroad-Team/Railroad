@@ -1,5 +1,7 @@
 package io.github.railroad.utility;
 
+import io.github.railroad.Railroad;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -29,7 +31,7 @@ public class NodeTree<T> {
     }
 
     public void print() {
-        System.out.println(root);
+        Railroad.LOGGER.info(root.toString());
     }
 
     public static class Node<T> {

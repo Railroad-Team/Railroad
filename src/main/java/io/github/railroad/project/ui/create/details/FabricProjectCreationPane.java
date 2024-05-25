@@ -86,8 +86,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 if (!executor.awaitTermination(1, TimeUnit.SECONDS))
                     executor.shutdownNow();
             } catch (InterruptedException exception) {
-                System.err.println("An error occurred while waiting for the executor to terminate.");
-                exception.printStackTrace(); // TODO: Replace with logger
+                Railroad.LOGGER.error("An error occurred while waiting for the executor to terminate.", exception);
             }
 
             // Open project in IDE
@@ -187,19 +186,18 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 updateLabel("Creating project...");
                 Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, data.projectName()));
                 updateProgress(13, 16);
-                System.out.println("Project created successfully.");
+                Railroad.LOGGER.info("Project created successfully.");
 
                 runGenSources(projectPath);
                 createGitRepository(projectPath);
 
                 updateProgress(16, 16);
-                System.out.println("Project creation completed successfully.");
+                Railroad.LOGGER.info("Project creation completed successfully.");
                 updateLabel("Project created successfully.");
             } catch (Exception exception) {
                 // Handle errors
                 Platform.runLater(() -> showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage()));
-                exception.printStackTrace();
-                // Railroad.LOGGER.error("An error occurred while creating the project.", exception);
+                Railroad.LOGGER.error("An error occurred while creating the project.", exception);
             }
 
             return null;
@@ -257,30 +255,30 @@ public class FabricProjectCreationPane extends RRBorderPane {
         private void downloadExampleMod(Path projectPath, String minecraftId) throws IOException {
             Files.createDirectories(projectPath);
             updateProgress(1, 16);
-            System.out.println("Project directory created successfully.");
+            Railroad.LOGGER.info("Project directory created successfully.");
 
             updateLabel("Downloading example mod...");
             String modUrl = String.format(EXAMPLE_MOD_URL, minecraftId);
             FileHandler.copyUrlToFile(modUrl, Path.of(projectPath.resolve("example-mod.zip").toString()));
             updateProgress(2, 16);
-            System.out.println("Example mod downloaded successfully.");
+            Railroad.LOGGER.info("Example mod downloaded successfully.");
 
             updateLabel("Extracting example mod...");
             FileHandler.unzipFile(projectPath.resolve("example-mod.zip"), projectPath);
             updateProgress(3, 16);
-            System.out.println("Example mod extracted successfully.");
+            Railroad.LOGGER.info("Example mod extracted successfully.");
 
             updateLabel("Deleting example mod zip...");
             Files.delete(Path.of(projectPath.resolve("example-mod.zip").toString()));
             updateProgress(4, 16);
-            System.out.println("Example mod zip deleted successfully.");
+            Railroad.LOGGER.info("Example mod zip deleted successfully.");
 
             updateLabel("Copying project...");
             Path folder = projectPath.resolve("fabric-example-mod-" + minecraftId);
             FileHandler.copyFolder(folder, projectPath);
             FileHandler.deleteFolder(folder);
             updateProgress(5, 16);
-            System.out.println("Project copied successfully.");
+            Railroad.LOGGER.info("Project copied successfully.");
         }
 
         private void updateGradleProperties(Path projectPath, MinecraftVersion version) throws IOException {
@@ -301,7 +299,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             FileHandler.updateKeyValuePairByLine("archives_base_name", data.modId(), gradlePropertiesFile);
 
             updateProgress(6, 16);
-            System.out.println("gradle.properties updated successfully.");
+            Railroad.LOGGER.info("gradle.properties updated successfully.");
         }
 
         private void renamePackages(Path projectPath, Path mainJava, Path clientJava, String newFolderPath) throws IOException {
@@ -333,7 +331,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             }
 
             updateProgress(7, 16);
-            System.out.println("Package renamed successfully.");
+            Railroad.LOGGER.info("Package renamed successfully.");
         }
 
         private void updateFabricModJson(Path resources, MinecraftVersion version) throws IOException {
@@ -404,7 +402,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             Files.writeString(fabricModJson, Railroad.GSON.toJson(fabricModJsonObj));
 
             updateProgress(8, 16);
-            System.out.println("fabric.mod.json updated successfully.");
+            Railroad.LOGGER.info("fabric.mod.json updated successfully.");
         }
 
         private void renameMixins(Path projectPath, Path resources) throws IOException {
@@ -423,7 +421,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             }
 
             updateProgress(9, 16);
-            System.out.println("Mixins files renamed successfully.");
+            Railroad.LOGGER.info("Mixins files renamed successfully.");
         }
 
         private void renameMainClasses(String newFolderPath, Path mainJava, Path clientJava) throws IOException {
@@ -446,7 +444,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             }
 
             updateProgress(10, 16);
-            System.out.println("Main classes renamed successfully.");
+            Railroad.LOGGER.info("Main classes renamed successfully.");
         }
 
         private void refactorMixins(String newFolderPath, Path mainJava, Path clientJava) throws IOException {
@@ -465,7 +463,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             }
 
             updateProgress(11, 16);
-            System.out.println("Mixins refactored successfully.");
+            Railroad.LOGGER.info("Mixins refactored successfully.");
         }
 
         private boolean updateBuildGradle(Path projectPath, MinecraftVersion mdkVersion) throws IOException, ClassNotFoundException {
@@ -501,7 +499,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             Files.writeString(buildGradle, buffer);
 
             updateProgress(12, 16);
-            System.out.println("build.gradle updated successfully.");
+            Railroad.LOGGER.info("build.gradle updated successfully.");
             return true;
         }
 
@@ -521,11 +519,11 @@ public class FabricProjectCreationPane extends RRBorderPane {
                         .run();
 
                 updateProgress(14, 16);
-                System.out.println("genSources task completed successfully.");
+                Railroad.LOGGER.info("genSources task completed successfully.");
                 Platform.runLater(() -> centerBox.getChildren().remove(outputArea));
             } catch (BuildException exception) {
                 showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
-                exception.printStackTrace();
+                Railroad.LOGGER.error("An error occurred while running the genSources task.", exception);
             }
         }
 
@@ -540,10 +538,10 @@ public class FabricProjectCreationPane extends RRBorderPane {
                     process.waitFor();
 
                     updateProgress(15, 16);
-                    System.out.println("Git repository created successfully.");
+                    Railroad.LOGGER.info("Git repository created successfully.");
                 } catch (IOException | InterruptedException exception) {
                     showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
-                    exception.printStackTrace();
+                    Railroad.LOGGER.error("An error occurred while creating the git repository.", exception);
                 }
             }
         }

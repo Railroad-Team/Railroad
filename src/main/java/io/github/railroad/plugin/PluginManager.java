@@ -3,6 +3,7 @@ package io.github.railroad.plugin;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.github.railroad.Railroad;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.utility.ConfigHandler;
 
@@ -65,9 +66,9 @@ public class PluginManager extends Thread {
 
     public void showError(Plugin plugin, PluginPhaseResult pluginPhaseResult, String message, String topic) {
         if (plugin != null) {
-            System.out.println("[Error][" + topic + "][" + plugin.getClass().getName() + "] Phase: " + message + " State: " + plugin.getState() + " Errors: " + pluginPhaseResult.getErrors());
+            Railroad.LOGGER.error("[Plugin][{}][{}] Phase: {} State: {} Errors: {}", topic, plugin.getClass().getName(), message, plugin.getState(), pluginPhaseResult.getErrors());
         } else {
-            System.out.println("[Error][" + topic + "][Missing] Phase: " + message + " State: Missing Errors: " + pluginPhaseResult.getErrors());
+            Railroad.LOGGER.error("[Plugin][{}][Missing] Phase: {} State: Missing Errors: {}", topic, message, pluginPhaseResult.getErrors());
         }
 
         if (listener != null) {
@@ -81,10 +82,10 @@ public class PluginManager extends Thread {
     }
 
     public void showLog(Plugin plugin, String message, String topic) {
-        System.out.println("[Log][" + topic + "][" + plugin.getClass().getName() + "]" + message);
+        Railroad.LOGGER.info("[Plugin][{}][{}]{}", topic, plugin.getClass().getName(), message);
     }
 
-    public void unLoadAllPlugins() {
+    public void unloadPlugins() {
         for (Plugin plugin : this.pluginList) {
             while (plugin.getHealthChecker().isAlive()) {
                 try {

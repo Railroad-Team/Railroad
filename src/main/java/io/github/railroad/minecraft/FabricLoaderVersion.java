@@ -53,8 +53,7 @@ public record FabricLoaderVersion(LoaderVersion loaderVersion, IntermediaryVersi
 
             return versions;
         } catch (IOException | URISyntaxException exception) {
-            System.err.println("Failed to load Fabric versions for Minecraft " + minecraftVersion.id());
-            exception.printStackTrace();
+            Railroad.LOGGER.error("Failed to load Fabric versions for Minecraft {}", minecraftVersion.id(), exception);
             return List.of();
         }
     }
@@ -103,8 +102,7 @@ public record FabricLoaderVersion(LoaderVersion loaderVersion, IntermediaryVersi
             LauncherMeta launcherMeta = Railroad.GSON.fromJson(versionObject.get("launcherMeta"), LauncherMeta.class);
             return Optional.of(new FabricLoaderVersion(loaderVersion, intermediaryVersion, launcherMeta));
         } catch (IOException | URISyntaxException exception) {
-            System.err.println("Failed to load Fabric version " + version + " for Minecraft " + minecraftVersion.id());
-            exception.printStackTrace();
+            Railroad.LOGGER.error("Failed to load Fabric version {} for Minecraft {}", version, minecraftVersion.id(), exception);
             return Optional.empty();
         }
     }
