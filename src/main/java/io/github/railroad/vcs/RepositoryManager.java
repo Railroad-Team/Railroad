@@ -6,9 +6,6 @@ import io.github.railroad.vcs.connections.Profile;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class RepositoryManager extends Thread {
     private final ObservableList<AbstractConnection> connections;
     private final ObservableList<Repository> repositories = FXCollections.observableArrayList();
