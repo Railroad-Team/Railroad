@@ -153,7 +153,7 @@ public class Railroad extends Application {
         primaryStage.setMinWidth(scene.getWidth() + 10);
         primaryStage.setMinHeight(scene.getHeight() + 10);
         primaryStage.setScene(scene);
-        primaryStage.setTitle(getLocalized("railroad.home.title") + " - " + "1.0.0(dev)");
+        primaryStage.setTitle(getLocalized("railroad.home.window.title") + " - " + "1.0.0(dev)");
         primaryStage.show();
         // FIXME window is not being focused when it opens
 

@@ -37,7 +37,7 @@ public class WelcomeLeftPane extends RRVBox {
 
         var rightVbox = new RRVBox();
         rightVbox.setAlignment(Pos.CENTER);
-        rightVbox.getChildren().add(new Label(getLocalized("railroad.home.welcome.title")));
+        rightVbox.getChildren().add(new Label(getLocalized("railroad.home.window.title")));
         rightVbox.getChildren().add(new Label("1.0.0(dev)"));
 
         hbox.getChildren().add(rightVbox);
