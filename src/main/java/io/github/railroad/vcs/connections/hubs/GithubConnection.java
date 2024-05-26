@@ -28,11 +28,11 @@ public class GithubConnection extends AbstractConnection {
         this.account = profile;
     }
 
-    private List<HttpResponse> ReadHTTP(String method, String postixurl, String body) throws Exception {
-        return ReadHTTP(method, postixurl, body, true);
+    private List<HttpResponse> readHTTP(String method, String postixurl, String body) throws Exception {
+        return readHTTP(method, postixurl, body, true);
     }
 
-    private List<HttpResponse> ReadHTTP(String method, String postixurl, String body, boolean enable_pages) throws Exception {
+    private List<HttpResponse> readHTTP(String method, String postixurl, String body, boolean enable_pages) throws Exception {
         if (account.getAccessToken().isEmpty()) {
             throw new Exception("Missing Access Token");
         }
@@ -89,11 +89,11 @@ public class GithubConnection extends AbstractConnection {
         }
     }
 
-    private List<Repository> getWriteAccessRepos() {
+    private List<Repository> getUserRepos() {
         List<Repository> repositoryList = new ArrayList<>();
         try {
             Railroad.LOGGER.debug("VCS - Github - Downloading repos");
-            List<HttpResponse> output = ReadHTTP("GET", "user/repos?per_page=20", "");
+            List<HttpResponse> output = readHTTP("GET", "user/repos?per_page=20", "");
             if (!output.isEmpty()) {
                 for (HttpResponse http_response : output) {
                     if (http_response.getStatusCode() == 200) {
@@ -123,7 +123,7 @@ public class GithubConnection extends AbstractConnection {
 
     @Override
     public void downloadRepositories() {
-        this.getRepositories().setAll(getWriteAccessRepos());
+        this.getRepositories().setAll(getUserRepos());
     }
 
     @Override
@@ -176,7 +176,7 @@ public class GithubConnection extends AbstractConnection {
         Railroad.LOGGER.debug("VCS - Github - Validating profile");
         List<HttpResponse> output = null;
         try {
-            output = ReadHTTP("GET", "user/repos?per_page=1", "", false);
+            output = readHTTP("GET", "user/repos?per_page=1", "", false);
         } catch (Exception e) {
             Railroad.LOGGER.error("Github Validation - " + e.getMessage());
             return false;
