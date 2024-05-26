@@ -1,44 +1,33 @@
 package io.github.railroad.utility.localization;
 
+import java.util.Locale;
+import java.util.Objects;
+
+import static io.github.railroad.Railroad.LOGGER;
+
 public enum Languages {
-    ENGLISH("en_us", "English"),
-    SPANISH("es_es", "Español"),
-    FRENCH("fr_fr", "Français"),
-    GERMAN("de_de", "Deutsch");
+    en_us("English"),
+    es_es("Español"),
+    fr_fr("Français"),
+    de_de("Deutsch");
 
-    private final String locale;
-    private final String language;
+    private final String name;
 
-    Languages(String locale, String language) {
-        this.locale = locale;
-        this.language = language;
+    Languages(String name) {
+        this.name = name;
     }
 
-    public String getLocale() {
-        return locale;
+    public String getName() {
+        return name;
     }
 
-    public String getLanguage() {
-        return language;
-    }
-
-    public static Languages fromLocale(String locale) {
-        for (Languages lang : values()) {
-            if (lang.getLocale().equals(locale)) {
-                return lang;
+    public static Languages fromName(String name) {
+        for(Languages l : Languages.values()){
+            if(Objects.equals(l.getName(), name)){
+                return l;
             }
         }
-
-        return null;
-    }
-
-    public static Languages fromLanguage(String language) {
-        for (Languages lang : values()) {
-            if (lang.getLanguage().equals(language)) {
-                return lang;
-            }
-        }
-
+        LOGGER.error("Cannot find language: {}", name);
         return null;
     }
 }

@@ -4,15 +4,16 @@ import io.github.railroad.Railroad;
 import io.github.railroad.utility.ConfigHandler;
 
 import java.io.InputStream;
+import java.util.Locale;
 import java.util.Properties;
 
 import static io.github.railroad.Railroad.LOGGER;
 
-public class LocalizationHandler {
-    private static Properties LANG_CACHE = new Properties();
+public class L18n {
+    private static final Properties LANG_CACHE = new Properties();
     private static Languages CURRENT_LANG;
 
-    private LocalizationHandler() {
+    private L18n() {
     }
 
     public static void setLanguage(Languages language) {
@@ -20,12 +21,12 @@ public class LocalizationHandler {
         LOGGER.debug("Setting language to {}", language);
 
         var updated = ConfigHandler.getConfigJson();
-        updated.get("settings").getAsJsonObject().addProperty("language", language.getLocale());
+        updated.get("settings").getAsJsonObject().addProperty("language", language.toString());
 
         ConfigHandler.updateConfig(updated);
         loadLanguage();
 
-        LOGGER.info("Language set to {}", language.getLocale());
+        LOGGER.info("Language set to {}", language);
     }
 
     public static Languages getCurrentLanguage() {
@@ -35,16 +36,17 @@ public class LocalizationHandler {
     public static void loadLanguage() {
         //Loads the language into cache and sets the CURRENT_LANG
         LOGGER.info("Loading language file");
-        CURRENT_LANG = Languages.fromLocale(ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("language").getAsString());
+        CURRENT_LANG = Languages.valueOf(ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("language").getAsString());
 
         if(CURRENT_LANG == null) {
-            CURRENT_LANG = Languages.ENGLISH;
-            LOGGER.error("Language {} not found, defaulting to English");
+            LOGGER.error("Language not found, defaulting to English");
+            CURRENT_LANG = Languages.en_us;
         }
 
         try {
-            InputStream props = Railroad.getResourceAsStream("lang/" + CURRENT_LANG.getLocale() + ".properties");
-            LOGGER.info("Reading language file {}", props.toString());
+            LOGGER.debug(String.valueOf(CURRENT_LANG));
+            InputStream props = Railroad.getResourceAsStream("lang/" + CURRENT_LANG.toString() + ".properties");
+            LOGGER.info("Reading language file");
 
             LANG_CACHE.load(props);
         } catch (Exception e) {
@@ -53,13 +55,13 @@ public class LocalizationHandler {
         }
     }
 
-    public static String getLocalized(String key) {
-        LOGGER.info("Getting localized string for key {}", key);
+    public static String localize(String key) {
+        LOGGER.debug("Getting localized string for key {}", key);
         if (LANG_CACHE.get(key) == null) {
             LOGGER.error("Error finding translations for {} {} Moving to english", key, CURRENT_LANG);
 
-            setLanguage(Languages.ENGLISH);
-            getLocalized(key);
+            setLanguage(Languages.en_us);
+            return localize(key);
         }
         return LANG_CACHE.get(key).toString();
     }
