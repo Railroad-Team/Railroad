@@ -52,7 +52,7 @@ public class PluginManager extends Thread {
         JsonArray plugins = object.getAsJsonObject("settings").getAsJsonArray("plugins");
         for (JsonElement element : plugins) {
             try {
-                // TODO: Don't do this because it's really fucking jank
+                // TODO: Move plugins to external jar files
                 var plugin = (Plugin) Class.forName("io.github.railroad.plugin.defaults." + element.getAsString())
                         .getDeclaredConstructor().newInstance();
                 addPlugin(plugin);
