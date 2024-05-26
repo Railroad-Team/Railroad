@@ -20,13 +20,12 @@ public class L18n {
     }
 
     public static void setLanguage(Languages language) {
-        //Updates the config and calls loadLanguage to update the cache
+        //Updates the config and calls loadLanguage to update the cache and CURRENT_LANG
         LOGGER.debug("Setting language to {}", language);
 
         var updated = ConfigHandler.getConfigJson();
         updated.get("settings").getAsJsonObject().addProperty("language", language.toString());
 
-        LOGGER.info("Language set to {}", language);
         ConfigHandler.updateConfig(updated);
         loadLanguage();
     }
@@ -50,8 +49,12 @@ public class L18n {
             LOGGER.info("Reading language file");
 
             //Load cache and THEN change CURRENT_LANG otherwise binds will be triggered before cache changes
+            LANG_CACHE.clear();
             LANG_CACHE.load(props);
             CURRENT_LANG.setValue(newLang);
+
+            //KEEP THIS HERE OR IT WILL BREAK STUFF
+            CURRENT_LANG.getValue();
         } catch (Exception e) {
             LOGGER.error("Error reading language file", e);
             throw new IllegalStateException("Error reading language file", e);
@@ -59,14 +62,15 @@ public class L18n {
     }
 
     public static String localize(String key) {
+        var t = LANG_CACHE;
         LOGGER.debug("Getting localized string for key {}", key);
-        if (LANG_CACHE.get(key) == null) {
+        if (t.get(key) == null) {
             LOGGER.error("Error finding translations for {} {} Moving to english", key, CURRENT_LANG);
 
             setLanguage(Languages.en_us);
             return localize(key);
         }
-        return LANG_CACHE.get(key).toString();
+        return t.get(key).toString();
     }
 
     public static StringBinding createStringBinding(final String key) {

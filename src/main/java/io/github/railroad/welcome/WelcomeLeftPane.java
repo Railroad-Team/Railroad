@@ -4,7 +4,7 @@ import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.utility.localization.L18n;
+import io.github.railroad.ui.localized.LocalizedLabel;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -18,6 +18,8 @@ import javafx.scene.paint.Paint;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+
+import static io.github.railroad.utility.localization.L18n.createStringBinding;
 
 public class WelcomeLeftPane extends RRVBox {
     private final RRListView<MenuType> listView;
@@ -36,9 +38,7 @@ public class WelcomeLeftPane extends RRVBox {
 
         var rightVbox = new RRVBox();
         rightVbox.setAlignment(Pos.CENTER);
-        var lab = new Label();
-        lab.textProperty().bind(L18n.createStringBinding("railroad.home.window.title"));
-        rightVbox.getChildren().add(lab);
+        rightVbox.getChildren().add(new LocalizedLabel("railroad.home.window.title"););
         rightVbox.getChildren().add(new Label("1.0.0(dev)"));
 
         hbox.getChildren().add(rightVbox);
