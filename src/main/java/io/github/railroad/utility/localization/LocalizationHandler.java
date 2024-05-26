@@ -1,17 +1,15 @@
 package io.github.railroad.utility.localization;
 
-import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.utility.ConfigHandler;
 
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.InputStream;
+import java.util.Properties;
 
 import static io.github.railroad.Railroad.LOGGER;
 
 public class LocalizationHandler {
-    private static JsonObject LANG_CACHE;
+    private static Properties LANG_CACHE = new Properties();
     private static Languages CURRENT_LANG;
 
     private LocalizationHandler() {
@@ -45,11 +43,10 @@ public class LocalizationHandler {
         }
 
         try {
-            URI langFile = Railroad.getResource("lang/" + CURRENT_LANG.getLocale() + ".json").toURI();
-            Path langPath = Path.of(langFile);
-            LOGGER.info("Reading language file {}", langFile);
+            InputStream props = Railroad.getResourceAsStream("lang/" + CURRENT_LANG.getLocale() + ".properties");
+            LOGGER.info("Reading language file {}", props.toString());
 
-            LANG_CACHE = Railroad.GSON.fromJson(Files.readString(langPath), JsonObject.class);
+            LANG_CACHE.load(props);
         } catch (Exception e) {
             LOGGER.error("Error reading language file", e);
             throw new IllegalStateException("Error reading language file", e);
@@ -64,6 +61,6 @@ public class LocalizationHandler {
             setLanguage(Languages.ENGLISH);
             getLocalized(key);
         }
-        return LANG_CACHE.get(key).getAsString();
+        return LANG_CACHE.get(key).toString();
     }
 }
