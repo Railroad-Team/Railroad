@@ -1,5 +1,6 @@
 package io.github.railroad.vcs;
 
+import io.github.railroad.vcs.connections.AbstractConnection;
 import javafx.scene.image.Image;
 
 import java.util.Optional;
@@ -10,8 +11,10 @@ public class Repository {
     private String repositoryCloneURL;
     private Optional<Image> icon;
     private String repositoryName;
+    private AbstractConnection connection;
+
     public Repository(RepositoryTypes repositoryType) {
-        this.repositoryType = repositoryType;
+        this.setRepositoryType(repositoryType);
     }
 
     public String getRepositoryURL() {
@@ -44,5 +47,25 @@ public class Repository {
 
     public void setIcon(Optional<Image> icon) {
         this.icon = icon;
+    }
+
+    public RepositoryTypes getRepositoryType() {
+        return repositoryType;
+    }
+
+    public void setRepositoryType(RepositoryTypes repositoryType) {
+        this.repositoryType = repositoryType;
+    }
+
+    public AbstractConnection getConnection() {
+        return connection;
+    }
+
+    public void setConnection(AbstractConnection connection) {
+        this.connection = connection;
+    }
+
+    public void cloneRepo() {
+        this.connection.cloneRepo(this);
     }
 }

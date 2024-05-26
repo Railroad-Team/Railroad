@@ -4,7 +4,9 @@ public class Profile {
     private String username;
     private String password;
     private String accessToken;
-    public Profile() {}
+
+    public Profile() {
+    }
 
     public String getUsername() {
         return username;

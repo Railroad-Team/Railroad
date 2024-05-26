@@ -87,6 +87,7 @@ public final class ConfigHandler {
             return setting_obj;
         } else {
             try {
+                Railroad.LOGGER.debug("Reading config file");
                 Path projectsJsonPath = getConfigPath().resolve("config.json");
                 if (Files.notExists(projectsJsonPath)) {
                     createProjectsJsonIfNotExists();

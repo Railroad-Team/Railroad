@@ -10,8 +10,6 @@ import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ui.welcome.WelcomePane;
 import io.github.railroad.vcs.RepositoryManager;
-import io.github.railroad.vcs.connections.Profile;
-import io.github.railroad.vcs.connections.hubs.Github;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -34,12 +32,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class Railroad extends Application {
+    public static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
     public static final AtomicReference<String> THEME = new AtomicReference<>("default-dark");
-    public static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
+    public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
 
     private static boolean DEBUG = false;
     private static Scene scene;
@@ -96,14 +95,11 @@ public class Railroad extends Application {
     public static InputStream getResourceAsStream(String path) {
         return Railroad.class.getResourceAsStream("/io/github/railroad/" + path);
     }
-    public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
-    private static final Profile PROFILE = new Profile();
     @Override
     public void start(Stage primaryStage) {
-        REPOSITORY_MANAGER.addConnection(new Github(PROFILE));
-        REPOSITORY_MANAGER.updateRepositories();
         ConfigHandler.updateConfig();
         PLUGIN_MANAGER.start();
+        REPOSITORY_MANAGER.start();
         PLUGIN_MANAGER.addCustomEventListener(event -> {
             Platform.runLater(() -> {
                 Railroad.showErrorAlert("Plugin", event.getPlugin().getClass().getName(), event.getPhaseResult().getErrors().toString());

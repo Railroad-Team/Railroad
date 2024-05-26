@@ -20,10 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class Github extends AbstractConnection {
+public class GithubConnection extends AbstractConnection {
     private Profile account;
 
-    public Github(Profile profile) {
+    public GithubConnection(Profile profile) {
         this.account = profile;
     }
 
@@ -38,6 +38,7 @@ public class Github extends AbstractConnection {
                 con.setRequestMethod(method.toUpperCase());
                 con.setRequestProperty("Accept", "application/vnd.github+json");
                 con.setRequestProperty("X-GitHub-Api-Version", "2022-11-28");
+                con.setRequestProperty("Authorization", "Bearer " + account.getAccessToken());
                 BufferedReader in = new BufferedReader(
                         new InputStreamReader(con.getInputStream()));
                 String inputLine;
@@ -49,8 +50,7 @@ public class Github extends AbstractConnection {
                     finished = true;
                     for (String el : con.getHeaderField("link").split(",")) {
                         if (el.contains("rel=\"next\"")) {
-                            request_url = el.substring(el.indexOf("<")+1, el.indexOf(">"));
-                            System.out.println("Not finished next url: " + request_url);
+                            request_url = el.substring(el.indexOf("<") + 1, el.indexOf(">"));
                             finished = false;
                         }
                     }
@@ -74,7 +74,7 @@ public class Github extends AbstractConnection {
     private List<Repository> getWriteAccessRepos() {
         List<Repository> repositoryList = new ArrayList<>();
         try {
-            System.out.println("Downloading Github Repos");
+            Railroad.LOGGER.debug("VCS - Github - Downloading repos");
             List<String> output = ReadHTTP("GET", "user/repos?per_page=20", "");
             if (!output.isEmpty()) {
                 for (String http_response : output) {
@@ -87,6 +87,7 @@ public class Github extends AbstractConnection {
                                 repository.setRepositoryURL(element.getAsJsonObject().get("url").getAsString());
                                 repository.setRepositoryCloneURL(element.getAsJsonObject().get("clone_url").getAsString());
                                 repository.setIcon(Optional.of(new Image(element.getAsJsonObject().get("owner").getAsJsonObject().get("avatar_url").getAsString())));
+                                repository.setConnection(this);
                                 repositoryList.add(repository);
                             }
                         }
@@ -107,5 +108,43 @@ public class Github extends AbstractConnection {
     @Override
     public boolean updateRepo(Repository repo) {
         return false;
+    }
+
+    @Override
+    public void cloneRepo(Repository repository) {
+        if (repository.getRepositoryType() == RepositoryTypes.git) {
+            ProcessBuilder processBuilder = new ProcessBuilder();
+            processBuilder.command("git", "clone", repository.getRepositoryCloneURL(), "/home/romeo/Gits/" + repository.getRepositoryName());
+
+            try {
+                Process process = processBuilder.start();
+
+                // Read the output from the process
+                new Thread(() -> {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                         BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            //updateOutput(line);
+                        }
+                        while ((line = errorReader.readLine()) != null) {
+                            //updateOutput(line);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }).start();
+
+                int exitCode = process.waitFor();
+                if (exitCode == 0) {
+                    //updateOutput("Repository cloned successfully.");
+                } else {
+                    //updateOutput("Failed to clone the repository.");
+                }
+            } catch (IOException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

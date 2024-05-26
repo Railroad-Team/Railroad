@@ -14,6 +14,7 @@ import javafx.scene.layout.StackPane;
 public class ImportProjectListCell extends ListCell<Repository> {
     private final StackPane node = new StackPane();
     private final ImportProjectListCell.repositoryListNode repositoryListNode = new ImportProjectListCell.repositoryListNode();
+
     public ImportProjectListCell() {
         getStyleClass().add("project-list-cell");
         node.getChildren().add(repositoryListNode);
@@ -23,11 +24,14 @@ public class ImportProjectListCell extends ListCell<Repository> {
         StackPane.setAlignment(ellipseButton, Pos.TOP_RIGHT);
 
         var dropdown = new ContextMenu();
-        var openItem = new MenuItem("Open");
+        var openItem = new MenuItem("Clone");
         var removeItem = new MenuItem("Remove");
 
         openItem.setOnAction(e -> {
-
+            Repository repository = repositoryListNode.repositoryProperty().get();
+            if (repository != null) {
+                repository.cloneRepo();
+            }
         });
 
         removeItem.setOnAction(e -> {
@@ -42,6 +46,7 @@ public class ImportProjectListCell extends ListCell<Repository> {
 
         node.getChildren().add(ellipseButton);
     }
+
     @Override
     protected void updateItem(Repository repository, boolean empty) {
         super.updateItem(repository, empty);
