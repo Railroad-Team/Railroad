@@ -45,7 +45,6 @@ public class GithubConnection extends AbstractConnection {
                 while (!finished) {
                     URL url = new URL(request_url);
                     HttpURLConnection con = (HttpURLConnection) url.openConnection();
-                    System.out.println(account.getAccessToken());
                     con.setRequestMethod(method.toUpperCase());
                     con.setRequestProperty("Accept", "application/vnd.github+json");
                     con.setRequestProperty("X-GitHub-Api-Version", "2022-11-28");
@@ -139,12 +138,9 @@ public class GithubConnection extends AbstractConnection {
 
             try {
                 Process process = processBuilder.start();
-
-                // Read the output from the process
                 new Thread(() -> {
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                          BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-
                         String line;
                         while ((line = reader.readLine()) != null) {
                             //updateOutput(line);
@@ -189,6 +185,11 @@ public class GithubConnection extends AbstractConnection {
                 return false;
             }
         }
+    }
+
+    @Override
+    public Profile getProfile() {
+        return this.account;
     }
 
     private class HttpResponse {

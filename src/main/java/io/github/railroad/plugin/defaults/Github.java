@@ -23,10 +23,11 @@ public class Github extends Plugin {
             JsonObject config = ConfigHandler.getPluginSettings("Github", true);
             if (config.has("accounts")) {
                 for (JsonElement element : config.get("accounts").getAsJsonArray()) {
-                    if (!element.getAsJsonObject().get("username").getAsString().isEmpty()) {
+                    if ((element.getAsJsonObject().get("token") != null) && (element.getAsJsonObject().get("alias") != null) ) {
                         Railroad.LOGGER.info("Adding new Github connection to RepositoryManager");
                         Profile prof = new Profile();
-                        prof.setAccessToken(element.getAsJsonObject().get("username").getAsString());
+                        prof.setAccessToken(element.getAsJsonObject().get("token").getAsString());
+                        prof.setAlias(element.getAsJsonObject().get("alias").getAsString());
                         GithubConnection connection = new GithubConnection(prof);
                         Railroad.REPOSITORY_MANAGER.addConnection(connection);
                     }

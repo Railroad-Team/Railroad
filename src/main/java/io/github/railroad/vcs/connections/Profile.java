@@ -4,6 +4,7 @@ public class Profile {
     private String username;
     private String password;
     private String accessToken;
+    private String Alias;
 
     public Profile() {
     }
@@ -30,5 +31,13 @@ public class Profile {
 
     public void setAccessToken(String accessToken) {
         this.accessToken = accessToken;
+    }
+
+    public String getAlias() {
+        return Alias;
+    }
+
+    public void setAlias(String alias) {
+        Alias = alias;
     }
 }

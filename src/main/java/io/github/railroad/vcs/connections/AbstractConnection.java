@@ -12,4 +12,6 @@ public abstract class AbstractConnection {
     public abstract void cloneRepo(Repository repository);
 
     public abstract boolean validateProfile();
+
+    public abstract Profile getProfile();
 }

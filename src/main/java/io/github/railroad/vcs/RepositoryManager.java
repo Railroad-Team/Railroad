@@ -2,6 +2,7 @@ package io.github.railroad.vcs;
 
 import io.github.railroad.Railroad;
 import io.github.railroad.vcs.connections.AbstractConnection;
+import io.github.railroad.vcs.connections.Profile;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -10,10 +11,10 @@ import java.util.List;
 
 public class RepositoryManager extends Thread {
     private final ObservableList<Repository> repositoryList;
-    private List<AbstractConnection> connections;
+    private final ObservableList<AbstractConnection> connections;
 
     public RepositoryManager() {
-        this.connections = new ArrayList<AbstractConnection>();
+        this.connections = FXCollections.observableArrayList();
         this.repositoryList = FXCollections.observableArrayList();
     }
 
@@ -35,7 +36,7 @@ public class RepositoryManager extends Thread {
         return repositoryList;
     }
 
-    public synchronized void updateRepositories() {
+    public void updateRepositories() {
         try {
             List<Repository> newRepositories = new ArrayList<>();
             for (AbstractConnection abstractConnection : connections) {
@@ -50,6 +51,13 @@ public class RepositoryManager extends Thread {
     public boolean addConnection(AbstractConnection connection) {
         this.connections.add(connection);
         return true;
+    }
+    public ObservableList<Profile> getProfiles() {
+        ObservableList<Profile> profiles = FXCollections.observableArrayList();
+        for (AbstractConnection connection : connections) {
+            profiles.addAll(connection.getProfile());
+        }
+        return profiles;
     }
 
 }

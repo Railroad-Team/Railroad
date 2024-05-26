@@ -3,6 +3,7 @@ package io.github.railroad.plugin.defaults.github.ui;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ConfigHandler;
@@ -29,17 +30,19 @@ public class GithubAccounts extends RRVBox {
             showAddProfileDialog();
         });
 
-        JsonObject config = ConfigHandler.getPluginSettings("Github", true);
+        /*JsonObject config = ConfigHandler.getPluginSettings("Github", true);
         if (config.has("accounts")) {
             JsonArray accounts = config.get("accounts").getAsJsonArray();
             for (JsonElement account : accounts) {
                 if (account.isJsonObject()) {
                     Profile profile = new Profile();
                     profile.setUsername(account.getAsJsonObject().get("username").getAsString());
-                    profileListView.getItems().add(profile);
+                    //profileListView.getItems().add(profile);
                 }
             }
-        }
+        }*/
+
+        profileListView.setItems(Railroad.REPOSITORY_MANAGER.getProfiles());
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToHeight(true);
         scrollPane.setFitToWidth(true);
