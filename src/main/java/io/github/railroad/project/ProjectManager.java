@@ -3,6 +3,7 @@ package io.github.railroad.project;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.github.railroad.Railroad;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -49,7 +50,7 @@ public class ProjectManager {
     public void updateProjectInfo(Project project, boolean removeProject) {
         JsonObject object = ConfigHandler.getConfigJson();
         JsonArray projects = object.getAsJsonArray("projects");
-        System.out.println("Starting project update: " + project.getId());
+        Railroad.LOGGER.info("Starting project update: " + project.getId());
         boolean found = false;
         for (JsonElement projectElement : projects) {
             JsonObject projectObject = projectElement.getAsJsonObject();
@@ -60,17 +61,24 @@ public class ProjectManager {
                 } else {
                     found = true;
                     projectObject.addProperty("lastOpened", project.getLastOpened());
-                    System.out.println("Starting update project: " + project.getId() + " last opened to: " + project.getLastOpened());
+                    Railroad.LOGGER.info("Starting update project: " + project.getId() + " last opened to: " + project.getLastOpened());
                 }
             }
         }
 
         if (!found && !removeProject) {
-            System.out.println("Create new Project");
+            Railroad.LOGGER.info("Create new Project");
             var newProject = new JsonObject();
             newProject.addProperty("uuid", project.getId());
             newProject.addProperty("path", project.getPath().toString());
             newProject.addProperty("alias", project.getAlias());
+            if (project.getRepository() != null) {
+                var newProjectRepoObject = new JsonObject();
+                newProjectRepoObject.addProperty("repo_type", project.getRepository().getRepositoryType().toString());
+                newProjectRepoObject.addProperty("account_alias", project.getRepository().getConnection().getProfile().getAlias());
+                newProjectRepoObject.addProperty("account_url", project.getRepository().getRepositoryURL());
+                newProject.add("repository", newProjectRepoObject);
+            }
             projects.add(newProject);
         }
         ConfigHandler.updateConfig();

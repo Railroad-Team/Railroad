@@ -3,6 +3,7 @@ package io.github.railroad.vcs;
 import io.github.railroad.vcs.connections.AbstractConnection;
 import javafx.scene.image.Image;
 
+import java.nio.file.Path;
 import java.util.Optional;
 
 public class Repository {
@@ -65,7 +66,7 @@ public class Repository {
         this.connection = connection;
     }
 
-    public void cloneRepo() {
-        this.connection.cloneRepo(this);
+    public boolean cloneRepo(Path path) {
+        return this.connection.cloneRepo(this, path);
     }
 }

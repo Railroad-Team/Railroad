@@ -1,12 +1,8 @@
 package io.github.railroad.plugin.defaults.github.ui;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.utility.ConfigHandler;
 import io.github.railroad.vcs.connections.Profile;
 import io.github.railroad.vcs.connections.hubs.GithubConnection;
 import javafx.scene.Scene;
@@ -30,18 +26,6 @@ public class GithubAccounts extends RRVBox {
             showAddProfileDialog();
         });
 
-        /*JsonObject config = ConfigHandler.getPluginSettings("Github", true);
-        if (config.has("accounts")) {
-            JsonArray accounts = config.get("accounts").getAsJsonArray();
-            for (JsonElement account : accounts) {
-                if (account.isJsonObject()) {
-                    Profile profile = new Profile();
-                    profile.setUsername(account.getAsJsonObject().get("username").getAsString());
-                    //profileListView.getItems().add(profile);
-                }
-            }
-        }*/
-
         profileListView.setItems(Railroad.REPOSITORY_MANAGER.getProfiles());
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToHeight(true);
@@ -58,8 +42,10 @@ public class GithubAccounts extends RRVBox {
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Add New Profile");
         RRVBox dialogVbox = new RRVBox(20);
+        TextField aliasField = new TextField();
+        aliasField.setPromptText("Enter Alias");
         TextField usernameField = new TextField();
-        usernameField.setPromptText("Enter GitHub username");
+        usernameField.setPromptText("Enter GitHub token");
         Button addProfileButton = new Button("Add Profile");
         addProfileButton.setOnAction(event -> {
             String username = usernameField.getText();
@@ -79,7 +65,9 @@ public class GithubAccounts extends RRVBox {
 
         Button cancelButton = new Button("Cancel");
         cancelButton.setOnAction(event -> dialog.close());
-        dialogVbox.getChildren().addAll(usernameField, addProfileButton, cancelButton);
+        RRVBox box = new RRVBox();
+        box.getChildren().addAll(addProfileButton, cancelButton);
+        dialogVbox.getChildren().addAll(aliasField, usernameField, box);
         Scene dialogScene = new Scene(dialogVbox, 300, 200);
         dialog.setScene(dialogScene);
         dialog.show();

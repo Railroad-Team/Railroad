@@ -1,5 +1,7 @@
 package io.github.railroad.project.ui.project;
 
+import io.github.railroad.Railroad;
+import io.github.railroad.project.Project;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.vcs.Repository;
@@ -10,6 +12,9 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
+import javafx.stage.DirectoryChooser;
+
+import java.io.File;
 
 public class ImportProjectListCell extends ListCell<Repository> {
     private final StackPane node = new StackPane();
@@ -28,9 +33,16 @@ public class ImportProjectListCell extends ListCell<Repository> {
         var removeItem = new MenuItem("Remove");
 
         openItem.setOnAction(e -> {
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            File selectedDirectory = directoryChooser.showDialog(Railroad.getWindow());
+
             Repository repository = repositoryListNode.repositoryProperty().get();
             if (repository != null) {
-                repository.cloneRepo();
+               if (repository.cloneRepo(selectedDirectory.toPath())) {
+                   Project newProject = new Project(selectedDirectory.toPath().resolve(repository.getRepositoryName()), repository.getRepositoryName());
+                   newProject.setRepository(repository);
+                   Railroad.PROJECT_MANAGER.newProject(newProject);
+               }
             }
         });
 

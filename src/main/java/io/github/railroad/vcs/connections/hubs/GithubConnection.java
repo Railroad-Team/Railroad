@@ -16,6 +16,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -131,10 +132,11 @@ public class GithubConnection extends AbstractConnection {
     }
 
     @Override
-    public void cloneRepo(Repository repository) {
+    public boolean cloneRepo(Repository repository, Path path) {
         if (repository.getRepositoryType() == RepositoryTypes.git) {
+            Railroad.LOGGER.info("Cloning Repo:" + repository.getRepositoryCloneURL() + " to:" + path.toAbsolutePath());
             ProcessBuilder processBuilder = new ProcessBuilder();
-            processBuilder.command("git", "clone", repository.getRepositoryCloneURL(), "/home/romeo/Gits/" + repository.getRepositoryName());
+            processBuilder.command("git", "clone", repository.getRepositoryCloneURL(), path.toAbsolutePath().resolve(repository.getRepositoryName()).toString());
 
             try {
                 Process process = processBuilder.start();
@@ -155,14 +157,18 @@ public class GithubConnection extends AbstractConnection {
 
                 int exitCode = process.waitFor();
                 if (exitCode == 0) {
-                    //updateOutput("Repository cloned successfully.");
+                    Railroad.LOGGER.info("Repository cloned successfully.");
+                    return true;
                 } else {
-                    //updateOutput("Failed to clone the repository.");
+                    Railroad.LOGGER.error("Failed to clone the repository.");
+                    return false;
                 }
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
+                return false;
             }
         }
+        return false;
     }
 
     @Override
