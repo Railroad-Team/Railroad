@@ -42,10 +42,8 @@ public class WelcomeLeftPane extends RRVBox {
         var rightVbox = new RRVBox();
         rightVbox.setAlignment(Pos.CENTER);
         var lab = new Label();
-        lab.textProperty().setValue("TESSSS");
         lab.textProperty().bind(createStringBinding("railroad.home.window.title"));
-        LOGGER.debug(lab.textProperty().getValue());
-        rightVbox.getChildren().add(new Label());
+        rightVbox.getChildren().add(lab);
         rightVbox.getChildren().add(new Label("1.0.0(dev)"));
 
         hbox.getChildren().add(rightVbox);
