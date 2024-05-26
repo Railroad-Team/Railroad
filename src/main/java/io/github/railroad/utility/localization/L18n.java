@@ -2,6 +2,8 @@ package io.github.railroad.utility.localization;
 
 import io.github.railroad.Railroad;
 import io.github.railroad.utility.ConfigHandler;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.StringBinding;
 
 import java.io.InputStream;
 import java.util.Locale;
@@ -64,5 +66,9 @@ public class L18n {
             return localize(key);
         }
         return LANG_CACHE.get(key).toString();
+    }
+
+    public static StringBinding createStringBinding(final String key) {
+        return Bindings.createStringBinding(() -> localize(key));
     }
 }
