@@ -121,8 +121,8 @@ public class GithubConnection extends AbstractConnection {
     }
 
     @Override
-    public List<Repository> getRepositories() {
-        return this.getWriteAccessRepos();
+    public void downloadRepositories() {
+        this.getRepositories().setAll(getWriteAccessRepos());
     }
 
     @Override
@@ -175,7 +175,6 @@ public class GithubConnection extends AbstractConnection {
             Railroad.LOGGER.error("Github Validation - " + e.getMessage());
             return false;
         }
-        System.out.println(output);
         if (output.isEmpty()) {
             return false;
         } else {

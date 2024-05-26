@@ -1,26 +1,63 @@
 package io.github.railroad.plugin.defaults.github.ui;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.utility.ConfigHandler;
+import io.github.railroad.vcs.Repository;
 import io.github.railroad.vcs.connections.Profile;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 
 public class GithubProfilesListCell extends ListCell<Profile> {
     private final StackPane node = new StackPane();
-    private final GithubProfilesListCell.ProfileListNode pluginListNode = new GithubProfilesListCell.ProfileListNode();
+    private final GithubProfilesListCell.ProfileListNode profileListNode = new GithubProfilesListCell.ProfileListNode();
 
     public GithubProfilesListCell(ScrollPane pane) {
 
         getStyleClass().add("project-list-cell");
-        node.getChildren().add(pluginListNode);
+        node.getChildren().add(profileListNode);
+
+        var ellipseButton = new Button("...");
+        ellipseButton.setBackground(null);
+        StackPane.setAlignment(ellipseButton, Pos.TOP_RIGHT);
+
+        var dropdown = new ContextMenu();
+        var removeItem = new MenuItem("Remove");
+
+
+        removeItem.setOnAction(e -> {
+            Profile profile = profileListNode.profileProperty().get();
+            if (profile != null) {
+                JsonObject config = ConfigHandler.getPluginSettings("Github", true);
+                if (config.has("accounts")) {
+                    for (JsonElement element : config.get("accounts").getAsJsonArray()) {
+                        if (element.isJsonObject()) {
+                            if (element.getAsJsonObject() == profile.getConfig_obj()) {
+                                config.get("accounts").getAsJsonArray().remove(element);
+                                ConfigHandler.updateConfig();
+                            }
+                        }
+                    }
+                }
+                Railroad.REPOSITORY_MANAGER.deleteWhereProfileIs(profile);
+            }
+        });
+
+        dropdown.getItems().addAll(removeItem);
+
+        ellipseButton.setOnMouseClicked(e -> {
+            dropdown.show(ellipseButton, e.getScreenX(), e.getScreenY());
+        });
+
+        node.getChildren().add(ellipseButton);
     }
 
     @Override
@@ -30,9 +67,9 @@ public class GithubProfilesListCell extends ListCell<Profile> {
         if (empty || profile == null) {
             setText(null);
             setGraphic(null);
-            pluginListNode.pluginProperty().set(null);
+            profileListNode.profileProperty().set(null);
         } else {
-            pluginListNode.pluginProperty().set(profile);
+            profileListNode.profileProperty().set(profile);
             setGraphic(node);
         }
     }
@@ -51,7 +88,7 @@ public class GithubProfilesListCell extends ListCell<Profile> {
             aliasLabel.setStyle("-fx-font-size: 16px;");
 
             var accessTokenLabel = new Label();
-            accessTokenLabel.textProperty().bind(profile.map(Profile::getAccessToken));
+            accessTokenLabel.textProperty().bind(profile.map(Profile::getShortAccessToken));
             accessTokenLabel.setStyle("-fx-font-size: 16px;");
 
 
@@ -70,7 +107,7 @@ public class GithubProfilesListCell extends ListCell<Profile> {
             this.profile.set(plugin);
         }
 
-        public ObjectProperty<Profile> pluginProperty() {
+        public ObjectProperty<Profile> profileProperty() {
             return profile;
         }
     }

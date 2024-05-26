@@ -12,7 +12,6 @@ import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ConfigHandler;
 import io.github.railroad.vcs.connections.Profile;
 import io.github.railroad.vcs.connections.hubs.GithubConnection;
-import javafx.scene.control.ScrollPane;
 
 public class Github extends Plugin {
     @Override
@@ -23,11 +22,12 @@ public class Github extends Plugin {
             JsonObject config = ConfigHandler.getPluginSettings("Github", true);
             if (config.has("accounts")) {
                 for (JsonElement element : config.get("accounts").getAsJsonArray()) {
-                    if ((element.getAsJsonObject().get("token") != null) && (element.getAsJsonObject().get("alias") != null) ) {
+                    if ((element.getAsJsonObject().get("token") != null) && (element.getAsJsonObject().get("alias") != null)) {
                         Railroad.LOGGER.info("Adding new Github connection to RepositoryManager");
                         Profile prof = new Profile();
                         prof.setAccessToken(element.getAsJsonObject().get("token").getAsString());
                         prof.setAlias(element.getAsJsonObject().get("alias").getAsString());
+                        prof.setConfig_obj(element.getAsJsonObject());
                         GithubConnection connection = new GithubConnection(prof);
                         Railroad.REPOSITORY_MANAGER.addConnection(connection);
                     }

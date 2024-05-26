@@ -10,12 +10,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RepositoryManager extends Thread {
-    private final ObservableList<Repository> repositoryList;
     private final ObservableList<AbstractConnection> connections;
+    private final ObservableList<Repository> repositories = FXCollections.observableArrayList();
 
     public RepositoryManager() {
         this.connections = FXCollections.observableArrayList();
-        this.repositoryList = FXCollections.observableArrayList();
     }
 
     @Override
@@ -32,17 +31,18 @@ public class RepositoryManager extends Thread {
         }
     }
 
-    public ObservableList<Repository> getRepositoryList() {
-        return repositoryList;
-    }
 
     public void updateRepositories() {
         try {
-            List<Repository> newRepositories = new ArrayList<>();
             for (AbstractConnection abstractConnection : connections) {
-                newRepositories.addAll(abstractConnection.getRepositories());
+                if (abstractConnection.getProfile().toDelete()) {
+                    connections.remove(abstractConnection);
+                    continue;
+                }
+                abstractConnection.downloadRepositories();
+                repositories.setAll(abstractConnection.getRepositories());
             }
-            repositoryList.setAll(newRepositories);
+
         } catch (Exception exception) {
             Railroad.LOGGER.error("Error updating repositories", exception);
         }
@@ -52,12 +52,29 @@ public class RepositoryManager extends Thread {
         this.connections.add(connection);
         return true;
     }
+
     public ObservableList<Profile> getProfiles() {
         ObservableList<Profile> profiles = FXCollections.observableArrayList();
         for (AbstractConnection connection : connections) {
-            profiles.addAll(connection.getProfile());
+            if (!connection.getProfile().toDelete()) {
+                profiles.addAll(connection.getProfile());
+            }
         }
         return profiles;
     }
 
+    public ObservableList<Repository> getRepositories() {
+        return repositories;
+    }
+
+    public boolean deleteWhereProfileIs(Profile profile) {
+        for (AbstractConnection connection : connections) {
+            if (connection.getProfile() == profile) {
+                connection.getProfile().markDelete();
+                Railroad.LOGGER.info("VCS - Marking for delete profile:" + profile.getAlias());
+                return true;
+            }
+        }
+        return false;
+    }
 }
