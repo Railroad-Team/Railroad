@@ -19,7 +19,7 @@ public final class ConfigHandler {
         if (!object.has("projects")) {
             var projectsArray = new JsonArray();
             object.add("projects", projectsArray);
-        };
+        }
         if (!object.has("settings")) {
             JsonObject railroadsettings = new JsonObject();
             object.add("settings", railroadsettings);
@@ -44,7 +44,7 @@ public final class ConfigHandler {
     public static JsonObject getPluginSettings(String plugin_name, boolean create_if_not_exists) {
         JsonObject object = getConfigJson();
         JsonArray plugin_settings = object.get("settings").getAsJsonObject().get("plugin_settings").getAsJsonArray();
-        for (JsonElement setting: plugin_settings) {
+        for (JsonElement setting : plugin_settings) {
             if (setting.isJsonObject()) {
                 if (setting.getAsJsonObject().get("name").getAsString().equals(plugin_name)) {
                     return setting.getAsJsonObject();
@@ -56,7 +56,6 @@ public final class ConfigHandler {
         plugin_settings.add(new_obj);
         return new_obj;
     }
-
 
 
     public static void createDefaultConfigs() {

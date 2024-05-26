@@ -4,19 +4,16 @@ import io.github.railroad.vcs.Repository;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 
-import java.util.UUID;
-
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
-import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
-
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.UUID;
 
 
 public class Project {

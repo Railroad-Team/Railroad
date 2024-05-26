@@ -10,8 +10,7 @@ public class Profile {
     private JsonObject config_obj;
     private boolean toDelete;
 
-    public Profile() {
-    }
+    public Profile() {}
 
     public String getUsername() {
         return username;
@@ -34,7 +33,7 @@ public class Profile {
     }
 
     public String getShortAccessToken() {
-        return accessToken.substring(0,10) + "...";
+        return accessToken.substring(0, 10) + "...";
     }
 
     public void setAccessToken(String accessToken) {

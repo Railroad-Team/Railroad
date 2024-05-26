@@ -8,6 +8,7 @@ import javafx.scene.control.ScrollPane;
 
 public class SettingsPluginsPane extends ScrollPane {
     private final ListView<Plugin> pluginList = new ListView<>();
+
     public SettingsPluginsPane() {
         setFitToWidth(true);
         setFitToHeight(true);

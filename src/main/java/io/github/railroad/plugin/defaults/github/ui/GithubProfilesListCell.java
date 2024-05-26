@@ -6,7 +6,6 @@ import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ConfigHandler;
-import io.github.railroad.vcs.Repository;
 import io.github.railroad.vcs.connections.Profile;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
