@@ -1,6 +1,5 @@
 package io.github.railroad.utility.localization;
 
-import java.util.Locale;
 import java.util.Objects;
 
 import static io.github.railroad.Railroad.LOGGER;

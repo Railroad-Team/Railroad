@@ -4,16 +4,17 @@ import io.github.railroad.Railroad;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.StringBinding;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 
 import java.io.InputStream;
-import java.util.Locale;
 import java.util.Properties;
 
 import static io.github.railroad.Railroad.LOGGER;
 
 public class L18n {
     private static final Properties LANG_CACHE = new Properties();
-    private static Languages CURRENT_LANG;
+    private static final ObjectProperty<Languages> CURRENT_LANG = new SimpleObjectProperty<>();
 
     private L18n() {
     }
@@ -25,32 +26,32 @@ public class L18n {
         var updated = ConfigHandler.getConfigJson();
         updated.get("settings").getAsJsonObject().addProperty("language", language.toString());
 
+        LOGGER.info("Language set to {}", language);
         ConfigHandler.updateConfig(updated);
         loadLanguage();
-
-        LOGGER.info("Language set to {}", language);
     }
 
     public static Languages getCurrentLanguage() {
-        return CURRENT_LANG;
+        return CURRENT_LANG.getValue();
     }
 
     public static void loadLanguage() {
         //Loads the language into cache and sets the CURRENT_LANG
         LOGGER.info("Loading language file");
-        CURRENT_LANG = Languages.valueOf(ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("language").getAsString());
+        Languages newLang = Languages.valueOf(ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("language").getAsString());
 
-        if(CURRENT_LANG == null) {
+        if(newLang == null) {
             LOGGER.error("Language not found, defaulting to English");
-            CURRENT_LANG = Languages.en_us;
+            newLang = Languages.en_us;
         }
 
         try {
-            LOGGER.debug(String.valueOf(CURRENT_LANG));
-            InputStream props = Railroad.getResourceAsStream("lang/" + CURRENT_LANG.toString() + ".properties");
+            InputStream props = Railroad.getResourceAsStream("lang/" + newLang + ".properties");
             LOGGER.info("Reading language file");
 
+            //Load cache and THEN change CURRENT_LANG otherwise binds will be triggered before cache changes
             LANG_CACHE.load(props);
+            CURRENT_LANG.setValue(newLang);
         } catch (Exception e) {
             LOGGER.error("Error reading language file", e);
             throw new IllegalStateException("Error reading language file", e);
@@ -69,6 +70,6 @@ public class L18n {
     }
 
     public static StringBinding createStringBinding(final String key) {
-        return Bindings.createStringBinding(() -> localize(key));
+        return Bindings.createStringBinding(() -> localize(key), CURRENT_LANG);
     }
 }

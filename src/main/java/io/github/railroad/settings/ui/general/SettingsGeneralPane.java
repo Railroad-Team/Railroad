@@ -1,6 +1,5 @@
 package io.github.railroad.settings.ui.general;
 
-import io.github.railroad.Railroad;
 import io.github.railroad.utility.localization.L18n;
 import io.github.railroad.utility.localization.Languages;
 import javafx.geometry.Insets;
@@ -38,7 +37,6 @@ public class SettingsGeneralPane extends VBox {
         langComboBox.setValue(L18n.getCurrentLanguage().getName());
         langComboBox.setOnAction(e -> {
             L18n.setLanguage(Languages.fromName(langComboBox.getValue().toString()));
-            Railroad.showErrorAlert("Restart required", null, "A restart is required to apply a language change!");
         });
 
         langBox.getChildren().addAll(langTitleLabel, langComboBox);
