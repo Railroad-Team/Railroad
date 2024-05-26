@@ -2,7 +2,6 @@ package io.github.railroad.project.ui.create;
 
 import io.github.railroad.project.ProjectType;
 import io.github.railroad.ui.defaults.RRHBox;
-import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.layout.Priority;
 

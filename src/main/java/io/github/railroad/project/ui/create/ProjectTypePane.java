@@ -20,6 +20,8 @@ public class ProjectTypePane extends RRVBox {
     private final RRListView<ProjectType> projectTypeListView;
 
     public ProjectTypePane() {
+        super(10);
+
         setPadding(new Insets(10));
         getStyleClass().add("project-type-pane");
 
@@ -30,14 +32,15 @@ public class ProjectTypePane extends RRVBox {
         backButton.setGraphic(new FontIcon(FontAwesomeSolid.BACKSPACE));
         backButton.prefWidthProperty().bind(widthProperty());
 
-        projectTypeSearchField = new TextField("Search Project Types");
+        projectTypeSearchField = new TextField();
+        projectTypeSearchField.setPromptText("Search Project Types");
 
         projectTypesScroller = new ScrollPane();
         projectTypesScroller.setFitToWidth(true);
         projectTypesScroller.setFitToHeight(true);
 
         projectTypeListView = new RRListView<>();
-        projectTypeListView.getStyleClass().add("project-type-list-view");
+        projectTypeListView.getStyleClass().add("project-type-list");
         projectTypeListView.setCellFactory(param -> new ProjectTypeCell());
         projectTypeListView.getItems().addAll(ProjectType.values());
         projectTypeListView.getSelectionModel().selectFirst();
@@ -45,8 +48,8 @@ public class ProjectTypePane extends RRVBox {
         projectTypesScroller.setContent(projectTypeListView);
 
         var separator = new Separator();
-        separator.setPadding(new Insets(10, -10, 10, -10));
-        getChildren().addAll(backButton, projectTypeSearchField, separator, projectTypesScroller);
+        separator.setPadding(new Insets(0, -10, 0, -10));
+        getChildren().addAll(backButton, separator, projectTypeSearchField, projectTypesScroller);
         RRVBox.setVgrow(projectTypesScroller, Priority.ALWAYS);
     }
 

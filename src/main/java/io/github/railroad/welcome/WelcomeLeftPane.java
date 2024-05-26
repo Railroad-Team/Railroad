@@ -46,7 +46,7 @@ public class WelcomeLeftPane extends RRVBox {
         listView = new RRListView<>();
         listView.getItems().addAll(MenuType.values());
         listView.setCellFactory(param -> new MenuTypeCell());
-        listView.getStyleClass().add("welcome-left-pane-list-view");
+        listView.getStyleClass().add("welcome-left-pane-list");
 
         setMinWidth(200);
         setMaxWidth(200);

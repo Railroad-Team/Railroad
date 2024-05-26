@@ -19,10 +19,33 @@
     -fx-background-color: -color-bg-subtle;
 }
 
-.welcome-left-pane, .welcome-left-pane *, .project-type-pane, .project-type-pane * {
+.welcome-left-pane, .welcome-left-pane .Pane, .project-type-pane, .project-type-pane .Pane, .settings-categories-pane, .settings-categories-pane .Pane {
     -fx-background-color: -color-bg-inset;
 }
 
-.welcome-left-pane-list-view, .welcome-projects-list, .project-type-list-view {
+.welcome-left-pane-list, .welcome-projects-list, .project-type-list, .settings-categories-list {
+    -fx-background-color: -color-bg-inset;
     -fx-border-width: 0;
+}
+
+.list-cell {
+    -fx-background-color: -color-bg-overlay;
+}
+
+.list-cell:hover {
+    -fx-background-color: -color-base-8;
+}
+
+.list-cell:empty {
+    -fx-background-color: inherit;
+}
+
+.settings-title {
+    -fx-font-size: 20pt; 
+    -fx-font-weight: bold;
+}
+
+.combo-box-base {
+    -fx-border-width: 1;
+    -fx-border-color: -color-border-default;
 }
