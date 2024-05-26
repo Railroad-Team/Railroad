@@ -8,6 +8,7 @@ import io.github.railroad.plugin.Plugin;
 import io.github.railroad.plugin.PluginPhaseResult;
 import io.github.railroad.plugin.PluginStates;
 import io.github.railroad.plugin.defaults.github.ui.GithubAccounts;
+import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ConfigHandler;
 import io.github.railroad.vcs.connections.Profile;
 import io.github.railroad.vcs.connections.hubs.GithubConnection;
@@ -61,7 +62,7 @@ public class Github extends Plugin {
     }
 
     @Override
-    public ScrollPane showSettings() {
+    public RRVBox showSettings() {
         GithubAccounts accounts = new GithubAccounts();
         return accounts;
     }

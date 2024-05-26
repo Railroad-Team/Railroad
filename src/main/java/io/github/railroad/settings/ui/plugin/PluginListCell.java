@@ -8,7 +8,10 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 
 public class PluginListCell extends ListCell<Plugin> {
     private final StackPane node = new StackPane();
@@ -26,9 +29,11 @@ public class PluginListCell extends ListCell<Plugin> {
         settingsItem.setOnAction(e -> {
             Plugin plugin = pluginListNode.pluginProperty().get();
             if (plugin != null) {
-                ScrollPane setting_pane = plugin.showSettings();
+                RRVBox setting_pane = plugin.showSettings();
                 if (setting_pane != null) {
                     pane.setContent(setting_pane);
+                    VBox.setVgrow(setting_pane, Priority.ALWAYS);
+                    HBox.setHgrow(setting_pane, Priority.ALWAYS);
                 }
 
             }

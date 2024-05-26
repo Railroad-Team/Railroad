@@ -6,6 +6,7 @@ import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.plugin.Plugin;
 import io.github.railroad.plugin.PluginPhaseResult;
 import io.github.railroad.plugin.PluginStates;
+import io.github.railroad.ui.defaults.RRVBox;
 import javafx.scene.control.ScrollPane;
 
 import java.time.Instant;
@@ -96,7 +97,7 @@ public class Discord extends Plugin {
     }
 
     @Override
-    public ScrollPane showSettings() {
+    public RRVBox showSettings() {
         return null;
     }
 }

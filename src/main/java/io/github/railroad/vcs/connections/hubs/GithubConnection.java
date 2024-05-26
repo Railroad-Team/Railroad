@@ -27,47 +27,65 @@ public class GithubConnection extends AbstractConnection {
         this.account = profile;
     }
 
-    private List<String> ReadHTTP(String method, String postixurl, String body) {
-        List<String> result = new ArrayList<>();
+    private List<HttpResponse> ReadHTTP(String method, String postixurl, String body) throws Exception {
+        return ReadHTTP(method, postixurl, body, true);
+    }
+
+    private List<HttpResponse> ReadHTTP(String method, String postixurl, String body, boolean enable_pages) throws Exception {
+        if (account.getAccessToken().isEmpty()) {
+            throw new Exception("Missing Access Token");
+        }
+        List<HttpResponse> result = new ArrayList<>();
+
         String request_url = "https://api.github.com/" + postixurl;
         boolean finished = false;
         try {
-            while (!finished) {
-                URL url = new URL(request_url);
-                HttpURLConnection con = (HttpURLConnection) url.openConnection();
-                con.setRequestMethod(method.toUpperCase());
-                con.setRequestProperty("Accept", "application/vnd.github+json");
-                con.setRequestProperty("X-GitHub-Api-Version", "2022-11-28");
-                con.setRequestProperty("Authorization", "Bearer " + account.getAccessToken());
-                BufferedReader in = new BufferedReader(
-                        new InputStreamReader(con.getInputStream()));
-                String inputLine;
-                StringBuffer content = new StringBuffer();
-                while ((inputLine = in.readLine()) != null) {
-                    content.append(inputLine);
-                }
-                if (con.getHeaderField("link") != null) {
-                    finished = true;
-                    for (String el : con.getHeaderField("link").split(",")) {
-                        if (el.contains("rel=\"next\"")) {
-                            request_url = el.substring(el.indexOf("<") + 1, el.indexOf(">"));
-                            finished = false;
-                        }
-                    }
-                } else {
-                    finished = true;
-                }
-                in.close();
-                result.add(content.toString());
-            }
-            return result;
+            try {
 
-        } catch (ProtocolException e) {
-            throw new RuntimeException(e);
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+                while (!finished) {
+                    URL url = new URL(request_url);
+                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                    System.out.println(account.getAccessToken());
+                    con.setRequestMethod(method.toUpperCase());
+                    con.setRequestProperty("Accept", "application/vnd.github+json");
+                    con.setRequestProperty("X-GitHub-Api-Version", "2022-11-28");
+                    con.setRequestProperty("Authorization", "Bearer " + account.getAccessToken());
+                    BufferedReader in = new BufferedReader(
+                            new InputStreamReader(con.getInputStream()));
+                    String inputLine;
+                    StringBuffer content = new StringBuffer();
+                    var statusCode = con.getResponseCode();
+                    while ((inputLine = in.readLine()) != null) {
+                        content.append(inputLine);
+                    }
+                    if (enable_pages) {
+                        if (con.getHeaderField("link") != null) {
+                            finished = true;
+                            for (String el : con.getHeaderField("link").split(",")) {
+                                if (el.contains("rel=\"next\"")) {
+                                    request_url = el.substring(el.indexOf("<") + 1, el.indexOf(">"));
+                                    finished = false;
+                                }
+                            }
+                        } else {
+                            finished = true;
+                        }
+                    } else {
+                        finished = true;
+                    }
+                    in.close();
+                    result.add(new HttpResponse(content.toString(), statusCode));
+                }
+
+            } catch (ProtocolException e) {
+                throw new RuntimeException(e);
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } finally {
+            return result;
         }
     }
 
@@ -75,27 +93,30 @@ public class GithubConnection extends AbstractConnection {
         List<Repository> repositoryList = new ArrayList<>();
         try {
             Railroad.LOGGER.debug("VCS - Github - Downloading repos");
-            List<String> output = ReadHTTP("GET", "user/repos?per_page=20", "");
+            List<HttpResponse> output = ReadHTTP("GET", "user/repos?per_page=20", "");
             if (!output.isEmpty()) {
-                for (String http_response : output) {
-                    if (!http_response.isBlank()) {
-                        JsonArray repos = Railroad.GSON.fromJson(http_response, JsonArray.class);
-                        for (JsonElement element : repos) {
-                            if (element.isJsonObject()) {
-                                Repository repository = new Repository(RepositoryTypes.git);
-                                repository.setRepositoryName(element.getAsJsonObject().get("name").getAsString());
-                                repository.setRepositoryURL(element.getAsJsonObject().get("url").getAsString());
-                                repository.setRepositoryCloneURL(element.getAsJsonObject().get("clone_url").getAsString());
-                                repository.setIcon(Optional.of(new Image(element.getAsJsonObject().get("owner").getAsJsonObject().get("avatar_url").getAsString())));
-                                repository.setConnection(this);
-                                repositoryList.add(repository);
+                for (HttpResponse http_response : output) {
+                    if (http_response.getStatusCode() == 200) {
+                        if (!http_response.getContent().isBlank()) {
+                            JsonArray repos = Railroad.GSON.fromJson(http_response.content, JsonArray.class);
+                            for (JsonElement element : repos) {
+                                if (element.isJsonObject()) {
+                                    Repository repository = new Repository(RepositoryTypes.git);
+                                    repository.setRepositoryName(element.getAsJsonObject().get("name").getAsString());
+                                    repository.setRepositoryURL(element.getAsJsonObject().get("url").getAsString());
+                                    repository.setRepositoryCloneURL(element.getAsJsonObject().get("clone_url").getAsString());
+                                    repository.setIcon(Optional.of(new Image(element.getAsJsonObject().get("owner").getAsJsonObject().get("avatar_url").getAsString())));
+                                    repository.setConnection(this);
+                                    repositoryList.add(repository);
+                                }
                             }
                         }
                     }
+
                 }
             }
         } catch (Exception exception) {
-            Railroad.LOGGER.error(exception.getMessage());
+            Railroad.LOGGER.error("Github Download repos " + exception.getMessage());
         }
         return repositoryList;
     }
@@ -147,4 +168,45 @@ public class GithubConnection extends AbstractConnection {
             }
         }
     }
+
+    @Override
+    public boolean validateProfile() {
+        Railroad.LOGGER.debug("VCS - Github - Validating profile");
+        List<HttpResponse> output = null;
+        try {
+            output = ReadHTTP("GET", "user/repos?per_page=1", "", false);
+        } catch (Exception e) {
+            Railroad.LOGGER.error("Github Validation - " + e.getMessage());
+            return false;
+        }
+        System.out.println(output);
+        if (output.isEmpty()) {
+            return false;
+        } else {
+            if (output.get(0).getStatusCode() == 200) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    private class HttpResponse {
+        private String content;
+        private int statusCode;
+
+        public HttpResponse(String content, int statusCode) {
+            this.content = content;
+            this.statusCode = statusCode;
+        }
+
+        public String getContent() {
+            return content;
+        }
+
+        public int getStatusCode() {
+            return statusCode;
+        }
+    }
+
 }

@@ -10,4 +10,6 @@ public abstract class AbstractConnection {
     public abstract boolean updateRepo(Repository repo);
 
     public abstract void cloneRepo(Repository repository);
+
+    public abstract boolean validateProfile();
 }

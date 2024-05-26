@@ -1,12 +1,14 @@
 package io.github.railroad.plugin;
 
 import io.github.railroad.discord.activity.RailroadActivities;
+import io.github.railroad.ui.defaults.RRVBox;
 import javafx.scene.control.ScrollPane;
 
 public abstract class Plugin {
     private PluginManager pluginManager;
     private PluginStates state = PluginStates.NOT_LOADED;
     private PluginHealthChecker healthChecker;
+    private String pluginLogoUrl;
     private String pluiginName;
 
     public Plugin() {
@@ -24,7 +26,7 @@ public abstract class Plugin {
 
     public abstract PluginPhaseResult reloadPlugin();
 
-    public abstract ScrollPane showSettings();
+    public abstract RRVBox showSettings();
 
     public void updateStatus(PluginStates state) {
         this.pluginManager.showLog(this, "Change state from: " + this.state + " to: " + state);
@@ -65,5 +67,13 @@ public abstract class Plugin {
 
     public void setPluiginName(String pluiginName) {
         this.pluiginName = pluiginName;
+    }
+
+    public String getPluginLogoUrl() {
+        return pluginLogoUrl;
+    }
+
+    public void setPluginLogoUrl(String pluginLogoUrl) {
+        this.pluginLogoUrl = pluginLogoUrl;
     }
 }
