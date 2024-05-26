@@ -1,6 +1,8 @@
 package io.github.railroad.settings.ui.general;
 
 import io.github.railroad.github.GithubAccount;
+import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.defaults.RRVBox;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
@@ -8,10 +10,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 
-public class GithubConnectionPane extends HBox {
+public class GithubConnectionPane extends RRHBox {
     private final ImageView profileImage = new ImageView();
     private final Label profileUsername = new Label();
     private final Label profileEmail = new Label();
@@ -45,7 +45,8 @@ public class GithubConnectionPane extends HBox {
             githubAccount.set(null);
         });
 
-        var detailsPane = new VBox(5, profileUsername, profileEmail);
+        var detailsPane = new RRVBox(5);
+        detailsPane.getChildren().addAll(profileUsername, profileEmail);
         detailsPane.setAlignment(Pos.CENTER);
 
         if (githubAccount.get() == null) {

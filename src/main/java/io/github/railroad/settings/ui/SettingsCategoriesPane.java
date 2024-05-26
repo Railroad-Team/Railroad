@@ -1,6 +1,7 @@
 package io.github.railroad.settings.ui;
 
 import io.github.railroad.settings.SettingsCategory;
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -14,10 +15,14 @@ public class SettingsCategoriesPane extends VBox {
     private final ListView<SettingsCategory> listView = new ListView<>();
 
     public SettingsCategoriesPane(SettingsPane parent) {
+        setPadding(new Insets(10));
+        getStyleClass().add("settings-categories-pane");
+
         this.backButton = new Button("Back");
         this.backButton.setGraphic(new FontIcon(FontAwesomeSolid.BACKSPACE));
         this.backButton.prefWidthProperty().bind(widthProperty());
 
+        this.listView.getStyleClass().add("settings-categories-list");
         this.listView.getItems().addAll(SettingsCategory.values());
         this.listView.prefHeightProperty().bind(heightProperty());
         this.listView.getSelectionModel().selectFirst();
@@ -25,7 +30,9 @@ public class SettingsCategoriesPane extends VBox {
                 parent.settingsCategoryProperty().set(newValue));
         this.listView.setCellFactory(param -> new SettingsCategoryCell());
 
-        getChildren().addAll(backButton, new Separator(), listView);
+        var separator = new Separator();
+        separator.setPadding(new Insets(10, -10, 10, -10));
+        getChildren().addAll(backButton, separator, listView);
     }
 
     public Button getBackButton() {

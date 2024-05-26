@@ -8,7 +8,6 @@ import io.github.railroad.project.ui.create.widget.ProjectSearchField;
 import io.github.railroad.ui.defaults.RRListView;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
-import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
 

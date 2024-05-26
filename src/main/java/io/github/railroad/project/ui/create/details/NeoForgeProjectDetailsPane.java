@@ -1,8 +1,8 @@
 package io.github.railroad.project.ui.create.details;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.minecraft.NeoForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
+import io.github.railroad.minecraft.NeoForgeVersion;
 import io.github.railroad.minecraft.RecommendableVersion;
 import io.github.railroad.minecraft.mapping.MappingChannel;
 import io.github.railroad.minecraft.mapping.MappingHelper;
