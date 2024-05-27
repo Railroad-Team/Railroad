@@ -48,7 +48,7 @@ public class GithubAccounts extends RRVBox {
         addProfileButton.setOnAction(event -> {
             String username = usernameField.getText();
             if (!username.isEmpty()) {
-                Profile profile = new Profile();
+                var profile = new Profile();
                 profile.setAccessToken(username);
                 GithubConnection connection = new GithubConnection(profile);
                 if (connection.validateProfile()) {
