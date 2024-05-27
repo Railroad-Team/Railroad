@@ -3,8 +3,8 @@ package io.github.railroad.project.ui;
 import io.github.railroad.Railroad;
 import io.github.railroad.project.data.Project;
 import io.github.railroad.ui.defaults.RRHBox;
-import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.defaults.RRStackPane;
+import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.vcs.Repository;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -12,14 +12,13 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.StackPane;
 import javafx.stage.DirectoryChooser;
 
 import java.io.File;
 
 public class ImportProjectListCell extends ListCell<Repository> {
     private final RRStackPane node = new RRStackPane();
-    private final ImportProjectListCell.repositoryListNode repositoryListNode = new ImportProjectListCell.repositoryListNode();
+    private final ImportProjectListCell.PepositoryListNode repositoryListNode = new ImportProjectListCell.PepositoryListNode();
 
     public ImportProjectListCell() {
         getStyleClass().add("project-list-cell");
@@ -74,14 +73,14 @@ public class ImportProjectListCell extends ListCell<Repository> {
         }
     }
 
-    public static class repositoryListNode extends RRVBox {
+    public static class PepositoryListNode extends RRVBox {
         private final ObjectProperty<Repository> repository = new SimpleObjectProperty<>();
         private final ImageView icon;
         private final Label label;
         private final Label pathLabel;
         private final Label lastOpened;
 
-        public repositoryListNode() {
+        public PepositoryListNode() {
             getStyleClass().add("project-list-node");
 
             setSpacing(5);
@@ -117,7 +116,7 @@ public class ImportProjectListCell extends ListCell<Repository> {
             getChildren().addAll(nameBox, pathLabel, lastOpened);
         }
 
-        public repositoryListNode(Repository repository) {
+        public PepositoryListNode(Repository repository) {
             this();
             this.repository.set(repository);
         }
