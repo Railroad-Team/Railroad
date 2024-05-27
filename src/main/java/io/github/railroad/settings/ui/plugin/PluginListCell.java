@@ -11,7 +11,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.Priority;
 
 public class PluginListCell extends ListCell<Plugin> {
-    private final StackPane node = new StackPane();
+    private final RRStackPane node = new RRStackPane();
     private final PluginListCell.PluginListNode pluginListNode = new PluginListCell.PluginListNode();
 
     public PluginListCell(ScrollPane pane) {
