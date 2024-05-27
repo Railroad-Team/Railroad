@@ -42,7 +42,7 @@ public class GithubAccounts extends RRVBox {
         var dialogVbox = new RRVBox(20);
         var aliasField = new TextField();
         aliasField.setPromptText("Enter Alias");
-        TextField usernameField = new TextField();
+        var usernameField = new TextField();
         usernameField.setPromptText("Enter GitHub token");
         Button addProfileButton = new Button("Add Profile");
         addProfileButton.setOnAction(event -> {
