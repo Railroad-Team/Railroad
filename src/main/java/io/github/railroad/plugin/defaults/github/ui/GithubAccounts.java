@@ -54,7 +54,7 @@ public class GithubAccounts extends RRVBox {
                 if (connection.validateProfile()) {
                     System.out.println("Valid profile");
                 } else {
-                    System.out.println("Invalid prof");
+                    Railroad.LOGGER.debug("Invalid GitHub profile");
                 }
                 //profileListView.getItems().add(profile);
                 dialog.close();
