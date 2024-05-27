@@ -83,10 +83,6 @@ public class Project {
         return path.toString();
     }
 
-    public String getPathStr() {
-        return getPath().toString();
-    }
-
     public String getAlias() {
         return alias;
     }

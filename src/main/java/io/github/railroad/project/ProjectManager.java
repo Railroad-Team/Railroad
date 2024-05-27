@@ -3,12 +3,12 @@ package io.github.railroad.project;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.github.railroad.Railroad;
-import io.github.railroad.project.data.Project;
+import io.github.railroad.project.ui.project.ProjectListCell;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +19,16 @@ public class ProjectManager {
     public ProjectManager() {
         ConfigHandler.createDefaultConfigs();
         loadProjects();
+    }
+
+    private static void deleteDirectory(File dir) {
+        for (File subfile : dir.listFiles()) {
+            if(subfile.isDirectory()){
+                deleteDirectory(subfile);
+            }
+
+            subfile.delete();
+        }
     }
 
     public void loadProjects() {
@@ -45,30 +55,33 @@ public class ProjectManager {
     }
 
     public void updateProjectInfo(Project project) {
-        updateProjectInfo(project, false);
+        updateProjectInfo(project, false, false);
     }
 
-    public void updateProjectInfo(Project project, boolean removeProject) {
+    public void updateProjectInfo(Project project, boolean removeProject, boolean deleteProject) {
         JsonObject object = ConfigHandler.getConfigJson();
         JsonArray projects = object.getAsJsonArray("projects");
-        Railroad.LOGGER.debug("Starting project update: {}", project.getId());
+        System.out.println("Starting project update: " + project.getId());
         boolean found = false;
         for (JsonElement projectElement : projects) {
             JsonObject projectObject = projectElement.getAsJsonObject();
             if (projectObject.get("uuid").getAsString().equals(project.getId())) {
                 if (removeProject) {
                     projects.remove(projectElement);
+                    if(deleteProject) {
+                        deleteProjectFiles(project);
+                    }
                     break;
                 } else {
                     found = true;
                     projectObject.addProperty("lastOpened", project.getLastOpened());
-                    Railroad.LOGGER.debug("Starting update project: {} last opened to: {}", project.getId(), project.getLastOpened());
+                    System.out.println("Starting update project: " + project.getId() + " last opened to: " + project.getLastOpened());
                 }
             }
         }
 
         if (!found && !removeProject) {
-            Railroad.LOGGER.debug("Creating new project");
+            System.out.println("Create new Project");
             var newProject = new JsonObject();
             newProject.addProperty("uuid", project.getId());
             newProject.addProperty("path", project.getPath().toString());
@@ -83,10 +96,6 @@ public class ProjectManager {
         return projects;
     }
 
-    public void setProjects(List<Project> projectCollection) {
-        this.projects.setAll(projectCollection);
-    }
-
     public Project newProject(Project project) {
         updateProjectInfo(project);
         project.setManager(this);
@@ -95,10 +104,20 @@ public class ProjectManager {
         return project;
     }
 
-    public boolean removeProject(Project project) {
+    public boolean removeProject(Project project, boolean delete) {
         this.projects.remove(project);
-        updateProjectInfo(project, true);
+        updateProjectInfo(project, true, delete);
 
         return true;
+    }
+
+    public static void deleteProjectFiles(Project project) {
+        File projectdir = new File(project.getPathString());
+
+        deleteDirectory(projectdir);
+    }
+
+    public void setProjects(List<Project> projectCollection) {
+        this.projects.setAll(projectCollection);
     }
 }
