@@ -1,5 +1,6 @@
 package io.github.railroad.project.data;
 
+import io.github.railroad.Railroad;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.vcs.Repository;
 import javafx.embed.swing.SwingFXUtils;
