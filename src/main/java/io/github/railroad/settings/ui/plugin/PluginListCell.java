@@ -30,8 +30,8 @@ public class PluginListCell extends ListCell<Plugin> {
                 RRVBox setting_pane = plugin.showSettings();
                 if (setting_pane != null) {
                     pane.setContent(setting_pane);
-                    VBox.setVgrow(setting_pane, Priority.ALWAYS);
-                    HBox.setHgrow(setting_pane, Priority.ALWAYS);
+                    RRVBox.setVgrow(setting_pane, Priority.ALWAYS);
+                    RRHBox.setHgrow(setting_pane, Priority.ALWAYS);
                 }
 
             }
