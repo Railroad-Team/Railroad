@@ -3,6 +3,7 @@ package io.github.railroad.settings.ui;
 import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.localized.LocalizedLabel;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -22,12 +23,12 @@ public class SettingsAppearancePane extends RRVBox {
     public SettingsAppearancePane() {
         var themeBox = new RRVBox(10);
 
-        Label title = new Label("Appearance");
+        Label title = new LocalizedLabel("railroad.home.settings.appearance");
         title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");
         title.prefWidthProperty().bind(widthProperty());
         title.setAlignment(Pos.CENTER);
 
-        Label themeOption = new Label("Select a theme:");
+        Label themeOption = new LocalizedLabel("railroad.home.settings.appearance.theme");
         themeOption.setStyle("-fx-font-weight: bold;");
 
         List<Path> themes = new ArrayList<>();

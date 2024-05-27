@@ -6,13 +6,13 @@ import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 public enum SettingsCategory {
-    GENERAL("General", FontAwesomeSolid.COG),
-    APPEARANCE("Appearance", FontAwesomeSolid.PAINT_BRUSH),
-    BEHAVIOR("Behavior", FontAwesomeSolid.COGS),
-    KEYMAPS("Keymaps", FontAwesomeSolid.KEYBOARD),
-    PLUGINS("Plugins", FontAwesomeSolid.PLUG),
-    PROJECTS("Projects", FontAwesomeSolid.FOLDER),
-    TOOLS("Tools", FontAwesomeSolid.TOOLBOX);
+    GENERAL("railroad.home.settings.general", FontAwesomeSolid.COG),
+    APPEARANCE("railroad.home.settings.appearance", FontAwesomeSolid.PAINT_BRUSH),
+    BEHAVIOR("railroad.home.settings.behavior", FontAwesomeSolid.COGS),
+    KEYMAPS("railroad.home.settings.keymaps", FontAwesomeSolid.KEYBOARD),
+    PLUGINS("railroad.home.settings.plugins", FontAwesomeSolid.PLUG),
+    PROJECTS("railroad.home.settings.projects", FontAwesomeSolid.FOLDER),
+    TOOLS("railroad.home.settings.tools", FontAwesomeSolid.TOOLBOX);
 
     private final String key;
     private final Ikon icon;

@@ -9,6 +9,7 @@ public class LocalizedButton extends Button {
     public LocalizedButton(String key) {
         super();
         setKey(key);
+        setText(L18n.localize(key));
     }
 
     public void setKey(String key) {

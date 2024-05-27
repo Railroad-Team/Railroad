@@ -44,11 +44,6 @@ public class L18n {
         LOGGER.info("Loading language file");
         Languages newLang = Languages.valueOf(ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("language").getAsString());
 
-        if(newLang == null) {
-            LOGGER.error("Language not found, defaulting to English");
-            newLang = Languages.en_us;
-        }
-
         try {
             InputStream props = Railroad.getResourceAsStream("lang/" + newLang + ".properties");
             LOGGER.info("Reading language file");
@@ -64,18 +59,13 @@ public class L18n {
     }
 
     public static String localize(String key) {
-        var t = LANG_CACHE;
         LOGGER.debug("Getting localized string for key {}", key);
-        if (t.get(key) == null) {
+        if (LANG_CACHE.get(key) == null) {
             LOGGER.error("Error finding translations for {} {} Moving to english", key, CURRENT_LANG);
 
             setLanguage(Languages.en_us);
             return localize(key);
         }
-        return t.get(key).toString();
-    }
-
-    public static StringBinding createStringBinding(final String key) {
-        return Bindings.createStringBinding(() -> localize(key), CURRENT_LANG);
+        return LANG_CACHE.get(key).toString();
     }
 }

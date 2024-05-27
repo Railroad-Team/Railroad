@@ -5,6 +5,7 @@ import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.localized.LocalizedLabel;
+import io.github.railroad.ui.localized.LocalizedListCell;
 import io.github.railroad.utility.localization.L18n;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -100,27 +101,23 @@ public class WelcomeLeftPane extends RRVBox {
         }
     }
 
-    public static class MenuTypeCell extends ListCell<MenuType> {
+    public static class MenuTypeCell extends LocalizedListCell<MenuType> {
         private final FontIcon icon = new FontIcon();
 
         public MenuTypeCell() {
+            super(MenuType::getName);
             icon.setIconSize(24);
-
-            L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                    setText(L18n.localize(getItem().getName())));
         }
 
         @Override
         protected void updateItem(MenuType item, boolean empty) {
             super.updateItem(item, empty);
             if (empty || item == null) {
-                setText(null);
                 setGraphic(null);
             } else {
                 icon.setIconCode(item.getIcon());
                 icon.setIconColor(item.getColor());
                 setGraphic(icon);
-                setText(L18n.localize(item.getName()));
             }
         }
     }

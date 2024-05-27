@@ -1,6 +1,7 @@
 package io.github.railroad.settings.ui;
 
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.localized.LocalizedLabel;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -10,7 +11,7 @@ import javafx.scene.control.TableView;
 public class SettingsKeymapsPane extends RRVBox {
 
         public SettingsKeymapsPane() {
-            var title = new Label("Keymaps");
+            var title = new LocalizedLabel("railroad.home.settings.keymaps");
             title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");
             title.prefWidthProperty().bind(widthProperty());
             title.setAlignment(Pos.CENTER);

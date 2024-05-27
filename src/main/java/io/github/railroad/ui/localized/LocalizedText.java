@@ -9,6 +9,7 @@ public class LocalizedText extends Text {
     public LocalizedText(final String key) {
         super();
         setKey(key);
+        setText(L18n.localize(key));
     }
 
     public void setKey(final String key) {

@@ -10,6 +10,7 @@ public class LocalizedLabel extends Label {
     public LocalizedLabel(String key) {
         super();
         setKey(key);
+        setText(L18n.localize(key));
     }
 
     public void setKey(String key) {
