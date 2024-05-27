@@ -44,7 +44,7 @@ public class GithubAccounts extends RRVBox {
         aliasField.setPromptText("Enter Alias");
         var usernameField = new TextField();
         usernameField.setPromptText("Enter GitHub token");
-        Button addProfileButton = new Button("Add Profile");
+        var addProfileButton = new Button("Add Profile");
         addProfileButton.setOnAction(event -> {
             String username = usernameField.getText();
             if (!username.isEmpty()) {
