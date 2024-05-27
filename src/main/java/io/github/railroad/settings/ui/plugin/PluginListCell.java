@@ -33,7 +33,6 @@ public class PluginListCell extends ListCell<Plugin> {
                     RRVBox.setVgrow(setting_pane, Priority.ALWAYS);
                     RRHBox.setHgrow(setting_pane, Priority.ALWAYS);
                 }
-
             }
         });
 
