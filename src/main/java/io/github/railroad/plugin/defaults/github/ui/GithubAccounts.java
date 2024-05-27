@@ -63,7 +63,7 @@ public class GithubAccounts extends RRVBox {
 
         var cancelButton = new Button("Cancel");
         cancelButton.setOnAction(event -> dialog.close());
-        RRVBox box = new RRVBox();
+        var box = new RRVBox();
         box.getChildren().addAll(addProfileButton, cancelButton);
         dialogVbox.getChildren().addAll(aliasField, usernameField, box);
         Scene dialogScene = new Scene(dialogVbox, 300, 200);
