@@ -17,7 +17,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 public class GithubAccounts extends RRVBox {
-    private final ListView<Profile> profileListView = new RRListView<>();
+    private final RRListView<Profile> profileListView = new RRListView<>();
 
     public GithubAccounts() {
         // Create the button
