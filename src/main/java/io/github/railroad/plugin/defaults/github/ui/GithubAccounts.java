@@ -32,8 +32,8 @@ public class GithubAccounts extends RRVBox {
         scrollPane.setFitToWidth(true);
         profileListView.setCellFactory(param -> new GithubProfilesListCell(scrollPane));
         scrollPane.setContent(profileListView);
-        VBox.setVgrow(scrollPane, Priority.ALWAYS);
-        HBox.setHgrow(scrollPane, Priority.ALWAYS);
+        RRVBox.setVgrow(scrollPane, Priority.ALWAYS);
+        RRHBox.setHgrow(scrollPane, Priority.ALWAYS);
         getChildren().addAll(addButton, scrollPane);
     }
 
