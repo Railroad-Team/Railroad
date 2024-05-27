@@ -103,7 +103,7 @@ public class GithubConnection extends AbstractConnection {
                             JsonArray repos = Railroad.GSON.fromJson(http_response.content, JsonArray.class);
                             for (JsonElement element : repos) {
                                 if (element.isJsonObject()) {
-                                    var repository = new Repository(RepositoryTypes.git);
+                                    var repository = new Repository(RepositoryTypes.GIT);
                                     repository.setRepositoryName(element.getAsJsonObject().get("name").getAsString());
                                     repository.setRepositoryURL(element.getAsJsonObject().get("url").getAsString());
                                     repository.setRepositoryCloneURL(element.getAsJsonObject().get("clone_url").getAsString());
@@ -136,7 +136,7 @@ public class GithubConnection extends AbstractConnection {
 
     @Override
     public boolean cloneRepo(Repository repository, Path path) {
-        if (repository.getRepositoryType() == RepositoryTypes.git) {
+        if (repository.getRepositoryType() == RepositoryTypes.GIT) {
             Railroad.LOGGER.info("Cloning Repo:" + repository.getRepositoryCloneURL() + " to:" + path.toAbsolutePath());
             var processBuilder = new ProcessBuilder();
             processBuilder.command("git", "clone", repository.getRepositoryCloneURL(), path.toAbsolutePath().resolve(repository.getRepositoryName()).toString());
