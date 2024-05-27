@@ -4,7 +4,7 @@ import io.github.railroad.Railroad;
 import io.github.railroad.project.ui.ImportProjectListCell;
 import io.github.railroad.vcs.Repository;
 import javafx.beans.binding.Bindings;
-import javafx.scene.control.ListView;
+import io.github.railroad.ui.defaults.RRListView;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
 import io.github.railroad.ui.defaults.RRStackPane;
