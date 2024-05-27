@@ -1,9 +1,13 @@
 package io.github.railroad.utility;
 
-import java.util.*;
+import io.github.railroad.Railroad;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 public class NodeTree<T> {
-
     private Node<T> root;
 
     public NodeTree() {
@@ -27,11 +31,10 @@ public class NodeTree<T> {
     }
 
     public void print() {
-        System.out.println(root);
+        Railroad.LOGGER.info(root.toString());
     }
 
     public static class Node<T> {
-
         private final T value;
         private final List<Node<T>> children = new ArrayList<>();
 
@@ -85,7 +88,5 @@ public class NodeTree<T> {
         public void removeChild(Node<T> child) {
             children.remove(child);
         }
-
     }
-
 }

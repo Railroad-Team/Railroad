@@ -1,10 +1,12 @@
 package io.github.railroad.layout;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 public class LayoutItem {
-    private String name;
     private final Map<String, Object> properties = new HashMap<>();
+    private String name;
 
     public LayoutItem(String name) {
         this.name = name;

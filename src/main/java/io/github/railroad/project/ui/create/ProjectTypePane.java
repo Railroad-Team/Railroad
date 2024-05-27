@@ -1,21 +1,28 @@
-package io.github.railroad.project.ui.project.newProject;
+package io.github.railroad.project.ui.create;
 
 import io.github.railroad.project.ProjectType;
+import io.github.railroad.project.ui.create.widget.ProjectTypeCell;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.Priority;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 public class ProjectTypePane extends RRVBox {
     private final Button backButton;
-    private final ProjectTypeSearchField projectTypeSearchField;
+    private final TextField projectTypeSearchField;
     private final ScrollPane projectTypesScroller;
     private final RRListView<ProjectType> projectTypeListView;
 
     public ProjectTypePane() {
+        setPadding(new Insets(10));
+        getStyleClass().add("project-type-pane");
+
         setMinWidth(200);
         setMaxWidth(200);
 
@@ -23,25 +30,24 @@ public class ProjectTypePane extends RRVBox {
         backButton.setGraphic(new FontIcon(FontAwesomeSolid.BACKSPACE));
         backButton.prefWidthProperty().bind(widthProperty());
 
-        projectTypeSearchField = new ProjectTypeSearchField();
+        projectTypeSearchField = new TextField("Search Project Types");
 
         projectTypesScroller = new ScrollPane();
         projectTypesScroller.setFitToWidth(true);
         projectTypesScroller.setFitToHeight(true);
 
         projectTypeListView = new RRListView<>();
+        projectTypeListView.getStyleClass().add("project-type-list-view");
         projectTypeListView.setCellFactory(param -> new ProjectTypeCell());
         projectTypeListView.getItems().addAll(ProjectType.values());
         projectTypeListView.getSelectionModel().selectFirst();
 
         projectTypesScroller.setContent(projectTypeListView);
 
-        getChildren().addAll(backButton, projectTypeSearchField, projectTypesScroller);
+        var separator = new Separator();
+        separator.setPadding(new Insets(10, -10, 10, -10));
+        getChildren().addAll(backButton, projectTypeSearchField, separator, projectTypesScroller);
         RRVBox.setVgrow(projectTypesScroller, Priority.ALWAYS);
-    }
-
-    public ProjectTypeSearchField getProjectTypeSearchField() {
-        return projectTypeSearchField;
     }
 
     public RRListView<ProjectType> getProjectTypeListView() {

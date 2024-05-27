@@ -1,7 +1,7 @@
-package io.github.railroad.project.ui.welcome;
+package io.github.railroad.welcome;
 
-import io.github.railroad.project.ui.project.ProjectSearchField;
-import io.github.railroad.project.ui.project.ProjectSortComboBox;
+import io.github.railroad.project.ui.create.widget.ProjectSearchField;
+import io.github.railroad.project.ui.create.widget.ProjectSortComboBox;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import javafx.geometry.Insets;

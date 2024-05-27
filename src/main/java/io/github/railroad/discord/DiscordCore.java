@@ -8,7 +8,6 @@ import io.github.railroad.discord.event.DiscordEventHandler;
 import io.github.railroad.discord.event.DiscordEvents;
 import io.github.railroad.discord.impl.UnixDiscordIPCChannel;
 import io.github.railroad.discord.impl.WindowsDiscordIPCChannel;
-import io.github.railroad.project.ui.project.newProject.details.ForgeProjectCreationPane;
 import javafx.util.Pair;
 
 import java.io.IOException;
@@ -86,7 +85,7 @@ public class DiscordCore implements AutoCloseable {
 
     private void handleCommand(DiscordCommand command) {
         if (command.isError()) {
-            System.err.println("Received error from Discord IPC channel: " + command.toString());
+            Railroad.LOGGER.error("Received error from Discord IPC channel: {}", command);
             return;
         }
 
@@ -146,7 +145,7 @@ public class DiscordCore implements AutoCloseable {
     public void onReady() {
         this.connectionState = DiscordConnectionState.CONNECTED;
         registerEvents();
-        System.out.println("Discord IPC channel is ready");
+        Railroad.LOGGER.info("Discord IPC channel is ready");
 
         while (!this.commandQueue.isEmpty()) {
             var pair = this.commandQueue.poll();
@@ -166,14 +165,12 @@ public class DiscordCore implements AutoCloseable {
             command.setEvt(event);
             command.setArgs(Railroad.GSON.toJsonTree(eventHandler.getRegistrationArgs()));
             command.setNonce(Long.toString(++this.nonce));
-            sendCommand(command, response -> {
-                System.out.println("Registered event " + event.name());
-            });
+            sendCommand(command, response -> Railroad.LOGGER.debug("Registered event {}", event.name()));
         }
     }
 
     private void sendCommand(DiscordCommand command, Consumer<DiscordCommand> callback) {
-        if(this.connectionState == DiscordConnectionState.HANDSHAKE && command.getEvt() != DiscordCommand.Event.READY) {
+        if (this.connectionState == DiscordConnectionState.HANDSHAKE && command.getEvt() != DiscordCommand.Event.READY) {
             this.commandQueue.add(new Pair<>(command, callback));
             return;
         }
@@ -190,16 +187,12 @@ public class DiscordCore implements AutoCloseable {
     public DiscordResult checkError(DiscordCommand command) {
         if (command.getEvt() == DiscordCommand.Event.ERROR) {
             var error = Railroad.GSON.fromJson(command.getData(), DiscordError.class);
-            System.err.println("Received error from Discord IPC channel: " + error.getMessage());
+            Railroad.LOGGER.error("Received error from Discord IPC channel: {}", error.getMessage());
 
             return DiscordResult.fromCode(error.getCode());
         }
 
         return DiscordResult.OK;
-    }
-
-    public void setCurrentUser(DiscordUser user) {
-        this.currentUser = user;
     }
 
     public long getPID() {
@@ -208,6 +201,10 @@ public class DiscordCore implements AutoCloseable {
 
     public DiscordUser getCurrentUser() {
         return this.currentUser;
+    }
+
+    public void setCurrentUser(DiscordUser user) {
+        this.currentUser = user;
     }
 
     public DiscordActivityManager getActivityManager() {

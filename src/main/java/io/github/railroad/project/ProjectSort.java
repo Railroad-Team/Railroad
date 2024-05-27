@@ -1,5 +1,7 @@
 package io.github.railroad.project;
 
+import io.github.railroad.project.data.Project;
+
 import java.util.Comparator;
 
 public enum ProjectSort {

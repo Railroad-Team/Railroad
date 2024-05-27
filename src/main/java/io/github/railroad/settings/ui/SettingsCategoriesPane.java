@@ -1,7 +1,6 @@
 package io.github.railroad.settings.ui;
 
 import io.github.railroad.settings.SettingsCategory;
-import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;

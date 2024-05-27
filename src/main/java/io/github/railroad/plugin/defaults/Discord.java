@@ -1,5 +1,6 @@
 package io.github.railroad.plugin.defaults;
 
+import io.github.railroad.Railroad;
 import io.github.railroad.discord.DiscordCore;
 import io.github.railroad.discord.activity.DiscordActivity;
 import io.github.railroad.discord.activity.RailroadActivities;
@@ -47,7 +48,7 @@ public class Discord extends Plugin {
     @Override
     public PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
         if (getState() != PluginStates.LOADED) {
-            System.out.println("Plugin not loaded, unable to send the update");
+            Railroad.LOGGER.warn("Plugin not loaded, unable to send the update!");
             return getNewPhase();
         }
 

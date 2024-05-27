@@ -1,6 +1,5 @@
 package io.github.railroad.utility;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import org.json.XML;

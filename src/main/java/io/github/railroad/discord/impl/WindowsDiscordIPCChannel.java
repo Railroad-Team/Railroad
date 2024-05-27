@@ -17,7 +17,7 @@ public class WindowsDiscordIPCChannel implements DiscordIPCChannel {
         if (path == null) {
             String instance = System.getenv("DISCORD_INSTANCE_ID");
             int pid = 0;
-            if(instance != null) {
+            if (instance != null) {
                 try {
                     pid = Integer.parseInt(instance);
                 } catch (NumberFormatException exception) {
@@ -45,7 +45,7 @@ public class WindowsDiscordIPCChannel implements DiscordIPCChannel {
     @Override
     public int read(ByteBuffer dst) throws IOException {
         int result = 0;
-        if(this.blocking || (this.channel.size() - this.channel.position()) >= dst.remaining()) {
+        if (this.blocking || (this.channel.size() - this.channel.position()) >= dst.remaining()) {
             result = this.channel.read(dst);
         }
 
@@ -60,7 +60,7 @@ public class WindowsDiscordIPCChannel implements DiscordIPCChannel {
             remaining += dsts[i].remaining();
         }
 
-        if(this.blocking || (this.channel.size() - this.channel.position()) >= remaining) {
+        if (this.blocking || (this.channel.size() - this.channel.position()) >= remaining) {
             result = this.channel.read(dsts, offset, length);
         }
 

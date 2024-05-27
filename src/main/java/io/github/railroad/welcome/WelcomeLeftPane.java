@@ -1,9 +1,10 @@
-package io.github.railroad.project.ui.welcome;
+package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -18,9 +19,12 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 public class WelcomeLeftPane extends RRVBox {
-    private final RRListView<MenuType> listView = new RRListView<>();
+    private final RRListView<MenuType> listView;
 
     public WelcomeLeftPane() {
+        setPadding(new Insets(10));
+        getStyleClass().add("welcome-left-pane");
+
         var topBox = new RRVBox();
         topBox.setPrefHeight(80);
 
@@ -37,17 +41,21 @@ public class WelcomeLeftPane extends RRVBox {
         hbox.getChildren().add(rightVbox);
         topBox.getChildren().add(hbox);
 
+        listView = new RRListView<>();
         listView.getItems().addAll(MenuType.values());
         listView.setCellFactory(param -> new MenuTypeCell());
+        listView.getStyleClass().add("welcome-left-pane-list-view");
 
         setMinWidth(200);
         setMaxWidth(200);
         setAlignment(Pos.TOP_CENTER);
         RRVBox.setVgrow(listView, Priority.ALWAYS);
 
+        var separator = new Separator();
+        separator.setPadding(new Insets(10, -10, 10, -10));
         getChildren().addAll(
                 topBox,
-                new Separator(),
+                separator,
                 listView
         );
     }

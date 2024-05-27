@@ -24,14 +24,6 @@ public enum License {
         this.spdxId = spdxId;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public String getSpdxId() {
-        return spdxId;
-    }
-
     public static License fromSpdxId(String spdxId) {
         for (License license : values()) {
             if (license.spdxId.equals(spdxId)) {
@@ -50,5 +42,13 @@ public enum License {
         }
 
         return null;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getSpdxId() {
+        return spdxId;
     }
 }

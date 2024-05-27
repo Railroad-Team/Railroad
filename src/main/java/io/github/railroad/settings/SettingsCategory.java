@@ -4,7 +4,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import org.kordamp.ikonli.javafx.FontIcon;
 
 public enum SettingsCategory {
     GENERAL("General", FontAwesomeSolid.COG),

@@ -1,6 +1,8 @@
-package io.github.railroad.project;
+package io.github.railroad.project.data;
 
 import io.github.railroad.vcs.Repository;
+import io.github.railroad.Railroad;
+import io.github.railroad.project.ProjectManager;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 
@@ -107,6 +109,13 @@ public class Project {
         return lastOpened;
     }
 
+    public void setLastOpened(long lastOpened) {
+        this.lastOpened = lastOpened;
+        if (this.manager != null) {
+            this.manager.updateProjectInfo(this);
+        }
+    }
+
     public String getLastOpenedFriendly() {
         var instant = Instant.ofEpochMilli(this.getLastOpened());
         ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
@@ -137,13 +146,6 @@ public class Project {
                 long years = secondsDifference / 29030400;
                 return years + (years == 1 ? " year ago" : " years ago");
             }
-        }
-    }
-
-    public void setLastOpened(long lastOpened) {
-        this.lastOpened = lastOpened;
-        if (this.manager != null) {
-            this.manager.updateProjectInfo(this);
         }
     }
 
@@ -191,7 +193,6 @@ public class Project {
     public void setId(String id) {
         this.id = id;
     }
-
     public Repository getRepository() {
         return repository;
     }

@@ -1,10 +1,12 @@
-package io.github.railroad.project.ui.welcome;
+package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.project.ui.project.newProject.NewProjectPane;
+import io.github.railroad.project.ui.create.NewProjectPane;
 import io.github.railroad.settings.ui.SettingsPane;
+import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
@@ -15,9 +17,9 @@ import javax.swing.filechooser.FileSystemView;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.github.railroad.project.ui.BrowseButton.folderBrowser;
+import static io.github.railroad.ui.BrowseButton.folderBrowser;
 
-public class WelcomePane extends SplitPane {
+public class WelcomePane extends RRHBox {
     private final WelcomeLeftPane leftPane;
     private final WelcomeHeaderPane headerPane;
     private final WelcomeProjectsPane projectsPane;
@@ -35,20 +37,18 @@ public class WelcomePane extends SplitPane {
         headerPane.setPrefHeight(80);
 
         var rightPane = new RRVBox();
-        rightPane.getChildren().addAll(headerPane, new Separator(), projectsPane);
-        VBox.setVgrow(projectsPane, Priority.ALWAYS);
-        VBox.setVgrow(importProjectsPane, Priority.ALWAYS);
-
-
-        setOrientation(Orientation.HORIZONTAL);
-        getItems().addAll(leftPane, rightPane);
-
-        SplitPane.setResizableWithParent(leftPane, false);
-        SplitPane.setResizableWithParent(rightPane, true);
+        rightPane.setPadding(new Insets(10));
+        var horizontalSeparator = new Separator();
+        horizontalSeparator.setPadding(new Insets(10, 0, 10, -10));
+        rightPane.getChildren().addAll(headerPane, horizontalSeparator, projectsPane);
+        RRVBox.setVgrow(projectsPane, Priority.ALWAYS);
+        RRVBox.setVgrow(importProjectsPane, Priority.ALWAYS);
+        var verticalSeparator = new Separator(Orientation.VERTICAL);
+        verticalSeparator.setPadding(new Insets(0));
+        getChildren().addAll(leftPane, verticalSeparator, rightPane);
+        RRHBox.setHgrow(rightPane, Priority.ALWAYS);
 
         rightPane.setMinWidth(300);
-
-        setDividerPositions(1.0 / 3);
 
         // Setup buttons
         leftPane.getListView()
@@ -74,7 +74,7 @@ public class WelcomePane extends SplitPane {
                             case OPEN_PROJECT -> {
                                 var directoryChooser = folderBrowser(FileSystemView.getFileSystemView().getHomeDirectory(), "Open Project");
                                 //TODO Create/import/whatever with the selected folder here
-                                System.out.println(String.format("Dir Selected: %s", directoryChooser.showDialog(getScene().getWindow())));
+                                Railroad.LOGGER.debug("Dir Selected: {}\n", directoryChooser.showDialog(getScene().getWindow()));
                             }
                             case IMPORT_PROJECT -> {
                                 rightPane.getChildren().clear();

@@ -81,6 +81,7 @@ public class PluginManager extends Thread {
         } else {
             Railroad.LOGGER.error("[" + topic + "][Missing] Phase: " + message + " State: Missing Errors: " + phaseErrors);
         }
+
         if (listener != null) {
             PluginManagerErrorEvent event = new PluginManagerErrorEvent(this, plugin, message, pluginPhaseResult);
             listener.onPluginManagerError(event);
@@ -95,7 +96,7 @@ public class PluginManager extends Thread {
         Railroad.LOGGER.info("[" + topic + "][" + plugin.getClass().getName() + "]" + message);
     }
 
-    public void unLoadAllPlugins() {
+    public void unloadPlugins() {
         for (Plugin plugin : this.pluginList) {
             while (plugin.getHealthChecker().isAlive()) {
                 try {

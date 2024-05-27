@@ -9,7 +9,6 @@ import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.ui.welcome.WelcomePane;
-import io.github.railroad.vcs.RepositoryManager;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -37,8 +36,9 @@ public class Railroad extends Application {
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
-    public static final AtomicReference<String> THEME = new AtomicReference<>("default-dark");
     public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
+    public static final AtomicReference<String> THEME = new AtomicReference<>("default-dark");
+    public static final String URL_REGEX = "(?:http(s)?:\\/\\/)?[\\w.-]+(?:\\.[\\w\\.-]+)+[\\w\\-\\._~:/?#\\[\\]@!\\$&'\\(\\)\\*\\+,;=.]+$";
 
     private static boolean DEBUG = false;
     private static Scene scene;
@@ -55,7 +55,7 @@ public class Railroad extends Application {
     public static void setStyle(String theme) {
         getScene().getStylesheets().remove(THEME.get() + ".css");
 
-        if(theme.startsWith("default")) {
+        if (theme.startsWith("default")) {
             Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
         } else {
             Application.setUserAgentStylesheet(new File("themes/" + theme + ".css").toURI().toString());
@@ -65,7 +65,6 @@ public class Railroad extends Application {
     }
 
     private static void handleStyles(Scene scene) {
-
         var selectedTheme = ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("theme").getAsString();
 
         setStyle(selectedTheme);
@@ -95,11 +94,28 @@ public class Railroad extends Application {
     public static InputStream getResourceAsStream(String path) {
         return Railroad.class.getResourceAsStream("/io/github/railroad/" + path);
     }
+
+    public static void showErrorAlert(String title, String header, String content, Consumer<ButtonType> action) {
+        var alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            action.accept(result.get());
+        }
+    }
+
+    public static void showErrorAlert(String title, String header, String content) {
+        showErrorAlert(title, header, content, buttonType -> {
+        });
+    }
+
     @Override
     public void start(Stage primaryStage) {
         ConfigHandler.updateConfig();
         PLUGIN_MANAGER.start();
-        REPOSITORY_MANAGER.start();
         PLUGIN_MANAGER.addCustomEventListener(event -> {
             Platform.runLater(() -> {
                 Railroad.showErrorAlert("Plugin", event.getPlugin().getClass().getName(), event.getPhaseResult().getErrors().toString());
@@ -108,6 +124,7 @@ public class Railroad extends Application {
         MinecraftVersion.load();
         ForgeVersion.load();
         FabricAPIVersion.load();
+        NeoForgeVersion.load();
         window = primaryStage;
 
         // Calculate the primary screen size to better fit the window
@@ -116,7 +133,6 @@ public class Railroad extends Application {
         double screenW = screen.getBounds().getWidth();
         double screenH = screen.getBounds().getHeight();
 
-        // TODO: Find a better way to calculate these because it makes it weird on different sized monitors
         double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
         double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
 
@@ -142,24 +158,8 @@ public class Railroad extends Application {
 
     @Override
     public void stop() {
-        PLUGIN_MANAGER.unLoadAllPlugins();
         LOGGER.info("Stopping Railroad");
+        PLUGIN_MANAGER.unloadPlugins();
         System.exit(0);
-    }
-
-    public static void showErrorAlert(String title, String header, String content, Consumer<ButtonType> action) {
-        var alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(header);
-        alert.setContentText(content);
-
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            action.accept(result.get());
-        }
-    }
-
-    public static void showErrorAlert(String title, String header, String content) {
-        showErrorAlert(title, header, content, buttonType -> {});
     }
 }
