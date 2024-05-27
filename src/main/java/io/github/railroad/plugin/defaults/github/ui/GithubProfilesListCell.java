@@ -25,7 +25,7 @@ public class GithubProfilesListCell extends ListCell<Profile> {
 
         var ellipseButton = new Button("...");
         ellipseButton.setBackground(null);
-        StackPane.setAlignment(ellipseButton, Pos.TOP_RIGHT);
+        RRStackPane.setAlignment(ellipseButton, Pos.TOP_RIGHT);
 
         var dropdown = new ContextMenu();
         var removeItem = new MenuItem("Remove");
