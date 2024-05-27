@@ -82,6 +82,7 @@ public class ProjectManager {
             }
             projects.add(newProject);
         }
+        
         ConfigHandler.updateConfig();
     }
 
