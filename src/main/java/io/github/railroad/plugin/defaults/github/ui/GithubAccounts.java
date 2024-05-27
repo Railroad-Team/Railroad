@@ -39,8 +39,8 @@ public class GithubAccounts extends RRVBox {
         var dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Add New Profile");
-        RRVBox dialogVbox = new RRVBox(20);
-        TextField aliasField = new TextField();
+        var dialogVbox = new RRVBox(20);
+        var aliasField = new TextField();
         aliasField.setPromptText("Enter Alias");
         TextField usernameField = new TextField();
         usernameField.setPromptText("Enter GitHub token");
