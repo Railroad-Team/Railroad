@@ -27,7 +27,7 @@ public class GithubAccounts extends RRVBox {
         });
 
         profileListView.setItems(Railroad.REPOSITORY_MANAGER.getProfiles());
-        ScrollPane scrollPane = new ScrollPane();
+        var scrollPane = new ScrollPane();
         scrollPane.setFitToHeight(true);
         scrollPane.setFitToWidth(true);
         profileListView.setCellFactory(param -> new GithubProfilesListCell(scrollPane));
