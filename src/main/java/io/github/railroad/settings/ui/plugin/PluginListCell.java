@@ -1,6 +1,7 @@
 package io.github.railroad.settings.ui.plugin;
 
 import io.github.railroad.plugin.Plugin;
+import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.defaults.RRStackPane;
 import javafx.beans.property.ObjectProperty;
