@@ -7,6 +7,7 @@ import javafx.beans.binding.StringBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
@@ -34,6 +35,10 @@ public class L18n {
         return CURRENT_LANG.getValue();
     }
 
+    public static ObjectProperty<Languages> currentLanguageProperty() {
+        return CURRENT_LANG;
+    }
+
     public static void loadLanguage() {
         //Loads the language into cache and sets the CURRENT_LANG
         LOGGER.info("Loading language file");
@@ -52,12 +57,9 @@ public class L18n {
             LANG_CACHE.clear();
             LANG_CACHE.load(props);
             CURRENT_LANG.setValue(newLang);
-
-            //KEEP THIS HERE OR IT WILL BREAK STUFF
-            CURRENT_LANG.getValue();
-        } catch (Exception e) {
-            LOGGER.error("Error reading language file", e);
-            throw new IllegalStateException("Error reading language file", e);
+        } catch (IOException exception) {
+            LOGGER.error("Error reading language file", exception);
+            throw new IllegalStateException("Error reading language file", exception);
         }
     }
 

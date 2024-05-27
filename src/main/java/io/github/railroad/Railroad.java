@@ -116,7 +116,7 @@ public class Railroad extends Application {
     }
 
     @Override
-    public void start(Stage primaryStage) {
+    public void start(Stage primaryStage) throws Exception {
         ConfigHandler.updateConfig(ConfigHandler.getConfigJson());
         PLUGIN_MANAGER.start();
         PLUGIN_MANAGER.addCustomEventListener(event -> {

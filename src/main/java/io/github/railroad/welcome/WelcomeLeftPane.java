@@ -105,6 +105,9 @@ public class WelcomeLeftPane extends RRVBox {
 
         public MenuTypeCell() {
             icon.setIconSize(24);
+
+            L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
+                    setText(L18n.localize(getItem().getName())));
         }
 
         @Override
@@ -117,8 +120,7 @@ public class WelcomeLeftPane extends RRVBox {
                 icon.setIconCode(item.getIcon());
                 icon.setIconColor(item.getColor());
                 setGraphic(icon);
-
-                textProperty().bind(L18n.createStringBinding(item.getName()));
+                setText(L18n.localize(item.getName()));
             }
         }
     }
