@@ -36,7 +36,7 @@ public class WelcomeImportProjectsPane extends ScrollPane {
         repositoryListView.setItems(Railroad.REPOSITORY_MANAGER.getRepositories());
 
         // Create a StackPane to hold both the ListView and the ProgressIndicator
-        StackPane stackPane = new StackPane();
+        var stackPane = new RRStackPane();
         stackPane.getChildren().addAll(repositoryListView, progressIndicator);
 
         setContent(stackPane);
