@@ -16,7 +16,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 
 public class GithubProfilesListCell extends ListCell<Profile> {
-    private final StackPane node = new StackPane();
+    private final RRStackPane node = new RRStackPane();
     private final GithubProfilesListCell.ProfileListNode profileListNode = new GithubProfilesListCell.ProfileListNode();
 
     public GithubProfilesListCell(ScrollPane pane) {
