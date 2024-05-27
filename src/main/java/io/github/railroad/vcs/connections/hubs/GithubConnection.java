@@ -28,67 +28,67 @@ public class GithubConnection extends AbstractConnection {
         this.account = profile;
     }
 
-    private List<HttpResponse> readHTTP(String method, String postixurl, String body) throws Exception {
+    private List<HttpResponse> readHTTP(String method, String postixurl, String body) throws RuntimeException {
         return readHTTP(method, postixurl, body, true);
     }
 
-    private List<HttpResponse> readHTTP(String method, String postixurl, String body, boolean enable_pages) throws Exception {
+    private List<HttpResponse> readHTTP(String method, String postixurl, String body, boolean enable_pages) throws RuntimeException {
         if (account.getAccessToken().isEmpty()) {
             throw new RuntimeException("Missing Access Token");
         }
-        
+
         List<HttpResponse> result = new ArrayList<>();
 
         String request_url = "https://api.github.com/" + postixurl;
         boolean finished = false;
         try {
-            try {
 
-                while (!finished) {
-                    URL url = new URL(request_url);
-                    var con = (HttpURLConnection) url.openConnection();
-                    con.setRequestMethod(method.toUpperCase());
-                    con.setRequestProperty("Accept", "application/vnd.github+json");
-                    con.setRequestProperty("X-GitHub-Api-Version", "2022-11-28");
-                    con.setRequestProperty("Authorization", "Bearer " + account.getAccessToken());
-                    var in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-                    String inputLine;
-                    var content = new StringBuffer();
-                    var statusCode = con.getResponseCode();
-                    while ((inputLine = in.readLine()) != null) {
-                        content.append(inputLine);
-                    }
-                    
-                    if (enable_pages) {
-                        if (con.getHeaderField("link") != null) {
-                            finished = true;
-                            for (String el : con.getHeaderField("link").split(",")) {
-                                if (el.contains("rel=\"next\"")) {
-                                    request_url = el.substring(el.indexOf("<") + 1, el.indexOf(">"));
-                                    finished = false;
-                                }
+            while (!finished) {
+                URL url = new URL(request_url);
+                var con = (HttpURLConnection) url.openConnection();
+                con.setRequestMethod(method.toUpperCase());
+                con.setRequestProperty("Accept", "application/vnd.github+json");
+                con.setRequestProperty("X-GitHub-Api-Version", "2022-11-28");
+                con.setRequestProperty("Authorization", "Bearer " + account.getAccessToken());
+                var in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                String inputLine;
+                var content = new StringBuffer();
+                var statusCode = con.getResponseCode();
+                while ((inputLine = in.readLine()) != null) {
+                    content.append(inputLine);
+                }
+
+                if (enable_pages) {
+                    if (con.getHeaderField("link") != null) {
+                        finished = true;
+                        for (String el : con.getHeaderField("link").split(",")) {
+                            if (el.contains("rel=\"next\"")) {
+                                request_url = el.substring(el.indexOf("<") + 1, el.indexOf(">"));
+                                finished = false;
                             }
-                        } else {
-                            finished = true;
                         }
                     } else {
                         finished = true;
                     }
-                    
-                    in.close();
-                    result.add(new HttpResponse(content.toString(), statusCode));
+                } else {
+                    finished = true;
                 }
 
-            } catch (ProtocolException e) {
-                throw new RuntimeException(e);
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                in.close();
+                result.add(new HttpResponse(content.toString(), statusCode));
             }
-        } finally {
-            return result;
+
+        } catch (IOException e) {
+            if (e instanceof ProtocolException) {
+                throw new RuntimeException("Protocol error: " + e.getMessage(), e);
+            } else if (e instanceof MalformedURLException) {
+                throw new RuntimeException("URL is malformed: " + e.getMessage(), e);
+            } else {
+                throw new RuntimeException("I/O error: " + e.getMessage(), e);
+            }
+
         }
+        return result;
     }
 
     private List<Repository> getUserRepos() {
@@ -120,7 +120,7 @@ public class GithubConnection extends AbstractConnection {
         } catch (Exception exception) {
             Railroad.LOGGER.error("Github Download repos " + exception.getMessage());
         }
-        
+
         return repositoryList;
     }
 
@@ -171,7 +171,7 @@ public class GithubConnection extends AbstractConnection {
                 return false;
             }
         }
-        
+
         return false;
     }
 
@@ -185,7 +185,7 @@ public class GithubConnection extends AbstractConnection {
             Railroad.LOGGER.error("Github Validation - " + e.getMessage());
             return false;
         }
-        
+
         if (output.isEmpty()) {
             return false;
         } else {
