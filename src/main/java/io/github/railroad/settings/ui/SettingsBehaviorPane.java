@@ -9,7 +9,7 @@ import javafx.scene.control.Label;
 public class SettingsBehaviorPane extends RRVBox {
 
     public SettingsBehaviorPane() {
-        Label title = new LocalizedLabel("railroad.home.settings.behaviour");
+        Label title = new LocalizedLabel("railroad.home.settings.behavior");
         title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");
         title.prefWidthProperty().bind(widthProperty());
         title.setAlignment(Pos.CENTER);
@@ -17,6 +17,6 @@ public class SettingsBehaviorPane extends RRVBox {
         setPadding(new Insets(10));
         setSpacing(10);
 
-        //getChildren().add(title);
+        getChildren().add(title);
     }
 }

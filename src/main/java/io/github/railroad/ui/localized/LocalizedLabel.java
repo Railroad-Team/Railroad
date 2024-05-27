@@ -1,8 +1,7 @@
 package io.github.railroad.ui.localized;
 
-import javafx.scene.control.Label;
-
 import io.github.railroad.utility.localization.L18n;
+import javafx.scene.control.Label;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;

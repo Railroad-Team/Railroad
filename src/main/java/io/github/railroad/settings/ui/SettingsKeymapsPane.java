@@ -4,7 +4,6 @@ import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.localized.LocalizedLabel;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 

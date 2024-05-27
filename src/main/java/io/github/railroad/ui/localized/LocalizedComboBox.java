@@ -8,7 +8,6 @@ import java.util.Locale;
 import java.util.function.Function;
 
 public class LocalizedComboBox<T> extends ComboBox<T> {
-
     public LocalizedComboBox(Function<T, String> keyFunction, Function<String, T> valOfFunction) {
         setConverter(new StringConverter<>() {
             @Override

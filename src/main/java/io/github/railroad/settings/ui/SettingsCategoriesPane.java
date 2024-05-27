@@ -5,7 +5,6 @@ import io.github.railroad.ui.localized.LocalizedButton;
 import io.github.railroad.ui.localized.LocalizedListCell;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.VBox;
