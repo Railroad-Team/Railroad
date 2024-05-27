@@ -15,6 +15,7 @@ import io.github.railroad.project.ui.create.widget.StarableListCell;
 import io.github.railroad.ui.BrowseButton;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.localized.LocalizedLabel;
 import io.github.railroad.utility.ClassNameValidator;
 import javafx.beans.binding.BooleanBinding;
 import javafx.geometry.Insets;
@@ -80,21 +81,21 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var projectNameBox = new RRHBox(10);
         projectNameBox.setAlignment(Pos.CENTER_LEFT);
-        var projectNameLabel = new Label("Name:");
+        var projectNameLabel = new LocalizedLabel("railroad.home.project.name");
         projectNameLabel.setLabelFor(projectNameField);
         projectNameBox.getChildren().addAll(projectNameLabel, createAsterisk(), projectNameField);
 
         var projectPathVBox = new RRVBox(10);
         projectPathVBox.setAlignment(Pos.CENTER_LEFT);
 
-        var createdAtLabel = new Label("This will be created at: " + System.getProperty("user.home"));
+        var createdAtLabel = new LocalizedLabel("railroad.home.project.destination", System.getProperty("user.home"));
         createdAtLabel.setGraphic(new FontIcon(FontAwesomeSolid.INFO_CIRCLE));
         createdAtLabel.setTooltip(new Tooltip("The project will be created in this directory."));
         createdAtLabel.setTextFill(Color.SLATEGRAY);
 
         var projectPathBox = new RRHBox(10);
         projectPathBox.setAlignment(Pos.CENTER_LEFT);
-        var projectPathLabel = new Label("Location:");
+        var projectPathLabel = new LocalizedLabel("railroad.home.project.location");
         projectPathLabel.setLabelFor(projectPathField);
         projectPathField.setPrefWidth(300);
         projectPathField.setText(System.getProperty("user.home"));
@@ -110,7 +111,8 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
             // Update the created at label
             String fullPath = fixPath(projectPathField.getText().trim() + "/" + projectNameField.getText().trim());
-            createdAtLabel.setText("This will be created at: " + fullPath);
+            createdAtLabel.setArgs(fullPath);
+            createdAtLabel.setKey("railroad.home.project.destination");
 
             // If the project is in OneDrive, warn the user
             if (fullPath.contains("OneDrive") && hasOneDriveWarning.compareAndSet(false, true)) {
@@ -151,7 +153,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var gitBox = new RRHBox(10);
         gitBox.setAlignment(Pos.CENTER_LEFT);
-        var createGitLabel = new Label("Create Git Repository:");
+        var createGitLabel = new LocalizedLabel("railroad.home.project.git");
         createGitLabel.setLabelFor(createGitCheckBox);
         gitBox.getChildren().addAll(createGitLabel, createGitCheckBox);
 
@@ -159,7 +161,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         licenseVBox.setAlignment(Pos.CENTER_LEFT);
         var licenseBox = new RRHBox(10);
         licenseBox.setAlignment(Pos.CENTER_LEFT);
-        var licenseLabel = new Label("License:");
+        var licenseLabel = new LocalizedLabel("railroad.home.project.license");
         licenseLabel.setLabelFor(licenseComboBox);
         licenseComboBox.getItems().addAll(License.values());
         licenseComboBox.setValue(License.MIT);

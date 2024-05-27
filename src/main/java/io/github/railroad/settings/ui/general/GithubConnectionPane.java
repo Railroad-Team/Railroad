@@ -3,6 +3,7 @@ package io.github.railroad.settings.ui.general;
 import io.github.railroad.github.GithubAccount;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.localized.LocalizedButton;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
@@ -15,8 +16,8 @@ public class GithubConnectionPane extends RRHBox {
     private final ImageView profileImage = new ImageView();
     private final Label profileUsername = new Label();
     private final Label profileEmail = new Label();
-    private final Button connectButton = new Button("Connect");
-    private final Button disconnectButton = new Button("Disconnect");
+    private final Button connectButton = new LocalizedButton("railroad.home.settings.general.github.connect");
+    private final Button disconnectButton = new LocalizedButton("railroad.home.settings.general.github.disconnect");
 
     private final ObjectProperty<GithubAccount> githubAccount = new SimpleObjectProperty<>();
 

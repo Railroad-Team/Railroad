@@ -22,7 +22,7 @@ public enum Languages {
 
     public static Languages fromName(String name) {
         for(Languages l : Languages.values()){
-            if(l.name().equalsIgnoreCase(l.getName())){
+            if(Objects.equals(l.getName(), name)){
                 return l;
             }
         }

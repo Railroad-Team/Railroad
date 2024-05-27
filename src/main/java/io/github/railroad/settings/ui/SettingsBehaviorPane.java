@@ -17,6 +17,6 @@ public class SettingsBehaviorPane extends RRVBox {
         setPadding(new Insets(10));
         setSpacing(10);
 
-        getChildren().add(title);
+        //getChildren().add(title);
     }
 }
