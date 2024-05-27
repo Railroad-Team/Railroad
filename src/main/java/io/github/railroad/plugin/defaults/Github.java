@@ -16,7 +16,7 @@ import io.github.railroad.vcs.connections.hubs.GithubConnection;
 public class Github extends Plugin {
     @Override
     public PluginPhaseResult initPlugin() {
-        this.setPluiginName("Github");
+        setPluiginName("Github");
         PluginPhaseResult phaseResult = new PluginPhaseResult();
         try {
             JsonObject config = ConfigHandler.getPluginSettings("Github", true);
