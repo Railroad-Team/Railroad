@@ -20,7 +20,6 @@ public class GithubProfilesListCell extends ListCell<Profile> {
     private final GithubProfilesListCell.ProfileListNode profileListNode = new GithubProfilesListCell.ProfileListNode();
 
     public GithubProfilesListCell(ScrollPane pane) {
-
         getStyleClass().add("project-list-cell");
         node.getChildren().add(profileListNode);
 
