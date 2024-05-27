@@ -65,7 +65,6 @@ public class Github extends Plugin {
 
     @Override
     public RRVBox showSettings() {
-        GithubAccounts accounts = new GithubAccounts();
-        return accounts;
+        return new GithubAccounts();
     }
 }
