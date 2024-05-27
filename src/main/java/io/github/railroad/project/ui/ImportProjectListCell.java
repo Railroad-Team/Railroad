@@ -17,7 +17,7 @@ import javafx.stage.DirectoryChooser;
 import java.io.File;
 
 public class ImportProjectListCell extends ListCell<Repository> {
-    private final StackPane node = new StackPane();
+    private final RRStackPane node = new RRStackPane();
     private final ImportProjectListCell.repositoryListNode repositoryListNode = new ImportProjectListCell.repositoryListNode();
 
     public ImportProjectListCell() {
