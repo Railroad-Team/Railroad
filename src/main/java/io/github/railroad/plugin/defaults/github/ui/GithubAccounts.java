@@ -1,6 +1,7 @@
 package io.github.railroad.plugin.defaults.github.ui;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.vcs.connections.Profile;
