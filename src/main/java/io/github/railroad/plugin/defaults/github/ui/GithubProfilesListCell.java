@@ -89,7 +89,6 @@ public class GithubProfilesListCell extends ListCell<Profile> {
             accessTokenLabel.textProperty().bind(profile.map(Profile::getShortAccessToken));
             accessTokenLabel.setStyle("-fx-font-size: 16px;");
 
-
             var icon = new ImageView();
             icon.setFitWidth(32);
             icon.setFitHeight(32);
