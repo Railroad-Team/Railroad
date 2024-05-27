@@ -30,7 +30,6 @@ public class GithubProfilesListCell extends ListCell<Profile> {
         var dropdown = new ContextMenu();
         var removeItem = new MenuItem("Remove");
 
-
         removeItem.setOnAction(e -> {
             Profile profile = profileListNode.profileProperty().get();
             if (profile != null) {
