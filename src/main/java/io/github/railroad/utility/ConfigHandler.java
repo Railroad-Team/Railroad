@@ -52,7 +52,8 @@ public final class ConfigHandler {
                 }
             }
         }
-        JsonObject new_obj = new JsonObject();
+        
+        var new_obj = new JsonObject();
         new_obj.addProperty("name", plugin_name);
         plugin_settings.add(new_obj);
         return new_obj;
