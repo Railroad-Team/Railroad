@@ -44,7 +44,7 @@ public class Github extends Plugin {
 
     @Override
     public PluginPhaseResult loadPlugin() {
-        this.updateStatus(PluginStates.LOADED);
+        updateStatus(PluginStates.LOADED);
         return new PluginPhaseResult();
     }
 
