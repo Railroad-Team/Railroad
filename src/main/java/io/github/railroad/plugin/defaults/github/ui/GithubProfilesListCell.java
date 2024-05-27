@@ -93,7 +93,7 @@ public class GithubProfilesListCell extends ListCell<Profile> {
             icon.setFitWidth(32);
             icon.setFitHeight(32);
             icon.setPreserveRatio(true);
-            RRVBox rrvBox = new RRVBox();
+            var rrvBox = new RRVBox();
             rrvBox.getChildren().addAll(aliasLabel, accessTokenLabel);
             getChildren().addAll(icon, rrvBox);
         }
