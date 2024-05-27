@@ -66,7 +66,7 @@ public class GithubAccounts extends RRVBox {
         var box = new RRVBox();
         box.getChildren().addAll(addProfileButton, cancelButton);
         dialogVbox.getChildren().addAll(aliasField, usernameField, box);
-        Scene dialogScene = new Scene(dialogVbox, 300, 200);
+        var dialogScene = new Scene(dialogVbox, 300, 200);
         dialog.setScene(dialogScene);
         dialog.show();
     }
