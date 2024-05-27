@@ -27,7 +27,7 @@ public class ImportProjectListCell extends ListCell<Repository> {
 
         var ellipseButton = new Button("...");
         ellipseButton.setBackground(null);
-        StackPane.setAlignment(ellipseButton, Pos.TOP_RIGHT);
+        RRStackPane.setAlignment(ellipseButton, Pos.TOP_RIGHT);
 
         var dropdown = new ContextMenu();
         var openItem = new MenuItem("Clone");
