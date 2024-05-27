@@ -96,7 +96,6 @@ public class GithubProfilesListCell extends ListCell<Profile> {
             RRVBox rrvBox = new RRVBox();
             rrvBox.getChildren().addAll(aliasLabel, accessTokenLabel);
             getChildren().addAll(icon, rrvBox);
-
         }
 
         public ProfileListNode(Profile plugin) {
