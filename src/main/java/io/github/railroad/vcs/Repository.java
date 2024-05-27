@@ -15,7 +15,7 @@ public class Repository {
     private AbstractConnection connection;
 
     public Repository(RepositoryTypes repositoryType) {
-        this.setRepositoryType(repositoryType);
+        setRepositoryType(repositoryType);
     }
 
     public String getRepositoryURL() {
