@@ -1,8 +1,7 @@
 package io.github.railroad.project.data;
 
-import io.github.railroad.vcs.Repository;
-import io.github.railroad.Railroad;
 import io.github.railroad.project.ProjectManager;
+import io.github.railroad.vcs.Repository;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 
@@ -193,6 +192,7 @@ public class Project {
     public void setId(String id) {
         this.id = id;
     }
+
     public Repository getRepository() {
         return repository;
     }

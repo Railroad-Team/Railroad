@@ -2,7 +2,6 @@ package io.github.railroad.plugin;
 
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.ui.defaults.RRVBox;
-import javafx.scene.control.ScrollPane;
 
 public abstract class Plugin {
     private PluginManager pluginManager;
