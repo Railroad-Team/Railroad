@@ -33,7 +33,8 @@ public class Github extends Plugin {
                     }
                 }
             }
-            this.updateStatus(PluginStates.FINISHED_INIT);
+
+            updateStatus(PluginStates.FINISHED_INIT);
         } catch (Exception exception) {
             phaseResult.addError(new Error(exception.getMessage()));
         }
