@@ -40,7 +40,7 @@ public class ImportProjectListCell extends ListCell<Repository> {
             Repository repository = repositoryListNode.repositoryProperty().get();
             if (repository != null) {
                 if (repository.cloneRepo(selectedDirectory.toPath())) {
-                    Project newProject = new Project(selectedDirectory.toPath().resolve(repository.getRepositoryName()), repository.getRepositoryName());
+                    var newProject = new Project(selectedDirectory.toPath().resolve(repository.getRepositoryName()), repository.getRepositoryName());
                     newProject.setRepository(repository);
                     Railroad.PROJECT_MANAGER.newProject(newProject);
                 }
