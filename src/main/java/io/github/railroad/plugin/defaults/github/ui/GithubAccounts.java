@@ -52,7 +52,7 @@ public class GithubAccounts extends RRVBox {
                 profile.setAccessToken(username);
                 var connection = new GithubConnection(profile);
                 if (connection.validateProfile()) {
-                    System.out.println("Valid profile");
+                    Railroad.LOGGER.debug("Valid GitHub profile");
                 } else {
                     Railroad.LOGGER.debug("Invalid GitHub profile");
                 }
