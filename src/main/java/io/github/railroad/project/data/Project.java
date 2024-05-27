@@ -149,7 +149,7 @@ public class Project {
     }
 
     public void open() {
-        System.out.println("Opening project: " + path);
+        Railroad.LOGGER.debug("Opening project: {}", path);
         setLastOpened(System.currentTimeMillis());
     }
 
