@@ -21,7 +21,7 @@ public class GithubAccounts extends RRVBox {
 
     public GithubAccounts() {
         // Create the button
-        Button addButton = new Button("+ Add New Profile");
+        var addButton = new Button("+ Add New Profile");
         addButton.setOnAction(event -> {
             showAddProfileDialog();
         });
