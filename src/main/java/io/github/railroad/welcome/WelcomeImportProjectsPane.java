@@ -40,6 +40,5 @@ public class WelcomeImportProjectsPane extends ScrollPane {
         stackPane.getChildren().addAll(repositoryListView, progressIndicator);
 
         setContent(stackPane);
-
     }
 }
