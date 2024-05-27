@@ -45,7 +45,7 @@ public class GithubConnection extends AbstractConnection {
             try {
 
                 while (!finished) {
-                    URL url = new URL(request_url);
+                    URL url = new URI(request_url).toUrl();
                     var con = (HttpURLConnection) url.openConnection();
                     con.setRequestMethod(method.toUpperCase());
                     con.setRequestProperty("Accept", "application/vnd.github+json");
