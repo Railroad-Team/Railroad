@@ -28,7 +28,7 @@ public class Github extends Plugin {
                         prof.setAccessToken(element.getAsJsonObject().get("token").getAsString());
                         prof.setAlias(element.getAsJsonObject().get("alias").getAsString());
                         prof.setConfig_obj(element.getAsJsonObject());
-                        GithubConnection connection = new GithubConnection(prof);
+                        var connection = new GithubConnection(prof);
                         Railroad.REPOSITORY_MANAGER.addConnection(connection);
                     }
                 }
