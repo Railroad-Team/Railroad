@@ -19,7 +19,7 @@ public class RepositoryManager extends Thread {
         while (true) {
             try {
                 Railroad.LOGGER.debug("Starting update repos");
-                this.updateRepositories();
+                updateRepositories();
                 Thread.sleep(10_000);
             } catch (InterruptedException e) {
                 Railroad.LOGGER.error("RepositoryManager interrupted", e);
