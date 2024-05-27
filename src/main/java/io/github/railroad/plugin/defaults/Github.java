@@ -17,7 +17,7 @@ public class Github extends Plugin {
     @Override
     public PluginPhaseResult initPlugin() {
         setPluiginName("Github");
-        PluginPhaseResult phaseResult = new PluginPhaseResult();
+        var phaseResult = new PluginPhaseResult();
         try {
             JsonObject config = ConfigHandler.getPluginSettings("Github", true);
             if (config.has("accounts")) {
