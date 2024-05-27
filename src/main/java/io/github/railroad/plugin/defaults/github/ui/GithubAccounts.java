@@ -50,7 +50,7 @@ public class GithubAccounts extends RRVBox {
             if (!username.isEmpty()) {
                 var profile = new Profile();
                 profile.setAccessToken(username);
-                GithubConnection connection = new GithubConnection(profile);
+                var connection = new GithubConnection(profile);
                 if (connection.validateProfile()) {
                     System.out.println("Valid profile");
                 } else {
