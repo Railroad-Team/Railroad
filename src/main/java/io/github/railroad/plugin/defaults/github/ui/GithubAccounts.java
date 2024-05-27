@@ -8,7 +8,6 @@ import io.github.railroad.vcs.connections.Profile;
 import io.github.railroad.vcs.connections.hubs.GithubConnection;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Priority;
