@@ -3,7 +3,7 @@ package io.github.railroad.project;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.github.railroad.project.ui.project.ProjectListCell;
+import io.github.railroad.project.data.Project;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
