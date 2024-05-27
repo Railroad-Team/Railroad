@@ -13,8 +13,6 @@ import io.github.railroad.utility.ConfigHandler;
 import io.github.railroad.vcs.RepositoryManager;
 import io.github.railroad.welcome.WelcomePane;
 import javafx.application.Application;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -27,6 +25,7 @@ import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Optional;
@@ -38,7 +37,6 @@ public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
-    public static BooleanProperty isShifting = new SimpleBooleanProperty();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
     public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
     public static final AtomicReference<String> THEME = new AtomicReference<>("default-dark");
@@ -56,8 +54,22 @@ public class Railroad extends Application {
         return window;
     }
 
+    public static void setStyle(String theme) {
+        getScene().getStylesheets().remove(THEME.get() + ".css");
+
+        if (theme.startsWith("default")) {
+            Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
+        } else {
+            Application.setUserAgentStylesheet(new File("themes/" + theme + ".css").toURI().toString());
+        }
+
+        THEME.set(theme);
+    }
+
     private static void handleStyles(Scene scene) {
-        Application.setUserAgentStylesheet(getResource("styles/themes/nord-dark.css").toExternalForm());
+        var selectedTheme = ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("theme").getAsString();
+
+        setStyle(selectedTheme);
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();
@@ -76,17 +88,7 @@ public class Railroad extends Application {
         String baseTheme = getResource("styles/base.css").toExternalForm();
         scene.getStylesheets().add(baseTheme);
     }
-    
-    private static void handleInputs(Scene scene) {
-        scene.setOnKeyPressed(event -> {
-            isShifting.setValue(event.isShiftDown());
-        });
 
-        scene.setOnKeyReleased(event -> {
-            isShifting.setValue(event.isShiftDown());
-        });
-    }
-    
     public static URL getResource(String path) {
         return Railroad.class.getResource("/io/github/railroad/" + path);
     }
@@ -94,7 +96,6 @@ public class Railroad extends Application {
     public static InputStream getResourceAsStream(String path) {
         return Railroad.class.getResourceAsStream("/io/github/railroad/" + path);
     }
-
 
     public static void showErrorAlert(String title, String header, String content, Consumer<ButtonType> action) {
         var alert = new Alert(Alert.AlertType.ERROR);

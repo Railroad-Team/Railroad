@@ -10,6 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static io.github.railroad.Railroad.LOGGER;
+
 public final class ConfigHandler {
     private static JsonObject setting_obj;
 
@@ -90,7 +92,7 @@ public final class ConfigHandler {
             return setting_obj;
         } else {
             try {
-                Railroad.LOGGER.debug("Reading config file");
+                LOGGER.debug("Reading config file");
                 Path projectsJsonPath = getConfigPath().resolve("config.json");
                 if (Files.notExists(projectsJsonPath)) {
                     createProjectsJsonIfNotExists();
@@ -125,7 +127,7 @@ public final class ConfigHandler {
     }
 
     public static void updateConfig() {
-        Railroad.LOGGER.info("Updating config file");
+        LOGGER.info("Updating config file");
 
         Path projectsJsonPath = getConfigPath().resolve("config.json");
         if (Files.notExists(projectsJsonPath)) {
@@ -134,6 +136,7 @@ public final class ConfigHandler {
 
         try {
             Files.writeString(projectsJsonPath, Railroad.GSON.toJson(getConfigJson()));
+            LOGGER.info("UPDATING CONFIG {}", Railroad.GSON.toJson(getConfigJson()));
         } catch (IOException exception) {
             throw new IllegalStateException("Error updating config.json", exception);
         }

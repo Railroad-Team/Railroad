@@ -27,7 +27,7 @@ public class L18n {
         var updated = ConfigHandler.getConfigJson();
         updated.get("settings").getAsJsonObject().addProperty("language", language.toString());
 
-        ConfigHandler.updateConfig(updated);
+        ConfigHandler.updateConfig();
         loadLanguage();
     }
 
@@ -59,7 +59,7 @@ public class L18n {
     }
 
     public static String localize(String key) {
-        //LOGGER.debug("Getting localized string for key {}", key);
+        LOGGER.debug("Getting localized string for key {}", key);
         if (LANG_CACHE.get(key) == null) {
             LOGGER.error("Error finding translations for {} {} Moving to english", key, CURRENT_LANG);
 

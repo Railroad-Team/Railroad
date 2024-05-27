@@ -19,17 +19,17 @@ import java.util.stream.Stream;
 
 public class SettingsAppearancePane extends RRVBox {
     private static final ComboBox<String> themeSelector = new ComboBox<>();
+    private static final LocalizedLabel title = new LocalizedLabel("railroad.home.settings.appearance");
+    private static final LocalizedLabel themeOption = new LocalizedLabel("railroad.home.settings.appearance.theme");
 
     public SettingsAppearancePane() {
-        var themeBox = new RRVBox(10);
+        var themeBox = new RRVBox();
 
-        Label title = new LocalizedLabel("railroad.home.settings.appearance");
         title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");
         title.prefWidthProperty().bind(widthProperty());
         title.setAlignment(Pos.CENTER);
 
-        Label themeOption = new LocalizedLabel("railroad.home.settings.appearance.theme");
-        themeOption.setStyle("-fx-font-weight: bold;");
+        themeBox.setStyle("-fx-padding: 0 0 0 10");
 
         List<Path> themes = new ArrayList<>();
         try (Stream<Path> files = Files.list(Path.of("themes"))) {
@@ -69,9 +69,6 @@ public class SettingsAppearancePane extends RRVBox {
 
             Railroad.setStyle(theme);
         });
-
-        setSpacing(10);
-        setPadding(new Insets(10));
 
         themeBox.getChildren().addAll(themeOption, themeSelector);
 

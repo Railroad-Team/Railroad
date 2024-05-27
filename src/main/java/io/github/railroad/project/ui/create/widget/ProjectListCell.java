@@ -38,9 +38,9 @@ public class ProjectListCell extends ListCell<Project> {
         removeItem.setOnAction(e -> {
             Project project = projectListNode.projectProperty().get();
             if (project != null) {
-                boolean deleteDir = Railroad.isShifting.get();
+                //boolean deleteDir = Railroad.isShifting.get();
 
-                Railroad.PROJECT_MANAGER.removeProject(project, deleteDir);
+                //Railroad.PROJECT_MANAGER.removeProject(project, deleteDir);
             }
         });
 
