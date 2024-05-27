@@ -36,7 +36,7 @@ public class GithubAccounts extends RRVBox {
     }
 
     private void showAddProfileDialog() {
-        Stage dialog = new Stage();
+        var dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Add New Profile");
         RRVBox dialogVbox = new RRVBox(20);
