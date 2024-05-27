@@ -7,7 +7,7 @@ import javafx.beans.binding.Bindings;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.StackPane;
+import io.github.railroad.ui.defaults.RRStackPane;
 
 public class WelcomeImportProjectsPane extends ScrollPane {
     private final ListView<Repository> repositoryListView = new ListView<>();
