@@ -21,8 +21,8 @@ public class RepositoryManager extends Thread {
                 Railroad.LOGGER.debug("Starting update repos");
                 updateRepositories();
                 Thread.sleep(10_000);
-            } catch (InterruptedException e) {
-                Railroad.LOGGER.error("RepositoryManager interrupted", e);
+            } catch (InterruptedException exception) {
+                Railroad.LOGGER.error("RepositoryManager interrupted", exception);
                 Thread.currentThread().interrupt(); // Restore interrupted status
                 break;
             }
@@ -37,10 +37,10 @@ public class RepositoryManager extends Thread {
                     connections.remove(abstractConnection);
                     continue;
                 }
+                
                 abstractConnection.downloadRepositories();
                 repositories.setAll(abstractConnection.getRepositories());
             }
-
         } catch (Exception exception) {
             Railroad.LOGGER.error("Error updating repositories", exception);
         }
@@ -58,6 +58,7 @@ public class RepositoryManager extends Thread {
                 profiles.addAll(connection.getProfile());
             }
         }
+        
         return profiles;
     }
 

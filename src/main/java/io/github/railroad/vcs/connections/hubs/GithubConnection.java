@@ -34,8 +34,9 @@ public class GithubConnection extends AbstractConnection {
 
     private List<HttpResponse> readHTTP(String method, String postixurl, String body, boolean enable_pages) throws Exception {
         if (account.getAccessToken().isEmpty()) {
-            throw new Exception("Missing Access Token");
+            throw new RuntimeException("Missing Access Token");
         }
+        
         List<HttpResponse> result = new ArrayList<>();
 
         String request_url = "https://api.github.com/" + postixurl;
@@ -45,19 +46,19 @@ public class GithubConnection extends AbstractConnection {
 
                 while (!finished) {
                     URL url = new URL(request_url);
-                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                    var con = (HttpURLConnection) url.openConnection();
                     con.setRequestMethod(method.toUpperCase());
                     con.setRequestProperty("Accept", "application/vnd.github+json");
                     con.setRequestProperty("X-GitHub-Api-Version", "2022-11-28");
                     con.setRequestProperty("Authorization", "Bearer " + account.getAccessToken());
-                    BufferedReader in = new BufferedReader(
-                            new InputStreamReader(con.getInputStream()));
+                    var in = new BufferedReader(new InputStreamReader(con.getInputStream()));
                     String inputLine;
-                    StringBuffer content = new StringBuffer();
+                    var content = new StringBuffer();
                     var statusCode = con.getResponseCode();
                     while ((inputLine = in.readLine()) != null) {
                         content.append(inputLine);
                     }
+                    
                     if (enable_pages) {
                         if (con.getHeaderField("link") != null) {
                             finished = true;
@@ -73,6 +74,7 @@ public class GithubConnection extends AbstractConnection {
                     } else {
                         finished = true;
                     }
+                    
                     in.close();
                     result.add(new HttpResponse(content.toString(), statusCode));
                 }
@@ -101,7 +103,7 @@ public class GithubConnection extends AbstractConnection {
                             JsonArray repos = Railroad.GSON.fromJson(http_response.content, JsonArray.class);
                             for (JsonElement element : repos) {
                                 if (element.isJsonObject()) {
-                                    Repository repository = new Repository(RepositoryTypes.git);
+                                    var repository = new Repository(RepositoryTypes.git);
                                     repository.setRepositoryName(element.getAsJsonObject().get("name").getAsString());
                                     repository.setRepositoryURL(element.getAsJsonObject().get("url").getAsString());
                                     repository.setRepositoryCloneURL(element.getAsJsonObject().get("clone_url").getAsString());
@@ -118,12 +120,13 @@ public class GithubConnection extends AbstractConnection {
         } catch (Exception exception) {
             Railroad.LOGGER.error("Github Download repos " + exception.getMessage());
         }
+        
         return repositoryList;
     }
 
     @Override
     public void downloadRepositories() {
-        this.getRepositories().setAll(getUserRepos());
+        getRepositories().setAll(getUserRepos());
     }
 
     @Override
@@ -135,14 +138,14 @@ public class GithubConnection extends AbstractConnection {
     public boolean cloneRepo(Repository repository, Path path) {
         if (repository.getRepositoryType() == RepositoryTypes.git) {
             Railroad.LOGGER.info("Cloning Repo:" + repository.getRepositoryCloneURL() + " to:" + path.toAbsolutePath());
-            ProcessBuilder processBuilder = new ProcessBuilder();
+            var processBuilder = new ProcessBuilder();
             processBuilder.command("git", "clone", repository.getRepositoryCloneURL(), path.toAbsolutePath().resolve(repository.getRepositoryName()).toString());
 
             try {
                 Process process = processBuilder.start();
                 new Thread(() -> {
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                         BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                    try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                         var errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
                         String line;
                         while ((line = reader.readLine()) != null) {
                             //updateOutput(line);
@@ -150,8 +153,8 @@ public class GithubConnection extends AbstractConnection {
                         while ((line = errorReader.readLine()) != null) {
                             //updateOutput(line);
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    } catch (IOException exception) {
+                        Railroad.LOGGER.error("Something went wrong trying to clone a github repo", exception);
                     }
                 }).start();
 
@@ -163,11 +166,12 @@ public class GithubConnection extends AbstractConnection {
                     Railroad.LOGGER.error("Failed to clone the repository.");
                     return false;
                 }
-            } catch (IOException | InterruptedException e) {
-                e.printStackTrace();
+            } catch (IOException | InterruptedException exception) {
+                Railroad.LOGGER.error("Something went wrong!", exception);
                 return false;
             }
         }
+        
         return false;
     }
 
@@ -181,14 +185,11 @@ public class GithubConnection extends AbstractConnection {
             Railroad.LOGGER.error("Github Validation - " + e.getMessage());
             return false;
         }
+        
         if (output.isEmpty()) {
             return false;
         } else {
-            if (output.get(0).getStatusCode() == 200) {
-                return true;
-            } else {
-                return false;
-            }
+            return output.get(0).getStatusCode() == 200;
         }
     }
 
@@ -214,5 +215,4 @@ public class GithubConnection extends AbstractConnection {
             return statusCode;
         }
     }
-
 }
