@@ -5,7 +5,7 @@ import javafx.scene.control.Label;
 import static io.github.railroad.utility.localization.L18n.createStringBinding;
 
 public class LocalizedLabel extends Label {
-    private static String currentKey;
+    private String currentKey;
 
     public LocalizedLabel(String key) {
         super();

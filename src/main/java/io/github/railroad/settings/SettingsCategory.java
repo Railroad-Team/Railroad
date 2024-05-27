@@ -14,22 +14,22 @@ public enum SettingsCategory {
     PROJECTS("Projects", FontAwesomeSolid.FOLDER),
     TOOLS("Tools", FontAwesomeSolid.TOOLBOX);
 
-    private final String name;
+    private final String key;
     private final Ikon icon;
     private final Paint color;
 
-    SettingsCategory(String name, Ikon icon, Paint color) {
-        this.name = name;
+    SettingsCategory(String key, Ikon icon, Paint color) {
+        this.key = key;
         this.icon = icon;
         this.color = color;
     }
 
-    SettingsCategory(String name, Ikon icon) {
-        this(name, icon, Color.WHITE);
+    SettingsCategory(String key, Ikon icon) {
+        this(key, icon, Color.WHITE);
     }
 
     public String getName() {
-        return name;
+        return key;
     }
 
     public Ikon getIcon() {

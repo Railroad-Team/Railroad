@@ -5,7 +5,7 @@ import javafx.scene.control.Button;
 import static io.github.railroad.utility.localization.L18n.createStringBinding;
 
 public class LocalizedButton extends Button {
-    private static String currentKey;
+    private String currentKey;
 
     public LocalizedButton(String key) {
         super();
