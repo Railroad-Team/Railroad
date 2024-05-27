@@ -65,7 +65,7 @@ public class SettingsAppearancePane extends RRVBox {
             JsonObject config = ConfigHandler.getConfigJson();
             config.get("settings").getAsJsonObject().addProperty("theme", theme);
 
-            ConfigHandler.updateConfig(config);
+            ConfigHandler.updateConfig();
 
             Railroad.setStyle(theme);
         });

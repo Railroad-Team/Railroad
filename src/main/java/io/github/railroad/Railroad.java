@@ -2,13 +2,16 @@ package io.github.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.github.railroad.minecraft.FabricAPIVersion;
+import io.github.railroad.minecraft.NeoForgeVersion;
 import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
-import io.github.railroad.project.ui.welcome.WelcomePane;
 import io.github.railroad.utility.ConfigHandler;
+import io.github.railroad.vcs.RepositoryManager;
+import io.github.railroad.welcome.WelcomePane;
 import javafx.application.Application;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -21,18 +24,25 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import okhttp3.OkHttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class Railroad extends Application {
+    public static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static BooleanProperty isShifting = new SimpleBooleanProperty();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
+    public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
+    public static final AtomicReference<String> THEME = new AtomicReference<>("default-dark");
+    public static final String URL_REGEX = "(?:http(s)?:\\/\\/)?[\\w.-]+(?:\\.[\\w\\.-]+)+[\\w\\-\\._~:/?#\\[\\]@!\\$&'\\(\\)\\*\\+,;=.]+$";
 
     private static boolean DEBUG = false;
     private static Scene scene;
@@ -85,57 +95,6 @@ public class Railroad extends Application {
         return Railroad.class.getResourceAsStream("/io/github/railroad/" + path);
     }
 
-    @Override
-    public void start(Stage primaryStage) {
-        ConfigHandler.updateConfig(ConfigHandler.getConfigJson());
-        PLUGIN_MANAGER.start();
-        PLUGIN_MANAGER.addCustomEventListener(event -> {
-            Platform.runLater(() -> {
-                Railroad.showErrorAlert("Plugin", event.getPlugin().getClass().getName(), event.getPhaseResult().getErrors().toString());
-            });
-        });
-
-        MinecraftVersion.load();
-        ForgeVersion.load();
-        window = primaryStage;
-
-        // Calculate the primary screen size to better fit the window
-        Screen screen = Screen.getPrimary();
-
-        double screenW = screen.getBounds().getWidth();
-        double screenH = screen.getBounds().getHeight();
-
-        // TODO: Find a better way to calculate these because it makes it weird on different sized monitors
-        double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
-        double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
-
-        // Start the welcome screen and window
-        scene = new Scene(new Pane(), windowW, windowH);
-
-        var welcomePane = new WelcomePane();
-        scene.setRoot(welcomePane);
-
-        handleStyles(scene);
-        handleInputs(scene);
-
-        // Open setup and show the window
-        primaryStage.setMinWidth(scene.getWidth() + 10);
-        primaryStage.setMinHeight(scene.getHeight() + 10);
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Railroad - 1.0.0(dev)");
-        primaryStage.show();
-        primaryStage.requestFocus();
-
-        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
-
-    }
-
-    @Override
-    public void stop() throws Exception {
-        PLUGIN_MANAGER.unLoadAllPlugins();
-        System.out.println("Stopping Railroad");
-        System.exit(0);
-    }
 
     public static void showErrorAlert(String title, String header, String content, Consumer<ButtonType> action) {
         var alert = new Alert(Alert.AlertType.ERROR);
@@ -150,6 +109,59 @@ public class Railroad extends Application {
     }
 
     public static void showErrorAlert(String title, String header, String content) {
-        showErrorAlert(title, header, content, buttonType -> {});
+        showErrorAlert(title, header, content, buttonType -> {
+        });
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        ConfigHandler.updateConfig();
+        PLUGIN_MANAGER.start();
+        PLUGIN_MANAGER.addCustomEventListener(event -> {
+            Platform.runLater(() -> {
+                Railroad.showErrorAlert("Plugin", event.getPlugin().getClass().getName(), event.getPhaseResult().getErrors().toString());
+            });
+        });
+        REPOSITORY_MANAGER.start();
+        MinecraftVersion.load();
+        ForgeVersion.load();
+        FabricAPIVersion.load();
+        NeoForgeVersion.load();
+        window = primaryStage;
+
+        // Calculate the primary screen size to better fit the window
+        Screen screen = Screen.getPrimary();
+
+        double screenW = screen.getBounds().getWidth();
+        double screenH = screen.getBounds().getHeight();
+
+        double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
+        double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
+
+        // Start the welcome screen and window
+        scene = new Scene(new Pane(), windowW, windowH);
+
+        var welcomePane = new WelcomePane();
+        scene.setRoot(welcomePane);
+
+        handleStyles(scene);
+
+        // Open setup and show the window
+        primaryStage.setMinWidth(scene.getWidth() + 10);
+        primaryStage.setMinHeight(scene.getHeight() + 10);
+        primaryStage.setScene(scene);
+        primaryStage.setTitle("Railroad - 1.0.0(dev)");
+        primaryStage.show();
+        // FIXME window is not being focused when it opens
+
+        LOGGER.info("Railroad started");
+        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
+    }
+
+    @Override
+    public void stop() {
+        LOGGER.info("Stopping Railroad");
+        PLUGIN_MANAGER.unloadPlugins();
+        System.exit(0);
     }
 }

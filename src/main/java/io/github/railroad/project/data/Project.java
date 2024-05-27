@@ -1,7 +1,7 @@
 package io.github.railroad.project.data;
 
-import io.github.railroad.Railroad;
 import io.github.railroad.project.ProjectManager;
+import io.github.railroad.vcs.Repository;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 
@@ -16,12 +16,13 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
+
 public class Project {
     private final Path path;
     private String alias;
     private Optional<Image> icon;
     private long lastOpened;
-
+    private Repository repository;
     private String id;
     private ProjectManager manager;
 
@@ -186,5 +187,13 @@ public class Project {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public Repository getRepository() {
+        return repository;
+    }
+
+    public void setRepository(Repository repository) {
+        this.repository = repository;
     }
 }

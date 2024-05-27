@@ -1,21 +1,22 @@
 package io.github.railroad.settings.ui;
 
-import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.ui.localized.LocalizedLabel;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
+import io.github.railroad.Railroad;
+import io.github.railroad.plugin.Plugin;
+import io.github.railroad.settings.ui.plugin.PluginListCell;
+import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollPane;
 
-public class SettingsPluginsPane extends RRVBox {
+public class SettingsPluginsPane extends ScrollPane {
+    private final ListView<Plugin> pluginList = new ListView<>();
 
     public SettingsPluginsPane() {
-        var title = new LocalizedLabel("railroad.home.settings.plugins");
-        title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");
-        title.prefWidthProperty().bind(widthProperty());
-        title.setAlignment(Pos.CENTER);
+        setFitToWidth(true);
+        setFitToHeight(true);
+        setHbarPolicy(ScrollBarPolicy.NEVER);
+        setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
 
-        setPadding(new Insets(10));
-        setSpacing(10);
-
-        getChildren().add(title);
+        pluginList.setCellFactory(param -> new PluginListCell(this));
+        pluginList.getItems().addAll(Railroad.PLUGIN_MANAGER.getPluginList());
+        setContent(pluginList);
     }
 }
