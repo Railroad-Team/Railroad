@@ -34,7 +34,7 @@ public class ImportProjectListCell extends ListCell<Repository> {
         var removeItem = new MenuItem("Remove");
 
         openItem.setOnAction(e -> {
-            DirectoryChooser directoryChooser = new DirectoryChooser();
+            var directoryChooser = new DirectoryChooser();
             File selectedDirectory = directoryChooser.showDialog(Railroad.getWindow());
 
             Repository repository = repositoryListNode.repositoryProperty().get();
