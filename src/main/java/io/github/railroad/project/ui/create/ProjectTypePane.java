@@ -4,6 +4,7 @@ import io.github.railroad.project.ProjectType;
 import io.github.railroad.project.ui.create.widget.ProjectTypeCell;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.localized.LocalizedButton;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
@@ -28,7 +29,7 @@ public class ProjectTypePane extends RRVBox {
         setMinWidth(200);
         setMaxWidth(200);
 
-        backButton = new Button("Back");
+        backButton = new LocalizedButton("railroad.home.settings.back");
         backButton.setGraphic(new FontIcon(FontAwesomeSolid.BACKSPACE));
         backButton.prefWidthProperty().bind(widthProperty());
 

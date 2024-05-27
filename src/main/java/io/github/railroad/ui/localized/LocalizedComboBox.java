@@ -13,9 +13,15 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
         setConverter(new StringConverter<>() {
             @Override
             public String toString(T object) {
-                return L18n.localize(keyFunction.apply(object));
+                if (object == null) {
+                    return "NullObject";
+                }
+                String key = keyFunction.apply(object);
+                if (key == null) {
+                    return "NullKey";
+                }
+                return L18n.localize(key);
             }
-
             @Override
             public T fromString(String string) {
                 return valOfFunction.apply(string.toUpperCase(Locale.ROOT));

@@ -12,6 +12,7 @@ import io.github.railroad.project.data.NeoForgeProjectData;
 import io.github.railroad.project.data.Project;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.localized.LocalizedLabel;
 import io.github.railroad.utility.ExceptionlessRunnable;
 import io.github.railroad.utility.FileHandler;
 import io.github.railroad.utility.TextAreaOutputStream;
@@ -71,7 +72,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
         progressBox.getChildren().addAll(timeElapsedLabel, taskLabel);
         setBottom(progressBox);
 
-        setTop(new Label("Creating project..."));
+        setTop(new LocalizedLabel("railroad.home.project.creating"));
         setAlignment(getTop(), Pos.CENTER);
         progressSpinner.setProgress(0);
 
