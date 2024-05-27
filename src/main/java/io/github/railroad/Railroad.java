@@ -2,14 +2,15 @@ package io.github.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.minecraft.FabricAPIVersion;
-import io.github.railroad.minecraft.ForgeVersion;
-import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.minecraft.NeoForgeVersion;
 import io.github.railroad.plugin.PluginManager;
+import io.github.railroad.discord.activity.RailroadActivities;
+import io.github.railroad.minecraft.ForgeVersion;
+import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.utility.ConfigHandler;
+import io.github.railroad.vcs.RepositoryManager;
 import io.github.railroad.welcome.WelcomePane;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -32,12 +33,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class Railroad extends Application {
+    public static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
+    public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
     public static final AtomicReference<String> THEME = new AtomicReference<>("default-dark");
-    public static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
     public static final String URL_REGEX = "(?:http(s)?:\\/\\/)?[\\w.-]+(?:\\.[\\w\\.-]+)+[\\w\\-\\._~:/?#\\[\\]@!\\$&'\\(\\)\\*\\+,;=.]+$";
 
     private static boolean DEBUG = false;
@@ -114,14 +116,14 @@ public class Railroad extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        ConfigHandler.updateConfig(ConfigHandler.getConfigJson());
+        ConfigHandler.updateConfig();
         PLUGIN_MANAGER.start();
         PLUGIN_MANAGER.addCustomEventListener(event -> {
             Platform.runLater(() -> {
                 Railroad.showErrorAlert("Plugin", event.getPlugin().getClass().getName(), event.getPhaseResult().getErrors().toString());
             });
         });
-
+        REPOSITORY_MANAGER.start();
         MinecraftVersion.load();
         ForgeVersion.load();
         FabricAPIVersion.load();

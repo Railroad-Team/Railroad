@@ -21,6 +21,7 @@ public class WelcomePane extends RRHBox {
     private final WelcomeLeftPane leftPane;
     private final WelcomeHeaderPane headerPane;
     private final WelcomeProjectsPane projectsPane;
+    private final WelcomeImportProjectsPane importProjectsPane;
 
     private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
     private final AtomicReference<SettingsPane> settingsPane = new AtomicReference<>();
@@ -30,7 +31,7 @@ public class WelcomePane extends RRHBox {
         headerPane = new WelcomeHeaderPane();
         projectsPane = new WelcomeProjectsPane(headerPane.getSearchField());
         projectsPane.setSortProperty(headerPane.getSortComboBox().valueProperty());
-
+        importProjectsPane = new WelcomeImportProjectsPane();
         headerPane.setPrefHeight(80);
 
         var rightPane = new RRVBox();
@@ -39,7 +40,7 @@ public class WelcomePane extends RRHBox {
         horizontalSeparator.setPadding(new Insets(10, 0, 10, -10));
         rightPane.getChildren().addAll(headerPane, horizontalSeparator, projectsPane);
         RRVBox.setVgrow(projectsPane, Priority.ALWAYS);
-
+        RRVBox.setVgrow(importProjectsPane, Priority.ALWAYS);
         var verticalSeparator = new Separator(Orientation.VERTICAL);
         verticalSeparator.setPadding(new Insets(0));
         getChildren().addAll(leftPane, verticalSeparator, rightPane);
@@ -57,6 +58,10 @@ public class WelcomePane extends RRHBox {
 
                     Platform.runLater(() -> {
                         switch (newValue) {
+                            case HOME -> {
+                                rightPane.getChildren().clear();
+                                rightPane.getChildren().addAll(headerPane, new Separator(), projectsPane);
+                            }
                             case NEW_PROJECT -> {
                                 var newProjectPane = this.newProjectPane.updateAndGet(
                                         pane -> Objects.requireNonNullElseGet(pane, NewProjectPane::new));
@@ -70,9 +75,8 @@ public class WelcomePane extends RRHBox {
                                 Railroad.LOGGER.debug("Dir Selected: {}\n", directoryChooser.showDialog(getScene().getWindow()));
                             }
                             case IMPORT_PROJECT -> {
-                                Railroad.LOGGER.warn("[Import project] is still not implemented!");
-                                //TODO Either create an import pane with options for java ver, mc ver, forge/fabric etc OR have open dir & automagically work it out and maybe check with the user
-                                //TODO That all of the values are correct?
+                                rightPane.getChildren().clear();
+                                rightPane.getChildren().addAll(headerPane, new Separator(), importProjectsPane);
                             }
 
                             case SETTINGS -> {

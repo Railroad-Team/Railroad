@@ -7,6 +7,7 @@ import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.plugin.Plugin;
 import io.github.railroad.plugin.PluginPhaseResult;
 import io.github.railroad.plugin.PluginStates;
+import io.github.railroad.ui.defaults.RRVBox;
 
 import java.time.Instant;
 
@@ -15,6 +16,7 @@ public class Discord extends Plugin {
 
     @Override
     public PluginPhaseResult initPlugin() {
+        this.setPluiginName("Discord");
         updateStatus(PluginStates.STARTING_INIT);
         PluginPhaseResult phaseResult = getNewPhase();
 
@@ -92,5 +94,10 @@ public class Discord extends Plugin {
     @Override
     public PluginPhaseResult reloadPlugin() {
         return getNewPhase();
+    }
+
+    @Override
+    public RRVBox showSettings() {
+        return null;
     }
 }

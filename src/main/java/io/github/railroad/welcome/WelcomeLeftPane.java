@@ -65,6 +65,7 @@ public class WelcomeLeftPane extends RRVBox {
     }
 
     public enum MenuType {
+        HOME("Home", FontAwesomeSolid.HOME),
         NEW_PROJECT("New Project", FontAwesomeSolid.PLUS),
         OPEN_PROJECT("Open Project", FontAwesomeSolid.FOLDER_OPEN),
         IMPORT_PROJECT("Import Project", FontAwesomeSolid.FILE_IMPORT),

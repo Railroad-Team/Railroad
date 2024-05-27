@@ -51,7 +51,7 @@ public class ProjectManager {
     public void updateProjectInfo(Project project, boolean removeProject) {
         JsonObject object = ConfigHandler.getConfigJson();
         JsonArray projects = object.getAsJsonArray("projects");
-        Railroad.LOGGER.debug("Starting project update: {}", project.getId());
+        Railroad.LOGGER.info("Starting project update: " + project.getId());
         boolean found = false;
         for (JsonElement projectElement : projects) {
             JsonObject projectObject = projectElement.getAsJsonObject();
@@ -62,21 +62,28 @@ public class ProjectManager {
                 } else {
                     found = true;
                     projectObject.addProperty("lastOpened", project.getLastOpened());
-                    Railroad.LOGGER.debug("Starting update project: {} last opened to: {}", project.getId(), project.getLastOpened());
+                    Railroad.LOGGER.info("Starting update project: " + project.getId() + " last opened to: " + project.getLastOpened());
                 }
             }
         }
 
         if (!found && !removeProject) {
-            Railroad.LOGGER.debug("Creating new project");
+            Railroad.LOGGER.info("Create new Project");
             var newProject = new JsonObject();
             newProject.addProperty("uuid", project.getId());
             newProject.addProperty("path", project.getPath().toString());
             newProject.addProperty("alias", project.getAlias());
+            if (project.getRepository() != null) {
+                var newProjectRepoObject = new JsonObject();
+                newProjectRepoObject.addProperty("repo_type", project.getRepository().getRepositoryType().toString());
+                newProjectRepoObject.addProperty("account_alias", project.getRepository().getConnection().getProfile().getAlias());
+                newProjectRepoObject.addProperty("account_url", project.getRepository().getRepositoryURL());
+                newProject.add("repository", newProjectRepoObject);
+            }
             projects.add(newProject);
         }
-
-        ConfigHandler.updateConfig(object);
+        
+        ConfigHandler.updateConfig();
     }
 
     public ObservableList<Project> getProjects() {
