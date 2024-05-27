@@ -1,10 +1,9 @@
-package io.github.railroad.project.ui.welcome;
+package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.project.ui.project.ImportProjectListCell;
+import io.github.railroad.project.ui.ImportProjectListCell;
 import io.github.railroad.vcs.Repository;
 import javafx.beans.binding.Bindings;
-import javafx.collections.ListChangeListener;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;

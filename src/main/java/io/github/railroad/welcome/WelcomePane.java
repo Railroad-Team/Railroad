@@ -9,9 +9,7 @@ import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Separator;
-import javafx.scene.control.SplitPane;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
 
 import javax.swing.filechooser.FileSystemView;
 import java.util.Objects;

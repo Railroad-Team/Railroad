@@ -107,8 +107,4 @@ public class ProjectManager {
 
         return true;
     }
-
-    public void setProjects(List<Project> projectCollection) {
-        this.projects.setAll(projectCollection);
-    }
 }

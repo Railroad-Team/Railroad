@@ -1,7 +1,7 @@
-package io.github.railroad.project.ui.project;
+package io.github.railroad.project.ui;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.project.Project;
+import io.github.railroad.project.data.Project;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.vcs.Repository;
