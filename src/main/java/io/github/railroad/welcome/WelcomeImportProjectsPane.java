@@ -10,7 +10,7 @@ import javafx.scene.control.ScrollPane;
 import io.github.railroad.ui.defaults.RRStackPane;
 
 public class WelcomeImportProjectsPane extends ScrollPane {
-    private final ListView<Repository> repositoryListView = new ListView<>();
+    private final RRListView<Repository> repositoryListView = new RRListView<>();
     private final ProgressIndicator progressIndicator = new ProgressIndicator();
 
     public WelcomeImportProjectsPane() {
