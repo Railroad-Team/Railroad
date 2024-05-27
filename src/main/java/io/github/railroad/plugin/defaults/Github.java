@@ -24,7 +24,7 @@ public class Github extends Plugin {
                 for (JsonElement element : config.get("accounts").getAsJsonArray()) {
                     if (element.getAsJsonObject().get("token") != null && element.getAsJsonObject().get("alias") != null) {
                         Railroad.LOGGER.info("Adding new Github connection to RepositoryManager");
-                        Profile prof = new Profile();
+                        var prof = new Profile();
                         prof.setAccessToken(element.getAsJsonObject().get("token").getAsString());
                         prof.setAlias(element.getAsJsonObject().get("alias").getAsString());
                         prof.setConfig_obj(element.getAsJsonObject());
