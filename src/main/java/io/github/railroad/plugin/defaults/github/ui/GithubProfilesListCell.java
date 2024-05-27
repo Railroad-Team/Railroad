@@ -44,6 +44,7 @@ public class GithubProfilesListCell extends ListCell<Profile> {
                         }
                     }
                 }
+                
                 Railroad.REPOSITORY_MANAGER.deleteWhereProfileIs(profile);
             }
         });
