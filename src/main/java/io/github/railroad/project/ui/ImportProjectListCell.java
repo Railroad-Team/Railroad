@@ -4,6 +4,7 @@ import io.github.railroad.Railroad;
 import io.github.railroad.project.data.Project;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.defaults.RRStackPane;
 import io.github.railroad.vcs.Repository;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
