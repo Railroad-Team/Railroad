@@ -81,7 +81,6 @@ public class PluginListCell extends ListCell<Plugin> {
             icon.setPreserveRatio(true);
 
             getChildren().addAll(icon, nameLabel);
-
         }
 
         public PluginListNode(Plugin plugin) {
