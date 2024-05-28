@@ -2,6 +2,7 @@ package io.github.railroad.project.ui.create.widget;
 
 import io.github.railroad.project.ProjectSort;
 import io.github.railroad.ui.localized.LocalizedComboBox;
+import io.github.railroad.ui.localized.LocalizedListCell;
 import io.github.railroad.utility.localization.L18n;
 import javafx.collections.FXCollections;
 import javafx.scene.control.ListCell;
@@ -16,18 +17,11 @@ public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {
         setItems(FXCollections.observableArrayList(ProjectSort.values()));
         setPrefWidth(120);
 
-        setButtonCell(new ListCell<>() {
+        setButtonCell(new LocalizedListCell<>(ProjectSort::getKey) {
             @Override
             protected void updateItem(ProjectSort item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(item == null ? null : L18n.localize(item.getKey()));
-                L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) -> {
-                    if (item != null) {
-                        setText(L18n.localize(item.getKey()));
-                    } else {
-                        setText(null);
-                    }
-                });
+
                 setGraphic(ICON);
             }
         });
