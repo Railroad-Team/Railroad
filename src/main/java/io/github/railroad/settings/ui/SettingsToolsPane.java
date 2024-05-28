@@ -6,7 +6,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 
 public class SettingsToolsPane extends RRVBox {
-
     public SettingsToolsPane() {
         var title = new LocalizedLabel("railroad.home.settings.tools");
         title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");

@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class LocalizedLabel extends Label {
     private String currentKey;
-    AtomicReference<String> argString = new AtomicReference<>("");
+    private final AtomicReference<String> argString = new AtomicReference<>("");
 
     public LocalizedLabel(String key, String... args) {
         super();

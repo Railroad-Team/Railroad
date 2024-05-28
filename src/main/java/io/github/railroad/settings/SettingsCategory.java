@@ -28,7 +28,7 @@ public enum SettingsCategory {
         this(key, icon, Color.WHITE);
     }
 
-    public String getName() {
+    public String getKey() {
         return key;
     }
 

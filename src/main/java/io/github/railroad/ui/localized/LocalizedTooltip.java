@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class LocalizedTooltip extends Tooltip {
     private String currentKey;
-    AtomicReference<String> argString = new AtomicReference<>("");
+    private final AtomicReference<String> argString = new AtomicReference<>("");
 
     public LocalizedTooltip(String key, String... args) {
         super();

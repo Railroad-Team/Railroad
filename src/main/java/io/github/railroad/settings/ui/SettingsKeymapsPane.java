@@ -8,7 +8,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 public class SettingsKeymapsPane extends RRVBox {
-
     public SettingsKeymapsPane() {
         var title = new LocalizedLabel("railroad.home.settings.keymaps");
         title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");

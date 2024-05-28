@@ -4,12 +4,10 @@ import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.ui.localized.LocalizedLabel;
 import io.github.railroad.ui.localized.LocalizedListCell;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.Separator;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -37,7 +35,7 @@ public class WelcomeLeftPane extends RRVBox {
 
         var rightVbox = new RRVBox();
         rightVbox.setAlignment(Pos.CENTER);
-        rightVbox.getChildren().add(new LocalizedLabel("railroad.home.window.title"));
+        rightVbox.getChildren().add(new Label("Railroad IDE"));
         rightVbox.getChildren().add(new Label("1.0.0(dev)"));
 
         hbox.getChildren().add(rightVbox);
@@ -87,7 +85,7 @@ public class WelcomeLeftPane extends RRVBox {
             this(key, icon, Color.WHITE);
         }
 
-        public String getName() {
+        public String getKey() {
             return this.key;
         }
 
@@ -104,7 +102,7 @@ public class WelcomeLeftPane extends RRVBox {
         private final FontIcon icon = new FontIcon();
 
         public MenuTypeCell() {
-            super(MenuType::getName);
+            super(MenuType::getKey);
             icon.setIconSize(24);
         }
 

@@ -13,12 +13,12 @@ import static io.github.railroad.Railroad.LOGGER;
 
 public class L18n {
     private static final Properties LANG_CACHE = new Properties();
-    private static final ObjectProperty<Languages> CURRENT_LANG = new SimpleObjectProperty<>();
+    private static final ObjectProperty<Language> CURRENT_LANG = new SimpleObjectProperty<>();
 
     private L18n() {
     }
 
-    public static void setLanguage(Languages language) {
+    public static void setLanguage(Language language) {
         //Updates the config and calls loadLanguage to update the cache and CURRENT_LANG
         LOGGER.debug("Setting language to {}", language);
 
@@ -29,21 +29,21 @@ public class L18n {
         loadLanguage();
     }
 
-    public static Languages getCurrentLanguage() {
+    public static Language getCurrentLanguage() {
         return CURRENT_LANG.getValue();
     }
 
-    public static ObjectProperty<Languages> currentLanguageProperty() {
+    public static ObjectProperty<Language> currentLanguageProperty() {
         return CURRENT_LANG;
     }
 
     public static void loadLanguage() {
         //Loads the language into cache and sets the CURRENT_LANG
         LOGGER.info("Loading language file");
-        Languages newLang = Languages.valueOf(ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("language").getAsString());
+        Language newLang = Language.valueOf(ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("language").getAsString());
 
         try {
-            InputStream props = Railroad.getResourceAsStream("lang/" + newLang + ".properties");
+            InputStream props = Railroad.getResourceAsStream("lang/" + newLang + ".lang");
             LOGGER.info("Reading language file");
 
             //Load cache and THEN change CURRENT_LANG otherwise binds will be triggered before cache changes
@@ -61,9 +61,10 @@ public class L18n {
         if (LANG_CACHE.get(key) == null) {
             LOGGER.error("Error finding translations for {} {} Moving to english", key, CURRENT_LANG);
 
-            setLanguage(Languages.en_us);
+            setLanguage(Language.EN_US);
             return localize(key);
         }
+
         return LANG_CACHE.get(key).toString();
     }
 }

@@ -132,10 +132,6 @@
     -fx-bounds-type: logical_vertical_center;
 }
 
-Text {
-    -fx-fill: -color-fg-default;
-}
-
 LocalizedText {
     -fx-fill: -color-fg-default;
 }

@@ -12,7 +12,7 @@ public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {
     private static final FontIcon ICON = FontIcon.of(FontAwesomeSolid.FILTER);
 
     public ProjectSortComboBox() {
-        super(ProjectSort::getName, ProjectSort::valueOf);
+        super(ProjectSort::getKey, ProjectSort::valueOf);
         setItems(FXCollections.observableArrayList(ProjectSort.values()));
         setPrefWidth(120);
 
@@ -20,10 +20,10 @@ public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {
             @Override
             protected void updateItem(ProjectSort item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(item == null ? null : L18n.localize(item.getName()));
+                setText(item == null ? null : L18n.localize(item.getKey()));
                 L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) -> {
                     if (item != null) {
-                        setText(L18n.localize(item.getName()));
+                        setText(L18n.localize(item.getKey()));
                     } else {
                         setText(null);
                     }

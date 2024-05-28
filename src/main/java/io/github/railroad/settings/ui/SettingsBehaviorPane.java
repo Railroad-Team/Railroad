@@ -7,7 +7,6 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 
 public class SettingsBehaviorPane extends RRVBox {
-
     public SettingsBehaviorPane() {
         Label title = new LocalizedLabel("railroad.home.settings.behavior");
         title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");

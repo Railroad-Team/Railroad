@@ -1,33 +1,33 @@
 package io.github.railroad.settings.ui.general;
 
+import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.localized.LocalizedLabel;
 import io.github.railroad.utility.localization.L18n;
-import io.github.railroad.utility.localization.Languages;
+import io.github.railroad.utility.localization.Language;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ComboBox;
-import javafx.scene.layout.VBox;
 
 import java.util.Arrays;
 
-public class SettingsGeneralPane extends VBox {
+public class SettingsGeneralPane extends RRVBox {
     public SettingsGeneralPane() {
         var titleLabel = new LocalizedLabel("railroad.home.settings.general");
         titleLabel.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");
         titleLabel.prefWidthProperty().bind(widthProperty());
         titleLabel.setAlignment(Pos.CENTER);
 
-        var langBox = new VBox(10);
+        var langBox = new RRVBox(10);
         langBox.setAlignment(Pos.CENTER_LEFT);
         var langTitleLabel = new LocalizedLabel("railroad.home.settings.general.language");
         langTitleLabel.setStyle("-fx-font-weight: bold;");
 
         var langComboBox = new ComboBox<>();
-        langComboBox.getItems().addAll(Arrays.stream(Languages.values()).map(Languages::getName).toList());
+        langComboBox.getItems().addAll(Arrays.stream(Language.values()).map(Language::getName).toList());
 
         langComboBox.setValue(L18n.getCurrentLanguage().getName());
         langComboBox.setOnAction(e -> {
-            L18n.setLanguage(Languages.fromName(langComboBox.getValue().toString()));
+            L18n.setLanguage(Language.fromName(langComboBox.getValue().toString()));
         });
 
         langBox.getChildren().addAll(langTitleLabel, langComboBox);

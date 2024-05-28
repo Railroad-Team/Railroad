@@ -17,7 +17,7 @@ public enum ProjectSort {
         this.comparator = comparator;
     }
 
-    public String getName() {
+    public String getKey() {
         return key;
     }
 
