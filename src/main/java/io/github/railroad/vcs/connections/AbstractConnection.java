@@ -7,7 +7,7 @@ import javafx.collections.ObservableList;
 import java.nio.file.Path;
 
 public abstract class AbstractConnection {
-    private ObservableList<Repository> repositories = FXCollections.observableArrayList();
+    private final ObservableList<Repository> repositories = FXCollections.observableArrayList();
 
     public abstract void downloadRepositories();
 

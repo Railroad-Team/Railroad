@@ -1,11 +1,13 @@
 package io.github.railroad.plugin.defaults.github.ui;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.plugin.defaults.Github;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.vcs.connections.Profile;
 import io.github.railroad.vcs.connections.hubs.GithubConnection;
+import javafx.collections.FXCollections;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
@@ -24,7 +26,7 @@ public class GithubAccounts extends RRVBox {
             showAddProfileDialog();
         });
 
-        profileListView.setItems(Railroad.REPOSITORY_MANAGER.getProfiles());
+        profileListView.setItems(FXCollections.observableArrayList(Railroad.REPOSITORY_MANAGER.getProfiles()));
         var scrollPane = new ScrollPane();
         scrollPane.setFitToHeight(true);
         scrollPane.setFitToWidth(true);
@@ -53,6 +55,7 @@ public class GithubAccounts extends RRVBox {
                 var connection = new GithubConnection(profile);
                 if (connection.validateProfile()) {
                     Railroad.LOGGER.debug("Valid GitHub profile");
+                    Railroad.REPOSITORY_MANAGER.addConnection(connection);
                 } else {
                     Railroad.LOGGER.debug("Invalid GitHub profile");
                 }

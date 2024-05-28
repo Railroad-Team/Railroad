@@ -6,13 +6,12 @@ import io.github.railroad.vcs.connections.Profile;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
-public class RepositoryManager extends Thread {
-    private final ObservableList<AbstractConnection> connections;
-    private final ObservableList<Repository> repositories = FXCollections.observableArrayList();
+import java.util.ArrayList;
+import java.util.List;
 
-    public RepositoryManager() {
-        this.connections = FXCollections.observableArrayList();
-    }
+public class RepositoryManager extends Thread {
+    private final ObservableList<AbstractConnection> connections = FXCollections.observableArrayList();
+    private final ObservableList<Repository> repositories = FXCollections.observableArrayList();
 
     @Override
     public void run() {
@@ -20,7 +19,7 @@ public class RepositoryManager extends Thread {
             try {
                 Railroad.LOGGER.debug("Starting update repos");
                 updateRepositories();
-                Thread.sleep(10_000);
+                Thread.sleep(60_000);
             } catch (InterruptedException exception) {
                 Railroad.LOGGER.error("RepositoryManager interrupted", exception);
                 Thread.currentThread().interrupt(); // Restore interrupted status
@@ -51,11 +50,11 @@ public class RepositoryManager extends Thread {
         return true;
     }
 
-    public ObservableList<Profile> getProfiles() {
-        ObservableList<Profile> profiles = FXCollections.observableArrayList();
+    public List<Profile> getProfiles() {
+        List<Profile> profiles = new ArrayList<>();
         for (AbstractConnection connection : connections) {
             if (!connection.getProfile().toDelete()) {
-                profiles.addAll(connection.getProfile());
+                profiles.add(connection.getProfile());
             }
         }
         

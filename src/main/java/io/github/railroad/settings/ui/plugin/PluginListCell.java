@@ -25,7 +25,7 @@ public class PluginListCell extends ListCell<Plugin> {
         var settingsItem = new MenuItem("Settings");
         var removeItem = new MenuItem("Remove");
 
-        settingsItem.setOnAction(e -> {
+        settingsItem.setOnAction(event -> {
             Plugin plugin = pluginListNode.pluginProperty().get();
             if (plugin != null) {
                 RRVBox setting_pane = plugin.showSettings();
@@ -39,9 +39,8 @@ public class PluginListCell extends ListCell<Plugin> {
 
         dropdown.getItems().addAll(settingsItem, removeItem);
 
-        ellipseButton.setOnMouseClicked(e -> {
-            dropdown.show(ellipseButton, e.getScreenX(), e.getScreenY());
-        });
+        ellipseButton.setOnMouseClicked(event ->
+                dropdown.show(ellipseButton, event.getScreenX(), event.getScreenY()));
 
         getStyleClass().add("project-list-cell");
         node.getChildren().add(pluginListNode);

@@ -30,7 +30,7 @@ public class GithubProfilesListCell extends ListCell<Profile> {
         var dropdown = new ContextMenu();
         var removeItem = new MenuItem("Remove");
 
-        removeItem.setOnAction(e -> {
+        removeItem.setOnAction(event -> {
             Profile profile = profileListNode.profileProperty().get();
             if (profile != null) {
                 JsonObject config = ConfigHandler.getPluginSettings("Github", true);
@@ -51,9 +51,8 @@ public class GithubProfilesListCell extends ListCell<Profile> {
 
         dropdown.getItems().addAll(removeItem);
 
-        ellipseButton.setOnMouseClicked(e -> {
-            dropdown.show(ellipseButton, e.getScreenX(), e.getScreenY());
-        });
+        ellipseButton.setOnMouseClicked(event ->
+                dropdown.show(ellipseButton, event.getScreenX(), event.getScreenY()));
 
         node.getChildren().add(ellipseButton);
     }
