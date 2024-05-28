@@ -136,6 +136,10 @@ Text {
   -fx-fill: -color-fg-default;
 }
 
+LocalizedText {
+  -fx-fill: -color-fg-default;
+}
+
 .title-1 {
   -fx-font-size: 2em;
   -fx-font-weight: bolder;
