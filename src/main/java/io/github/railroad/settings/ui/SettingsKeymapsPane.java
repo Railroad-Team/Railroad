@@ -19,8 +19,8 @@ public class SettingsKeymapsPane extends RRVBox {
 
         //TODO add items to table from config
         var keymapsList = new TableView<>();
-        TableColumn keyColumn = new TableColumn("Key");
-        TableColumn actionColumn = new TableColumn("Action");
+        var keyColumn = new TableColumn("Key");
+        var actionColumn = new TableColumn("Action");
 
         keyColumn.setMinWidth(150);
         keyColumn.setResizable(false);

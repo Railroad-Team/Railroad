@@ -1,5 +1,6 @@
 package io.github.railroad.utility.localization;
 
+import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.beans.property.ObjectProperty;
@@ -22,7 +23,7 @@ public class L18n {
         //Updates the config and calls loadLanguage to update the cache and CURRENT_LANG
         LOGGER.debug("Setting language to {}", language);
 
-        var updated = ConfigHandler.getConfigJson();
+        JsonObject updated = ConfigHandler.getConfigJson();
         updated.get("settings").getAsJsonObject().addProperty("language", language.toString());
 
         ConfigHandler.updateConfig();
@@ -40,7 +41,7 @@ public class L18n {
     public static void loadLanguage() {
         //Loads the language into cache and sets the CURRENT_LANG
         LOGGER.info("Loading language file");
-        Language newLang = Language.valueOf(ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("language").getAsString());
+        var newLang = Language.valueOf(ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("language").getAsString());
 
         try {
             InputStream props = Railroad.getResourceAsStream("lang/" + newLang + ".lang");
