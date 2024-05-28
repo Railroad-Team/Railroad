@@ -3,7 +3,9 @@ package io.github.railroad.settings.ui;
 import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.localized.LocalizedLabel;
 import io.github.railroad.utility.ConfigHandler;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -17,17 +19,17 @@ import java.util.stream.Stream;
 
 public class SettingsAppearancePane extends RRVBox {
     private static final ComboBox<String> themeSelector = new ComboBox<>();
-    private final Label title = new Label("Appearance");
-    private final Label themeOption = new Label("Select a theme:");
+    private final Label title = new LocalizedLabel("railroad.home.settings.appearance");
+    private final Label themeOption = new LocalizedLabel("railroad.home.settings.appearance.theme");
 
     public SettingsAppearancePane() {
-        var themeBox = new RRVBox();
+        var themeBox = new RRVBox(10);
 
         title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");
         title.prefWidthProperty().bind(widthProperty());
         title.setAlignment(Pos.CENTER);
 
-        themeBox.setStyle("-fx-padding: 0 0 0 10");
+        themeOption.setStyle("-fx-font-weight: bold;");
 
         List<Path> themes = new ArrayList<>();
         try (Stream<Path> files = Files.list(Path.of("themes"))) {
@@ -67,6 +69,9 @@ public class SettingsAppearancePane extends RRVBox {
 
             Railroad.setStyle(theme);
         });
+
+        setSpacing(10);
+        setPadding(new Insets(10));
 
         themeBox.getChildren().addAll(themeOption, themeSelector);
 

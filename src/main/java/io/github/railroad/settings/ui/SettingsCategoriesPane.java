@@ -1,6 +1,8 @@
 package io.github.railroad.settings.ui;
 
 import io.github.railroad.settings.SettingsCategory;
+import io.github.railroad.ui.localized.LocalizedButton;
+import io.github.railroad.ui.localized.LocalizedListCell;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListCell;
@@ -18,7 +20,7 @@ public class SettingsCategoriesPane extends VBox {
         setPadding(new Insets(10));
         getStyleClass().add("settings-categories-pane");
 
-        this.backButton = new Button("Back");
+        this.backButton = new LocalizedButton("railroad.home.settings.back");
         this.backButton.setGraphic(new FontIcon(FontAwesomeSolid.BACKSPACE));
         this.backButton.prefWidthProperty().bind(widthProperty());
 
@@ -43,10 +45,11 @@ public class SettingsCategoriesPane extends VBox {
         return listView;
     }
 
-    public static class SettingsCategoryCell extends ListCell<SettingsCategory> {
+    public static class SettingsCategoryCell extends LocalizedListCell<SettingsCategory> {
         private final FontIcon icon = new FontIcon();
 
         public SettingsCategoryCell() {
+            super(SettingsCategory::getName);
             icon.setIconSize(24);
         }
 
@@ -54,14 +57,11 @@ public class SettingsCategoriesPane extends VBox {
         protected void updateItem(SettingsCategory item, boolean empty) {
             super.updateItem(item, empty);
             if (empty || item == null) {
-                setText(null);
                 setGraphic(null);
             } else {
                 icon.setIconCode(item.getIcon());
                 icon.setIconColor(item.getColor());
                 setGraphic(icon);
-
-                setText(item.getName());
             }
         }
     }

@@ -4,6 +4,7 @@ import io.github.railroad.project.ui.create.widget.ProjectSearchField;
 import io.github.railroad.project.ui.create.widget.ProjectSortComboBox;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.localized.LocalizedText;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;
@@ -17,8 +18,7 @@ public class WelcomeHeaderPane extends RRHBox {
 
     public WelcomeHeaderPane() {
         // Creating and styling children
-        var title = new Text();
-        title.setText("Projects List");
+        var title = new LocalizedText("railroad.home.welcome.projects");
         title.setStyle("-fx-font-size: 20px;");
 
         searchField = new ProjectSearchField();

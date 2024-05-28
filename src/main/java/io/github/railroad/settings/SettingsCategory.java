@@ -6,30 +6,30 @@ import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 public enum SettingsCategory {
-    GENERAL("General", FontAwesomeSolid.COG),
-    APPEARANCE("Appearance", FontAwesomeSolid.PAINT_BRUSH),
-    BEHAVIOR("Behavior", FontAwesomeSolid.COGS),
-    KEYMAPS("Keymaps", FontAwesomeSolid.KEYBOARD),
-    PLUGINS("Plugins", FontAwesomeSolid.PLUG),
-    PROJECTS("Projects", FontAwesomeSolid.FOLDER),
-    TOOLS("Tools", FontAwesomeSolid.TOOLBOX);
+    GENERAL("railroad.home.settings.general", FontAwesomeSolid.COG),
+    APPEARANCE("railroad.home.settings.appearance", FontAwesomeSolid.PAINT_BRUSH),
+    BEHAVIOR("railroad.home.settings.behavior", FontAwesomeSolid.COGS),
+    KEYMAPS("railroad.home.settings.keymaps", FontAwesomeSolid.KEYBOARD),
+    PLUGINS("railroad.home.settings.plugins", FontAwesomeSolid.PLUG),
+    PROJECTS("railroad.home.settings.projects", FontAwesomeSolid.FOLDER),
+    TOOLS("railroad.home.settings.tools", FontAwesomeSolid.TOOLBOX);
 
-    private final String name;
+    private final String key;
     private final Ikon icon;
     private final Paint color;
 
-    SettingsCategory(String name, Ikon icon, Paint color) {
-        this.name = name;
+    SettingsCategory(String key, Ikon icon, Paint color) {
+        this.key = key;
         this.icon = icon;
         this.color = color;
     }
 
-    SettingsCategory(String name, Ikon icon) {
-        this(name, icon, Color.WHITE);
+    SettingsCategory(String key, Ikon icon) {
+        this(key, icon, Color.WHITE);
     }
 
     public String getName() {
-        return name;
+        return key;
     }
 
     public Ikon getIcon() {

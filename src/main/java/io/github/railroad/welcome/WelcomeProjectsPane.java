@@ -110,6 +110,7 @@ public class WelcomeProjectsPane extends ScrollPane {
 
     private void sortProjects(ProjectSort sort) {
         List<Project> copy = new ArrayList<>(List.copyOf(projectsList.getItems()));
+        if (sort == null) return;
         copy.sort(sort.getComparator());
 
         if (copy.equals(projectsList.getItems()))
