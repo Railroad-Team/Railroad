@@ -4,7 +4,7 @@ railroad.home.welcome.home=Inicio
 railroad.home.welcome.openproject=Abrir proyecto
 railroad.home.welcome.newproject=Nuevo proyecto
 railroad.home.welcome.importproject=Importar proyecto
-railroad.home.welcome.settings=Configuraci√≥n
+railroad.home.welcome.settings=ConfiguraciÛn
 
 railroad.home.welcome.sort.none=Ninguno
 railroad.home.welcome.sort.name=Nombre
@@ -13,7 +13,7 @@ railroad.home.welcome.sort.date=Fecha
 railroad.home.welcome.project.open=Abrir
 railroad.home.welcome.project.remove=Eliminar
 
-railroad.home.settings.search=Buscar configuraci√≥n...
+railroad.home.settings.search=Buscar configuraciÛn...
 railroad.home.settings.back=Volver
 
 railroad.home.settings.general=General
@@ -24,7 +24,7 @@ railroad.home.settings.plugins=Plugins
 railroad.home.settings.projects=Proyectos
 railroad.home.settings.tools=Herramientas
 
-railroad.home.settings.general.github=Conexi√≥n a Github:
+railroad.home.settings.general.github=ConexiÛn a Github:
 railroad.home.settings.general.github.connect=Conectar
 railroad.home.settings.general.github.disconnect=Desconectar
 
@@ -33,7 +33,7 @@ railroad.home.settings.general.language=Idioma:
 railroad.home.settings.appearance.theme=Seleccionar un tema
 
 railroad.home.settings.keymaps.key=Tecla
-railroad.home.settings.keymaps.action=Acci√≥n
+railroad.home.settings.keymaps.action=AcciÛn
 
 railroad.home.settings.keymaps.action.runproject=Ejecutar proyecto
 railroad.home.settings.keymaps.action.termproject=Terminar proyecto
@@ -45,50 +45,50 @@ railroad.home.welcome.project.searchtype=Buscar tipos de proyectos
 
 railroad.home.project.mappings=Mapeos
 railroad.home.project.mappingchannel=Canal de mapeo:
-railroad.home.project.mappingversion=Versi√≥n de mapeo:
+railroad.home.project.mappingversion=VersiÛn de mapeo:
 
 railroad.home.project.details=Detalles (Opcional)
 railroad.home.project.details.author=Autor:
-railroad.home.project.details.credits=Cr√©ditos:
-railroad.home.project.details.description=Descripci√≥n:
+railroad.home.project.details.credits=CrÈditos:
+railroad.home.project.details.description=DescripciÛn:
 railroad.home.project.details.issues=Problemas:
 railroad.home.project.details.jsonurl=Actualizar URL JSON:
 railroad.home.project.details.displayurl=Mostrar URL:
 railroad.home.project.details.displaytest=Mostrar prueba:
 railroad.home.project.details.client=Solo lado cliente:
-railroad.home.project.details.homepage=P√°gina de inicio:
+railroad.home.project.details.homepage=P·gina de inicio:
 railroad.home.project.details.sources=Fuentes:
 
 railroad.home.minecraft=Minecraft
-railroad.home.minecraft.version=Versi√≥n de Minecraft:
+railroad.home.minecraft.version=VersiÛn de Minecraft:
 
 railroad.home.project.name=Nombre:
-railroad.home.project.location=Ubicaci√≥n:
+railroad.home.project.location=UbicaciÛn:
 railroad.home.project.browse=Examinar
-railroad.home.project.destination=Esto se crear√° en:
+railroad.home.project.destination=Esto se crear· en:
 railroad.home.project.git=Crear repositorio Git:
 railroad.home.project.license=Licencia:
 
 railroad.home.project.maven=Maven
 railroad.home.project.maven.group=ID de grupo:
 railroad.home.project.maven.artifact=ID de artefacto:
-railroad.home.project.maven.version=Versi√≥n:
+railroad.home.project.maven.version=VersiÛn:
 
-railroad.home.project.forge.version=Versi√≥n de Forge:
+railroad.home.project.forge.version=VersiÛn de Forge:
 
-railroad.home.project.fabric.version=Versi√≥n de Fabric:
+railroad.home.project.fabric.version=VersiÛn de Fabric:
 railroad.home.project.fabric.api=Incluir API de Fabric:
-railroad.home.project.fabric.apiversion=Versi√≥n de API de Fabric:
+railroad.home.project.fabric.apiversion=VersiÛn de API de Fabric:
 railroad.home.project.fabric.uaw=Usar Access Widener:
 railroad.home.project.fabric.split=Dividir fuentes:
 
-railroad.home.project.neoforged.version=Versi√≥n de NeoForged:
+railroad.home.project.neoforged.version=VersiÛn de NeoForged:
 
 railroad.home.project.modid=ID del mod:
 railroad.home.project.modname=Nombre del mod:
 railroad.home.project.mainclass=Clase principal:
 railroad.home.project.mixins=Usar Mixins:
 railroad.home.project.uat=Usar Access Transformer:
-railroad.home.project.grf=Generar carpetas de ejecuci√≥n:
+railroad.home.project.grf=Generar carpetas de ejecuciÛn:
 
-railroad.home.project.tooltips.projectcreated=El proyecto se crear√° en este directorio.
+railroad.home.project.tooltips.projectcreated=El proyecto se crear· en este directorio.

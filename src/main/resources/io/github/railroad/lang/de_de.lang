@@ -1,7 +1,10 @@
+railroad.home.window.title=Railroad
+railroad.ide.window.title=Railroad IDE
+
 railroad.home.welcome.projects=Projektliste
 railroad.home.welcome.projectsearch=Projekte suchen...
 railroad.home.welcome.home=Startseite
-railroad.home.welcome.openproject=Projekt Ã¶ffnen
+railroad.home.welcome.openproject=Projekt öffnen
 railroad.home.welcome.newproject=Neues Projekt
 railroad.home.welcome.importproject=Projekt importieren
 railroad.home.welcome.settings=Einstellungen
@@ -10,16 +13,16 @@ railroad.home.welcome.sort.none=Keine
 railroad.home.welcome.sort.name=Name
 railroad.home.welcome.sort.date=Datum
 
-railroad.home.welcome.project.open=Ã–ffnen
+railroad.home.welcome.project.open=Öffnen
 railroad.home.welcome.project.remove=Entfernen
 
 railroad.home.settings.search=Einstellungen durchsuchen...
-railroad.home.settings.back=ZurÃ¼ck
+railroad.home.settings.back=Zurück
 
 railroad.home.settings.general=Allgemein
 railroad.home.settings.appearance=Aussehen
 railroad.home.settings.behavior=Verhalten
-railroad.home.settings.keymaps=TastenkÃ¼rzel
+railroad.home.settings.keymaps=Tastenkürzel
 railroad.home.settings.plugins=Plugins
 railroad.home.settings.projects=Projekte
 railroad.home.settings.tools=Werkzeuge
@@ -30,12 +33,12 @@ railroad.home.settings.general.github.disconnect=Trennen
 
 railroad.home.settings.general.language=Sprache:
 
-railroad.home.settings.appearance.theme=Thema auswÃ¤hlen
+railroad.home.settings.appearance.theme=Thema auswählen
 
 railroad.home.settings.keymaps.key=Taste
 railroad.home.settings.keymaps.action=Aktion
 
-railroad.home.settings.keymaps.action.runproject=Projekt ausfÃ¼hren
+railroad.home.settings.keymaps.action.runproject=Projekt ausführen
 railroad.home.settings.keymaps.action.termproject=Projekt beenden
 
 railroad.home.project=Projekt
@@ -77,7 +80,7 @@ railroad.home.project.maven.version=Version:
 railroad.home.project.forge.version=Forge-Version:
 
 railroad.home.project.fabric.version=Fabric-Version:
-railroad.home.project.fabric.api=Fabric-API einschlieÃŸen:
+railroad.home.project.fabric.api=Fabric-API einschließen:
 railroad.home.project.fabric.apiversion=Fabric-API-Version:
 railroad.home.project.fabric.uaw=Access Widener verwenden:
 railroad.home.project.fabric.split=Quellen aufteilen:
