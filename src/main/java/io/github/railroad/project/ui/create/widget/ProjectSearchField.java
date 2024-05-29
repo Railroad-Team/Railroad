@@ -1,9 +1,9 @@
 package io.github.railroad.project.ui.create.widget;
 
-import javafx.scene.control.TextField;
+import io.github.railroad.ui.localized.LocalizedTextField;
 
-public class ProjectSearchField extends TextField {
+public class ProjectSearchField extends LocalizedTextField {
     public ProjectSearchField() {
-        setPromptText("Search projects...");
+        super("railroad.home.welcome.projectsearch");
     }
 }
