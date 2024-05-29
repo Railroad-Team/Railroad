@@ -4,6 +4,7 @@ railroad.ide.window.title=Railroad IDE
 railroad.home.welcome.projects=Lista de Proyectos
 railroad.home.welcome.projectsearch=Buscar proyectos...
 railroad.home.welcome.home=Casa
+railroad.home.welcome.openproject=Open
 railroad.home.welcome.newproject=Nuevo Proyecto
 railroad.home.welcome.importproject=Importar Proyecto
 railroad.home.welcome.settings=Configuraciones

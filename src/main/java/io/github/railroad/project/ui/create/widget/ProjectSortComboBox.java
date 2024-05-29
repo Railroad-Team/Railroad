@@ -26,10 +26,6 @@ public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {
             }
         });
 
-        L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) -> {
-            setItems(FXCollections.observableArrayList(ProjectSort.values()));
-        });
-
         setValue(ProjectSort.NONE);
     }
 }
