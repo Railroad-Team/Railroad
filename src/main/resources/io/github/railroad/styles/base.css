@@ -49,3 +49,7 @@
     -fx-border-width: 1;
     -fx-border-color: -color-border-default;
 }
+
+LocalizedText {
+    -fx-fill: -color-fg-default;
+}

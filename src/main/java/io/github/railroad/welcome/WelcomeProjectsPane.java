@@ -4,8 +4,8 @@ import io.github.railroad.Railroad;
 import io.github.railroad.project.ProjectSort;
 import io.github.railroad.project.data.Project;
 import io.github.railroad.project.ui.create.widget.ProjectListCell;
-import io.github.railroad.project.ui.create.widget.ProjectSearchField;
 import io.github.railroad.ui.defaults.RRListView;
+import io.github.railroad.ui.localized.LocalizedTextField;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.ScrollPane;
@@ -20,7 +20,7 @@ public class WelcomeProjectsPane extends ScrollPane {
 
     private ObservableValue<ProjectSort> sortProperty;
 
-    public WelcomeProjectsPane(ProjectSearchField searchField) {
+    public WelcomeProjectsPane(LocalizedTextField searchField) {
         setFitToWidth(true);
         setFitToHeight(true);
         setHbarPolicy(ScrollBarPolicy.NEVER);
@@ -110,6 +110,7 @@ public class WelcomeProjectsPane extends ScrollPane {
 
     private void sortProjects(ProjectSort sort) {
         List<Project> copy = new ArrayList<>(List.copyOf(projectsList.getItems()));
+        if (sort == null) return;
         copy.sort(sort.getComparator());
 
         if (copy.equals(projectsList.getItems()))

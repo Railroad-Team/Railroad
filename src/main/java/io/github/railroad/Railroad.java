@@ -2,14 +2,15 @@ package io.github.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.github.railroad.minecraft.FabricAPIVersion;
-import io.github.railroad.minecraft.NeoForgeVersion;
-import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.discord.activity.RailroadActivities;
+import io.github.railroad.minecraft.FabricAPIVersion;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
+import io.github.railroad.minecraft.NeoForgeVersion;
+import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.utility.ConfigHandler;
+import io.github.railroad.utility.localization.L18n;
 import io.github.railroad.vcs.RepositoryManager;
 import io.github.railroad.welcome.WelcomePane;
 import javafx.application.Application;
@@ -128,6 +129,7 @@ public class Railroad extends Application {
         ForgeVersion.load();
         FabricAPIVersion.load();
         NeoForgeVersion.load();
+        L18n.loadLanguage();
         window = primaryStage;
 
         // Calculate the primary screen size to better fit the window

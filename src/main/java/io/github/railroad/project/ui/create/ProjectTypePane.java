@@ -4,7 +4,9 @@ import io.github.railroad.project.ProjectType;
 import io.github.railroad.project.ui.create.widget.ProjectTypeCell;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.localized.LocalizedTextField;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
@@ -15,7 +17,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 public class ProjectTypePane extends RRVBox {
     private final Button backButton;
-    private final TextField projectTypeSearchField;
+    private final LocalizedTextField projectTypeSearchField;
     private final ScrollPane projectTypesScroller;
     private final RRListView<ProjectType> projectTypeListView;
 
@@ -32,8 +34,7 @@ public class ProjectTypePane extends RRVBox {
         backButton.setGraphic(new FontIcon(FontAwesomeSolid.BACKSPACE));
         backButton.prefWidthProperty().bind(widthProperty());
 
-        projectTypeSearchField = new TextField();
-        projectTypeSearchField.setPromptText("Search Project Types");
+        projectTypeSearchField = new LocalizedTextField("railroad.home.welcome.project.searchtype");
 
         projectTypesScroller = new ScrollPane();
         projectTypesScroller.setFitToWidth(true);
