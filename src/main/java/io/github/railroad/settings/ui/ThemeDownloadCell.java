@@ -1,55 +1,67 @@
 package io.github.railroad.settings.ui;
 
 import com.google.gson.JsonObject;
-import io.github.railroad.project.data.Project;
-import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.defaults.RRStackPane;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.ui.localized.LocalizedButton;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.StackPane;
 
-public class ThemeDownloadCell extends ListCell<Object> {
-    private final StackPane node = new StackPane();
+public class ThemeDownloadCell extends ListCell<JsonObject> {
+    private final StackPane node = new RRStackPane();
     private final ThemeDownloadNode themeDownloadNode = new ThemeDownloadNode();
 
-    public ThemeDownloadCell(final String cssName) {
-        getStyleClass().add("theme-download-cell");
+    public ThemeDownloadCell() {
         node.getChildren().add(themeDownloadNode);
 
-        setPadding(new Insets(10));
-        setAlignment(Pos.BASELINE_LEFT);
+        var button = new Button("Hello");
 
-        var name = new Label(cssName);
-        var downloadButton = new LocalizedButton("railroad.home.settings.appearance.download");
+        node.getChildren().add(button);
+    }
 
-        node.getChildren().addAll(downloadButton);
+    @Override
+    protected void updateItem(JsonObject item, boolean empty) {
+        super.updateItem(item, empty);
+
+        if (empty || item == null) {
+            setText(null);
+            setGraphic(null);
+            themeDownloadNode.jsonProperty().set(null);
+        } else {
+            themeDownloadNode.jsonProperty().set(item);
+            setGraphic(node);
+        }
     }
 
     public static class ThemeDownloadNode extends RRVBox {
-        private final ObjectProperty<JsonObject> object = new SimpleObjectProperty<>();
-        Label label = null;
+        private final ObjectProperty<JsonObject> jsonProperty = new SimpleObjectProperty<>();
+        private final Label theme;
 
         public ThemeDownloadNode() {
-            setPadding(new Insets(5));
-            label = new Label("test");
+            getStyleClass().add("project-list-node");
 
-            var tbox = new RRHBox(5);
-            tbox.getChildren().add(label);
-            getChildren().add(tbox);
+            setSpacing(5);
+            setPadding(new Insets(10));
+            setAlignment(Pos.CENTER_LEFT);
+
+            var themeLabel = new Label();
+            themeLabel.textProperty().bind(jsonProperty.map(e -> e.get("name").toString()));
+
+            this.theme = themeLabel;
+
+            getChildren().addAll(themeLabel);
         }
 
         public ThemeDownloadNode(JsonObject obj) {
             this();
-            this.object.set(obj);
+            this.jsonProperty.set(obj);
         }
 
-        public ObjectProperty<JsonObject> projectProperty() {
-            return object;
-        }
+        public ObjectProperty<JsonObject> jsonProperty() { return jsonProperty; }
     }
 }
