@@ -1,11 +1,12 @@
 package io.github.railroad.plugin.defaults.github.ui;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.utility.ConfigHandler;
+import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.vcs.connections.Profile;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -35,11 +36,12 @@ public class GithubProfilesListCell extends ListCell<Profile> {
             if (profile != null) {
                 JsonObject config = ConfigHandler.getPluginSettings("Github", true);
                 if (config.has("accounts")) {
-                    for (JsonElement element : config.get("accounts").getAsJsonArray()) {
+                    JsonArray accounts = config.get("accounts").getAsJsonArray();
+                    for (JsonElement element : accounts) {
                         if (element.isJsonObject()) {
                             if (element.getAsJsonObject() == profile.getConfig_obj()) {
-                                config.get("accounts").getAsJsonArray().remove(element);
-                                ConfigHandler.updateConfig();
+                                accounts.remove(element);
+                                ConfigHandler.updateConfig(config);
                             }
                         }
                     }

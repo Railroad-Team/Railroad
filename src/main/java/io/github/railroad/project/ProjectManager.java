@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.project.data.Project;
-import io.github.railroad.utility.ConfigHandler;
+import io.github.railroad.config.ConfigHandler;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 

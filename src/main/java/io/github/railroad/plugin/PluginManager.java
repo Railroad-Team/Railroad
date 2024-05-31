@@ -5,13 +5,18 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.discord.activity.RailroadActivities;
-import io.github.railroad.utility.ConfigHandler;
+import io.github.railroad.config.ConfigHandler;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class PluginManager extends Thread {
-    private final List<Plugin> pluginList = new ArrayList<>();
+    @Getter
+    private final ObservableList<Plugin> pluginList = FXCollections.observableArrayList();
     private PluginManagerErrorEventListener listener;
 
     public void addCustomEventListener(PluginManagerErrorEventListener listener) {
@@ -26,15 +31,15 @@ public class PluginManager extends Thread {
 
     private void loadAllPlugins() {
         for (Plugin plugin : this.pluginList) {
-            if (plugin.getState() == PluginStates.LOADED)
+            if (plugin.getState() == PluginState.LOADED)
                 continue;
 
-            PluginPhaseResult initPhaseResult = plugin.initPlugin();
+            PluginPhaseResult initPhaseResult = plugin.init();
             if (initPhaseResult != null) {
-                if (plugin.getState() == PluginStates.FINISHED_INIT) {
-                    PluginPhaseResult loadPhaseResult = plugin.loadPlugin();
+                if (plugin.getState() == PluginState.FINISHED_INIT) {
+                    PluginPhaseResult loadPhaseResult = plugin.load();
                     if (loadPhaseResult != null) {
-                        if (plugin.getState() == PluginStates.LOADED) {
+                        if (plugin.getState() == PluginState.LOADED) {
                             showLog(plugin, "Loaded");
                         } else {
                             showError(plugin, loadPhaseResult, "LoadPlugin");
@@ -53,9 +58,7 @@ public class PluginManager extends Thread {
         for (JsonElement element : plugins) {
             try {
                 // TODO: Move plugins to external jar files
-                var plugin = (Plugin) Class.forName("io.github.railroad.plugin.defaults." + element.getAsString())
-                        .getDeclaredConstructor().newInstance();
-                addPlugin(plugin);
+                addPlugin(createPlugin(element.getAsString()));
             } catch (Exception exception) {
                 PluginPhaseResult phase = new PluginPhaseResult();
                 phase.addError(new Error(exception.getMessage()));
@@ -64,22 +67,28 @@ public class PluginManager extends Thread {
         }
     }
 
+    private static Plugin createPlugin(String pluginName) throws Exception {
+        return (Plugin) Class.forName("io.github.railroad.plugin.defaults." + pluginName)
+                .getDeclaredConstructor().newInstance();
+    }
+
     public void showError(Plugin plugin, PluginPhaseResult pluginPhaseResult, String message) {
         showError(plugin, pluginPhaseResult, message, "PluginManager");
     }
 
     public void showError(Plugin plugin, PluginPhaseResult pluginPhaseResult, String message, String topic) {
-        String phaseErrors = "";
+        String phaseErrors;
         if (pluginPhaseResult != null) {
             phaseErrors = pluginPhaseResult.getErrors().toString();
         } else {
             phaseErrors = "Missing phase";
             pluginPhaseResult = new PluginPhaseResult();
         }
+
         if (plugin != null) {
-            Railroad.LOGGER.error("[" + topic + "][" + plugin.getClass().getName() + "] Phase: " + message + " State: " + plugin.getState() + " Errors: " + phaseErrors);
+            Railroad.LOGGER.error("[{}][{}] Phase: {} State: {} Errors: {}", topic, plugin.getClass().getName(), message, plugin.getState(), phaseErrors);
         } else {
-            Railroad.LOGGER.error("[" + topic + "][Missing] Phase: " + message + " State: Missing Errors: " + phaseErrors);
+            Railroad.LOGGER.error("[{}][Missing] Phase: {} State: Missing Errors: {}", topic, message, phaseErrors);
         }
 
         if (listener != null) {
@@ -93,7 +102,7 @@ public class PluginManager extends Thread {
     }
 
     public void showLog(Plugin plugin, String message, String topic) {
-        Railroad.LOGGER.info("[" + topic + "][" + plugin.getClass().getName() + "]" + message);
+        Railroad.LOGGER.info("[{}][{}]{}", topic, plugin.getClass().getName(), message);
     }
 
     public void unloadPlugins() {
@@ -106,7 +115,7 @@ public class PluginManager extends Thread {
                 }
             }
 
-            plugin.unloadPlugin();
+            plugin.unload();
             showLog(plugin, "Unloaded");
         }
     }
@@ -121,13 +130,20 @@ public class PluginManager extends Thread {
     public void notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
         for (Plugin plugin : this.pluginList) {
             PluginPhaseResult phaseResult = plugin.railroadActivityChange(railroadActivityTypes);
-            if (plugin.getState() == PluginStates.ACTIVITY_UPDATE_ERROR) {
+            if (plugin.getState() == PluginState.ACTIVITY_UPDATE_ERROR) {
                 showError(plugin, phaseResult, "Update Activity");
             }
         }
     }
 
-    public List<Plugin> getPluginList() {
-        return this.pluginList;
+    // TODO: Don't do things by name, because other plugins can't have the same name, we should use a unique identifier
+    public Optional<Plugin> byName(String asString) {
+        for (Plugin plugin : this.pluginList) {
+            if (plugin.getClass().getName().equals(asString)) {
+                return Optional.of(plugin);
+            }
+        }
+
+        return Optional.empty();
     }
 }

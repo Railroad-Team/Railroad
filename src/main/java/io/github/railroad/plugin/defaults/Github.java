@@ -6,17 +6,17 @@ import io.github.railroad.Railroad;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.plugin.Plugin;
 import io.github.railroad.plugin.PluginPhaseResult;
-import io.github.railroad.plugin.PluginStates;
+import io.github.railroad.plugin.PluginState;
 import io.github.railroad.plugin.defaults.github.ui.GithubAccounts;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.utility.ConfigHandler;
+import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.vcs.connections.Profile;
 import io.github.railroad.vcs.connections.hubs.GithubConnection;
 
 public class Github extends Plugin {
     @Override
-    public PluginPhaseResult initPlugin() {
-        setPluiginName("Github");
+    public PluginPhaseResult init() {
+        setPluginName("Github");
         var phaseResult = new PluginPhaseResult();
         try {
             JsonObject config = ConfigHandler.getPluginSettings("Github", true);
@@ -34,7 +34,7 @@ public class Github extends Plugin {
                 }
             }
 
-            updateStatus(PluginStates.FINISHED_INIT);
+            updateStatus(PluginState.FINISHED_INIT);
         } catch (Exception exception) {
             phaseResult.addError(new Error(exception.getMessage()));
         }
@@ -43,13 +43,13 @@ public class Github extends Plugin {
     }
 
     @Override
-    public PluginPhaseResult loadPlugin() {
-        updateStatus(PluginStates.LOADED);
+    public PluginPhaseResult load() {
+        updateStatus(PluginState.LOADED);
         return new PluginPhaseResult();
     }
 
     @Override
-    public PluginPhaseResult unloadPlugin() {
+    public PluginPhaseResult unload() {
         return null;
     }
 
@@ -59,7 +59,7 @@ public class Github extends Plugin {
     }
 
     @Override
-    public PluginPhaseResult reloadPlugin() {
+    public PluginPhaseResult reload() {
         return null;
     }
 

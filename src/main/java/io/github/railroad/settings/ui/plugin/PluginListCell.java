@@ -72,7 +72,7 @@ public class PluginListCell extends ListCell<Plugin> {
             setAlignment(Pos.CENTER_LEFT);
 
             var nameLabel = new Label();
-            nameLabel.textProperty().bind(plugin.map(Plugin::getPluiginName));
+            nameLabel.textProperty().bind(plugin.map(Plugin::getPluginName));
             nameLabel.setStyle("-fx-font-size: 16px;");
 
             var icon = new ImageView();
