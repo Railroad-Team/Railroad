@@ -3,10 +3,12 @@ package io.github.railroad.settings.ui;
 import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.localized.LocalizedButton;
 import io.github.railroad.ui.localized.LocalizedLabel;
 import io.github.railroad.utility.ConfigHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 
@@ -21,6 +23,7 @@ public class SettingsAppearancePane extends RRVBox {
     private static final ComboBox<String> themeSelector = new ComboBox<>();
     private final Label title = new LocalizedLabel("railroad.home.settings.appearance");
     private final Label themeOption = new LocalizedLabel("railroad.home.settings.appearance.theme");
+    private final Button downloadThemes = new LocalizedButton("railroad.home.settings.appearance.downloadtheme");
 
     public SettingsAppearancePane() {
         var themeBox = new RRVBox(10);
@@ -70,10 +73,13 @@ public class SettingsAppearancePane extends RRVBox {
             Railroad.setStyle(theme);
         });
 
+        //Download theme button
+        downloadThemes.setOnAction(a -> new ThemeDownloadPane());
+
         setSpacing(10);
         setPadding(new Insets(10));
 
-        themeBox.getChildren().addAll(themeOption, themeSelector);
+        themeBox.getChildren().addAll(themeOption, themeSelector, downloadThemes);
 
         getChildren().addAll(title, themeBox);
     }
