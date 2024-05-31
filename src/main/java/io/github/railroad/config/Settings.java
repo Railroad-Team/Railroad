@@ -20,7 +20,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-@Getter
 public class Settings implements JsonSerializable<JsonObject> {
     private final ObservableMap<String, PluginSettings> pluginsSettings = FXCollections.observableHashMap();
     private final StringProperty theme = new SimpleStringProperty("default-dark");
@@ -93,5 +92,33 @@ public class Settings implements JsonSerializable<JsonObject> {
                 } catch (IllegalArgumentException ignored) {}
             }
         }
+    }
+
+    public void copyFrom(Settings settings) {
+        this.pluginsSettings.clear();
+        this.pluginsSettings.putAll(settings.pluginsSettings);
+
+        this.theme.set(settings.theme.get());
+        this.language.set(settings.language.get());
+    }
+
+    public PluginSettings getPluginSettings(Plugin plugin) {
+        return this.pluginsSettings.get(plugin.getName());
+    }
+
+    public <T extends PluginSettings> T getPluginSettings(Plugin plugin, Class<? extends T> settingsClass) throws ClassCastException {
+        return getPluginSettings(plugin.getName(), settingsClass);
+    }
+
+    public <T extends PluginSettings> T getPluginSettings(String pluginName, Class<? extends T> settingsClass) throws ClassCastException {
+        return settingsClass.cast(this.pluginsSettings.get(pluginName));
+    }
+
+    public String getTheme() {
+        return theme.get();
+    }
+
+    public Language getLanguage() {
+        return language.get();
     }
 }

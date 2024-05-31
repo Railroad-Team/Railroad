@@ -1,6 +1,8 @@
 package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.project.ProjectManager;
+import io.github.railroad.project.data.Project;
 import io.github.railroad.project.ui.create.NewProjectPane;
 import io.github.railroad.settings.ui.SettingsPane;
 import io.github.railroad.ui.defaults.RRHBox;
@@ -10,16 +12,21 @@ import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.Priority;
+import lombok.Getter;
 
 import javax.swing.filechooser.FileSystemView;
+import java.io.File;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.github.railroad.ui.BrowseButton.folderBrowser;
 
 public class WelcomePane extends RRHBox {
+    @Getter
     private final WelcomeLeftPane leftPane;
+    @Getter
     private final WelcomeHeaderPane headerPane;
+    @Getter
     private final WelcomeProjectsPane projectsPane;
     private final WelcomeImportProjectsPane importProjectsPane;
 
@@ -72,7 +79,12 @@ public class WelcomePane extends RRHBox {
                             case OPEN_PROJECT -> {
                                 var directoryChooser = folderBrowser(FileSystemView.getFileSystemView().getHomeDirectory(), "Open Project");
                                 //TODO Create/import/whatever with the selected folder here
-                                Railroad.LOGGER.debug("Dir Selected: {}\n", directoryChooser.showDialog(getScene().getWindow()));
+                                File selected = directoryChooser.showDialog(getScene().getWindow());
+                                Railroad.LOGGER.debug("Dir Selected: {}\n", selected);
+
+                                if(selected != null) {
+                                    ProjectManager.INSTANCE.newProject(new Project(selected.toPath()));
+                                }
                             }
                             case IMPORT_PROJECT -> {
                                 rightPane.getChildren().clear();
@@ -92,17 +104,5 @@ public class WelcomePane extends RRHBox {
                         leftPane.getListView().getSelectionModel().clearSelection();
                     });
                 });
-    }
-
-    public WelcomeProjectsPane getProjectsPane() {
-        return projectsPane;
-    }
-
-    public WelcomeHeaderPane getHeaderPane() {
-        return headerPane;
-    }
-
-    public WelcomeLeftPane getLeftPane() {
-        return leftPane;
     }
 }

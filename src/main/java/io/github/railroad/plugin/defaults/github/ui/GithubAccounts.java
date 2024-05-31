@@ -15,6 +15,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.Priority;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.jetbrains.annotations.NotNull;
 
 public class GithubAccounts extends RRVBox {
     private final RRListView<Profile> profileListView = new RRListView<>();
@@ -22,36 +23,56 @@ public class GithubAccounts extends RRVBox {
     public GithubAccounts() {
         // Create the button
         var addButton = new Button("+ Add New Profile");
-        addButton.setOnAction(event -> {
-            showAddProfileDialog();
-        });
+        addButton.setOnAction(event -> showAddProfileDialog());
 
         profileListView.setItems(FXCollections.observableArrayList(Railroad.REPOSITORY_MANAGER.getProfiles()));
+
         var scrollPane = new ScrollPane();
         scrollPane.setFitToHeight(true);
         scrollPane.setFitToWidth(true);
         profileListView.setCellFactory(param -> new GithubProfilesListCell(scrollPane));
+
         scrollPane.setContent(profileListView);
+        getChildren().addAll(addButton, scrollPane);
         RRVBox.setVgrow(scrollPane, Priority.ALWAYS);
         RRHBox.setHgrow(scrollPane, Priority.ALWAYS);
-        getChildren().addAll(addButton, scrollPane);
     }
 
     private void showAddProfileDialog() {
         var dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Add New Profile");
+
         var dialogVbox = new RRVBox(20);
+
         var aliasField = new TextField();
         aliasField.setPromptText("Enter Alias");
+
         var usernameField = new TextField();
         usernameField.setPromptText("Enter GitHub token");
+
+        var addProfileButton = createAddButton(usernameField, aliasField, dialog);
+
+        var cancelButton = new Button("Cancel");
+        cancelButton.setOnAction(event -> dialog.close());
+
+        var box = new RRVBox();
+        box.getChildren().addAll(addProfileButton, cancelButton);
+        dialogVbox.getChildren().addAll(aliasField, usernameField, box);
+
+        var dialogScene = new Scene(dialogVbox, 300, 200);
+        dialog.setScene(dialogScene);
+        dialog.show();
+    }
+
+    private static @NotNull Button createAddButton(TextField usernameField, TextField aliasField, Stage dialog) {
         var addProfileButton = new Button("Add Profile");
         addProfileButton.setOnAction(event -> {
             String username = usernameField.getText();
             if (!username.isEmpty()) {
                 var profile = new Profile();
-                profile.setAccessToken(username);
+                profile.usernameProperty().set(username);
+                profile.aliasProperty().set(aliasField.getText());
                 var connection = new GithubConnection(profile);
                 if (connection.validateProfile()) {
                     Railroad.LOGGER.debug("Valid GitHub profile");
@@ -59,18 +80,12 @@ public class GithubAccounts extends RRVBox {
                 } else {
                     Railroad.LOGGER.debug("Invalid GitHub profile");
                 }
-                //profileListView.getItems().add(profile);
+
+                // profileListView.getItems().add(profile);
                 dialog.close();
             }
         });
-
-        var cancelButton = new Button("Cancel");
-        cancelButton.setOnAction(event -> dialog.close());
-        var box = new RRVBox();
-        box.getChildren().addAll(addProfileButton, cancelButton);
-        dialogVbox.getChildren().addAll(aliasField, usernameField, box);
-        var dialogScene = new Scene(dialogVbox, 300, 200);
-        dialog.setScene(dialogScene);
-        dialog.show();
+        
+        return addProfileButton;
     }
 }

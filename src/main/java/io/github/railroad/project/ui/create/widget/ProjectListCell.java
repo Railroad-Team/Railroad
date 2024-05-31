@@ -83,11 +83,11 @@ public class ProjectListCell extends ListCell<Project> {
             icon.setFitWidth(32);
             icon.setFitHeight(32);
             icon.setPreserveRatio(true);
-            icon.imageProperty().bind(project.map(Project::getIcon));
+            icon.imageProperty().bind(project.flatMap(Project::iconProperty));
             this.icon = icon;
 
             var nameLabel = new Label();
-            nameLabel.textProperty().bind(project.map(Project::getAlias));
+            nameLabel.textProperty().bind(project.flatMap(Project::aliasProperty));
             nameLabel.setStyle("-fx-font-size: 16px;");
             this.label = nameLabel;
 

@@ -112,6 +112,7 @@
   -fx-background-radius: inherit;
   -fx-background-insets: inherit;
   -fx-padding: inherit;
+  -color-cell-fg: -color-fg-default;
 }
 .root.popup {
   -fx-background-color: transparent;

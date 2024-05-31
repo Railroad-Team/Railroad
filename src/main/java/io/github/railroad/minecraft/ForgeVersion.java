@@ -20,6 +20,7 @@ import org.w3c.dom.NodeList;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public record ForgeVersion(MinecraftVersion minecraftVersion, String id,
@@ -95,6 +96,23 @@ public record ForgeVersion(MinecraftVersion minecraftVersion, String id,
         }
 
         return Optional.empty();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        ForgeVersion that = (ForgeVersion) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
     }
 
     @Override

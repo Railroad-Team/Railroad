@@ -1,8 +1,7 @@
 package io.github.railroad.utility.localization;
 
-import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
-import io.github.railroad.utility.ConfigHandler;
+import io.github.railroad.config.ConfigHandler;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
@@ -20,12 +19,10 @@ public class L18n {
     }
 
     public static void setLanguage(Language language) {
-        //Updates the config and calls loadLanguage to update the cache and CURRENT_LANG
+        // Updates the config and calls loadLanguage to update the cache and CURRENT_LANG
         LOGGER.debug("Setting language to {}", language);
 
-        JsonObject updated = ConfigHandler.getConfigJson();
-        updated.get("settings").getAsJsonObject().addProperty("language", language.toString());
-
+        ConfigHandler.getConfig().getSettings().setLanguage(language);
         ConfigHandler.updateConfig();
         loadLanguage();
     }
@@ -39,18 +36,18 @@ public class L18n {
     }
 
     public static void loadLanguage() {
-        //Loads the language into cache and sets the CURRENT_LANG
+        // Loads the language into cache and sets the CURRENT_LANG
         LOGGER.info("Loading language file");
-        var newLang = Language.valueOf(ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("language").getAsString());
+        Language language = ConfigHandler.getConfig().getSettings().getLanguage();
 
         try {
-            InputStream props = Railroad.getResourceAsStream("lang/" + newLang + ".lang");
+            InputStream props = Railroad.getResourceAsStream("lang/" + language + ".lang");
             LOGGER.info("Reading language file");
 
-            //Load cache and THEN change CURRENT_LANG otherwise binds will be triggered before cache changes
+            // Load cache and then change CURRENT_LANG otherwise binds will be triggered before cache changes
             LANG_CACHE.clear();
             LANG_CACHE.load(props);
-            CURRENT_LANG.setValue(newLang);
+            CURRENT_LANG.setValue(language);
         } catch (IOException exception) {
             LOGGER.error("Error reading language file", exception);
             throw new IllegalStateException("Error reading language file", exception);

@@ -1,9 +1,11 @@
 package io.github.railroad.plugin.defaults;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.config.PluginSettings;
 import io.github.railroad.discord.DiscordCore;
 import io.github.railroad.discord.activity.DiscordActivity;
 import io.github.railroad.discord.activity.RailroadActivities;
+import io.github.railroad.plugin.BlankPluginSettings;
 import io.github.railroad.plugin.Plugin;
 import io.github.railroad.plugin.PluginPhaseResult;
 import io.github.railroad.plugin.PluginState;
@@ -16,7 +18,7 @@ public class Discord extends Plugin {
 
     @Override
     public PluginPhaseResult init() {
-        this.setPluginName("Discord");
+        setName("Discord");
         updateStatus(PluginState.STARTING_INIT);
         PluginPhaseResult phaseResult = getNewPhase();
 
@@ -99,5 +101,10 @@ public class Discord extends Plugin {
     @Override
     public RRVBox showSettings() {
         return null;
+    }
+
+    @Override
+    public PluginSettings createSettings() {
+        return new BlankPluginSettings();
     }
 }

@@ -6,6 +6,7 @@ import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.JsonSerializable;
 import javafx.beans.property.*;
+import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,9 +16,10 @@ public abstract class Plugin implements JsonSerializable<JsonPrimitive> {
 
     @Setter
     private PluginManager pluginManager;
+    @Getter
     private final PluginHealthChecker healthChecker;
-    private final StringProperty pluginLogoUrl = new SimpleStringProperty();
-    private final StringProperty pluginName = new SimpleStringProperty();
+    private final StringProperty logoUrl = new SimpleStringProperty();
+    private final StringProperty name = new SimpleStringProperty();
 
     public Plugin() {
         this.healthChecker = new PluginHealthChecker(this);
@@ -64,5 +66,21 @@ public abstract class Plugin implements JsonSerializable<JsonPrimitive> {
     @Override
     public void fromJson(JsonPrimitive json) {
         // This is a no-op because we don't need to deserialize the plugin name
+    }
+
+    public PluginState getState() {
+        return state.get();
+    }
+
+    public void setName(String name) {
+        this.name.set(name);
+    }
+
+    public StringProperty nameProperty() {
+        return name;
+    }
+
+    public StringProperty logoUrlProperty() {
+        return logoUrl;
     }
 }

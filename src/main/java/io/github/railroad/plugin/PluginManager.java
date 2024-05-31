@@ -1,17 +1,11 @@
 package io.github.railroad.plugin;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.discord.activity.RailroadActivities;
-import io.github.railroad.config.ConfigHandler;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 public class PluginManager extends Thread {
@@ -25,7 +19,6 @@ public class PluginManager extends Thread {
 
     @Override
     public void run() {
-        preparePluginsFromConfig();
         loadAllPlugins();
     }
 
@@ -52,22 +45,7 @@ public class PluginManager extends Thread {
         }
     }
 
-    private void preparePluginsFromConfig() {
-        JsonObject object = ConfigHandler.getConfigJson();
-        JsonArray plugins = object.getAsJsonObject("settings").getAsJsonArray("plugins");
-        for (JsonElement element : plugins) {
-            try {
-                // TODO: Move plugins to external jar files
-                addPlugin(createPlugin(element.getAsString()));
-            } catch (Exception exception) {
-                PluginPhaseResult phase = new PluginPhaseResult();
-                phase.addError(new Error(exception.getMessage()));
-                showError(null, phase, "Error finding class and create new " + element.getAsString());
-            }
-        }
-    }
-
-    private static Plugin createPlugin(String pluginName) throws Exception {
+    public static Plugin createPlugin(String pluginName) throws Exception {
         return (Plugin) Class.forName("io.github.railroad.plugin.defaults." + pluginName)
                 .getDeclaredConstructor().newInstance();
     }
@@ -110,9 +88,7 @@ public class PluginManager extends Thread {
             while (plugin.getHealthChecker().isAlive()) {
                 try {
                     plugin.getHealthChecker().join(50);
-                } catch (InterruptedException ignored) {
-                    //throw new RuntimeException(e);
-                }
+                } catch (InterruptedException ignored) {}
             }
 
             plugin.unload();
@@ -120,11 +96,10 @@ public class PluginManager extends Thread {
         }
     }
 
-    public boolean addPlugin(Plugin plugin) {
+    public void addPlugin(Plugin plugin) {
         plugin.setPluginManager(this);
         this.pluginList.add(plugin);
         showLog(plugin, "Added plugin");
-        return true;
     }
 
     public void notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
@@ -145,5 +120,15 @@ public class PluginManager extends Thread {
         }
 
         return Optional.empty();
+    }
+
+    public void addPlugin(String name) {
+        try {
+            addPlugin(createPlugin(name));
+        } catch (Exception exception) {
+            var phase = new PluginPhaseResult();
+            phase.addError(new Error(exception.getMessage()));
+            showError(null, phase, "Error finding class and create new " + name);
+        }
     }
 }

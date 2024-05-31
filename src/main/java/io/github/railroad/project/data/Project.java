@@ -8,6 +8,7 @@ import io.github.railroad.project.ProjectManager;
 import io.github.railroad.utility.JsonSerializable;
 import io.github.railroad.vcs.Repository;
 import javafx.beans.property.*;
+import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 import lombok.Getter;
@@ -20,10 +21,11 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
-@Getter
 public class Project implements JsonSerializable<JsonObject> {
     private final ObjectProperty<Path> path = new ReadOnlyObjectWrapper<>();
     private final StringProperty alias = new SimpleStringProperty();
@@ -242,5 +244,47 @@ public class Project implements JsonSerializable<JsonObject> {
         if (this.manager != null) {
             this.manager.updateProjectInfo(this);
         }
+    }
+
+    public static Optional<Project> createFromJson(JsonObject json) {
+        if(!json.has("Path"))
+            return Optional.empty();
+
+        JsonElement pathElement = json.get("Path");
+        if(!pathElement.isJsonPrimitive())
+            return Optional.empty();
+
+        JsonPrimitive pathPrimitive = pathElement.getAsJsonPrimitive();
+        if(!pathPrimitive.isString())
+            return Optional.empty();
+
+        var project = new Project(Path.of(pathElement.getAsString()));
+        project.fromJson(json);
+
+        return Optional.of(project);
+    }
+
+    public String getAlias() {
+        return alias.get();
+    }
+
+    public long getLastOpened() {
+        return lastOpened.get();
+    }
+
+    public Image getIcon() {
+        return icon.get();
+    }
+
+    public ObjectProperty<Image> iconProperty() {
+        return icon;
+    }
+
+    public StringProperty aliasProperty() {
+        return alias;
+    }
+
+    public ObjectProperty<Repository> repositoryProperty() {
+        return repository;
     }
 }

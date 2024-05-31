@@ -1,14 +1,12 @@
 package io.github.railroad.settings.ui;
 
-import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
+import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.localized.LocalizedLabel;
-import io.github.railroad.utility.ConfigHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,16 +17,16 @@ import java.util.stream.Stream;
 
 public class SettingsAppearancePane extends RRVBox {
     private static final ComboBox<String> themeSelector = new ComboBox<>();
-    private final Label title = new LocalizedLabel("railroad.home.settings.appearance");
-    private final Label themeOption = new LocalizedLabel("railroad.home.settings.appearance.theme");
 
     public SettingsAppearancePane() {
         var themeBox = new RRVBox(10);
 
+        var title = new LocalizedLabel("railroad.home.settings.appearance");
         title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");
         title.prefWidthProperty().bind(widthProperty());
         title.setAlignment(Pos.CENTER);
 
+        var themeOption = new LocalizedLabel("railroad.home.settings.appearance.theme");
         themeOption.setStyle("-fx-font-weight: bold;");
 
         List<Path> themes = new ArrayList<>();
@@ -50,10 +48,7 @@ public class SettingsAppearancePane extends RRVBox {
                 themeSelector.getItems().add(name);
             }
 
-            JsonObject config = ConfigHandler.getConfigJson();
-            String theme = config.get("settings").getAsJsonObject().get("theme").getAsString();
-
-            themeSelector.setValue(theme);
+            themeSelector.setValue(ConfigHandler.getConfig().getSettings().getTheme());
         }
 
         themeSelector.setOnAction(event -> {
@@ -61,13 +56,9 @@ public class SettingsAppearancePane extends RRVBox {
                 return;
 
             String theme = themeSelector.getValue();
-
-            JsonObject config = ConfigHandler.getConfigJson();
-            config.get("settings").getAsJsonObject().addProperty("theme", theme);
-
+            ConfigHandler.getConfig().getSettings().setTheme(theme);
             ConfigHandler.updateConfig();
-
-            Railroad.setStyle(theme);
+            Railroad.updateTheme(theme);
         });
 
         setSpacing(10);

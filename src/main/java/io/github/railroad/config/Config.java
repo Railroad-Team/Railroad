@@ -1,20 +1,21 @@
 package io.github.railroad.config;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import io.github.railroad.Railroad;
 import io.github.railroad.plugin.Plugin;
+import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.data.Project;
 import io.github.railroad.utility.JsonSerializable;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
 
-@Getter
+import java.util.Optional;
+
 public class Config implements JsonSerializable<JsonObject> {
-    private final ObservableList<Project> projects = FXCollections.observableArrayList();
-    private final ObservableList<Plugin> plugins = FXCollections.observableArrayList();
     private final ObjectProperty<Settings> settings = new ReadOnlyObjectWrapper<>(new Settings());
 
     @Override
@@ -22,14 +23,14 @@ public class Config implements JsonSerializable<JsonObject> {
         var json = new JsonObject();
 
         var projects = new JsonArray();
-        for (Project project : this.projects) {
+        for (Project project : ProjectManager.INSTANCE.getProjects()) {
             projects.add(project.toJson());
         }
 
         json.add("Projects", projects);
 
         var plugins = new JsonArray();
-        for (Plugin plugin : this.plugins) {
+        for (Plugin plugin : Railroad.PLUGIN_MANAGER.getPluginList()) {
             plugins.add(plugin.toJson());
         }
 
@@ -41,6 +42,56 @@ public class Config implements JsonSerializable<JsonObject> {
 
     @Override
     public void fromJson(JsonObject json) {
+        if(!json.has("Projects")) {
+            JsonElement projects = json.get("Projects");
+            if(projects.isJsonArray()) {
+                JsonArray projectsArray = projects.getAsJsonArray();
+                for(JsonElement project : projectsArray) {
+                    if(!project.isJsonObject())
+                        continue;
 
+                    Optional<Project> projectOptional = Project.createFromJson(project.getAsJsonObject());
+                    projectOptional.ifPresent(ProjectManager.INSTANCE.getProjects()::add);
+                }
+            }
+        }
+
+        if(!json.has("Plugins")) {
+            JsonElement plugins = json.get("Plugins");
+            if(plugins.isJsonArray()) {
+                Railroad.PLUGIN_MANAGER.unloadPlugins();
+                Railroad.PLUGIN_MANAGER.getPluginList().clear();
+
+                JsonArray pluginsArray = plugins.getAsJsonArray();
+                for(JsonElement plugin : pluginsArray) {
+                    if(!plugin.isJsonPrimitive())
+                        continue;
+
+                    JsonPrimitive pluginPrimitive = plugin.getAsJsonPrimitive();
+                    if(!pluginPrimitive.isString())
+                        continue;
+
+                    Railroad.PLUGIN_MANAGER.addPlugin(pluginPrimitive.getAsString());
+                }
+            }
+        }
+
+        if(json.has("Settings")) {
+            JsonElement settings = json.get("Settings");
+            if(settings.isJsonObject()) {
+                this.settings.get().fromJson(settings.getAsJsonObject());
+            }
+        }
+    }
+
+    public void copyFrom(@Nullable Config config) {
+        if(config == null)
+            return;
+
+        this.settings.get().copyFrom(config.getSettings());
+    }
+
+    public Settings getSettings() {
+        return settings.get();
     }
 }
