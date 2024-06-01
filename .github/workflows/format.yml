@@ -10,4 +10,7 @@ jobs:
       - uses: actions/checkout@v4 # v2 minimum required
       - uses: axel-op/googlejavaformat-action@v3
         with:
-          args: "--set-exit-if-changed"
+          args: "--replace"
+          skip-commit: true
+      - name: Print diffs
+        run: git --no-pager diff --exit-code
