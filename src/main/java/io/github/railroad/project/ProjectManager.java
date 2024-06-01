@@ -23,7 +23,7 @@ public final class ProjectManager {
         if (removeProject) {
             Railroad.LOGGER.info("Removing project: {}", project.getId());
             projects.removeIf(projectObj -> projectObj.getId().equals(project.getId()));
-            ConfigHandler.updateConfig();
+            ConfigHandler.saveConfig();
             return;
         }
 
@@ -40,7 +40,7 @@ public final class ProjectManager {
             projects.add(project);
         }
         
-        ConfigHandler.updateConfig();
+        ConfigHandler.saveConfig();
     }
 
     public void setProjects(Collection<? extends Project> projectCollection) {

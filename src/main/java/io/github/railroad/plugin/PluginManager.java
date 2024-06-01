@@ -97,7 +97,6 @@ public class PluginManager extends Thread {
     }
 
     public void addPlugin(Plugin plugin) {
-        plugin.setPluginManager(this);
         this.pluginList.add(plugin);
         showLog(plugin, "Added plugin");
     }

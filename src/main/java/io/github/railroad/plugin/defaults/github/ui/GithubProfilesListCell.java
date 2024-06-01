@@ -38,7 +38,7 @@ public class GithubProfilesListCell extends ListCell<Profile> {
                 for (Profile account : settings.getAccounts()) {
                     if (Objects.equals(account, profile)) {
                         settings.getAccounts().remove(account);
-                        ConfigHandler.updateConfig();
+                        ConfigHandler.saveConfig();
                     }
                 }
                 

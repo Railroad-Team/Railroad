@@ -40,7 +40,7 @@ public final class ConfigHandler {
         }
     }
 
-    public static void updateConfig() {
+    public static void saveConfig() {
         Railroad.LOGGER.info("Updating config file");
 
         Path railroadDataPath = getAppDataPath();

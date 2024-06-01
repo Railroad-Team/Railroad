@@ -29,10 +29,9 @@ public class ImportProjectListCell extends ListCell<Repository> {
         RRStackPane.setAlignment(ellipseButton, Pos.TOP_RIGHT);
 
         var dropdown = new ContextMenu();
-        var openItem = new MenuItem("Clone");
-        var removeItem = new MenuItem("Remove");
+        var cloneItem = new MenuItem("Clone");
 
-        openItem.setOnAction(e -> {
+        cloneItem.setOnAction(e -> {
             var directoryChooser = new DirectoryChooser();
             File selectedDirectory = directoryChooser.showDialog(Railroad.getWindow());
 
@@ -46,15 +45,9 @@ public class ImportProjectListCell extends ListCell<Repository> {
             }
         });
 
-        removeItem.setOnAction(e -> {
+        dropdown.getItems().addAll(cloneItem);
 
-        });
-
-        dropdown.getItems().addAll(openItem, removeItem);
-
-        ellipseButton.setOnMouseClicked(e -> {
-            dropdown.show(ellipseButton, e.getScreenX(), e.getScreenY());
-        });
+        ellipseButton.setOnMouseClicked(e -> dropdown.show(ellipseButton, e.getScreenX(), e.getScreenY()));
 
         node.getChildren().add(ellipseButton);
     }

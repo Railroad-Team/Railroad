@@ -1,6 +1,7 @@
 package io.github.railroad.plugin;
 
 import com.google.gson.JsonPrimitive;
+import io.github.railroad.Railroad;
 import io.github.railroad.config.PluginSettings;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.ui.defaults.RRVBox;
@@ -14,8 +15,6 @@ public abstract class Plugin implements JsonSerializable<JsonPrimitive> {
     private final ObjectProperty<PluginSettings> pluginSettings = new ReadOnlyObjectWrapper<>();
     private final ObjectProperty<PluginState> state = new SimpleObjectProperty<>(PluginState.NOT_LOADED);
 
-    @Setter
-    private PluginManager pluginManager;
     @Getter
     private final PluginHealthChecker healthChecker;
     private final StringProperty logoUrl = new SimpleStringProperty();
@@ -42,7 +41,7 @@ public abstract class Plugin implements JsonSerializable<JsonPrimitive> {
     public abstract PluginSettings createSettings();
 
     public void updateStatus(PluginState state) {
-        this.pluginManager.showLog(this, "Change state from: " + this.state + " to: " + state);
+        Railroad.PLUGIN_MANAGER.showLog(this, "Change state from: " + this.state + " to: " + state);
         this.state.set(state);
     }
 
@@ -51,7 +50,7 @@ public abstract class Plugin implements JsonSerializable<JsonPrimitive> {
     }
 
     public String getName() {
-        return getClass().getName();
+        return getClass().getSimpleName();
     }
 
     public @Nullable PluginSettings getPluginSettings() {

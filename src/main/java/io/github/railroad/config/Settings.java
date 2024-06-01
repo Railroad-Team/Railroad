@@ -78,6 +78,11 @@ public class Settings implements JsonSerializable<JsonObject> {
             }
         }
 
+        // Add plugin settings that are not in the config file
+        Railroad.PLUGIN_MANAGER.getPluginList().forEach(plugin -> {
+            this.pluginsSettings.computeIfAbsent(plugin.getName(), name -> plugin.createSettings());
+        });
+
         if(json.has("Theme") && json.get("Theme").isJsonPrimitive()) {
             JsonPrimitive theme = json.getAsJsonPrimitive("Theme");
             if(theme.isString())

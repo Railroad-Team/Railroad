@@ -1,6 +1,8 @@
 package io.github.railroad.vcs;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.config.ConfigHandler;
+import io.github.railroad.plugin.defaults.Github;
 import io.github.railroad.vcs.connections.AbstractConnection;
 import io.github.railroad.vcs.connections.Profile;
 import javafx.collections.FXCollections;
@@ -51,15 +53,9 @@ public class RepositoryManager extends Thread {
         this.connections.add(connection);
     }
 
-    public List<Profile> getProfiles() {
-        List<Profile> profiles = new ArrayList<>();
-        for (AbstractConnection connection : connections) {
-            if (!connection.getProfile().isToDelete()) {
-                profiles.add(connection.getProfile());
-            }
-        }
-        
-        return profiles;
+    public ObservableList<Profile> getProfiles() {
+        Github.GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", Github.GithubSettings.class);
+        return settings.getAccounts();
     }
 
     public boolean deleteProfile(Profile profile) {

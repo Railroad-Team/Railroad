@@ -57,7 +57,7 @@ public class SettingsAppearancePane extends RRVBox {
 
             String theme = themeSelector.getValue();
             ConfigHandler.getConfig().getSettings().setTheme(theme);
-            ConfigHandler.updateConfig();
+            ConfigHandler.saveConfig();
             Railroad.updateTheme(theme);
         });
 

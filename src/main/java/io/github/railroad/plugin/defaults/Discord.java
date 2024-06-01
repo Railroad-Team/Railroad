@@ -105,6 +105,6 @@ public class Discord extends Plugin {
 
     @Override
     public PluginSettings createSettings() {
-        return new BlankPluginSettings();
+        return BlankPluginSettings.INSTANCE;
     }
 }

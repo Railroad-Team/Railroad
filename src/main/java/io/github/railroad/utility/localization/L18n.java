@@ -23,7 +23,7 @@ public class L18n {
         LOGGER.debug("Setting language to {}", language);
 
         ConfigHandler.getConfig().getSettings().setLanguage(language);
-        ConfigHandler.updateConfig();
+        ConfigHandler.saveConfig();
         loadLanguage();
     }
 

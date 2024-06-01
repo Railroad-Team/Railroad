@@ -62,14 +62,10 @@ public class Config implements JsonSerializable<JsonObject> {
 
                 JsonArray pluginsArray = plugins.getAsJsonArray();
                 for(JsonElement plugin : pluginsArray) {
-                    if(!plugin.isJsonPrimitive())
+                    if(!plugin.isJsonPrimitive() || !plugin.getAsJsonPrimitive().isString())
                         continue;
 
-                    JsonPrimitive pluginPrimitive = plugin.getAsJsonPrimitive();
-                    if(!pluginPrimitive.isString())
-                        continue;
-
-                    Railroad.PLUGIN_MANAGER.addPlugin(pluginPrimitive.getAsString());
+                    Railroad.PLUGIN_MANAGER.addPlugin(plugin.getAsString());
                 }
             }
         }

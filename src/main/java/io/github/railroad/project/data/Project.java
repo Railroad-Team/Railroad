@@ -232,8 +232,6 @@ public class Project implements JsonSerializable<JsonObject> {
 
         if(!hasIcon)
             this.icon.set(createIcon(this));
-
-        Railroad.PROJECT_MANAGER.updateProjectInfo(this);
     }
 
     public static Optional<Project> createFromJson(JsonObject json) {
