@@ -1,18 +1,22 @@
 package io.github.railroad.settings.ui.themes;
 
 import com.google.gson.JsonObject;
+import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRStackPane;
-import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.localized.LocalizedButton;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.StackPane;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.Screen;
 import org.gradle.internal.impldep.org.apache.commons.lang.WordUtils;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -21,13 +25,24 @@ public class ThemeDownloadCell extends ListCell<JsonObject> {
     private final StackPane node = new RRStackPane();
     private final ThemeDownloadNode themeDownloadNode = new ThemeDownloadNode();
     private final LocalizedButton downloadButton = new LocalizedButton("railroad.home.settings.appearance.download");
-    private final LocalizedButton previewButton = new LocalizedButton("railroad.home.settings.appearance.preview");
+    private final Button previewButton = new Button();
 
     public ThemeDownloadCell() {
+        var box = new RRHBox();
+        box.setAlignment(Pos.CENTER_RIGHT);
+        box.setSpacing(10);
+
         setPadding(new Insets(5));
         setMaxWidth(Screen.getPrimary().getBounds().getMaxX());
 
         previewButton.setAlignment(Pos.BASELINE_CENTER);
+        previewButton.setGraphic(new FontIcon(FontAwesomeSolid.EYE));
+        previewButton.setBackground(null);
+
+
+        downloadButton.setPrefWidth(87.2);
+        downloadButton.setAlignment(Pos.CENTER_RIGHT);
+        downloadButton.setTextAlignment(TextAlignment.JUSTIFY);
 
         setPrefHeight(75);
 
@@ -49,8 +64,10 @@ public class ThemeDownloadCell extends ListCell<JsonObject> {
             this.downloadButton.setDisable(isDownloaded);
         });
 
-        node.setAlignment(Pos.CENTER_RIGHT);
-        node.getChildren().addAll(themeDownloadNode, downloadButton, previewButton);
+
+        box.getChildren().addAll(downloadButton, previewButton);
+
+        node.getChildren().addAll(themeDownloadNode, box);
     }
 
     @Override
@@ -67,7 +84,7 @@ public class ThemeDownloadCell extends ListCell<JsonObject> {
         }
     }
 
-    public static class ThemeDownloadNode extends RRVBox {
+    public static class ThemeDownloadNode extends RRHBox {
         private final ObjectProperty<JsonObject> jsonProperty = new SimpleObjectProperty<>();
 
         public ThemeDownloadNode() {
@@ -86,6 +103,7 @@ public class ThemeDownloadCell extends ListCell<JsonObject> {
             var themeLabel = new Label();
             themeLabel.textProperty().bind(themeName);
             themeLabel.setAlignment(Pos.BASELINE_LEFT);
+            themeLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16;");
 
             getChildren().addAll(themeLabel);
         }
