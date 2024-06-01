@@ -19,7 +19,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.Pane;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import lombok.Getter;
@@ -133,11 +132,7 @@ public class Railroad extends Application {
         double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
 
         // Start the welcome screen and window
-        scene = new Scene(new Pane(), windowW, windowH);
-
-        var welcomePane = new WelcomePane();
-        scene.setRoot(welcomePane);
-
+        scene = new Scene(new WelcomePane(), windowW, windowH);
         handleStyles(scene);
 
         // Open setup and show the window
@@ -155,5 +150,6 @@ public class Railroad extends Application {
     public void stop() {
         LOGGER.info("Stopping Railroad");
         PLUGIN_MANAGER.unloadPlugins();
+
     }
 }

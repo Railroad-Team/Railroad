@@ -4,15 +4,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.github.railroad.Railroad;
-import io.github.railroad.project.ProjectManager;
 import io.github.railroad.utility.JsonSerializable;
 import io.github.railroad.vcs.Repository;
 import javafx.beans.property.*;
 import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
-import lombok.Getter;
-import lombok.Setter;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -21,7 +19,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,9 +30,6 @@ public class Project implements JsonSerializable<JsonObject> {
     private final LongProperty lastOpened = new SimpleLongProperty();
     private final ObjectProperty<Repository> repository = new SimpleObjectProperty<>();
     private final StringProperty id = new SimpleStringProperty();
-
-    @Setter
-    private ProjectManager manager;
 
     public Project(Path path) {
         this(path, path.getFileName().toString());
@@ -88,7 +82,7 @@ public class Project implements JsonSerializable<JsonObject> {
     }
 
     public String getPathString() {
-        return this.path.toString();
+        return this.path.get().toString();
     }
 
     public void setIcon(Image icon) {
@@ -97,14 +91,11 @@ public class Project implements JsonSerializable<JsonObject> {
 
     public void setLastOpened(long lastOpened) {
         this.lastOpened.set(lastOpened);
-        if (this.manager != null) {
-            this.manager.updateProjectInfo(this);
-        }
     }
 
     // TODO: Extract for reusability purposes
-    public String getLastOpenedFriendly() {
-        var instant = Instant.ofEpochMilli(lastOpened.get());
+    public static String getLastOpenedFriendly(@NotNull Number time) {
+        var instant = Instant.ofEpochMilli(time.longValue());
         ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
         var currentTime = ZonedDateTime.now();
         long daysDifference = ChronoUnit.DAYS.between(zonedDateTime, currentTime);
@@ -137,8 +128,9 @@ public class Project implements JsonSerializable<JsonObject> {
     }
 
     public void open() {
-        Railroad.LOGGER.debug("Opening project: {}", path);
+        Railroad.LOGGER.debug("Opening project: {}", getPathString());
         setLastOpened(System.currentTimeMillis());
+        Railroad.PROJECT_MANAGER.updateProjectInfo(this);
     }
 
     @Override
@@ -241,9 +233,7 @@ public class Project implements JsonSerializable<JsonObject> {
         if(!hasIcon)
             this.icon.set(createIcon(this));
 
-        if (this.manager != null) {
-            this.manager.updateProjectInfo(this);
-        }
+        Railroad.PROJECT_MANAGER.updateProjectInfo(this);
     }
 
     public static Optional<Project> createFromJson(JsonObject json) {
@@ -286,5 +276,9 @@ public class Project implements JsonSerializable<JsonObject> {
 
     public ObjectProperty<Repository> repositoryProperty() {
         return repository;
+    }
+
+    public LongProperty lastOpenedProperty() {
+        return lastOpened;
     }
 }

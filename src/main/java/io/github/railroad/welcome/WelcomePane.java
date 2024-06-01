@@ -83,7 +83,7 @@ public class WelcomePane extends RRHBox {
                                 Railroad.LOGGER.debug("Dir Selected: {}\n", selected);
 
                                 if(selected != null) {
-                                    ProjectManager.INSTANCE.newProject(new Project(selected.toPath()));
+                                    Railroad.PROJECT_MANAGER.newProject(new Project(selected.toPath()));
                                 }
                             }
                             case IMPORT_PROJECT -> {

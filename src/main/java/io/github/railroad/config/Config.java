@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.github.railroad.Railroad;
 import io.github.railroad.plugin.Plugin;
-import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.data.Project;
 import io.github.railroad.utility.JsonSerializable;
 import javafx.beans.property.ObjectProperty;
@@ -23,7 +22,7 @@ public class Config implements JsonSerializable<JsonObject> {
         var json = new JsonObject();
 
         var projects = new JsonArray();
-        for (Project project : ProjectManager.INSTANCE.getProjects()) {
+        for (Project project : Railroad.PROJECT_MANAGER.getProjects()) {
             projects.add(project.toJson());
         }
 
@@ -42,7 +41,7 @@ public class Config implements JsonSerializable<JsonObject> {
 
     @Override
     public void fromJson(JsonObject json) {
-        if(!json.has("Projects")) {
+        if(json.has("Projects")) {
             JsonElement projects = json.get("Projects");
             if(projects.isJsonArray()) {
                 JsonArray projectsArray = projects.getAsJsonArray();
@@ -50,13 +49,12 @@ public class Config implements JsonSerializable<JsonObject> {
                     if(!project.isJsonObject())
                         continue;
 
-                    Optional<Project> projectOptional = Project.createFromJson(project.getAsJsonObject());
-                    projectOptional.ifPresent(ProjectManager.INSTANCE.getProjects()::add);
+                    Project.createFromJson(project.getAsJsonObject());
                 }
             }
         }
 
-        if(!json.has("Plugins")) {
+        if(json.has("Plugins")) {
             JsonElement plugins = json.get("Plugins");
             if(plugins.isJsonArray()) {
                 Railroad.PLUGIN_MANAGER.unloadPlugins();

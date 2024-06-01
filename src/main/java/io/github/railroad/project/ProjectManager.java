@@ -11,8 +11,6 @@ import java.util.Collection;
 
 @Getter
 public final class ProjectManager {
-    public static final ProjectManager INSTANCE = new ProjectManager();
-
     private final ObservableList<Project> projects = FXCollections.observableArrayList();
 
     public void updateProjectInfo(Project project) {
@@ -50,7 +48,6 @@ public final class ProjectManager {
     }
 
     public Project newProject(Project project) {
-        project.setManager(this);
         updateProjectInfo(project);
         return project;
     }
