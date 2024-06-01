@@ -148,7 +148,7 @@ public class Railroad extends Application {
 
     @Override
     public void stop() {
-        LOGGER.info("Stopping Railroad".repeat(5));
+        LOGGER.info("Stopping Railroad");
         PLUGIN_MANAGER.unloadPlugins();
         ConfigHandler.saveConfig();
     }
