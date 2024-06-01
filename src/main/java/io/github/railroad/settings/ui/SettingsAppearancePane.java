@@ -2,6 +2,8 @@ package io.github.railroad.settings.ui;
 
 import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
+import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
+import io.github.railroad.settings.ui.themes.ThemeDownloadPane;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.localized.LocalizedButton;
 import io.github.railroad.ui.localized.LocalizedLabel;
@@ -33,9 +35,11 @@ public class SettingsAppearancePane extends RRVBox {
         title.setAlignment(Pos.CENTER);
 
         themeOption.setStyle("-fx-font-weight: bold;");
+        themeSelector.setStyle(".list-view { -fx-pref-height: 400 }");
 
         List<Path> themes = new ArrayList<>();
-        try (Stream<Path> files = Files.list(Path.of("themes"))) {
+
+        try (Stream<Path> files = Files.list(ThemeDownloadManager.getThemesDir())) {
             files.filter(file -> file.toString().endsWith(".css")).forEach(themes::add);
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to load themes", exception);

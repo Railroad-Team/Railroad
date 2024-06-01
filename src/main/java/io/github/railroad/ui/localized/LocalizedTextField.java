@@ -16,6 +16,7 @@ public class LocalizedTextField extends TextField {
         currentKey = key;
         L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
                 setPromptText(L18n.localize(key)));
+        setPromptText(L18n.localize(currentKey));
     }
 
     public String getKey() {

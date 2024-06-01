@@ -16,6 +16,7 @@ public class LocalizedText extends Text {
         currentKey = key;
         L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
                 setText(L18n.localize(key)));
+        setText(L18n.localize(currentKey));
     }
 
     public String getKey() {

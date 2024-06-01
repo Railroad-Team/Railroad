@@ -117,8 +117,6 @@ public class Railroad extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setOnCloseRequest(e -> Platform.exit());
-
         ConfigHandler.updateConfig();
         PLUGIN_MANAGER.start();
         PLUGIN_MANAGER.addCustomEventListener(event -> {
