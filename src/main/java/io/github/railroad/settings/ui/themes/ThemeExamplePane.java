@@ -14,7 +14,7 @@ public class ThemeExamplePane {
         var stage = new Stage();
         var pane = new RRVBox();
 
-        Image image = new Image("https://github.com/YodaForce157/railroadthemes/blob/main/" + theme.replace(".css","") + ".png?raw=true");
+        Image image = new Image("https://github.com/Railroad-Team/Themes/blob/main/" + theme.replace(".css","") + ".png?raw=true");
         LOGGER.debug("getting image {}", image.getUrl());
         ImageView view = new ImageView(image);
 

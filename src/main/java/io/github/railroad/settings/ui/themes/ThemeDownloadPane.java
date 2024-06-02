@@ -19,7 +19,7 @@ public class ThemeDownloadPane {
         var pane = new RRVBox();
         var listView = new RRListView<JsonObject>();
 
-        List<JsonObject> themeList = ThemeDownloadManager.fetchThemes("https://api.github.com/repos/YodaForce157/railroadthemes/contents");
+        List<JsonObject> themeList = ThemeDownloadManager.fetchThemes("https://api.github.com/repos/Railroad-Team/Themes/contents");
 
         if(themeList.isEmpty()) {
             listView.setVisible(false);
