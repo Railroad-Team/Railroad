@@ -11,6 +11,8 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Screen;
@@ -18,6 +20,9 @@ import org.gradle.internal.impldep.org.apache.commons.lang.WordUtils;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -62,6 +67,10 @@ public class ThemeDownloadCell extends ListCell<JsonObject> {
             boolean isDownloaded = newValue != null && ThemeDownloadManager.isDownloaded(newValue.get("name").toString().replace("\"", ""));
             this.downloadButton.setKey(isDownloaded ? "railroad.home.settings.appearance.installed" : "railroad.home.settings.appearance.download");
             this.downloadButton.setDisable(isDownloaded);
+        });
+
+        previewButton.setOnAction(action -> {
+            new ThemeExamplePane(themeDownloadNode.jsonProperty().get().get("name").getAsString());
         });
 
 
