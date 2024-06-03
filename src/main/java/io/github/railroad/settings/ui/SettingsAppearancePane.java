@@ -22,9 +22,6 @@ import java.util.stream.Stream;
 
 public class SettingsAppearancePane extends RRVBox {
     private static final ComboBox<String> themeSelector = new ComboBox<>();
-    private final Label title = new LocalizedLabel("railroad.home.settings.appearance");
-    private final Label themeOption = new LocalizedLabel("railroad.home.settings.appearance.theme");
-    private final Button downloadThemes = new LocalizedButton("railroad.home.settings.appearance.downloadtheme");
 
     public SettingsAppearancePane() {
         var themeBox = new RRVBox(10);
@@ -37,6 +34,8 @@ public class SettingsAppearancePane extends RRVBox {
         var themeOption = new LocalizedLabel("railroad.home.settings.appearance.theme");
         themeOption.setStyle("-fx-font-weight: bold;");
         themeSelector.setStyle(".list-view { -fx-pref-height: 400 }");
+
+        var downloadThemes = new LocalizedButton("railroad.home.settings.appearance.downloadtheme");
 
         List<Path> themes = new ArrayList<>();
 
