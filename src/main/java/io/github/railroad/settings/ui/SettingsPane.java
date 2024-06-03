@@ -17,6 +17,8 @@ import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Priority;
 
+import static io.github.railroad.Railroad.LOGGER;
+
 public class SettingsPane extends RRBorderPane {
     private final ObjectProperty<SettingsCategory> settingsCategory = new SimpleObjectProperty<>(SettingsCategory.GENERAL);
     private final SettingsCategoriesPane leftPane;
@@ -42,6 +44,13 @@ public class SettingsPane extends RRBorderPane {
 
         rightPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         rightPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+
+        searchBox.textProperty().addListener((observable, oldValue, newValue) -> {
+            if(!(rightPane.getContent() instanceof SettingsSearchPane)) {
+                rightPane.setContent(new SettingsSearchPane());
+            }
+            ((SettingsSearchPane) rightPane.getContent()).updateSearch(newValue);
+        });
 
         var contentPane = new RRHBox();
         var verticalSeparator = new Separator(Orientation.VERTICAL);
