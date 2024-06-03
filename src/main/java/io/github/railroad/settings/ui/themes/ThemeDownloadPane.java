@@ -39,7 +39,7 @@ public class ThemeDownloadPane {
         pane.getChildren().addAll(title, listView);
         pane.setAlignment(Pos.TOP_CENTER);
 
-        Scene scene = new Scene(pane, 450, 450);
+        var scene = new Scene(pane, 450, 450);
 
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.setResizable(false);

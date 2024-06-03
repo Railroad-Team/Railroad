@@ -21,6 +21,8 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import static io.github.railroad.Railroad.LOGGER;
+
 public class ThemeDownloadCell extends ListCell<JsonObject> {
     private final StackPane node = new RRStackPane();
     private final ThemeDownloadNode themeDownloadNode = new ThemeDownloadNode();
@@ -54,7 +56,7 @@ public class ThemeDownloadCell extends ListCell<JsonObject> {
                 this.downloadButton.setKey(res ? "railroad.home.settings.appearance.installed" : "railroad.home.settings.appearance.download");
                 this.downloadButton.setDisable(res);
             } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
+                LOGGER.trace("Error downloading theme", e);
             }
         });
 

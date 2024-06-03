@@ -14,9 +14,9 @@ public class ThemeExamplePane {
         var stage = new Stage();
         var pane = new RRVBox();
 
-        Image image = new Image("https://github.com/Railroad-Team/Themes/blob/main/" + theme.replace(".css","") + ".png?raw=true");
-        LOGGER.debug("getting image {}", image.getUrl());
-        ImageView view = new ImageView(image);
+        var image = new Image("https://github.com/Railroad-Team/Themes/blob/main/" + theme.replace(".css","") + ".png?raw=true");
+        LOGGER.debug("Getting image {}", image.getUrl());
+        var view = new ImageView(image);
 
         view.fitHeightProperty().bind(stage.heightProperty());
         view.fitWidthProperty().bind(stage.widthProperty());
@@ -24,7 +24,7 @@ public class ThemeExamplePane {
 
         pane.getChildren().add(view);
 
-        Scene scene = new Scene(pane, 500, 350);
+        var scene = new Scene(pane, 500, 350);
         stage.setTitle("Theme Example");
         stage.setScene(scene);
         stage.initModality(Modality.APPLICATION_MODAL);

@@ -44,7 +44,7 @@ public class ThemeDownloadManager {
 
                 LOGGER.info("Completed theme download");
             } catch (Exception e) {
-                throw new RuntimeException("Exception downloading theme", e);
+                LOGGER.trace("Exception downloading theme", e);
             }
 
             if(Files.exists(Path.of(getThemesDir().toString() + '\\' + fileName))) {
@@ -62,21 +62,21 @@ public class ThemeDownloadManager {
     }
 
     public static ObservableList<String> getDownloaded() {
-        Stream<String> themes;
+        Stream<String> themes = Stream.empty();
         Path dir = getThemesDir();
 
         if(Files.notExists(dir)) {
             try {
                 Files.createDirectory(dir);
             } catch (IOException e) {
-                throw new RuntimeException("Could not create themes directory", e);
+                LOGGER.trace("Could not create themes directory", e);
             }
         }
 
         try {
             themes = Files.list(dir).map(e -> e.getFileName().toString());
         } catch (IOException e) {
-            throw new RuntimeException("Could not fetch installed themes", e);
+            LOGGER.trace("Could not fetch installed themes", e);
         }
 
         return FXCollections.observableList(themes.toList());
@@ -84,7 +84,7 @@ public class ThemeDownloadManager {
 
     public static List<JsonObject> fetchThemes(final String url) {
         List<JsonObject> itemList = new ArrayList<>();
-        JsonArray jsonRes;
+        JsonArray jsonRes = null;
 
         if(ChronoUnit.SECONDS.between(lastRefreshed, ZonedDateTime.now()) < 60)
             return themesCache;
@@ -99,7 +99,7 @@ public class ThemeDownloadManager {
             int resCode = connection.getResponseCode();
 
             if(resCode != 200) {
-                throw new RuntimeException("THEME DOWNLOADER ERROR " + resCode);
+                LOGGER.error("THEME DOWNLOADER ERROR {}", resCode);
             }
 
             String inline = "";
@@ -112,10 +112,10 @@ public class ThemeDownloadManager {
             scanner.close();
             connection.disconnect();
 
-            jsonRes = JsonParser.parseString(inline).getAsJsonArray();
+            //jsonRes = JsonParser.parseString(inline).getAsJsonArray();
             lastRefreshed = ZonedDateTime.now();
         } catch (IOException e) {
-            throw new RuntimeException("Could not list themes from github.");
+           LOGGER.trace("Could not list themes from github.", e);
         }
 
         if(!jsonRes.isEmpty()) {
