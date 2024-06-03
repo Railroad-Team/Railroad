@@ -72,13 +72,14 @@ public class PluginListCell extends ListCell<Plugin> {
             setAlignment(Pos.CENTER_LEFT);
 
             var nameLabel = new Label();
-            nameLabel.textProperty().bind(plugin.map(Plugin::getPluiginName));
+            nameLabel.textProperty().bind(plugin.flatMap(Plugin::nameProperty));
             nameLabel.setStyle("-fx-font-size: 16px;");
 
             var icon = new ImageView();
             icon.setFitWidth(32);
             icon.setFitHeight(32);
             icon.setPreserveRatio(true);
+            // icon.imageProperty().bind(plugin.flatMap(Plugin::logoUrlProperty));
 
             getChildren().addAll(icon, nameLabel);
         }

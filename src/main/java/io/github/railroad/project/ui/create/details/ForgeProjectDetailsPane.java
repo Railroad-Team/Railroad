@@ -222,11 +222,11 @@ public class ForgeProjectDetailsPane extends RRVBox {
         });
         forgeVersionComboBox.setCellFactory(param -> new StarableListCell<>(
                 version -> version instanceof RecommendableVersion recommendableVersion && recommendableVersion.isRecommended(),
-                version -> Objects.equals(version.id(), ForgeVersion.getLatestVersion(minecraftVersionComboBox.getValue()).id()),
+                version -> Objects.equals(version, ForgeVersion.getLatestVersion(minecraftVersionComboBox.getValue())),
                 ForgeVersion::id));
         forgeVersionComboBox.setButtonCell(new StarableListCell<>(
                 version -> version instanceof RecommendableVersion recommendableVersion && recommendableVersion.isRecommended(),
-                version -> Objects.equals(version.id(), ForgeVersion.getLatestVersion(minecraftVersionComboBox.getValue()).id()),
+                version -> Objects.equals(version, ForgeVersion.getLatestVersion(minecraftVersionComboBox.getValue())),
                 ForgeVersion::id));
         forgeVersionComboBox.getItems().addAll(ForgeVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
         forgeVersionComboBox.setValue(ForgeVersion.getLatestVersion(MinecraftVersion.getLatestStableVersion()));

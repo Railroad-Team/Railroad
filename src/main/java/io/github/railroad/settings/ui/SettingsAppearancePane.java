@@ -1,13 +1,12 @@
 package io.github.railroad.settings.ui;
 
-import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.settings.ui.themes.ThemeDownloadPane;
+import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.localized.LocalizedButton;
 import io.github.railroad.ui.localized.LocalizedLabel;
-import io.github.railroad.utility.ConfigHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -30,10 +29,12 @@ public class SettingsAppearancePane extends RRVBox {
     public SettingsAppearancePane() {
         var themeBox = new RRVBox(10);
 
+        var title = new LocalizedLabel("railroad.home.settings.appearance");
         title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");
         title.prefWidthProperty().bind(widthProperty());
         title.setAlignment(Pos.CENTER);
 
+        var themeOption = new LocalizedLabel("railroad.home.settings.appearance.theme");
         themeOption.setStyle("-fx-font-weight: bold;");
         themeSelector.setStyle(".list-view { -fx-pref-height: 400 }");
 
@@ -57,10 +58,7 @@ public class SettingsAppearancePane extends RRVBox {
                 themeSelector.getItems().add(name);
             }
 
-            JsonObject config = ConfigHandler.getConfigJson();
-            String theme = config.get("settings").getAsJsonObject().get("theme").getAsString();
-
-            themeSelector.setValue(theme);
+            themeSelector.setValue(ConfigHandler.getConfig().getSettings().getTheme());
         }
 
         themeSelector.setOnAction(event -> {
@@ -68,13 +66,9 @@ public class SettingsAppearancePane extends RRVBox {
                 return;
 
             String theme = themeSelector.getValue();
-
-            JsonObject config = ConfigHandler.getConfigJson();
-            config.get("settings").getAsJsonObject().addProperty("theme", theme);
-
-            ConfigHandler.updateConfig();
-
-            Railroad.setStyle(theme);
+            ConfigHandler.getConfig().getSettings().setTheme(theme);
+            ConfigHandler.saveConfig();
+            Railroad.updateTheme(theme);
         });
 
         //Download theme button

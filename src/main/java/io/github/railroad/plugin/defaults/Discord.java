@@ -1,12 +1,14 @@
 package io.github.railroad.plugin.defaults;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.config.PluginSettings;
 import io.github.railroad.discord.DiscordCore;
 import io.github.railroad.discord.activity.DiscordActivity;
 import io.github.railroad.discord.activity.RailroadActivities;
+import io.github.railroad.plugin.BlankPluginSettings;
 import io.github.railroad.plugin.Plugin;
 import io.github.railroad.plugin.PluginPhaseResult;
-import io.github.railroad.plugin.PluginStates;
+import io.github.railroad.plugin.PluginState;
 import io.github.railroad.ui.defaults.RRVBox;
 
 import java.time.Instant;
@@ -15,9 +17,9 @@ public class Discord extends Plugin {
     private DiscordCore discord;
 
     @Override
-    public PluginPhaseResult initPlugin() {
-        this.setPluiginName("Discord");
-        updateStatus(PluginStates.STARTING_INIT);
+    public PluginPhaseResult init() {
+        setName("Discord");
+        updateStatus(PluginState.STARTING_INIT);
         PluginPhaseResult phaseResult = getNewPhase();
 
         try {
@@ -25,35 +27,35 @@ public class Discord extends Plugin {
             Runtime.getRuntime().addShutdownHook(new Thread(discord::close));
             this.discord = discord;
         } catch (Exception exception) {
-            updateStatus(PluginStates.ERROR_INIT);
+            updateStatus(PluginState.ERROR_INIT);
             phaseResult.addError(new Error(exception.getMessage()));
             return phaseResult;
         }
 
-        updateStatus(PluginStates.FINISHED_INIT);
+        updateStatus(PluginState.FINISHED_INIT);
         return phaseResult;
     }
 
     @Override
-    public PluginPhaseResult loadPlugin() {
-        updateStatus(PluginStates.LOADED);
+    public PluginPhaseResult load() {
+        updateStatus(PluginState.LOADED);
         return getNewPhase();
     }
 
     @Override
-    public PluginPhaseResult unloadPlugin() {
+    public PluginPhaseResult unload() {
         return getNewPhase();
     }
 
     @Override
     public PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
-        if (getState() != PluginStates.LOADED) {
+        if (getState() != PluginState.LOADED) {
             Railroad.LOGGER.warn("Plugin not loaded, unable to send the update!");
             return getNewPhase();
         }
 
         try {
-            updateStatus(PluginStates.ACTIVITY_UPDATE_START);
+            updateStatus(PluginState.ACTIVITY_UPDATE_START);
             var activity = new DiscordActivity();
             switch (railroadActivityTypes) {
                 case RAILROAD_DEFAULT:
@@ -81,23 +83,28 @@ public class Discord extends Plugin {
 
             discord.getActivityManager().updateActivity(activity);
         } catch (Exception exception) {
-            updateStatus(PluginStates.ACTIVITY_UPDATE_ERROR);
+            updateStatus(PluginState.ACTIVITY_UPDATE_ERROR);
             var phaseResult = new PluginPhaseResult();
             phaseResult.addError(new Error(exception.getMessage()));
         }
 
-        updateStatus(PluginStates.ACTIVITY_UPDATE_FINISHED);
-        updateStatus(PluginStates.LOADED);
+        updateStatus(PluginState.ACTIVITY_UPDATE_FINISHED);
+        updateStatus(PluginState.LOADED);
         return new PluginPhaseResult();
     }
 
     @Override
-    public PluginPhaseResult reloadPlugin() {
+    public PluginPhaseResult reload() {
         return getNewPhase();
     }
 
     @Override
     public RRVBox showSettings() {
         return null;
+    }
+
+    @Override
+    public PluginSettings createSettings() {
+        return BlankPluginSettings.INSTANCE;
     }
 }
