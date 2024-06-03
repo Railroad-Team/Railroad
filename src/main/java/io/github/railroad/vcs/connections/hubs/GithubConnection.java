@@ -172,7 +172,7 @@ public class GithubConnection extends AbstractConnection {
     @Override
     public boolean validateProfile() {
         Railroad.LOGGER.debug("VCS - Github - Validating profile");
-        List<HttpResponse> output = null;
+        List<HttpResponse> output;
         try {
             output = readHTTP("GET", "user/repos?per_page=1", "", false);
         } catch (Exception exception) {

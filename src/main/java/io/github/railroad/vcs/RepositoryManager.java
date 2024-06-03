@@ -1,16 +1,21 @@
 package io.github.railroad.vcs;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.config.ConfigHandler;
+import io.github.railroad.plugin.defaults.Github;
 import io.github.railroad.vcs.connections.AbstractConnection;
 import io.github.railroad.vcs.connections.Profile;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class RepositoryManager extends Thread {
     private final ObservableList<AbstractConnection> connections = FXCollections.observableArrayList();
+    @Getter
     private final ObservableList<Repository> repositories = FXCollections.observableArrayList();
 
     @Override
@@ -28,11 +33,10 @@ public class RepositoryManager extends Thread {
         }
     }
 
-
     public void updateRepositories() {
         try {
             for (AbstractConnection abstractConnection : connections) {
-                if (abstractConnection.getProfile().toDelete()) {
+                if (abstractConnection.getProfile().isToDelete()) {
                     connections.remove(abstractConnection);
                     continue;
                 }
@@ -45,34 +49,24 @@ public class RepositoryManager extends Thread {
         }
     }
 
-    public boolean addConnection(AbstractConnection connection) {
+    public void addConnection(AbstractConnection connection) {
         this.connections.add(connection);
-        return true;
     }
 
-    public List<Profile> getProfiles() {
-        List<Profile> profiles = new ArrayList<>();
+    public ObservableList<Profile> getProfiles() {
+        Github.GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", Github.GithubSettings.class);
+        return settings.getAccounts();
+    }
+
+    public boolean deleteProfile(Profile profile) {
         for (AbstractConnection connection : connections) {
-            if (!connection.getProfile().toDelete()) {
-                profiles.add(connection.getProfile());
-            }
-        }
-        
-        return profiles;
-    }
-
-    public ObservableList<Repository> getRepositories() {
-        return repositories;
-    }
-
-    public boolean deleteWhereProfileIs(Profile profile) {
-        for (AbstractConnection connection : connections) {
-            if (connection.getProfile() == profile) {
-                connection.getProfile().markDelete();
-                Railroad.LOGGER.info("VCS - Marking for delete profile:" + profile.getAlias());
+            if (Objects.equals(connection.getProfile(), profile)) {
+                connection.getProfile().markForDeletion();
+                Railroad.LOGGER.info("VCS - Marking for delete profile: {}", profile.getAlias());
                 return true;
             }
         }
+
         return false;
     }
 }

@@ -14,11 +14,13 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.Priority;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import lombok.Getter;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 public class WelcomeLeftPane extends RRVBox {
+    @Getter
     private final RRListView<MenuType> listView;
 
     public WelcomeLeftPane() {
@@ -60,10 +62,7 @@ public class WelcomeLeftPane extends RRVBox {
         );
     }
 
-    public RRListView<MenuType> getListView() {
-        return listView;
-    }
-
+    @Getter
     public enum MenuType {
         HOME("railroad.home.welcome.home", FontAwesomeSolid.HOME),
         NEW_PROJECT("railroad.home.welcome.newproject", FontAwesomeSolid.PLUS),
@@ -85,17 +84,6 @@ public class WelcomeLeftPane extends RRVBox {
             this(key, icon, Color.WHITE);
         }
 
-        public String getKey() {
-            return this.key;
-        }
-
-        public Ikon getIcon() {
-            return this.icon;
-        }
-
-        public Paint getColor() {
-            return this.color;
-        }
     }
 
     public static class MenuTypeCell extends LocalizedListCell<MenuType> {
