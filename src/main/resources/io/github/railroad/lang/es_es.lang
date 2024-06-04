@@ -14,9 +14,10 @@ railroad.home.welcome.project.open=Abrir
 railroad.home.welcome.project.remove=Eliminar
 
 railroad.home.settings.search=Buscar configuración...
+railroad.home.settings.search.notfound
 railroad.home.settings.back=Volver
 
-railroad.home.settings.general=General
+railroad.home.settings.general=Generala
 railroad.home.settings.appearance=Apariencia
 railroad.home.settings.behavior=Comportamiento
 railroad.home.settings.keymaps=Mapas de teclas

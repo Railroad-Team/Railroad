@@ -39,4 +39,16 @@ public enum SettingsCategory {
     public Paint getColor() {
         return color;
     }
+
+    public static SettingsCategory fromName(String name) {
+        SettingsCategory res = null;
+        for(SettingsCategory settingsCategory : values()) {
+            if(settingsCategory.name().equalsIgnoreCase(name)) {
+                res = settingsCategory;
+                break;
+            }
+        }
+
+        return res;
+    }
 }

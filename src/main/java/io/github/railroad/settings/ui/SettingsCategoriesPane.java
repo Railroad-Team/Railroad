@@ -1,17 +1,17 @@
 package io.github.railroad.settings.ui;
 
 import io.github.railroad.settings.SettingsCategory;
+import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.localized.LocalizedButton;
 import io.github.railroad.ui.localized.LocalizedListCell;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Separator;
-import javafx.scene.layout.VBox;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-public class SettingsCategoriesPane extends VBox {
+public class SettingsCategoriesPane extends RRVBox {
     private final Button backButton;
     private final ListView<SettingsCategory> listView = new ListView<>();
 

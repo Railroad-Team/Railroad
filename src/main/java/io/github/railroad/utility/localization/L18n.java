@@ -35,6 +35,8 @@ public class L18n {
         return CURRENT_LANG;
     }
 
+    public static Properties getLangCache() { return LANG_CACHE; }
+
     public static void loadLanguage() {
         // Loads the language into cache and sets the CURRENT_LANG
         LOGGER.info("Loading language file");

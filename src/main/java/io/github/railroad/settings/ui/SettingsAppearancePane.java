@@ -1,17 +1,17 @@
 package io.github.railroad.settings.ui;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.settings.ui.themes.ThemeDownloadPane;
-import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.localized.LocalizedButton;
 import io.github.railroad.ui.localized.LocalizedLabel;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
+import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,8 +20,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static io.github.railroad.Railroad.LOGGER;
+
 public class SettingsAppearancePane extends RRVBox {
     private static final ComboBox<String> themeSelector = new ComboBox<>();
+
+    public ObservableList<Node> getcChildren() {
+        return super.getChildren();
+    }
 
     public SettingsAppearancePane() {
         var themeBox = new RRVBox(10);
@@ -42,7 +48,7 @@ public class SettingsAppearancePane extends RRVBox {
         try (Stream<Path> files = Files.list(ThemeDownloadManager.getThemesDir())) {
             files.filter(file -> file.toString().endsWith(".css")).forEach(themes::add);
         } catch (IOException exception) {
-            Railroad.LOGGER.error("Failed to load themes", exception);
+            LOGGER.error("Failed to load themes", exception);
         }
 
         themeSelector.setPrefWidth(180);

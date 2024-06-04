@@ -14,6 +14,7 @@ railroad.home.welcome.project.open=Open
 railroad.home.welcome.project.remove=Remove
 
 railroad.home.settings.search=Search settings...
+railroad.home.settings.search.notfound=Settings not found
 railroad.home.settings.back=Back
 
 railroad.home.settings.general=General
