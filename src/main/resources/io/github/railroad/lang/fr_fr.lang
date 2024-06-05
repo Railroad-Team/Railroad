@@ -34,6 +34,11 @@ railroad.home.settings.general.github.disconnect=Déconnecter
 railroad.home.settings.general.language=Langue :
 
 railroad.home.settings.appearance.theme=Séléctionner un thème
+railroad.home.settings.appearance.downloadtheme=Télécharger les thèmes
+railroad.home.settings.appearance.notfound=Thèmes non trouvés
+railroad.home.settings.appearance.download=Télécharger
+railroad.home.settings.appearance.installed=Installé
+railroad.home.settings.appearance.preview=Aperçu
 
 railroad.home.settings.keymaps.key=Touche
 railroad.home.settings.keymaps.action=Action

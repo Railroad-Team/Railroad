@@ -10,6 +10,7 @@ import io.github.railroad.minecraft.MinecraftVersion;
 import io.github.railroad.minecraft.NeoForgeVersion;
 import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.project.ProjectManager;
+import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.utility.localization.L18n;
 import io.github.railroad.vcs.RepositoryManager;
 import io.github.railroad.welcome.WelcomePane;
@@ -53,7 +54,7 @@ public class Railroad extends Application {
         if (theme.startsWith("default")) {
             Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
         } else {
-            Application.setUserAgentStylesheet(new File("themes/" + theme + ".css").toURI().toString());
+            Application.setUserAgentStylesheet(new File(ThemeDownloadManager.getThemesDir() + "/" + theme + ".css").toURI().toString());
         }
 
         ConfigHandler.getConfig().getSettings().setTheme(theme);

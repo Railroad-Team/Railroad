@@ -22,6 +22,7 @@ public class LocalizedTooltip extends Tooltip {
         currentKey = key;
         L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
                 setText(L18n.localize(key) + argString));
+        setText(L18n.localize(currentKey));
     }
 
     public void setArgs(String... args) {
