@@ -112,7 +112,7 @@ public class ThemeDownloadManager {
             scanner.close();
             connection.disconnect();
 
-            //jsonRes = JsonParser.parseString(inline).getAsJsonArray();
+            jsonRes = JsonParser.parseString(inline).getAsJsonArray();
             lastRefreshed = ZonedDateTime.now();
         } catch (IOException e) {
            LOGGER.trace("Could not list themes from github.", e);

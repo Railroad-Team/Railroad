@@ -26,7 +26,7 @@ import static io.github.railroad.Railroad.LOGGER;
 public class ThemeDownloadCell extends ListCell<JsonObject> {
     private final StackPane node = new RRStackPane();
     private final ThemeDownloadNode themeDownloadNode = new ThemeDownloadNode();
-    private final LocalizedButton downloadButton = new LocalizedButton("railroad.home.settings.appearance.download");
+    private final LocalizedButton downloadButton = new LocalizedButton("railroad.home.themebox.download");
     private final Button previewButton = new Button();
 
     public ThemeDownloadCell() {
@@ -53,7 +53,7 @@ public class ThemeDownloadCell extends ListCell<JsonObject> {
         downloadButton.setOnAction(action -> {
             try {
                 boolean res = ThemeDownloadManager.downloadTheme(new URL(themeDownloadNode.jsonProperty().get().get("download_url").getAsString()));
-                this.downloadButton.setKey(res ? "railroad.home.settings.appearance.installed" : "railroad.home.settings.appearance.download");
+                this.downloadButton.setKey(res ? "railroad.home.themebox.installed" : "railroad.home.themebox.download");
                 this.downloadButton.setDisable(res);
             } catch (MalformedURLException e) {
                 LOGGER.trace("Error downloading theme", e);
@@ -62,7 +62,7 @@ public class ThemeDownloadCell extends ListCell<JsonObject> {
 
         themeDownloadNode.jsonProperty().addListener((observable, oldValue, newValue) -> {
             boolean isDownloaded = newValue != null && ThemeDownloadManager.isDownloaded(newValue.get("name").toString().replace("\"", ""));
-            this.downloadButton.setKey(isDownloaded ? "railroad.home.settings.appearance.installed" : "railroad.home.settings.appearance.download");
+            this.downloadButton.setKey(isDownloaded ? "railroad.home.themebox.installed" : "railroad.home.themebox.download");
             this.downloadButton.setDisable(isDownloaded);
         });
 

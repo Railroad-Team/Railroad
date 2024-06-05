@@ -45,10 +45,12 @@ public class SettingsAppearancePane extends RRVBox {
 
         List<Path> themes = new ArrayList<>();
 
-        try (Stream<Path> files = Files.list(ThemeDownloadManager.getThemesDir())) {
-            files.filter(file -> file.toString().endsWith(".css")).forEach(themes::add);
-        } catch (IOException exception) {
-            LOGGER.error("Failed to load themes", exception);
+        if(Files.exists(ThemeDownloadManager.getThemesDir())) {
+            try (Stream<Path> files = Files.list(ThemeDownloadManager.getThemesDir())) {
+                files.filter(file -> file.toString().endsWith(".css")).forEach(themes::add);
+            } catch (IOException exception) {
+                LOGGER.error("Failed to load themes", exception);
+            }
         }
 
         themeSelector.setPrefWidth(180);

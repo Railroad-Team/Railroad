@@ -152,5 +152,6 @@ public class Railroad extends Application {
         LOGGER.info("Stopping Railroad");
         PLUGIN_MANAGER.unloadPlugins();
         ConfigHandler.saveConfig();
+        System.exit(0);
     }
 }

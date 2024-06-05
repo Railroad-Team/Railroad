@@ -2,13 +2,11 @@ package io.github.railroad.settings.ui;
 
 import io.github.railroad.settings.SettingsCategory;
 import io.github.railroad.settings.ui.general.SettingsGeneralPane;
-import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.localized.LocalizedButton;
 import io.github.railroad.ui.localized.LocalizedLabel;
 import io.github.railroad.utility.localization.L18n;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
 import javafx.util.Pair;
 

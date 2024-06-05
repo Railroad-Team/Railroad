@@ -36,10 +36,9 @@ railroad.home.settings.general.language=Sprache:
 
 railroad.home.settings.appearance.theme=Thema auswählen
 railroad.home.settings.appearance.downloadtheme=Themen herunterladen
-railroad.home.settings.appearance.notfound=Themen nicht gefunden
-railroad.home.settings.appearance.download=Herunterladen
-railroad.home.settings.appearance.installed=Installiert
-railroad.home.settings.appearance.preview=Vorschau
+railroad.home.themebox.notfound=Themen nicht gefunden
+railroad.home.themebox.download=Herunterladen
+railroad.home.themebox.installed=Installiert
 
 railroad.home.settings.keymaps.key=Taste
 railroad.home.settings.keymaps.action=Aktion

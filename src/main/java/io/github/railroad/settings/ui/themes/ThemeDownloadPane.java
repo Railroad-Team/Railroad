@@ -23,7 +23,7 @@ public class ThemeDownloadPane {
 
         if(themeList.isEmpty()) {
             listView.setVisible(false);
-            pane.getChildren().add(new LocalizedLabel("railroad.home.settings.appearance.notfound"));
+            pane.getChildren().add(new LocalizedLabel("railroad.home.themebox.notfound"));
         }
         ObservableList<JsonObject> observableThemes = FXCollections.observableList(themeList);
 
