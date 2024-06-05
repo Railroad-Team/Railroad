@@ -53,3 +53,7 @@
 LocalizedText {
     -fx-fill: -color-fg-default;
 }
+
+.theme-selector .list-view {
+    -fx-pref-height: 400
+}

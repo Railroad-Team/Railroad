@@ -7,6 +7,7 @@ import javafx.beans.property.SimpleObjectProperty;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Locale;
 import java.util.Properties;
 
 import static io.github.railroad.Railroad.LOGGER;
@@ -41,8 +42,10 @@ public class L18n {
         Language language = ConfigHandler.getConfig().getSettings().getLanguage();
 
         try {
-            InputStream props = Railroad.getResourceAsStream("lang/" + language + ".lang");
-            LOGGER.info("Reading language file");
+            String name = "lang/" + language.name().toLowerCase(Locale.ROOT) + ".lang";
+            InputStream props = Railroad.getResourceAsStream(name);
+            System.out.println(name + " " + props);
+            LOGGER.info("Reading language file {}", name);
 
             // Load cache and then change CURRENT_LANG otherwise binds will be triggered before cache changes
             LANG_CACHE.clear();

@@ -9,21 +9,18 @@ import io.github.railroad.ui.localized.LocalizedButton;
 import io.github.railroad.ui.localized.LocalizedLabel;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class SettingsAppearancePane extends RRVBox {
-    private static final ComboBox<String> themeSelector = new ComboBox<>();
+    private final ComboBox<String> themeSelector = new ComboBox<>();
 
     public SettingsAppearancePane() {
+        setSpacing(10);
+        setPadding(new Insets(10));
+
         var themeBox = new RRVBox(10);
 
         var title = new LocalizedLabel("railroad.home.settings.appearance");
@@ -33,20 +30,10 @@ public class SettingsAppearancePane extends RRVBox {
 
         var themeOption = new LocalizedLabel("railroad.home.settings.appearance.theme");
         themeOption.setStyle("-fx-font-weight: bold;");
-        themeSelector.setStyle(".list-view { -fx-pref-height: 400 }");
-
-        var downloadThemes = new LocalizedButton("railroad.home.settings.appearance.downloadtheme");
-
-        List<Path> themes = new ArrayList<>();
-
-        try (Stream<Path> files = Files.list(ThemeDownloadManager.getThemesDir())) {
-            files.filter(file -> file.toString().endsWith(".css")).forEach(themes::add);
-        } catch (IOException exception) {
-            Railroad.LOGGER.error("Failed to load themes", exception);
-        }
-
+        themeSelector.getStyleClass().add("theme-selector");
         themeSelector.setPrefWidth(180);
 
+        List<Path> themes = ThemeDownloadManager.getDownloaded();
         if (themeSelector.getItems().size() < themes.size() + 2) {
             themeSelector.getItems().clear();
 
@@ -65,19 +52,14 @@ public class SettingsAppearancePane extends RRVBox {
                 return;
 
             String theme = themeSelector.getValue();
-            ConfigHandler.getConfig().getSettings().setTheme(theme);
-            ConfigHandler.saveConfig();
             Railroad.updateTheme(theme);
         });
 
-        //Download theme button
-        downloadThemes.setOnAction(a -> new ThemeDownloadPane());
-
-        setSpacing(10);
-        setPadding(new Insets(10));
+        // Download theme button
+        var downloadThemes = new LocalizedButton("railroad.home.settings.appearance.downloadtheme");
+        downloadThemes.setOnAction(event -> new ThemeDownloadPane());
 
         themeBox.getChildren().addAll(themeOption, themeSelector, downloadThemes);
-
         getChildren().addAll(title, themeBox);
     }
 }

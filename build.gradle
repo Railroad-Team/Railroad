@@ -4,6 +4,7 @@ plugins {
     id 'org.javamodularity.moduleplugin' version '1.8.12'
     id 'org.openjfx.javafxplugin' version '0.0.13'
     id 'org.beryx.jlink' version '2.25.0'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 group 'io.github'
@@ -59,4 +60,19 @@ jlink {
 
 jlinkZip {
     group = 'distribution'
+}
+
+jar {
+    manifest {
+        attributes(
+                "Implementation-Title": "Railroad",
+                "Implementation-Version": "1.0-alpha",
+                "Main-Class": "io.github.railroad.Startup"
+        )
+    }
+}
+
+shadowJar {
+    zip64 true
+    mergeServiceFiles()
 }
