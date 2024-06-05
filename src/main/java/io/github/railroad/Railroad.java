@@ -54,10 +54,11 @@ public class Railroad extends Application {
         if (theme.startsWith("default")) {
             Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
         } else {
-            Application.setUserAgentStylesheet(new File(ThemeDownloadManager.getThemesDir() + "/" + theme + ".css").toURI().toString());
+            Application.setUserAgentStylesheet(new File(ThemeDownloadManager.getThemesDirectory() + "/" + theme + ".css").toURI().toString());
         }
 
         ConfigHandler.getConfig().getSettings().setTheme(theme);
+        ConfigHandler.saveConfig();
     }
 
     private static void handleStyles(Scene scene) {
@@ -82,11 +83,11 @@ public class Railroad extends Application {
     }
 
     public static URL getResource(String path) {
-        return Railroad.class.getResource("/io/github/railroad/" + path);
+        return Railroad.class.getClassLoader().getResource("assets/railroad/" + path);
     }
 
     public static InputStream getResourceAsStream(String path) {
-        return Railroad.class.getResourceAsStream("/io/github/railroad/" + path);
+        return Railroad.class.getClassLoader().getResourceAsStream("assets/railroad/" + path);
     }
 
     public static void showErrorAlert(String title, String header, String content, Consumer<ButtonType> action) {
@@ -152,5 +153,6 @@ public class Railroad extends Application {
         LOGGER.info("Stopping Railroad");
         PLUGIN_MANAGER.unloadPlugins();
         ConfigHandler.saveConfig();
+        RepositoryManager.currentThread().interrupt();
     }
 }

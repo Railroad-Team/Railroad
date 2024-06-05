@@ -13,7 +13,7 @@ public final class ConfigHandler {
     private static final ConfigHandler INSTANCE = new ConfigHandler();
     private final Config config = new Config();
 
-    public static Path getAppDataPath() {
+    public static Path getConfigDirectory() {
         String os = System.getProperty("os.name"); // TODO: Create Enum for OS
         String homePath = System.getProperty("user.home");
         if (os.startsWith("Linux")) {
@@ -30,7 +30,7 @@ public final class ConfigHandler {
     public static void updateConfig(@Nullable Config newConfig) {
         Railroad.LOGGER.info("{} config file", newConfig == null ? "Initializing" : "Updating");
 
-        Path railroadDataPath = getAppDataPath();
+        Path railroadDataPath = getConfigDirectory();
         try {
             Files.createDirectories(railroadDataPath);
             INSTANCE.config.copyFrom(newConfig);
@@ -43,7 +43,7 @@ public final class ConfigHandler {
     public static void saveConfig() {
         Railroad.LOGGER.info("Updating config file");
 
-        Path railroadDataPath = getAppDataPath();
+        Path railroadDataPath = getConfigDirectory();
         try {
             Files.createDirectories(railroadDataPath);
             Files.writeString(railroadDataPath.resolve("config.json"), Railroad.GSON.toJson(INSTANCE.config.toJson()));
@@ -55,7 +55,7 @@ public final class ConfigHandler {
     public static void initConfig() {
         Railroad.LOGGER.info("Initializing config file");
 
-        Path railroadDataPath = getAppDataPath();
+        Path railroadDataPath = getConfigDirectory();
         try {
             Files.createDirectories(railroadDataPath);
             if (Files.notExists(railroadDataPath.resolve("config.json"))) {

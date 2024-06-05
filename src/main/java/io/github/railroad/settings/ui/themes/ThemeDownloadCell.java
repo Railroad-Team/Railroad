@@ -1,35 +1,32 @@
 package io.github.railroad.settings.ui.themes;
 
-import com.google.gson.JsonObject;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRStackPane;
 import io.github.railroad.ui.localized.LocalizedButton;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.Background;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Screen;
 import org.gradle.internal.impldep.org.apache.commons.lang.WordUtils;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-
-import static io.github.railroad.Railroad.LOGGER;
-
-public class ThemeDownloadCell extends ListCell<JsonObject> {
-    private final StackPane node = new RRStackPane();
+public class ThemeDownloadCell extends ListCell<Theme> {
+    private final RRStackPane node = new RRStackPane();
     private final ThemeDownloadNode themeDownloadNode = new ThemeDownloadNode();
     private final LocalizedButton downloadButton = new LocalizedButton("railroad.home.themebox.download");
     private final Button previewButton = new Button();
 
     public ThemeDownloadCell() {
+        setPrefHeight(75);
+
         var box = new RRHBox();
         box.setAlignment(Pos.CENTER_RIGHT);
         box.setSpacing(10);
@@ -39,68 +36,59 @@ public class ThemeDownloadCell extends ListCell<JsonObject> {
 
         previewButton.setAlignment(Pos.BASELINE_CENTER);
         previewButton.setGraphic(new FontIcon(FontAwesomeSolid.EYE));
-        previewButton.setBackground(null);
-
+        previewButton.setBackground(Background.EMPTY);
 
         downloadButton.setPrefWidth(87.2);
         downloadButton.setAlignment(Pos.CENTER_RIGHT);
         downloadButton.setTextAlignment(TextAlignment.JUSTIFY);
 
-        setPrefHeight(75);
-
         themeDownloadNode.setAlignment(Pos.CENTER_LEFT);
 
         downloadButton.setOnAction(action -> {
-            try {
-                boolean res = ThemeDownloadManager.downloadTheme(new URL(themeDownloadNode.jsonProperty().get().get("download_url").getAsString()));
-                this.downloadButton.setKey(res ? "railroad.home.themebox.installed" : "railroad.home.themebox.download");
-                this.downloadButton.setDisable(res);
-            } catch (MalformedURLException e) {
-                LOGGER.trace("Error downloading theme", e);
-            }
+            boolean resolved = ThemeDownloadManager.downloadTheme(themeDownloadNode.themePropertyProperty().get());
+            this.downloadButton.setKey(resolved ? "railroad.home.settings.appearance.installed" : "railroad.home.settings.appearance.download");
+            this.downloadButton.setDisable(resolved);
         });
 
-        themeDownloadNode.jsonProperty().addListener((observable, oldValue, newValue) -> {
-            boolean isDownloaded = newValue != null && ThemeDownloadManager.isDownloaded(newValue.get("name").toString().replace("\"", ""));
-            this.downloadButton.setKey(isDownloaded ? "railroad.home.themebox.installed" : "railroad.home.themebox.download");
+        themeDownloadNode.themePropertyProperty().addListener((observable, oldValue, newValue) -> {
+            boolean isDownloaded = newValue != null && ThemeDownloadManager.isDownloaded(newValue);
+            this.downloadButton.setKey(isDownloaded ? "railroad.home.settings.appearance.installed" : "railroad.home.settings.appearance.download");
             this.downloadButton.setDisable(isDownloaded);
         });
 
         previewButton.setOnAction(action -> {
-            new ThemeExamplePane(themeDownloadNode.jsonProperty().get().get("name").getAsString());
+            new ThemeExamplePane(themeDownloadNode.themePropertyProperty().map(Theme::getName).getValue());
         });
 
-
         box.getChildren().addAll(downloadButton, previewButton);
-
         node.getChildren().addAll(themeDownloadNode, box);
     }
 
     @Override
-    protected void updateItem(JsonObject item, boolean empty) {
+    protected void updateItem(Theme item, boolean empty) {
         super.updateItem(item, empty);
 
         if (empty || item == null) {
             setText(null);
             setGraphic(null);
-            themeDownloadNode.jsonProperty().set(null);
+            themeDownloadNode.themePropertyProperty().set(null);
         } else {
-            themeDownloadNode.jsonProperty().set(item);
+            themeDownloadNode.themePropertyProperty().set(item);
             setGraphic(node);
         }
     }
 
     public static class ThemeDownloadNode extends RRHBox {
-        private final ObjectProperty<JsonObject> jsonProperty = new SimpleObjectProperty<>();
+        private final ObjectProperty<Theme> themeProperty = new SimpleObjectProperty<>();
 
         public ThemeDownloadNode() {
             getStyleClass().add("project-list-node");
             setSpacing(5);
             setPadding(new Insets(10));
 
-            var themeName = jsonProperty.map(e ->
+            ObservableValue<String> themeName = themeProperty.map(theme ->
                     WordUtils.capitalize(
-                            e.get("name").toString()
+                            theme.getName()
                                     .replace("\"", "")
                                     .replace(".css", "")
                                     .replace("-", " ")
@@ -114,11 +102,13 @@ public class ThemeDownloadCell extends ListCell<JsonObject> {
             getChildren().addAll(themeLabel);
         }
 
-        public ThemeDownloadNode(JsonObject obj) {
+        public ThemeDownloadNode(Theme obj) {
             this();
-            this.jsonProperty.set(obj);
+            this.themeProperty.set(obj);
         }
 
-        public ObjectProperty<JsonObject> jsonProperty() { return jsonProperty; }
+        public ObjectProperty<Theme> themePropertyProperty() {
+            return themeProperty;
+        }
     }
 }

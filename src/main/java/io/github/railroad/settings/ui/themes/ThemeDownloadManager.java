@@ -1,148 +1,144 @@
 package io.github.railroad.settings.ui.themes;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
+import io.github.railroad.Railroad;
+import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.utility.FileHandler;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import static io.github.railroad.Railroad.LOGGER;
 
 public class ThemeDownloadManager {
-    private static ZonedDateTime lastRefreshed = ZonedDateTime.now().minusSeconds(60);
-    private static List<JsonObject> themesCache = new ArrayList<>();
+    private static final AtomicLong LAST_REFRESHED = new AtomicLong(0);
+    private static final List<Theme> THEMES_CACHE = new ArrayList<>();
 
     private ThemeDownloadManager() {}
 
-    public static boolean downloadTheme(final URL url) {
-        if(url == null) {
-            LOGGER.error("Theme is null");
+    public static boolean downloadTheme(@NotNull Theme theme) {
+        if(theme.getDownloadUrl() == null) {
+            LOGGER.error("Theme download URL is null");
             return false;
         } else {
-            var split = url.toString().split("[/\\s]");
-            var fileName = split[split.length - 1];
+            String url = theme.getDownloadUrl();
+            String[] split = url.split("[/\\s]");
+            String fileName = split[split.length - 1];
 
             LOGGER.info("Downloading theme: {}", fileName);
             try {
-                Thread downloadThread = new Thread(() -> FileHandler.copyUrlToFile(url.toString(), Paths.get(getThemesDir().toString(), fileName)));
-                downloadThread.start();
-                downloadThread.join();
-
+                FileHandler.copyUrlToFile(url, Paths.get(getThemesDirectory().toString(), fileName));
                 LOGGER.info("Completed theme download");
-            } catch (Exception e) {
-                LOGGER.trace("Exception downloading theme", e);
+            } catch (RuntimeException exception) {
+                LOGGER.error("Exception downloading theme", exception);
             }
 
-            if(Files.exists(Path.of(getThemesDir().toString() + '\\' + fileName))) {
-                LOGGER.info("Downloaded theme: {} to {}", fileName, Path.of(getThemesDir().toString() + '\\' + fileName));
+            if(Files.exists(Path.of(getThemesDirectory().toString() + '\\' + fileName))) {
+                LOGGER.info("Downloaded theme: {} to {}", fileName, Path.of(getThemesDirectory().toString() + '\\' + fileName));
                 return true;
             } else {
-                LOGGER.error("Error Downloading theme: {} to {}", fileName, Path.of(getThemesDir().toString() + '\\' + fileName));
+                LOGGER.error("Error Downloading theme: {} to {}", fileName, Path.of(getThemesDirectory().toString() + '\\' + fileName));
                 return false;
             }
         }
     }
 
-    public static boolean isDownloaded(final String theme) {
-        return getDownloaded().contains(theme);
+    public static boolean isDownloaded(final Theme theme) {
+        return getDownloaded().stream()
+                .map(Path::getFileName)
+                .map(Path::toString)
+                .anyMatch(t -> t.equals(theme.getName().replace("\"", "")));
     }
 
-    public static ObservableList<String> getDownloaded() {
-        Stream<String> themes = Stream.empty();
-        Path dir = getThemesDir();
+    public static List<Path> getDownloaded() {
+        Path dir = getThemesDirectory();
 
         if(Files.notExists(dir)) {
             try {
-                Files.createDirectory(dir);
-            } catch (IOException e) {
-                LOGGER.trace("Could not create themes directory", e);
+                Files.createDirectories(dir);
+            } catch (IOException exception) {
+                LOGGER.warn("Could not create themes directory", exception);
             }
         }
 
-        try {
-            themes = Files.list(dir).map(e -> e.getFileName().toString());
-        } catch (IOException e) {
-            LOGGER.trace("Could not fetch installed themes", e);
+        try(Stream<Path> list = Files.list(dir)) {
+            return list.filter(file -> file.toString().endsWith(".css")).toList();
+        } catch (IOException exception) {
+            LOGGER.warn("Could not fetch installed themes", exception);
+            return List.of();
         }
-
-        return FXCollections.observableList(themes.toList());
     }
 
-    public static List<JsonObject> fetchThemes(final String url) {
-        List<JsonObject> itemList = new ArrayList<>();
-        JsonArray jsonRes = null;
+    public static List<Theme> fetchThemes(final String url) {
+        if(LAST_REFRESHED.get() + 60_000 > System.currentTimeMillis())
+            return THEMES_CACHE;
 
-        if(ChronoUnit.SECONDS.between(lastRefreshed, ZonedDateTime.now()) < 60)
-            return themesCache;
+        List<Theme> itemList = new ArrayList<>();
+        JsonArray themesArray;
 
-        try {
-            LOGGER.info("FETCHING THEMES");
-            URL conUrl = new URL(url);
-            HttpURLConnection connection = (HttpURLConnection) conUrl.openConnection();
-            connection.setRequestMethod("GET");
-            connection.connect();
-
-            int resCode = connection.getResponseCode();
-
+        LOGGER.info("Fetching themes from: {}", url);
+        Request request = new Request.Builder().url(url).get().build();
+        try(Response response = Railroad.HTTP_CLIENT.newCall(request).execute()) {
+            int resCode = response.code();
             if(resCode != 200) {
-                LOGGER.error("THEME DOWNLOADER ERROR {}", resCode);
+                LOGGER.error("There was an issue downloading themes. Response Code: {}", resCode);
             }
 
-            String inline = "";
-            Scanner scanner = new Scanner(conUrl.openStream());
-
-            while (scanner.hasNext()) {
-                inline += scanner.nextLine();
+            ResponseBody body = response.body();
+            if(body == null) {
+                LOGGER.error("While fetching themes, the body was null");
+                return itemList;
             }
 
-            scanner.close();
-            connection.disconnect();
+            String bodyStr = body.string();
+            if(bodyStr.isBlank()) {
+                LOGGER.error("While fetching themes, the body was empty");
+                return itemList;
+            }
 
-            jsonRes = JsonParser.parseString(inline).getAsJsonArray();
-            lastRefreshed = ZonedDateTime.now();
-        } catch (IOException e) {
-           LOGGER.trace("Could not list themes from github.", e);
+            themesArray = Railroad.GSON.fromJson(bodyStr, JsonArray.class);
+        } catch (IOException exception) {
+           LOGGER.warn("Error fetching themes", exception);
+           return THEMES_CACHE;
         }
 
-        if(!jsonRes.isEmpty()) {
-            jsonRes.forEach(item -> {
-                if(item.getAsJsonObject().get("name").toString().replace("\"", "").endsWith("css")) {
-                    itemList.add(item.getAsJsonObject());
-                }
-            });
+        if(themesArray != null && !themesArray.isEmpty()) {
+            for(JsonElement element : themesArray) {
+                if(!element.isJsonObject())
+                    continue;
+
+                JsonObject obj = element.getAsJsonObject();
+                if(!obj.has("name") || !obj.get("name").isJsonPrimitive())
+                    continue;
+
+                JsonPrimitive name = obj.getAsJsonPrimitive("name");
+                if(!name.isString() || !name.getAsString().endsWith(".css"))
+                    continue;
+
+                itemList.add(Railroad.GSON.fromJson(element.getAsJsonObject(), Theme.class));
+            }
         }
 
-        themesCache = itemList;
+        THEMES_CACHE.clear();
+        THEMES_CACHE.addAll(itemList);
+        LAST_REFRESHED.set(System.currentTimeMillis());
         return itemList;
     }
 
-    public static Path getThemesDir() {
-        Path dir;
-        var os = System.getProperty("os.name");
-        var userHome = System.getProperty("user.home");
-
-        if(os.startsWith("Linux")) {
-            dir = Paths.get(userHome, ".config", "Railroad", "themes");
-        } else if(os.startsWith("Windows")) {
-            dir = Paths.get(userHome, "AppData", "Roaming", "Railroad", "themes");
-        } else {
-            dir = Paths.get("");
-        }
-
-        return dir;
+    public static Path getThemesDirectory() {
+        return ConfigHandler.getConfigDirectory().resolve("themes");
     }
 }
