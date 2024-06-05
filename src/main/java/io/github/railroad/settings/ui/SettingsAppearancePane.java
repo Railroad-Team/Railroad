@@ -7,10 +7,8 @@ import io.github.railroad.settings.ui.themes.ThemeDownloadPane;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.localized.LocalizedButton;
 import io.github.railroad.ui.localized.LocalizedLabel;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
 
 import java.nio.file.Path;
@@ -18,10 +16,6 @@ import java.util.List;
 
 public class SettingsAppearancePane extends RRVBox {
     private final ComboBox<String> themeSelector = new ComboBox<>();
-
-    public ObservableList<Node> getcChildren() {
-        return super.getChildren();
-    }
 
     public SettingsAppearancePane() {
         setSpacing(10);
