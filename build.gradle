@@ -45,7 +45,7 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic:1.5.6'
     implementation 'org.apache.groovy:groovy-all:5.0.0-alpha-8'
     implementation 'org.gradle:gradle-tooling-api:7.3-20210825160000+0000'
-    compileOnly group: 'org.fxmisc.richtext', name: 'richtextfx', version: '0.11.2'
+    implementation 'org.fxmisc.richtext:richtextfx:0.11.2'
 
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
     compileOnly 'org.projectlombok:lombok:1.18.32'
