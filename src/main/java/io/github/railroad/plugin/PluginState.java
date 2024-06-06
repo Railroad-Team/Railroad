@@ -1,6 +1,6 @@
 package io.github.railroad.plugin;
 
-public enum PluginStates {
+public enum PluginState {
     NOT_LOADED, STARTING_INIT, ERROR_INIT, FINISHED_INIT, LOADING, LOADED,
     ACTIVITY_UPDATE_START, ACTIVITY_UPDATE_FINISHED, ACTIVITY_UPDATE_ERROR
 }

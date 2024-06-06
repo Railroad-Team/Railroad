@@ -1,27 +1,21 @@
 package io.github.railroad.project;
 
 import io.github.railroad.project.data.Project;
+import lombok.Getter;
 
 import java.util.Comparator;
 
+@Getter
 public enum ProjectSort {
-    NAME("Name", Comparator.comparing(Project::getAlias)),
-    DATE("Date", Comparator.comparing(Project::getLastOpened).reversed()),
-    NONE("None", Comparator.comparing(Project::hashCode));
+    NAME("railroad.home.welcome.sort.name", Comparator.comparing(Project::getAlias)),
+    DATE("railroad.home.welcome.sort.date", Comparator.comparing(Project::getLastOpened).reversed()),
+    NONE("railroad.home.welcome.sort.none", Comparator.comparing(Project::hashCode));
 
-    private final String name;
+    private final String key;
     private final Comparator<? super Project> comparator;
 
-    ProjectSort(String name, Comparator<? super Project> comparator) {
-        this.name = name;
+    ProjectSort(String key, Comparator<? super Project> comparator) {
+        this.key = key;
         this.comparator = comparator;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Comparator<? super Project> getComparator() {
-        return comparator;
     }
 }

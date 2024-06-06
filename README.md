@@ -1,4 +1,4 @@
-<img src="/src/main/resources/io/github/railroad/images/logo.png" width="128" height="128" alt="The Railroad IDE logo"/>
+<img src="/src/main/resources/assets/railroad/images/logo.png" width="128" height="128" alt="The Railroad IDE logo"/>
 
 # Railroad IDE
 
@@ -8,7 +8,7 @@ Railroad IDE is an IDE that is made specifically for Minecraft mod development u
 
 ### Who started this project?
 
-This project was started by [TurtyWurty](https://www.youtube.com/channel/UCicAXLV4w2X6bn2EuM4To4w).
+This project was started by [TurtyWurty](https://www.youtube.com/TurtyWurty).
 
 ### Is there a Discord server I can join?
 

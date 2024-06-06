@@ -49,3 +49,11 @@
     -fx-border-width: 1;
     -fx-border-color: -color-border-default;
 }
+
+LocalizedText {
+    -fx-fill: -color-fg-default;
+}
+
+.theme-selector .list-view {
+    -fx-pref-height: 400
+}

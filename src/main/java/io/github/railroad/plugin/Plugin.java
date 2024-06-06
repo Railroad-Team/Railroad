@@ -1,78 +1,85 @@
 package io.github.railroad.plugin;
 
+import com.google.gson.JsonPrimitive;
+import io.github.railroad.Railroad;
+import io.github.railroad.config.PluginSettings;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.utility.JsonSerializable;
+import javafx.beans.property.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.jetbrains.annotations.Nullable;
 
-public abstract class Plugin {
-    private PluginManager pluginManager;
-    private PluginStates state = PluginStates.NOT_LOADED;
-    private PluginHealthChecker healthChecker;
-    private String pluginLogoUrl;
-    private String pluiginName;
+public abstract class Plugin implements JsonSerializable<JsonPrimitive> {
+    private final ObjectProperty<PluginSettings> pluginSettings = new ReadOnlyObjectWrapper<>();
+    private final ObjectProperty<PluginState> state = new SimpleObjectProperty<>(PluginState.NOT_LOADED);
+
+    @Getter
+    private final PluginHealthChecker healthChecker;
+    private final StringProperty logoUrl = new SimpleStringProperty();
+    private final StringProperty name = new SimpleStringProperty();
 
     public Plugin() {
         this.healthChecker = new PluginHealthChecker(this);
         this.healthChecker.start();
+        this.pluginSettings.set(createSettings());
     }
 
-    public abstract PluginPhaseResult initPlugin();
+    public abstract PluginPhaseResult init();
 
-    public abstract PluginPhaseResult loadPlugin();
+    public abstract PluginPhaseResult load();
 
-    public abstract PluginPhaseResult unloadPlugin();
+    public abstract PluginPhaseResult unload();
 
     public abstract PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes);
 
-    public abstract PluginPhaseResult reloadPlugin();
+    public abstract PluginPhaseResult reload();
 
-    public abstract RRVBox showSettings();
+    public abstract RRVBox showSettings(); // TODO: Replace with automatic generation using form builder
 
-    public void updateStatus(PluginStates state) {
-        this.pluginManager.showLog(this, "Change state from: " + this.state + " to: " + state);
-        this.state = state;
-    }
+    public abstract PluginSettings createSettings();
 
-    public PluginStates getState() {
-        return this.state;
+    public void updateStatus(PluginState state) {
+        Railroad.PLUGIN_MANAGER.showLog(this, "Change state from: " + this.state + " to: " + state);
+        this.state.set(state);
     }
 
     public PluginPhaseResult getNewPhase() {
         return new PluginPhaseResult();
     }
 
-    public PluginHealthChecker getHealthChecker() {
-        return healthChecker;
-    }
-
-    public void setHealthChecker(PluginHealthChecker healthChecker) {
-        this.healthChecker = healthChecker;
-    }
-
-    public PluginManager getPluginManager() {
-        return pluginManager;
-    }
-
-    public void setPluginManager(PluginManager pluginManager) {
-        this.pluginManager = pluginManager;
-    }
-
     public String getName() {
-        return this.getClass().getName().toString();
+        return getClass().getSimpleName();
     }
 
-    public String getPluiginName() {
-        return pluiginName;
+    public @Nullable PluginSettings getPluginSettings() {
+        return pluginSettings.get();
     }
 
-    public void setPluiginName(String pluiginName) {
-        this.pluiginName = pluiginName;
+    @Override
+    public JsonPrimitive toJson() {
+        return new JsonPrimitive(getName());
     }
 
-    public String getPluginLogoUrl() {
-        return pluginLogoUrl;
+    @Override
+    public void fromJson(JsonPrimitive json) {
+        // This is a no-op because we don't need to deserialize the plugin name
     }
 
-    public void setPluginLogoUrl(String pluginLogoUrl) {
-        this.pluginLogoUrl = pluginLogoUrl;
+    public PluginState getState() {
+        return state.get();
+    }
+
+    public void setName(String name) {
+        this.name.set(name);
+    }
+
+    public StringProperty nameProperty() {
+        return name;
+    }
+
+    public StringProperty logoUrlProperty() {
+        return logoUrl;
     }
 }

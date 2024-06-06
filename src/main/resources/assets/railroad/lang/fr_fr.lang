@@ -1,0 +1,102 @@
+railroad.home.window.title=Railroad
+railroad.ide.window.title=Railroad IDE
+
+railroad.home.welcome.projects=Liste des projets
+railroad.home.welcome.projectsearch=Rechercher des projets...
+railroad.home.welcome.home=Accueil
+railroad.home.welcome.openproject=Ouvrir le projet
+railroad.home.welcome.newproject=Nouveau projet
+railroad.home.welcome.importproject=Importer le projet
+railroad.home.welcome.settings=Paramètres
+
+railroad.home.welcome.sort.none=Aucun
+railroad.home.welcome.sort.name=Nom
+railroad.home.welcome.sort.date=Date
+
+railroad.home.welcome.project.open=Ouvrir
+railroad.home.welcome.project.remove=Supprimer
+
+railroad.home.settings.search=Rechercher des paramètres...
+railroad.home.settings.back=Retour
+
+railroad.home.settings.general=Général
+railroad.home.settings.appearance=Apparence
+railroad.home.settings.behavior=Comportement
+railroad.home.settings.keymaps=Raccourcis clavier
+railroad.home.settings.plugins=Plugins
+railroad.home.settings.projects=Projets
+railroad.home.settings.tools=Outils
+
+railroad.home.settings.general.github=Connexion à Github :
+railroad.home.settings.general.github.connect=Connecter
+railroad.home.settings.general.github.disconnect=Déconnecter
+
+railroad.home.settings.general.language=Langue :
+
+railroad.home.settings.appearance.theme=Séléctionner un thème
+railroad.home.settings.appearance.downloadtheme=Télécharger les thèmes
+railroad.home.settings.appearance.notfound=Thèmes non trouvés
+railroad.home.settings.appearance.download=Télécharger
+railroad.home.settings.appearance.installed=Installé
+railroad.home.settings.appearance.preview=Aperçu
+
+railroad.home.settings.keymaps.key=Touche
+railroad.home.settings.keymaps.action=Action
+
+railroad.home.settings.keymaps.action.runproject=Exécuter le projet
+railroad.home.settings.keymaps.action.termproject=Terminer le projet
+
+railroad.home.project=Projet
+railroad.home.project.create=Créer
+railroad.home.project.creating=Création du projet...
+railroad.home.welcome.project.searchtype=Rechercher des types de projets
+
+railroad.home.project.mappings=Mappages
+railroad.home.project.mappingchannel=Canal de mappage :
+railroad.home.project.mappingversion=Version de mappage :
+
+railroad.home.project.details=Détails (Optionnel)
+railroad.home.project.details.author=Auteur :
+railroad.home.project.details.credits=Crédits :
+railroad.home.project.details.description=Description :
+railroad.home.project.details.issues=Problèmes :
+railroad.home.project.details.jsonurl=Mettre à jour l'URL JSON :
+railroad.home.project.details.displayurl=Afficher l'URL :
+railroad.home.project.details.displaytest=Afficher le test :
+railroad.home.project.details.client=Client uniquement :
+railroad.home.project.details.homepage=Page d'accueil :
+railroad.home.project.details.sources=Sources :
+
+railroad.home.minecraft=Minecraft
+railroad.home.minecraft.version=Version de Minecraft :
+
+railroad.home.project.name=Nom :
+railroad.home.project.location=Emplacement :
+railroad.home.project.browse=Parcourir
+railroad.home.project.destination=Ce sera créé à :
+railroad.home.project.git=Créer un dépôt Git :
+railroad.home.project.license=Licence :
+
+railroad.home.project.maven=Maven
+railroad.home.project.maven.group=ID du groupe :
+railroad.home.project.maven.artifact=ID de l'artefact :
+railroad.home.project.maven.version=Version :
+
+railroad.home.project.forge.version=Version de Forge :
+
+railroad.home.project.fabric.version=Version de Fabric :
+railroad.home.project.fabric.api=Inclure l'API Fabric :
+railroad.home.project.fabric.apiversion=Version de l'API Fabric :
+railroad.home.project.fabric.uaw=Utiliser Access Widener :
+railroad.home.project.fabric.split=Diviser les sources :
+
+railroad.home.project.neoforged.version=Version de NeoForged :
+
+railroad.home.project.modid=ID du mod :
+railroad.home.project.modname=Nom du mod :
+railroad.home.project.mainclass=Classe principale :
+railroad.home.project.mixins=Utiliser Mixins :
+railroad.home.project.uat=Utiliser Access Transformer :
+railroad.home.project.grf=Générer des dossiers d'exécution :
+
+railroad.home.project.tooltips.projectcreated=Le projet sera créé dans ce répertoire.

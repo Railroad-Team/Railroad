@@ -1,8 +1,0 @@
-Basically, this is only temporary.
-
-These themes will later on be installed with the installer into %APPDATA%\Roaming\Railroad\themes\
-and then the options will come from then and users can create their own, but due to there being a PR for theming
-and the installer isn't done, I'll leave it as is to not confuse people.
-
-When moving the themes to the appdata folder (NOT YET), the themes will stay on github to make it easier to download them
-but they will need to be moved to the appdata folder to be used.

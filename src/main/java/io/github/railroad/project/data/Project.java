@@ -1,10 +1,16 @@
 package io.github.railroad.project.data;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.github.railroad.Railroad;
-import io.github.railroad.project.ProjectManager;
+import io.github.railroad.utility.JsonSerializable;
 import io.github.railroad.vcs.Repository;
+import javafx.beans.property.*;
+import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -17,15 +23,13 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
-
-public class Project {
-    private final Path path;
-    private String alias;
-    private Optional<Image> icon;
-    private long lastOpened;
-    private Repository repository;
-    private String id;
-    private ProjectManager manager;
+public class Project implements JsonSerializable<JsonObject> {
+    private final ObjectProperty<Path> path = new ReadOnlyObjectWrapper<>();
+    private final StringProperty alias = new SimpleStringProperty();
+    private final ObjectProperty<Image> icon = new SimpleObjectProperty<>();
+    private final LongProperty lastOpened = new SimpleLongProperty();
+    private final ObjectProperty<Repository> repository = new SimpleObjectProperty<>();
+    private final StringProperty id = new SimpleStringProperty();
 
     public Project(Path path) {
         this(path, path.getFileName().toString());
@@ -36,14 +40,14 @@ public class Project {
     }
 
     public Project(Path path, String alias, Image icon) {
-        this.path = path;
-        this.alias = alias;
-        this.icon = icon == null ? Optional.of(createIcon(this)) : Optional.of(icon);
+        this.path.set(path);
+        this.alias.set(alias);
+        this.icon.set(icon == null ? createIcon(this) : icon);
     }
 
     private static Image createIcon(Project project) {
-        var color = new Color(Math.abs(project.path.toAbsolutePath().toString().hashCode()) % 0xFFFFFF);
-        String abbreviation = getAbbreviation(project.alias).toUpperCase(Locale.ROOT);
+        var color = new Color(Math.abs(project.path.get().toAbsolutePath().toString().hashCode()) % 0xFFFFFF);
+        String abbreviation = getAbbreviation(project.alias.get()).toUpperCase(Locale.ROOT);
         abbreviation = abbreviation.isBlank() ? "?" : abbreviation;
         abbreviation = abbreviation.length() > 4 ? abbreviation.substring(0, 4) : abbreviation;
 
@@ -77,47 +81,21 @@ public class Project {
         return abbreviation.toString();
     }
 
-    public Path getPath() {
-        return path;
-    }
-
     public String getPathString() {
-        return path.toString();
-    }
-
-    public String getPathStr() {
-        return getPath().toString();
-    }
-
-    public String getAlias() {
-        return alias;
-    }
-
-    public void setAlias(String alias) {
-        this.alias = alias;
-    }
-
-    public Optional<Image> getIcon() {
-        return icon;
+        return this.path.get().toString();
     }
 
     public void setIcon(Image icon) {
-        this.icon = Optional.of(icon);
-    }
-
-    public long getLastOpened() {
-        return lastOpened;
+        this.icon.set(icon == null ? createIcon(this) : icon);
     }
 
     public void setLastOpened(long lastOpened) {
-        this.lastOpened = lastOpened;
-        if (this.manager != null) {
-            this.manager.updateProjectInfo(this);
-        }
+        this.lastOpened.set(lastOpened);
     }
 
-    public String getLastOpenedFriendly() {
-        var instant = Instant.ofEpochMilli(this.getLastOpened());
+    // TODO: Extract for reusability purposes
+    public static String getLastOpenedFriendly(@NotNull Number time) {
+        var instant = Instant.ofEpochMilli(time.longValue());
         ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
         var currentTime = ZonedDateTime.now();
         long daysDifference = ChronoUnit.DAYS.between(zonedDateTime, currentTime);
@@ -150,13 +128,14 @@ public class Project {
     }
 
     public void open() {
-        Railroad.LOGGER.debug("Opening project: {}", path);
+        Railroad.LOGGER.debug("Opening project: {}", getPathString());
         setLastOpened(System.currentTimeMillis());
+        Railroad.PROJECT_MANAGER.updateProjectInfo(this);
     }
 
     @Override
     public String toString() {
-        return alias + " - " + getLastOpened();
+        return alias.get() + " - " + lastOpened.get();
     }
 
     @Override
@@ -178,27 +157,126 @@ public class Project {
         return path.hashCode();
     }
 
-    public void setManager(ProjectManager manager) {
-        this.manager = manager;
-    }
-
     public String getId() {
-        if (this.id == null || this.id.isEmpty()) {
-            this.id = UUID.randomUUID().toString();
+        if (this.id.get() == null || this.id.get().isEmpty()) {
+            this.id.set(UUID.randomUUID().toString());
         }
 
-        return id;
+        return id.get();
     }
 
-    public void setId(String id) {
-        this.id = id;
+    @Override
+    public JsonObject toJson() {
+        var json = new JsonObject();
+        json.addProperty("Path", getPathString());
+        json.addProperty("Alias", alias.get());
+        json.addProperty("LastOpened", lastOpened.get());
+        json.addProperty("Id", getId());
+        json.addProperty("Icon", this.icon.map(Image::getUrl).orElse("").getValue());
+
+        return json;
     }
 
-    public Repository getRepository() {
+    @Override
+    public void fromJson(JsonObject json) {
+        if(json == null)
+            return;
+
+        if(json.has("Path")) {
+            JsonElement pathElement = json.get("Path");
+            if(pathElement.isJsonPrimitive()) {
+                JsonPrimitive pathPrimitive = pathElement.getAsJsonPrimitive();
+                if(pathPrimitive.isString())
+                    this.path.set(Path.of(pathElement.getAsString()));
+            }
+        }
+
+        if(json.has("Alias")) {
+            JsonElement aliasElement = json.get("Alias");
+            if(aliasElement.isJsonPrimitive()) {
+                JsonPrimitive aliasPrimitive = aliasElement.getAsJsonPrimitive();
+                if(aliasPrimitive.isString())
+                    this.alias.set(aliasElement.getAsString());
+            }
+        }
+
+        if(json.has("LastOpened")) {
+            JsonElement lastOpenedElement = json.get("LastOpened");
+            if(lastOpenedElement.isJsonPrimitive()) {
+                JsonPrimitive lastOpenedPrimitive = lastOpenedElement.getAsJsonPrimitive();
+                if(lastOpenedPrimitive.isNumber())
+                    this.lastOpened.set(lastOpenedElement.getAsLong());
+            }
+        }
+
+        if(json.has("Id")) {
+            JsonElement idElement = json.get("Id");
+            if(idElement.isJsonPrimitive()) {
+                JsonPrimitive idPrimitive = idElement.getAsJsonPrimitive();
+                if(idPrimitive.isString())
+                    this.id.set(idElement.getAsString());
+            }
+        }
+
+        boolean hasIcon = false;
+        if(json.has("Icon")) {
+            JsonElement iconElement = json.get("Icon");
+            if(iconElement.isJsonPrimitive()) {
+                JsonPrimitive iconPrimitive = iconElement.getAsJsonPrimitive();
+                if(iconPrimitive.isString() && !iconElement.getAsString().isBlank()) {
+                    this.icon.set(new Image(iconElement.getAsString()));
+                    hasIcon = true;
+                }
+            }
+        }
+
+        if(!hasIcon)
+            this.icon.set(createIcon(this));
+    }
+
+    public static Optional<Project> createFromJson(JsonObject json) {
+        if(!json.has("Path"))
+            return Optional.empty();
+
+        JsonElement pathElement = json.get("Path");
+        if(!pathElement.isJsonPrimitive())
+            return Optional.empty();
+
+        JsonPrimitive pathPrimitive = pathElement.getAsJsonPrimitive();
+        if(!pathPrimitive.isString())
+            return Optional.empty();
+
+        var project = new Project(Path.of(pathElement.getAsString()));
+        project.fromJson(json);
+
+        return Optional.of(project);
+    }
+
+    public String getAlias() {
+        return alias.get();
+    }
+
+    public long getLastOpened() {
+        return lastOpened.get();
+    }
+
+    public Image getIcon() {
+        return icon.get();
+    }
+
+    public ObjectProperty<Image> iconProperty() {
+        return icon;
+    }
+
+    public StringProperty aliasProperty() {
+        return alias;
+    }
+
+    public ObjectProperty<Repository> repositoryProperty() {
         return repository;
     }
 
-    public void setRepository(Repository repository) {
-        this.repository = repository;
+    public LongProperty lastOpenedProperty() {
+        return lastOpened;
     }
 }

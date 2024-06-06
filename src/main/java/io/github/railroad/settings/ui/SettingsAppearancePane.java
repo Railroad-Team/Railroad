@@ -1,43 +1,39 @@
 package io.github.railroad.settings.ui;
 
-import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
+import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
+import io.github.railroad.settings.ui.themes.ThemeDownloadPane;
+import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.utility.ConfigHandler;
+import io.github.railroad.ui.localized.LocalizedButton;
+import io.github.railroad.ui.localized.LocalizedLabel;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class SettingsAppearancePane extends RRVBox {
-    private static final ComboBox<String> themeSelector = new ComboBox<>();
-    private final Label title = new Label("Appearance");
-    private final Label themeOption = new Label("Select a theme:");
+    private final ComboBox<String> themeSelector = new ComboBox<>();
 
     public SettingsAppearancePane() {
-        var themeBox = new RRVBox();
+        setSpacing(10);
+        setPadding(new Insets(10));
 
+        var themeBox = new RRVBox(10);
+
+        var title = new LocalizedLabel("railroad.home.settings.appearance");
         title.setStyle("-fx-font-size: 20pt; -fx-font-weight: bold;");
         title.prefWidthProperty().bind(widthProperty());
         title.setAlignment(Pos.CENTER);
 
-        themeBox.setStyle("-fx-padding: 0 0 0 10");
-
-        List<Path> themes = new ArrayList<>();
-        try (Stream<Path> files = Files.list(Path.of("themes"))) {
-            files.filter(file -> file.toString().endsWith(".css")).forEach(themes::add);
-        } catch (IOException exception) {
-            Railroad.LOGGER.error("Failed to load themes", exception);
-        }
-
+        var themeOption = new LocalizedLabel("railroad.home.settings.appearance.theme");
+        themeOption.setStyle("-fx-font-weight: bold;");
+        themeSelector.getStyleClass().add("theme-selector");
         themeSelector.setPrefWidth(180);
 
+        List<Path> themes = ThemeDownloadManager.getDownloaded();
         if (themeSelector.getItems().size() < themes.size() + 2) {
             themeSelector.getItems().clear();
 
@@ -48,10 +44,7 @@ public class SettingsAppearancePane extends RRVBox {
                 themeSelector.getItems().add(name);
             }
 
-            JsonObject config = ConfigHandler.getConfigJson();
-            String theme = config.get("settings").getAsJsonObject().get("theme").getAsString();
-
-            themeSelector.setValue(theme);
+            themeSelector.setValue(ConfigHandler.getConfig().getSettings().getTheme());
         }
 
         themeSelector.setOnAction(event -> {
@@ -59,17 +52,14 @@ public class SettingsAppearancePane extends RRVBox {
                 return;
 
             String theme = themeSelector.getValue();
-
-            JsonObject config = ConfigHandler.getConfigJson();
-            config.get("settings").getAsJsonObject().addProperty("theme", theme);
-
-            ConfigHandler.updateConfig();
-
-            Railroad.setStyle(theme);
+            Railroad.updateTheme(theme);
         });
 
-        themeBox.getChildren().addAll(themeOption, themeSelector);
+        // Download theme button
+        var downloadThemes = new LocalizedButton("railroad.home.settings.appearance.downloadtheme");
+        downloadThemes.setOnAction(event -> new ThemeDownloadPane());
 
+        themeBox.getChildren().addAll(themeOption, themeSelector, downloadThemes);
         getChildren().addAll(title, themeBox);
     }
 }

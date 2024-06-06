@@ -4,21 +4,23 @@ import io.github.railroad.Railroad;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.localized.LocalizedListCell;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.Separator;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Priority;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import lombok.Getter;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 public class WelcomeLeftPane extends RRVBox {
+    @Getter
     private final RRListView<MenuType> listView;
 
     public WelcomeLeftPane() {
@@ -60,48 +62,35 @@ public class WelcomeLeftPane extends RRVBox {
         );
     }
 
-    public RRListView<MenuType> getListView() {
-        return listView;
-    }
-
+    @Getter
     public enum MenuType {
-        HOME("Home", FontAwesomeSolid.HOME),
-        NEW_PROJECT("New Project", FontAwesomeSolid.PLUS),
-        OPEN_PROJECT("Open Project", FontAwesomeSolid.FOLDER_OPEN),
-        IMPORT_PROJECT("Import Project", FontAwesomeSolid.FILE_IMPORT),
-        SETTINGS("Settings", FontAwesomeSolid.COG);
+        HOME("railroad.home.welcome.home", FontAwesomeSolid.HOME),
+        NEW_PROJECT("railroad.home.welcome.newproject", FontAwesomeSolid.PLUS),
+        OPEN_PROJECT("railroad.home.welcome.openproject", FontAwesomeSolid.FOLDER_OPEN),
+        IMPORT_PROJECT("railroad.home.welcome.importproject", FontAwesomeSolid.FILE_IMPORT),
+        SETTINGS("railroad.home.welcome.settings", FontAwesomeSolid.COG);
 
-        private final String name;
+        private final String key;
         private final Ikon icon;
         private final Paint color;
 
-        MenuType(String name, Ikon icon, Paint color) {
-            this.name = name;
+        MenuType(String key, Ikon icon, Paint color) {
+            this.key = key;
             this.icon = icon;
             this.color = color;
         }
 
-        MenuType(String name, Ikon icon) {
-            this(name, icon, Color.WHITE);
+        MenuType(String key, Ikon icon) {
+            this(key, icon, Color.WHITE);
         }
 
-        public String getName() {
-            return this.name;
-        }
-
-        public Ikon getIcon() {
-            return this.icon;
-        }
-
-        public Paint getColor() {
-            return this.color;
-        }
     }
 
-    public static class MenuTypeCell extends ListCell<MenuType> {
+    public static class MenuTypeCell extends LocalizedListCell<MenuType> {
         private final FontIcon icon = new FontIcon();
 
         public MenuTypeCell() {
+            super(MenuType::getKey);
             icon.setIconSize(24);
         }
 
@@ -109,14 +98,11 @@ public class WelcomeLeftPane extends RRVBox {
         protected void updateItem(MenuType item, boolean empty) {
             super.updateItem(item, empty);
             if (empty || item == null) {
-                setText(null);
                 setGraphic(null);
             } else {
                 icon.setIconCode(item.getIcon());
                 icon.setIconColor(item.getColor());
                 setGraphic(icon);
-
-                setText(item.getName());
             }
         }
     }

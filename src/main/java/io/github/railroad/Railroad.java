@@ -2,14 +2,17 @@ package io.github.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.github.railroad.minecraft.FabricAPIVersion;
-import io.github.railroad.minecraft.NeoForgeVersion;
-import io.github.railroad.plugin.PluginManager;
+import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.discord.activity.RailroadActivities;
+import io.github.railroad.minecraft.FabricAPIVersion;
 import io.github.railroad.minecraft.ForgeVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
+import io.github.railroad.minecraft.NeoForgeVersion;
+import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.project.ProjectManager;
-import io.github.railroad.utility.ConfigHandler;
+import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
+import io.github.railroad.utility.ShutdownHooks;
+import io.github.railroad.utility.localization.L18n;
 import io.github.railroad.vcs.RepositoryManager;
 import io.github.railroad.welcome.WelcomePane;
 import javafx.application.Application;
@@ -18,9 +21,9 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.Pane;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import lombok.Getter;
 import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +32,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class Railroad extends Application {
@@ -39,37 +41,29 @@ public class Railroad extends Application {
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
     public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
-    public static final AtomicReference<String> THEME = new AtomicReference<>("default-dark");
     public static final String URL_REGEX = "(?:http(s)?:\\/\\/)?[\\w.-]+(?:\\.[\\w\\.-]+)+[\\w\\-\\._~:/?#\\[\\]@!\\$&'\\(\\)\\*\\+,;=.]+$";
 
     private static boolean DEBUG = false;
+    @Getter
     private static Scene scene;
+    @Getter
     private static Stage window;
 
-    public static Scene getScene() {
-        return scene;
-    }
-
-    public static Stage getWindow() {
-        return window;
-    }
-
-    public static void setStyle(String theme) {
-        getScene().getStylesheets().remove(THEME.get() + ".css");
+    public static void updateTheme(String theme) {
+        getScene().getStylesheets().remove(ConfigHandler.getConfig().getSettings().getTheme() + ".css");
 
         if (theme.startsWith("default")) {
             Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
         } else {
-            Application.setUserAgentStylesheet(new File("themes/" + theme + ".css").toURI().toString());
+            Application.setUserAgentStylesheet(new File(ThemeDownloadManager.getThemesDirectory() + "/" + theme + ".css").toURI().toString());
         }
 
-        THEME.set(theme);
+        ConfigHandler.getConfig().getSettings().setTheme(theme);
+        ConfigHandler.saveConfig();
     }
 
     private static void handleStyles(Scene scene) {
-        var selectedTheme = ConfigHandler.getConfigJson().get("settings").getAsJsonObject().get("theme").getAsString();
-
-        setStyle(selectedTheme);
+        updateTheme(ConfigHandler.getConfig().getSettings().getTheme());
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();
@@ -90,11 +84,11 @@ public class Railroad extends Application {
     }
 
     public static URL getResource(String path) {
-        return Railroad.class.getResource("/io/github/railroad/" + path);
+        return Railroad.class.getClassLoader().getResource("assets/railroad/" + path);
     }
 
     public static InputStream getResourceAsStream(String path) {
-        return Railroad.class.getResourceAsStream("/io/github/railroad/" + path);
+        return Railroad.class.getClassLoader().getResourceAsStream("assets/railroad/" + path);
     }
 
     public static void showErrorAlert(String title, String header, String content, Consumer<ButtonType> action) {
@@ -116,7 +110,7 @@ public class Railroad extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        ConfigHandler.updateConfig();
+        ConfigHandler.initConfig();
         PLUGIN_MANAGER.start();
         PLUGIN_MANAGER.addCustomEventListener(event -> {
             Platform.runLater(() -> {
@@ -128,6 +122,7 @@ public class Railroad extends Application {
         ForgeVersion.load();
         FabricAPIVersion.load();
         NeoForgeVersion.load();
+        L18n.loadLanguage();
         window = primaryStage;
 
         // Calculate the primary screen size to better fit the window
@@ -140,11 +135,7 @@ public class Railroad extends Application {
         double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
 
         // Start the welcome screen and window
-        scene = new Scene(new Pane(), windowW, windowH);
-
-        var welcomePane = new WelcomePane();
-        scene.setRoot(welcomePane);
-
+        scene = new Scene(new WelcomePane(), windowW, windowH);
         handleStyles(scene);
 
         // Open setup and show the window
@@ -153,16 +144,20 @@ public class Railroad extends Application {
         primaryStage.setScene(scene);
         primaryStage.setTitle("Railroad - 1.0.0(dev)");
         primaryStage.show();
-        // FIXME window is not being focused when it opens
 
         LOGGER.info("Railroad started");
         PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
+        ShutdownHooks.addHook(() -> {
+            HTTP_CLIENT.dispatcher().executorService().shutdown();
+            HTTP_CLIENT.connectionPool().evictAll();
+        });
     }
 
     @Override
     public void stop() {
         LOGGER.info("Stopping Railroad");
         PLUGIN_MANAGER.unloadPlugins();
-        System.exit(0);
+        ConfigHandler.saveConfig();
+        ShutdownHooks.runHooks();
     }
 }

@@ -1,0 +1,99 @@
+railroad.home.welcome.projects=Projects List
+railroad.home.welcome.projectsearch=Search projects...
+railroad.home.welcome.home=Home
+railroad.home.welcome.openproject=Open Project
+railroad.home.welcome.newproject=New Project
+railroad.home.welcome.importproject=Import Project
+railroad.home.welcome.settings=Settings
+
+railroad.home.welcome.sort.none=None
+railroad.home.welcome.sort.name=Name
+railroad.home.welcome.sort.date=Date
+
+railroad.home.welcome.project.open=Open
+railroad.home.welcome.project.remove=Remove
+
+railroad.home.settings.search=Search settings...
+railroad.home.settings.back=Back
+
+railroad.home.settings.general=General
+railroad.home.settings.appearance=Appearance
+railroad.home.settings.behavior=Behavior
+railroad.home.settings.keymaps=Keymaps
+railroad.home.settings.plugins=Plugins
+railroad.home.settings.projects=Projects
+railroad.home.settings.tools=Tools
+
+railroad.home.settings.general.github=Github Connection:
+railroad.home.settings.general.github.connect=Connect
+railroad.home.settings.general.github.disconnect=Disconnect
+
+railroad.home.settings.general.language=Language:
+
+railroad.home.settings.appearance.theme=Select a Theme
+railroad.home.settings.appearance.downloadtheme=Download themes
+railroad.home.settings.appearance.notfound=Themes not found
+railroad.home.settings.appearance.download=Download
+railroad.home.settings.appearance.installed=Installed
+railroad.home.settings.appearance.preview=Preview
+
+railroad.home.settings.keymaps.key=Key
+railroad.home.settings.keymaps.action=Action
+
+railroad.home.settings.keymaps.action.runproject=Run Project
+railroad.home.settings.keymaps.action.termproject=Terminate Project
+
+railroad.home.project=Project
+railroad.home.project.create=Create
+railroad.home.project.creating=Creating project...
+railroad.home.welcome.project.searchtype=Search Project Types
+
+railroad.home.project.mappings=Mappings
+railroad.home.project.mappingchannel=Mapping Channel:
+railroad.home.project.mappingversion=Mapping Version:
+
+railroad.home.project.details=Details (Optional)
+railroad.home.project.details.author=Author:
+railroad.home.project.details.credits=Credits:
+railroad.home.project.details.description=Description:
+railroad.home.project.details.issues=Issues:
+railroad.home.project.details.jsonurl=Update JSON URL:
+railroad.home.project.details.displayurl=Display URL:
+railroad.home.project.details.displaytest=Display Test:
+railroad.home.project.details.client=Client Side Only:
+railroad.home.project.details.homepage=Homepage:
+railroad.home.project.details.sources=Sources:
+
+railroad.home.minecraft=Minecraft
+railroad.home.minecraft.version=Minecraft Version:
+
+railroad.home.project.name=Name:
+railroad.home.project.location=Location:
+railroad.home.project.browse=Browse
+railroad.home.project.destination=This will be created at:
+railroad.home.project.git=Create Git Repository:
+railroad.home.project.license=License:
+
+railroad.home.project.maven=Maven
+railroad.home.project.maven.group=Group ID:
+railroad.home.project.maven.artifact=Artifact ID:
+railroad.home.project.maven.version=Version:
+
+railroad.home.project.forge.version=Forge Version:
+
+railroad.home.project.fabric.version=Fabric Version:
+railroad.home.project.fabric.api=Include Fabric API:
+railroad.home.project.fabric.apiversion=Fabric API Version:
+railroad.home.project.fabric.uaw=Use Access Widener:
+railroad.home.project.fabric.split=Split Sources:
+
+railroad.home.project.neoforged.version=NeoForged Version:
+
+railroad.home.project.modid=Mod ID:
+railroad.home.project.modname=Mod Name:
+railroad.home.project.mainclass=Main Class:
+railroad.home.project.mixins=Use Mixins:
+railroad.home.project.uat=Use Access Transformer:
+railroad.home.project.grf=Generate Run Folders:
+
+railroad.home.project.tooltips.projectcreated=The project will be created in this directory.

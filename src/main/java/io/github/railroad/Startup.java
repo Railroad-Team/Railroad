@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 
 public class Startup {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Startup.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
     private static final boolean TEST = false;
 
     public static void main(String[] args) {

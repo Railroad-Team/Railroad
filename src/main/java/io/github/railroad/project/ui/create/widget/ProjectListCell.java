@@ -4,6 +4,7 @@ import io.github.railroad.Railroad;
 import io.github.railroad.project.data.Project;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
@@ -11,6 +12,10 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class ProjectListCell extends ListCell<Project> {
     private final StackPane node = new StackPane();
@@ -66,6 +71,7 @@ public class ProjectListCell extends ListCell<Project> {
     }
 
     public static class ProjectListNode extends RRVBox {
+        private static final ScheduledExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadScheduledExecutor();
         private final ObjectProperty<Project> project = new SimpleObjectProperty<>();
         private final ImageView icon;
         private final Label label;
@@ -83,21 +89,26 @@ public class ProjectListCell extends ListCell<Project> {
             icon.setFitWidth(32);
             icon.setFitHeight(32);
             icon.setPreserveRatio(true);
-            icon.imageProperty().bind(project.map(project -> project.getIcon().orElse(null)));
+            icon.imageProperty().bind(project.flatMap(Project::iconProperty));
             this.icon = icon;
 
             var nameLabel = new Label();
-            nameLabel.textProperty().bind(project.map(Project::getAlias));
+            nameLabel.textProperty().bind(project.flatMap(Project::aliasProperty));
             nameLabel.setStyle("-fx-font-size: 16px;");
             this.label = nameLabel;
 
             var pathLabel = new Label();
-            pathLabel.textProperty().bind(project.map(Project::getPathStr));
+            pathLabel.textProperty().bind(project.map(Project::getPathString));
             pathLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #808080;");
             this.pathLabel = pathLabel;
 
             var lastOpened = new Label();
-            lastOpened.textProperty().bind(project.map(Project::getLastOpenedFriendly));
+            EXECUTOR_SERVICE.scheduleAtFixedRate(() -> {
+                Project project = this.project.get();
+                if (project != null) {
+                    Platform.runLater(() -> lastOpened.setText(Project.getLastOpenedFriendly(project.getLastOpened())));
+                }
+            }, 0, 1, TimeUnit.SECONDS);
             lastOpened.setStyle("-fx-font-size: 14px; -fx-text-fill: #808080;");
             this.lastOpened = lastOpened;
 
