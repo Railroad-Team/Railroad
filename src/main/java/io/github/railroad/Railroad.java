@@ -11,6 +11,7 @@ import io.github.railroad.minecraft.NeoForgeVersion;
 import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
+import io.github.railroad.utility.ShutdownHooks;
 import io.github.railroad.utility.localization.L18n;
 import io.github.railroad.vcs.RepositoryManager;
 import io.github.railroad.welcome.WelcomePane;
@@ -146,6 +147,10 @@ public class Railroad extends Application {
 
         LOGGER.info("Railroad started");
         PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
+        ShutdownHooks.addHook(() -> {
+            HTTP_CLIENT.dispatcher().executorService().shutdown();
+            HTTP_CLIENT.connectionPool().evictAll();
+        });
     }
 
     @Override
@@ -153,6 +158,6 @@ public class Railroad extends Application {
         LOGGER.info("Stopping Railroad");
         PLUGIN_MANAGER.unloadPlugins();
         ConfigHandler.saveConfig();
-        RepositoryManager.currentThread().interrupt();
+        ShutdownHooks.runHooks();
     }
 }

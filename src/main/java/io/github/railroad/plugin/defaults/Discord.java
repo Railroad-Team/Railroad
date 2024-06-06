@@ -10,6 +10,7 @@ import io.github.railroad.plugin.Plugin;
 import io.github.railroad.plugin.PluginPhaseResult;
 import io.github.railroad.plugin.PluginState;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.utility.ShutdownHooks;
 
 import java.time.Instant;
 
@@ -24,7 +25,7 @@ public class Discord extends Plugin {
 
         try {
             var discord = new DiscordCore("853387211897700394");
-            Runtime.getRuntime().addShutdownHook(new Thread(discord::close));
+            ShutdownHooks.addHook(discord::close);
             this.discord = discord;
         } catch (Exception exception) {
             updateStatus(PluginState.ERROR_INIT);

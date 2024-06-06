@@ -3,34 +3,28 @@ package io.github.railroad.vcs;
 import io.github.railroad.Railroad;
 import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.plugin.defaults.Github;
+import io.github.railroad.utility.ShutdownHooks;
 import io.github.railroad.vcs.connections.AbstractConnection;
 import io.github.railroad.vcs.connections.Profile;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-public class RepositoryManager extends Thread {
+public class RepositoryManager implements Runnable {
+    private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
     private final ObservableList<AbstractConnection> connections = FXCollections.observableArrayList();
     @Getter
     private final ObservableList<Repository> repositories = FXCollections.observableArrayList();
 
     @Override
     public void run() {
-        while (true) {
-            try {
-                Railroad.LOGGER.debug("Starting update repos");
-                updateRepositories();
-                Thread.sleep(60_000);
-            } catch (InterruptedException exception) {
-                Railroad.LOGGER.error("RepositoryManager interrupted", exception);
-                Thread.currentThread().interrupt(); // Restore interrupted status
-                break;
-            }
-        }
+        Railroad.LOGGER.debug("Starting update repos");
+        updateRepositories();
     }
 
     public void updateRepositories() {
@@ -68,5 +62,10 @@ public class RepositoryManager extends Thread {
         }
 
         return false;
+    }
+
+    public void start() {
+        EXECUTOR.scheduleAtFixedRate(this, 0, 60, TimeUnit.SECONDS);
+        ShutdownHooks.addHook(EXECUTOR::shutdown);
     }
 }

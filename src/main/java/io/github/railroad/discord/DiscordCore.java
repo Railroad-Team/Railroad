@@ -34,6 +34,7 @@ public class DiscordCore implements AutoCloseable {
     private DiscordConnectionState connectionState;
     private DiscordUser currentUser;
     private long pid = ProcessHandle.current().pid();
+    private boolean isShuttingDown = false;
 
     public DiscordCore(String clientId) throws DiscordException {
         this.clientId = clientId;
@@ -63,6 +64,9 @@ public class DiscordCore implements AutoCloseable {
     private void runCallbacks() {
         new Thread(() -> {
             while (true) {
+                if(this.isShuttingDown)
+                    break;
+
                 try {
                     var response = receiveString();
                     if (response == null)
@@ -226,5 +230,7 @@ public class DiscordCore implements AutoCloseable {
         } catch (IOException exception) {
             throw new RuntimeException("Failed to close Discord IPC channel", exception);
         }
+
+        this.isShuttingDown = true;
     }
 }
