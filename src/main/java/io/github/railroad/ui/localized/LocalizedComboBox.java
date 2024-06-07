@@ -1,21 +1,22 @@
 package io.github.railroad.ui.localized;
 
+import io.github.railroad.utility.FromStringFunction;
+import io.github.railroad.utility.ToStringFunction;
 import io.github.railroad.utility.localization.L18n;
 import javafx.scene.control.ComboBox;
 import javafx.util.StringConverter;
 
 import java.util.Locale;
-import java.util.function.Function;
 
 public class LocalizedComboBox<T> extends ComboBox<T> {
-    public LocalizedComboBox(Function<T, String> keyFunction, Function<String, T> valOfFunction) {
+    public LocalizedComboBox(ToStringFunction<T> keyFunction, FromStringFunction<T> valueOfFunction) {
         setConverter(new StringConverter<>() {
             @Override
             public String toString(T object) {
                 if (object == null)
                     return "NullObject";
 
-                String key = keyFunction.apply(object);
+                String key = keyFunction.toString(object);
                 if (key == null)
                     return "NullKey";
 
@@ -24,7 +25,7 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
 
             @Override
             public T fromString(String string) {
-                return valOfFunction.apply(string.toUpperCase(Locale.ROOT));
+                return valueOfFunction.fromString(string.toUpperCase(Locale.ROOT));
             }
         });
     }

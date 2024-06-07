@@ -8,8 +8,10 @@ public class LocalizedTextField extends TextField {
     private String currentKey;
     public LocalizedTextField(final String key) {
         super();
-        setKey(key);
-        setPromptText(L18n.localize(key));
+        if(key != null) {
+            setKey(key);
+            setPromptText(L18n.localize(key));
+        }
     }
 
     public void setKey(final String key) {

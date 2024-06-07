@@ -1,7 +1,11 @@
 package io.github.railroad.ui.form;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class Form {
     private final Consumer<FormData> onSubmit;
@@ -30,6 +34,12 @@ public class Form {
         public Builder appendSection(FormSection.Builder formSectionBuilder) {
             formSectionBuilder.build(this);
             return this;
+        }
+
+        public Builder appendSection(String title, FormComponent<?, ?, ?, ?>... formComponents) {
+            var builder = new FormSection.Builder().title(title);
+            Arrays.stream(formComponents).forEach(builder::appendComponent);
+            return appendSection(builder);
         }
 
         public Form build() {
