@@ -1,34 +1,35 @@
 package io.github.railroad.ui.form.impl;
 
 import io.github.railroad.ui.BrowseButton;
-import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.form.FormComponent;
 import io.github.railroad.ui.form.FormComponentChangeListener;
 import io.github.railroad.ui.form.FormComponentValidator;
-import io.github.railroad.ui.localized.LocalizedTextField;
+import io.github.railroad.ui.form.ui.FormDirectoryChooser;
+import javafx.beans.property.Property;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Tooltip;
-import javafx.scene.paint.Color;
-import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-public class DirectoryChooserComponent extends FormComponent<DirectoryChooserComponent.FormDirectoryChooser, DirectoryChooserComponent.Data, TextField, String> {
-    public DirectoryChooserComponent(Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener) {
-        super(data, dataCurrent -> new FormDirectoryChooser(dataCurrent.label, dataCurrent.defaultPath, dataCurrent.required, dataCurrent.includeButton), validator, listener);
+public class DirectoryChooserComponent extends FormComponent<FormDirectoryChooser, DirectoryChooserComponent.Data, TextField, String> {
+    public DirectoryChooserComponent(Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, Property<BrowseButton> bindBrowseButtonTo) {
+        super(data, dataCurrent -> new FormDirectoryChooser(dataCurrent.label, dataCurrent.required, dataCurrent.defaultPath, dataCurrent.includeButton), validator, listener);
+
+        if(bindTextFieldTo != null) {
+            bindTextFieldTo.bind(componentProperty().map(FormDirectoryChooser::getPrimaryComponent));
+        }
+
+        if(bindBrowseButtonTo != null) {
+            bindBrowseButtonTo.bind(componentProperty().map(FormDirectoryChooser::getBrowseButton));
+        }
     }
 
     @Override
     public ObservableValue<TextField> getValidationNode() {
-        return componentProperty().map(FormDirectoryChooser::getTextField);
+        return componentProperty().map(FormDirectoryChooser::getPrimaryComponent);
     }
 
     @Override
@@ -36,52 +37,70 @@ public class DirectoryChooserComponent extends FormComponent<DirectoryChooserCom
         AtomicReference<ChangeListener<String>> listenerRef = new AtomicReference<>();
         componentProperty().addListener((observable, oldValue, newValue) -> {
             if (oldValue != null) {
-                oldValue.textField.textProperty().removeListener(listenerRef.get());
+                oldValue.getPrimaryComponent().textProperty().removeListener(listenerRef.get());
             }
 
             if (newValue != null) {
                 listenerRef.set((observable1, oldValue1, newValue1) ->
-                        listener.changed(newValue.textField, observable1, oldValue1, newValue1));
+                        listener.changed(newValue.getPrimaryComponent(), observable1, oldValue1, newValue1));
 
-                newValue.textField.textProperty().addListener(listenerRef.get());
+                newValue.getPrimaryComponent().textProperty().addListener(listenerRef.get());
             }
         });
     }
 
-    @Getter
-    public static class FormDirectoryChooser extends RRHBox {
-        private final TextField textField;
-        private final BrowseButton browseButton;
-        private final Label label;
+    public static class Builder {
+        private final Data data;
+        private FormComponentValidator<TextField> validator = null;
+        private FormComponentChangeListener<TextField, String> listener = null;
+        private Property<TextField> bindTextFieldTo;
+        private Property<BrowseButton> bindBrowseButtonTo;
 
-        public FormDirectoryChooser(@NotNull String label, @Nullable String defaultPath, boolean required, boolean includeButton) {
-            setSpacing(10);
+        public Builder(@NotNull String label) {
+            this.data = new Data(label);
+        }
 
-            this.label = createLabel(this, label, required);
+        public Builder defaultPath(@Nullable String defaultPath) {
+            this.data.defaultPath(defaultPath);
+            return this;
+        }
 
-            this.textField = new LocalizedTextField(null);
-            if (defaultPath != null) {
-                this.textField.setText(defaultPath);
-            }
+        public Builder required(boolean required) {
+            this.data.required(required);
+            return this;
+        }
 
-            getChildren().add(textField);
+        public Builder includeButton(boolean includeButton) {
+            this.data.includeButton(includeButton);
+            return this;
+        }
 
-            if(includeButton) {
-                var browseButtonIcon = new FontIcon(FontAwesomeSolid.FOLDER_OPEN);
-                browseButtonIcon.setIconSize(16);
-                browseButtonIcon.setIconColor(Color.CADETBLUE);
+        public Builder validator(@NotNull FormComponentValidator<TextField> validator) {
+            this.validator = validator;
+            return this;
+        }
 
-                this.browseButton = new BrowseButton();
-                browseButton.parentWindowProperty().bind(sceneProperty().map(Scene::getWindow));
-                browseButton.textFieldProperty().set(textField);
-                browseButton.browseTypeProperty().set(BrowseButton.BrowseType.DIRECTORY);
-                browseButton.setGraphic(browseButtonIcon);
-                browseButton.setTooltip(new Tooltip("Browse"));
+        public Builder listener(@NotNull FormComponentChangeListener<TextField, String> listener) {
+            this.listener = listener;
+            return this;
+        }
 
-                getChildren().add(browseButton);
-            } else {
-                this.browseButton = null;
-            }
+        public Builder bindTextFieldTo(@NotNull Property<TextField> bindTextFieldTo) {
+            this.bindTextFieldTo = bindTextFieldTo;
+            return this;
+        }
+
+        public Builder bindBrowseButtonTo(@NotNull Property<BrowseButton> bindBrowseButtonTo) {
+            this.bindBrowseButtonTo = bindBrowseButtonTo;
+            return this;
+        }
+
+        public DirectoryChooserComponent build() {
+            return new DirectoryChooserComponent(data, validator, listener, bindTextFieldTo, bindBrowseButtonTo);
+        }
+
+        public Builder required() {
+            return required(true);
         }
     }
 

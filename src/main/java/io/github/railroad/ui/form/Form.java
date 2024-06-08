@@ -17,6 +17,10 @@ public class Form {
         this.formSections = builder.formSections;
     }
 
+    public static Builder create() {
+        return new Builder();
+    }
+
     public static class Builder {
         Consumer<FormData> onSubmit;
         List<FormSection> formSections;

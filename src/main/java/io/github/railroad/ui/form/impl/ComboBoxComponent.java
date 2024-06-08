@@ -1,18 +1,16 @@
 package io.github.railroad.ui.form.impl;
 
-import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.form.FormComponent;
 import io.github.railroad.ui.form.FormComponentChangeListener;
 import io.github.railroad.ui.form.FormComponentValidator;
-import io.github.railroad.ui.localized.LocalizedComboBox;
+import io.github.railroad.ui.form.ui.FormComboBox;
 import io.github.railroad.utility.ComboBoxConverter;
 import io.github.railroad.utility.FromStringFunction;
 import io.github.railroad.utility.ToStringFunction;
+import javafx.beans.property.Property;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -20,12 +18,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ComboBoxComponent<T> extends FormComponent<ComboBoxComponent.FormComboBox<T>, ComboBoxComponent.Data<T>, ComboBox<T>, T> {
-    public ComboBoxComponent(Data<T> data, FormComponentValidator<ComboBox<T>> validator, FormComponentChangeListener<ComboBox<T>, T> listener) {
+public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBoxComponent.Data<T>, ComboBox<T>, T> {
+    public ComboBoxComponent(Data<T> data, FormComponentValidator<ComboBox<T>> validator, FormComponentChangeListener<ComboBox<T>, T> listener, Property<ComboBox<T>> bindComboBoxTo) {
         super(data, currentData -> {
-            var formComboBox = new FormComboBox<>(currentData.label, currentData.items, currentData.editable, currentData.required, currentData.translate, currentData.keyFunction, currentData.valueOfFunction);
+            var formComboBox = new FormComboBox<>(currentData.label, currentData.required, currentData.items, currentData.editable, currentData.translate, currentData.keyFunction, currentData.valueOfFunction);
             if(!currentData.translate) {
-                formComboBox.comboBox.setConverter(new ComboBoxConverter<>(currentData.keyFunction, currentData.valueOfFunction));
+                formComboBox.getPrimaryComponent().setConverter(new ComboBoxConverter<>(currentData.keyFunction, currentData.valueOfFunction));
             }
             return formComboBox;
         }, validator, listener);
@@ -33,14 +31,18 @@ public class ComboBoxComponent<T> extends FormComponent<ComboBoxComponent.FormCo
         componentProperty().addListener((observable, oldValue, newValue) -> {
             Data<T> currentData = dataProperty().get();
             if (newValue != null && currentData != null && !currentData.translate) {
-                newValue.comboBox.setConverter(new ComboBoxConverter<>(currentData.keyFunction, currentData.valueOfFunction));
+                newValue.getPrimaryComponent().setConverter(new ComboBoxConverter<>(currentData.keyFunction, currentData.valueOfFunction));
             }
         });
+
+        if(bindComboBoxTo != null) {
+            bindComboBoxTo.bind(componentProperty().map(FormComboBox::getPrimaryComponent));
+        }
     }
 
     @Override
     public ObservableValue<ComboBox<T>> getValidationNode() {
-        return componentProperty().map(FormComboBox::getComboBox);
+        return componentProperty().map(FormComboBox::getPrimaryComponent);
     }
 
     @Override
@@ -48,32 +50,79 @@ public class ComboBoxComponent<T> extends FormComponent<ComboBoxComponent.FormCo
         AtomicReference<ChangeListener<T>> listenerRef = new AtomicReference<>();
         componentProperty().addListener((observable, oldValue, newValue) -> {
             if (oldValue != null) {
-                oldValue.comboBox.valueProperty().removeListener(listenerRef.get());
+                oldValue.getPrimaryComponent().valueProperty().removeListener(listenerRef.get());
             }
 
             if (newValue != null) {
                 listenerRef.set((observable1, oldValue1, newValue1) ->
-                        listener.changed(newValue.comboBox, observable1, oldValue1, newValue1));
+                        listener.changed(newValue.getPrimaryComponent(), observable1, oldValue1, newValue1));
 
-                newValue.comboBox.valueProperty().addListener(listenerRef.get());
+                newValue.getPrimaryComponent().valueProperty().addListener(listenerRef.get());
             }
         });
     }
 
-    @Getter
-    public static class FormComboBox<T> extends RRHBox {
-        private final ComboBox<T> comboBox;
-        private final Label label;
+    public static class Builder<T> {
+        private final Data<T> data;
+        private FormComponentValidator<ComboBox<T>> validator;
+        private FormComponentChangeListener<ComboBox<T>, T> listener;
+        private Property<ComboBox<T>> bindComboBoxTo;
 
-        public FormComboBox(@NotNull String label, List<T> items, boolean editable, boolean required, boolean translate, ToStringFunction<T> toStringFunction, FromStringFunction<T> fromStringFunction) {
-            setSpacing(10);
+        public Builder(@NotNull String label) {
+            this.data = new Data<>(label);
+        }
 
-            this.label = createLabel(this, label, required);
+        public Builder<T> items(Collection<T> items) {
+            data.items(items);
+            return this;
+        }
 
-            this.comboBox = translate ? new LocalizedComboBox<>(toStringFunction, fromStringFunction) : new ComboBox<>();
-            this.comboBox.getItems().addAll(items);
-            this.comboBox.setEditable(editable);
-            getChildren().add(this.comboBox);
+        public Builder<T> editable(boolean editable) {
+            data.editable(editable);
+            return this;
+        }
+
+        public Builder<T> required(boolean required) {
+            data.required(required);
+            return this;
+        }
+
+        public Builder<T> translate(boolean translate) {
+            data.translate(translate);
+            return this;
+        }
+
+        public Builder<T> keyFunction(ToStringFunction<T> keyFunction) {
+            data.keyFunction(keyFunction);
+            return this;
+        }
+
+        public Builder<T> valueOfFunction(FromStringFunction<T> valueOfFunction) {
+            data.valueOfFunction(valueOfFunction);
+            return this;
+        }
+
+        public Builder<T> validator(FormComponentValidator<ComboBox<T>> validator) {
+            this.validator = validator;
+            return this;
+        }
+
+        public Builder<T> listener(FormComponentChangeListener<ComboBox<T>, T> listener) {
+            this.listener = listener;
+            return this;
+        }
+
+        public Builder<T> bindComboBoxTo(Property<ComboBox<T>> bindComboBoxTo) {
+            this.bindComboBoxTo = bindComboBoxTo;
+            return this;
+        }
+
+        public Builder<T> required() {
+            return required(true);
+        }
+
+        public ComboBoxComponent<T> build() {
+            return new ComboBoxComponent<>(data, validator, listener, bindComboBoxTo);
         }
     }
 

@@ -15,8 +15,16 @@ import io.github.railroad.project.ui.create.widget.StarableListCell;
 import io.github.railroad.ui.BrowseButton;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.form.Form;
+import io.github.railroad.ui.form.FormComponent;
+import io.github.railroad.ui.form.FormSection;
+import io.github.railroad.ui.form.impl.DirectoryChooserComponent;
+import io.github.railroad.ui.form.impl.TextFieldComponent;
+import io.github.railroad.ui.localized.LocalizedLabel;
 import io.github.railroad.utility.ClassNameValidator;
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -36,36 +44,37 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ForgeProjectDetailsPane extends RRVBox {
-    private final TextField projectNameField = new TextField();
-    private final TextField projectPathField = new TextField();
-    private final CheckBox createGitCheckBox = new CheckBox();
-    private final ComboBox<License> licenseComboBox = new ComboBox<>();
-    private final TextField licenseCustomField = new TextField();
+    private final ObjectProperty<TextField> projectNameField = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> projectPathField = new SimpleObjectProperty<>();
+    private final ObjectProperty<LocalizedLabel> createdAtLabel = new SimpleObjectProperty<>();
+    private final ObjectProperty<CheckBox> createGitCheckBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<ComboBox<License>> licenseComboBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> licenseCustomField = new SimpleObjectProperty<>();
 
-    private final ComboBox<MinecraftVersion> minecraftVersionComboBox = new ComboBox<>();
-    private final ComboBox<ForgeVersion> forgeVersionComboBox = new ComboBox<>();
-    private final TextField modIdField = new TextField();
-    private final TextField modNameField = new TextField();
-    private final TextField mainClassField = new TextField();
-    private final CheckBox useMixinsCheckBox = new CheckBox();
-    private final CheckBox useAccessTransformerCheckBox = new CheckBox();
-    private final CheckBox genRunFoldersCheckBox = new CheckBox();
+    private final ObjectProperty<ComboBox<MinecraftVersion>> minecraftVersionComboBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<ComboBox<ForgeVersion>> forgeVersionComboBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> modIdField = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> modNameField = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> mainClassField = new SimpleObjectProperty<>();
+    private final ObjectProperty<CheckBox> useMixinsCheckBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<CheckBox> useAccessTransformerCheckBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<CheckBox> genRunFoldersCheckBox = new SimpleObjectProperty<>();
 
-    private final ComboBox<MappingChannel> mappingChannelComboBox = new ComboBox<>();
-    private final ComboBox<MappingVersion> mappingVersionComboBox = new ComboBox<>();
+    private final ObjectProperty<ComboBox<MappingChannel>> mappingChannelComboBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<ComboBox<MappingVersion>> mappingVersionComboBox = new SimpleObjectProperty<>();
 
-    private final TextField authorField = new TextField(System.getProperty("user.name")); // optional
-    private final TextField creditsField = new TextField(); // optional
+    private final ObjectProperty<TextField> authorField = new SimpleObjectProperty<>(); // optional
+    private final ObjectProperty<TextField> creditsField = new SimpleObjectProperty<>(); // optional
     private final TextArea descriptionArea = new TextArea(); // optional
-    private final TextField issuesField = new TextField(); // optional
-    private final TextField updateJsonUrlField = new TextField(); // optional
-    private final TextField displayUrlField = new TextField(); // optional
-    private final ComboBox<DisplayTest> displayTestComboBox = new ComboBox<>(); // optional
-    private final CheckBox clientSideOnlyCheckBox = new CheckBox(); // optional
+    private final ObjectProperty<TextField> issuesField = new SimpleObjectProperty<>(); // optional
+    private final ObjectProperty<TextField> updateJsonUrlField = new SimpleObjectProperty<>(); // optional
+    private final ObjectProperty<TextField> displayUrlField = new SimpleObjectProperty<>(); // optional
+    private final ObjectProperty<ComboBox<DisplayTest>> displayTestComboBox = new SimpleObjectProperty<>(); // optional
+    private final ObjectProperty<CheckBox> clientSideOnlyCheckBox = new SimpleObjectProperty<>(); // optional
 
-    private final TextField groupIdField = new TextField();
-    private final TextField artifactIdField = new TextField();
-    private final TextField versionField = new TextField();
+    private final ObjectProperty<TextField> groupIdField = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> artifactIdField = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> versionField = new SimpleObjectProperty<>();
 
     private final AtomicBoolean hasOneDriveWarning = new AtomicBoolean(false);
     private final AtomicBoolean hasModidWarning = new AtomicBoolean(false);
@@ -75,6 +84,107 @@ public class ForgeProjectDetailsPane extends RRVBox {
     private final AtomicBoolean hasTypedInArtifactId = new AtomicBoolean(false);
 
     public ForgeProjectDetailsPane() {
+        TextFieldComponent projectNameComponent = FormComponent.textField("railroad.home.project.name")
+                .required()
+                .bindTextFieldTo(projectNameField)
+                .listener((node, observable, oldValue, newValue) -> {
+                    // Remove any .<>:"/\|?* characters from the project name
+                    newValue = newValue.replaceAll("[.<>:\"/\\\\|?*]", "");
+
+                    // Check that the name does not exceed 256 characters
+                    if (newValue.length() > 256)
+                        projectNameField.get().setText(newValue.substring(0, 256));
+
+                    // Validate the project name
+                    // TODO: Validator
+                    // if (newValue.isBlank())
+                    //            projectNameField.get().setStyle("-fx-border-color: red;");
+                    //        else
+                    //            projectNameField.get().setBorder(projectNameFieldBorder);
+
+                    // Update the created at label
+                    String path = fixPath(projectPathField.get().getText().trim() + "/" + projectNameField.get().getText().trim());
+                    createdAtLabel.get().setKey("This will be created at: ", path);
+
+                    // Update the mod ID field if it is empty
+                    if (!hasTypedInModid.get() || modIdField.get().getText().isBlank())
+                        modIdField.get().setText(newValue.toLowerCase(Locale.ROOT).replace(" ", "_").replaceAll("[^a-z0-9_-]", ""));
+
+                    // Update the mod name field if it is empty
+                    if (!hasTypedInModName.get() || modNameField.get().getText().isBlank())
+                        modNameField.get().setText(newValue);
+
+                    // Update the main class field if it is empty
+                    if (!hasTypedInMainClass.get() || mainClassField.get().getText().isBlank()) {
+                        // convert to pascal case
+                        String[] words = newValue.split("[ _-]+");
+                        var pascalCase = new StringBuilder();
+                        for (String word : words) {
+                            if (word.isBlank())
+                                continue;
+
+                            pascalCase.append(word.substring(0, 1).toUpperCase(Locale.ROOT)).append(word.substring(1));
+                        }
+
+                        mainClassField.get().setText(pascalCase.toString().replaceAll("[^a-zA-Z0-9]", ""));
+                    }
+
+                    // Update the artifact ID field if it is empty
+                    if (!hasTypedInArtifactId.get() || artifactIdField.get().getText().isBlank())
+                        artifactIdField.get().setText(newValue.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9-]", ""));
+                })
+                .build();
+
+        DirectoryChooserComponent directoryChooserComponent = FormComponent.directoryChooser("railroad.home.project.path")
+                .required()
+                .bindTextFieldTo(projectPathField)
+                .defaultPath(System.getProperty("user.home"))
+                .listener((node, observable, oldValue, newValue) -> {
+                    // Validate the project path
+                    // TODO: Validation
+//                                    Path path = Path.of(newValue);
+//                                    if (Files.notExists(path) || !Files.isDirectory(path))
+//                                        projectPathField.get().setStyle("-fx-border-color: red;");
+//                                    else
+//                                        projectPathField.get().setBorder(projectPathFieldBorder);
+
+                    // Update the created at label
+                    String fullPath = fixPath(projectPathField.get().getText().trim() + "/" + projectNameField.get().getText().trim());
+                    createdAtLabel.get().setKey("This will be created at: ", fullPath);
+
+                    // If the project is in OneDrive, warn the user
+                    // TODO: Validation
+//                                    if (fullPath.contains("OneDrive") && hasOneDriveWarning.compareAndSet(false, true)) {
+//                                        projectPathField.get().setStyle("-fx-border-color: orange;");
+//
+//                                        var tooltip = new Tooltip("It is not recommended to create projects in OneDrive as it has a tendency to cause problems.");
+//                                        Tooltip.install(projectPathField, tooltip);
+//
+//                                        var warningIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
+//                                        warningIcon.setIconSize(16);
+//                                        warningIcon.setIconColor(Color.ORANGE);
+//                                        projectPathBox.getChildren().add(warningIcon);
+//                                    } else if (!fullPath.contains("OneDrive") && hasOneDriveWarning.compareAndSet(true, false)) {
+//                                        projectPathField.get().setBorder(projectPathFieldBorder);
+//
+//                                        Tooltip.uninstall(projectPathField.get(), projectPathField.get().getTooltip());
+//
+//                                        projectPathBox.getChildren().removeLast();
+//                                    } else if (fullPath.contains("OneDrive")) {
+//                                        projectPathField.get().setStyle("-fx-border-color: orange;");
+//                                    } else {
+//                                        projectPathField.get().setBorder(projectPathFieldBorder);
+//                                    }
+                }).build();
+
+        Form form = Form.create()
+                .appendSection(FormSection.create("railroad.home.project")
+                        .appendComponent(projectNameComponent)
+                        .appendComponent(directoryChooserComponent)
+                        .build())
+                .build();
+
+
         // Project Section
         var projectSection = new RRVBox(10);
 

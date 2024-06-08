@@ -15,6 +15,10 @@ public class FormSection {
         this.fields = builder.fields;
     }
 
+    public static Builder create(String titleKey) {
+        return new Builder().title(titleKey);
+    }
+
     public boolean isValid() {
         return fields.stream().allMatch(FormComponent::isValid);
     }
