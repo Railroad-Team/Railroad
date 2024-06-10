@@ -30,6 +30,7 @@
 
 .list-cell {
     -fx-background-color: -color-bg-overlay;
+    -fx-cell-size: 40;
 }
 
 .list-cell:hover {
