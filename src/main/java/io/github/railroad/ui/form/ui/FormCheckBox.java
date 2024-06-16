@@ -2,18 +2,17 @@ package io.github.railroad.ui.form.ui;
 
 import javafx.scene.control.CheckBox;
 
-public class FormCheckBox extends InformativeLabeledHBox<CheckBox> {
-    private final boolean selected;
+import java.util.Map;
 
+public class FormCheckBox extends InformativeLabeledHBox<CheckBox> {
     public FormCheckBox(String label, boolean required, boolean selected) {
-        super(label, required);
-        this.selected = selected;
+        super(label, required, Map.of("selected", selected));
     }
 
     @Override
-    public CheckBox createPrimaryComponent() {
+    public CheckBox createPrimaryComponent(Map<String, Object> params) {
         var checkBox = new CheckBox();
-        checkBox.setSelected(selected);
+        checkBox.setSelected(params.get("selected") != null && (boolean) params.get("selected"));
         return checkBox;
     }
 }

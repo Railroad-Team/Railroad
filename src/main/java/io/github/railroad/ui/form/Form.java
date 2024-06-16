@@ -1,9 +1,9 @@
 package io.github.railroad.ui.form;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import io.github.railroad.ui.defaults.RRVBox;
+import javafx.scene.Node;
+
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -21,9 +21,18 @@ public class Form {
         return new Builder();
     }
 
+    public Node createUI() {
+        var vbox = new RRVBox(25);
+        for (FormSection section : formSections) {
+            vbox.getChildren().add(section.createUI());
+        }
+
+        return vbox;
+    }
+
     public static class Builder {
         Consumer<FormData> onSubmit;
-        List<FormSection> formSections;
+        List<FormSection> formSections = new ArrayList<>();
 
         public Builder onSubmit(Consumer<FormData> onSubmit) {
             this.onSubmit = onSubmit;

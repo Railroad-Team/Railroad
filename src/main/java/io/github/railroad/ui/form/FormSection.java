@@ -1,5 +1,11 @@
 package io.github.railroad.ui.form;
 
+import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.localized.LocalizedText;
+import javafx.geometry.Insets;
+import javafx.scene.Node;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -19,16 +25,28 @@ public class FormSection {
         return new Builder().title(titleKey);
     }
 
-    public boolean isValid() {
-        return fields.stream().allMatch(FormComponent::isValid);
-    }
-
     public void reset() {
         fields.forEach(FormComponent::reset);
     }
 
     public void disable(boolean disable) {
         fields.forEach(field -> field.disable(disable));
+    }
+
+    public Node createUI() {
+        var vbox = new RRVBox(10);
+        vbox.setBorder(new Border(new BorderStroke(Color.AQUAMARINE, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
+        vbox.setPadding(new Insets(10));
+
+        var title = new LocalizedText(titleKey);
+        title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+        vbox.getChildren().add(title);
+
+        for (FormComponent<?, ?, ?, ?> field : fields) {
+            vbox.getChildren().add(field.getComponent());
+        }
+
+        return vbox;
     }
 
     public static class Builder {

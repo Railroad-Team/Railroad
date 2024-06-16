@@ -4,32 +4,54 @@ import io.github.railroad.ui.BrowseButton;
 import io.github.railroad.ui.form.FormComponent;
 import io.github.railroad.ui.form.FormComponentChangeListener;
 import io.github.railroad.ui.form.FormComponentValidator;
+import io.github.railroad.ui.form.FormTransformer;
 import io.github.railroad.ui.form.ui.FormDirectoryChooser;
 import javafx.beans.property.Property;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.event.EventHandler;
+import javafx.scene.Node;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class DirectoryChooserComponent extends FormComponent<FormDirectoryChooser, DirectoryChooserComponent.Data, TextField, String> {
-    public DirectoryChooserComponent(Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, Property<BrowseButton> bindBrowseButtonTo) {
-        super(data, dataCurrent -> new FormDirectoryChooser(dataCurrent.label, dataCurrent.required, dataCurrent.defaultPath, dataCurrent.includeButton), validator, listener);
+    public DirectoryChooserComponent(Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, Property<BrowseButton> bindBrowseButtonTo, List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler) {
+        super(data, dataCurrent -> new FormDirectoryChooser(dataCurrent.label, dataCurrent.required, dataCurrent.defaultPath, dataCurrent.includeButton), validator, listener, transformers);
 
-        if(bindTextFieldTo != null) {
-            bindTextFieldTo.bind(componentProperty().map(FormDirectoryChooser::getPrimaryComponent));
+        if (bindTextFieldTo != null) {
+            bindTextFieldTo.bind(componentProperty().map(FormDirectoryChooser::getPrimaryComponent).map(FormDirectoryChooser.TextFieldWithButton::getTextField));
         }
 
-        if(bindBrowseButtonTo != null) {
-            bindBrowseButtonTo.bind(componentProperty().map(FormDirectoryChooser::getBrowseButton));
+        if (bindBrowseButtonTo != null) {
+            bindBrowseButtonTo.bind(componentProperty().map(FormDirectoryChooser::getPrimaryComponent).map(FormDirectoryChooser.TextFieldWithButton::getBrowseButton));
+        }
+
+        if (keyTypedHandler != null) {
+            componentProperty().get().getPrimaryComponent().addEventHandler(KeyEvent.KEY_TYPED, keyTypedHandler);
+
+            componentProperty().addListener((observable, oldValue, newValue) -> {
+                if (oldValue != null) {
+                    oldValue.getPrimaryComponent().removeEventHandler(KeyEvent.KEY_TYPED, keyTypedHandler);
+                }
+
+                if (newValue != null) {
+                    newValue.getPrimaryComponent().addEventHandler(KeyEvent.KEY_TYPED, keyTypedHandler);
+                }
+            });
         }
     }
 
     @Override
     public ObservableValue<TextField> getValidationNode() {
-        return componentProperty().map(FormDirectoryChooser::getPrimaryComponent);
+        return componentProperty().map(FormDirectoryChooser::getPrimaryComponent).map(FormDirectoryChooser.TextFieldWithButton::getTextField);
     }
 
     @Override
@@ -37,14 +59,14 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
         AtomicReference<ChangeListener<String>> listenerRef = new AtomicReference<>();
         componentProperty().addListener((observable, oldValue, newValue) -> {
             if (oldValue != null) {
-                oldValue.getPrimaryComponent().textProperty().removeListener(listenerRef.get());
+                oldValue.getPrimaryComponent().getTextField().textProperty().removeListener(listenerRef.get());
             }
 
             if (newValue != null) {
                 listenerRef.set((observable1, oldValue1, newValue1) ->
-                        listener.changed(newValue.getPrimaryComponent(), observable1, oldValue1, newValue1));
+                        listener.changed(newValue.getPrimaryComponent().getTextField(), observable1, oldValue1, newValue1));
 
-                newValue.getPrimaryComponent().textProperty().addListener(listenerRef.get());
+                newValue.getPrimaryComponent().getTextField().textProperty().addListener(listenerRef.get());
             }
         });
     }
@@ -55,6 +77,8 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
         private FormComponentChangeListener<TextField, String> listener = null;
         private Property<TextField> bindTextFieldTo;
         private Property<BrowseButton> bindBrowseButtonTo;
+        private final List<FormTransformer<TextField, String, ?>> transformers = new ArrayList<>();
+        private EventHandler<? super KeyEvent> keyTypedHandler;
 
         public Builder(@NotNull String label) {
             this.data = new Data(label);
@@ -95,8 +119,29 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
             return this;
         }
 
+        public <W> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<W> toComponentFunction, Function<String, W> valueMapper) {
+            this.transformers.add(new FormTransformer<>(fromComponent, TextField::getText, toComponentFunction, valueMapper));
+            return this;
+        }
+
+        public <U extends Node, W> Builder addTransformer(ObservableValue<TextField> fromComponent, ObservableValue<U> toComponent, Function<String, W> valueMapper) {
+            this.transformers.add(new FormTransformer<>(fromComponent, TextField::getText, value -> {
+                if (toComponent.getValue() instanceof TextField textField) {
+                    textField.setText(value.toString());
+                } else {
+                    throw new IllegalArgumentException("Unsupported component type: " + toComponent.getValue().getClass().getName());
+                }
+            }, valueMapper));
+            return this;
+        }
+
+        public Builder keyTypedHandler(EventHandler<? super KeyEvent> keyTypedHandler) {
+            this.keyTypedHandler = keyTypedHandler;
+            return this;
+        }
+
         public DirectoryChooserComponent build() {
-            return new DirectoryChooserComponent(data, validator, listener, bindTextFieldTo, bindBrowseButtonTo);
+            return new DirectoryChooserComponent(data, validator, listener, bindTextFieldTo, bindBrowseButtonTo, transformers, keyTypedHandler);
         }
 
         public Builder required() {

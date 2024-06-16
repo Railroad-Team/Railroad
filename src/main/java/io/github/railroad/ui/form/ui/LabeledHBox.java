@@ -10,25 +10,27 @@ import javafx.scene.text.Text;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Map;
+
 @Getter
 public abstract class LabeledHBox<T extends Node> extends RRHBox {
     private final LocalizedLabel label;
     private final T primaryComponent;
     private final boolean required;
 
-    public LabeledHBox(@NotNull String labelKey, boolean required) {
+    public LabeledHBox(@NotNull String labelKey, boolean required, Map<String, Object> params) {
         super(10);
         setAlignment(Pos.CENTER_LEFT);
 
         this.label = createLabel(this, labelKey, required);
-        this.primaryComponent = createPrimaryComponent();
+        this.primaryComponent = createPrimaryComponent(params);
         this.label.setLabelFor(primaryComponent);
         getChildren().add(primaryComponent);
 
         this.required = required;
     }
 
-    public abstract T createPrimaryComponent();
+    public abstract T createPrimaryComponent(Map<String, Object> params);
 
     protected static LocalizedLabel createLabel(RRHBox hBox, @NotNull String label, boolean required) {
         var labelNode = new LocalizedLabel(label);

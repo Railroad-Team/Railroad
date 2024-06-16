@@ -3,10 +3,8 @@ package io.github.railroad.ui.form.ui;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.ui.localized.LocalizedLabel;
 import javafx.beans.binding.BooleanBinding;
-import javafx.beans.property.Property;
 import javafx.beans.property.StringProperty;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -16,24 +14,48 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 @Getter
 public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
+    private static final BooleanBinding TRUE_BINDING = new BooleanBinding() {
+        @Override
+        protected boolean computeValue() {
+            return true;
+        }
+    };
+
     private final LabeledHBox<T> labeledHBox;
     private final List<InformationLabel> informationLabels = new ArrayList<>();
 
-    public InformativeLabeledHBox(String labelKey, boolean required) {
-        super(10);
+    public InformativeLabeledHBox(String labelKey, boolean required, Map<String, Object> params) {
+        super(5);
 
-        this.labeledHBox = new LabeledHBox<>(labelKey, required) {
+        this.labeledHBox = new LabeledHBox<>(labelKey, required, params) {
             @Override
-            public T createPrimaryComponent() {
-                return InformativeLabeledHBox.this.createPrimaryComponent();
+            public T createPrimaryComponent(Map<String, Object> params) {
+                return InformativeLabeledHBox.this.createPrimaryComponent(params);
             }
         };
 
         getChildren().addAll(labeledHBox);
+    }
+
+    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType, @Nullable StringProperty bindTo) {
+        addInformationLabel(informativeText, t -> TRUE_BINDING, informationType, bindTo);
+    }
+
+    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType) {
+        addInformationLabel(informativeText, informationType, null);
+    }
+
+    public void addInformationLabel(@NotNull String informativeText) {
+        addInformationLabel(informativeText, InformationType.INFO);
+    }
+
+    public void addInformationLabel(@NotNull String informativeText, @Nullable StringProperty bindTo) {
+        addInformationLabel(informativeText, InformationType.INFO, bindTo);
     }
 
     public void addInformationLabel(@NotNull String informativeText, @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType, @Nullable StringProperty bindTo) {
@@ -51,7 +73,7 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
         addInformationLabel(informativeText, informativeTextVisibleBinding, informationType, null);
     }
 
-    public abstract T createPrimaryComponent();
+    public abstract T createPrimaryComponent(Map<String, Object> params);
 
     public T getPrimaryComponent() {
         return labeledHBox.getPrimaryComponent();
