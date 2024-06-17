@@ -60,10 +60,9 @@ public class L18n {
     public static String localize(String key) {
         LOGGER.debug("Getting localized string for key {}", key);
         if (LANG_CACHE.get(key) == null) {
-            LOGGER.error("Error finding translations for {} {} Moving to english", key, CURRENT_LANG);
-
-            setLanguage(Language.EN_US);
-            return localize(key);
+            //TODO create a popup/toast to ask if user wants to swap to english as key is missing
+            LOGGER.error("Error finding translations for {} {}", key, CURRENT_LANG);
+            return key;
         }
 
         return LANG_CACHE.get(key).toString();
