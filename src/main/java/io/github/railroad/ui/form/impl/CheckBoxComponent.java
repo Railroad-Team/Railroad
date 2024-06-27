@@ -5,6 +5,7 @@ import io.github.railroad.ui.form.FormComponentChangeListener;
 import io.github.railroad.ui.form.FormComponentValidator;
 import io.github.railroad.ui.form.FormTransformer;
 import io.github.railroad.ui.form.ui.FormCheckBox;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -12,6 +13,7 @@ import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,8 +22,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxComponent.Data, CheckBox, Boolean> {
-    public CheckBoxComponent(Data data, FormComponentValidator<CheckBox> validator, FormComponentChangeListener<CheckBox, Boolean> listener, Property<CheckBox> bindCheckboxTo, List<FormTransformer<CheckBox, Boolean, ?>> transformers) {
-        super(data, dataCurrent -> new FormCheckBox(dataCurrent.label, dataCurrent.selected, dataCurrent.required), validator, listener, transformers);
+    public CheckBoxComponent(Data data, FormComponentValidator<CheckBox> validator, FormComponentChangeListener<CheckBox, Boolean> listener, Property<CheckBox> bindCheckboxTo, List<FormTransformer<CheckBox, Boolean, ?>> transformers, @Nullable BooleanBinding visible) {
+        super(data, dataCurrent -> new FormCheckBox(dataCurrent.label, dataCurrent.selected, dataCurrent.required), validator, listener, transformers, visible);
 
         if (bindCheckboxTo != null) {
             bindCheckboxTo.bind(componentProperty().map(FormCheckBox::getPrimaryComponent));
@@ -56,6 +58,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
         private FormComponentChangeListener<CheckBox, Boolean> listener;
         private Property<CheckBox> bindCheckBoxTo;
         private final List<FormTransformer<CheckBox, Boolean, ?>> transformers = new ArrayList<>();
+        private BooleanBinding visible;
 
         public Builder(@NotNull String label) {
             this.data = new Data(label);
@@ -106,8 +109,13 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
             return this;
         }
 
+        public Builder visible(BooleanBinding visible) {
+            this.visible = visible;
+            return this;
+        }
+
         public CheckBoxComponent build() {
-            return new CheckBoxComponent(data, validator, listener, bindCheckBoxTo, transformers);
+            return new CheckBoxComponent(data, validator, listener, bindCheckBoxTo, transformers, visible);
         }
     }
 

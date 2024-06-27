@@ -5,6 +5,7 @@ import io.github.railroad.ui.form.FormComponentChangeListener;
 import io.github.railroad.ui.form.FormComponentValidator;
 import io.github.railroad.ui.form.FormTransformer;
 import io.github.railroad.ui.form.ui.FormTextField;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -13,6 +14,7 @@ import javafx.scene.Node;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +23,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class TextFieldComponent extends FormComponent<FormTextField, TextFieldComponent.Data, TextField, String> {
-    public TextFieldComponent(Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler) {
-        super(data, currentData -> new FormTextField(currentData.label, currentData.required, currentData.text, currentData.promptText, currentData.editable, currentData.translate), validator, listener, transformers);
+    public TextFieldComponent(Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
+        super(data, currentData -> new FormTextField(currentData.label, currentData.required, currentData.text, currentData.promptText, currentData.editable, currentData.translate), validator, listener, transformers, visible);
 
         if (bindTextFieldTo != null) {
             bindTextFieldTo.bind(componentProperty().map(FormTextField::getPrimaryComponent));
@@ -73,6 +75,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
         private Property<TextField> bindTextFieldTo;
         private final List<FormTransformer<TextField, String, ?>> transformers = new ArrayList<>();
         private EventHandler<? super KeyEvent> keyTypedHandler;
+        private BooleanBinding visible;
 
         public Builder(@NotNull String label) {
             this.data = new Data(label);
@@ -143,14 +146,19 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
             return this;
         }
 
+        public Builder visible(BooleanBinding visible) {
+            this.visible = visible;
+            return this;
+        }
+
         public TextFieldComponent build() {
-            return new TextFieldComponent(data, validator, listener, bindTextFieldTo, transformers, keyTypedHandler);
+            return new TextFieldComponent(data, validator, listener, bindTextFieldTo, transformers, keyTypedHandler, visible);
         }
     }
 
     public static class Data {
         private final String label;
-        private String text;
+        private String text = "";
         private String promptText;
         private boolean editable = true;
         private boolean required = false;

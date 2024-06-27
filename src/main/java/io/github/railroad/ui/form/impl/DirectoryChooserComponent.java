@@ -6,6 +6,7 @@ import io.github.railroad.ui.form.FormComponentChangeListener;
 import io.github.railroad.ui.form.FormComponentValidator;
 import io.github.railroad.ui.form.FormTransformer;
 import io.github.railroad.ui.form.ui.FormDirectoryChooser;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -23,8 +24,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class DirectoryChooserComponent extends FormComponent<FormDirectoryChooser, DirectoryChooserComponent.Data, TextField, String> {
-    public DirectoryChooserComponent(Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, Property<BrowseButton> bindBrowseButtonTo, List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler) {
-        super(data, dataCurrent -> new FormDirectoryChooser(dataCurrent.label, dataCurrent.required, dataCurrent.defaultPath, dataCurrent.includeButton), validator, listener, transformers);
+    public DirectoryChooserComponent(Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, Property<BrowseButton> bindBrowseButtonTo, List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
+        super(data, dataCurrent -> new FormDirectoryChooser(dataCurrent.label, dataCurrent.required, dataCurrent.defaultPath, dataCurrent.includeButton), validator, listener, transformers, visible);
 
         if (bindTextFieldTo != null) {
             bindTextFieldTo.bind(componentProperty().map(FormDirectoryChooser::getPrimaryComponent).map(FormDirectoryChooser.TextFieldWithButton::getTextField));
@@ -79,6 +80,7 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
         private Property<BrowseButton> bindBrowseButtonTo;
         private final List<FormTransformer<TextField, String, ?>> transformers = new ArrayList<>();
         private EventHandler<? super KeyEvent> keyTypedHandler;
+        private BooleanBinding visible;
 
         public Builder(@NotNull String label) {
             this.data = new Data(label);
@@ -140,8 +142,13 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
             return this;
         }
 
+        public Builder visible(BooleanBinding visible) {
+            this.visible = visible;
+            return this;
+        }
+
         public DirectoryChooserComponent build() {
-            return new DirectoryChooserComponent(data, validator, listener, bindTextFieldTo, bindBrowseButtonTo, transformers, keyTypedHandler);
+            return new DirectoryChooserComponent(data, validator, listener, bindTextFieldTo, bindBrowseButtonTo, transformers, keyTypedHandler, visible);
         }
 
         public Builder required() {

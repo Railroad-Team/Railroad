@@ -1,32 +1,28 @@
 package io.github.railroad.ui.localized;
 
 import io.github.railroad.utility.localization.L18n;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.scene.control.Label;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.concurrent.atomic.AtomicReference;
-
+@Getter
 public class LocalizedLabel extends Label {
-    private String currentKey;
-    private final AtomicReference<String> argString = new AtomicReference<>("");
+    private String key;
+    private final ObservableList<Object> args = FXCollections.observableArrayList();
 
-    public LocalizedLabel(@NotNull String key, @NotNull String... args) {
+    public LocalizedLabel(@NotNull String key, @NotNull Object... args) {
         super();
         setKey(key, args);
     }
 
-    public void setKey(@NotNull String key, @NotNull String... args) {
-        for(String arg : args) {
-            argString.set(argString + arg);
-        }
+    public void setKey(@NotNull String key, @NotNull Object... args) {
+        this.args.setAll(args);
+        this.key = key;
 
-        currentKey = key;
         L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                setText(L18n.localize(key) + argString));
-        setText(L18n.localize(currentKey) + argString);
-    }
-
-    public String getKey() {
-        return currentKey;
+                setText(L18n.localize(key).formatted(args)));
+        setText(L18n.localize(this.key).formatted(args));
     }
 }

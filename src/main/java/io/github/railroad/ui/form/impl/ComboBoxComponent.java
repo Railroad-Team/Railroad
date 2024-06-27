@@ -8,15 +8,20 @@ import io.github.railroad.ui.form.ui.FormComboBox;
 import io.github.railroad.utility.ComboBoxConverter;
 import io.github.railroad.utility.FromStringFunction;
 import io.github.railroad.utility.ToStringFunction;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
+import javafx.util.Callback;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,16 +29,30 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBoxComponent.Data<T>, ComboBox<T>, T> {
-    public ComboBoxComponent(Data<T> data, FormComponentValidator<ComboBox<T>> validator, FormComponentChangeListener<ComboBox<T>, T> listener, Property<ComboBox<T>> bindComboBoxTo, List<FormTransformer<ComboBox<T>, T, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler) {
+    public ComboBoxComponent(Data<T> data, FormComponentValidator<ComboBox<T>> validator, FormComponentChangeListener<ComboBox<T>, T> listener, Property<ComboBox<T>> bindComboBoxTo, List<FormTransformer<ComboBox<T>, T, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible, Callback<ListView<T>, ListCell<T>> cellFactory, ListCell<T> buttonCell, Supplier<T> defaultValue) {
         super(data, currentData -> {
             var formComboBox = new FormComboBox<>(currentData.label, currentData.required, currentData.items, currentData.editable, currentData.translate, currentData.keyFunction, currentData.valueOfFunction);
             if (!currentData.translate) {
                 formComboBox.getPrimaryComponent().setConverter(new ComboBoxConverter<>(currentData.keyFunction, currentData.valueOfFunction));
             }
+
+            if (cellFactory != null) {
+                formComboBox.getPrimaryComponent().setCellFactory(cellFactory);
+            }
+
+            if (buttonCell != null) {
+                formComboBox.getPrimaryComponent().setButtonCell(buttonCell);
+            }
+
+            if (defaultValue != null) {
+                formComboBox.getPrimaryComponent().setValue(defaultValue.get());
+            }
+
             return formComboBox;
-        }, validator, listener, transformers);
+        }, validator, listener, transformers, visible);
 
         if (dataProperty().get() != null && !dataProperty().get().translate) {
             componentProperty().get().getPrimaryComponent().setConverter(new ComboBoxConverter<>(data.keyFunction, data.valueOfFunction));
@@ -92,6 +111,10 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         private Property<ComboBox<T>> bindComboBoxTo;
         private final List<FormTransformer<ComboBox<T>, T, ?>> transformers = new ArrayList<>();
         private EventHandler<? super KeyEvent> keyTypedHandler;
+        private BooleanBinding visible;
+        private Callback<ListView<T>, ListCell<T>> cellFactory;
+        private ListCell<T> buttonCell;
+        private Supplier<T> defaultValue;
 
         public Builder(@NotNull String label) {
             this.data = new Data<>(label);
@@ -158,7 +181,11 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
                     textField.setText(value.toString());
                 } else if (toComponent.getValue() instanceof ComboBox comboBox) {
                     try {
-                        comboBox.setValue(value);
+                        if(value instanceof Collection<?> collection) {
+                            comboBox.getItems().setAll(collection);
+                        } else {
+                            comboBox.setValue(value);
+                        }
                     } catch (Exception ignored) {
                     }
                 } else {
@@ -168,14 +195,39 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
             return this;
         }
 
+        public Builder<T> keyTypedHandler(EventHandler<? super KeyEvent> keyTypedHandler) {
+            this.keyTypedHandler = keyTypedHandler;
+            return this;
+        }
+
+        public Builder<T> visible(BooleanBinding visible) {
+            this.visible = visible;
+            return this;
+        }
+
+        public Builder<T> cellFactory(Callback<ListView<T>, ListCell<T>> cellFactory) {
+            this.cellFactory = cellFactory;
+            return this;
+        }
+
+        public Builder<T> buttonCell(ListCell<T> buttonCell) {
+            this.buttonCell = buttonCell;
+            return this;
+        }
+
+        public Builder<T> defaultValue(Supplier<T> defaultValue) {
+            this.defaultValue = defaultValue;
+            return this;
+        }
+
         public ComboBoxComponent<T> build() {
-            return new ComboBoxComponent<>(data, validator, listener, bindComboBoxTo, transformers, keyTypedHandler);
+            return new ComboBoxComponent<>(data, validator, listener, bindComboBoxTo, transformers, keyTypedHandler, visible, cellFactory, buttonCell, defaultValue);
         }
     }
 
     public static class Data<T> {
         private final String label;
-        private List<T> items;
+        private List<T> items = new ArrayList<>();
         private boolean editable = true;
         private boolean required = false;
         private boolean translate = true;
@@ -186,7 +238,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
             this.label = label;
         }
 
-        public Data<T> items(Collection<T> items) {
+        public Data<T> items(@NotNull Collection<T> items) {
             this.items = new ArrayList<>(items);
             return this;
         }

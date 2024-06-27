@@ -1,14 +1,11 @@
 package io.github.railroad.ui.form;
 
-import io.github.railroad.ui.form.impl.CheckBoxComponent;
-import io.github.railroad.ui.form.impl.ComboBoxComponent;
-import io.github.railroad.ui.form.impl.DirectoryChooserComponent;
-import io.github.railroad.ui.form.impl.TextFieldComponent;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import io.github.railroad.ui.form.impl.*;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Node;
 import javafx.scene.control.Tooltip;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.Function;
@@ -18,32 +15,41 @@ public abstract class FormComponent<T extends Node, U, V extends Node, W> {
     private final UpdatableObjectProperty<T> component = new UpdatableObjectProperty<>();
     private final FormComponentChangeListener<V, W> listener;
     private final FormComponentValidator<V> validator;
+    private final BooleanBinding visible;
 
-    public FormComponent(U data, Function<U, T> componentFactory, FormComponentValidator<V> validator, FormComponentChangeListener<V, W> listener, List<FormTransformer<V, W, ?>> transformers, Runnable setup) {
+    public FormComponent(U data, Function<U, T> componentFactory, FormComponentValidator<V> validator, FormComponentChangeListener<V, W> listener, List<FormTransformer<V, W, ?>> transformers, @Nullable BooleanBinding visible, Runnable setup) {
         this.validator = validator;
         this.listener = (node, observable, oldValue, newValue) -> {
             runValidation(node);
+
+            transformers.forEach(FormTransformer::transform);
+
             if (listener != null) {
                 listener.changed(node, observable, oldValue, newValue);
             }
-
-            transformers.forEach(FormTransformer::transform);
         };
+
+        this.visible = visible;
 
         applyListener(this.listener);
         setup.run();
 
         this.data.set(data);
         this.component.set(componentFactory.apply(this.data.get()));
+        if(this.visible != null)
+            this.component.get().visibleProperty().bind(this.visible);
 
         this.data.addListener((observable, oldValue, newValue) ->
                 component.set(componentFactory.apply(newValue)));
-        this.component.addListener((observable, oldValue, newValue) ->
-                this.data.set(newValue == null ? null : this.data.get()));
+        this.component.addListener((observable, oldValue, newValue) -> {
+            this.data.set(newValue == null ? null : this.data.get());
+            if (this.visible != null)
+                this.component.get().visibleProperty().bind(this.visible);
+        });
     }
 
-    public FormComponent(U data, Function<U, T> componentFactory, FormComponentValidator<V> validator, FormComponentChangeListener<V, W> listener, List<FormTransformer<V, W, ?>> transformers) {
-        this(data, componentFactory, validator, listener, transformers, () -> {});
+    public FormComponent(U data, Function<U, T> componentFactory, FormComponentValidator<V> validator, FormComponentChangeListener<V, W> listener, List<FormTransformer<V, W, ?>> transformers, @Nullable BooleanBinding visible) {
+        this(data, componentFactory, validator, listener, transformers, visible, () -> {});
     }
 
     public UpdatableObjectProperty<U> dataProperty() {
@@ -124,5 +130,9 @@ public abstract class FormComponent<T extends Node, U, V extends Node, W> {
 
     public static DirectoryChooserComponent.Builder directoryChooser(String label) {
         return new DirectoryChooserComponent.Builder(label);
+    }
+
+    public static TextAreaComponent.Builder textArea(String label) {
+        return new TextAreaComponent.Builder(label);
     }
 }

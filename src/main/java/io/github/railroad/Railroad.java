@@ -136,7 +136,7 @@ public class Railroad extends Application {
         double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
 
         // Start the welcome screen and window
-        scene = new Scene(new FormTestPane(), windowW, windowH);
+        scene = new Scene(new WelcomePane(), windowW, windowH);
         handleStyles(scene);
 
         // Open setup and show the window

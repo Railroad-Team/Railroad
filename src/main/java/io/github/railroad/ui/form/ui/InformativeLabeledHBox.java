@@ -42,34 +42,34 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
         getChildren().addAll(labeledHBox);
     }
 
-    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType, @Nullable StringProperty bindTo) {
-        addInformationLabel(informativeText, t -> TRUE_BINDING, informationType, bindTo);
+    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType, @Nullable StringProperty bindTo, Object... args) {
+        addInformationLabel(informativeText, t -> TRUE_BINDING, informationType, bindTo, args);
     }
 
-    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType) {
-        addInformationLabel(informativeText, informationType, null);
+    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType, Object... args) {
+        addInformationLabel(informativeText, informationType, null, args);
     }
 
-    public void addInformationLabel(@NotNull String informativeText) {
-        addInformationLabel(informativeText, InformationType.INFO);
+    public void addInformationLabel(@NotNull String informativeText, Object... args) {
+        addInformationLabel(informativeText, InformationType.INFO, args);
     }
 
-    public void addInformationLabel(@NotNull String informativeText, @Nullable StringProperty bindTo) {
-        addInformationLabel(informativeText, InformationType.INFO, bindTo);
+    public void addInformationLabel(@NotNull String informativeText, @Nullable StringProperty bindTo, Object... args) {
+        addInformationLabel(informativeText, InformationType.INFO, bindTo, args);
     }
 
-    public void addInformationLabel(@NotNull String informativeText, @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType, @Nullable StringProperty bindTo) {
-        var informationLabel = new InformationLabel(informativeText, informationType);
+    public void addInformationLabel(@NotNull String informativeText, @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType, @Nullable StringProperty bindTo, Object... args) {
+        var informationLabel = new InformationLabel(informativeText, informationType, args);
         informationLabel.visibleProperty().bind(informativeTextVisibleBinding.apply(labeledHBox.getPrimaryComponent()));
         informationLabels.add(informationLabel);
         getChildren().add(informationLabel);
 
         if(bindTo != null) {
-            bindTo.bind(informationLabel.textProperty());
+            bindTo.bindBidirectional(informationLabel.textProperty());
         }
     }
 
-    public void addInformationLabel(@NotNull String informativeText, @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType) {
+    public void addInformationLabel(@NotNull String informativeText, @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType, Object... args) {
         addInformationLabel(informativeText, informativeTextVisibleBinding, informationType, null);
     }
 
@@ -83,8 +83,8 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
     public static class InformationLabel extends LocalizedLabel {
         private final InformationType informationType;
 
-        public InformationLabel(String key, InformationType informationType) {
-            super(key);
+        public InformationLabel(String key, InformationType informationType, Object... args) {
+            super(key, args);
             this.informationType = informationType;
             if(informationType == InformationType.ERROR) {
                 setStyle("-fx-font-weight: bold;");
