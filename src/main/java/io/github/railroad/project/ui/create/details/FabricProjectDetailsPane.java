@@ -1,6 +1,5 @@
 package io.github.railroad.project.ui.create.details;
 
-import io.github.railroad.Railroad;
 import io.github.railroad.minecraft.FabricAPIVersion;
 import io.github.railroad.minecraft.FabricLoaderVersion;
 import io.github.railroad.minecraft.MinecraftVersion;
@@ -11,608 +10,544 @@ import io.github.railroad.minecraft.mapping.MappingVersion;
 import io.github.railroad.project.License;
 import io.github.railroad.project.ProjectType;
 import io.github.railroad.project.data.FabricProjectData;
+import io.github.railroad.project.data.ForgeProjectData;
 import io.github.railroad.project.ui.create.widget.StarableListCell;
-import io.github.railroad.ui.BrowseButton;
-import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.utility.ClassNameValidator;
+import io.github.railroad.ui.form.*;
+import io.github.railroad.ui.form.impl.*;
+import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.Border;
+import javafx.beans.property.*;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Text;
-import javafx.util.StringConverter;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FabricProjectDetailsPane extends RRVBox {
-    private final TextField projectNameField = new TextField();
-    private final TextField projectPathField = new TextField();
-    private final CheckBox createGitCheckBox = new CheckBox();
-    private final ComboBox<License> licenseComboBox = new ComboBox<>();
-    private final TextField licenseCustomField = new TextField();
+    private final StringProperty createdAtPath = new SimpleStringProperty();
 
-    private final ComboBox<MinecraftVersion> minecraftVersionComboBox = new ComboBox<>();
-    private final ComboBox<FabricLoaderVersion> fabricLoaderVersionComboBox = new ComboBox<>();
-    private final CheckBox includeFapiCheckBox = new CheckBox();
-    private final ComboBox<FabricAPIVersion> fapiVersionComboBox = new ComboBox<>();
-    private final TextField modIdField = new TextField();
-    private final TextField modNameField = new TextField();
-    private final TextField mainClassField = new TextField();
-    private final CheckBox useAccessWidenerCheckBox = new CheckBox();
-    private final CheckBox splitSourcesCheckBox = new CheckBox();
+    private final ObjectProperty<TextField> projectNameField = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> projectPathField = new SimpleObjectProperty<>();
+    private final ObjectProperty<CheckBox> createGitCheckBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<ComboBox<License>> licenseComboBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> licenseCustomField = new SimpleObjectProperty<>();
 
-    private final ComboBox<MappingChannel> mappingChannelComboBox = new ComboBox<>();
-    private final ComboBox<MappingVersion> mappingVersionComboBox = new ComboBox<>();
+    private final ObjectProperty<ComboBox<MinecraftVersion>> minecraftVersionComboBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<ComboBox<FabricLoaderVersion>> fabricLoaderVersionComboBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<CheckBox> includeFapiCheckBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<ComboBox<FabricAPIVersion>> fapiVersionComboBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> modIdField = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> modNameField = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> mainClassField = new SimpleObjectProperty<>();
+    private final ObjectProperty<CheckBox> useAccessWidenerCheckBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<CheckBox> splitSourcesCheckBox = new SimpleObjectProperty<>();
 
-    private final TextField authorField = new TextField(System.getProperty("user.name")); // optional
-    private final TextArea descriptionArea = new TextArea(); // optional
-    private final TextField issuesField = new TextField(); // optional
-    private final TextField homepageField = new TextField(); // optional
-    private final TextField sourcesField = new TextField(); // optional
+    private final ObjectProperty<ComboBox<MappingChannel>> mappingChannelComboBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<ComboBox<MappingVersion>> mappingVersionComboBox = new SimpleObjectProperty<>();
 
-    private final TextField groupIdField = new TextField();
-    private final TextField artifactIdField = new TextField();
-    private final TextField versionField = new TextField();
+    private final ObjectProperty<TextField> authorField = new SimpleObjectProperty<>(); // optional
+    private final ObjectProperty<TextArea> descriptionArea = new SimpleObjectProperty<>(); // optional
+    private final ObjectProperty<TextField> issuesField = new SimpleObjectProperty<>(); // optional
+    private final ObjectProperty<TextField> homepageField = new SimpleObjectProperty<>(); // optional
+    private final ObjectProperty<TextField> sourcesField = new SimpleObjectProperty<>(); // optional
 
-    private final AtomicBoolean hasOneDriveWarning = new AtomicBoolean(false);
-    private final AtomicBoolean hasModidWarning = new AtomicBoolean(false);
+    private final ObjectProperty<TextField> groupIdField = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> artifactIdField = new SimpleObjectProperty<>();
+    private final ObjectProperty<TextField> versionField = new SimpleObjectProperty<>();
+
+    private final AtomicBoolean hasTypedInProjectName = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInModid = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInModName = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInMainClass = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInArtifactId = new AtomicBoolean(false);
 
     public FabricProjectDetailsPane() {
-        // Project Section
-        var projectSection = new RRVBox(10);
+        TextFieldComponent projectNameComponent = FormComponent.textField("ProjectName", "railroad.project.creation.name")
+                .required()
+                .bindTextFieldTo(projectNameField)
+                .promptText("railroad.project.creation.name.prompt")
+                .validator(textField -> {
+                    String text = textField.getText();
+                    if (text == null || text.isBlank())
+                        return ValidationResult.error("railroad.project.creation.name.error.required");
 
-        var projectNameBox = new RRHBox(10);
-        projectNameBox.setAlignment(Pos.CENTER_LEFT);
-        var projectNameLabel = new Label("Name:");
-        projectNameLabel.setLabelFor(projectNameField);
-        projectNameBox.getChildren().addAll(projectNameLabel, createAsterisk(), projectNameField);
+                    if (text.length() > 256)
+                        return ValidationResult.error("railroad.project.creation.name.error.length_long");
 
-        var projectPathVBox = new RRVBox(10);
-        projectPathVBox.setAlignment(Pos.CENTER_LEFT);
+                    if (text.length() < 3)
+                        return ValidationResult.error("railroad.project.creation.name.error.length_short");
 
-        var createdAtLabel = new Label("This will be created at: " + System.getProperty("user.home"));
-        createdAtLabel.setGraphic(new FontIcon(FontAwesomeSolid.INFO_CIRCLE));
-        createdAtLabel.setTooltip(new Tooltip("The project will be created in this directory."));
-        createdAtLabel.setTextFill(Color.SLATEGRAY);
+                    if (text.matches("[.<>:\"/\\\\|?*]"))
+                        return ValidationResult.error("railroad.project.creation.name.error.invalid_characters");
 
-        var projectPathBox = new RRHBox(10);
-        projectPathBox.setAlignment(Pos.CENTER_LEFT);
-        var projectPathLabel = new Label("Location:");
-        projectPathLabel.setLabelFor(projectPathField);
-        projectPathField.setPrefWidth(300);
-        projectPathField.setText(System.getProperty("user.home"));
-        projectPathField.setEditable(false);
-        Border projectPathFieldBorder = projectPathField.getBorder();
-        projectPathField.textProperty().addListener((observable, oldValue, newValue) -> {
-            // Validate the project path
-            Path path = Path.of(newValue);
-            if (Files.notExists(path) || !Files.isDirectory(path))
-                projectPathField.setStyle("-fx-border-color: red;");
-            else
-                projectPathField.setBorder(projectPathFieldBorder);
+                    return ValidationResult.ok();
+                })
+                .listener((node, observable, oldValue, newValue) -> {
+                    String path = fixPath(projectPathField.get().getText().trim() + "\\" + projectNameField.get().getText().trim());
+                    createdAtPath.set(path);
+                })
+                .keyTypedHandler(event -> {
+                    if (!hasTypedInProjectName.get() && !projectNameField.get().getText().isBlank())
+                        hasTypedInProjectName.set(true);
+                    else if (hasTypedInProjectName.get() && projectNameField.get().getText().isBlank())
+                        hasTypedInProjectName.set(false);
+                })
+                .addTransformer(projectNameField, modIdField, text -> {
+                    if (!hasTypedInModid.get() || modIdField.get().getText().isBlank())
+                        return text.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9-]", "");
 
-            // Update the created at label
-            String fullPath = fixPath(projectPathField.getText().trim() + "/" + projectNameField.getText().trim());
-            createdAtLabel.setText("This will be created at: " + fullPath);
+                    return text;
+                })
+                .addTransformer(projectNameField, modNameField, text -> {
+                    if (!hasTypedInModName.get() || modNameField.get().getText().isBlank())
+                        return text;
 
-            // If the project is in OneDrive, warn the user
-            if (fullPath.contains("OneDrive") && hasOneDriveWarning.compareAndSet(false, true)) {
-                projectPathField.setStyle("-fx-border-color: orange;");
+                    return text;
+                })
+                .build();
 
-                var tooltip = new Tooltip("It is not recommended to create projects in OneDrive as it has a tendency to cause problems.");
-                Tooltip.install(projectPathField, tooltip);
+        DirectoryChooserComponent projectPathComponent = FormComponent.directoryChooser("ProjectPath", "railroad.project.creation.location")
+                .required()
+                .defaultPath(System.getProperty("user.home"))
+                .bindTextFieldTo(projectPathField)
+                .validator(textField -> {
+                    String text = textField.getText();
+                    if (text == null || text.isBlank())
+                        return ValidationResult.error("railroad.project.creation.location.error.required");
 
-                var warningIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
-                warningIcon.setIconSize(16);
-                warningIcon.setIconColor(Color.ORANGE);
-                projectPathBox.getChildren().add(warningIcon);
-            } else if (!fullPath.contains("OneDrive") && hasOneDriveWarning.compareAndSet(true, false)) {
-                projectPathField.setBorder(projectPathFieldBorder);
+                    if (!text.matches(".*[a-zA-Z0-9]"))
+                        return ValidationResult.error("railroad.project.creation.location.error.invalid_characters");
 
-                Tooltip.uninstall(projectPathField, projectPathField.getTooltip());
+                    try {
+                        Path path = Path.of(text);
+                        if (Files.notExists(path))
+                            return ValidationResult.error("railroad.project.creation.location.error.not_exists");
 
-                projectPathBox.getChildren().removeLast();
-            } else if (fullPath.contains("OneDrive")) {
-                projectPathField.setStyle("-fx-border-color: orange;");
-            } else {
-                projectPathField.setBorder(projectPathFieldBorder);
-            }
-        });
+                        if (!Files.isDirectory(path))
+                            return ValidationResult.error("railroad.project.creation.location.error.not_directory");
+                    } catch (InvalidPathException exception) {
+                        return ValidationResult.error("railroad.project.creation.location.error.invalid_path");
+                    }
 
-        var browseButtonIcon = new FontIcon(FontAwesomeSolid.FOLDER_OPEN);
-        browseButtonIcon.setIconSize(16);
-        browseButtonIcon.setIconColor(Color.CADETBLUE);
-        var browseButton = new BrowseButton();
-        browseButton.parentWindowProperty().bind(sceneProperty().map(Scene::getWindow));
-        browseButton.textFieldProperty().set(projectPathField);
-        browseButton.browseTypeProperty().set(BrowseButton.BrowseType.DIRECTORY);
-        browseButton.setGraphic(browseButtonIcon);
-        browseButton.setTooltip(new Tooltip("Browse"));
-        projectPathBox.getChildren().addAll(projectPathLabel, createAsterisk(), projectPathField, browseButton);
+                    if (text.contains("OneDrive"))
+                        return ValidationResult.warning("railroad.project.creation.location.warning.onedrive");
 
-        projectPathVBox.getChildren().addAll(projectPathBox, createdAtLabel);
+                    return ValidationResult.ok();
+                })
+                .listener((node, observable, oldValue, newValue) -> {
+                    String path = fixPath(projectPathField.get().getText().trim() + "\\" + projectNameField.get().getText().trim());
+                    createdAtPath.set(path);
+                })
+                .build();
 
-        var gitBox = new RRHBox(10);
-        gitBox.setAlignment(Pos.CENTER_LEFT);
-        var createGitLabel = new Label("Create Git Repository:");
-        createGitLabel.setLabelFor(createGitCheckBox);
-        gitBox.getChildren().addAll(createGitLabel, createGitCheckBox);
+        CheckBoxComponent createGitComponent = FormComponent.checkBox("CreateGit", "railroad.project.creation.git")
+                .bindCheckBoxTo(createGitCheckBox)
+                .build();
 
-        var licenseVBox = new RRVBox(10);
-        licenseVBox.setAlignment(Pos.CENTER_LEFT);
-        var licenseBox = new RRHBox(10);
-        licenseBox.setAlignment(Pos.CENTER_LEFT);
-        var licenseLabel = new Label("License:");
-        licenseLabel.setLabelFor(licenseComboBox);
-        licenseComboBox.getItems().addAll(License.values());
-        licenseComboBox.setValue(License.MIT);
-        licenseComboBox.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(License object) {
-                return object.getName();
-            }
+        ComboBoxComponent<License> licenseComponent = FormComponent.comboBox("License", "railroad.project.creation.license", License.class)
+                .required()
+                .bindComboBoxTo(licenseComboBox)
+                .keyFunction(License::getName)
+                .valueOfFunction(License::fromName)
+                .translate(false)
+                .items(Arrays.asList(License.values()))
+                .defaultValue(() -> License.LGPL)
+                .build();
 
-            @Override
-            public License fromString(String string) {
-                return License.fromName(string);
-            }
-        });
-        licenseComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue == License.CUSTOM) {
-                licenseVBox.getChildren().add(licenseCustomField);
-            } else {
-                licenseVBox.getChildren().remove(licenseCustomField);
-            }
-        });
-        licenseBox.getChildren().addAll(licenseLabel, createAsterisk(), licenseComboBox);
-        licenseVBox.getChildren().add(licenseBox);
+        TextFieldComponent licenseCustomComponent = FormComponent.textField("CustomLicense", "railroad.project.creation.license.custom")
+                .visible(licenseComboBox.get().valueProperty().isEqualTo(License.CUSTOM))
+                .bindTextFieldTo(licenseCustomField)
+                .promptText("railroad.project.creation.license.custom.prompt")
+                .validator(textField -> {
+                    if (textField.getText().isBlank())
+                        return ValidationResult.error("railroad.project.creation.license.custom.error.required");
 
-        projectSection.getChildren().addAll(createTitle("Project"), projectNameBox, projectPathVBox, gitBox, licenseVBox);
+                    return ValidationResult.ok();
+                })
+                .build();
 
-        // Minecraft Section
-        var minecraftSection = new RRVBox(10);
-        minecraftSection.setAlignment(Pos.CENTER_LEFT);
+        List<MinecraftVersion> supportedVersions = MinecraftVersion.getSupportedVersions(ProjectType.FABRIC);
+        MinecraftVersion latestVersion = supportedVersions.getFirst();
+        ComboBoxComponent<MinecraftVersion> minecraftVersionComponent = FormComponent.comboBox("MinecraftVersion", "railroad.project.creation.minecraft_version", MinecraftVersion.class)
+                .required()
+                .items(supportedVersions)
+                .defaultValue(() -> latestVersion)
+                .bindComboBoxTo(minecraftVersionComboBox)
+                .keyFunction(MinecraftVersion::id)
+                .valueOfFunction(string -> MinecraftVersion.fromId(string).orElse(null))
+                .addTransformer(minecraftVersionComboBox, fabricLoaderVersionComboBox, FabricLoaderVersion::getVersions)
+                .addTransformer(minecraftVersionComboBox, fapiVersionComboBox, FabricAPIVersion::getVersions)
+                .listener((node, observable, oldValue, newValue) -> {
+                    fabricLoaderVersionComboBox.get().setValue(FabricLoaderVersion.getLatestVersion(newValue));
+                    fapiVersionComboBox.get().setValue(FabricAPIVersion.getLatest());
 
-        var minecraftVersionBox = new RRHBox(10);
-        minecraftVersionBox.setAlignment(Pos.CENTER_LEFT);
-        var minecraftVersionLabel = new Label("Minecraft Version:");
-        minecraftVersionLabel.setLabelFor(minecraftVersionComboBox);
-        minecraftVersionComboBox.getItems().addAll(MinecraftVersion.getSupportedVersions(ProjectType.FORGE));
-        minecraftVersionComboBox.setValue(MinecraftVersion.getLatestStableVersion());
-        minecraftVersionComboBox.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(MinecraftVersion object) {
-                return object.id();
-            }
+                    MappingHelper.loadMappings(mappingChannelComboBox.get().getItems(), newValue);
+                    mappingChannelComboBox.get().setValue(mappingChannelComboBox.get().getItems().getFirst());
+                })
+                .translate(false)
+                .build();
 
-            @Override
-            public MinecraftVersion fromString(String string) {
-                return MinecraftVersion.fromId(string).orElse(null);
-            }
-        });
-        minecraftVersionBox.getChildren().addAll(minecraftVersionLabel, createAsterisk(), minecraftVersionComboBox);
+        ComboBoxComponent<FabricLoaderVersion> fabricLoaderVersionComponent = FormComponent.comboBox("FabricLoaderVersion", "railroad.project.creation.fabric_loader_version", FabricLoaderVersion.class)
+                .required()
+                .bindComboBoxTo(fabricLoaderVersionComboBox)
+                .keyFunction(version -> version.loaderVersion().version())
+                .valueOfFunction(string -> FabricLoaderVersion.fromId(minecraftVersionComboBox.get().getValue(), string).orElse(null))
+                .addTransformer(fabricLoaderVersionComboBox, fapiVersionComboBox, version -> FabricAPIVersion.getVersions(minecraftVersionComboBox.get().getValue()))
+                .listener((node, observable, oldValue, newValue) ->
+                        fapiVersionComboBox.get().setValue(FabricAPIVersion.getLatest()))
+                .translate(false)
+                .cellFactory(param -> new StarableListCell<>(
+                        version -> Objects.equals(version.loaderVersion().version(), FabricLoaderVersion.getLatestVersion(minecraftVersionComboBox.get().getValue()).loaderVersion().version()),
+                        version -> false,
+                        fabricLoaderVersion -> fabricLoaderVersion.loaderVersion().version()))
+                .buttonCell(new StarableListCell<>(
+                        version -> Objects.equals(version.loaderVersion().version(), FabricLoaderVersion.getLatestVersion(minecraftVersionComboBox.get().getValue()).loaderVersion().version()),
+                        version -> false,
+                        fabricLoaderVersion -> fabricLoaderVersion.loaderVersion().version()))
+                .defaultValue(() -> FabricLoaderVersion.getLatestVersion(latestVersion))
+                .build();
 
-        var fabricLoaderVersionBox = new RRHBox(10);
-        fabricLoaderVersionBox.setAlignment(Pos.CENTER_LEFT);
-        var fabricLoaderVersionLabel = new Label("Loader Version:");
-        fabricLoaderVersionLabel.setLabelFor(fabricLoaderVersionComboBox);
-        fabricLoaderVersionComboBox.setCellFactory(param -> new StarableListCell<>(
-                version -> Objects.equals(version.loaderVersion().version(), FabricLoaderVersion.getLatestVersion(minecraftVersionComboBox.getValue()).loaderVersion().version()),
-                version -> false,
-                fabricLoaderVersion -> fabricLoaderVersion.loaderVersion().version()));
-        fabricLoaderVersionComboBox.setButtonCell(new StarableListCell<>(
-                version -> Objects.equals(version.loaderVersion().version(), FabricLoaderVersion.getLatestVersion(minecraftVersionComboBox.getValue()).loaderVersion().version()),
-                version -> false,
-                fabricLoaderVersion -> fabricLoaderVersion.loaderVersion().version()));
-        fabricLoaderVersionComboBox.getItems().addAll(FabricLoaderVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
-        fabricLoaderVersionComboBox.setValue(FabricLoaderVersion.getLatestVersion(MinecraftVersion.getLatestStableVersion()));
-        fabricLoaderVersionBox.getChildren().addAll(fabricLoaderVersionLabel, createAsterisk(), fabricLoaderVersionComboBox);
+        CheckBoxComponent includeFapiComponent = FormComponent.checkBox("IncludeFapi", "railroad.project.creation.include_fapi")
+                .bindCheckBoxTo(includeFapiCheckBox)
+                .build();
 
-        var fapiBox = new RRVBox(10);
-        fapiBox.setAlignment(Pos.CENTER_LEFT);
-        var includeFapiBox = new RRHBox(10);
-        includeFapiBox.setAlignment(Pos.CENTER_LEFT);
-        var includeFapiLabel = new Label("Include Fabric API:");
-        includeFapiLabel.setLabelFor(includeFapiCheckBox);
-        includeFapiCheckBox.setSelected(true);
-        var fapiVersionBox = new RRHBox(10);
-        fapiVersionBox.setAlignment(Pos.CENTER_LEFT);
-        var fapiVersionLabel = new Label("Fabric API Version:");
-        fapiVersionLabel.setLabelFor(fapiVersionComboBox);
-        fapiVersionComboBox.setCellFactory(param -> new StarableListCell<>(
-                version -> Objects.equals(version, FabricAPIVersion.getLatest()),
-                version -> false,
-                FabricAPIVersion::version));
-        fapiVersionComboBox.setButtonCell(new StarableListCell<>(
-                version -> Objects.equals(version, FabricAPIVersion.getLatest()),
-                version -> false,
-                FabricAPIVersion::version));
-        fapiVersionComboBox.getItems().addAll(FabricAPIVersion.getVersions(MinecraftVersion.getLatestStableVersion()));
-        fapiVersionComboBox.setValue(fapiVersionComboBox.getItems().getFirst());
-        includeFapiBox.getChildren().addAll(includeFapiLabel, includeFapiCheckBox);
-        fapiVersionBox.getChildren().addAll(fapiVersionLabel, createAsterisk(), fapiVersionComboBox);
-        fapiBox.getChildren().addAll(includeFapiBox, fapiVersionBox);
+        ComboBoxComponent<FabricAPIVersion> fapiVersionComponent = FormComponent.comboBox("FabricAPIVersion", "railroad.project.creation.fabric_api_version", FabricAPIVersion.class)
+                .required()
+                .bindComboBoxTo(fapiVersionComboBox)
+                .keyFunction(FabricAPIVersion::version)
+                .valueOfFunction(string -> fapiVersionComboBox.get().getItems().stream()
+                        .filter(version -> version.version().equals(string))
+                        .findFirst().orElse(null))
+                .translate(false)
+                .cellFactory(param -> new StarableListCell<>(
+                        version -> Objects.equals(version, FabricAPIVersion.getLatest()),
+                        version -> false,
+                        FabricAPIVersion::version))
+                .buttonCell(new StarableListCell<>(
+                        version -> Objects.equals(version, FabricAPIVersion.getLatest()),
+                        version -> false,
+                        FabricAPIVersion::version))
+                .defaultValue(FabricAPIVersion::getLatest)
+                .visible(createBinding(includeFapiCheckBox.get().selectedProperty()))
+                .build();
 
-        includeFapiCheckBox.setOnAction(event -> {
-            if (fapiBox.getChildren().contains(fapiVersionBox)) {
-                fapiBox.getChildren().remove(fapiVersionBox);
-            } else {
-                fapiBox.getChildren().add(fapiVersionBox);
-            }
-        });
+        TextFieldComponent modIdComponent = FormComponent.textField("ModId", "railroad.project.creation.mod_id")
+                .required()
+                .bindTextFieldTo(modIdField)
+                .promptText("railroad.project.creation.mod_id.prompt")
+                .validator(textField -> {
+                    String text = textField.getText();
+                    if (text == null || text.isBlank())
+                        return ValidationResult.error("railroad.project.creation.mod_id.error.required");
 
-        minecraftVersionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-            fabricLoaderVersionComboBox.getItems().setAll(FabricLoaderVersion.getVersions(newValue));
-            fabricLoaderVersionComboBox.setValue(FabricLoaderVersion.getLatestVersion(newValue));
+                    if (text.length() < 3)
+                        return ValidationResult.error("railroad.project.creation.mod_id.error.length_short");
 
-            MappingHelper.loadMappings(mappingChannelComboBox.getItems(), newValue);
-            mappingChannelComboBox.setValue(mappingChannelComboBox.getItems().getFirst());
+                    if (text.length() > 64)
+                        return ValidationResult.error("railroad.project.creation.mod_id.error.length_long");
 
-            fapiVersionComboBox.getItems().setAll(FabricAPIVersion.getVersions(newValue));
-            fapiVersionComboBox.setValue(FabricAPIVersion.getLatest());
-        });
+                    if (!text.matches("^[a-z][a-z0-9_]{1,63}$"))
+                        return ValidationResult.error("railroad.project.creation.mod_id.error.invalid_characters");
 
-        var modIdBox = new RRHBox(10);
-        modIdBox.setAlignment(Pos.CENTER_LEFT);
-        var modIdLabel = new Label("Mod ID:");
-        modIdLabel.setLabelFor(modIdField);
-        Border modidFieldBorder = modIdField.getBorder();
-        modIdField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (oldValue.equals(newValue))
-                return;
+                    return ValidationResult.ok();
+                })
+                .keyTypedHandler(event -> {
+                    if (!hasTypedInModid.get() && !modIdField.get().getText().isBlank())
+                        hasTypedInModid.set(true);
+                    else if (hasTypedInModid.get() && modIdField.get().getText().isBlank())
+                        hasTypedInModid.set(false);
+                })
+                .addTransformer(modIdField, artifactIdField, text -> {
+                    if (!hasTypedInArtifactId.get() || artifactIdField.get().getText().isBlank())
+                        return text.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9-]", "");
 
-            if (!newValue.matches("[a-z][a-z0-9_]")) {
-                modIdField.setText(newValue = newValue.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_]", ""));
-            }
+                    return text;
+                })
+                .build();
 
-            // Only allow a maximum of 64 characters
-            if (newValue.length() > 64) {
-                modIdField.setText(newValue = newValue.substring(0, 64));
-            }
+        TextFieldComponent modNameComponent = FormComponent.textField("ModName", "railroad.project.creation.mod_name")
+                .required()
+                .bindTextFieldTo(modNameField)
+                .promptText("railroad.project.creation.mod_name.prompt")
+                .validator(textField -> {
+                    String text = textField.getText();
+                    if (text == null || text.isBlank())
+                        return ValidationResult.error("railroad.project.creation.mod_name.error.required");
 
-            // Validate the mod ID
-            if (newValue.length() < 3 || !newValue.matches("^[a-z][a-z0-9_]{1,63}$"))
-                modIdField.setStyle("-fx-border-color: red;");
-            else
-                modIdField.setBorder(modidFieldBorder);
+                    if (text.length() > 256)
+                        return ValidationResult.error("railroad.project.creation.mod_name.error.length_long");
 
-            // If the mod ID is not valid, show a warning
-            if ((newValue.length() < 5 && newValue.length() > 2) && hasModidWarning.compareAndSet(false, true)) {
-                modIdField.setStyle("-fx-border-color: orange;");
+                    return ValidationResult.ok();
+                })
+                .keyTypedHandler(event -> {
+                    if (!hasTypedInModName.get() && !modNameField.get().getText().isBlank())
+                        hasTypedInModName.set(true);
+                    else if (hasTypedInModName.get() && modNameField.get().getText().isBlank())
+                        hasTypedInModName.set(false);
+                })
+                .addTransformer(modNameField, mainClassField, text -> {
+                    if (!hasTypedInMainClass.get() || mainClassField.get().getText().isBlank())
+                        return text;
 
-                var tooltip = new Tooltip("Short mod IDs are discouraged as they may conflict with other mods.");
-                Tooltip.install(modIdField, tooltip);
+                    return text;
+                })
+                .build();
 
-                var warningIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
-                warningIcon.setIconSize(16);
-                warningIcon.setIconColor(Color.ORANGE);
-                modIdBox.getChildren().add(warningIcon);
-            } else if (newValue.length() >= 5 && hasModidWarning.compareAndSet(true, false)) {
-                modIdField.setBorder(modidFieldBorder);
+        TextFieldComponent mainClassComponent = FormComponent.textField("MainClass", "railroad.project.creation.main_class")
+                .required()
+                .bindTextFieldTo(mainClassField)
+                .promptText("railroad.project.creation.main_class.prompt")
+                .validator(textField -> {
+                    String text = textField.getText();
+                    if (text == null || text.isBlank())
+                        return ValidationResult.error("railroad.project.creation.main_class.error.required");
 
-                Tooltip.uninstall(modIdField, modIdField.getTooltip());
-                modIdBox.getChildren().removeLast();
-            } else if (newValue.length() < 3 && hasModidWarning.compareAndSet(true, false)) {
-                Tooltip.uninstall(modIdField, modIdField.getTooltip());
-                modIdBox.getChildren().removeLast();
-            }
+                    if (!text.matches("[a-zA-Z0-9_]+"))
+                        return ValidationResult.error("railroad.project.creation.main_class.error.invalid_characters");
 
-            // update the artifact ID field if it is empty
-            if (!hasTypedInArtifactId.get() || artifactIdField.getText().isBlank())
-                artifactIdField.setText(newValue.replaceAll("[^a-z0-9-]", ""));
-        });
-        modIdField.setOnKeyTyped(event -> {
-            // If the user has typed in the mod ID and it is not empty, set the hasTypedInModid flag to true
-            if (!hasTypedInModid.get() && !modIdField.getText().isBlank())
-                hasTypedInModid.set(true);
-            else if (hasTypedInModid.get() && modIdField.getText().isBlank())
-                hasTypedInModid.set(false);
-        });
-        modIdBox.getChildren().addAll(modIdLabel, createAsterisk(), modIdField);
+                    return ValidationResult.ok();
+                })
+                .keyTypedHandler(event -> {
+                    if (!hasTypedInMainClass.get() && !mainClassField.get().getText().isBlank())
+                        hasTypedInMainClass.set(true);
+                    else if (hasTypedInMainClass.get() && mainClassField.get().getText().isBlank())
+                        hasTypedInMainClass.set(false);
+                })
+                .build();
 
-        var modNameBox = new RRHBox(10);
-        modNameBox.setAlignment(Pos.CENTER_LEFT);
-        var modNameLabel = new Label("Mod Name:");
-        modNameLabel.setLabelFor(modNameField);
-        modNameField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue.length() > 256) {
-                modNameField.setText(newValue.substring(0, 256));
-            }
-        });
-        modNameField.setOnKeyTyped(event -> {
-            // If the user has typed in the mod name and it is not empty, set the hasTypedInModName flag to true
-            if (!hasTypedInModName.get() && !modNameField.getText().isBlank())
-                hasTypedInModName.set(true);
-            else if (hasTypedInModName.get() && modNameField.getText().isBlank())
-                hasTypedInModName.set(false);
-        });
-        modNameBox.getChildren().addAll(modNameLabel, createAsterisk(), modNameField);
+        CheckBoxComponent useAccessWidenerComponent = FormComponent.checkBox("UseAccessWidener", "railroad.project.creation.use_access_widener")
+                .bindCheckBoxTo(useAccessWidenerCheckBox)
+                .build();
 
-        var mainClassBox = new RRHBox(10);
-        mainClassBox.setAlignment(Pos.CENTER_LEFT);
-        var mainClassLabel = new Label("Main Class:");
-        mainClassLabel.setLabelFor(mainClassField);
-        mainClassField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (!ClassNameValidator.isValid(newValue)) {
-                mainClassField.setText(oldValue);
-            }
-        });
-        mainClassField.setOnKeyTyped(event -> {
-            // If the user has typed in the main class and it is not empty, set the hasTypedInMainClass flag to true
-            if (!hasTypedInMainClass.get() && !mainClassField.getText().isBlank())
-                hasTypedInMainClass.set(true);
-            else if (hasTypedInMainClass.get() && mainClassField.getText().isBlank())
-                hasTypedInMainClass.set(false);
-        });
-        mainClassBox.getChildren().addAll(mainClassLabel, createAsterisk(), mainClassField);
+        CheckBoxComponent splitSourcesComponent = FormComponent.checkBox("SplitSources", "railroad.project.creation.split_sources")
+                .bindCheckBoxTo(splitSourcesCheckBox)
+                .build();
 
-        var useAccessWidenerBox = new RRHBox(10);
-        useAccessWidenerBox.setAlignment(Pos.CENTER_LEFT);
-        var useAccessWidenerLabel = new Label("Use Access Widener:");
-        useAccessWidenerLabel.setLabelFor(useAccessWidenerCheckBox);
-        useAccessWidenerBox.getChildren().addAll(useAccessWidenerLabel, useAccessWidenerCheckBox);
+        ComboBoxComponent<MappingChannel> mappingChannelComponent = FormComponent.comboBox("MappingChannel", "railroad.project.creation.mapping_channel", MappingChannel.class)
+                .required()
+                .items(Arrays.asList(MappingChannel.values()))
+                .defaultValue(() -> MappingChannel.MOJMAP)
+                .bindComboBoxTo(mappingChannelComboBox)
+                .keyFunction(MappingChannel::getName)
+                .valueOfFunction(string -> MappingChannel.valueOf(string.toUpperCase(Locale.ROOT)))
+                .addTransformer(mappingChannelComboBox, mappingVersionComboBox, mappingChannel -> {
+                    ObservableList<MappingVersion> items = FXCollections.observableArrayList();
+                    MappingHelper.loadMappingsVersions(items, minecraftVersionComboBox.get().getValue(), mappingChannel);
+                    return items;
+                })
+                .listener((node, observable, oldValue, newValue) ->
+                        mappingVersionComboBox.get().setValue(mappingVersionComboBox.get().getItems().getFirst()))
+                .translate(false)
+                .build();
 
-        var splitSourcesBox = new RRHBox(10);
-        splitSourcesBox.setAlignment(Pos.CENTER_LEFT);
-        var splitSourcesLabel = new Label("Split Sources:");
-        splitSourcesLabel.setLabelFor(splitSourcesCheckBox);
-        splitSourcesCheckBox.setSelected(true);
-        splitSourcesBox.getChildren().addAll(splitSourcesLabel, splitSourcesCheckBox);
+        ComboBoxComponent<MappingVersion> mappingVersionComponent = FormComponent.comboBox("MappingVersion", "railroad.project.creation.mapping_version", MappingVersion.class)
+                .required()
+                .bindComboBoxTo(mappingVersionComboBox)
+                .cellFactory(param -> new StarableListCell<>(
+                        version -> version instanceof RecommendableVersion recommendableVersion && recommendableVersion.isRecommended(),
+                        MappingVersion::isLatest,
+                        MappingVersion::getId))
+                .buttonCell(new StarableListCell<>(
+                        version -> version instanceof RecommendableVersion recommendableVersion && recommendableVersion.isRecommended(),
+                        MappingVersion::isLatest,
+                        MappingVersion::getId))
+                .keyFunction(MappingVersion::getId)
+                .translate(false)
+                .build();
 
-        minecraftSection.getChildren().addAll(createTitle("Minecraft"), minecraftVersionBox, fabricLoaderVersionBox, fapiBox,
-                modIdBox, modNameBox, mainClassBox, useAccessWidenerBox, splitSourcesBox);
+        TextFieldComponent authorComponent = FormComponent.textField("Author", "railroad.project.creation.author")
+                .bindTextFieldTo(authorField)
+                .promptText("railroad.project.creation.author.prompt")
+                .validator(textField -> {
+                    String text = textField.getText();
+                    if (text.length() > 256)
+                        return ValidationResult.error("railroad.project.creation.author.error.length_long");
 
-        // Mapping Section
-        var mappingSection = new RRVBox(10);
-        mappingSection.setAlignment(Pos.CENTER_LEFT);
+                    return ValidationResult.ok();
+                })
+                .build();
 
-        var mappingChannelBox = new RRHBox(10);
-        mappingChannelBox.setAlignment(Pos.CENTER_LEFT);
-        var mappingChannelLabel = new Label("Mapping Channel:");
-        mappingChannelLabel.setLabelFor(mappingChannelComboBox);
-        MappingHelper.loadMappings(mappingChannelComboBox.getItems(), minecraftVersionComboBox.getValue());
-        mappingChannelComboBox.setValue(MappingChannel.MOJMAP);
-        mappingChannelComboBox.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(MappingChannel object) {
-                return object == null ? "" : object.getName();
-            }
+        TextAreaComponent descriptionComponent = FormComponent.textArea("Description", "railroad.project.creation.description")
+                .bindTextAreaTo(descriptionArea)
+                .promptText("railroad.project.creation.description.prompt")
+                .validator(textArea -> {
+                    String text = textArea.getText();
+                    if (text.length() > 1028)
+                        return ValidationResult.error("railroad.project.creation.description.error.length_long");
 
-            @Override
-            public MappingChannel fromString(String string) {
-                return MappingChannel.valueOf(string.toUpperCase(Locale.ROOT));
-            }
-        });
-        mappingChannelComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue == null)
-                return;
+                    return ValidationResult.ok();
+                })
+                .resize(true)
+                .wrapText(true)
+                .build();
 
-            MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.getValue(), newValue);
-            mappingVersionComboBox.setValue(mappingVersionComboBox.getItems().getFirst());
-        });
-        mappingChannelBox.getChildren().addAll(mappingChannelLabel, createAsterisk(), mappingChannelComboBox);
+        TextFieldComponent issuesComponent = FormComponent.textField("Issues", "railroad.project.creation.issues")
+                .bindTextFieldTo(issuesField)
+                .promptText("railroad.project.creation.issues.prompt")
+                .validator(textField -> {
+                    String text = textField.getText();
+                    if (text.length() > 256)
+                        return ValidationResult.error("railroad.project.creation.issues.error.length_long");
 
-        var mappingVersionBox = new RRHBox(10);
-        mappingVersionBox.setAlignment(Pos.CENTER_LEFT);
-        var mappingVersionLabel = new Label("Mapping Version:");
-        mappingVersionLabel.setLabelFor(mappingVersionComboBox);
-        mappingVersionComboBox.setCellFactory(param -> new StarableListCell<>(
-                version -> version instanceof RecommendableVersion recommendableVersion && recommendableVersion.isRecommended(),
-                MappingVersion::isLatest,
-                MappingVersion::getId));
-        mappingVersionComboBox.setButtonCell(new StarableListCell<>(
-                version -> version instanceof RecommendableVersion recommendableVersion && recommendableVersion.isRecommended(),
-                MappingVersion::isLatest,
-                MappingVersion::getId));
-        MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.getValue(), mappingChannelComboBox.getValue());
+                    return ValidationResult.ok();
+                })
+                .build();
+
+        TextFieldComponent homepageComponent = FormComponent.textField("Homepage", "railroad.project.creation.homepage")
+                .bindTextFieldTo(homepageField)
+                .promptText("railroad.project.creation.homepage.prompt")
+                .validator(textField -> {
+                    String text = textField.getText();
+                    if (text.length() > 256)
+                        return ValidationResult.error("railroad.project.creation.homepage.error.length_long");
+
+                    return ValidationResult.ok();
+                })
+                .build();
+
+        TextFieldComponent sourcesComponent = FormComponent.textField("Sources", "railroad.project.creation.sources")
+                .bindTextFieldTo(sourcesField)
+                .promptText("railroad.project.creation.sources.prompt")
+                .validator(textField -> {
+                    String text = textField.getText();
+                    if (text.length() > 256)
+                        return ValidationResult.error("railroad.project.creation.sources.error.length_long");
+
+                    return ValidationResult.ok();
+                })
+                .build();
+
+        TextFieldComponent groupIdComponent = FormComponent.textField("GroupId", "railroad.project.creation.group_id")
+                .required()
+                .bindTextFieldTo(groupIdField)
+                .promptText("railroad.project.creation.group_id.prompt")
+                .validator(textField -> {
+                    String text = textField.getText();
+                    if (text == null || text.isBlank())
+                        return ValidationResult.error("railroad.project.creation.group_id.error.required");
+
+                    if (text.length() > 256)
+                        return ValidationResult.error("railroad.project.creation.group_id.error.length_long");
+
+                    if (!text.matches("[a-zA-Z0-9.]+"))
+                        return ValidationResult.error("railroad.project.creation.group_id.error.invalid_characters");
+
+                    return ValidationResult.ok();
+                })
+                .build();
+
+        TextFieldComponent artifactIdComponent = FormComponent.textField("ArtifactId", "railroad.project.creation.artifact_id")
+                .required()
+                .bindTextFieldTo(artifactIdField)
+                .promptText("railroad.project.creation.artifact_id.prompt")
+                .validator(textField -> {
+                    String text = textField.getText();
+                    if (text == null || text.isBlank())
+                        return ValidationResult.error("railroad.project.creation.artifact_id.error.required");
+
+                    if (text.length() > 256)
+                        return ValidationResult.error("railroad.project.creation.artifact_id.error.length_long");
+
+                    if (!text.matches("[a-z0-9-]+"))
+                        return ValidationResult.error("railroad.project.creation.artifact_id.error.invalid_characters");
+
+                    return ValidationResult.ok();
+                })
+                .keyTypedHandler(event -> {
+                    if (!hasTypedInArtifactId.get() && !artifactIdField.get().getText().isBlank())
+                        hasTypedInArtifactId.set(true);
+                    else if (hasTypedInArtifactId.get() && artifactIdField.get().getText().isBlank())
+                        hasTypedInArtifactId.set(false);
+                })
+                .build();
+
+        TextFieldComponent versionComponent = FormComponent.textField("Version", "railroad.project.creation.version")
+                .required()
+                .bindTextFieldTo(versionField)
+                .promptText("railroad.project.creation.version.prompt")
+                .validator(textField -> {
+                    String text = textField.getText();
+                    if (text == null || text.isBlank())
+                        return ValidationResult.error("railroad.project.creation.version.error.required");
+
+                    if (text.length() > 256)
+                        return ValidationResult.error("railroad.project.creation.version.error.length_long");
+
+                    if (!text.matches("[a-zA-Z0-9.-]+"))
+                        return ValidationResult.error("railroad.project.creation.version.error.invalid_characters");
+
+                    return ValidationResult.ok();
+                })
+                .build();
+
+        Form form = Form.create()
+                .spacing(15)
+                .padding(10)
+                .appendSection(FormSection.create("railroad.project.creation.section.project")
+                        .borderColor(Color.DARKGRAY)
+                        .appendComponent(projectNameComponent)
+                        .appendComponent(projectPathComponent)
+                        .appendComponent(createGitComponent)
+                        .appendComponent(licenseComponent)
+                        .appendComponent(licenseCustomComponent))
+                .appendSection(FormSection.create("railroad.project.creation.section.minecraft")
+                        .borderColor(Color.DARKGRAY)
+                        .appendComponent(minecraftVersionComponent)
+                        .appendComponent(fabricLoaderVersionComponent)
+                        .appendComponent(includeFapiComponent)
+                        .appendComponent(fapiVersionComponent)
+                        .appendComponent(modIdComponent)
+                        .appendComponent(modNameComponent)
+                        .appendComponent(mainClassComponent)
+                        .appendComponent(useAccessWidenerComponent)
+                        .appendComponent(splitSourcesComponent))
+                .appendSection(FormSection.create("railroad.project.creation.section.mappings")
+                        .borderColor(Color.DARKGRAY)
+                        .appendComponent(mappingChannelComponent)
+                        .appendComponent(mappingVersionComponent))
+                .appendSection(FormSection.create("railroad.project.creation.section.optional")
+                        .borderColor(Color.SLATEGRAY)
+                        .appendComponent(authorComponent)
+                        .appendComponent(descriptionComponent)
+                        .appendComponent(issuesComponent)
+                        .appendComponent(homepageComponent)
+                        .appendComponent(sourcesComponent))
+                .appendSection(FormSection.create("railroad.project.creation.section.maven")
+                        .borderColor(Color.DARKGRAY)
+                        .appendComponent(groupIdComponent)
+                        .appendComponent(artifactIdComponent)
+                        .appendComponent(versionComponent))
+                .disableResetButton()
+                .onSubmit((theForm, formData) -> {
+                    if (theForm.validate()) {
+                        FabricProjectData data = createData(formData);
+                        getScene().setRoot(new FabricProjectCreationPane(data));
+                    } else {
+                        theForm.runValidation(); // Show validation errors
+                    }
+                })
+                .build();
+
+        getChildren().add(form.createUI());
+
+        projectPathComponent.getComponent().addInformationLabel("railroad.project.creation.location.info", createdAtPath, (projectPathField.get().getText() == null ? "" : projectPathField.get().getText()) + "\\" + (projectNameField.get().getText() == null ? "" : projectNameField.get().getText()));
+
+        ComboBox<MappingVersion> mappingVersionComboBox = this.mappingVersionComboBox.get();
+        MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.get().getValue(), mappingChannelComboBox.get().getValue());
         mappingVersionComboBox.setValue(mappingVersionComboBox.getItems().getFirst());
-        mappingVersionBox.getChildren().addAll(mappingVersionLabel, createAsterisk(), mappingVersionComboBox);
-
-        mappingSection.getChildren().addAll(createTitle("Mappings"), mappingChannelBox, mappingVersionBox);
-
-        // Optional Section
-        var optionalSection = new RRVBox(10);
-        optionalSection.setAlignment(Pos.CENTER_LEFT);
-
-        var authorBox = new RRHBox(10);
-        authorBox.setAlignment(Pos.CENTER_LEFT);
-        var authorLabel = new Label("Author:");
-        authorLabel.setLabelFor(authorField);
-        authorField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue.length() > 256) {
-                authorField.setText(newValue.substring(0, 256));
-            }
-        });
-        authorBox.getChildren().addAll(authorLabel, authorField);
-
-        var descriptionBox = new RRHBox(10);
-        descriptionBox.setAlignment(Pos.CENTER_LEFT);
-        var descriptionLabel = new Label("Description:");
-        descriptionLabel.setLabelFor(descriptionArea);
-        descriptionArea.setWrapText(true);
-        descriptionArea.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue.length() > 1028) {
-                descriptionArea.setText(newValue.substring(0, 1028));
-            }
-
-            descriptionArea.setMinHeight(newValue.lines().count() * 20 + 40);
-        });
-        descriptionBox.getChildren().addAll(descriptionLabel, descriptionArea);
-
-        var issuesBox = new RRHBox(10);
-        issuesBox.setAlignment(Pos.CENTER_LEFT);
-        var issuesLabel = new Label("Issues:");
-        issuesLabel.setLabelFor(issuesField);
-        issuesBox.getChildren().addAll(issuesLabel, issuesField);
-
-        var homepageBox = new RRHBox(10);
-        homepageBox.setAlignment(Pos.CENTER_LEFT);
-        var homepageLabel = new Label("Homepage:");
-        homepageLabel.setLabelFor(homepageField);
-        homepageBox.getChildren().addAll(homepageLabel, homepageField);
-
-        var sourcesBox = new RRHBox(10);
-        sourcesBox.setAlignment(Pos.CENTER_LEFT);
-        var sourcesLabel = new Label("Sources:");
-        sourcesLabel.setLabelFor(sourcesField);
-        sourcesBox.getChildren().addAll(sourcesLabel, sourcesField);
-
-        optionalSection.getChildren().addAll(createTitle("Details (Optional)"), authorBox, descriptionBox,
-                issuesBox, homepageBox, sourcesBox);
-
-        // Maven Section
-        var mavenSection = new RRVBox(10);
-        mavenSection.setAlignment(Pos.CENTER_LEFT);
-
-        var groupIdBox = new RRHBox(10);
-        groupIdBox.setAlignment(Pos.CENTER_LEFT);
-        var groupIdLabel = new Label("Group ID:");
-        groupIdLabel.setLabelFor(groupIdField);
-        groupIdBox.getChildren().addAll(groupIdLabel, createAsterisk(), groupIdField);
-
-        var artifactIdBox = new RRHBox(10);
-        artifactIdBox.setAlignment(Pos.CENTER_LEFT);
-        var artifactIdLabel = new Label("Artifact ID:");
-        artifactIdLabel.setLabelFor(artifactIdField);
-        artifactIdBox.getChildren().addAll(artifactIdLabel, createAsterisk(), artifactIdField);
-
-        var versionBox = new RRHBox(10);
-        versionBox.setAlignment(Pos.CENTER_LEFT);
-        var versionLabel = new Label("Version:");
-        versionLabel.setLabelFor(versionField);
-        versionBox.getChildren().addAll(versionLabel, createAsterisk(), versionField);
-
-        mavenSection.getChildren().addAll(createTitle("Maven"), groupIdBox, artifactIdBox, versionBox);
-
-        getChildren().addAll(projectSection,
-                new Separator(), minecraftSection,
-                new Separator(), mappingSection,
-                new Separator(), optionalSection,
-                new Separator(), mavenSection);
-        setSpacing(20);
-        setPadding(new Insets(20));
-
-        Border projectNameFieldBorder = projectNameField.getBorder();
-        projectNameField.textProperty().addListener((observable, oldValue, newValue) -> {
-            // Remove any .<>:"/\|?* characters from the project name
-            newValue = newValue.replaceAll("[.<>:\"/\\\\|?*]", "");
-
-            // Check that the name does not exceed 256 characters
-            if (newValue.length() > 256)
-                projectNameField.setText(newValue.substring(0, 256));
-
-            // Validate the project name
-            if (newValue.isBlank())
-                projectNameField.setStyle("-fx-border-color: red;");
-            else
-                projectNameField.setBorder(projectNameFieldBorder);
-
-            // Update the created at label
-            String path = fixPath(projectPathField.getText().trim() + "/" + projectNameField.getText().trim());
-            createdAtLabel.setText("This will be created at: " + path);
-
-            // Update the mod ID field if it is empty
-            if (!hasTypedInModid.get() || modIdField.getText().isBlank())
-                modIdField.setText(newValue.toLowerCase(Locale.ROOT).replace(" ", "_").replaceAll("[^a-z0-9_-]", ""));
-
-            // Update the mod name field if it is empty
-            if (!hasTypedInModName.get() || modNameField.getText().isBlank())
-                modNameField.setText(newValue);
-
-            // Update the main class field if it is empty
-            if (!hasTypedInMainClass.get() || mainClassField.getText().isBlank()) {
-                // convert to pascal case
-                String[] words = newValue.split("[ _-]+");
-                var pascalCase = new StringBuilder();
-                for (String word : words) {
-                    if (word.isBlank())
-                        continue;
-
-                    pascalCase.append(word.substring(0, 1).toUpperCase(Locale.ROOT)).append(word.substring(1));
-                }
-
-                mainClassField.setText(pascalCase.toString().replaceAll("[^a-zA-Z0-9]", ""));
-            }
-
-            // Update the artifact ID field if it is empty
-            if (!hasTypedInArtifactId.get() || artifactIdField.getText().isBlank())
-                artifactIdField.setText(newValue.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9-]", ""));
-        });
-
-        var createButton = new Button("Create");
-        createButton.setAlignment(Pos.CENTER_RIGHT);
-        getChildren().add(createButton);
-
-//        createButton.disableProperty().bind(
-//                isInvalid(projectNameField)
-//                        .or(isInvalid(projectPathField))
-//                        .or(isInvalid(modIdField))
-//                        .or(isInvalid(modNameField))
-//                        .or(isInvalid(mainClassField))
-//                        .or(isInvalid(groupIdField))
-//                        .or(isInvalid(artifactIdField))
-//                        .or(isInvalid(versionField))
-//                        .or(isInvalid(minecraftVersionComboBox))
-//                        .or(isInvalid(fabricVersionComboBox))
-//                        .or(isInvalid(mappingChannelComboBox))
-//                        .or(isInvalid(mappingVersionComboBox))
-//                        .or(isInvalid(licenseComboBox)
-//                                .or(licenseComboBox.valueProperty().isEqualTo(License.CUSTOM)
-//                                        .and(licenseCustomField.textProperty().isEmpty()))));
-
-        createButton.setOnAction(event -> {
-            if (validate()) {
-                Scene scene = getScene();
-
-                FabricProjectData data = createData();
-                scene.setRoot(new FabricProjectCreationPane(data));
-                event.consume();
-            }
-        });
     }
 
-    private static Text createAsterisk() {
-        var asterisk = new Text("*");
-        asterisk.setFill(Color.RED);
-        Tooltip.install(asterisk, new Tooltip("Required"));
-        return asterisk;
-    }
-
-    private static Text createTitle(String title) {
-        var text = new Text(title);
-        text.setStyle("-fx-font-size: 1.5em;");
-        return text;
-    }
-
-    private static BooleanBinding isInvalid(TextField textField) {
-        return textField.textProperty().isEmpty().or(textField.styleProperty().isEqualTo("-fx-border-color: red;"));
-    }
-
-    private static BooleanBinding isInvalid(ComboBox<?> comboBox) {
-        return comboBox.valueProperty().isNull().or(comboBox.styleProperty().isEqualTo("-fx-border-color: red;"));
-    }
-
-    private static void createAlert(String header, String content) {
-        var alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(header);
-        alert.setContentText(content);
-        alert.showAndWait();
+    private static BooleanBinding createBinding(BooleanProperty property) {
+        return Bindings.when(property).then(true).otherwise(false);
     }
 
     private static String fixPath(String path) {
@@ -640,227 +575,31 @@ public class FabricProjectDetailsPane extends RRVBox {
         return path;
     }
 
-    protected boolean validate() {
-        // Validate the project name
-        if (projectNameField.getText().isBlank()) {
-            projectNameField.setStyle("-fx-border-color: red;");
-            projectNameField.requestFocus();
+    protected static FabricProjectData createData(FormData formData) {
+        String projectName = formData.getString("ProjectName");
+        var projectPath = Path.of(formData.getString("ProjectPath"));
+        boolean createGit = formData.getBoolean("CreateGit");
+        License license = formData.getEnum("License", License.class);
+        String licenseCustom = license == License.CUSTOM ? formData.getString("CustomLicense") : null;
+        MinecraftVersion minecraftVersion = formData.get("MinecraftVersion", MinecraftVersion.class);
+        FabricLoaderVersion fabricVersion = formData.get("FabricLoaderVersion", FabricLoaderVersion.class);
+        Optional<FabricAPIVersion> fapiVersion = Optional.ofNullable(formData.getBoolean("IncludeFapi") ? formData.get("FabricAPIVersion", FabricAPIVersion.class) : null);
+        String modId = formData.getString("ModId");
+        String modName = formData.getString("ModName");
+        String mainClass = formData.getString("MainClass");
+        boolean useAccessWidener = formData.getBoolean("UseAccessWidener");
+        boolean splitSources = formData.getBoolean("SplitSources");
+        MappingChannel mappingChannel = formData.get("MappingChannel", MappingChannel.class);
+        MappingVersion mappingVersion = formData.get("MappingVersion", MappingVersion.class);
+        Optional<String> author = Optional.ofNullable(formData.getString("Author")).filter(s -> !s.isBlank());
+        Optional<String> description = Optional.ofNullable(formData.getString("Description")).filter(s -> !s.isBlank());
+        Optional<String> issues = Optional.ofNullable(formData.getString("Issues")).filter(s -> !s.isBlank());
+        Optional<String> homepage = Optional.ofNullable(formData.getString("Homepage")).filter(s -> !s.isBlank());
+        Optional<String> sources = Optional.ofNullable(formData.getString("Sources")).filter(s -> !s.isBlank());
+        String groupId = formData.getString("GroupId");
+        String artifactId = formData.getString("ArtifactId");
+        String version = formData.getString("Version");
 
-            createAlert("Project Name is Required", "Please enter a name for your project.");
-            return false;
-        }
-
-        // Validate the project path
-        if (projectPathField.getText().isBlank()) {
-            projectPathField.setStyle("-fx-border-color: red;");
-            projectPathField.requestFocus();
-
-            createAlert("Project Path is Required", "Please enter a path for your project.");
-            return false;
-        }
-
-        Path path = Path.of(projectPathField.getText());
-        if (Files.notExists(path)) {
-            projectPathField.setStyle("-fx-border-color: red;");
-            projectPathField.requestFocus();
-
-            createAlert("Invalid Project Path", "The specified path does not exist.");
-            return false;
-        }
-
-        if (!Files.isDirectory(path)) {
-            projectPathField.setStyle("-fx-border-color: red;");
-            projectPathField.requestFocus();
-
-            createAlert("Invalid Project Path", "The specified path is not a directory.");
-            return false;
-        }
-
-        // Validate the mod ID
-        if (modIdField.getText().isBlank()) {
-            modIdField.setStyle("-fx-border-color: red;");
-            modIdField.requestFocus();
-
-            createAlert("Mod ID is Required", "Please enter a mod ID for your project.");
-            return false;
-        }
-
-        if (modIdField.getText().length() < 2) {
-            modIdField.setStyle("-fx-border-color: red;");
-            modIdField.requestFocus();
-
-            createAlert("Invalid Mod ID", "The mod ID must be at least 2 characters long.");
-            return false;
-        }
-
-        if (!modIdField.getText().matches("^[a-z][a-z0-9_]{1,63}$")) {
-            modIdField.setStyle("-fx-border-color: red;");
-            modIdField.requestFocus();
-
-            createAlert("Invalid Mod ID", "The mod ID must start with a lowercase letter and contain only lowercase letters, numbers, and underscores.");
-            return false;
-        }
-
-        // Validate the mod name
-        if (modNameField.getText().isBlank()) {
-            modNameField.setStyle("-fx-border-color: red;");
-            modNameField.requestFocus();
-
-            createAlert("Mod Name is Required", "Please enter a mod name for your project.");
-            return false;
-        }
-
-        if (modNameField.getText().length() < 2) {
-            modNameField.setStyle("-fx-border-color: red;");
-            modNameField.requestFocus();
-
-            createAlert("Invalid Mod Name", "The mod name must be at least 2 characters long.");
-            return false;
-        }
-
-        if (modNameField.getText().length() > 256) {
-            modNameField.setStyle("-fx-border-color: red;");
-            modNameField.requestFocus();
-
-            createAlert("Invalid Mod Name", "The mod name must be at most 256 characters long.");
-            return false;
-        }
-
-        // Validate the main class
-        if (mainClassField.getText().isBlank()) {
-            mainClassField.setStyle("-fx-border-color: red;");
-            mainClassField.requestFocus();
-
-            createAlert("Main Class is Required", "Please enter a main class for your project.");
-            return false;
-        }
-
-        if (!ClassNameValidator.isValid(mainClassField.getText())) {
-            mainClassField.setStyle("-fx-border-color: red;");
-            mainClassField.requestFocus();
-
-            createAlert("Invalid Main Class", "The main class must be a valid Java class name.");
-            return false;
-        }
-
-        // Validate the group ID
-        if (groupIdField.getText().isBlank()) {
-            groupIdField.setStyle("-fx-border-color: red;");
-            groupIdField.requestFocus();
-
-            createAlert("Group ID is Required", "Please enter a group ID for your project.");
-            return false;
-        }
-
-        if (!groupIdField.getText().matches("[a-zA-Z0-9.]+")) {
-            groupIdField.setStyle("-fx-border-color: red;");
-            groupIdField.requestFocus();
-
-            createAlert("Invalid Group ID", "The group ID must contain only letters, numbers, and periods.");
-            return false;
-        }
-
-        // Validate the artifact ID
-        if (artifactIdField.getText().isBlank()) {
-            artifactIdField.setStyle("-fx-border-color: red;");
-            artifactIdField.requestFocus();
-
-            createAlert("Artifact ID is Required", "Please enter an artifact ID for your project.");
-            return false;
-        }
-
-        if (!artifactIdField.getText().matches("[a-z0-9-]+")) {
-            artifactIdField.setStyle("-fx-border-color: red;");
-            artifactIdField.requestFocus();
-
-            createAlert("Invalid Artifact ID", "The artifact ID must contain only lowercase letters, numbers, and hyphens.");
-            return false;
-        }
-
-        // Validate the version
-        if (versionField.getText().isBlank()) {
-            versionField.setStyle("-fx-border-color: red;");
-            versionField.requestFocus();
-
-            createAlert("Version is Required", "Please enter a version for your project.");
-            return false;
-        }
-
-        if (!versionField.getText().matches("[0-9]+(\\.[0-9]+){0,2}(-[a-zA-Z0-9]+)?")) {
-            versionField.setStyle("-fx-border-color: red;");
-            versionField.requestFocus();
-
-            createAlert("Invalid Version", "The version must be in the format of x.y.z or x.y.z-tag.");
-            return false;
-        }
-
-        // Validate the license
-        if (licenseComboBox.getValue() == License.CUSTOM && licenseCustomField.getText().isBlank()) {
-            licenseCustomField.setStyle("-fx-border-color: red;");
-            licenseCustomField.requestFocus();
-
-            createAlert("Custom License is Required", "Please enter a custom license for your project.");
-            return false;
-        }
-
-        // Validate issues, homepage, and sources to be URLs
-        if (!issuesField.getText().isBlank() && !issuesField.getText().matches(Railroad.URL_REGEX)) {
-            issuesField.setStyle("-fx-border-color: red;");
-            issuesField.requestFocus();
-
-            createAlert("Invalid Issues URL", "The issues URL must be a valid URL.");
-            return false;
-        }
-
-        if (!homepageField.getText().isBlank() && !homepageField.getText().matches(Railroad.URL_REGEX)) {
-            homepageField.setStyle("-fx-border-color: red;");
-            homepageField.requestFocus();
-
-            createAlert("Invalid Homepage URL", "The homepage URL must be a valid URL.");
-            return false;
-        }
-
-        if (!sourcesField.getText().isBlank() && !sourcesField.getText().matches(Railroad.URL_REGEX)) {
-            sourcesField.setStyle("-fx-border-color: red;");
-            sourcesField.requestFocus();
-
-            createAlert("Invalid Sources URL", "The sources URL must be a valid URL.");
-            return false;
-        }
-
-        return true;
-    }
-
-    protected FabricProjectData createData() {
-        String projectName = projectNameField.getText().trim();
-        var projectPath = Path.of(projectPathField.getText().trim());
-        boolean createGit = createGitCheckBox.isSelected();
-        License license = licenseComboBox.getValue();
-        String licenseCustom = license == License.CUSTOM ? licenseCustomField.getText().trim() : null;
-        MinecraftVersion minecraftVersion = minecraftVersionComboBox.getValue();
-        FabricLoaderVersion fabricLoaderVersion = fabricLoaderVersionComboBox.getValue();
-        Optional<FabricAPIVersion> fapiVersion = Optional.ofNullable(includeFapiCheckBox.isSelected() ? fapiVersionComboBox.getValue() : null);
-        String modId = modIdField.getText().trim();
-        String modName = modNameField.getText().trim();
-        String mainClass = mainClassField.getText().trim();
-        boolean useAccessWidener = useAccessWidenerCheckBox.isSelected();
-        boolean splitSources = splitSourcesCheckBox.isSelected();
-        MappingChannel mappingChannel = mappingChannelComboBox.getValue();
-        MappingVersion mappingVersion = mappingVersionComboBox.getValue();
-        Optional<String> author = Optional.of(authorField.getText().trim()).filter(s -> !s.isBlank());
-        Optional<String> description = Optional.of(descriptionArea.getText().trim()).filter(s -> !s.isBlank());
-        Optional<String> issues = Optional.of(issuesField.getText().trim()).filter(s -> !s.isBlank());
-        Optional<String> homepage = Optional.of(homepageField.getText().trim()).filter(s -> !s.isBlank());
-        Optional<String> sources = Optional.of(sourcesField.getText().trim()).filter(s -> !s.isBlank());
-        String groupId = groupIdField.getText().trim();
-        String artifactId = artifactIdField.getText().trim();
-        String version = versionField.getText().trim();
-
-        return new FabricProjectData(projectName, projectPath, createGit, license, licenseCustom,
-                minecraftVersion, fabricLoaderVersion, fapiVersion,
-                modId, modName, mainClass, useAccessWidener, splitSources,
-                mappingChannel, mappingVersion,
-                author, description, issues, homepage, sources,
-                groupId, artifactId, version);
+        return new FabricProjectData(projectName, projectPath, createGit, license, licenseCustom, minecraftVersion, fabricVersion, fapiVersion, modId, modName, mainClass, useAccessWidener, splitSources, mappingChannel, mappingVersion, author, description, issues, homepage, sources, groupId, artifactId, version);
     }
 }
