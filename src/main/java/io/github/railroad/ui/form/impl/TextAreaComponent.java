@@ -79,6 +79,11 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
                 .getValue());
     }
 
+    @Override
+    public void reset() {
+        getComponent().getPrimaryComponent().setText(getData().text);
+    }
+
     public static class Builder {
         private final String dataKey;
         private final Data data;

@@ -24,7 +24,7 @@ public abstract class FormComponent<T extends Node, U, V extends Node, W> {
     public FormComponent(String dataKey, U data, Function<U, T> componentFactory, FormComponentValidator<V> validator, FormComponentChangeListener<V, W> listener, List<FormTransformer<V, W, ?>> transformers, @Nullable BooleanBinding visible, Runnable setup) {
         this.dataKey = dataKey;
         this.validator = node -> {
-            if(validator == null || node == null || !isVisible(node))
+            if (validator == null || node == null || !isVisible(node))
                 return ValidationResult.ok();
 
             return validator.apply(node);
@@ -93,12 +93,10 @@ public abstract class FormComponent<T extends Node, U, V extends Node, W> {
 
     protected abstract void bindToFormData(FormData formData);
 
+    public abstract void reset();
+
     public ValidationResult validate() {
         return validator.apply(getValidationNode().getValue());
-    }
-
-    public void reset() {
-        data.set(data.get());
     }
 
     public void disable(boolean disable) {

@@ -120,6 +120,11 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
                 .getValue());
     }
 
+    @Override
+    public void reset() {
+        getComponent().getPrimaryComponent().setValue(this.defaultValue == null ? null : this.defaultValue.get());
+    }
+
     public static class Builder<T> {
         private final String dataKey;
         private final Data<T> data;

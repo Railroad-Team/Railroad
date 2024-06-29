@@ -86,6 +86,11 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
                 .getValue());
     }
 
+    @Override
+    public void reset() {
+        getComponent().getPrimaryComponent().getTextField().setText(getData().defaultPath);
+    }
+
     public static class Builder {
         private final String dataKey;
         private final Data data;

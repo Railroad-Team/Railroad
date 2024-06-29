@@ -64,6 +64,11 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
                 .getValue());
     }
 
+    @Override
+    public void reset() {
+        getComponent().getPrimaryComponent().setSelected(getData().selected);
+    }
+
     public static class Builder {
         private final String dataKey;
         private final Data data;
