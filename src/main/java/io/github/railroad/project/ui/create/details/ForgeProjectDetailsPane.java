@@ -20,6 +20,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.geometry.Pos;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
@@ -531,6 +532,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                         .appendComponent(groupIdComponent)
                         .appendComponent(artifactIdComponent)
                         .appendComponent(versionComponent))
+                .disableResetButton()
                 .onSubmit((theForm, formData) -> {
                     if (theForm.validate()) {
                         ForgeProjectData data = createData(formData);

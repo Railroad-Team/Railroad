@@ -3,8 +3,10 @@ package io.github.railroad.ui.form;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -20,6 +22,7 @@ public class Form {
     private final Insets padding;
     private final @Nullable Button submitButton;
     private final @Nullable Button resetButton;
+    private final Pos buttonAlignment;
 
     private final FormData formData = new FormData();
 
@@ -31,6 +34,8 @@ public class Form {
 
         this.submitButton = builder.submitButtonFactory != null ? builder.submitButtonFactory.apply(this) : null;
         this.resetButton = builder.resetButtonFactory != null ? builder.resetButtonFactory.apply(this) : null;
+
+        this.buttonAlignment = builder.buttonAlignment != null ? builder.buttonAlignment : Pos.CENTER;
     }
 
     public static Builder create() {
@@ -47,6 +52,7 @@ public class Form {
         }
 
         var buttonBox = new RRHBox(10);
+        buttonBox.setAlignment(buttonAlignment);
         if (submitButton != null) {
             submitButton.setOnAction(event -> onSubmit.accept(this, formData));
             buttonBox.getChildren().add(submitButton);
@@ -77,6 +83,7 @@ public class Form {
         private Insets padding = new Insets(25);
         private @Nullable Function<Form, Button> submitButtonFactory = form -> new Button("Submit");
         private @Nullable Function<Form, Button> resetButtonFactory = form -> new Button("Reset");
+        private Pos buttonAlignment = Pos.CENTER;
 
         public Builder onSubmit(BiConsumer<Form, FormData> onSubmit) {
             this.onSubmit = onSubmit;
@@ -133,6 +140,11 @@ public class Form {
 
         public Builder disableResetButton() {
             return resetButtonFactory(null);
+        }
+
+        public Builder buttonAlignment(@NotNull Pos buttonAlignment) {
+            this.buttonAlignment = buttonAlignment;
+            return this;
         }
 
         public Form build() {
