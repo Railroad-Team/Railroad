@@ -58,7 +58,20 @@ public class FormSection {
         vbox.getChildren().add(title);
 
         for (FormComponent<?, ?, ?, ?> field : fields) {
-            vbox.getChildren().add(field.getComponent());
+            Node node = field.getComponent();
+            if(node.isVisible()) {
+                vbox.getChildren().add(node);
+            }
+
+            node.visibleProperty().addListener((observable, oldValue, newValue) -> {
+                if(newValue) {
+                    if(!vbox.getChildren().contains(node)) {
+                        vbox.getChildren().add(node);
+                    }
+                } else {
+                    vbox.getChildren().remove(node);
+                }
+            });
         }
 
         return vbox;
