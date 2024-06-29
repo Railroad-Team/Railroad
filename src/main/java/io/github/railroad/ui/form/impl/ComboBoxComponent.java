@@ -228,7 +228,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
     public static class Data<T> {
         private final String label;
         private List<T> items = new ArrayList<>();
-        private boolean editable = true;
+        private boolean editable = false;
         private boolean required = false;
         private boolean translate = true;
         private ToStringFunction<T> keyFunction = Object::toString;
