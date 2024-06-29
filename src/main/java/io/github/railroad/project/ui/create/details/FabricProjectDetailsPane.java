@@ -218,6 +218,7 @@ public class FabricProjectDetailsPane extends RRVBox {
 
         CheckBoxComponent includeFapiComponent = FormComponent.checkBox("IncludeFapi", "railroad.project.creation.include_fapi")
                 .bindCheckBoxTo(includeFapiCheckBox)
+                .selected(true)
                 .build();
 
         ComboBoxComponent<FabricAPIVersion> fapiVersionComponent = FormComponent.comboBox("FabricAPIVersion", "railroad.project.creation.fabric_api_version", FabricAPIVersion.class)

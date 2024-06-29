@@ -20,7 +20,7 @@ import java.util.function.Function;
 
 public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxComponent.Data, CheckBox, Boolean> {
     public CheckBoxComponent(String dataKey, Data data, FormComponentValidator<CheckBox> validator, FormComponentChangeListener<CheckBox, Boolean> listener, Property<CheckBox> bindCheckboxTo, List<FormTransformer<CheckBox, Boolean, ?>> transformers, @Nullable BooleanBinding visible) {
-        super(dataKey, data, dataCurrent -> new FormCheckBox(dataCurrent.label, dataCurrent.selected, dataCurrent.required), validator, listener, transformers, visible);
+        super(dataKey, data, dataCurrent -> new FormCheckBox(dataCurrent.label, dataCurrent.required, dataCurrent.selected), validator, listener, transformers, visible);
 
         if (bindCheckboxTo != null) {
             bindCheckboxTo.bind(componentProperty().map(FormCheckBox::getPrimaryComponent));
