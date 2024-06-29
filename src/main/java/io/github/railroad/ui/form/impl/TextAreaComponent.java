@@ -1,9 +1,6 @@
 package io.github.railroad.ui.form.impl;
 
-import io.github.railroad.ui.form.FormComponent;
-import io.github.railroad.ui.form.FormComponentChangeListener;
-import io.github.railroad.ui.form.FormComponentValidator;
-import io.github.railroad.ui.form.FormTransformer;
+import io.github.railroad.ui.form.*;
 import io.github.railroad.ui.form.ui.FormTextArea;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
@@ -23,8 +20,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaComponent.Data, TextArea, String> {
-    public TextAreaComponent(Data data, FormComponentValidator<TextArea> validator, FormComponentChangeListener<TextArea, String> listener, Property<TextArea> bindTextAreaTo, List<FormTransformer<TextArea, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
-        super(data, currentData -> new FormTextArea(currentData.label, currentData.required, currentData.text, currentData.promptText, currentData.editable, currentData.resize, currentData.wrapText, currentData.translate), validator, listener, transformers, visible);
+    public TextAreaComponent(String dataKey, Data data, FormComponentValidator<TextArea> validator, FormComponentChangeListener<TextArea, String> listener, Property<TextArea> bindTextAreaTo, List<FormTransformer<TextArea, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
+        super(dataKey, data, currentData -> new FormTextArea(currentData.label, currentData.required, currentData.text, currentData.promptText, currentData.editable, currentData.resize, currentData.wrapText, currentData.translate), validator, listener, transformers, visible);
 
         if (bindTextAreaTo != null) {
             bindTextAreaTo.bind(componentProperty().map(FormTextArea::getPrimaryComponent));
@@ -67,7 +64,23 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
         });
     }
 
+    @Override
+    protected void bindToFormData(FormData formData) {
+        componentProperty()
+                .map(FormTextArea::getPrimaryComponent)
+                .flatMap(TextArea::textProperty)
+                .addListener((observable, oldValue, newValue) ->
+                        formData.addProperty(dataKey, newValue));
+
+        formData.addProperty(dataKey, componentProperty()
+                .map(FormTextArea::getPrimaryComponent)
+                .map(TextArea::getText)
+                .orElse(getData().text)
+                .getValue());
+    }
+
     public static class Builder {
+        private final String dataKey;
         private final Data data;
         private FormComponentValidator<TextArea> validator;
         private FormComponentChangeListener<TextArea, String> listener;
@@ -76,7 +89,8 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
         private EventHandler<? super KeyEvent> keyTypedHandler;
         private BooleanBinding visible;
 
-        public Builder(@NotNull String label) {
+        public Builder(@NotNull String dataKey, @NotNull String label) {
+            this.dataKey = dataKey;
             this.data = new Data(label);
         }
 
@@ -161,7 +175,7 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
         }
 
         public TextAreaComponent build() {
-            return new TextAreaComponent(data, validator, listener, bindTextAreaTo, transformers, keyTypedHandler, visible);
+            return new TextAreaComponent(dataKey, data, validator, listener, bindTextAreaTo, transformers, keyTypedHandler, visible);
         }
     }
 

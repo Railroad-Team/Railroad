@@ -1,9 +1,6 @@
 package io.github.railroad.ui.form.impl;
 
-import io.github.railroad.ui.form.FormComponent;
-import io.github.railroad.ui.form.FormComponentChangeListener;
-import io.github.railroad.ui.form.FormComponentValidator;
-import io.github.railroad.ui.form.FormTransformer;
+import io.github.railroad.ui.form.*;
 import io.github.railroad.ui.form.ui.FormComboBox;
 import io.github.railroad.utility.ComboBoxConverter;
 import io.github.railroad.utility.FromStringFunction;
@@ -32,8 +29,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBoxComponent.Data<T>, ComboBox<T>, T> {
-    public ComboBoxComponent(Data<T> data, FormComponentValidator<ComboBox<T>> validator, FormComponentChangeListener<ComboBox<T>, T> listener, Property<ComboBox<T>> bindComboBoxTo, List<FormTransformer<ComboBox<T>, T, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible, Callback<ListView<T>, ListCell<T>> cellFactory, ListCell<T> buttonCell, Supplier<T> defaultValue) {
-        super(data, currentData -> {
+    private final Supplier<T> defaultValue;
+
+    public ComboBoxComponent(String dataKey, Data<T> data, FormComponentValidator<ComboBox<T>> validator, FormComponentChangeListener<ComboBox<T>, T> listener, Property<ComboBox<T>> bindComboBoxTo, List<FormTransformer<ComboBox<T>, T, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible, Callback<ListView<T>, ListCell<T>> cellFactory, ListCell<T> buttonCell, Supplier<T> defaultValue) {
+        super(dataKey, data, currentData -> {
             var formComboBox = new FormComboBox<>(currentData.label, currentData.required, currentData.items, currentData.editable, currentData.translate, currentData.keyFunction, currentData.valueOfFunction);
             if (!currentData.translate) {
                 formComboBox.getPrimaryComponent().setConverter(new ComboBoxConverter<>(currentData.keyFunction, currentData.valueOfFunction));
@@ -80,6 +79,8 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         if (bindComboBoxTo != null) {
             bindComboBoxTo.bind(componentProperty().map(FormComboBox::getPrimaryComponent));
         }
+
+        this.defaultValue = defaultValue;
     }
 
     @Override
@@ -104,7 +105,23 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         });
     }
 
+    @Override
+    protected void bindToFormData(FormData formData) {
+        componentProperty()
+                .map(FormComboBox::getPrimaryComponent)
+                .flatMap(ComboBox::valueProperty)
+                .addListener((observable, oldValue, newValue) ->
+                        formData.add(dataKey, newValue));
+
+        formData.add(dataKey, componentProperty()
+                .map(FormComboBox::getPrimaryComponent)
+                .map(ComboBox::getValue)
+                .orElse(defaultValue == null ? null : defaultValue.get())
+                .getValue());
+    }
+
     public static class Builder<T> {
+        private final String dataKey;
         private final Data<T> data;
         private FormComponentValidator<ComboBox<T>> validator;
         private FormComponentChangeListener<ComboBox<T>, T> listener;
@@ -116,7 +133,8 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         private ListCell<T> buttonCell;
         private Supplier<T> defaultValue;
 
-        public Builder(@NotNull String label) {
+        public Builder(@NotNull String dataKey, @NotNull String label) {
+            this.dataKey = dataKey;
             this.data = new Data<>(label);
         }
 
@@ -221,7 +239,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         }
 
         public ComboBoxComponent<T> build() {
-            return new ComboBoxComponent<>(data, validator, listener, bindComboBoxTo, transformers, keyTypedHandler, visible, cellFactory, buttonCell, defaultValue);
+            return new ComboBoxComponent<>(dataKey, data, validator, listener, bindComboBoxTo, transformers, keyTypedHandler, visible, cellFactory, buttonCell, defaultValue);
         }
     }
 

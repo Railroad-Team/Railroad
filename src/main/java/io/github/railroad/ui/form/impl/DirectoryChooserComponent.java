@@ -1,10 +1,7 @@
 package io.github.railroad.ui.form.impl;
 
 import io.github.railroad.ui.BrowseButton;
-import io.github.railroad.ui.form.FormComponent;
-import io.github.railroad.ui.form.FormComponentChangeListener;
-import io.github.railroad.ui.form.FormComponentValidator;
-import io.github.railroad.ui.form.FormTransformer;
+import io.github.railroad.ui.form.*;
 import io.github.railroad.ui.form.ui.FormDirectoryChooser;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
@@ -24,8 +21,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class DirectoryChooserComponent extends FormComponent<FormDirectoryChooser, DirectoryChooserComponent.Data, TextField, String> {
-    public DirectoryChooserComponent(Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, Property<BrowseButton> bindBrowseButtonTo, List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
-        super(data, dataCurrent -> new FormDirectoryChooser(dataCurrent.label, dataCurrent.required, dataCurrent.defaultPath, dataCurrent.includeButton), validator, listener, transformers, visible);
+    public DirectoryChooserComponent(String dataKey, Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, Property<BrowseButton> bindBrowseButtonTo, List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
+        super(dataKey, data, dataCurrent -> new FormDirectoryChooser(dataCurrent.label, dataCurrent.required, dataCurrent.defaultPath, dataCurrent.includeButton), validator, listener, transformers, visible);
 
         if (bindTextFieldTo != null) {
             bindTextFieldTo.bind(componentProperty().map(FormDirectoryChooser::getPrimaryComponent).map(FormDirectoryChooser.TextFieldWithButton::getTextField));
@@ -72,7 +69,25 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
         });
     }
 
+    @Override
+    protected void bindToFormData(FormData formData) {
+        componentProperty()
+                .map(FormDirectoryChooser::getPrimaryComponent)
+                .map(FormDirectoryChooser.TextFieldWithButton::getTextField)
+                .flatMap(TextField::textProperty)
+                .addListener((observable, oldValue, newValue) ->
+                        formData.addProperty(dataKey, newValue));
+
+        formData.addProperty(dataKey, componentProperty()
+                .map(FormDirectoryChooser::getPrimaryComponent)
+                .map(FormDirectoryChooser.TextFieldWithButton::getTextField)
+                .map(TextField::getText)
+                .orElse(getData().defaultPath)
+                .getValue());
+    }
+
     public static class Builder {
+        private final String dataKey;
         private final Data data;
         private FormComponentValidator<TextField> validator = null;
         private FormComponentChangeListener<TextField, String> listener = null;
@@ -82,7 +97,8 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
         private EventHandler<? super KeyEvent> keyTypedHandler;
         private BooleanBinding visible;
 
-        public Builder(@NotNull String label) {
+        public Builder(@NotNull String dataKey, @NotNull String label) {
+            this.dataKey = dataKey;
             this.data = new Data(label);
         }
 
@@ -148,7 +164,7 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
         }
 
         public DirectoryChooserComponent build() {
-            return new DirectoryChooserComponent(data, validator, listener, bindTextFieldTo, bindBrowseButtonTo, transformers, keyTypedHandler, visible);
+            return new DirectoryChooserComponent(dataKey, data, validator, listener, bindTextFieldTo, bindBrowseButtonTo, transformers, keyTypedHandler, visible);
         }
 
         public Builder required() {

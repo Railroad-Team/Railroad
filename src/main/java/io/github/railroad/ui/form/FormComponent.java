@@ -1,24 +1,35 @@
 package io.github.railroad.ui.form;
 
+import io.github.railroad.Railroad;
 import io.github.railroad.ui.form.impl.*;
+import io.github.railroad.utility.localization.L18n;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Node;
 import javafx.scene.control.Tooltip;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.Function;
 
 public abstract class FormComponent<T extends Node, U, V extends Node, W> {
+    protected final String dataKey;
     private final UpdatableObjectProperty<U> data = new UpdatableObjectProperty<>();
     private final UpdatableObjectProperty<T> component = new UpdatableObjectProperty<>();
     private final FormComponentChangeListener<V, W> listener;
     private final FormComponentValidator<V> validator;
     private final BooleanBinding visible;
 
-    public FormComponent(U data, Function<U, T> componentFactory, FormComponentValidator<V> validator, FormComponentChangeListener<V, W> listener, List<FormTransformer<V, W, ?>> transformers, @Nullable BooleanBinding visible, Runnable setup) {
-        this.validator = validator;
+    public FormComponent(String dataKey, U data, Function<U, T> componentFactory, FormComponentValidator<V> validator, FormComponentChangeListener<V, W> listener, List<FormTransformer<V, W, ?>> transformers, @Nullable BooleanBinding visible, Runnable setup) {
+        this.dataKey = dataKey;
+        this.validator = node -> {
+            if(validator == null || node == null || !isVisible(node))
+                return ValidationResult.ok();
+
+            return validator.apply(node);
+        };
+
         this.listener = (node, observable, oldValue, newValue) -> {
             runValidation(node);
 
@@ -48,8 +59,12 @@ public abstract class FormComponent<T extends Node, U, V extends Node, W> {
         });
     }
 
-    public FormComponent(U data, Function<U, T> componentFactory, FormComponentValidator<V> validator, FormComponentChangeListener<V, W> listener, List<FormTransformer<V, W, ?>> transformers, @Nullable BooleanBinding visible) {
-        this(data, componentFactory, validator, listener, transformers, visible, () -> {});
+    private static boolean isVisible(Node node) {
+        return node.isVisible() && (node.getParent() == null || isVisible(node.getParent()));
+    }
+
+    public FormComponent(String dataKey, U data, Function<U, T> componentFactory, FormComponentValidator<V> validator, FormComponentChangeListener<V, W> listener, List<FormTransformer<V, W, ?>> transformers, @Nullable BooleanBinding visible) {
+        this(dataKey, data, componentFactory, validator, listener, transformers, visible, () -> {});
     }
 
     public UpdatableObjectProperty<U> dataProperty() {
@@ -76,6 +91,8 @@ public abstract class FormComponent<T extends Node, U, V extends Node, W> {
 
     protected abstract void applyListener(FormComponentChangeListener<V, W> listener);
 
+    protected abstract void bindToFormData(FormData formData);
+
     public ValidationResult validate() {
         return validator.apply(getValidationNode().getValue());
     }
@@ -88,10 +105,8 @@ public abstract class FormComponent<T extends Node, U, V extends Node, W> {
         component.get().setDisable(disable);
     }
 
+    // TODO: Toast messages for validation errors
     protected void runValidation(V node) {
-        if(validator == null)
-            return;
-
         ValidationResult result = validator.apply(node);
         if (result.status() == ValidationResult.Status.OK) {
             node.getStyleClass().removeAll("warning", "error");
@@ -110,29 +125,36 @@ public abstract class FormComponent<T extends Node, U, V extends Node, W> {
         }
 
         if(result.message() != null) {
-            Tooltip.install(node, new Tooltip(result.message()));
+            String message = L18n.localize(result.message());
+            Tooltip.install(node, new Tooltip(message));
+
+            Railroad.LOGGER.warn("Validation error: {}", message);
         } else {
             Tooltip.uninstall(node, null);
         }
     }
 
-    public static TextFieldComponent.Builder textField(String label) {
-        return new TextFieldComponent.Builder(label);
+    protected void runValidation() {
+        runValidation(getValidationNode().getValue());
     }
 
-    public static <T> ComboBoxComponent.Builder<T> comboBox(String label, Class<T> ignored) {
-        return new ComboBoxComponent.Builder<>(label);
+    public static TextFieldComponent.Builder textField(@NotNull String dataKey, @NotNull String label) {
+        return new TextFieldComponent.Builder(dataKey, label);
     }
 
-    public static CheckBoxComponent.Builder checkBox(String label) {
-        return new CheckBoxComponent.Builder(label);
+    public static <T> ComboBoxComponent.Builder<T> comboBox(@NotNull String dataKey, @NotNull String label, @NotNull Class<T> ignored) {
+        return new ComboBoxComponent.Builder<>(dataKey, label);
     }
 
-    public static DirectoryChooserComponent.Builder directoryChooser(String label) {
-        return new DirectoryChooserComponent.Builder(label);
+    public static CheckBoxComponent.Builder checkBox(@NotNull String dataKey, @NotNull String label) {
+        return new CheckBoxComponent.Builder(dataKey, label);
     }
 
-    public static TextAreaComponent.Builder textArea(String label) {
-        return new TextAreaComponent.Builder(label);
+    public static DirectoryChooserComponent.Builder directoryChooser(@NotNull String dataKey, @NotNull String label) {
+        return new DirectoryChooserComponent.Builder(dataKey, label);
+    }
+
+    public static TextAreaComponent.Builder textArea(@NotNull String dataKey, @NotNull String label) {
+        return new TextAreaComponent.Builder(dataKey, label);
     }
 }

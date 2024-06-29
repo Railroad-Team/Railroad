@@ -12,10 +12,7 @@ import io.github.railroad.project.data.DisplayTest;
 import io.github.railroad.project.data.ForgeProjectData;
 import io.github.railroad.project.ui.create.widget.StarableListCell;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.ui.form.Form;
-import io.github.railroad.ui.form.FormComponent;
-import io.github.railroad.ui.form.FormSection;
-import io.github.railroad.ui.form.ValidationResult;
+import io.github.railroad.ui.form.*;
 import io.github.railroad.ui.form.impl.*;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -76,7 +73,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
     private final AtomicBoolean hasTypedInArtifactId = new AtomicBoolean(false);
 
     public ForgeProjectDetailsPane() {
-        TextFieldComponent projectNameComponent = FormComponent.textField("railroad.project.creation.name")
+        TextFieldComponent projectNameComponent = FormComponent.textField("ProjectName", "railroad.project.creation.name")
                 .required()
                 .bindTextFieldTo(projectNameField)
                 .promptText("railroad.project.creation.name.prompt")
@@ -120,7 +117,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 })
                 .build();
 
-        DirectoryChooserComponent projectPathComponent = FormComponent.directoryChooser("railroad.project.creation.location")
+        DirectoryChooserComponent projectPathComponent = FormComponent.directoryChooser("ProjectPath", "railroad.project.creation.location")
                 .required()
                 .defaultPath(System.getProperty("user.home"))
                 .bindTextFieldTo(projectPathField)
@@ -154,11 +151,11 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 })
                 .build();
 
-        CheckBoxComponent createGitComponent = FormComponent.checkBox("railroad.project.creation.git")
+        CheckBoxComponent createGitComponent = FormComponent.checkBox("CreateGit", "railroad.project.creation.git")
                 .bindCheckBoxTo(createGitCheckBox)
                 .build();
 
-        ComboBoxComponent<License> licenseComponent = FormComponent.comboBox("railroad.project.creation.license", License.class)
+        ComboBoxComponent<License> licenseComponent = FormComponent.comboBox("License", "railroad.project.creation.license", License.class)
                 .required()
                 .bindComboBoxTo(licenseComboBox)
                 .keyFunction(License::getName)
@@ -168,7 +165,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 .defaultValue(() -> License.LGPL)
                 .build();
 
-        TextFieldComponent licenseCustomComponent = FormComponent.textField("railroad.project.creation.license.custom")
+        TextFieldComponent licenseCustomComponent = FormComponent.textField("CustomLicense", "railroad.project.creation.license.custom")
                 .visible(licenseComboBox.get().valueProperty().isEqualTo(License.CUSTOM))
                 .bindTextFieldTo(licenseCustomField)
                 .promptText("railroad.project.creation.license.custom.prompt")
@@ -182,7 +179,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
 
         List<MinecraftVersion> supportedVersions = MinecraftVersion.getSupportedVersions(ProjectType.FORGE);
         MinecraftVersion latestVersion = supportedVersions.getFirst();
-        ComboBoxComponent<MinecraftVersion> minecraftVersionComponent = FormComponent.comboBox("railroad.project.creation.minecraft_version", MinecraftVersion.class)
+        ComboBoxComponent<MinecraftVersion> minecraftVersionComponent = FormComponent.comboBox("MinecraftVersion", "railroad.project.creation.minecraft_version", MinecraftVersion.class)
                 .required()
                 .items(supportedVersions)
                 .defaultValue(() -> latestVersion)
@@ -195,7 +192,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 .translate(false)
                 .build();
 
-        ComboBoxComponent<ForgeVersion> forgeVersionComponent = FormComponent.comboBox("railroad.project.creation.forge_version", ForgeVersion.class)
+        ComboBoxComponent<ForgeVersion> forgeVersionComponent = FormComponent.comboBox("ForgeVersion", "railroad.project.creation.forge_version", ForgeVersion.class)
                 .required()
                 .items(ForgeVersion.getVersions(latestVersion))
                 .defaultValue(() -> ForgeVersion.getLatestVersion(latestVersion))
@@ -213,7 +210,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 .translate(false)
                 .build();
 
-        TextFieldComponent modIdComponent = FormComponent.textField("railroad.project.creation.mod_id")
+        TextFieldComponent modIdComponent = FormComponent.textField("ModId", "railroad.project.creation.mod_id")
                 .required()
                 .bindTextFieldTo(modIdField)
                 .promptText("railroad.project.creation.mod_id.prompt")
@@ -247,7 +244,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 })
                 .build();
 
-        TextFieldComponent modNameComponent = FormComponent.textField("railroad.project.creation.mod_name")
+        TextFieldComponent modNameComponent = FormComponent.textField("ModName", "railroad.project.creation.mod_name")
                 .required()
                 .bindTextFieldTo(modNameField)
                 .promptText("railroad.project.creation.mod_name.prompt")
@@ -275,7 +272,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 })
                 .build();
 
-        TextFieldComponent mainClassComponent = FormComponent.textField("railroad.project.creation.main_class")
+        TextFieldComponent mainClassComponent = FormComponent.textField("MainClass", "railroad.project.creation.main_class")
                 .required()
                 .bindTextFieldTo(mainClassField)
                 .promptText("railroad.project.creation.main_class.prompt")
@@ -297,19 +294,19 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 })
                 .build();
 
-        CheckBoxComponent useMixinsComponent = FormComponent.checkBox("railroad.project.creation.use_mixins")
+        CheckBoxComponent useMixinsComponent = FormComponent.checkBox("UseMixins", "railroad.project.creation.use_mixins")
                 .bindCheckBoxTo(useMixinsCheckBox)
                 .build();
 
-        CheckBoxComponent useAccessTransformerComponent = FormComponent.checkBox("railroad.project.creation.use_access_transformer")
+        CheckBoxComponent useAccessTransformerComponent = FormComponent.checkBox("UseAccessTransformer", "railroad.project.creation.use_access_transformer")
                 .bindCheckBoxTo(useAccessTransformerCheckBox)
                 .build();
 
-        CheckBoxComponent genRunFoldersComponent = FormComponent.checkBox("railroad.project.creation.gen_run_folders")
+        CheckBoxComponent genRunFoldersComponent = FormComponent.checkBox("GenRunFolders", "railroad.project.creation.gen_run_folders")
                 .bindCheckBoxTo(genRunFoldersCheckBox)
                 .build();
 
-        ComboBoxComponent<MappingChannel> mappingChannelComponent = FormComponent.comboBox("railroad.project.creation.mapping_channel", MappingChannel.class)
+        ComboBoxComponent<MappingChannel> mappingChannelComponent = FormComponent.comboBox("MappingChannel", "railroad.project.creation.mapping_channel", MappingChannel.class)
                 .required()
                 .items(Arrays.asList(MappingChannel.values()))
                 .defaultValue(() -> MappingChannel.MOJMAP)
@@ -326,7 +323,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 .translate(false)
                 .build();
 
-        ComboBoxComponent<MappingVersion> mappingVersionComponent = FormComponent.comboBox("railroad.project.creation.mapping_version", MappingVersion.class)
+        ComboBoxComponent<MappingVersion> mappingVersionComponent = FormComponent.comboBox("MappingVersion", "railroad.project.creation.mapping_version", MappingVersion.class)
                 .required()
                 .bindComboBoxTo(mappingVersionComboBox)
                 .cellFactory(param -> new StarableListCell<>(
@@ -341,7 +338,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 .translate(false)
                 .build();
 
-        TextFieldComponent authorComponent = FormComponent.textField("railroad.project.creation.author")
+        TextFieldComponent authorComponent = FormComponent.textField("Author", "railroad.project.creation.author")
                 .bindTextFieldTo(authorField)
                 .promptText("railroad.project.creation.author.prompt")
                 .validator(textField -> {
@@ -353,7 +350,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 })
                 .build();
 
-        TextFieldComponent creditsComponent = FormComponent.textField("railroad.project.creation.credits")
+        TextFieldComponent creditsComponent = FormComponent.textField("Credits", "railroad.project.creation.credits")
                 .bindTextFieldTo(creditsField)
                 .promptText("railroad.project.creation.credits.prompt")
                 .validator(textField -> {
@@ -365,7 +362,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 })
                 .build();
 
-        TextAreaComponent descriptionComponent = FormComponent.textArea("railroad.project.creation.description")
+        TextAreaComponent descriptionComponent = FormComponent.textArea("Description", "railroad.project.creation.description")
                 .bindTextAreaTo(descriptionArea)
                 .promptText("railroad.project.creation.description.prompt")
                 .validator(textArea -> {
@@ -379,7 +376,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 .wrapText(true)
                 .build();
 
-        TextFieldComponent issuesComponent = FormComponent.textField("railroad.project.creation.issues")
+        TextFieldComponent issuesComponent = FormComponent.textField("Issues", "railroad.project.creation.issues")
                 .bindTextFieldTo(issuesField)
                 .promptText("railroad.project.creation.issues.prompt")
                 .validator(textField -> {
@@ -391,7 +388,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 })
                 .build();
 
-        TextFieldComponent updateJsonUrlComponent = FormComponent.textField("railroad.project.creation.update_json_url")
+        TextFieldComponent updateJsonUrlComponent = FormComponent.textField("UpdateJsonUrl", "railroad.project.creation.update_json_url")
                 .bindTextFieldTo(updateJsonUrlField)
                 .promptText("railroad.project.creation.update_json_url.prompt")
                 .validator(textField -> {
@@ -406,7 +403,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 })
                 .build();
 
-        TextFieldComponent displayUrlComponent = FormComponent.textField("railroad.project.creation.display_url")
+        TextFieldComponent displayUrlComponent = FormComponent.textField("DisplayUrl", "railroad.project.creation.display_url")
                 .bindTextFieldTo(displayUrlField)
                 .promptText("railroad.project.creation.display_url.prompt")
                 .validator(textField -> {
@@ -421,7 +418,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 })
                 .build();
 
-        ComboBoxComponent<DisplayTest> displayTestComponent = FormComponent.comboBox("railroad.project.creation.display_test", DisplayTest.class)
+        ComboBoxComponent<DisplayTest> displayTestComponent = FormComponent.comboBox("DisplayTest", "railroad.project.creation.display_test", DisplayTest.class)
                 .bindComboBoxTo(displayTestComboBox)
                 .keyFunction(DisplayTest::name)
                 .valueOfFunction(DisplayTest::valueOf)
@@ -430,11 +427,11 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 .defaultValue(() -> DisplayTest.MATCH_VERSION)
                 .build();
 
-        CheckBoxComponent clientSideOnlyComponent = FormComponent.checkBox("railroad.project.creation.client_side_only")
+        CheckBoxComponent clientSideOnlyComponent = FormComponent.checkBox("ClientSideOnly", "railroad.project.creation.client_side_only")
                 .bindCheckBoxTo(clientSideOnlyCheckBox)
                 .build();
 
-        TextFieldComponent groupIdComponent = FormComponent.textField("railroad.project.creation.group_id")
+        TextFieldComponent groupIdComponent = FormComponent.textField("GroupId", "railroad.project.creation.group_id")
                 .required()
                 .bindTextFieldTo(groupIdField)
                 .promptText("railroad.project.creation.group_id.prompt")
@@ -453,7 +450,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 })
                 .build();
 
-        TextFieldComponent artifactIdComponent = FormComponent.textField("railroad.project.creation.artifact_id")
+        TextFieldComponent artifactIdComponent = FormComponent.textField("ArtifactId", "railroad.project.creation.artifact_id")
                 .required()
                 .bindTextFieldTo(artifactIdField)
                 .promptText("railroad.project.creation.artifact_id.prompt")
@@ -478,7 +475,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 })
                 .build();
 
-        TextFieldComponent versionComponent = FormComponent.textField("railroad.project.creation.version")
+        TextFieldComponent versionComponent = FormComponent.textField("Version", "railroad.project.creation.version")
                 .required()
                 .bindTextFieldTo(versionField)
                 .promptText("railroad.project.creation.version.prompt")
@@ -534,6 +531,14 @@ public class ForgeProjectDetailsPane extends RRVBox {
                         .appendComponent(groupIdComponent)
                         .appendComponent(artifactIdComponent)
                         .appendComponent(versionComponent))
+                .onSubmit((theForm, formData) -> {
+                    if (theForm.validate()) {
+                        ForgeProjectData data = createData(formData);
+                        getScene().setRoot(new ForgeProjectCreationPane(data));
+                    } else {
+                        theForm.runValidation(); // Show validation errors
+                    }
+                })
                 .build();
 
         getChildren().add(form.createUI());
@@ -570,33 +575,33 @@ public class ForgeProjectDetailsPane extends RRVBox {
         return path;
     }
 
-    protected ForgeProjectData createData() {
-        String projectName = projectNameField.get().getText().trim();
-        var projectPath = Path.of(projectPathField.get().getText().trim());
-        boolean createGit = createGitCheckBox.get().isSelected();
-        License license = licenseComboBox.get().getValue();
-        String licenseCustom = license == License.CUSTOM ? licenseCustomField.get().getText().trim() : null;
-        MinecraftVersion minecraftVersion = minecraftVersionComboBox.get().getValue();
-        ForgeVersion forgeVersion = forgeVersionComboBox.get().getValue();
-        String modId = modIdField.get().getText().trim();
-        String modName = modNameField.get().getText().trim();
-        String mainClass = mainClassField.get().getText().trim();
-        boolean useMixins = useMixinsCheckBox.get().isSelected();
-        boolean useAccessTransformer = useAccessTransformerCheckBox.get().isSelected();
-        boolean genRunFolders = genRunFoldersCheckBox.get().isSelected();
-        MappingChannel mappingChannel = mappingChannelComboBox.get().getValue();
-        MappingVersion mappingVersion = mappingVersionComboBox.get().getValue();
-        Optional<String> author = Optional.of(authorField.get().getText().trim()).filter(s -> !s.isBlank());
-        Optional<String> credits = Optional.of(creditsField.get().getText().trim()).filter(s -> !s.isBlank());
-        Optional<String> description = Optional.of(descriptionArea.get().getText().trim()).filter(s -> !s.isBlank());
-        Optional<String> issues = Optional.of(issuesField.get().getText().trim()).filter(s -> !s.isBlank());
-        Optional<String> updateJsonUrl = Optional.of(updateJsonUrlField.get().getText().trim()).filter(s -> !s.isBlank());
-        Optional<String> displayUrl = Optional.of(displayUrlField.get().getText().trim()).filter(s -> !s.isBlank());
-        DisplayTest displayTest = displayTestComboBox.get().getValue();
-        boolean clientSideOnly = clientSideOnlyCheckBox.get().isSelected();
-        String groupId = groupIdField.get().getText().trim();
-        String artifactId = artifactIdField.get().getText().trim();
-        String version = versionField.get().getText().trim();
+    protected ForgeProjectData createData(FormData formData) {
+        String projectName = formData.getString("ProjectName");
+        var projectPath = Path.of(formData.getString("ProjectPath"));
+        boolean createGit = formData.getBoolean("CreateGit");
+        License license = formData.getEnum("License", License.class);
+        String licenseCustom = license == License.CUSTOM ? formData.getString("CustomLicense") : null;
+        MinecraftVersion minecraftVersion = formData.get("MinecraftVersion", MinecraftVersion.class);
+        ForgeVersion forgeVersion = formData.get("ForgeVersion", ForgeVersion.class);
+        String modId = formData.getString("ModId");
+        String modName = formData.getString("ModName");
+        String mainClass = formData.getString("MainClass");
+        boolean useMixins = formData.getBoolean("UseMixins");
+        boolean useAccessTransformer = formData.getBoolean("UseAccessTransformer");
+        boolean genRunFolders = formData.getBoolean("GenRunFolders");
+        MappingChannel mappingChannel = formData.getEnum("MappingChannel", MappingChannel.class);
+        MappingVersion mappingVersion = formData.get("MappingVersion", MappingVersion.class);
+        Optional<String> author = Optional.ofNullable(formData.getString("Author")).filter(s -> !s.isBlank());
+        Optional<String> credits = Optional.ofNullable(formData.getString("Credits")).filter(s -> !s.isBlank());
+        Optional<String> description = Optional.ofNullable(formData.getString("Description")).filter(s -> !s.isBlank());
+        Optional<String> issues = Optional.ofNullable(formData.getString("Issues")).filter(s -> !s.isBlank());
+        Optional<String> updateJsonUrl = Optional.ofNullable(formData.getString("UpdateJsonUrl")).filter(s -> !s.isBlank());
+        Optional<String> displayUrl = Optional.ofNullable(formData.getString("DisplayUrl")).filter(s -> !s.isBlank());
+        DisplayTest displayTest = formData.getEnum("DisplayTest", DisplayTest.class);
+        boolean clientSideOnly = formData.getBoolean("ClientSideOnly");
+        String groupId = formData.getString("GroupId");
+        String artifactId = formData.getString("ArtifactId");
+        String version = formData.getString("Version");
 
         return new ForgeProjectData(projectName, projectPath, createGit, license, licenseCustom,
                 minecraftVersion, forgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer, genRunFolders,

@@ -1,8 +1,12 @@
 package io.github.railroad.ui.form;
 
+import io.github.railroad.minecraft.MinecraftVersion;
+import lombok.Getter;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@Getter
 public class FormData {
     private final Map<String, Object> data = new HashMap<>();
 
@@ -44,10 +48,6 @@ public class FormData {
 
     public void addProperty(String key, char value) {
         data.put(key, value);
-    }
-
-    public Map<String, Object> getData() {
-        return data;
     }
 
     public Object get(String key) {
@@ -100,5 +100,13 @@ public class FormData {
 
     public boolean isEmpty() {
         return data.isEmpty();
+    }
+
+    public <T extends Enum<?>> T getEnum(String key, Class<T> enumType) {
+        return enumType.cast(data.get(key));
+    }
+
+    public <T> T get(String key, Class<T> clazz) {
+        return clazz.cast(data.get(key));
     }
 }

@@ -1,9 +1,6 @@
 package io.github.railroad.ui.form.impl;
 
-import io.github.railroad.ui.form.FormComponent;
-import io.github.railroad.ui.form.FormComponentChangeListener;
-import io.github.railroad.ui.form.FormComponentValidator;
-import io.github.railroad.ui.form.FormTransformer;
+import io.github.railroad.ui.form.*;
 import io.github.railroad.ui.form.ui.FormCheckBox;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
@@ -22,8 +19,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxComponent.Data, CheckBox, Boolean> {
-    public CheckBoxComponent(Data data, FormComponentValidator<CheckBox> validator, FormComponentChangeListener<CheckBox, Boolean> listener, Property<CheckBox> bindCheckboxTo, List<FormTransformer<CheckBox, Boolean, ?>> transformers, @Nullable BooleanBinding visible) {
-        super(data, dataCurrent -> new FormCheckBox(dataCurrent.label, dataCurrent.selected, dataCurrent.required), validator, listener, transformers, visible);
+    public CheckBoxComponent(String dataKey, Data data, FormComponentValidator<CheckBox> validator, FormComponentChangeListener<CheckBox, Boolean> listener, Property<CheckBox> bindCheckboxTo, List<FormTransformer<CheckBox, Boolean, ?>> transformers, @Nullable BooleanBinding visible) {
+        super(dataKey, data, dataCurrent -> new FormCheckBox(dataCurrent.label, dataCurrent.selected, dataCurrent.required), validator, listener, transformers, visible);
 
         if (bindCheckboxTo != null) {
             bindCheckboxTo.bind(componentProperty().map(FormCheckBox::getPrimaryComponent));
@@ -52,7 +49,23 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
         });
     }
 
+    @Override
+    protected void bindToFormData(FormData formData) {
+        componentProperty()
+                .map(FormCheckBox::getPrimaryComponent)
+                .flatMap(CheckBox::selectedProperty)
+                .addListener((observable, oldValue, newValue) ->
+                        formData.addProperty(dataKey, newValue));
+
+        formData.addProperty(dataKey, componentProperty()
+                .map(FormCheckBox::getPrimaryComponent)
+                .map(CheckBox::isSelected)
+                .orElse(getData().selected)
+                .getValue());
+    }
+
     public static class Builder {
+        private final String dataKey;
         private final Data data;
         private FormComponentValidator<CheckBox> validator;
         private FormComponentChangeListener<CheckBox, Boolean> listener;
@@ -60,7 +73,8 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
         private final List<FormTransformer<CheckBox, Boolean, ?>> transformers = new ArrayList<>();
         private BooleanBinding visible;
 
-        public Builder(@NotNull String label) {
+        public Builder(@NotNull String dataKey, @NotNull String label) {
+            this.dataKey = dataKey;
             this.data = new Data(label);
         }
 
@@ -101,7 +115,8 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
                 } else if (toComponent.getValue() instanceof CheckBox checkBox) {
                     try {
                         checkBox.setSelected((Boolean) value);
-                    } catch(Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
                 } else {
                     throw new IllegalArgumentException("Unsupported component type: " + toComponent.getValue().getClass().getName());
                 }
@@ -115,7 +130,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
         }
 
         public CheckBoxComponent build() {
-            return new CheckBoxComponent(data, validator, listener, bindCheckBoxTo, transformers, visible);
+            return new CheckBoxComponent(dataKey, data, validator, listener, bindCheckBoxTo, transformers, visible);
         }
     }
 

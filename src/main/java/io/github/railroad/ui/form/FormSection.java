@@ -24,6 +24,8 @@ public class FormSection {
     private final Insets padding;
     private final Border border;
     private final Consumer<LocalizedText> titleConsumer;
+    @Getter
+    private FormData formData;
 
     private FormSection(Builder builder) {
         this.titleKey = builder.title;
@@ -75,6 +77,19 @@ public class FormSection {
         }
 
         return vbox;
+    }
+
+    public void bindFormData(FormData formData) {
+        this.formData = formData;
+        fields.forEach(field -> field.bindToFormData(formData));
+    }
+
+    public boolean validate() {
+        return fields.stream().allMatch(formComponent -> formComponent.validate().status() != ValidationResult.Status.ERROR);
+    }
+
+    public void runValidation() {
+        fields.forEach(FormComponent::runValidation);
     }
 
     public static class Builder {

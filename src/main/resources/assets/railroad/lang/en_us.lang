@@ -70,6 +70,7 @@ railroad.project.creation.git=Create Git Repository
 railroad.project.creation.license=License
 railroad.project.creation.license.custom=Custom License
 railroad.project.creation.license.custom.prompt=Enter custom license
+railroad.project.creation.license.custom.error.required=You must enter a custom license
 
 railroad.project.creation.minecraft_version=Minecraft Version
 railroad.project.creation.forge_version=Forge Version
