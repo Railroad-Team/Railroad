@@ -514,7 +514,9 @@ public class ForgeProjectDetailsPane extends RRVBox {
                         .appendComponent(mainClassComponent)
                         .appendComponent(useMixinsComponent)
                         .appendComponent(useAccessTransformerComponent)
-                        .appendComponent(genRunFoldersComponent)
+                        .appendComponent(genRunFoldersComponent))
+                .appendSection(FormSection.create("railroad.project.creation.section.mappings")
+                        .borderColor(Color.DARKGRAY)
                         .appendComponent(mappingChannelComponent)
                         .appendComponent(mappingVersionComponent))
                 .appendSection(FormSection.create("railroad.project.creation.section.optional")
@@ -577,7 +579,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
         return path;
     }
 
-    protected ForgeProjectData createData(FormData formData) {
+    protected static ForgeProjectData createData(FormData formData) {
         String projectName = formData.getString("ProjectName");
         var projectPath = Path.of(formData.getString("ProjectPath"));
         boolean createGit = formData.getBoolean("CreateGit");

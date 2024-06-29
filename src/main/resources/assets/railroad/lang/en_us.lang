@@ -149,4 +149,5 @@ railroad.project.creation.version.error.invalid_characters=Version contains inva
 railroad.project.creation.section.project=Project
 railroad.project.creation.section.minecraft=Minecraft
 railroad.project.creation.section.optional=Optional
+railroad.project.creation.section.mappings=Mappings
 railroad.project.creation.section.maven=Maven
