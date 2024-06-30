@@ -58,3 +58,11 @@ LocalizedText {
 .theme-selector .list-view {
     -fx-pref-height: 400
 }
+
+.error {
+    -fx-border-color: -color-danger-emphasis;
+}
+
+.warning {
+    -fx-border-color: -color-warning-emphasis;
+}

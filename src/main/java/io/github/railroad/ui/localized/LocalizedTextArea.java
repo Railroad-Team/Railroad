@@ -1,12 +1,12 @@
 package io.github.railroad.ui.localized;
 
 import io.github.railroad.utility.localization.L18n;
+import javafx.scene.control.TextArea;
 
-import javafx.scene.control.TextField;
-
-public class LocalizedTextField extends TextField {
+public class LocalizedTextArea extends TextArea {
     private String currentKey;
-    public LocalizedTextField(final String key) {
+
+    public LocalizedTextArea(final String key) {
         super();
         if(key != null) {
             setKey(key);

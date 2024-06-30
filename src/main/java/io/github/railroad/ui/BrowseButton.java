@@ -1,8 +1,8 @@
 package io.github.railroad.ui;
 
+import io.github.railroad.ui.localized.LocalizedButton;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.nio.file.Path;
 
-public class BrowseButton extends Button {
+public class BrowseButton extends LocalizedButton {
     private final ObjectProperty<Window> parentWindow = new SimpleObjectProperty<>();
     private final ObjectProperty<TextField> textField = new SimpleObjectProperty<>();
     private final ObjectProperty<BrowseType> browseType = new SimpleObjectProperty<>(BrowseType.FILE);
@@ -20,7 +20,7 @@ public class BrowseButton extends Button {
     private final ObjectProperty<Path> defaultLocation = new SimpleObjectProperty<>(Path.of(System.getProperty("user.home")));
 
     public BrowseButton() {
-        setText("Browse");
+        super("railroad.home.project.browse");
         setOnAction(event -> {
             TextField textField = this.textField.getValue();
             if (textField == null)
