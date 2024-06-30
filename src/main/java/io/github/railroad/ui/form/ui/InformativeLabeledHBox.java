@@ -17,6 +17,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * A labeled {@link io.github.railroad.ui.defaults.RRHBox} that can have information labels attached to it.
+ *
+ * @param <T> The type of the primary component of the labeled {@link io.github.railroad.ui.defaults.RRHBox}.
+ */
 @Getter
 public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
     private static final BooleanBinding TRUE_BINDING = new BooleanBinding() {
@@ -29,6 +34,12 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
     private final LabeledHBox<T> labeledHBox;
     private final List<InformationLabel> informationLabels = new ArrayList<>();
 
+    /**
+     * Creates a new {@link InformativeLabeledHBox} with the given label key and required status.
+     *
+     * @param labelKey The key of the label.
+     * @param required Whether the component is required.
+     */
     public InformativeLabeledHBox(String labelKey, boolean required, Map<String, Object> params) {
         super(5);
 
@@ -42,55 +53,135 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
         getChildren().addAll(labeledHBox);
     }
 
+    /**
+     * Adds an information label to the {@link InformativeLabeledHBox}.
+     *
+     * @param informativeText The text of the information label.
+     * @param informationType The type of the information label.
+     * @param bindTo          The property to bind the information label to.
+     * @param args            The arguments to format the text with.
+     * @see String#format(String, Object...)
+     * @see InformationType
+     */
     public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType, @Nullable StringProperty bindTo, Object... args) {
         addInformationLabel(informativeText, t -> TRUE_BINDING, informationType, bindTo, args);
     }
 
+    /**
+     * Adds an information label to the {@link InformativeLabeledHBox}.
+     *
+     * @param informativeText The text of the information label.
+     * @param informationType The type of the information label.
+     * @param args            The arguments to format the text with.
+     * @see String#format(String, Object...)
+     * @see InformationType
+     */
     public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType, Object... args) {
         addInformationLabel(informativeText, informationType, null, args);
     }
 
+    /**
+     * Adds an information label to the {@link InformativeLabeledHBox}.
+     *
+     * @param informativeText The text of the information label.
+     * @param args            The arguments to format the text with.
+     * @see String#format(String, Object...)
+     * @see InformationType
+     */
     public void addInformationLabel(@NotNull String informativeText, Object... args) {
         addInformationLabel(informativeText, InformationType.INFO, args);
     }
 
+    /**
+     * Adds an information label to the {@link InformativeLabeledHBox}.
+     *
+     * @param informativeText The text of the information label.
+     * @param bindTo          The property to bind the information label to.
+     * @param args            The arguments to format the text with.
+     * @see String#format(String, Object...)
+     * @see InformationType
+     */
     public void addInformationLabel(@NotNull String informativeText, @Nullable StringProperty bindTo, Object... args) {
         addInformationLabel(informativeText, InformationType.INFO, bindTo, args);
     }
 
+    /**
+     * Adds an information label to the {@link InformativeLabeledHBox}.
+     *
+     * @param informativeText               The text of the information label.
+     * @param informativeTextVisibleBinding The binding that determines whether the information label should be visible.
+     * @param informationType               The type of the information label.
+     * @param args                          The arguments to format the text with.
+     * @see String#format(String, Object...)
+     * @see InformationType
+     */
+    public void addInformationLabel(@NotNull String informativeText, @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType, Object... args) {
+        addInformationLabel(informativeText, informativeTextVisibleBinding, informationType, null, args);
+    }
+
+    /**
+     * Adds an information label to the {@link InformativeLabeledHBox}.
+     *
+     * @param informativeText               The text of the information label.
+     * @param informativeTextVisibleBinding The binding that determines whether the information label should be visible.
+     * @param informationType               The type of the information label.
+     * @param bindTo                        The property to bind the information label to.
+     * @param args                          The arguments to format the text with.
+     * @see String#format(String, Object...)
+     * @see InformationType
+     */
     public void addInformationLabel(@NotNull String informativeText, @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType, @Nullable StringProperty bindTo, Object... args) {
         var informationLabel = new InformationLabel(informativeText, informationType, args);
         informationLabel.visibleProperty().bind(informativeTextVisibleBinding.apply(labeledHBox.getPrimaryComponent()));
         informationLabels.add(informationLabel);
         getChildren().add(informationLabel);
 
-        if(bindTo != null) {
+        if (bindTo != null) {
             bindTo.bindBidirectional(informationLabel.textProperty());
         }
     }
 
-    public void addInformationLabel(@NotNull String informativeText, @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType, Object... args) {
-        addInformationLabel(informativeText, informativeTextVisibleBinding, informationType, null);
-    }
-
+    /**
+     * Creates the primary component of the {@link InformativeLabeledHBox}.
+     *
+     * @param params The parameters to create the primary component with.
+     * @return The primary component of the {@link InformativeLabeledHBox}.
+     */
     public abstract T createPrimaryComponent(Map<String, Object> params);
 
+    /**
+     * Gets the primary component of the {@link InformativeLabeledHBox}.
+     *
+     * @return The primary component of the {@link InformativeLabeledHBox}.
+     */
     public T getPrimaryComponent() {
         return labeledHBox.getPrimaryComponent();
     }
 
+    /**
+     * The information label of the {@link InformativeLabeledHBox}.
+     */
     @Getter
     public static class InformationLabel extends LocalizedLabel {
         private final InformationType informationType;
 
+        /**
+         * Creates a new {@link InformationLabel} with the given key, type, and arguments.
+         *
+         * @param key             The key of the label.
+         * @param informationType The type of the information label.
+         * @param args            The arguments to format the text with.
+         * @see String#format(String, Object...)
+         * @see InformationType
+         */
         public InformationLabel(String key, InformationType informationType, Object... args) {
             super(key, args);
             this.informationType = informationType;
-            if(informationType == InformationType.ERROR) {
+            if (informationType == InformationType.ERROR) {
                 setStyle("-fx-font-weight: bold;");
             }
 
-            if(informationType == InformationType.NOTE) {
+            if (informationType == InformationType.NOTE) {
                 setTextFill(Color.SLATEGRAY);
             }
 
@@ -112,6 +203,9 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
         }
     }
 
+    /**
+     * The type of the information label.
+     */
     public enum InformationType {
         INFO,
         NOTE,
