@@ -64,7 +64,7 @@ public class DiscordCore implements AutoCloseable {
     private void runCallbacks() {
         new Thread(() -> {
             while (true) {
-                if(this.isShuttingDown)
+                if (this.isShuttingDown)
                     break;
 
                 try {
