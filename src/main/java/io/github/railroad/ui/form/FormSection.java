@@ -62,13 +62,13 @@ public class FormSection {
         for (FormComponent<?, ?, ?, ?> field : fields) {
             Node node = field.getComponent();
             if(node.isVisible()) {
-                vbox.getChildren().add(node);
+                addChildNode(vbox, field);
             }
 
             node.visibleProperty().addListener((observable, oldValue, newValue) -> {
                 if(newValue) {
                     if(!vbox.getChildren().contains(node)) {
-                        vbox.getChildren().add(node);
+                        addChildNode(vbox, field);
                     }
                 } else {
                     vbox.getChildren().remove(node);
@@ -77,6 +77,29 @@ public class FormSection {
         }
 
         return vbox;
+    }
+
+    /**
+     * <strong>Adds the given component to the given vbox at the correct index.</strong>
+     * <p>
+     * The index is determined by the order of the fields in the fields list. It will find the first field that is
+     * before the given component in the list and add the component after that field.
+     * </p>
+     *
+     * @param vbox - the vbox to add the component to
+     * @param component - the component to add
+     */
+    private void addChildNode(RRVBox vbox, FormComponent<?, ?, ?, ?> component) {
+        int index = fields.indexOf(component);
+        for (int i = index - 1; i >= 0; i--) {
+            FormComponent<?, ?, ?, ?> field = fields.get(i);
+            if (field.getComponent().isVisible()) {
+                vbox.getChildren().add(i + 1, component.getComponent());
+                return;
+            }
+        }
+
+        vbox.getChildren().add(1, component.getComponent());
     }
 
     public void bindFormData(FormData formData) {
