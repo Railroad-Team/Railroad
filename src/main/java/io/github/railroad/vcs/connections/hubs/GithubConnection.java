@@ -8,7 +8,6 @@ import io.github.railroad.vcs.RepositoryTypes;
 import io.github.railroad.vcs.connections.AbstractConnection;
 import io.github.railroad.vcs.connections.Profile;
 import javafx.scene.image.Image;
-import okhttp3.internal.http.HttpStatusCodesKt;
 
 import java.io.BufferedReader;
 import java.io.IOException;

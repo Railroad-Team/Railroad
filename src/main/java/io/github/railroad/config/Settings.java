@@ -5,16 +5,15 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.github.railroad.Railroad;
+import io.github.railroad.localization.Language;
 import io.github.railroad.plugin.Plugin;
 import io.github.railroad.utility.JsonSerializable;
-import io.github.railroad.utility.localization.Language;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
-import lombok.Getter;
 
 import java.util.Locale;
 import java.util.Map;
@@ -24,14 +23,6 @@ public class Settings implements JsonSerializable<JsonObject> {
     private final ObservableMap<String, PluginSettings> pluginsSettings = FXCollections.observableHashMap();
     private final StringProperty theme = new SimpleStringProperty("default-dark");
     private final ObjectProperty<Language> language = new SimpleObjectProperty<>(Language.EN_US);
-
-    public void setTheme(String theme) {
-        this.theme.set(theme == null ? "default-dark" : theme);
-    }
-
-    public void setLanguage(Language language) {
-        this.language.set(language == null ? Language.EN_US : language);
-    }
 
     @Override
     public JsonObject toJson() {
@@ -55,21 +46,21 @@ public class Settings implements JsonSerializable<JsonObject> {
 
     @Override
     public void fromJson(JsonObject json) {
-        if(json.has("PluginsSettings")) {
+        if (json.has("PluginsSettings")) {
             JsonElement pluginsSettings = json.get("PluginsSettings");
-            if(pluginsSettings.isJsonArray()) {
+            if (pluginsSettings.isJsonArray()) {
                 for (JsonElement element : pluginsSettings.getAsJsonArray()) {
-                    if(element.isJsonObject()) {
+                    if (element.isJsonObject()) {
                         JsonObject object = element.getAsJsonObject();
-                        if(!object.has("Name") || !object.get("Name").isJsonPrimitive())
+                        if (!object.has("Name") || !object.get("Name").isJsonPrimitive())
                             continue;
 
                         JsonPrimitive name = object.getAsJsonPrimitive("Name");
-                        if(!name.isString())
+                        if (!name.isString())
                             continue;
 
                         Optional<Plugin> plugin = Railroad.PLUGIN_MANAGER.byName(name.getAsString());
-                        if(plugin.isEmpty())
+                        if (plugin.isEmpty())
                             continue;
 
                         this.pluginsSettings.put(name.getAsString(), plugin.get().createSettings());
@@ -83,18 +74,19 @@ public class Settings implements JsonSerializable<JsonObject> {
             this.pluginsSettings.computeIfAbsent(plugin.getName(), name -> plugin.createSettings());
         });
 
-        if(json.has("Theme") && json.get("Theme").isJsonPrimitive()) {
+        if (json.has("Theme") && json.get("Theme").isJsonPrimitive()) {
             JsonPrimitive theme = json.getAsJsonPrimitive("Theme");
-            if(theme.isString())
+            if (theme.isString())
                 this.theme.set(theme.getAsString());
         }
 
-        if(json.has("Language") && json.get("Language").isJsonPrimitive()) {
+        if (json.has("Language") && json.get("Language").isJsonPrimitive()) {
             JsonPrimitive language = json.getAsJsonPrimitive("Language");
-            if(language.isString()) {
+            if (language.isString()) {
                 try {
                     this.language.set(Language.valueOf(language.getAsString().toUpperCase(Locale.ROOT)));
-                } catch (IllegalArgumentException ignored) {}
+                } catch (IllegalArgumentException ignored) {
+                }
             }
         }
     }
@@ -123,7 +115,15 @@ public class Settings implements JsonSerializable<JsonObject> {
         return theme.get();
     }
 
+    public void setTheme(String theme) {
+        this.theme.set(theme == null ? "default-dark" : theme);
+    }
+
     public Language getLanguage() {
         return language.get();
+    }
+
+    public void setLanguage(Language language) {
+        this.language.set(language == null ? Language.EN_US : language);
     }
 }

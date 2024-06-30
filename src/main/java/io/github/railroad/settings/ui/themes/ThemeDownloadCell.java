@@ -1,8 +1,8 @@
 package io.github.railroad.settings.ui.themes;
 
+import io.github.railroad.localization.ui.LocalizedButton;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRStackPane;
-import io.github.railroad.ui.localized.LocalizedButton;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;

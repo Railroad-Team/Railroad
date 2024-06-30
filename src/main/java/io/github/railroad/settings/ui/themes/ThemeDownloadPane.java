@@ -1,8 +1,8 @@
 package io.github.railroad.settings.ui.themes;
 
+import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.ui.localized.LocalizedLabel;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.stage.Modality;
@@ -17,7 +17,7 @@ public class ThemeDownloadPane {
         var listView = new RRListView<Theme>();
 
         List<Theme> themes = ThemeDownloadManager.fetchThemes("https://api.github.com/repos/Railroad-Team/Themes/contents");
-        if(themes.isEmpty()) {
+        if (themes.isEmpty()) {
             listView.setVisible(false);
             pane.getChildren().add(new LocalizedLabel("railroad.home.settings.appearance.notfound"));
         }

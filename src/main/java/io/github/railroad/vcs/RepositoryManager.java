@@ -34,7 +34,7 @@ public class RepositoryManager implements Runnable {
                     connections.remove(abstractConnection);
                     continue;
                 }
-                
+
                 abstractConnection.downloadRepositories();
                 repositories.setAll(abstractConnection.getRepositories());
             }

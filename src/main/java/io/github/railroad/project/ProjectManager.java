@@ -1,7 +1,6 @@
 package io.github.railroad.project;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.project.data.Project;
 import io.github.railroad.config.ConfigHandler;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -39,7 +38,7 @@ public final class ProjectManager {
             Railroad.LOGGER.info("Create new Project");
             projects.add(project);
         }
-        
+
         ConfigHandler.saveConfig();
     }
 

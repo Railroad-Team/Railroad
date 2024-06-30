@@ -8,7 +8,6 @@ import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.JsonSerializable;
 import javafx.beans.property.*;
 import lombok.Getter;
-import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class Plugin implements JsonSerializable<JsonPrimitive> {
@@ -53,6 +52,10 @@ public abstract class Plugin implements JsonSerializable<JsonPrimitive> {
         return getClass().getSimpleName();
     }
 
+    public void setName(String name) {
+        this.name.set(name);
+    }
+
     public @Nullable PluginSettings getPluginSettings() {
         return pluginSettings.get();
     }
@@ -69,10 +72,6 @@ public abstract class Plugin implements JsonSerializable<JsonPrimitive> {
 
     public PluginState getState() {
         return state.get();
-    }
-
-    public void setName(String name) {
-        this.name.set(name);
     }
 
     public StringProperty nameProperty() {

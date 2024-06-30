@@ -1,7 +1,7 @@
 package io.github.railroad.settings.ui;
 
+import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.ui.localized.LocalizedLabel;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 

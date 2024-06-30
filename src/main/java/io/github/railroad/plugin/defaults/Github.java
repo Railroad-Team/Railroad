@@ -97,7 +97,7 @@ public class Github extends Plugin {
             if (accountsElement != null) {
                 JsonArray accountsArray = accountsElement.getAsJsonArray();
                 for (JsonElement accountElement : accountsArray) {
-                    if(!accountElement.isJsonObject())
+                    if (!accountElement.isJsonObject())
                         continue;
 
                     var profile = new Profile();

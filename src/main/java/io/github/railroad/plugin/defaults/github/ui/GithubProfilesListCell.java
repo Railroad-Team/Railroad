@@ -1,10 +1,11 @@
 package io.github.railroad.plugin.defaults.github.ui;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.plugin.defaults.Github;
 import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.defaults.RRStackPane;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.vcs.connections.Profile;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -12,7 +13,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
-import io.github.railroad.ui.defaults.RRStackPane;
 
 import java.util.Objects;
 
@@ -41,7 +41,7 @@ public class GithubProfilesListCell extends ListCell<Profile> {
                         ConfigHandler.saveConfig();
                     }
                 }
-                
+
                 Railroad.REPOSITORY_MANAGER.deleteProfile(profile);
             }
         });
