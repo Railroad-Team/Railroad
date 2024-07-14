@@ -140,6 +140,7 @@ public class Project implements JsonSerializable<JsonObject> {
         Railroad.LOGGER.debug("Opening project: {}", getPathString());
         setLastOpened(System.currentTimeMillis());
         Railroad.PROJECT_MANAGER.updateProjectInfo(this);
+        Railroad.switchToIDE(this);
     }
 
     @Override

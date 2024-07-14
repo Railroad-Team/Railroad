@@ -11,6 +11,8 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Optional;
+
 public class Config implements JsonSerializable<JsonObject> {
     private final ObjectProperty<Settings> settings = new ReadOnlyObjectWrapper<>(new Settings());
 
@@ -46,7 +48,8 @@ public class Config implements JsonSerializable<JsonObject> {
                     if (!project.isJsonObject())
                         continue;
 
-                    Project.createFromJson(project.getAsJsonObject());
+                    Optional<Project> optProject = Project.createFromJson(project.getAsJsonObject());
+                    optProject.ifPresent(Railroad.PROJECT_MANAGER::newProject);
                 }
             }
         }

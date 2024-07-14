@@ -5,12 +5,15 @@ import io.github.railroad.config.ConfigHandler;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
 @Getter
 public final class ProjectManager {
     private final ObservableList<Project> projects = FXCollections.observableArrayList();
+    @Getter
+    private Project openProject;
 
     public void updateProjectInfo(Project project) {
         updateProjectInfo(project, false);
@@ -53,5 +56,9 @@ public final class ProjectManager {
 
     public void removeProject(Project project) {
         updateProjectInfo(project, true);
+    }
+
+    public void setCurrentProject(@Nullable Project project) {
+        this.openProject = project;
     }
 }

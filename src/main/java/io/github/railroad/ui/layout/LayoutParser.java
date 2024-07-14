@@ -1,5 +1,7 @@
 package io.github.railroad.ui.layout;
 
+import io.github.railroad.Railroad;
+import io.github.railroad.project.Project;
 import io.github.railroad.utility.javafx.NodeTree;
 import io.github.railroad.utility.javafx.NodeTree.Node;
 import javafx.util.Pair;
@@ -357,6 +359,18 @@ public class LayoutParser {
         }
 
         return -1;
+    }
+
+    public static Layout loadLayout(Project project) {
+        Path projectPath = Path.of(project.getPathString());
+        Path layoutPath = projectPath.resolve(".railroad").resolve(".railayout");
+
+        try {
+            return parse(layoutPath);
+        } catch (LayoutParseException exception) {
+            Railroad.LOGGER.error("Failed to load layout for project: {}", project.getPathString(), exception);
+            return new Layout(new NodeTree<>(new Node<>(new LayoutItem("error"))));
+        }
     }
 
     public record Token(Type type, String value, int startLine, int startColumn, int endLine, int endColumn) {

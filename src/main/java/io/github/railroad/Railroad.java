@@ -6,6 +6,7 @@ import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.localization.L18n;
 import io.github.railroad.plugin.PluginManager;
+import io.github.railroad.project.Project;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.minecraft.FabricAPIVersion;
 import io.github.railroad.project.minecraft.ForgeVersion;
@@ -28,8 +29,12 @@ import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -62,7 +67,7 @@ public class Railroad extends Application {
         ConfigHandler.saveConfig();
     }
 
-    private static void handleStyles(Scene scene) {
+    public static void handleStyles(Scene scene) {
         updateTheme(ConfigHandler.getConfig().getSettings().getTheme());
 
         // setting up debug helper style
@@ -159,5 +164,28 @@ public class Railroad extends Application {
         PLUGIN_MANAGER.unloadPlugins();
         ConfigHandler.saveConfig();
         ShutdownHooks.runHooks();
+    }
+
+    public static void switchToIDE(Project project) {
+        Stage window = IDESetup.createIDEWindow(project);
+        Railroad.window.close();
+        Railroad.window = window;
+        PROJECT_MANAGER.setCurrentProject(project);
+        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN);
+    }
+
+    public static void openUrl(String url) {
+        if (!url.matches(URL_REGEX)) {
+            showErrorAlert("Invalid URL", "Invalid URL", "The URL provided is invalid.");
+            return;
+        }
+
+        try {
+            if(Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().browse(new URI(url));
+            }
+        } catch (IOException | URISyntaxException exception) {
+            showErrorAlert("Error", "Error opening URL", "An error occurred while trying to open the URL.");
+        }
     }
 }

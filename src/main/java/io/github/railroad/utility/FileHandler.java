@@ -1,5 +1,9 @@
 package io.github.railroad.utility;
 
+import javafx.scene.Node;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeRegular;
+import org.kordamp.ikonli.javafx.FontIcon;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -164,5 +168,30 @@ public class FileHandler {
         } catch (IOException | URISyntaxException exception) {
             return false;
         }
+    }
+
+    public static Node getIcon(Path path) {
+        if(Files.isDirectory(path))
+            return new FontIcon(FontAwesomeRegular.FOLDER);
+
+        String extension = getExtension(path.toString());
+        if (extension == null) {
+            return new FontIcon(FontAwesomeRegular.FILE);
+        }
+
+        return switch (extension) {
+            case "png", "jpg", "jpeg", "gif", "bmp", "webp" -> new FontIcon(FontAwesomeRegular.FILE_IMAGE);
+            case "mp4", "webm", "avi", "mov", "flv", "wmv", "mkv" -> new FontIcon(FontAwesomeRegular.FILE_VIDEO);
+            case "mp3", "wav", "flac", "ogg", "m4a", "wma", "aac" -> new FontIcon(FontAwesomeRegular.FILE_AUDIO);
+            case "zip", "rar", "7z", "tar", "gz", "xz", "bz2" -> new FontIcon(FontAwesomeRegular.FILE_ARCHIVE);
+            case "csv", "tsv", "xls", "xlsx", "ods", "dbf", "sql", "json", "xml", "yaml", "yml" -> new FontIcon(FontAwesomeRegular.FILE_EXCEL);
+            case "pdf" -> new FontIcon(FontAwesomeRegular.FILE_PDF);
+            case "doc", "docx", "odt", "rtf", "txt", "md" -> new FontIcon(FontAwesomeRegular.FILE_WORD);
+            case "ppt", "pptx", "odp" -> new FontIcon(FontAwesomeRegular.FILE_POWERPOINT);
+            case "html", "htm", "css", "js", "ts", "java", "py", "c", "cpp", "h", "hpp", "cs", "php", "rb", "go", "rs",
+                 "kt", "swift", "dart", "groovy", "gradle", "kts", "sh", "bat", "cmd", "ps1" ->
+                    new FontIcon(FontAwesomeRegular.FILE_CODE);
+            default -> new FontIcon(FontAwesomeRegular.FILE_ALT);
+        };
     }
 }

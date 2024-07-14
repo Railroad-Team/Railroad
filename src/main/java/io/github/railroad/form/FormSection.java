@@ -129,10 +129,15 @@ public class FormSection {
      */
     private void addChildNode(RRVBox vbox, FormComponent<?, ?, ?, ?> component) {
         int index = fields.indexOf(component);
+        if(index == 0) {
+            vbox.getChildren().add(1, component.getComponent());
+            return;
+        }
+
         for (int i = index - 1; i >= 0; i--) {
             FormComponent<?, ?, ?, ?> field = fields.get(i);
             if (field.getComponent().isVisible()) {
-                vbox.getChildren().add(i + 1, component.getComponent());
+                vbox.getChildren().add(vbox.getChildren().indexOf(field.getComponent()) + 1, component.getComponent());
                 return;
             }
         }
