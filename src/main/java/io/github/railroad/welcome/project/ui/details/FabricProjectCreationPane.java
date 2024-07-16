@@ -48,18 +48,15 @@ public class FabricProjectCreationPane extends RRBorderPane {
     private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/fabric/%s/template_build.gradle";
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    private final FabricProjectData data;
-    private final MFXProgressSpinner progressSpinner = new MFXProgressSpinner();
-    private final RRVBox progressBox = new RRVBox(10), centerBox = new RRVBox(10);
+    private final RRVBox centerBox = new RRVBox(10);
     private final Label timeElapsedLabel = new Label("");
     private final Label taskLabel = new Label();
     private final long startTime = System.currentTimeMillis();
     private final TextArea outputArea = new TextArea();
 
     public FabricProjectCreationPane(FabricProjectData data) {
-        this.data = data;
-
         centerBox.setAlignment(Pos.CENTER);
+        var progressSpinner = new MFXProgressSpinner();
         centerBox.getChildren().addAll(progressSpinner);
         progressSpinner.setRadius(50);
         setCenter(centerBox);
@@ -71,6 +68,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             outputArea.setScrollTop(Double.MAX_VALUE);
         });
 
+        var progressBox = new RRVBox(10);
         progressBox.setAlignment(Pos.CENTER);
         progressBox.getChildren().addAll(timeElapsedLabel, taskLabel);
         setBottom(progressBox);
@@ -471,10 +469,19 @@ public class FabricProjectCreationPane extends RRBorderPane {
             // Download template build.gradle
             Path buildGradle = projectPath.resolve("build.gradle");
             String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(mdkVersion.id().split("\\.")[1]);
+            if(FileHandler.is404(templateBuildGradleUrl)) {
+                templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(data.minecraftVersion().id().split("\\.")[1]);
+            }
+
+            if (FileHandler.is404(templateBuildGradleUrl)) {
+                showErrorAlert("Error", "An error occurred while creating the project.", "build.gradle template not found.");
+                return false;
+            }
+
             FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
             String buildGradleContent = Files.readString(buildGradle);
             if (!buildGradleContent.startsWith("// fileName:")) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
+                showErrorAlert("Error", "An error occurred while creating the project.", "build.gradle template is invalid.");
                 return false;
             }
 
@@ -487,7 +494,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             var shell = new GroovyShell();
             Object result = shell.parse(buildGradleContent.substring("// fileName:".length() + 1, newLineIndex), binding).run();
             if (result == null) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
+                showErrorAlert("Error", "An error occurred while creating the project.", "build.gradle template is invalid.");
                 return false;
             }
 

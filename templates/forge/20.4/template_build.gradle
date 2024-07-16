@@ -3,7 +3,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+    id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
     <% if(mappings.channel == 'parchment') {
         out.print("\n    id 'org.parchmentmc.librarian.forgegradle' version '1.+'")
     }
@@ -27,13 +27,12 @@ base {
     archivesName = mod_id
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 println "Java: \${System.getProperty 'java.version'}, JVM: \${System.getProperty 'java.vm.version'} (\${System.getProperty 'java.vendor'}), Arch: \${System.getProperty 'os.arch'}"
 minecraft {
     mappings channel: mapping_channel, version: mapping_version
 
-    reobf = false
     copyIdeResources = true
 
     <% if(props.genRunFolders) {
@@ -103,9 +102,6 @@ dependencies {
     // For more info:
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
-
-    // Hack fix for now, force jopt-simple to be exactly 5.0.4 because Mojang ships that version, but some transtive dependencies request 6.0+
-    implementation('net.sf.jopt-simple:jopt-simple:5.0.4') { version { strictly '5.0.4' } }
 }
 
 tasks.named('processResources', ProcessResources).configure {
@@ -140,6 +136,9 @@ tasks.named('jar', Jar).configure {
     manifest {
         attributes(manifestAttributes)
     }
+
+    // This is the preferred method to reobfuscate your jar file
+    finalizedBy 'reobfJar'
 }
 
 publishing {

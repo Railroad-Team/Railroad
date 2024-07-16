@@ -6,6 +6,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -165,6 +166,14 @@ public class FileHandler {
     public static boolean urlExists(String url) {
         try {
             return new URI(url).toURL().openConnection().getContentType() != null;
+        } catch (IOException | URISyntaxException exception) {
+            return false;
+        }
+    }
+
+    public static boolean is404(String url) {
+        try {
+            return ((HttpURLConnection) new URI(url).toURL().openConnection()).getResponseCode() == 404;
         } catch (IOException | URISyntaxException exception) {
             return false;
         }

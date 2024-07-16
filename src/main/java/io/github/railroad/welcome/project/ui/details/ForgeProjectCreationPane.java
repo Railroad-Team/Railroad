@@ -42,18 +42,15 @@ public class ForgeProjectCreationPane extends RRBorderPane {
     private static final String TEMPLATE_SETTINGS_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/forge/%s/template_settings.gradle";
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    private final ForgeProjectData data;
-    private final MFXProgressSpinner progressSpinner = new MFXProgressSpinner();
-    private final RRVBox progressBox = new RRVBox(10), centerBox = new RRVBox(10);
+    private final RRVBox centerBox = new RRVBox(10);
     private final Label timeElapsedLabel = new Label("");
     private final Label taskLabel = new Label();
     private final long startTime = System.currentTimeMillis();
     private final TextArea outputArea = new TextArea();
 
     public ForgeProjectCreationPane(ForgeProjectData data) {
-        this.data = data;
-
         centerBox.setAlignment(Pos.CENTER);
+        var progressSpinner = new MFXProgressSpinner();
         centerBox.getChildren().addAll(progressSpinner);
         progressSpinner.setRadius(50);
         setCenter(centerBox);
@@ -65,6 +62,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             outputArea.setScrollTop(Double.MAX_VALUE);
         });
 
+        var progressBox = new RRVBox(10);
         progressBox.setAlignment(Pos.CENTER);
         progressBox.getChildren().addAll(timeElapsedLabel, taskLabel);
         setBottom(progressBox);
@@ -320,10 +318,19 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             updateLabel("Updating build.gradle...");
             Path buildGradle = projectPath.resolve("build.gradle");
             String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(data.minecraftVersion().id().substring(2));
+            if(FileHandler.is404(templateBuildGradleUrl)) {
+                templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(data.minecraftVersion().id().split("\\.")[1]);
+            }
+
+            if(FileHandler.is404(templateBuildGradleUrl)) {
+                showErrorAlert("Error", "An error occurred while creating the project.", "No build.gradle template found for the specified Minecraft version.");
+                return false;
+            }
+
             FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
             String buildGradleContent = Files.readString(buildGradle);
             if (!buildGradleContent.startsWith("// fileName:")) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
+                showErrorAlert("Error", "An error occurred while creating the project.", "build.gradle template is invalid.");
                 return false;
             }
 
@@ -334,7 +341,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
 
             Object result = shell.parse(buildGradleContent.substring("// fileName:".length() + 1, newLineIndex), binding).run();
             if (result == null) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
+                showErrorAlert("Error", "An error occurred while creating the project.", "build.gradle template is invalid.");
                 return false;
             }
 
@@ -352,10 +359,19 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             updateLabel("Updating settings.gradle...");
             Path settingsGradle = projectPath.resolve("settings.gradle");
             String templateSettingsGradleUrl = TEMPLATE_SETTINGS_GRADLE_URL.formatted(data.minecraftVersion().id().substring(2));
+            if(FileHandler.is404(templateSettingsGradleUrl)) {
+                templateSettingsGradleUrl = TEMPLATE_SETTINGS_GRADLE_URL.formatted(data.minecraftVersion().id().split("\\.")[1]);
+            }
+
+            if(FileHandler.is404(templateSettingsGradleUrl)) {
+                showErrorAlert("Error", "An error occurred while creating the project.", "No settings.gradle template found for the specified Minecraft version.");
+                return false;
+            }
+
             FileHandler.copyUrlToFile(templateSettingsGradleUrl, settingsGradle);
             String settingsGradleContent = Files.readString(settingsGradle);
             if (!settingsGradleContent.startsWith("// fileName:")) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
+                showErrorAlert("Error", "An error occurred while creating the project.", "settings.gradle template is invalid.");
                 return false;
             }
 
@@ -364,10 +380,9 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             var binding = new Binding(args);
             binding.setVariable("defaultName", projectPath.relativize(settingsGradle.toAbsolutePath()).toString());
 
-            shell = new GroovyShell();
             Object result = shell.parse(settingsGradleContent.substring("// fileName:".length() + 1, newLineIndex), binding).run();
             if (result == null) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
+                showErrorAlert("Error", "An error occurred while creating the project.", "settings.gradle template is invalid.");
                 return false;
             }
 
@@ -400,7 +415,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
 
                 Files.writeString(mixinsJson, Railroad.GSON.toJson(mixins));
                 updateProgress(12, 17);
-                Railroad.LOGGER.info(data.modId() + ".mixins.json created successfully.");
+                Railroad.LOGGER.info("{}.mixins.json created successfully.", data.modId());
             }
         }
 
