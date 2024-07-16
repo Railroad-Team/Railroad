@@ -80,7 +80,7 @@ public record Layout(NodeTree<LayoutItem> tree) {
                 fileExplorer.getChildren().add(new Text("File Explorer"));
                 return Either.left(fileExplorer);
             case "TextEditor":
-                return Either.left(new TextEditorPane());
+                return null;
             case "Terminal":
                 return Either.left(new TerminalBuilder().newTerminal().getTerminal());
             case "GradleTasks":

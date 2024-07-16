@@ -171,7 +171,7 @@ public class FileHandler {
     }
 
     public static Node getIcon(Path path) {
-        if(Files.isDirectory(path))
+        if (Files.isDirectory(path))
             return new FontIcon(FontAwesomeRegular.FOLDER);
 
         String extension = getExtension(path.toString());
@@ -184,7 +184,8 @@ public class FileHandler {
             case "mp4", "webm", "avi", "mov", "flv", "wmv", "mkv" -> new FontIcon(FontAwesomeRegular.FILE_VIDEO);
             case "mp3", "wav", "flac", "ogg", "m4a", "wma", "aac" -> new FontIcon(FontAwesomeRegular.FILE_AUDIO);
             case "zip", "rar", "7z", "tar", "gz", "xz", "bz2" -> new FontIcon(FontAwesomeRegular.FILE_ARCHIVE);
-            case "csv", "tsv", "xls", "xlsx", "ods", "dbf", "sql", "json", "xml", "yaml", "yml" -> new FontIcon(FontAwesomeRegular.FILE_EXCEL);
+            case "csv", "tsv", "xls", "xlsx", "ods", "dbf", "sql", "json", "xml", "yaml", "yml" ->
+                    new FontIcon(FontAwesomeRegular.FILE_EXCEL);
             case "pdf" -> new FontIcon(FontAwesomeRegular.FILE_PDF);
             case "doc", "docx", "odt", "rtf", "txt", "md" -> new FontIcon(FontAwesomeRegular.FILE_WORD);
             case "ppt", "pptx", "odp" -> new FontIcon(FontAwesomeRegular.FILE_POWERPOINT);

@@ -50,6 +50,7 @@ dependencies {
     implementation 'com.panemu:tiwulfx-dock:0.3'
     implementation 'com.spencerwi:Either.java:2.9.0'
     implementation 'com.kodedu.terminalfx:terminalfx:1.2.0'
+    implementation 'org.fxmisc.richtext:richtextfx:0.11.3'
 
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
     compileOnly 'org.projectlombok:lombok:1.18.32'

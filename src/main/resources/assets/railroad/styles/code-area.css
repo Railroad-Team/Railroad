@@ -1,0 +1,90 @@
+.apply-font {
+    -fx-font-family: "JetBrains Mono";
+}
+
+.code-area {
+    -fx-background-color: -color-bg-overlay;
+}
+
+.code-area .paragraph-box .paragraph-text, .paragraph-text .text {
+    -fx-font-family: "JetBrains Mono";
+    -fx-font-weight: normal;
+    -fx-padding: 0 0 0 3;
+    -fx-tab-size: 10px;
+}
+
+.code-area .linenumber, .linenumber {
+    -fx-font-family: "JetBrains Mono";
+    -fx-font-weight: bold;
+    -fx-background-radius: 0;
+    -fx-box-border: none;
+}
+
+.code-area .error-lineno {
+    -fx-text-fill: -color-danger-emphasis;
+    -fx-font-weight: bold;
+    -fx-background-color: -color-danger-emphasis;
+}
+
+.code-area .line-holder {
+    -fx-border-width: 0 1.5 0 0;
+    -fx-border-color: -color-border-default;
+    -fx-background-color: -color-bg-overlay;
+}
+
+.code-area .line-holder:selected {
+    -fx-background-color: -color-base-8;
+}
+
+.code-area .line-holder:selected .linenumber {
+    -fx-text-fill: -color-bg-default;
+}
+
+.code-area .text {
+    -fx-fill: -color-fg-default;
+}
+
+.styled-text-area .selection {
+    -fx-fill: -color-neutral-emphasis;
+    -fx-border-width: 0;
+}
+
+.caret {
+    -fx-stroke: -color-fg-default;
+}
+
+.paragraph-box:has-caret, .has-caret  {
+    -fx-background-color: -color-base-8;
+}
+
+.code-area .text .keyword {
+    -fx-fill: purple !important;
+    -fx-font-weight: bold !important;
+}
+
+.code-area .text .semicolon {
+    -fx-font-weight: bold !important;
+}
+
+.code-area .text .paren {
+    -fx-fill: firebrick !important;
+    -fx-font-weight: bold !important;
+}
+
+.code-area .text .bracket {
+    -fx-fill: darkgreen !important;
+    -fx-font-weight: bold !important;
+}
+
+.code-area .text .brace {
+    -fx-fill: teal !important;
+    -fx-font-weight: bold !important;
+}
+
+.code-area .text .string {
+    -fx-fill: blue !important;
+}
+
+.code-area .text .comment {
+    -fx-fill: cadetblue;
+}

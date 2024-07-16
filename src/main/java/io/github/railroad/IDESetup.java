@@ -3,20 +3,26 @@ package io.github.railroad;
 import com.kodedu.terminalfx.TerminalBuilder;
 import com.kodedu.terminalfx.config.TerminalConfig;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
-import io.github.railroad.ide.*;
+import io.github.railroad.ide.ConsolePane;
+import io.github.railroad.ide.FileExplorerPane;
+import io.github.railroad.ide.IDEWelcomePane;
+import io.github.railroad.ide.StatusBarPane;
 import io.github.railroad.project.Project;
 import io.github.railroad.ui.defaults.RRBorderPane;
-import javafx.collections.ListChangeListener;
 import javafx.geometry.Orientation;
+import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.SplitPane;
-import javafx.scene.control.Tab;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import org.fxmisc.richtext.CodeArea;
 
 import java.nio.file.Path;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class IDESetup {
     public static Stage createIDEWindow(Project project) {
@@ -49,7 +55,7 @@ public class IDESetup {
 
         // File Explorer
         var leftPane = new DetachableTabPane();
-        var fileExplorer = new FileExplorerPane(project);
+        var fileExplorer = new FileExplorerPane(project, mainPane);
         leftPane.addTab("File Explorer", fileExplorer);
         horizontalSplit.getItems().add(leftPane);
 
@@ -89,10 +95,41 @@ public class IDESetup {
 
         var scene = new Scene(mainPane);
         Railroad.handleStyles(scene);
+        scene.getStylesheets().add(Railroad.getResource("styles/code-area.css").toExternalForm());
 
         stage.setScene(scene);
         stage.show();
 
         return stage;
+    }
+
+    // search for a tab pane that has a code area in it and if it cant find one, return the first tab pane it finds
+    public static Optional<DetachableTabPane> findBestPaneForFiles(Parent parent) {
+        var bestCandidate = new AtomicReference<DetachableTabPane>();
+        Optional<DetachableTabPane> found = findBestPaneForFiles(parent, bestCandidate);
+        return found.or(() -> Optional.ofNullable(bestCandidate.get()));
+    }
+
+    private static Optional<DetachableTabPane> findBestPaneForFiles(Parent parent, AtomicReference<DetachableTabPane> bestCandidate) {
+        if (parent instanceof DetachableTabPane tabPane) {
+            if (tabPane.getTabs().stream().anyMatch(tab -> tab.getContent() instanceof CodeArea))
+                return Optional.of(tabPane);
+            else if (bestCandidate.get() == null || tabPane.getTabs().size() < bestCandidate.get().getTabs().size())
+                bestCandidate.set(tabPane);
+        }
+
+        if (parent.getChildrenUnmodifiable().isEmpty())
+            return Optional.empty();
+
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            if (!(child instanceof Parent childAsParent))
+                continue;
+
+            Optional<DetachableTabPane> result = findBestPaneForFiles(childAsParent, bestCandidate);
+            if (result.isPresent())
+                return result;
+        }
+
+        return Optional.empty();
     }
 }
