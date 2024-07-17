@@ -34,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 // TODO: Someone who knows NeoForge will probably need to write the code for this. Right now it's just a near-copy of the ForgeProjectCreationPane
@@ -43,6 +44,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
     private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/neoforge/%s/template_build.gradle";
     private static final String TEMPLATE_SETTINGS_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/neoforge/%s/template_settings.gradle";
 
+    private final AtomicReference<Project> newProject = new AtomicReference<>();
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private final NeoForgeProjectData data;
     private final MFXProgressSpinner progressSpinner = new MFXProgressSpinner();
@@ -85,7 +87,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
                 Railroad.LOGGER.error("An error occurred while waiting for the executor to terminate.", exception);
             }
 
-            // Open project in IDE
+            newProject.get().open();
         });
 
         new Thread(task).start();
@@ -179,7 +181,8 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
                 createAccessTransformer(projectPath);
 
                 updateLabel("Creating project...");
-                Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
+                newProject.set(new Project(projectPath, this.data.projectName()));
+                Railroad.PROJECT_MANAGER.newProject(newProject.get());
                 updateProgress(14, 17);
                 Railroad.LOGGER.info("Project created successfully.");
 

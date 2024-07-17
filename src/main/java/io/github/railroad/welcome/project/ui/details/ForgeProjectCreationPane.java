@@ -34,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 public class ForgeProjectCreationPane extends RRBorderPane {
@@ -41,6 +42,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
     private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/forge/%s/template_build.gradle";
     private static final String TEMPLATE_SETTINGS_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/forge/%s/template_settings.gradle";
 
+    private final AtomicReference<Project> newProject = new AtomicReference<>();
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private final RRVBox centerBox = new RRVBox(10);
     private final Label timeElapsedLabel = new Label("");
@@ -81,7 +83,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 Railroad.LOGGER.error("An error occurred while waiting for the executor to terminate.", exception);
             }
 
-            // Open project in IDE
+            newProject.get().open();
         });
 
         new Thread(task).start();
@@ -175,7 +177,8 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 createAccessTransformer(projectPath);
 
                 updateLabel("Creating project...");
-                Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
+                newProject.set(new Project(projectPath, this.data.projectName()));
+                Railroad.PROJECT_MANAGER.newProject(newProject.get());
                 updateProgress(14, 17);
                 Railroad.LOGGER.info("Project created successfully.");
 
