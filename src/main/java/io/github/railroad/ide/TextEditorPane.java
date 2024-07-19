@@ -57,7 +57,7 @@ public class TextEditorPane extends CodeArea {
     );
 
     private final ExecutorService executor0 = Executors.newSingleThreadExecutor();
-    private final ExecutorService executor1 = Executors.newCachedThreadPool();
+    private final ExecutorService executor1 = Executors.newSingleThreadExecutor();
 
     public TextEditorPane(Path item) {
         try {

@@ -79,8 +79,10 @@ public class FileExplorerPane extends TreeView<Path> {
                         key.reset();
                     } catch (InterruptedException exception) {
                         Railroad.LOGGER.error("File explorer watcher interrupted.", exception);
+                        break;
                     } catch (IOException exception) {
                         Railroad.LOGGER.error("Failed to watch file explorer.", exception);
+                        break;
                     }
                 }
             });
