@@ -184,8 +184,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
                     return null;
 
                 updateLabel("Creating project...");
-                newProject.set(new Project(projectPath, data.projectName()));
-                Railroad.PROJECT_MANAGER.newProject(newProject.get());
+                Railroad.PROJECT_MANAGER.newProject(newProject.getAndSet(new Project(projectPath, data.projectName())));
                 updateProgress(13, 16);
                 Railroad.LOGGER.info("Project created successfully.");
 
