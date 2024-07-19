@@ -181,7 +181,8 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
                 createAccessTransformer(projectPath);
 
                 updateLabel("Creating project...");
-                Railroad.PROJECT_MANAGER.newProject(newProject.getAndSet(new Project(projectPath, this.data.projectName())));
+                newProject.set(new Project(projectPath, data.projectName()));
+                Railroad.PROJECT_MANAGER.newProject(newProject.get());
                 updateProgress(14, 17);
                 Railroad.LOGGER.info("Project created successfully.");
 
