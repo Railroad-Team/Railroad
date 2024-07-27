@@ -57,34 +57,102 @@
     -fx-background-color: -color-base-8;
 }
 
-.code-area .text .keyword {
-    -fx-fill: purple !important;
-    -fx-font-weight: bold !important;
+.code-area .class {
+    -fx-fill: #ff2e88;
 }
 
-.code-area .text .semicolon {
-    -fx-font-weight: bold !important;
+.code-area .package {
+    -fx-fill: #8c55ff;
 }
 
-.code-area .text .paren {
-    -fx-fill: firebrick !important;
-    -fx-font-weight: bold !important;
+.code-area .name {
+    -fx-fill: #8bffea;
 }
 
-.code-area .text .bracket {
-    -fx-fill: darkgreen !important;
-    -fx-font-weight: bold !important;
+.code-area .import {
+    -fx-fill: #2ea8ff;
 }
 
-.code-area .text .brace {
-    -fx-fill: teal !important;
-    -fx-font-weight: bold !important;
+.code-area .comment {
+    -fx-fill: #5bb094;
 }
 
-.code-area .text .string {
-    -fx-fill: blue !important;
+.code-area .annotation {
+    -fx-fill: #5a9a0f;
 }
 
-.code-area .text .comment {
-    -fx-fill: cadetblue;
+.code-area .array {
+    -fx-fill: #ff8c00;
+}
+
+.code-area .keyword {
+    -fx-fill: #a50fce;
+}
+
+.code-area .operator {
+    -fx-fill: #57b949;
+}
+
+.code-area .block {
+    -fx-fill: #ffdc2e;
+}
+
+.code-area .literal {
+    -fx-fill: #2effaf;
+}
+
+.code-area .constructor {
+    -fx-fill: #ff8c2e;
+}
+
+.code-area .enum {
+    -fx-fill: #2effee;
+}
+
+.code-area .expression {
+    -fx-fill: #692eff;
+}
+
+.code-area .field {
+    -fx-fill: #cb2eff;
+}
+
+.code-area .label {
+    -fx-fill: #2eb6ff;
+}
+
+.code-area .object {
+    -fx-fill: #ff2e2e;
+}
+
+.code-area .parameter {
+    -fx-fill: #2eff3f;
+}
+
+.code-area .type {
+    -fx-fill: #ffc42e;
+}
+
+.code-area .record {
+    -fx-fill: #150fce;
+}
+
+.code-area .variable {
+    -fx-fill: #d9ff2e;
+}
+
+.code-area .lambda {
+    -fx-fill: #ff2e8c;
+}
+
+.code-area .module {
+    -fx-fill: #2e58ff;
+}
+
+.code-area .error {
+    -fx-fill: red;
+}
+
+.code-area .modifier {
+    -fx-fill: #d000ff;
 }

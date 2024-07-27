@@ -185,7 +185,7 @@ public class FileExplorerPane extends TreeView<Path> {
                             var bestPane = IDESetup.findBestPaneForFiles(rootPane);
                             bestPane.ifPresent(detachableTabPane -> {
                                 DetachableTabPane tabPane = bestPane.get();
-                                var textEditorPane = new TextEditorPane(item);
+                                var textEditorPane = item.toString().endsWith(".java") ? new JavaEditorPane(item) : new TextEditorPane(item);
                                 tabPane.addTab(item.getFileName().toString(), new VirtualizedScrollPane<>(textEditorPane));
                             });
                         }

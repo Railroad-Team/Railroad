@@ -51,6 +51,7 @@ dependencies {
     implementation 'com.spencerwi:Either.java:2.9.0'
     implementation 'com.kodedu.terminalfx:terminalfx:1.2.0'
     implementation 'org.fxmisc.richtext:richtextfx:0.11.3'
+    implementation 'com.github.javaparser:javaparser-symbol-solver-core:3.26.1'
 
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
     compileOnly 'org.projectlombok:lombok:1.18.32'
