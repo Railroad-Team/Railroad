@@ -13,31 +13,21 @@
     -fx-tab-size: 10px;
 }
 
-.code-area .linenumber, .linenumber {
-    -fx-font-family: "JetBrains Mono";
-    -fx-font-weight: bold;
+.code-area .lineno {
+    -fx-font-family: "Fira Code";
     -fx-background-radius: 0;
     -fx-box-border: none;
+
+    -fx-background-color: -color-bg-inset;
+    -fx-text-fill: -color-fg-subtle;
+
+    -fx-padding: 0 35 0 5;
 }
 
 .code-area .error-lineno {
     -fx-text-fill: -color-danger-emphasis;
     -fx-font-weight: bold;
     -fx-background-color: -color-danger-emphasis;
-}
-
-.code-area .line-holder {
-    -fx-border-width: 0 1.5 0 0;
-    -fx-border-color: -color-border-default;
-    -fx-background-color: -color-bg-overlay;
-}
-
-.code-area .line-holder:selected {
-    -fx-background-color: -color-base-8;
-}
-
-.code-area .line-holder:selected .linenumber {
-    -fx-text-fill: -color-bg-default;
 }
 
 .code-area .text {
@@ -61,16 +51,12 @@
     -fx-fill: #ff2e88;
 }
 
-.code-area .package {
+.code-area .package, .code-area .import {
     -fx-fill: #8c55ff;
 }
 
 .code-area .name {
     -fx-fill: #8bffea;
-}
-
-.code-area .import {
-    -fx-fill: #2ea8ff;
 }
 
 .code-area .comment {
@@ -156,4 +142,9 @@
 .code-area .error {
     -fx-underline: true;
     -fx-stroke: -color-danger-emphasis;
+}
+
+.diagnostic-pane {
+    -fx-background-color: -color-bg-overlay;
+    -fx-border-width: 0 0 1 0;
 }
