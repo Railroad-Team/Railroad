@@ -1,4 +1,4 @@
-package io.github.railroad.utility.javafx;
+package io.github.railroad.utility;
 
 import io.github.railroad.Railroad;
 import lombok.Getter;
@@ -9,14 +9,14 @@ import java.util.List;
 import java.util.Objects;
 
 @Getter
-public class NodeTree<T> {
+public class Tree<T> {
     private Node<T> root;
 
-    public NodeTree() {
+    public Tree() {
         this.root = null;
     }
 
-    public NodeTree(Node<T> root) {
+    public Tree(Node<T> root) {
         this.root = root;
     }
 

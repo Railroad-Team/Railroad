@@ -1,4 +1,4 @@
-package io.github.railroad.ide;
+package io.github.railroad.ide.syntax_tests;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.Range;
@@ -30,10 +30,10 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class JavaEditorPane extends CodeArea {
+public class ASTJavaEditorPane extends CodeArea {
     private final ExecutorService executor0 = Executors.newSingleThreadExecutor();
 
-    public JavaEditorPane(Path item) {
+    public ASTJavaEditorPane(Path item) {
         setParagraphGraphicFactory(LineNumberFactory.get(this));
         multiPlainChanges()
                 .successionEnds(Duration.ofMillis(500))
@@ -140,16 +140,20 @@ public class JavaEditorPane extends CodeArea {
         }
 
         public StyleSpans<Collection<String>> computeStyleSpans() {
-            styleRanges.sort(Comparator.comparingInt(a -> a.beginOffset)); // Ensure ranges are in order
+            styleRanges.sort(Comparator.comparingInt(styleRange -> styleRange.beginOffset)); // Ensure ranges are in order
             StyleSpansBuilder<Collection<String>> spansBuilder = new StyleSpansBuilder<>();
             int lastEnd = 0;
 
-            for (StyleRange styleRange : styleRanges) {
+            for (int index = 0; index < styleRanges.size(); index++) {
+                StyleRange styleRange = styleRanges.get(index);
+                StyleRange nextStyleRange = index + 1 < styleRanges.size() ? styleRanges.get(index + 1) : null;
                 if (styleRange.beginOffset > lastEnd) {
                     spansBuilder.add(Collections.emptyList(), styleRange.beginOffset - lastEnd);
                 }
-                spansBuilder.add(Collections.singleton(styleRange.styleClass), (styleRange.endOffset - styleRange.beginOffset) + 1);
-                lastEnd = styleRange.endOffset + 1;
+
+                int endOffset = nextStyleRange != null ? nextStyleRange.beginOffset - 1 : styleRange.endOffset;
+                spansBuilder.add(Collections.singleton(styleRange.styleClass), (endOffset - styleRange.beginOffset) + 1);
+                lastEnd = endOffset + 1;
             }
 
             if (lastEnd < text.length()) {
@@ -165,20 +169,7 @@ public class JavaEditorPane extends CodeArea {
             int endOffset = getIndex(range.end, text);
             String styleClass = getStyleClassByNode(node);
 
-            if (!isOverlap(beginOffset, endOffset)) {
-                styleRanges.add(new StyleRange(beginOffset, endOffset, styleClass));
-            }
-        }
-
-        private boolean isOverlap(int beginOffset, int endOffset) {
-            for (StyleRange range : styleRanges) {
-                if ((beginOffset >= range.beginOffset && beginOffset < range.endOffset) ||
-                        (endOffset > range.beginOffset && endOffset <= range.endOffset) ||
-                        (beginOffset <= range.beginOffset && endOffset >= range.endOffset)) {
-                    return true;
-                }
-            }
-            return false;
+            styleRanges.add(new StyleRange(beginOffset, endOffset, styleClass));
         }
 
         private static int getIndex(com.github.javaparser.Position position, String text) {
@@ -194,7 +185,6 @@ public class JavaEditorPane extends CodeArea {
         }
 
         private static String getStyleClassByNode(Node node) {
-            System.out.println(node.getClass().getSimpleName());
             return switch (node) {
                 case ClassOrInterfaceDeclaration classOrInterfaceDeclaration -> "class";
                 case PackageDeclaration packageDeclaration -> "package";

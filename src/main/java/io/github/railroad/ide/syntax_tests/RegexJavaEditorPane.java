@@ -1,4 +1,4 @@
-package io.github.railroad.ide;
+package io.github.railroad.ide.syntax_tests;
 
 import io.github.railroad.Railroad;
 import io.github.railroad.utility.ShutdownHooks;
@@ -22,10 +22,10 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class TextEditorPane extends CodeArea {
+public class RegexJavaEditorPane extends CodeArea {
     private final ExecutorService executor0 = Executors.newSingleThreadExecutor();
 
-    public TextEditorPane(Path item) {
+    public RegexJavaEditorPane(Path item) {
         setParagraphGraphicFactory(LineNumberFactory.get(this));
         multiPlainChanges()
                 .successionEnds(Duration.ofMillis(500))
@@ -110,6 +110,7 @@ public class TextEditorPane extends CodeArea {
     }
 
     private static StyleSpans<Collection<String>> computeHighlighting(String text) {
+        long start = System.currentTimeMillis();
         Matcher matcher = Java.PATTERN.matcher(text);
         int lastKwEnd = 0;
         var spansBuilder = new StyleSpansBuilder<Collection<String>>();
@@ -121,7 +122,9 @@ public class TextEditorPane extends CodeArea {
         }
 
         spansBuilder.add(Collections.emptyList(), text.length() - lastKwEnd);
-        return spansBuilder.create();
+        StyleSpans<Collection<String>> spans = spansBuilder.create();
+        Railroad.LOGGER.debug("Computed highlighting in {} ms", System.currentTimeMillis() - start);
+        return spans;
     }
 
     private static @NotNull String getStyleClass(Matcher matcher) {

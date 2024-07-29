@@ -149,10 +149,11 @@
     -fx-fill: #2e58ff;
 }
 
-.code-area .error {
-    -fx-fill: red;
-}
-
 .code-area .modifier {
     -fx-fill: #d000ff;
+}
+
+.code-area .error {
+    -fx-underline: true;
+    -fx-stroke: -color-danger-emphasis;
 }

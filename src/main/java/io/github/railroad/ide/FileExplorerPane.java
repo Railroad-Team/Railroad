@@ -3,6 +3,9 @@ package io.github.railroad.ide;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import io.github.railroad.IDESetup;
 import io.github.railroad.Railroad;
+import io.github.railroad.ide.syntax_tests.ASTJavaEditorPane;
+import io.github.railroad.ide.syntax_tests.RegexJavaEditorPane;
+import io.github.railroad.ide.syntax_tests.TreeSitterJavaEditorPane;
 import io.github.railroad.project.Project;
 import io.github.railroad.utility.FileHandler;
 import io.github.railroad.utility.ShutdownHooks;
@@ -185,7 +188,7 @@ public class FileExplorerPane extends TreeView<Path> {
                             var bestPane = IDESetup.findBestPaneForFiles(rootPane);
                             bestPane.ifPresent(detachableTabPane -> {
                                 DetachableTabPane tabPane = bestPane.get();
-                                var textEditorPane = item.toString().endsWith(".java") ? new JavaEditorPane(item) : new TextEditorPane(item);
+                                var textEditorPane = new CodeEditorPane(item);
                                 tabPane.addTab(item.getFileName().toString(), new VirtualizedScrollPane<>(textEditorPane));
                             });
                         }
