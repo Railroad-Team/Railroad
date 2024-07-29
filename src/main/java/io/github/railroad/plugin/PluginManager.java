@@ -102,9 +102,9 @@ public class PluginManager extends Thread {
         showLog(plugin, "Added plugin");
     }
 
-    public void notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
+    public void notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes railroadActivityTypes, Object... data) {
         for (Plugin plugin : this.pluginList) {
-            PluginPhaseResult phaseResult = plugin.railroadActivityChange(railroadActivityTypes);
+            PluginPhaseResult phaseResult = plugin.railroadActivityChange(railroadActivityTypes, data);
             if (plugin.getState() == PluginState.ACTIVITY_UPDATE_ERROR) {
                 showError(plugin, phaseResult, "Update Activity");
             }

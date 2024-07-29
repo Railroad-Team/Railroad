@@ -171,7 +171,7 @@ public class Railroad extends Application {
         Railroad.window.close();
         Railroad.window = window;
         PROJECT_MANAGER.setCurrentProject(project);
-        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN);
+        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN, project);
     }
 
     public static void openUrl(String url) {

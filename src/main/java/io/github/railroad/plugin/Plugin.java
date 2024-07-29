@@ -31,7 +31,7 @@ public abstract class Plugin implements JsonSerializable<JsonPrimitive> {
 
     public abstract PluginPhaseResult unload();
 
-    public abstract PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes);
+    public abstract PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes, Object... data);
 
     public abstract PluginPhaseResult reload();
 

@@ -3,10 +3,9 @@ package io.github.railroad.ide;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import io.github.railroad.IDESetup;
 import io.github.railroad.Railroad;
-import io.github.railroad.ide.syntax_tests.ASTJavaEditorPane;
-import io.github.railroad.ide.syntax_tests.RegexJavaEditorPane;
-import io.github.railroad.ide.syntax_tests.TreeSitterJavaEditorPane;
+import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.project.Project;
+import io.github.railroad.project.ProjectManager;
 import io.github.railroad.utility.FileHandler;
 import io.github.railroad.utility.ShutdownHooks;
 import javafx.collections.FXCollections;
@@ -189,7 +188,15 @@ public class FileExplorerPane extends TreeView<Path> {
                             bestPane.ifPresent(detachableTabPane -> {
                                 DetachableTabPane tabPane = bestPane.get();
                                 var textEditorPane = new CodeEditorPane(item);
-                                tabPane.addTab(item.getFileName().toString(), new VirtualizedScrollPane<>(textEditorPane));
+                                Railroad.PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.EDIT_FILE, item);
+                                var tab = tabPane.addTab(item.getFileName().toString(), new VirtualizedScrollPane<>(textEditorPane));
+                                tabPane.getSelectionModel().select(tab);
+
+                                tab.setOnClosed(event -> {
+                                    if(tabPane.getTabs().isEmpty() || (tabPane.getTabs().size() == 1 && tabPane.getTabs().getFirst() == tab)) {
+                                        Railroad.PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN, Railroad.PROJECT_MANAGER.getOpenProject());
+                                    }
+                                });
                             });
                         }
                     }
