@@ -16,6 +16,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.SplitPane;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.fxmisc.richtext.CodeArea;
@@ -96,6 +97,7 @@ public class IDESetup {
         var scene = new Scene(mainPane);
         Railroad.handleStyles(scene);
         scene.getStylesheets().add(Railroad.getResource("styles/code-area.css").toExternalForm());
+        stage.getIcons().add(new Image(Railroad.getResourceAsStream("images/logo.png")));
 
         stage.setScene(scene);
         stage.show();
