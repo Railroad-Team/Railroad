@@ -1,14 +1,18 @@
 package io.github.railroad.ide;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.ide.syntax_tests.TreeSitterJavaEditorPane;
+import io.github.railroad.ide.indexing.Indexes;
+import io.github.railroad.ide.indexing.Trie;
+import io.github.railroad.ide.syntaxhighlighting.TreeSitterJavaSyntaxHighlighting;
 import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.utility.ShutdownHooks;
 import io.github.railroad.utility.compiler.JavaSourceFromString;
 import javafx.collections.FXCollections;
 import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableMap;
 import javafx.concurrent.Task;
+import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
@@ -55,7 +59,7 @@ public class CodeEditorPane extends CodeArea {
 
         syntaxHighlight();
         errorHighlighting();
-        codeCompletion();
+        // codeCompletion();
         listenForChanges();
         resizableFont();
 
@@ -123,18 +127,56 @@ public class CodeEditorPane extends CodeArea {
     }
 
     private void codeCompletion() {
-//        plainTextChanges()
-//                .successionEnds(Duration.ofMillis(500))
-//                .retainLatestUntilLater(executor0)
-//                .filter(change -> !change.getInserted().equals(change.getRemoved()))
-//                .subscribe(change -> {
-//                    String inserted = change.getInserted();
-//                    if(inserted.endsWith(".")) {
-//                        showAutoComplete(change.getPosition());
-//                    } else if(inserted.equals(" ")) {
-//                        hideAutoComplete();
-//                    }
-//                });
+        final Trie trie = Indexes.createTrie();
+        plainTextChanges()
+                .successionEnds(Duration.ofMillis(500))
+                .retainLatestUntilLater(executor0)
+                .filter(change -> !change.getInserted().equals(change.getRemoved()))
+                .subscribe(change -> {
+                    String inserted = change.getInserted();
+                    if(inserted.endsWith(".")) {
+                        showAutoComplete(trie, change.getPosition());
+                    } else if(inserted.equals(" ")) {
+                        hideAutoComplete();
+                    }
+                });
+    }
+
+    private void showAutoComplete(Trie trie, int position) {
+        String text = getText();
+        int start = position;
+        while(start > 0 && Character.isJavaIdentifierPart(text.charAt(start - 1))) {
+            start--;
+        }
+
+        String prefix = text.substring(start, position);
+        List<String> suggestions = trie.searchPrefix(prefix);
+        if(suggestions.isEmpty()) {
+            hideAutoComplete();
+            return;
+        }
+
+        var popup = new Popup();
+        var listView = new RRListView<String>();
+        listView.getItems().addAll(suggestions);
+
+        final int finalStart = start;
+        listView.setOnMouseClicked(event -> {
+            String selected = listView.getSelectionModel().getSelectedItem();
+            replaceText(finalStart, position, selected);
+            hideAutoComplete();
+        });
+
+        popup.getContent().add(listView);
+
+        int caretX = getCaretBounds().map(Bounds::getMaxX).map(Double::intValue).orElse(0);
+        int caretY = getCaretBounds().map(Bounds::getMaxY).map(Double::intValue).orElse(0);
+
+        popup.show(this, caretX, caretY);
+    }
+
+    private void hideAutoComplete() {
+
     }
 
     private void errorHighlighting() {
@@ -307,6 +349,6 @@ public class CodeEditorPane extends CodeArea {
     }
 
     private StyleSpans<Collection<String>> computeHighlighting(String text) {
-        return TreeSitterJavaEditorPane.computeHighlighting(text);
+        return TreeSitterJavaSyntaxHighlighting.computeHighlighting(text);
     }
 }

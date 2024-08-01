@@ -1,4 +1,4 @@
-package io.github.railroad.ide.syntax_tests;
+package io.github.railroad.ide.syntaxhighlighting;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.Range;
@@ -14,120 +14,23 @@ import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import io.github.railroad.Railroad;
-import io.github.railroad.utility.ShutdownHooks;
-import javafx.concurrent.Task;
-import org.fxmisc.richtext.CodeArea;
-import org.fxmisc.richtext.LineNumberFactory;
 import org.fxmisc.richtext.model.StyleSpans;
 import org.fxmisc.richtext.model.StyleSpansBuilder;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardWatchEventKinds;
-import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-public class ASTJavaEditorPane extends CodeArea {
-    private final ExecutorService executor0 = Executors.newSingleThreadExecutor();
-
-    public ASTJavaEditorPane(Path item) {
-        setParagraphGraphicFactory(LineNumberFactory.get(this));
-        multiPlainChanges()
-                .successionEnds(Duration.ofMillis(500))
-                .retainLatestUntilLater(executor0)
-                .supplyTask(this::computeHighlightingAsync)
-                .awaitLatest(multiPlainChanges())
-                .filterMap(throwable -> {
-                    if (throwable.isSuccess()) {
-                        return throwable.toOptional();
-                    } else {
-                        Railroad.LOGGER.error("Failed to compute highlighting", throwable.getFailure());
-                        return Optional.empty();
-                    }
-                })
-                .subscribe(this::applyHighlighting);
-
-        try {
-            replaceText(0, 0, Files.readString(item));
-
-            // listen for changes to the file
-            try (var watcher = item.getFileSystem().newWatchService()) {
-                item.getParent().register(watcher, StandardWatchEventKinds.ENTRY_MODIFY);
-
-                ExecutorService executor1 = Executors.newSingleThreadExecutor();
-                executor1.submit(() -> {
-                    while (!Thread.interrupted()) {
-                        try {
-                            var key = watcher.take();
-                            for (var event : key.pollEvents()) {
-                                if (event.context().equals(item.getFileName())) {
-                                    String content = Files.readString(item);
-                                    if (!getText().equals(content)) {
-                                        replaceText(0, 0, content);
-                                    }
-                                }
-                            }
-                            key.reset();
-                        } catch (InterruptedException exception) {
-                            Railroad.LOGGER.error("File watcher interrupted", exception);
-                        } catch (IOException exception) {
-                            Railroad.LOGGER.error("Failed to watch file", exception);
-                        }
-                    }
-                });
-
-                ShutdownHooks.addHook(executor1::shutdown);
-            } catch (IOException exception) {
-                Railroad.LOGGER.error("Failed to watch file", exception);
-            }
-
-            textProperty().addListener((observable, oldText, newText) -> {
-                try {
-                    if (!Files.readString(item).equals(newText)) {
-                        Files.writeString(item, newText);
-                    }
-                } catch (IOException exception) {
-                    Railroad.LOGGER.error("Failed to write file", exception);
-                }
-            });
-        } catch (IOException exception) {
-            Railroad.LOGGER.error("Failed to read file", exception);
-        }
-
-        ShutdownHooks.addHook(executor0::shutdown);
-    }
-
-    private Task<StyleSpans<Collection<String>>> computeHighlightingAsync() {
-        String text = getText();
-        Task<StyleSpans<Collection<String>>> task = new Task<>() {
-            @Override
-            protected StyleSpans<Collection<String>> call() {
-                return computeHighlighting(text);
-            }
-        };
-
-        executor0.submit(task);
-        return task;
-    }
-
-    private void applyHighlighting(StyleSpans<Collection<String>> highlighting) {
-        setStyleSpans(0, highlighting);
-    }
-
+public class ASTJavaSyntaxHighlighting {
     private static final JavaParser PARSER = new JavaParser();
 
-    private static StyleSpans<Collection<String>> computeHighlighting(String text) {
+    public static StyleSpans<Collection<String>> computeHighlighting(String text) {
         long start = System.currentTimeMillis();
         CompilationUnit compilationUnit = PARSER.parse(text).getResult().orElseThrow();
 
         var highlighter = new SyntaxHighlighter(text);
         highlighter.visit(compilationUnit, null);
+
         var styles = highlighter.computeStyleSpans();
-        long end = System.currentTimeMillis();
-        System.out.println("Highlighting took " + (end - start) + "ms");
+        Railroad.LOGGER.debug("Computed highlighting in {} ms", System.currentTimeMillis() - start);
         return styles;
     }
 
