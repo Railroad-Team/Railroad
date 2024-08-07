@@ -184,9 +184,8 @@ public class FileHandler {
             return new FontIcon(FontAwesomeRegular.FOLDER);
 
         String extension = getExtension(path.toString());
-        if (extension == null) {
+        if (extension == null)
             return new FontIcon(FontAwesomeRegular.FILE);
-        }
 
         return switch (extension) {
             case "png", "jpg", "jpeg", "gif", "bmp", "webp" -> new FontIcon(FontAwesomeRegular.FILE_IMAGE);

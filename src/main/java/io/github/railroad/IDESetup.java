@@ -2,11 +2,12 @@ package io.github.railroad;
 
 import com.kodedu.terminalfx.TerminalBuilder;
 import com.kodedu.terminalfx.config.TerminalConfig;
+import com.panemu.tiwulfx.control.dock.DetachableTab;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import io.github.railroad.ide.ConsolePane;
-import io.github.railroad.ide.FileExplorerPane;
 import io.github.railroad.ide.IDEWelcomePane;
 import io.github.railroad.ide.StatusBarPane;
+import io.github.railroad.ide.projectexplorer.ProjectExplorerPane;
 import io.github.railroad.project.Project;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import javafx.geometry.Orientation;
@@ -56,9 +57,10 @@ public class IDESetup {
 
         // File Explorer
         var leftPane = new DetachableTabPane();
-        var fileExplorer = new FileExplorerPane(project, mainPane);
-        leftPane.addTab("File Explorer", fileExplorer);
+        var fileExplorer = new ProjectExplorerPane(project/*, mainPane*/);
+        leftPane.addTab("Project Explorer", fileExplorer);
         horizontalSplit.getItems().add(leftPane);
+        horizontalSplit.setDividerPositions(0.1);
 
         var verticalSplit = new SplitPane();
         verticalSplit.setOrientation(Orientation.VERTICAL);
@@ -82,9 +84,12 @@ public class IDESetup {
         var terminalBuilder = new TerminalBuilder(terminalConfig);
         terminalBuilder.setTerminalPath(Path.of(project.getPathString()));
         var terminal = terminalBuilder.newTerminal().getTerminal();
-        bottomPane.addTab("Terminal", terminal);
+        DetachableTab terminalTab = bottomPane.addTab("Terminal", terminal);
+        bottomPane.getSelectionModel().select(terminalTab);
 
         verticalSplit.getItems().add(bottomPane);
+        verticalSplit.setDividerPositions(0.8);
+
         horizontalSplit.getItems().add(verticalSplit);
         mainPane.setCenter(horizontalSplit);
 
