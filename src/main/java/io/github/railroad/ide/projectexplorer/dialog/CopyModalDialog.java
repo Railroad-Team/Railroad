@@ -16,6 +16,7 @@ public class CopyModalDialog {
         var dialog = new Stage(StageStyle.UTILITY);
         dialog.initOwner(owner);
         dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setTitle("Replace file?"); // TODO: Localize
 
         var root = new RRGridPane();
         root.setPadding(new Insets(30));

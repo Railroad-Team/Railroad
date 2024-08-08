@@ -1,5 +1,7 @@
 package io.github.railroad.ide.projectexplorer;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,6 +12,8 @@ public class PathItem {
     @Getter
     private Path path;
     private int depthCount;
+
+    private BooleanProperty cutProperty = new SimpleBooleanProperty(false);
 
     public PathItem(Path path) {
         this.path = path;
@@ -27,5 +31,17 @@ public class PathItem {
 
     public int getNewDepthCount() {
         return ++this.depthCount;
+    }
+
+    public BooleanProperty cutProperty() {
+        return cutProperty;
+    }
+
+    public boolean isCut() {
+        return cutProperty.get();
+    }
+
+    public void setCut(boolean cut) {
+        cutProperty.set(cut);
     }
 }

@@ -16,7 +16,6 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import lombok.Getter;
-import org.apache.tools.ant.types.selectors.TypeSelector;
 
 import java.io.IOException;
 import java.nio.file.Files;

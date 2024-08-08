@@ -1,14 +1,22 @@
 package io.github.railroad.ide.projectexplorer;
 
+import com.kodedu.terminalfx.Terminal;
+import com.panemu.tiwulfx.control.dock.DetachableTabPane;
+import io.github.railroad.IDESetup;
 import io.github.railroad.Railroad;
+import io.github.railroad.ide.JavaCodeEditorPane;
+import io.github.railroad.ide.TextEditorPane;
 import io.github.railroad.ide.projectexplorer.dialog.CopyModalDialog;
 import io.github.railroad.ide.projectexplorer.dialog.CreateFileDialog;
+import io.github.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import io.github.railroad.ide.projectexplorer.task.FileCopyTask;
 import io.github.railroad.ide.projectexplorer.task.SearchTask;
 import io.github.railroad.ide.projectexplorer.task.WatchTask;
 import io.github.railroad.localization.ui.LocalizedTextField;
 import io.github.railroad.project.Project;
+import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.utility.FileHandler;
 import io.github.railroad.utility.ShutdownHooks;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -18,13 +26,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.geometry.Insets;
-import javafx.scene.control.SelectionMode;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
-import javafx.scene.input.ClipboardContent;
-import javafx.scene.input.Dragboard;
-import javafx.scene.input.TransferMode;
+import javafx.scene.control.*;
+import javafx.scene.input.*;
 import javafx.stage.Window;
 
 import java.io.File;
@@ -34,8 +37,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeListener {
     private final ExecutorService executorService = Executors.newFixedThreadPool(3);
@@ -57,7 +62,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         fileChangeListenerEnabled = true;
     }
 
-    public ProjectExplorerPane(Project project) {
+    public ProjectExplorerPane(Project project, RRBorderPane mainPane) {
         Path rootPath = Path.of(project.getPathString());
         setPadding(new Insets(10));
         setSpacing(10);
@@ -66,12 +71,86 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         this.treeView.setRoot(new PathTreeItem(new PathItem(rootPath)));
         this.treeView.setEditable(true);
         this.treeView.setCellFactory(param -> {
-            var cell = new PathTreeCell(messageProperty);
+            var cell = new PathTreeCell(messageProperty, mainPane);
             handleDragDrop(cell);
             return cell;
         });
         this.treeView.getRoot().setExpanded(true);
         this.treeView.prefHeightProperty().bind(heightProperty());
+        this.treeView.setOnKeyReleased(event -> {
+            TreeItem<PathItem> selectedItem = this.treeView.getSelectionModel().getSelectedItem();
+            if (selectedItem == null)
+                return;
+
+            PathItem item = selectedItem.getValue();
+            if (event.getCode() == KeyCode.ENTER) {
+                event.consume();
+
+                if (Files.isDirectory(item.getPath())) {
+                    this.treeView.getSelectionModel().selectNext();
+                } else {
+                    ProjectExplorerPane.openFile(item, mainPane);
+                }
+
+                return;
+            }
+
+            if (event.getCode() == KeyCode.DELETE) {
+                event.consume();
+
+                DeleteDialog.open(getScene().getWindow(), item.getPath());
+                return;
+            }
+
+            if (event.getCode() == KeyCode.C && event.isControlDown()) {
+                event.consume();
+
+                ProjectExplorerPane.copy(item);
+                return;
+            }
+
+            if (event.getCode() == KeyCode.V && event.isControlDown()) {
+                event.consume();
+
+                ProjectExplorerPane.paste(getScene().getWindow(), item);
+                return;
+            }
+
+            if (event.getCode() == KeyCode.X && event.isControlDown()) {
+                event.consume();
+
+                ProjectExplorerPane.cut((PathTreeItem) selectedItem, this.treeView);
+                return;
+            }
+
+            if (event.getCode() == KeyCode.N && event.isControlDown()) {
+                event.consume();
+
+                CreateFileDialog.open(getScene().getWindow(), item.getPath(), event.isShiftDown() ? FileCreateType.FOLDER : FileCreateType.FILE);
+                return;
+            }
+
+            if (event.getCode() == KeyCode.R && event.isControlDown()) {
+                event.consume();
+
+                ((PathTreeCell) selectedItem.getGraphic()).startEdit();
+                return;
+            }
+
+            if (event.getCode() == KeyCode.O && event.isControlDown()) {
+                event.consume();
+
+                ProjectExplorerPane.openInExplorer(item.getPath());
+                return;
+            }
+
+            if (event.getCode() == KeyCode.T && event.isControlDown()) {
+                event.consume();
+
+                ProjectExplorerPane.openInTerminal(item, mainPane);
+                return;
+            }
+        });
         sortTreeItems(this.treeView.getRoot());
 
         this.searchField = new LocalizedTextField("railroad.ide.project_explorer.search_field");
@@ -86,8 +165,126 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         ShutdownHooks.addHook(this.executorService::shutdown);
     }
 
-    public static void createFile(Window window, Path path, FileCreateType type) {
-        CreateFileDialog.open(window, path, type);
+    public static void cut(PathTreeItem pathItem, TreeView<PathItem> treeView) {
+        pathItem.getValue().setCut(true);
+
+        // get the clipboard content
+        Clipboard clipboard = Clipboard.getSystemClipboard();
+        if (clipboard.hasFiles() && clipboard.hasString() && clipboard.getString().equals("cut")) {
+            for (File file : clipboard.getFiles()) {
+                Path path = file.toPath();
+
+                // we need to find the cells that match the path and set them to not cut
+                TreeItem<PathItem> rootItem = treeView.getRoot();
+                TreeItem<PathItem> item = ((ProjectExplorerPane) treeView.getParent()).findOrCreateTreeItem(rootItem, path);
+                if (item == null)
+                    continue;
+
+                item.getValue().setCut(false);
+            }
+        }
+
+        var content = new ClipboardContent();
+        content.putFiles(List.of(pathItem.getValue().getPath().toFile()));
+        content.putString("cut");
+        clipboard.setContent(content);
+    }
+
+    public static void copy(PathItem item) {
+        var clipboard = Clipboard.getSystemClipboard();
+        var content = new ClipboardContent();
+        content.putFiles(List.of(item.getPath().toFile()));
+        clipboard.setContent(content);
+    }
+
+    public static void paste(Window window, PathItem item) {
+        var clipboard = Clipboard.getSystemClipboard();
+        if (clipboard.hasFiles()) {
+            var files = clipboard.getFiles();
+            boolean isCut = clipboard.hasString() && clipboard.getString().equals("cut");
+            for (File file : files) {
+                var targetPath = Path.of(item.getPath().toAbsolutePath().toString(), file.getName());
+                if (Files.exists(targetPath, LinkOption.NOFOLLOW_LINKS)) {
+                    var replaceProperty = new SimpleBooleanProperty();
+                    CopyModalDialog.open(window, replaceProperty);
+                    replaceProperty.addListener((observable, oldValue, newValue) -> {
+                        if (newValue) {
+                            new FileCopyTask(file.toPath(), targetPath).run();
+                        }
+                    });
+                } else {
+                    new FileCopyTask(file.toPath(), targetPath).run();
+                }
+
+                if (!isCut)
+                    continue;
+
+                Path path = file.toPath();
+                if (Files.isDirectory(path)) {
+                    FileHandler.deleteFolder(path);
+                } else {
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (IOException exception) {
+                        Railroad.LOGGER.error("Error while deleting file", exception);
+                    }
+                }
+            }
+        }
+    }
+
+    public static void openInExplorer(Path path) {
+        FileHandler.openInExplorer(path);
+    }
+
+    public static void openInTerminal(PathItem item, RRBorderPane mainPane) {
+        Path path = item.getPath();
+
+        Optional<DetachableTabPane> pane = IDESetup.findBestPaneForTerminal(mainPane);
+        pane.ifPresent(detachableTabPane -> {
+            Terminal terminal = IDESetup.createTerminal(Files.isDirectory(path) ? path : path.getParent());
+            if (!Files.isDirectory(path)) {
+                terminal.onTerminalFxReady(() -> terminal.command(path.getFileName().toString()));
+            }
+
+            Tab terminalTab = detachableTabPane.addTab("Terminal (" +
+                    detachableTabPane.getTabs()
+                            .stream()
+                            .filter(tab -> tab.getContent() instanceof Terminal)
+                            .count()
+                    + ")", terminal);
+
+            detachableTabPane.getSelectionModel().select(terminalTab);
+        });
+    }
+
+    public static void openFile(PathItem item, RRBorderPane mainPane) {
+        Path path = item.getPath();
+        if (Files.isDirectory(path))
+            return;
+
+        Optional<DetachableTabPane> pane = IDESetup.findBestPaneForFiles(mainPane);
+        pane.ifPresent(detachableTabPane -> { // TODO: Some kind of text editor registry
+            if (path.toString().endsWith(".java")) {
+                detachableTabPane.addTab(path.getFileName().toString(), new JavaCodeEditorPane(path));
+            } else {
+                detachableTabPane.addTab(path.getFileName().toString(), new TextEditorPane(path));
+            }
+        });
+    }
+
+    public static void expandAll(TreeItem<PathItem> treeItem) {
+        treeItem.setExpanded(true);
+        for (TreeItem<PathItem> child : treeItem.getChildren()) {
+            expandAll(child);
+        }
+    }
+
+    public static void collapseAll(TreeItem<PathItem> treeItem) {
+        treeItem.setExpanded(false);
+        for (TreeItem<PathItem> child : treeItem.getChildren()) {
+            collapseAll(child);
+        }
     }
 
     @Override
@@ -106,7 +303,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             }*/
 
             String searchValue = searchField.getText();
-            if(!searchValue.isBlank()) {
+            if (!searchValue.isBlank()) {
                 var searchTask = new SearchTask(treeView.getRoot().getValue().getPath(), searchValue);
                 searchTask.setOnSucceeded(event -> updateTreeViewWithSearchResults(searchTask.getMatchedPaths()));
                 executorService.submit(searchTask);
@@ -232,7 +429,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         for (Path path : matchedPaths) {
             TreeItem<PathItem> parentItem = findOrCreateTreeItem(rootItem, path.getParent());
-            if(!isPathAlreadyAdded(parentItem, path)) {
+            if (isMissingPath(parentItem, path)) {
                 TreeItem<PathItem> newItem = new PathTreeItem(new PathItem(path));
                 parentItem.getChildren().add(newItem);
             }
@@ -315,7 +512,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
     private void addPathToTree(Path path) {
         TreeItem<PathItem> parentItem = findTreeItem(path.getParent());
-        if (parentItem != null && !isPathAlreadyAdded(parentItem, path)) {
+        if (parentItem != null && isMissingPath(parentItem, path)) {
             PathItem newItem = new PathItem(path);
             TreeItem<PathItem> newTreeItem = new PathTreeItem(newItem);
             parentItem.getChildren().add(newTreeItem);
@@ -358,12 +555,13 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         }
     }
 
-    private boolean isPathAlreadyAdded(TreeItem<PathItem> parentItem, Path path) {
+    private boolean isMissingPath(TreeItem<PathItem> parentItem, Path path) {
         for (TreeItem<PathItem> child : parentItem.getChildren()) {
             if (child.getValue().getPath().equals(path)) {
-                return true;
+                return false;
             }
         }
-        return false;
+
+        return true;
     }
 }

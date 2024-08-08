@@ -4,6 +4,7 @@ import javafx.scene.Node;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -202,5 +203,15 @@ public class FileHandler {
                     new FontIcon(FontAwesomeRegular.FILE_CODE);
             default -> new FontIcon(FontAwesomeRegular.FILE_ALT);
         };
+    }
+
+    public static void openInExplorer(Path path) {
+        if(Desktop.isDesktopSupported()) {
+            try {
+                Desktop.getDesktop().open(Files.isDirectory(path) ? path.toFile() : path.getParent().toFile());
+            } catch (IOException exception) {
+                throw new RuntimeException("Failed to open in explorer", exception);
+            }
+        }
     }
 }

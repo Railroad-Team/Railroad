@@ -17,13 +17,11 @@ import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
-import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Popup;
-import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
 import org.fxmisc.richtext.event.MouseOverTextEvent;
 import org.fxmisc.richtext.model.StyleSpans;
@@ -31,39 +29,27 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import javax.tools.*;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardWatchEventKinds;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.IntFunction;
 
-public class CodeEditorPane extends CodeArea {
+public class JavaCodeEditorPane extends TextEditorPane {
     private static final JavaCompiler JAVA_COMPILER = ToolProvider.getSystemJavaCompiler();
 
-    private final Path filePath;
     private final ExecutorService executor0 = Executors.newFixedThreadPool(2);
     private final ObservableMap<Diagnostic<? extends JavaFileObject>, Popup> errors = FXCollections.observableHashMap();
 
-    private static final int[] FONT_SIZES = {6, 8, 10, 12, 14, 16, 18, 20, 24, 26, 28, 30, 36, 40, 48, 56, 60};
-    private int fontSizeIndex = 5;
+    public JavaCodeEditorPane(Path item) {
+        super(item);
 
-    public CodeEditorPane(Path item) {
-        this.filePath = item;
-
-        setParagraphGraphicFactory(LineNumberFactory.get(this)); // marginErrors();
-        setMouseOverTextDelay(Duration.ofMillis(500));
+        // marginErrors();
 
         syntaxHighlight();
         errorHighlighting();
         // codeCompletion();
-        listenForChanges();
-        resizableFont();
-
-        moveTo(0);
     }
 
     private void marginErrors() {
@@ -103,26 +89,6 @@ public class CodeEditorPane extends CodeArea {
 
             hbox.getChildren().addAll(icon);
             return hbox;
-        });
-    }
-
-    private void resizableFont() {
-        setStyle("-fx-font-size: " + FONT_SIZES[fontSizeIndex] + "px;");
-
-        setOnKeyPressed(event -> {
-            if (!event.isControlDown())
-                return;
-
-            KeyCode code = event.getCode();
-            if (code != KeyCode.EQUALS && code != KeyCode.MINUS)
-                return;
-
-            int index = fontSizeIndex + (code == KeyCode.EQUALS ? 1 : -1);
-            if (index < 0 || index >= FONT_SIZES.length)
-                return;
-
-            fontSizeIndex = index;
-            setStyle("-fx-font-size: " + FONT_SIZES[fontSizeIndex] + "px;");
         });
     }
 
@@ -206,7 +172,7 @@ public class CodeEditorPane extends CodeArea {
         Task<DiagnosticCollector<JavaFileObject>> task = new Task<>() {
             @Override
             protected DiagnosticCollector<JavaFileObject> call() {
-                JavaSourceFromString source = new JavaSourceFromString(CodeEditorPane.this.filePath.getFileName().toString().replace(".java", ""), getText());
+                JavaSourceFromString source = new JavaSourceFromString(JavaCodeEditorPane.this.filePath.getFileName().toString().replace(".java", ""), getText());
                 DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
                 JavaCompiler.CompilationTask task = JAVA_COMPILER.getTask(null, null, diagnostics, List.of("-Xlint:all"), null, List.of(source));
                 task.call();
@@ -237,7 +203,7 @@ public class CodeEditorPane extends CodeArea {
                         int position = event.getCharacterIndex();
                         if (position >= start && position <= end) {
                             Point2D screenPosition = event.getScreenPosition();
-                            popup.show(CodeEditorPane.this, screenPosition.getX(), screenPosition.getY());
+                            popup.show(JavaCodeEditorPane.this, screenPosition.getX(), screenPosition.getY());
                         }
                     });
 
@@ -246,7 +212,7 @@ public class CodeEditorPane extends CodeArea {
                         if (!popup.isShowing())
                             return;
 
-                        int charIndex = CodeEditorPane.this.hit(event.getX(), event.getY()).getCharacterIndex().orElse(-1);
+                        int charIndex = JavaCodeEditorPane.this.hit(event.getX(), event.getY()).getCharacterIndex().orElse(-1);
                         if (charIndex < start || charIndex > end) {
                             popup.hide();
                         }
@@ -280,55 +246,6 @@ public class CodeEditorPane extends CodeArea {
                 })
                 .subscribe(this::applyHighlighting);
         ShutdownHooks.addHook(executor0::shutdown);
-    }
-
-    private void listenForChanges() {
-        try {
-            replaceText(0, 0, Files.readString(this.filePath));
-
-            // listen for changes to the file
-            try (var watcher = this.filePath.getFileSystem().newWatchService()) {
-                this.filePath.getParent().register(watcher, StandardWatchEventKinds.ENTRY_MODIFY);
-
-                ExecutorService executor1 = Executors.newSingleThreadExecutor();
-                executor1.submit(() -> {
-                    while (!Thread.interrupted()) {
-                        try {
-                            var key = watcher.take();
-                            for (var event : key.pollEvents()) {
-                                if (event.context().equals(this.filePath.getFileName())) {
-                                    String content = Files.readString(this.filePath);
-                                    if (!getText().equals(content)) {
-                                        replaceText(0, 0, content);
-                                    }
-                                }
-                            }
-                            key.reset();
-                        } catch (InterruptedException exception) {
-                            Railroad.LOGGER.error("File watcher interrupted", exception);
-                        } catch (IOException exception) {
-                            Railroad.LOGGER.error("Failed to watch file", exception);
-                        }
-                    }
-                });
-
-                ShutdownHooks.addHook(executor1::shutdown);
-            } catch (IOException exception) {
-                Railroad.LOGGER.error("Failed to watch file", exception);
-            }
-
-            textProperty().addListener((observable, oldText, newText) -> {
-                try {
-                    if (!Files.readString(this.filePath).equals(newText)) {
-                        Files.writeString(this.filePath, newText);
-                    }
-                } catch (IOException exception) {
-                    Railroad.LOGGER.error("Failed to write file", exception);
-                }
-            });
-        } catch (IOException exception) {
-            Railroad.LOGGER.error("Failed to read file", exception);
-        }
     }
 
     private Task<StyleSpans<Collection<String>>> computeHighlightingAsync() {

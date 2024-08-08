@@ -1,5 +1,6 @@
 package io.github.railroad;
 
+import com.kodedu.terminalfx.Terminal;
 import com.kodedu.terminalfx.TerminalBuilder;
 import com.kodedu.terminalfx.config.TerminalConfig;
 import com.panemu.tiwulfx.control.dock.DetachableTab;
@@ -17,6 +18,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.Tab;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -25,6 +27,7 @@ import org.fxmisc.richtext.CodeArea;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 
 public class IDESetup {
     public static Stage createIDEWindow(Project project) {
@@ -57,7 +60,7 @@ public class IDESetup {
 
         // File Explorer
         var leftPane = new DetachableTabPane();
-        var fileExplorer = new ProjectExplorerPane(project/*, mainPane*/);
+        var fileExplorer = new ProjectExplorerPane(project, mainPane);
         leftPane.addTab("Project Explorer", fileExplorer);
         horizontalSplit.getItems().add(leftPane);
         horizontalSplit.setDividerPositions(0.1);
@@ -77,13 +80,7 @@ public class IDESetup {
         bottomPane.addTab("Console", console);
 
         // Terminal
-        var terminalConfig = new TerminalConfig();
-        terminalConfig.setBackgroundColor(Color.rgb(16, 16, 16));
-        terminalConfig.setForegroundColor(Color.rgb(240, 240, 240));
-        terminalConfig.setCursorColor(Color.rgb(255, 0, 0, 0.5));
-        var terminalBuilder = new TerminalBuilder(terminalConfig);
-        terminalBuilder.setTerminalPath(Path.of(project.getPathString()));
-        var terminal = terminalBuilder.newTerminal().getTerminal();
+        Terminal terminal = createTerminal(Path.of(project.getPathString()));
         DetachableTab terminalTab = bottomPane.addTab("Terminal", terminal);
         bottomPane.getSelectionModel().select(terminalTab);
 
@@ -110,16 +107,35 @@ public class IDESetup {
         return stage;
     }
 
+    public static Terminal createTerminal(Path path) {
+        var terminalConfig = new TerminalConfig();
+        terminalConfig.setBackgroundColor(Color.rgb(16, 16, 16));
+        terminalConfig.setForegroundColor(Color.rgb(240, 240, 240));
+        terminalConfig.setCursorColor(Color.rgb(255, 0, 0, 0.5));
+        var terminalBuilder = new TerminalBuilder(terminalConfig);
+        terminalBuilder.setTerminalPath(path);
+        return terminalBuilder.newTerminal().getTerminal();
+    }
+
     // search for a tab pane that has a code area in it and if it cant find one, return the first tab pane it finds
     public static Optional<DetachableTabPane> findBestPaneForFiles(Parent parent) {
+        return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof CodeArea);
+    }
+
+    // search for a tab pane that has a terminal in it and if it cant find one, return the first tab pane it finds
+    public static Optional<DetachableTabPane> findBestPaneForTerminal(Parent parent) {
+        return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof Terminal);
+    }
+
+    private static Optional<DetachableTabPane> findBestPaneForFiles(Parent parent, Predicate<Tab> predicate) {
         var bestCandidate = new AtomicReference<DetachableTabPane>();
-        Optional<DetachableTabPane> found = findBestPaneForFiles(parent, bestCandidate);
+        Optional<DetachableTabPane> found = findBestPaneFor(parent, bestCandidate, predicate);
         return found.or(() -> Optional.ofNullable(bestCandidate.get()));
     }
 
-    private static Optional<DetachableTabPane> findBestPaneForFiles(Parent parent, AtomicReference<DetachableTabPane> bestCandidate) {
+    private static Optional<DetachableTabPane> findBestPaneFor(Parent parent, AtomicReference<DetachableTabPane> bestCandidate, Predicate<Tab> predicate) {
         if (parent instanceof DetachableTabPane tabPane) {
-            if (tabPane.getTabs().stream().anyMatch(tab -> tab.getContent() instanceof CodeArea))
+            if (tabPane.getTabs().stream().anyMatch(predicate))
                 return Optional.of(tabPane);
             else if (bestCandidate.get() == null || tabPane.getTabs().size() < bestCandidate.get().getTabs().size())
                 bestCandidate.set(tabPane);
@@ -132,7 +148,7 @@ public class IDESetup {
             if (!(child instanceof Parent childAsParent))
                 continue;
 
-            Optional<DetachableTabPane> result = findBestPaneForFiles(childAsParent, bestCandidate);
+            Optional<DetachableTabPane> result = findBestPaneFor(childAsParent, bestCandidate, predicate);
             if (result.isPresent())
                 return result;
         }
