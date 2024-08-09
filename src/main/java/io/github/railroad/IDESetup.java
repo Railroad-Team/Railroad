@@ -7,6 +7,7 @@ import com.panemu.tiwulfx.control.dock.DetachableTab;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import io.github.railroad.ide.ConsolePane;
 import io.github.railroad.ide.IDEWelcomePane;
+import io.github.railroad.ide.ImageViewerPane;
 import io.github.railroad.ide.StatusBarPane;
 import io.github.railroad.ide.projectexplorer.ProjectExplorerPane;
 import io.github.railroad.project.Project;
@@ -120,6 +121,10 @@ public class IDESetup {
     // search for a tab pane that has a code area in it and if it cant find one, return the first tab pane it finds
     public static Optional<DetachableTabPane> findBestPaneForFiles(Parent parent) {
         return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof CodeArea);
+    }
+
+    public static Optional<DetachableTabPane> findBestPaneForImages(Parent parent) { // TODO: Priority based search
+        return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof ImageViewerPane || tab.getContent() instanceof CodeArea);
     }
 
     // search for a tab pane that has a terminal in it and if it cant find one, return the first tab pane it finds

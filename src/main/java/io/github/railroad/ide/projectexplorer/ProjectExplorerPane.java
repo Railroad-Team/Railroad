@@ -4,6 +4,7 @@ import com.kodedu.terminalfx.Terminal;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import io.github.railroad.IDESetup;
 import io.github.railroad.Railroad;
+import io.github.railroad.ide.ImageViewerPane;
 import io.github.railroad.ide.JavaCodeEditorPane;
 import io.github.railroad.ide.TextEditorPane;
 import io.github.railroad.ide.projectexplorer.dialog.CopyModalDialog;
@@ -40,7 +41,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeListener {
     private final ExecutorService executorService = Executors.newFixedThreadPool(3);
@@ -263,14 +263,26 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         if (Files.isDirectory(path))
             return;
 
-        Optional<DetachableTabPane> pane = IDESetup.findBestPaneForFiles(mainPane);
-        pane.ifPresent(detachableTabPane -> { // TODO: Some kind of text editor registry
-            if (path.toString().endsWith(".java")) {
-                detachableTabPane.addTab(path.getFileName().toString(), new JavaCodeEditorPane(path));
+
+        // if it's not a binary file, open it in the text editor
+        if (!FileHandler.isBinaryFile(path)) {
+            Optional<DetachableTabPane> pane = IDESetup.findBestPaneForFiles(mainPane);
+            pane.ifPresent(detachableTabPane -> { // TODO: Some kind of text editor registry
+                if (path.toString().endsWith(".java")) {
+                    detachableTabPane.addTab(path.getFileName().toString(), new JavaCodeEditorPane(path));
+                } else {
+                    detachableTabPane.addTab(path.getFileName().toString(), new TextEditorPane(path));
+                }
+            });
+        } else {
+            if (FileHandler.isImageFile(path)) {
+                Optional<DetachableTabPane> pane = IDESetup.findBestPaneForImages(mainPane);
+                pane.ifPresent(detachableTabPane ->
+                        detachableTabPane.addTab(path.getFileName().toString(), new ImageViewerPane(path)));
             } else {
-                detachableTabPane.addTab(path.getFileName().toString(), new TextEditorPane(path));
+                FileHandler.openInDefaultApplication(path);
             }
-        });
+        }
     }
 
     public static void expandAll(TreeItem<PathItem> treeItem) {
@@ -343,7 +355,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             TreeItem<PathItem> item = cell.getTreeItem();
             if ((item != null && !item.isLeaf()) && event.getGestureSource() != cell && event.getDragboard().hasFiles()) {
                 Path targetPath = cell.getTreeItem().getValue().getPath();
-                var sourceCell = (PathTreeCell) event.getGestureSource();
+                var sourceCell = (PathTreeCell) event.getGestureSource(); // TODO: This breaks if from external source
                 Path sourceParentPath = sourceCell.getTreeItem().getValue().getPath().getParent();
                 if (sourceParentPath.compareTo(targetPath) != 0) {
                     cell.setStyle("-fx-background-color: -color-accent-4");

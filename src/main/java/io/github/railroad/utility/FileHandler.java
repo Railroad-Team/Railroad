@@ -30,7 +30,7 @@ public class FileHandler {
         return null;
     }
 
-    public static void copyUrlToFile(String url, Path path) {
+    public static void copyUrlToFile(String url, Path path) throws RuntimeException {
         try (InputStream in = new URI(url).toURL().openStream()) {
             Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException | URISyntaxException exception) {
@@ -90,7 +90,7 @@ public class FileHandler {
         return destFile;
     }
 
-    public static void copyFolder(Path src, Path dst) {
+    public static void copyFolder(Path src, Path dst) throws RuntimeException {
         try (Stream<Path> files = Files.walk(src)) {
             files.forEach(source -> {
                 try {
@@ -109,7 +109,7 @@ public class FileHandler {
         }
     }
 
-    public static void deleteFolder(Path folder) {
+    public static void deleteFolder(Path folder) throws RuntimeException {
         try (Stream<Path> paths = Files.walk(folder)) {
             paths.sorted(Comparator.reverseOrder()).forEach(path -> {
                 try {
@@ -205,12 +205,40 @@ public class FileHandler {
         };
     }
 
-    public static void openInExplorer(Path path) {
+    public static void openInExplorer(Path path) throws RuntimeException {
+        openInDefaultApplication(Files.isDirectory(path) ? path : path.getParent());
+    }
+
+    public static boolean isBinaryFile(Path path) throws RuntimeException {
+        try(var stream = Files.newInputStream(path)) {
+            byte[] buffer = new byte[1024];
+            int read = stream.read(buffer);
+            for (int i = 0; i < read; i++) {
+                if (buffer[i] == 0) {
+                    return true;
+                }
+            }
+
+            return false;
+        } catch (IOException exception) {
+            throw new RuntimeException("Failed to check if file is binary", exception);
+        }
+    }
+
+    public static boolean isImageFile(Path path) {
+        String extension = getExtension(path.toString());
+        return extension != null && switch (extension) {
+            case "png", "jpg", "jpeg", "gif", "bmp", "webp" -> true;
+            default -> false;
+        };
+    }
+
+    public static void openInDefaultApplication(Path path) throws RuntimeException {
         if(Desktop.isDesktopSupported()) {
             try {
-                Desktop.getDesktop().open(Files.isDirectory(path) ? path.toFile() : path.getParent().toFile());
+                Desktop.getDesktop().open(path.toFile());
             } catch (IOException exception) {
-                throw new RuntimeException("Failed to open in explorer", exception);
+                throw new RuntimeException("Failed to open in default application", exception);
             }
         }
     }
