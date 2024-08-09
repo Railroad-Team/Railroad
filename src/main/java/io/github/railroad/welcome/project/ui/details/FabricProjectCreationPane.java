@@ -42,11 +42,13 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class FabricProjectCreationPane extends RRBorderPane {
     private static final String EXAMPLE_MOD_URL = "https://github.com/FabricMC/fabric-example-mod/archive/refs/heads/%s.zip";
     private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/fabric/%s/template_build.gradle";
 
+    private final AtomicReference<Project> newProject = new AtomicReference<>();
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private final RRVBox centerBox = new RRVBox(10);
     private final Label timeElapsedLabel = new Label("");
@@ -87,7 +89,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 Railroad.LOGGER.error("An error occurred while waiting for the executor to terminate.", exception);
             }
 
-            // Open project in IDE
+            newProject.get().open();
         });
 
         new Thread(task).start();
@@ -182,7 +184,8 @@ public class FabricProjectCreationPane extends RRBorderPane {
                     return null;
 
                 updateLabel("Creating project...");
-                Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, data.projectName()));
+                newProject.set(new Project(projectPath, data.projectName()));
+                Railroad.PROJECT_MANAGER.newProject(newProject.get());
                 updateProgress(13, 16);
                 Railroad.LOGGER.info("Project created successfully.");
 
