@@ -1,26 +1,39 @@
 package io.github.railroad.utility;
 
 import javafx.scene.Node;
+import javafx.scene.image.Image;
+import javafx.scene.image.PixelFormat;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
 import java.awt.*;
+import java.awt.color.ColorSpace;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class FileHandler {
+    public static String getExtension(Path path) {
+        return getExtension(path.toString());
+    }
+
     public static String getExtension(String path) {
         int i = path.lastIndexOf('.');
         if (i > 0) {
@@ -240,6 +253,112 @@ public class FileHandler {
             } catch (IOException exception) {
                 throw new RuntimeException("Failed to open in default application", exception);
             }
+        }
+    }
+
+    public static long getSize(Path path) throws IOException {
+        return Files.size(path);
+    }
+
+    public static String humanReadableByteCount(Path path) {
+        try {
+            return humanReadableByteCount(getSize(path));
+        } catch (IOException exception) {
+            return "0 B";
+        }
+    }
+
+    private static String humanReadableByteCount(long size) {
+        if (size <= 0)
+            return "0 B";
+
+        int unit = 1024;
+        int exp = (int) (Math.log(size) / Math.log(unit));
+        char pre = "KMGTPE".charAt(exp - 1);
+        return String.format("%.1f %sB", size / Math.pow(unit, exp), pre);
+    }
+
+    public static int getColorDepth(Image image) {
+        PixelFormat<?> pixelFormat = image.getPixelReader().getPixelFormat();
+
+        // Estimate color depth based on the PixelFormat
+        if (pixelFormat.getType() == PixelFormat.Type.INT_ARGB) {
+            return 32; // 8 bits per channel + alpha channel
+        } else if (pixelFormat.getType() == PixelFormat.Type.BYTE_BGRA ||
+                pixelFormat.getType() == PixelFormat.Type.BYTE_BGRA_PRE) {
+            return 32; // 8 bits per channel + alpha channel
+        } else if (pixelFormat.getType() == PixelFormat.Type.BYTE_RGB) {
+            return 24; // 8 bits per channel, no alpha channel
+        } else if (pixelFormat.getType() == PixelFormat.Type.BYTE_INDEXED) {
+            return 8;  // Typically 8 bits for indexed color (palette-based)
+        }
+
+        // If the format is unknown or not covered above, return -1 (or any indication of unknown depth)
+        return -1;
+    }
+
+    public static String getColorSpace(Image image) {
+        try {
+            ImageReader reader = ImageIO.getImageReadersByFormatName(image.getUrl().substring(image.getUrl().lastIndexOf('.') + 1)).next();
+            reader.setInput(ImageIO.createImageInputStream(Files.newInputStream(Path.of(URLDecoder.decode(image.getUrl().substring("file:/".length()), StandardCharsets.ISO_8859_1)))));
+            return switch (reader.getImageTypes(0).next().getColorModel().getColorSpace().getType()) {
+                case ColorSpace.TYPE_XYZ -> "XYZ";
+                case ColorSpace.TYPE_Lab -> "Lab";
+                case ColorSpace.TYPE_Luv -> "Luv";
+                case ColorSpace.TYPE_YCbCr -> "YCbCr";
+                case ColorSpace.TYPE_Yxy -> "Yxy";
+                case ColorSpace.TYPE_RGB -> "RGB";
+                case ColorSpace.TYPE_GRAY, ColorSpace.CS_GRAY -> "GRAY";
+                case ColorSpace.TYPE_HSV -> "HSV";
+                case ColorSpace.TYPE_HLS -> "HLS";
+                case ColorSpace.TYPE_CMYK -> "CMYK";
+                case ColorSpace.TYPE_CMY -> "CMY";
+                case ColorSpace.TYPE_2CLR -> "2CLR";
+                case ColorSpace.TYPE_3CLR -> "3CLR";
+                case ColorSpace.TYPE_4CLR -> "4CLR";
+                case ColorSpace.TYPE_5CLR -> "5CLR";
+                case ColorSpace.TYPE_6CLR -> "6CLR";
+                case ColorSpace.TYPE_7CLR -> "7CLR";
+                case ColorSpace.TYPE_8CLR -> "8CLR";
+                case ColorSpace.TYPE_9CLR -> "9CLR";
+                case ColorSpace.TYPE_ACLR -> "ACLR";
+                case ColorSpace.TYPE_BCLR -> "BCLR";
+                case ColorSpace.TYPE_CCLR -> "CCLR";
+                case ColorSpace.TYPE_DCLR -> "DCLR";
+                case ColorSpace.TYPE_ECLR -> "ECLR";
+                case ColorSpace.TYPE_FCLR -> "FCLR";
+                case ColorSpace.CS_sRGB -> "sRGB";
+                case ColorSpace.CS_LINEAR_RGB -> "LINEAR_RGB";
+                case ColorSpace.CS_CIEXYZ -> "CIEXYZ";
+                case ColorSpace.CS_PYCC -> "PYCC";
+                default -> "Unknown";
+            };
+        } catch (IOException exception) {
+            exception.printStackTrace();
+            return "Unknown";
+        }
+    }
+
+    public static String getNumberOfColors(Image image) {
+        Set<Integer> colors = new HashSet<>();
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                colors.add(image.getPixelReader().getArgb(x, y));
+            }
+        }
+
+        return String.valueOf(colors.size());
+    }
+
+    public static String getNumberOfFrames(Path imagePath) {
+        try {
+            // get gif metadata
+            ImageReader reader = ImageIO.getImageReadersByFormatName("gif").next();
+            reader.setInput(ImageIO.createImageInputStream(imagePath.toFile()));
+
+            return String.valueOf(reader.getNumImages(true));
+        } catch (IOException exception) {
+            return "Unknown";
         }
     }
 }
