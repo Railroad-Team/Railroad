@@ -61,7 +61,7 @@ public class WatchTask extends Task<Void> {
                                 registerAll(child, watcher);
                             }
                         } catch (IOException e) {
-                            // Handle error
+                            // TODO: Handle error
                         }
                     }
                 }

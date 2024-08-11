@@ -162,7 +162,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         getChildren().addAll(searchField, this.treeView);
 
-        ShutdownHooks.addHook(this.executorService::shutdown);
+        ShutdownHooks.addHook(this.executorService::shutdownNow);
     }
 
     public static void cut(PathTreeItem pathItem, TreeView<PathItem> treeView) {
@@ -262,7 +262,6 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         Path path = item.getPath();
         if (Files.isDirectory(path))
             return;
-
 
         // if it's not a binary file, open it in the text editor
         if (!FileHandler.isBinaryFile(path)) {

@@ -50,6 +50,8 @@ public class JavaCodeEditorPane extends TextEditorPane {
         syntaxHighlight();
         errorHighlighting();
         // codeCompletion();
+
+        ShutdownHooks.addHook(executor0::shutdown);
     }
 
     private void marginErrors() {
@@ -245,7 +247,6 @@ public class JavaCodeEditorPane extends TextEditorPane {
                     }
                 })
                 .subscribe(this::applyHighlighting);
-        ShutdownHooks.addHook(executor0::shutdown);
     }
 
     private Task<StyleSpans<Collection<String>>> computeHighlightingAsync() {

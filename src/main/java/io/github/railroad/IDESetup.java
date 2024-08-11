@@ -3,6 +3,7 @@ package io.github.railroad;
 import com.kodedu.terminalfx.Terminal;
 import com.kodedu.terminalfx.TerminalBuilder;
 import com.kodedu.terminalfx.config.TerminalConfig;
+import com.kodedu.terminalfx.helper.ThreadHelper;
 import com.panemu.tiwulfx.control.dock.DetachableTab;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import io.github.railroad.ide.ConsolePane;
@@ -12,6 +13,7 @@ import io.github.railroad.ide.StatusBarPane;
 import io.github.railroad.ide.projectexplorer.ProjectExplorerPane;
 import io.github.railroad.project.Project;
 import io.github.railroad.ui.defaults.RRBorderPane;
+import io.github.railroad.utility.ShutdownHooks;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -104,6 +106,8 @@ public class IDESetup {
 
         stage.setScene(scene);
         stage.show();
+
+        ShutdownHooks.addHook(ThreadHelper::stopExecutorService);
 
         return stage;
     }
