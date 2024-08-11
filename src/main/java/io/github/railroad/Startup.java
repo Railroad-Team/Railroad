@@ -1,8 +1,8 @@
 package io.github.railroad;
 
-import io.github.railroad.layout.Layout;
-import io.github.railroad.layout.LayoutParseException;
-import io.github.railroad.layout.LayoutParser;
+import io.github.railroad.ui.layout.Layout;
+import io.github.railroad.ui.layout.LayoutParseException;
+import io.github.railroad.ui.layout.LayoutParser;
 import javafx.application.Application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

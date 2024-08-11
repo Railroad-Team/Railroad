@@ -1,12 +1,11 @@
 package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.project.ProjectManager;
-import io.github.railroad.project.data.Project;
-import io.github.railroad.project.ui.create.NewProjectPane;
+import io.github.railroad.project.Project;
 import io.github.railroad.settings.ui.SettingsPane;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.welcome.project.ui.NewProjectPane;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -82,7 +81,7 @@ public class WelcomePane extends RRHBox {
                                 File selected = directoryChooser.showDialog(getScene().getWindow());
                                 Railroad.LOGGER.debug("Dir Selected: {}\n", selected);
 
-                                if(selected != null) {
+                                if (selected != null) {
                                     Railroad.PROJECT_MANAGER.newProject(new Project(selected.toPath()));
                                 }
                             }

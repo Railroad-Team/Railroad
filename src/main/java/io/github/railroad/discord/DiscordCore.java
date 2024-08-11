@@ -62,9 +62,9 @@ public class DiscordCore implements AutoCloseable {
     }
 
     private void runCallbacks() {
-        new Thread(() -> {
+        var thread = new Thread(() -> {
             while (true) {
-                if(this.isShuttingDown)
+                if (this.isShuttingDown)
                     break;
 
                 try {
@@ -84,7 +84,10 @@ public class DiscordCore implements AutoCloseable {
                     throw new RuntimeException("Failed to receive command from Discord IPC channel", exception);
                 }
             }
-        }).start();
+        });
+
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private void handleCommand(DiscordCommand command) {

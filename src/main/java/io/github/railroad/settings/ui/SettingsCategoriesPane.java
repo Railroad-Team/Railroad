@@ -1,8 +1,8 @@
 package io.github.railroad.settings.ui;
 
+import io.github.railroad.localization.ui.LocalizedButton;
+import io.github.railroad.localization.ui.LocalizedListCell;
 import io.github.railroad.settings.SettingsCategory;
-import io.github.railroad.ui.localized.LocalizedButton;
-import io.github.railroad.ui.localized.LocalizedListCell;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;

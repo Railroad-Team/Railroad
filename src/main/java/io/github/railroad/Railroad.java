@@ -2,17 +2,19 @@ package io.github.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.kodedu.terminalfx.helper.ThreadHelper;
 import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.discord.activity.RailroadActivities;
-import io.github.railroad.minecraft.FabricAPIVersion;
-import io.github.railroad.minecraft.ForgeVersion;
-import io.github.railroad.minecraft.MinecraftVersion;
-import io.github.railroad.minecraft.NeoForgeVersion;
+import io.github.railroad.localization.L18n;
 import io.github.railroad.plugin.PluginManager;
+import io.github.railroad.project.Project;
 import io.github.railroad.project.ProjectManager;
+import io.github.railroad.project.minecraft.FabricAPIVersion;
+import io.github.railroad.project.minecraft.ForgeVersion;
+import io.github.railroad.project.minecraft.MinecraftVersion;
+import io.github.railroad.project.minecraft.NeoForgeVersion;
 import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.utility.ShutdownHooks;
-import io.github.railroad.utility.localization.L18n;
 import io.github.railroad.vcs.RepositoryManager;
 import io.github.railroad.welcome.WelcomePane;
 import javafx.application.Application;
@@ -20,6 +22,7 @@ import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -28,9 +31,15 @@ import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -62,7 +71,7 @@ public class Railroad extends Application {
         ConfigHandler.saveConfig();
     }
 
-    private static void handleStyles(Scene scene) {
+    public static void handleStyles(Scene scene) {
         updateTheme(ConfigHandler.getConfig().getSettings().getTheme());
 
         // setting up debug helper style
@@ -81,6 +90,16 @@ public class Railroad extends Application {
 
         String baseTheme = getResource("styles/base.css").toExternalForm();
         scene.getStylesheets().add(baseTheme);
+
+        scene.setOnKeyReleased(event -> {
+            if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.R) {
+                for (String style : scene.getStylesheets()) {
+                    scene.getStylesheets().remove(style);
+                    scene.getStylesheets().add(style);
+                    break;
+                }
+            }
+        });
     }
 
     public static URL getResource(String path) {
@@ -143,6 +162,7 @@ public class Railroad extends Application {
         primaryStage.setMinHeight(scene.getHeight() + 10);
         primaryStage.setScene(scene);
         primaryStage.setTitle("Railroad - 1.0.0(dev)");
+        primaryStage.getIcons().add(new Image(getResourceAsStream("images/logo.png")));
         primaryStage.show();
 
         LOGGER.info("Railroad started");
@@ -159,5 +179,31 @@ public class Railroad extends Application {
         PLUGIN_MANAGER.unloadPlugins();
         ConfigHandler.saveConfig();
         ShutdownHooks.runHooks();
+
+        Platform.exit();
+        System.exit(0);
+    }
+
+    public static void switchToIDE(Project project) {
+        Stage window = IDESetup.createIDEWindow(project);
+        Railroad.window.close();
+        Railroad.window = window;
+        PROJECT_MANAGER.setCurrentProject(project);
+        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN, project);
+    }
+
+    public static void openUrl(String url) {
+        if (!url.matches(URL_REGEX)) {
+            showErrorAlert("Invalid URL", "Invalid URL", "The URL provided is invalid.");
+            return;
+        }
+
+        try {
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().browse(new URI(url));
+            }
+        } catch (IOException | URISyntaxException exception) {
+            showErrorAlert("Error", "Error opening URL", "An error occurred while trying to open the URL.");
+        }
     }
 }

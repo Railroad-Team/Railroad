@@ -1,13 +1,13 @@
 package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.project.ui.ImportProjectListCell;
+import io.github.railroad.ui.ImportProjectListCell;
+import io.github.railroad.ui.defaults.RRListView;
+import io.github.railroad.ui.defaults.RRStackPane;
 import io.github.railroad.vcs.Repository;
 import javafx.beans.binding.Bindings;
-import io.github.railroad.ui.defaults.RRListView;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
-import io.github.railroad.ui.defaults.RRStackPane;
 
 public class WelcomeImportProjectsPane extends ScrollPane {
     private final RRListView<Repository> repositoryListView = new RRListView<>();

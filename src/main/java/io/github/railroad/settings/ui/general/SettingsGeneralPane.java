@@ -1,9 +1,9 @@
 package io.github.railroad.settings.ui.general;
 
+import io.github.railroad.localization.L18n;
+import io.github.railroad.localization.Language;
+import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.ui.localized.LocalizedLabel;
-import io.github.railroad.utility.localization.L18n;
-import io.github.railroad.utility.localization.Language;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ComboBox;

@@ -34,7 +34,7 @@ public class RepositoryManager implements Runnable {
                     connections.remove(abstractConnection);
                     continue;
                 }
-                
+
                 abstractConnection.downloadRepositories();
                 repositories.setAll(abstractConnection.getRepositories());
             }
@@ -66,6 +66,6 @@ public class RepositoryManager implements Runnable {
 
     public void start() {
         EXECUTOR.scheduleAtFixedRate(this, 0, 60, TimeUnit.SECONDS);
-        ShutdownHooks.addHook(EXECUTOR::shutdown);
+        ShutdownHooks.addHook(EXECUTOR::shutdownNow);
     }
 }

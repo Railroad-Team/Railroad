@@ -1,12 +1,13 @@
 package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.project.ProjectSort;
-import io.github.railroad.project.data.Project;
-import io.github.railroad.project.ui.create.widget.ProjectListCell;
+import io.github.railroad.localization.ui.LocalizedTextField;
+import io.github.railroad.project.Project;
 import io.github.railroad.ui.defaults.RRListView;
-import io.github.railroad.ui.localized.LocalizedTextField;
+import io.github.railroad.welcome.project.ProjectSort;
+import io.github.railroad.welcome.project.ui.widget.ProjectListCell;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
@@ -109,13 +110,13 @@ public class WelcomeProjectsPane extends ScrollPane {
     }
 
     private void sortProjects(ProjectSort sort) {
-        List<Project> copy = new ArrayList<>(List.copyOf(projectsList.getItems()));
+        List<Project> copy = new ArrayList<>(projectsList.getItems());
         if (sort == null) return;
         copy.sort(sort.getComparator());
 
         if (copy.equals(projectsList.getItems()))
             return;
 
-        projectsList.getItems().setAll(copy);
+        projectsList.getItems().setAll(FXCollections.observableArrayList(copy));
     }
 }

@@ -8,7 +8,6 @@ import io.github.railroad.vcs.RepositoryTypes;
 import io.github.railroad.vcs.connections.AbstractConnection;
 import io.github.railroad.vcs.connections.Profile;
 import javafx.scene.image.Image;
-import okhttp3.internal.http.HttpStatusCodesKt;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -137,7 +136,7 @@ public class GithubConnection extends AbstractConnection {
 
             try {
                 Process process = processBuilder.start();
-                new Thread(() -> {
+                var thread = new Thread(() -> {
                     try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                          var errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
                         String line;
@@ -150,7 +149,10 @@ public class GithubConnection extends AbstractConnection {
                     } catch (IOException exception) {
                         Railroad.LOGGER.error("Something went wrong trying to clone a github repo", exception);
                     }
-                }).start();
+                });
+
+                thread.setDaemon(true);
+                thread.start();
 
                 int exitCode = process.waitFor();
                 if (exitCode == 0) {

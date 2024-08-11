@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 public class Theme {
     private String name;
-    @SerializedName("download_url") private String downloadUrl;
+    @SerializedName("download_url")
+    private String downloadUrl;
     private long size;
 }

@@ -20,7 +20,7 @@ public final class ConfigHandler {
             return Paths.get(homePath, ".config", "Railroad");
         } else if (os.startsWith("Windows")) {
             return Paths.get(homePath, "AppData", "Roaming", "Railroad");
-        } else if(os.startsWith("Mac") || os.startsWith("Darwin")) {
+        } else if (os.startsWith("Mac") || os.startsWith("Darwin")) {
             return Paths.get(homePath, "Library", "Application Support", "Railroad");
         } else {
             return Paths.get(homePath, "Railroad");

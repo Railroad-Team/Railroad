@@ -1,10 +1,10 @@
 package io.github.railroad.welcome;
 
-import io.github.railroad.project.ui.create.widget.ProjectSortComboBox;
+import io.github.railroad.localization.ui.LocalizedText;
+import io.github.railroad.localization.ui.LocalizedTextField;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.ui.localized.LocalizedText;
-import io.github.railroad.ui.localized.LocalizedTextField;
+import io.github.railroad.welcome.project.ui.widget.ProjectSortComboBox;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;

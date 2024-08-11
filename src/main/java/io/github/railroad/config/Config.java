@@ -3,10 +3,9 @@ package io.github.railroad.config;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import io.github.railroad.Railroad;
 import io.github.railroad.plugin.Plugin;
-import io.github.railroad.project.data.Project;
+import io.github.railroad.project.Project;
 import io.github.railroad.utility.JsonSerializable;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -41,28 +40,29 @@ public class Config implements JsonSerializable<JsonObject> {
 
     @Override
     public void fromJson(JsonObject json) {
-        if(json.has("Projects")) {
+        if (json.has("Projects")) {
             JsonElement projects = json.get("Projects");
-            if(projects.isJsonArray()) {
+            if (projects.isJsonArray()) {
                 JsonArray projectsArray = projects.getAsJsonArray();
-                for(JsonElement project : projectsArray) {
-                    if(!project.isJsonObject())
+                for (JsonElement project : projectsArray) {
+                    if (!project.isJsonObject())
                         continue;
 
-                    Project.createFromJson(project.getAsJsonObject());
+                    Optional<Project> optProject = Project.createFromJson(project.getAsJsonObject());
+                    optProject.ifPresent(Railroad.PROJECT_MANAGER::newProject);
                 }
             }
         }
 
-        if(json.has("Plugins")) {
+        if (json.has("Plugins")) {
             JsonElement plugins = json.get("Plugins");
-            if(plugins.isJsonArray()) {
+            if (plugins.isJsonArray()) {
                 Railroad.PLUGIN_MANAGER.unloadPlugins();
                 Railroad.PLUGIN_MANAGER.getPluginList().clear();
 
                 JsonArray pluginsArray = plugins.getAsJsonArray();
-                for(JsonElement plugin : pluginsArray) {
-                    if(!plugin.isJsonPrimitive() || !plugin.getAsJsonPrimitive().isString())
+                for (JsonElement plugin : pluginsArray) {
+                    if (!plugin.isJsonPrimitive() || !plugin.getAsJsonPrimitive().isString())
                         continue;
 
                     Railroad.PLUGIN_MANAGER.addPlugin(plugin.getAsString());
@@ -70,16 +70,16 @@ public class Config implements JsonSerializable<JsonObject> {
             }
         }
 
-        if(json.has("Settings")) {
+        if (json.has("Settings")) {
             JsonElement settings = json.get("Settings");
-            if(settings.isJsonObject()) {
+            if (settings.isJsonObject()) {
                 this.settings.get().fromJson(settings.getAsJsonObject());
             }
         }
     }
 
     public void copyFrom(@Nullable Config config) {
-        if(config == null)
+        if (config == null)
             return;
 
         this.settings.get().copyFrom(config.getSettings());

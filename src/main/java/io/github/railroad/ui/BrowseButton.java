@@ -1,6 +1,6 @@
 package io.github.railroad.ui;
 
-import io.github.railroad.ui.localized.LocalizedButton;
+import io.github.railroad.localization.ui.LocalizedButton;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.TextField;

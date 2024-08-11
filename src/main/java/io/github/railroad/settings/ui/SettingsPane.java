@@ -1,10 +1,10 @@
 package io.github.railroad.settings.ui;
 
+import io.github.railroad.localization.ui.LocalizedTextField;
 import io.github.railroad.settings.SettingsCategory;
 import io.github.railroad.settings.ui.general.SettingsGeneralPane;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRHBox;
-import io.github.railroad.ui.localized.LocalizedTextField;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
