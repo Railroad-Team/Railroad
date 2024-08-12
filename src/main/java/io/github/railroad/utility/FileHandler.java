@@ -1,8 +1,9 @@
 package io.github.railroad.utility;
 
 import javafx.scene.Node;
+import javafx.scene.image.*;
 import javafx.scene.image.Image;
-import javafx.scene.image.PixelFormat;
+import javafx.scene.paint.Color;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -223,7 +224,7 @@ public class FileHandler {
     }
 
     public static boolean isBinaryFile(Path path) throws RuntimeException {
-        try(var stream = Files.newInputStream(path)) {
+        try (var stream = Files.newInputStream(path)) {
             byte[] buffer = new byte[1024];
             int read = stream.read(buffer);
             for (int i = 0; i < read; i++) {
@@ -247,7 +248,7 @@ public class FileHandler {
     }
 
     public static void openInDefaultApplication(Path path) throws RuntimeException {
-        if(Desktop.isDesktopSupported()) {
+        if (Desktop.isDesktopSupported()) {
             try {
                 Desktop.getDesktop().open(path.toFile());
             } catch (IOException exception) {
@@ -360,5 +361,40 @@ public class FileHandler {
         } catch (IOException exception) {
             return "Unknown";
         }
+    }
+
+    public static Image createCheckerboard(int width, int height, int squareSize, Color color1, Color color2) {
+        // create a writable image
+        var image = new WritableImage(width, height);
+        for (int x = 0; x < width; x += squareSize) {
+            for (int y = 0; y < height; y += squareSize) {
+                int squareSizeX = Math.min(squareSize, width - x);
+                int squareSizeY = Math.min(squareSize, height - y);
+                fillArea(image.getPixelWriter(), x, y, x + squareSizeX, y + squareSizeY, (x / squareSize + y / squareSize) % 2 == 0 ? color1 : color2);
+            }
+        }
+
+        return image;
+    }
+
+    private static void fillArea(PixelWriter pixelWriter, int startX, int startY, int endX, int endY, Color color) {
+        for (int x = startX; x < endX; x++) {
+            for (int y = startY; y < endY; y++) {
+                pixelWriter.setColor(x, y, color);
+            }
+        }
+    }
+
+    public static boolean isImageTransparent(Image image) {
+        PixelReader pixelReader = image.getPixelReader();
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                if (pixelReader.getColor(x, y).getOpacity() < 1) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
