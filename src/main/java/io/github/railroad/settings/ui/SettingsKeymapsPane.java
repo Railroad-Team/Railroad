@@ -7,6 +7,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
+@SuppressWarnings("unused")
 public class SettingsKeymapsPane extends RRVBox {
     public SettingsKeymapsPane() {
         var title = new LocalizedLabel("railroad.home.settings.keymaps");
