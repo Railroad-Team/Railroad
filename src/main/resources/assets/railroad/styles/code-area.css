@@ -83,7 +83,7 @@
     -fx-fill: #ffdc2e;
 }
 
-.code-area .literal {
+.code-area .string {
     -fx-fill: #2effaf;
 }
 
@@ -137,6 +137,10 @@
 
 .code-area .modifier {
     -fx-fill: #d000ff;
+}
+
+.code-area .number {
+    -fx-fill: #ff2e2e;
 }
 
 .code-area .error {
