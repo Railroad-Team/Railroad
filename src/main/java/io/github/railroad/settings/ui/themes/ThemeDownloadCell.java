@@ -39,7 +39,7 @@ public class ThemeDownloadCell extends ListCell<Theme> {
         previewButton.setBackground(Background.EMPTY);
 
         downloadButton.setPrefWidth(87.2);
-        downloadButton.setAlignment(Pos.CENTER_RIGHT);
+        downloadButton.setAlignment(Pos.CENTER);
         downloadButton.setTextAlignment(TextAlignment.JUSTIFY);
 
         themeDownloadNode.setAlignment(Pos.CENTER_LEFT);
