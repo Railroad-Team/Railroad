@@ -233,6 +233,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
     }
 
     private void syntaxHighlight() {
+        applyHighlighting(computeHighlighting(getText()));
         multiPlainChanges()
                 .successionEnds(Duration.ofMillis(500))
                 .retainLatestUntilLater(executor0)
