@@ -12,9 +12,9 @@ version '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
-    jcenter()
     maven { url 'https://repo.gradle.org/gradle/libs-releases' }
     maven { url 'https://github.com/javaterminal/terminalfx/raw/master/releases' }
+    maven { url 'https://packages.jetbrains.team/maven/p/ij/intellij-dependencies' }
 }
 
 java {
