@@ -32,8 +32,7 @@ import javax.tools.*;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.function.IntFunction;
 
 public class JavaCodeEditorPane extends TextEditorPane {
@@ -49,7 +48,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
         syntaxHighlight();
         errorHighlighting();
-        // codeCompletion();
+        codeCompletion();
 
         ShutdownHooks.addHook(executor0::shutdown);
     }
@@ -148,6 +147,16 @@ public class JavaCodeEditorPane extends TextEditorPane {
     }
 
     private void errorHighlighting() {
+        try {
+            Task<DiagnosticCollector<JavaFileObject>> task = requestErrorDiagnostics();
+            task.run();
+            DiagnosticCollector<JavaFileObject> diagnostics = task.get(10, TimeUnit.SECONDS);
+
+            applyErrorHighlighting(diagnostics);
+        } catch (InterruptedException | ExecutionException | TimeoutException exception) {
+            Railroad.LOGGER.error("Failed to compile", exception);
+        }
+
         plainTextChanges()
                 .successionEnds(Duration.ofMillis(500))
                 .retainLatestUntilLater(executor0)
