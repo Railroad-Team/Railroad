@@ -53,7 +53,7 @@ public class Github extends Plugin {
     }
 
     @Override
-    public PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
+    public PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes, Object... data) {
         return null;
     }
 

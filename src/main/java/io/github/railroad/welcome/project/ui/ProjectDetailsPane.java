@@ -27,8 +27,8 @@ public class ProjectDetailsPane extends ScrollPane {
             switch (newValue) {
                 case FORGE -> setContent(getProjectDetailsPane(ProjectType.FORGE));
                 case FABRIC -> setContent(getProjectDetailsPane(ProjectType.FABRIC));
-                case NEOFORGED -> setContent(getProjectDetailsPane(ProjectType.NEOFORGED));
-                case QUILT -> setContent(getProjectDetailsPane(ProjectType.QUILT));
+                // case NEOFORGED -> setContent(getProjectDetailsPane(ProjectType.NEOFORGED));
+                // case QUILT -> setContent(getProjectDetailsPane(ProjectType.QUILT));
             }
         });
     }
@@ -41,8 +41,9 @@ public class ProjectDetailsPane extends ScrollPane {
         return this.projectDetailsPanes.computeIfAbsent(projectType, k -> switch (projectType) {
             case FORGE -> new ForgeProjectDetailsPane();
             case FABRIC -> new FabricProjectDetailsPane();
-            case NEOFORGED -> new NeoForgeProjectDetailsPane();
-            case QUILT -> new QuiltProjectDetailsPane();
+            //case NEOFORGED -> new NeoForgeProjectDetailsPane();
+            //case QUILT -> new QuiltProjectDetailsPane();
+            default -> null;
         });
     }
 }

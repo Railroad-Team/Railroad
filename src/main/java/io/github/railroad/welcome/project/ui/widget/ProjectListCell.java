@@ -4,6 +4,7 @@ import io.github.railroad.Railroad;
 import io.github.railroad.project.Project;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.utility.ShutdownHooks;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -12,6 +13,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
+import lombok.Getter;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -71,9 +73,11 @@ public class ProjectListCell extends ListCell<Project> {
     }
 
     public static class ProjectListNode extends RRVBox {
-        private static final ScheduledExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadScheduledExecutor();
+        private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         private final ObjectProperty<Project> project = new SimpleObjectProperty<>();
+        @Getter
         private final ImageView icon;
+        @Getter
         private final Label label;
         private final Label pathLabel;
         private final Label lastOpened;
@@ -103,7 +107,7 @@ public class ProjectListCell extends ListCell<Project> {
             this.pathLabel = pathLabel;
 
             var lastOpened = new Label();
-            EXECUTOR_SERVICE.scheduleAtFixedRate(() -> {
+            executor.scheduleAtFixedRate(() -> {
                 Project project = this.project.get();
                 if (project != null) {
                     Platform.runLater(() -> lastOpened.setText(Project.getLastOpenedFriendly(project.getLastOpened())));
@@ -117,6 +121,8 @@ public class ProjectListCell extends ListCell<Project> {
             nameBox.setAlignment(Pos.CENTER_LEFT);
 
             getChildren().addAll(nameBox, pathLabel, lastOpened);
+
+            ShutdownHooks.addHook(executor::shutdownNow);
         }
 
         public ProjectListNode(Project project) {
@@ -126,14 +132,6 @@ public class ProjectListCell extends ListCell<Project> {
 
         public ObjectProperty<Project> projectProperty() {
             return project;
-        }
-
-        public ImageView getIcon() {
-            return icon;
-        }
-
-        public Label getLabel() {
-            return label;
         }
     }
 }

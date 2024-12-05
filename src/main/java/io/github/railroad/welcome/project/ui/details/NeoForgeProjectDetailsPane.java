@@ -194,7 +194,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         minecraftVersionBox.setAlignment(Pos.CENTER_LEFT);
         var minecraftVersionLabel = new Label("Minecraft Version:");
         minecraftVersionLabel.setLabelFor(minecraftVersionComboBox);
-        minecraftVersionComboBox.getItems().addAll(MinecraftVersion.getSupportedVersions(ProjectType.NEOFORGED));
+        //minecraftVersionComboBox.getItems().addAll(MinecraftVersion.getSupportedVersions(ProjectType.NEOFORGED));
         minecraftVersionComboBox.setValue(MinecraftVersion.getLatestStableVersion());
         minecraftVersionComboBox.setConverter(new StringConverter<>() {
             @Override

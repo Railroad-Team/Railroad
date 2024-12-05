@@ -2,6 +2,7 @@ package io.github.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.kodedu.terminalfx.helper.ThreadHelper;
 import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.localization.L18n;
@@ -21,6 +22,7 @@ import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -36,6 +38,8 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -86,6 +90,16 @@ public class Railroad extends Application {
 
         String baseTheme = getResource("styles/base.css").toExternalForm();
         scene.getStylesheets().add(baseTheme);
+
+        scene.setOnKeyReleased(event -> {
+            if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.R) {
+                for (String style : scene.getStylesheets()) {
+                    scene.getStylesheets().remove(style);
+                    scene.getStylesheets().add(style);
+                    break;
+                }
+            }
+        });
     }
 
     public static URL getResource(String path) {
@@ -148,6 +162,7 @@ public class Railroad extends Application {
         primaryStage.setMinHeight(scene.getHeight() + 10);
         primaryStage.setScene(scene);
         primaryStage.setTitle("Railroad - 1.0.0(dev)");
+        primaryStage.getIcons().add(new Image(getResourceAsStream("images/logo.png")));
         primaryStage.show();
 
         LOGGER.info("Railroad started");
@@ -164,6 +179,9 @@ public class Railroad extends Application {
         PLUGIN_MANAGER.unloadPlugins();
         ConfigHandler.saveConfig();
         ShutdownHooks.runHooks();
+
+        Platform.exit();
+        System.exit(0);
     }
 
     public static void switchToIDE(Project project) {
@@ -171,7 +189,7 @@ public class Railroad extends Application {
         Railroad.window.close();
         Railroad.window = window;
         PROJECT_MANAGER.setCurrentProject(project);
-        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN);
+        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN, project);
     }
 
     public static void openUrl(String url) {
@@ -181,7 +199,7 @@ public class Railroad extends Application {
         }
 
         try {
-            if(Desktop.isDesktopSupported()) {
+            if (Desktop.isDesktopSupported()) {
                 Desktop.getDesktop().browse(new URI(url));
             }
         } catch (IOException | URISyntaxException exception) {

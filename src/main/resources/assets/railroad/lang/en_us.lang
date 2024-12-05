@@ -182,3 +182,5 @@ railroad.ide.welcome.getting_started=Getting Started
 railroad.ide.welcome.getting_started.description=Learn how to use Railroad with our wiki and tutorials.
 railroad.ide.welcome.getting_started.wiki=Wiki
 railroad.ide.welcome.getting_started.tutorials=Tutorials
+
+railroad.ide.project_explorer.search_field=Search files...

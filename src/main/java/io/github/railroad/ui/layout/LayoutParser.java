@@ -2,8 +2,8 @@ package io.github.railroad.ui.layout;
 
 import io.github.railroad.Railroad;
 import io.github.railroad.project.Project;
-import io.github.railroad.utility.javafx.NodeTree;
-import io.github.railroad.utility.javafx.NodeTree.Node;
+import io.github.railroad.utility.Tree;
+import io.github.railroad.utility.Tree.Node;
 import javafx.util.Pair;
 
 import java.io.File;
@@ -46,12 +46,12 @@ public class LayoutParser {
 
     private static Layout parse(String string) throws LayoutParseException {
         List<Token> tokens = tokenize(string);
-        NodeTree<LayoutItem> tree = constructTree(tokens);
+        Tree<LayoutItem> tree = constructTree(tokens);
         return new Layout(tree);
     }
 
     // TODO: When exceptions are thrown, give the line number and column number
-    public static NodeTree<LayoutItem> constructTree(List<Token> tokens) throws LayoutParseException {
+    public static Tree<LayoutItem> constructTree(List<Token> tokens) throws LayoutParseException {
         if (tokens.isEmpty()) {
             throw new LayoutParseException("The layout is empty");
         }
@@ -62,7 +62,7 @@ public class LayoutParser {
         }
 
         var item = new LayoutItem(token.value());
-        var tree = new NodeTree<>(new Node<>(item));
+        var tree = new Tree<>(new Node<>(item));
 
         Stack<Node<LayoutItem>> stack = new Stack<>();
         stack.push(tree.getRoot());
@@ -95,8 +95,8 @@ public class LayoutParser {
                         throw new LayoutParseException("Invalid property object: " + token.value());
                     }
 
-                    NodeTree<LayoutItem> subNodeTree = constructTree(tokenize(parts[1]));
-                    parent.getValue().setProperty(parts[0], subNodeTree.getRoot().getValue());
+                    Tree<LayoutItem> subTree = constructTree(tokenize(parts[1]));
+                    parent.getValue().setProperty(parts[0], subTree.getRoot().getValue());
                 }
                 case PROPERTY_ARRAY -> { // TODO: Handle nested arrays or objects and convert types
                     String[] parts = token.value().split(":");
@@ -369,7 +369,7 @@ public class LayoutParser {
             return parse(layoutPath);
         } catch (LayoutParseException exception) {
             Railroad.LOGGER.error("Failed to load layout for project: {}", project.getPathString(), exception);
-            return new Layout(new NodeTree<>(new Node<>(new LayoutItem("error"))));
+            return new Layout(new Tree<>(new Node<>(new LayoutItem("error"))));
         }
     }
 

@@ -5,24 +5,23 @@ import com.panemu.tiwulfx.control.dock.DetachableTab;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import com.spencerwi.either.Either;
 import io.github.railroad.Railroad;
-import io.github.railroad.ide.TextEditorPane;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.utility.javafx.NodeTree;
+import io.github.railroad.utility.Tree;
 import javafx.scene.layout.Pane;
 import javafx.scene.text.Text;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public record Layout(NodeTree<LayoutItem> tree) {
+public record Layout(Tree<LayoutItem> tree) {
     public void print() {
         tree.print();
     }
 
     public void apply(RRBorderPane pane) {
-        NodeTree.Node<LayoutItem> root = tree.getRoot();
+        Tree.Node<LayoutItem> root = tree.getRoot();
         Either<Pane, DetachableTabPane> parent = parseItem(root.getValue(), Either.left(pane));
         if(parent == null) {
             Railroad.LOGGER.error("Failed to parse root item");
@@ -38,8 +37,8 @@ public record Layout(NodeTree<LayoutItem> tree) {
         }
     }
 
-    private void parseAndAddChildren(List<NodeTree.Node<LayoutItem>> children, Either<Pane, DetachableTabPane> parent) {
-        for (NodeTree.Node<LayoutItem> item : children) {
+    private void parseAndAddChildren(List<Tree.Node<LayoutItem>> children, Either<Pane, DetachableTabPane> parent) {
+        for (Tree.Node<LayoutItem> item : children) {
             Either<Pane, DetachableTabPane> child = parseItem(item.getValue(), parent);
             if (child != null) {
                 if (parent.isRight()) {

@@ -15,6 +15,7 @@ import io.github.railroad.project.minecraft.mapping.MappingChannel;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.FileHandler;
+import io.github.railroad.utility.ShutdownHooks;
 import io.github.railroad.utility.function.ExceptionlessRunnable;
 import io.github.railroad.utility.javafx.TextAreaOutputStream;
 import javafx.application.Platform;
@@ -113,6 +114,11 @@ public class FabricProjectCreationPane extends RRBorderPane {
             final String finalTimeElapsedString = timeElapsedString;
             Platform.runLater(() -> timeElapsedLabel.setText("Time elapsed: " + finalTimeElapsedString));
         }, 1, 1, TimeUnit.SECONDS);
+
+        ShutdownHooks.addHook(() -> {
+            if (!executor.isShutdown())
+                executor.shutdownNow();
+        });
     }
 
     private static void showErrorAlert(String title, String header, String content) {
