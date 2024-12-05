@@ -13,9 +13,19 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
+/**
+ * Parses the JSON config file into individual objects.
+ */
 public class Config implements JsonSerializable<JsonObject> {
+    /**
+     * Stores the settings
+     */
     private final ObjectProperty<Settings> settings = new ReadOnlyObjectWrapper<>(new Settings());
 
+    /**
+     * Converts the individual values needed in the config file into a JSON object
+     * @return {@link JsonObject} - The JSON object with all the required values
+     */
     @Override
     public JsonObject toJson() {
         var json = new JsonObject();
@@ -38,6 +48,10 @@ public class Config implements JsonSerializable<JsonObject> {
         return json;
     }
 
+    /**
+     * Loads the individual values from the JSON object into the application
+     * @param json {@link JsonObject}
+     */
     @Override
     public void fromJson(JsonObject json) {
         if (json.has("Projects")) {
@@ -78,6 +92,10 @@ public class Config implements JsonSerializable<JsonObject> {
         }
     }
 
+    /**
+     * Copies the settings from the given config object
+     * @param config {@link Config}
+     */
     public void copyFrom(@Nullable Config config) {
         if (config == null)
             return;
@@ -85,6 +103,10 @@ public class Config implements JsonSerializable<JsonObject> {
         this.settings.get().copyFrom(config.getSettings());
     }
 
+    /**
+     * Gets the settings
+     * @return {@link Settings}
+     */
     public Settings getSettings() {
         return settings.get();
     }

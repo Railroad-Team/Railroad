@@ -9,10 +9,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * Handles the file management for the config.
+ * Allows for read and write operations to be executed onto the config file.
+ */
 public final class ConfigHandler {
     private static final ConfigHandler INSTANCE = new ConfigHandler();
     private final Config config = new Config();
 
+    /**
+     * Based on the users OS and HomePath, will return the correct path for the config directory.
+     * @return {@link Path} - The path to the config directory.
+     */
     public static Path getConfigDirectory() {
         String os = System.getProperty("os.name"); // TODO: Create Enum for OS
         String homePath = System.getProperty("user.home");
@@ -27,7 +35,12 @@ public final class ConfigHandler {
         }
     }
 
+    /**
+     * Updates the config file with the new config.
+     * @param newConfig {@link Config} - The config for the file to be updated with.
+     */
     public static void updateConfig(@Nullable Config newConfig) {
+        //TODO simplify this to saveConfig() and INSTANCE.config.copyFrom(newConfig) ????
         Railroad.LOGGER.info("{} config file", newConfig == null ? "Initializing" : "Updating");
 
         Path railroadDataPath = getConfigDirectory();
@@ -52,6 +65,10 @@ public final class ConfigHandler {
         }
     }
 
+    /**
+     * If the config file does not exist, it will create the file and write the default config to it.
+     * If the config file does exist, it will read the file and parse the JSON into the config object.
+     */
     public static void initConfig() {
         Railroad.LOGGER.info("Initializing config file");
 
@@ -69,6 +86,10 @@ public final class ConfigHandler {
         }
     }
 
+    /**
+     * Returns the config object.
+     * @return {@link Config} - The config object.
+     */
     public static Config getConfig() {
         return INSTANCE.config;
     }
