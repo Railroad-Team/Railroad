@@ -39,4 +39,10 @@ public class Trie {
             prefix.deleteCharAt(prefix.length() - 1);
         }
     }
+
+    public void print() {
+        List<String> results = new ArrayList<>();
+        findAllWords(root, new StringBuilder(), results);
+        results.forEach(System.out::println);
+    }
 }

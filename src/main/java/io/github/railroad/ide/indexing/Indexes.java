@@ -1,5 +1,7 @@
 package io.github.railroad.ide.indexing;
 
+import io.github.railroad.Railroad;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +32,10 @@ public class Indexes {
         }
 
         scanStandardLibrary(trie);
+
+        // print the trie
+        trie.print();
+
         // TODO: Scan project classes and dependencies
 
         return trie;
@@ -45,18 +51,28 @@ public class Indexes {
             // Scan the `java.base` module
             Path javaBase = jmods.resolve("java.base.jmod"); // this should be effectively a jar file
 
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             try(var jmod = new JarFile(javaBase.toFile())) {
-                ClassLoader jdkClassLoader = ClassLoader.getSystemClassLoader();
                 Enumeration<JarEntry> entries = jmod.entries();
                 while (entries.hasMoreElements()) {
                     JarEntry entry = entries.nextElement();
-                    if (entry.getName().endsWith(".class")) {
-                        // load the class file and scan it for methods and fields
+                    String className = entry.getName();
+                    if (className.endsWith(".class")) {
+                        if(className.contains("module-info.class") || className.contains("package-info.class") || className.contains("com/sun") || className.contains("sun/"))
+                            continue;
 
+                        try {
+                            Class<?> clazz = classLoader.loadClass(className);
+                            trie.insert(clazz.getSimpleName());
+
+                            System.out.println("Loaded class: " + clazz.getSimpleName());
+                        } catch (ClassNotFoundException exception) {
+                            Railroad.LOGGER.error("Failed to load class: {}", className, exception);
+                        }
                     }
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (IOException exception) {
+                Railroad.LOGGER.error("Failed to scan standard library", exception);
             }
         }
     }
@@ -70,7 +86,19 @@ public class Indexes {
 
         @Override
         protected Class<?> findClass(String name) throws ClassNotFoundException {
-            return super.findClass(name);
+            try (var jmod = new JarFile(this.jmod.toFile())) {
+                JarEntry entry = jmod.getJarEntry(name);
+                if (entry == null) {
+                    throw new ClassNotFoundException(name);
+                }
+
+                byte[] bytes = jmod.getInputStream(entry).readAllBytes();
+
+                String className = name.substring("classes/".length()).replace('/', '.');
+                return defineClass(className, bytes, 0, bytes.length);
+            } catch (IOException exception) {
+                throw new ClassNotFoundException(name, exception);
+            }
         }
     }
 }
