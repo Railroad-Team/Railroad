@@ -6,7 +6,14 @@ import javafx.scene.control.Tooltip;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * An extension of the JavaFX Tooltip that allows for the Tooltip's text to be localised.
+ */
 public class LocalizedTooltip extends Tooltip {
+    /*TODO why do we have 2 different ways of handling args?
+     * We have 1 here and 1 in LocalizedLabel
+     * Might just be me, but they look the same apart from this one using AtomicReference rather than an observable list
+     */
     private final AtomicReference<String> argString = new AtomicReference<>("");
     private String currentKey;
 
