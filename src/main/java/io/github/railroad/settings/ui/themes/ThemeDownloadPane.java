@@ -16,6 +16,7 @@ public class ThemeDownloadPane {
         var pane = new RRVBox();
         var listView = new RRListView<Theme>();
 
+        //TODO add a way to fetch themes from a different source
         List<Theme> themes = ThemeDownloadManager.fetchThemes("https://api.github.com/repos/Railroad-Team/Themes/contents");
         if (themes.isEmpty()) {
             listView.setVisible(false);

@@ -23,13 +23,27 @@ import java.util.stream.Stream;
 
 import static io.github.railroad.Railroad.LOGGER;
 
+/**
+ * A class of functions to enable the downloading and management of themes.
+ */
 public class ThemeDownloadManager {
+    /**
+     * The last time the themes were refreshed, must be at least 60 seconds ago otherwise rate limiting could occur
+     */
     private static final AtomicLong LAST_REFRESHED = new AtomicLong(0);
+    /**
+     * A cache of themes to prevent unnecessary requests
+     */
     private static final List<Theme> THEMES_CACHE = new ArrayList<>();
 
     private ThemeDownloadManager() {
     }
 
+    /**
+     * Downloads the provided theme using the FileHandler utility
+     * @param theme {@link Theme} The theme to download
+     * @return Whether the theme was downloaded successfully
+     */
     public static boolean downloadTheme(@NotNull Theme theme) {
         if (theme.getDownloadUrl() == null) {
             LOGGER.error("Theme download URL is null");
@@ -57,6 +71,11 @@ public class ThemeDownloadManager {
         }
     }
 
+    /**
+     * Checks if the provided theme is downloaded
+     * @param theme {@link Theme} The theme to check
+     * @return bool - Whether the theme is downloaded
+     */
     public static boolean isDownloaded(final Theme theme) {
         return getDownloaded().stream()
                 .map(Path::getFileName)
@@ -64,6 +83,11 @@ public class ThemeDownloadManager {
                 .anyMatch(t -> t.equals(theme.getName().replace("\"", "")));
     }
 
+    /**
+     * Fetches all downloaded themes
+     * If the themes directory does not exist, it will be created
+     * @return {@link List<Path>} - A list of all downloaded themes
+     */
     public static List<Path> getDownloaded() {
         Path dir = getThemesDirectory();
 
@@ -83,6 +107,12 @@ public class ThemeDownloadManager {
         }
     }
 
+    /**
+     * Fetches all themes from the provided URL
+     * Themes are then parsed into a list of {@link Theme} objects
+     * @param url {@link String} The URL to fetch themes from
+     * @return {@link List<Theme>} - A list of all themes fetched
+     */
     public static List<Theme> fetchThemes(final String url) {
         if (LAST_REFRESHED.get() + 60_000 > System.currentTimeMillis())
             return THEMES_CACHE;
@@ -99,11 +129,6 @@ public class ThemeDownloadManager {
             }
 
             ResponseBody body = response.body();
-            if (body == null) {
-                LOGGER.error("While fetching themes, the body was null");
-                return itemList;
-            }
-
             String bodyStr = body.string();
             if (bodyStr.isBlank()) {
                 LOGGER.error("While fetching themes, the body was empty");
@@ -139,6 +164,10 @@ public class ThemeDownloadManager {
         return itemList;
     }
 
+    /**
+     * Returns the themes directory
+     * @return {@link Path} - The themes directory
+     */
     public static Path getThemesDirectory() {
         return ConfigHandler.getConfigDirectory().resolve("themes");
     }
