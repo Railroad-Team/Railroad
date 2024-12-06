@@ -51,14 +51,14 @@ public class Indexes {
             // Scan the `java.base` module
             Path javaBase = jmods.resolve("java.base.jmod"); // this should be effectively a jar file
 
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            ClassLoader classLoader = new StandardLibraryClassLoader(javaBase);
             try(var jmod = new JarFile(javaBase.toFile())) {
                 Enumeration<JarEntry> entries = jmod.entries();
                 while (entries.hasMoreElements()) {
                     JarEntry entry = entries.nextElement();
                     String className = entry.getName();
                     if (className.endsWith(".class")) {
-                        if(className.contains("module-info.class") || className.contains("package-info.class") || className.contains("com/sun") || className.contains("sun/"))
+                        if(className.contains("module-info.class") || className.contains("package-info.class") || className.contains("com/sun") || className.contains("sun/") || className.contains("jdk/"))
                             continue;
 
                         try {

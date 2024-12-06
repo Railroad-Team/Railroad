@@ -16,6 +16,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * The pane that displays the list of projects in the welcome screen.
+ */
 public class WelcomeProjectsPane extends ScrollPane {
     private final RRListView<Project> projectsList = new RRListView<>();
 
