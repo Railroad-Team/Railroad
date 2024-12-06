@@ -21,10 +21,6 @@ public class LocalizedTextArea extends TextArea {
         }
     }
 
-    /**
-     * Gets the current key.
-     * @return The current key.
-     */
     public String getKey() {
         return currentKey;
     }

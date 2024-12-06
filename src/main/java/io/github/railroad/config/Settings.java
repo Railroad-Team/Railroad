@@ -23,23 +23,10 @@ import java.util.Optional;
  * Stores the settings for the application.
  */
 public class Settings implements JsonSerializable<JsonObject> {
-    /**
-     * A map of the pluginNames to their settings.
-     */
     private final ObservableMap<String, PluginSettings> pluginsSettings = FXCollections.observableHashMap();
-    /**
-     * The theme of the application.
-     */
     private final StringProperty theme = new SimpleStringProperty("default-dark");
-    /**
-     * The language of the application.
-     */
     private final ObjectProperty<Language> language = new SimpleObjectProperty<>(Language.EN_US);
 
-    /**
-     * Converts the individual values needed in the config file into a JSON object
-     * @return {@link JsonObject} - The JSON object with all the required values
-     */
     @Override
     public JsonObject toJson() {
         var json = new JsonObject();
@@ -60,15 +47,6 @@ public class Settings implements JsonSerializable<JsonObject> {
         return json;
     }
 
-    /**
-     * Loads the individual values from the JSON object into the application
-     * @param json
-     *
-     * Loads {@link PluginSettings} into the pluginsSettings map, which are then loaded into the plugin manager.
-     * Then loads the theme and language settings into their StringProperty and ObjectProperty respectively.
-     *
-     * If the Config file does not have plugin settings, it will call the createSettings method for that plugin.
-     */
     @Override
     public void fromJson(JsonObject json) {
         if (json.has("PluginsSettings")) {
@@ -160,34 +138,18 @@ public class Settings implements JsonSerializable<JsonObject> {
         return settingsClass.cast(this.pluginsSettings.get(pluginName));
     }
 
-    /**
-     * Returns the theme from the settings.
-     * @return {@link String} - The theme.
-     */
     public String getTheme() {
         return theme.get();
     }
 
-    /**
-     * Sets the theme in the settings.
-     * @param theme {@link String} - The theme to set.
-     */
     public void setTheme(String theme) {
         this.theme.set(theme == null ? "default-dark" : theme);
     }
 
-    /**
-     * Returns the language from the settings.
-     * @return {@link Language} - The language.
-     */
     public Language getLanguage() {
         return language.get();
     }
 
-    /**
-     * Sets the language in the settings.
-     * @param language {@link Language} - The language to set.
-     */
     public void setLanguage(Language language) {
         this.language.set(language == null ? Language.EN_US : language);
     }

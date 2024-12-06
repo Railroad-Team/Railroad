@@ -21,10 +21,6 @@ public class LocalizedTextField extends TextField {
         }
     }
 
-    /**
-     * Gets the current key.
-     * @return The current key.
-     */
     public String getKey() {
         return currentKey;
     }

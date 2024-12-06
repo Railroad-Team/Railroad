@@ -19,12 +19,6 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
      */
     public LocalizedComboBox(ToStringFunction<T> keyFunction, FromStringFunction<T> valueOfFunction) {
         setConverter(new StringConverter<>() {
-            /**
-             * Converts the object to a string that will be displayed in the ComboBox.
-             * If the object is null or
-             * @param object object that is in the ComboBox.
-             * @return The localized string to be displayed.
-             */
             @Override
             public String toString(T object) {
                 if (object == null)
@@ -37,11 +31,6 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
                 return L18n.localize(key);
             }
 
-            /**
-             * Converts the ComboBox's label to an object of type T.
-             * @param string The label
-             * @return The object
-             */
             @Override
             public T fromString(String string) {
                 return valueOfFunction.fromString(string.toUpperCase(Locale.ROOT));

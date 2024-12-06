@@ -12,9 +12,6 @@ import org.jetbrains.annotations.NotNull;
  */
 @Getter
 public class LocalizedLabel extends Label {
-    /**
-     * A list of arguments to be passed to the localisation function to allow for dynamic strings.
-     */
     private final ObservableList<Object> args = FXCollections.observableArrayList();
     private String key;
 

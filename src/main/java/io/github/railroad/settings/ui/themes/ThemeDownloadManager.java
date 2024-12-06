@@ -31,9 +31,6 @@ public class ThemeDownloadManager {
      * The last time the themes were refreshed, must be at least 60 seconds ago otherwise rate limiting could occur
      */
     private static final AtomicLong LAST_REFRESHED = new AtomicLong(0);
-    /**
-     * A cache of themes to prevent unnecessary requests
-     */
     private static final List<Theme> THEMES_CACHE = new ArrayList<>();
 
     private ThemeDownloadManager() {
@@ -164,10 +161,6 @@ public class ThemeDownloadManager {
         return itemList;
     }
 
-    /**
-     * Returns the themes directory
-     * @return {@link Path} - The themes directory
-     */
     public static Path getThemesDirectory() {
         return ConfigHandler.getConfigDirectory().resolve("themes");
     }

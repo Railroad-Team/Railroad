@@ -41,24 +41,16 @@ public class L18n {
         loadLanguage();
     }
 
-    /**
-     * Returns the current language of the application.
-     * @return {@link Language} The current language of the application.
-     */
     public static Language getCurrentLanguage() {
         return CURRENT_LANG.getValue();
     }
 
-    /**
-     * Returns the Current Language cache, for use in bindings or listeners.
-     * @return {@link ObjectProperty<Language>} The language cache.
-     */
     public static ObjectProperty<Language> currentLanguageProperty() {
         return CURRENT_LANG;
     }
 
     /**
-     * Gets the currently selected language from the config, and then attempts to load the .lang file for that language into the cache.
+     * Attempts to load the .lang file for the current language into the cache.
      */
     public static void loadLanguage() {
         // Loads the language into cache and sets the CURRENT_LANG

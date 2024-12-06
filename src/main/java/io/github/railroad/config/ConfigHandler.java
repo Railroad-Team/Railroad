@@ -86,10 +86,6 @@ public final class ConfigHandler {
         }
     }
 
-    /**
-     * Returns the config object.
-     * @return {@link Config} - The config object.
-     */
     public static Config getConfig() {
         return INSTANCE.config;
     }

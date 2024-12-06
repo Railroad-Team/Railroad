@@ -3,7 +3,7 @@ package io.github.railroad.localization;
 import static io.github.railroad.Railroad.LOGGER;
 
 public enum Language {
-    /*
+    /**
      * Language codes use the ISO 639-1 2 letter (set-1) standard.
      * Country codes use the ISO 3166-1 2 letter (A-2) standard.
      * Language names are in the language itself.
