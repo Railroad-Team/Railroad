@@ -12,7 +12,7 @@ import java.util.List;
  * @param defaultValue The default value for the setting, e.g true.
  * @param tags List of strings that can be used to filter/search settings
  */
-public record Setting<L, T>(String settingName, SettingComponentType componentType, L defaultOptions, T defaultValue, List<String> tags) {
+public record SettingData(String settingName, SettingComponentType componentType, List<String> tags) {
     public String getSettingName() {
         return settingName;
     }
@@ -21,35 +21,20 @@ public record Setting<L, T>(String settingName, SettingComponentType componentTy
         return componentType;
     }
 
-    public L getDefaultOptions() {
-        return defaultOptions;
-    }
-
-    public T getDefaultValue() {
-        return defaultValue;
-    }
-
     public List<String> getTags() {
         return tags;
     }
 
-    public Setting {
+    public SettingData {
         if (settingName == null) {
             throw new IllegalArgumentException("Setting name cannot be null");
         }
         if (componentType == null) {
             throw new IllegalArgumentException("Component type cannot be null");
         }
-        if (defaultValue == null) {
-            throw new IllegalArgumentException("Default value cannot be null");
-        }
         if (tags == null) {
             throw new IllegalArgumentException("Tags cannot be null");
         }
-    }
-
-    public Setting(String settingName, SettingComponentType componentType, T defaultValue, List<String> tags) {
-        this(settingName, componentType, null, defaultValue, tags);
     }
 }
 

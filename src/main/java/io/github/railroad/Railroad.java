@@ -12,6 +12,7 @@ import io.github.railroad.project.minecraft.FabricAPIVersion;
 import io.github.railroad.project.minecraft.ForgeVersion;
 import io.github.railroad.project.minecraft.MinecraftVersion;
 import io.github.railroad.project.minecraft.NeoForgeVersion;
+import io.github.railroad.settings.handler.SettingsManager;
 import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.utility.ShutdownHooks;
 import io.github.railroad.vcs.RepositoryManager;
@@ -51,6 +52,7 @@ public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+    public static final SettingsManager SETTINGS_HANDLER = new SettingsManager();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
     public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
