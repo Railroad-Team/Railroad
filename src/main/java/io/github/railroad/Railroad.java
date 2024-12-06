@@ -2,7 +2,6 @@ package io.github.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.kodedu.terminalfx.helper.ThreadHelper;
 import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.localization.L18n;
@@ -38,14 +37,13 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
 public class Railroad extends Application {
     public static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
+    public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
@@ -123,8 +121,30 @@ public class Railroad extends Application {
     }
 
     public static void showErrorAlert(String title, String header, String content) {
-        showErrorAlert(title, header, content, buttonType -> {
-        });
+        showErrorAlert(title, header, content, buttonType -> {});
+    }
+
+    public static void switchToIDE(Project project) {
+        Stage window = IDESetup.createIDEWindow(project);
+        Railroad.window.close();
+        Railroad.window = window;
+        PROJECT_MANAGER.setCurrentProject(project);
+        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN, project);
+    }
+
+    public static void openUrl(String url) {
+        if (!url.matches(URL_REGEX)) {
+            showErrorAlert("Invalid URL", "Invalid URL", "The URL provided is invalid.");
+            return;
+        }
+
+        try {
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().browse(new URI(url));
+            }
+        } catch (IOException | URISyntaxException exception) {
+            showErrorAlert("Error", "Error opening URL", "An error occurred while trying to open the URL.");
+        }
     }
 
     @Override
@@ -182,28 +202,5 @@ public class Railroad extends Application {
 
         Platform.exit();
         System.exit(0);
-    }
-
-    public static void switchToIDE(Project project) {
-        Stage window = IDESetup.createIDEWindow(project);
-        Railroad.window.close();
-        Railroad.window = window;
-        PROJECT_MANAGER.setCurrentProject(project);
-        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN, project);
-    }
-
-    public static void openUrl(String url) {
-        if (!url.matches(URL_REGEX)) {
-            showErrorAlert("Invalid URL", "Invalid URL", "The URL provided is invalid.");
-            return;
-        }
-
-        try {
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().browse(new URI(url));
-            }
-        } catch (IOException | URISyntaxException exception) {
-            showErrorAlert("Error", "Error opening URL", "An error occurred while trying to open the URL.");
-        }
     }
 }

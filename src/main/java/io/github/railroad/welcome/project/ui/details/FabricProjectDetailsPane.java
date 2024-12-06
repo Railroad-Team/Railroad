@@ -14,8 +14,6 @@ import io.github.railroad.project.minecraft.mapping.MappingVersion;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.welcome.project.ProjectType;
 import io.github.railroad.welcome.project.ui.widget.StarableListCell;
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -25,8 +23,6 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -74,24 +70,9 @@ public class FabricProjectDetailsPane extends RRVBox {
                 .required()
                 .bindTextFieldTo(projectNameField)
                 .promptText("railroad.project.creation.name.prompt")
-                .validator(textField -> {
-                    String text = textField.getText();
-                    if (text == null || text.isBlank())
-                        return ValidationResult.error("railroad.project.creation.name.error.required");
-
-                    if (text.length() > 256)
-                        return ValidationResult.error("railroad.project.creation.name.error.length_long");
-
-                    if (text.length() < 3)
-                        return ValidationResult.error("railroad.project.creation.name.error.length_short");
-
-                    if (text.matches("[.<>:\"/\\\\|?*]"))
-                        return ValidationResult.error("railroad.project.creation.name.error.invalid_characters");
-
-                    return ValidationResult.ok();
-                })
+                .validator(ProjectValidators::validateProjectName)
                 .listener((node, observable, oldValue, newValue) -> {
-                    String path = fixPath(projectPathField.get().getText().trim() + "\\" + projectNameField.get().getText().trim());
+                    String path = ProjectValidators.getRepairedPath(projectPathField.get().getText().trim() + "\\" + projectNameField.get().getText().trim());
                     createdAtPath.set(path);
                 })
                 .keyTypedHandler(event -> {
@@ -118,32 +99,9 @@ public class FabricProjectDetailsPane extends RRVBox {
                 .required()
                 .defaultPath(System.getProperty("user.home"))
                 .bindTextFieldTo(projectPathField)
-                .validator(textField -> {
-                    String text = textField.getText();
-                    if (text == null || text.isBlank())
-                        return ValidationResult.error("railroad.project.creation.location.error.required");
-
-                    if (!text.matches(".*[a-zA-Z0-9]"))
-                        return ValidationResult.error("railroad.project.creation.location.error.invalid_characters");
-
-                    try {
-                        Path path = Path.of(text);
-                        if (Files.notExists(path))
-                            return ValidationResult.error("railroad.project.creation.location.error.not_exists");
-
-                        if (!Files.isDirectory(path))
-                            return ValidationResult.error("railroad.project.creation.location.error.not_directory");
-                    } catch (InvalidPathException exception) {
-                        return ValidationResult.error("railroad.project.creation.location.error.invalid_path");
-                    }
-
-                    if (text.contains("OneDrive"))
-                        return ValidationResult.warning("railroad.project.creation.location.warning.onedrive");
-
-                    return ValidationResult.ok();
-                })
+                .validator(ProjectValidators::validatePath)
                 .listener((node, observable, oldValue, newValue) -> {
-                    String path = fixPath(projectPathField.get().getText().trim() + "\\" + projectNameField.get().getText().trim());
+                    String path = ProjectValidators.getRepairedPath(projectPathField.get().getText().trim() + "\\" + projectNameField.get().getText().trim());
                     createdAtPath.set(path);
                 })
                 .build();
@@ -166,12 +124,7 @@ public class FabricProjectDetailsPane extends RRVBox {
                 .visible(licenseComboBox.get().valueProperty().isEqualTo(License.CUSTOM))
                 .bindTextFieldTo(licenseCustomField)
                 .promptText("railroad.project.creation.license.custom.prompt")
-                .validator(textField -> {
-                    if (textField.getText().isBlank())
-                        return ValidationResult.error("railroad.project.creation.license.custom.error.required");
-
-                    return ValidationResult.ok();
-                })
+                .validator(ProjectValidators::validateCustomLicense)
                 .build();
 
         List<MinecraftVersion> supportedVersions = MinecraftVersion.getSupportedVersions(ProjectType.FABRIC);
@@ -237,29 +190,14 @@ public class FabricProjectDetailsPane extends RRVBox {
                         version -> false,
                         FabricAPIVersion::version))
                 .defaultValue(FabricAPIVersion::getLatest)
-                .visible(createBinding(includeFapiCheckBox.get().selectedProperty()))
+                .visible(ProjectValidators.createBinding(includeFapiCheckBox.get().selectedProperty()))
                 .build();
 
         TextFieldComponent modIdComponent = FormComponent.textField("ModId", "railroad.project.creation.mod_id")
                 .required()
                 .bindTextFieldTo(modIdField)
                 .promptText("railroad.project.creation.mod_id.prompt")
-                .validator(textField -> {
-                    String text = textField.getText();
-                    if (text == null || text.isBlank())
-                        return ValidationResult.error("railroad.project.creation.mod_id.error.required");
-
-                    if (text.length() < 3)
-                        return ValidationResult.error("railroad.project.creation.mod_id.error.length_short");
-
-                    if (text.length() > 64)
-                        return ValidationResult.error("railroad.project.creation.mod_id.error.length_long");
-
-                    if (!text.matches("^[a-z][a-z0-9_]{1,63}$"))
-                        return ValidationResult.error("railroad.project.creation.mod_id.error.invalid_characters");
-
-                    return ValidationResult.ok();
-                })
+                .validator(ProjectValidators::validateModId)
                 .keyTypedHandler(event -> {
                     if (!hasTypedInModid.get() && !modIdField.get().getText().isBlank())
                         hasTypedInModid.set(true);
@@ -278,16 +216,7 @@ public class FabricProjectDetailsPane extends RRVBox {
                 .required()
                 .bindTextFieldTo(modNameField)
                 .promptText("railroad.project.creation.mod_name.prompt")
-                .validator(textField -> {
-                    String text = textField.getText();
-                    if (text == null || text.isBlank())
-                        return ValidationResult.error("railroad.project.creation.mod_name.error.required");
-
-                    if (text.length() > 256)
-                        return ValidationResult.error("railroad.project.creation.mod_name.error.length_long");
-
-                    return ValidationResult.ok();
-                })
+                .validator(ProjectValidators::validateModName)
                 .keyTypedHandler(event -> {
                     if (!hasTypedInModName.get() && !modNameField.get().getText().isBlank())
                         hasTypedInModName.set(true);
@@ -306,16 +235,7 @@ public class FabricProjectDetailsPane extends RRVBox {
                 .required()
                 .bindTextFieldTo(mainClassField)
                 .promptText("railroad.project.creation.main_class.prompt")
-                .validator(textField -> {
-                    String text = textField.getText();
-                    if (text == null || text.isBlank())
-                        return ValidationResult.error("railroad.project.creation.main_class.error.required");
-
-                    if (!text.matches("[a-zA-Z0-9_]+"))
-                        return ValidationResult.error("railroad.project.creation.main_class.error.invalid_characters");
-
-                    return ValidationResult.ok();
-                })
+                .validator(ProjectValidators::validateMainClass)
                 .keyTypedHandler(event -> {
                     if (!hasTypedInMainClass.get() && !mainClassField.get().getText().isBlank())
                         hasTypedInMainClass.set(true);
@@ -367,25 +287,13 @@ public class FabricProjectDetailsPane extends RRVBox {
         TextFieldComponent authorComponent = FormComponent.textField("Author", "railroad.project.creation.author")
                 .bindTextFieldTo(authorField)
                 .promptText("railroad.project.creation.author.prompt")
-                .validator(textField -> {
-                    String text = textField.getText();
-                    if (text.length() > 256)
-                        return ValidationResult.error("railroad.project.creation.author.error.length_long");
-
-                    return ValidationResult.ok();
-                })
+                .validator(ProjectValidators::validateAuthor)
                 .build();
 
         TextAreaComponent descriptionComponent = FormComponent.textArea("Description", "railroad.project.creation.description")
                 .bindTextAreaTo(descriptionArea)
                 .promptText("railroad.project.creation.description.prompt")
-                .validator(textArea -> {
-                    String text = textArea.getText();
-                    if (text.length() > 1028)
-                        return ValidationResult.error("railroad.project.creation.description.error.length_long");
-
-                    return ValidationResult.ok();
-                })
+                .validator(ProjectValidators::validateDescription)
                 .resize(true)
                 .wrapText(true)
                 .build();
@@ -393,75 +301,33 @@ public class FabricProjectDetailsPane extends RRVBox {
         TextFieldComponent issuesComponent = FormComponent.textField("Issues", "railroad.project.creation.issues")
                 .bindTextFieldTo(issuesField)
                 .promptText("railroad.project.creation.issues.prompt")
-                .validator(textField -> {
-                    String text = textField.getText();
-                    if (text.length() > 256)
-                        return ValidationResult.error("railroad.project.creation.issues.error.length_long");
-
-                    return ValidationResult.ok();
-                })
+                .validator(ProjectValidators::validateIssues)
                 .build();
 
         TextFieldComponent homepageComponent = FormComponent.textField("Homepage", "railroad.project.creation.homepage")
                 .bindTextFieldTo(homepageField)
                 .promptText("railroad.project.creation.homepage.prompt")
-                .validator(textField -> {
-                    String text = textField.getText();
-                    if (text.length() > 256)
-                        return ValidationResult.error("railroad.project.creation.homepage.error.length_long");
-
-                    return ValidationResult.ok();
-                })
+                .validator(field -> ProjectValidators.validateGenericUrl(field, "homepage"))
                 .build();
 
         TextFieldComponent sourcesComponent = FormComponent.textField("Sources", "railroad.project.creation.sources")
                 .bindTextFieldTo(sourcesField)
                 .promptText("railroad.project.creation.sources.prompt")
-                .validator(textField -> {
-                    String text = textField.getText();
-                    if (text.length() > 256)
-                        return ValidationResult.error("railroad.project.creation.sources.error.length_long");
-
-                    return ValidationResult.ok();
-                })
+                .validator(field -> ProjectValidators.validateGenericUrl(field, "sources"))
                 .build();
 
         TextFieldComponent groupIdComponent = FormComponent.textField("GroupId", "railroad.project.creation.group_id")
                 .required()
                 .bindTextFieldTo(groupIdField)
                 .promptText("railroad.project.creation.group_id.prompt")
-                .validator(textField -> {
-                    String text = textField.getText();
-                    if (text == null || text.isBlank())
-                        return ValidationResult.error("railroad.project.creation.group_id.error.required");
-
-                    if (text.length() > 256)
-                        return ValidationResult.error("railroad.project.creation.group_id.error.length_long");
-
-                    if (!text.matches("[a-zA-Z0-9.]+"))
-                        return ValidationResult.error("railroad.project.creation.group_id.error.invalid_characters");
-
-                    return ValidationResult.ok();
-                })
+                .validator(ProjectValidators::validateGroupId)
                 .build();
 
         TextFieldComponent artifactIdComponent = FormComponent.textField("ArtifactId", "railroad.project.creation.artifact_id")
                 .required()
                 .bindTextFieldTo(artifactIdField)
                 .promptText("railroad.project.creation.artifact_id.prompt")
-                .validator(textField -> {
-                    String text = textField.getText();
-                    if (text == null || text.isBlank())
-                        return ValidationResult.error("railroad.project.creation.artifact_id.error.required");
-
-                    if (text.length() > 256)
-                        return ValidationResult.error("railroad.project.creation.artifact_id.error.length_long");
-
-                    if (!text.matches("[a-z0-9-]+"))
-                        return ValidationResult.error("railroad.project.creation.artifact_id.error.invalid_characters");
-
-                    return ValidationResult.ok();
-                })
+                .validator(ProjectValidators::validateArtifactId)
                 .keyTypedHandler(event -> {
                     if (!hasTypedInArtifactId.get() && !artifactIdField.get().getText().isBlank())
                         hasTypedInArtifactId.set(true);
@@ -474,19 +340,7 @@ public class FabricProjectDetailsPane extends RRVBox {
                 .required()
                 .bindTextFieldTo(versionField)
                 .promptText("railroad.project.creation.version.prompt")
-                .validator(textField -> {
-                    String text = textField.getText();
-                    if (text == null || text.isBlank())
-                        return ValidationResult.error("railroad.project.creation.version.error.required");
-
-                    if (text.length() > 256)
-                        return ValidationResult.error("railroad.project.creation.version.error.length_long");
-
-                    if (!text.matches("[a-zA-Z0-9.-]+"))
-                        return ValidationResult.error("railroad.project.creation.version.error.invalid_characters");
-
-                    return ValidationResult.ok();
-                })
+                .validator(ProjectValidators::validateVersion)
                 .build();
 
         Form form = Form.create()
@@ -544,35 +398,6 @@ public class FabricProjectDetailsPane extends RRVBox {
         ComboBox<MappingVersion> mappingVersionComboBox = this.mappingVersionComboBox.get();
         MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.get().getValue(), mappingChannelComboBox.get().getValue());
         mappingVersionComboBox.setValue(mappingVersionComboBox.getItems().getFirst());
-    }
-
-    private static BooleanBinding createBinding(BooleanProperty property) {
-        return Bindings.when(property).then(true).otherwise(false);
-    }
-
-    private static String fixPath(String path) {
-        while (path.endsWith(" "))
-            path = path.substring(0, path.length() - 1);
-
-        path = path.replace("/", "\\");
-
-        // Remove trailing backslashes
-        while (path.endsWith("\\"))
-            path = path.substring(0, path.length() - 1);
-
-        // remove any whitespace before a backslash
-        path = path.replaceAll("\\s+\\\\", "\\");
-
-        // remove any whitespace after a backslash
-        path = path.replaceAll("\\\\\\\\s+", "\\\\");
-
-        // remove any double backslashes
-        path = path.replaceAll("\\\\\\\\", "\\\\");
-
-        // remove any trailing whitespace
-        path = path.trim();
-
-        return path;
     }
 
     protected static FabricProjectData createData(FormData formData) {
