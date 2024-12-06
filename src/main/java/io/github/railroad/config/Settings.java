@@ -19,6 +19,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Stores the settings for the application.
+ */
 public class Settings implements JsonSerializable<JsonObject> {
     private final ObservableMap<String, PluginSettings> pluginsSettings = FXCollections.observableHashMap();
     private final StringProperty theme = new SimpleStringProperty("default-dark");
@@ -69,7 +72,6 @@ public class Settings implements JsonSerializable<JsonObject> {
             }
         }
 
-        // Add plugin settings that are not in the config file
         Railroad.PLUGIN_MANAGER.getPluginList().forEach(plugin -> {
             this.pluginsSettings.computeIfAbsent(plugin.getName(), name -> plugin.createSettings());
         });
@@ -91,6 +93,10 @@ public class Settings implements JsonSerializable<JsonObject> {
         }
     }
 
+    /**
+     * Copies the settings from the given settings object to this object.
+     * @param settings {@link Settings} - The settings to copy from.
+     */
     public void copyFrom(Settings settings) {
         this.pluginsSettings.clear();
         this.pluginsSettings.putAll(settings.pluginsSettings);
@@ -99,14 +105,35 @@ public class Settings implements JsonSerializable<JsonObject> {
         this.language.set(settings.language.get());
     }
 
+    /**
+     * Gets the settings for the given plugin.
+     * @param plugin {@link Plugin} - The plugin to get the settings for.
+     * @return {@link PluginSettings} - The settings for the plugin.
+     */
     public PluginSettings getPluginSettings(Plugin plugin) {
         return this.pluginsSettings.get(plugin.getName());
     }
 
+    /**
+     * Gets the settings for the given plugin.
+     * @param plugin {@link Plugin} - The plugin to get the settings for.
+     * @param settingsClass {@link Class} - The class of the settings.
+     * @return {@link T} - The settings for the plugin.
+     * @param <T> The type of the settings.
+     * @throws ClassCastException If the settings cannot be cast to the given class.
+     */
     public <T extends PluginSettings> T getPluginSettings(Plugin plugin, Class<? extends T> settingsClass) throws ClassCastException {
         return getPluginSettings(plugin.getName(), settingsClass);
     }
 
+    /**
+     * Gets the settings for the given plugin.
+     * @param pluginName {@link String} - The name of the plugin to get the settings for.
+     * @param settingsClass {@link Class} - The class of the settings.
+     * @return {@link T} - The settings for the plugin.
+     * @param <T> The type of the settings.
+     * @throws ClassCastException If the settings cannot be cast to the given class.
+     */
     public <T extends PluginSettings> T getPluginSettings(String pluginName, Class<? extends T> settingsClass) throws ClassCastException {
         return settingsClass.cast(this.pluginsSettings.get(pluginName));
     }

@@ -13,6 +13,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
+/**
+ * Parses the JSON config file into individual objects.
+ */
 public class Config implements JsonSerializable<JsonObject> {
     private final ObjectProperty<Settings> settings = new ReadOnlyObjectWrapper<>(new Settings());
 
@@ -78,6 +81,10 @@ public class Config implements JsonSerializable<JsonObject> {
         }
     }
 
+    /**
+     * Copies the settings from the given config object
+     * @param config {@link Config}
+     */
     public void copyFrom(@Nullable Config config) {
         if (config == null)
             return;

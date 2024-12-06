@@ -12,13 +12,26 @@ import java.util.Properties;
 
 import static io.github.railroad.Railroad.LOGGER;
 
+/**
+ * The L18n class handles the localization for the application.
+ * It loads a language file (.lang) and every time a new key is requested, it returns the value from that file.
+ * If the file does not include a key, the key is returned instead.
+ */
 public class L18n {
+    /**
+     * The language cache, stores key-value pairs to be used for localization.
+     * Due to .lang files already being a key-value pair, the properties class parses the file without any need for further parsing.
+     */
     private static final Properties LANG_CACHE = new Properties();
     private static final ObjectProperty<Language> CURRENT_LANG = new SimpleObjectProperty<>();
 
-    private L18n() {
-    }
+    private L18n() { }
 
+    /**
+     * Sets the applications language to the provided language.
+     * First updates the config, and then calls loadLanguage to update the cache.
+     * @param language The language to change to.
+     */
     public static void setLanguage(Language language) {
         // Updates the config and calls loadLanguage to update the cache and CURRENT_LANG
         LOGGER.debug("Setting language to {}", language);
@@ -36,6 +49,9 @@ public class L18n {
         return CURRENT_LANG;
     }
 
+    /**
+     * Attempts to load the .lang file for the current language into the cache.
+     */
     public static void loadLanguage() {
         // Loads the language into cache and sets the CURRENT_LANG
         LOGGER.info("Loading language file");
@@ -57,10 +73,15 @@ public class L18n {
         }
     }
 
+    /**
+     * Takes in the localization key and returns the localized string.
+     * @param key The key to localize.
+     * @return The localized string.
+     */
     public static String localize(String key) {
         LOGGER.debug("Getting localized string for key {}", key);
         if (LANG_CACHE.get(key) == null) {
-            //TODO create a popup/toast to ask if user wants to swap to english as key is missing
+            //TODO create a popup/toast to ask if user wants to swap to another language as key is missing
             LOGGER.error("Error finding translations for {} {}", key, CURRENT_LANG);
             return key;
         }
