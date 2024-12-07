@@ -1,14 +1,12 @@
 package io.github.railroad.settings.ui;
 
-import io.github.railroad.Railroad;
 import io.github.railroad.localization.ui.LocalizedLabel;
-import io.github.railroad.settings.handler.SettingNode;
+import io.github.railroad.localization.ui.LocalizedTextField;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
-import javafx.scene.control.skin.TreeViewSkin;
 import javafx.stage.Stage;
 
 public class SettingsTreeScene {
@@ -29,25 +27,30 @@ public class SettingsTreeScene {
         //displaySetting(id , settingnode, parentid, key, default options, dDefault value,Function(on change event))
 
         //displaySetting("yodassoobydooplugin.enable", SettingNode, "railroad.settings", "yodas.scoobydoo.enable", null, true, function)
-        var scoobySetting = new SettingNode<>(new CheckBox("Enable scooby-doo"));
+        var scoobySetting = new CheckBox("Enable scooby-doo");
         //displaySetting("yodasscoobydooplugin.isenabled", SettingNode, "yodassoobydooplugin.enable", "yodas.scoobydoo.isenabled", null, "Scooby doo enable checkbox above", function)
-        var scoobyString = new SettingNode<>(new LocalizedLabel("railroad.ide.welcome.features"));
+        var scoobyString = new LocalizedLabel("railroad.ide.welcome.features");
+
+        var subsetting = new LocalizedTextField("");
+        subsetting.setText("Wow this is a cool subsetting!");
 
         //Parent of scooby setting
-        var scoobyTreeItem = new TreeItem<Node>(scoobySetting.getNode());
+        var scoobyTreeItem = new TreeItem<Node>(scoobySetting);
+
+        var subsettingtreeitem = new TreeItem<Node>(subsetting);
 
         //Child of scooby setting
-        scoobyTreeItem.getChildren().add(new TreeItem<>(scoobyString.getNode()));
+        scoobyTreeItem.getChildren().addAll(new TreeItem<>(scoobyString), subsettingtreeitem);
         root.getChildren().add(scoobyTreeItem);
 
         var tree = new TreeView<>(root);
 
-        scoobySetting.getNode().setSelected(true);
-        scoobySetting.getNode().selectedProperty().addListener((observable, oldValue, newValue) -> {
+        scoobySetting.setSelected(true);
+        scoobySetting.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
-                scoobyString.getNode().setKey("railroad.project.creation.location.warning.onedrive");
+                scoobyString.setKey("railroad.project.creation.location.warning.onedrive");
             } else {
-                scoobyString.getNode().setKey("railroad.project.creation.name");
+                scoobyString.setKey("railroad.project.creation.name");
             }
 
         });
@@ -64,9 +67,6 @@ public class SettingsTreeScene {
     //  - Scooby-Doo Checkbox - SettingNode<Checkbox>
     //      - Scooby-Doo String - SettingNode<Label>
     public void findSetting(String settingId) {
-        //Setting ID is the unique id for the setting.
-        for (var item : root.getChildren()) {
-
-        }
+        //TODO No clue.
     }
 }

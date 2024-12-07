@@ -7,7 +7,6 @@ import javafx.collections.ObservableList;
 import java.util.List;
 
 public class SettingsManager {
-    private final ObservableList<SettingData> settingDataObservableList = new SimpleListProperty<>();
 
     public SettingsManager() {
         //          STRING, SettingsCategory, SettingComponentType, List<Type>, Type
@@ -25,10 +24,6 @@ public class SettingsManager {
 
     //Add settings to menu
     public void initSettings() {}
-
-    public ObservableList<SettingData> getSettingObservableList() {
-        return settingDataObservableList;
-    }
 
     //Search for settings
     public List<SettingData> searchSettings(String search) { return null; }
