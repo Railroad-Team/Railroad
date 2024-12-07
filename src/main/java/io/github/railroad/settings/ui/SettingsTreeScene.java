@@ -12,6 +12,8 @@ import javafx.scene.control.skin.TreeViewSkin;
 import javafx.stage.Stage;
 
 public class SettingsTreeScene {
+    private TreeItem<Node> root;
+
     public SettingsTreeScene() {
         var stage = new Stage();
 
@@ -23,13 +25,21 @@ public class SettingsTreeScene {
 
         //TODO localization
 
-        var root = new TreeItem<Node>(new LocalizedLabel("railroad.home.welcome.settings"));
-        var scoobySetting = new SettingNode<>(new CheckBox("Enable scooby-doo"));
-        var scoobyTreeItem = new TreeItem<Node>(scoobySetting.getNode());
-        var scoobyString = new SettingNode<>(new LocalizedLabel("railroad.ide.welcome.features"));
-        scoobyTreeItem.getChildren().add(new TreeItem<>(scoobyString.getNode()));
+        root = new TreeItem<Node>(new LocalizedLabel("railroad.home.welcome.settings"));
+        //displaySetting(id , settingnode, parentid, key, default options, dDefault value,Function(on change event))
 
+        //displaySetting("yodassoobydooplugin.enable", SettingNode, "railroad.settings", "yodas.scoobydoo.enable", null, true, function)
+        var scoobySetting = new SettingNode<>(new CheckBox("Enable scooby-doo"));
+        //displaySetting("yodasscoobydooplugin.isenabled", SettingNode, "yodassoobydooplugin.enable", "yodas.scoobydoo.isenabled", null, "Scooby doo enable checkbox above", function)
+        var scoobyString = new SettingNode<>(new LocalizedLabel("railroad.ide.welcome.features"));
+
+        //Parent of scooby setting
+        var scoobyTreeItem = new TreeItem<Node>(scoobySetting.getNode());
+
+        //Child of scooby setting
+        scoobyTreeItem.getChildren().add(new TreeItem<>(scoobyString.getNode()));
         root.getChildren().add(scoobyTreeItem);
+
         var tree = new TreeView<>(root);
 
         scoobySetting.getNode().setSelected(true);
@@ -46,5 +56,17 @@ public class SettingsTreeScene {
 
         stage.setScene(scene);
         stage.show();
+    }
+    //Tree example
+    //Tree - TreeView<Node>(root)
+    //Root - TreeItem<Node>
+    // - Scooby-Doo TreeItem<Node>
+    //  - Scooby-Doo Checkbox - SettingNode<Checkbox>
+    //      - Scooby-Doo String - SettingNode<Label>
+    public void findSetting(String settingId) {
+        //Setting ID is the unique id for the setting.
+        for (var item : root.getChildren()) {
+
+        }
     }
 }
