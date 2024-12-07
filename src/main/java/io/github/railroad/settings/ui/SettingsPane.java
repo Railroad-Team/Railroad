@@ -24,6 +24,7 @@ public class SettingsPane extends RRBorderPane {
     private final TextField searchBox;
 
     public SettingsPane() {
+        var t = new SettingsTreeScene();
         this.searchBox = new LocalizedTextField("railroad.home.settings.search");
         searchBox.prefWidthProperty().bind(widthProperty());
         setTop(searchBox);
