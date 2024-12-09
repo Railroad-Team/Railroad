@@ -1,36 +1,77 @@
 package io.github.railroad.settings.handler;
 
-import com.google.gson.JsonObject;
-import javafx.beans.property.SimpleListProperty;
-import javafx.collections.ObservableList;
-
-import java.util.List;
+import com.google.gson.JsonPrimitive;
+import io.github.railroad.Railroad;
+import io.github.railroad.localization.Language;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableMap;
+import javafx.scene.Node;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeView;
 
 public class SettingsManager {
+    public static final SettingsManager INSTANCE = new SettingsManager();
+
+    private final ObservableMap<String, Setting<?>> settings = FXCollections.observableHashMap();
+    private final ObservableMap<Class<?>, SettingCodec<?, ?, ?>> codecs = FXCollections.observableHashMap();
 
     public SettingsManager() {
-        //          STRING, SettingsCategory, SettingComponentType, List<Type>, Type
-        //register - Name, Category, ComponentType (Dropdown, checkbox etc), Options (if it can have multiple), default value/option
-        //Type can be int, string, boolean, color, theme etc. Maybe make each type have a method to convert to a string/back?
-        //Will need some way to convert List<Type> into ComponentType, and same for default value/option
-        //
-        registerSetting();
+
     }
-    //Load settings from plugins and default settings
-    public void loadSettings() {}
 
-    //Register settings to the list
-    public void registerSetting() {}
+    public void registerSetting(Setting<?> setting) {
+        settings.put(setting.getId(), setting);
+    }
 
-    //Add settings to menu
-    public void initSettings() {}
+    public void registerCodec(SettingCodec<?, ?, ?> codec) {
+        if (codecs.put(codec.getType(), codec) != null) {
+            Railroad.LOGGER.warn("WARNING: SettingCodec for type: {} has been overwritten! This may cause unintended problems!", codec.getType());
+        }
+    }
 
-    //Search for settings
-    public List<SettingData> searchSettings(String search) { return null; }
+    public Setting<?> getSetting(String id) {
+        return settings.get(id);
+    }
 
-    //Set setting value
-    public  void setSetting(String settingId, JsonObject value) { }
+    public SettingCodec<?, ?, ?> getCodec(Class<?> type) {
+        return codecs.get(type);
+    }
 
-    //Get setting value
-    public JsonObject getSetting(String settingId) { return null; }
+    private void defaultCodecs() {
+        registerCodec(new SettingCodec<>(Language.class, ComboBox.class, JsonPrimitive.class,
+                comboBox -> Language.fromName((String) comboBox.getValue()),
+                (comboBox, language) -> comboBox.setValue(language.getName()),
+                language -> {
+                    var nc = new ComboBox<>();
+                    for (Language value : Language.values()) {
+                        nc.getItems().add(value);
+                    }
+                    nc.setValue(language);
+                    return nc;
+                },
+                language -> new JsonPrimitive(language.getName()),
+                json -> Language.fromName(json.getAsString())
+                ));
+    }
+
+    public TreeView createTree() {
+        //find lowest level settings
+        var tree = new TreeView<>();
+        tree.setRoot(new TreeItem<>(null));
+
+        for (String id : settings.keySet()) {
+            Setting<?> setting = settings.get(id);
+            SettingCodec<?, ?, ?> codec = getCodec(setting.getType());
+            if (codec == null) {
+                Railroad.LOGGER.warn("No codec found for setting: {}", id);
+                continue;
+            }
+            //TODO fix this?????
+            Node item = codec.getNodeCreator().apply(setting.getDefaultValue());
+            tree.getRoot().getChildren().add(new TreeItem<>(item));
+        }
+
+        return tree;
+    }
 }
