@@ -17,7 +17,7 @@ public class SettingCodec<T, N extends Node, J extends JsonElement>{
     /**
      * Creates a node with the default value of T
      */
-    private final Function<T, N> nodeCreator;
+    private final Function<Object, N> nodeCreator;
 
     private final Function<T, J> jsonEncoder;
     private final Function<J, T> jsonDecoder;
@@ -27,7 +27,7 @@ public class SettingCodec<T, N extends Node, J extends JsonElement>{
     private final Class<J> jsonType;
 
     public SettingCodec(Class<T> type, Class<N> nodeType, Class<J> jsonType,
-                        Function<N, T> nodeToValFunction, BiConsumer<N, T> valToNodeFunction, Function<T, N> nodeCreator,
+                        Function<N, T> nodeToValFunction, BiConsumer<N, T> valToNodeFunction, Function<Object, N> nodeCreator,
                         Function<T, J> jsonEncoder, Function<J, T> jsonDecoder)
     {
         this.type = type;

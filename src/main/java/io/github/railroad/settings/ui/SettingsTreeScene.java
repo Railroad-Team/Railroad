@@ -1,10 +1,8 @@
 package io.github.railroad.settings.ui;
 
-import io.github.railroad.localization.ui.LocalizedLabel;
-import io.github.railroad.localization.ui.LocalizedTextField;
+import io.github.railroad.settings.handler.SettingsManager;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.stage.Stage;
@@ -17,7 +15,7 @@ public class SettingsTreeScene {
 
         stage.setTitle("Settings");
 
-        var tree = new TreeView<>();
+        var tree = SettingsManager.INSTANCE.createTree();
 
         var scene = new Scene(tree, 500, 700);
 

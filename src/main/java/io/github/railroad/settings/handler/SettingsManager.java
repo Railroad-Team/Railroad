@@ -5,7 +5,6 @@ import io.github.railroad.Railroad;
 import io.github.railroad.localization.Language;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
-import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
@@ -17,7 +16,8 @@ public class SettingsManager {
     private final ObservableMap<Class<?>, SettingCodec<?, ?, ?>> codecs = FXCollections.observableHashMap();
 
     public SettingsManager() {
-
+        defaultCodecs();
+        defaultSettings();
     }
 
     public void registerSetting(Setting<?> setting) {
@@ -28,6 +28,7 @@ public class SettingsManager {
         if (codecs.put(codec.getType(), codec) != null) {
             Railroad.LOGGER.warn("WARNING: SettingCodec for type: {} has been overwritten! This may cause unintended problems!", codec.getType());
         }
+        Railroad.LOGGER.info("Registered codec for type: {}", codec.getType());
     }
 
     public Setting<?> getSetting(String id) {
@@ -55,20 +56,24 @@ public class SettingsManager {
                 ));
     }
 
+    private void defaultSettings() {
+        registerSetting(new Setting<>("language", Language.class, Language.EN_US));
+    }
+
     public TreeView createTree() {
         //find lowest level settings
         var tree = new TreeView<>();
         tree.setRoot(new TreeItem<>(null));
 
         for (String id : settings.keySet()) {
-            Setting<?> setting = settings.get(id);
-            SettingCodec<?, ?, ?> codec = getCodec(setting.getType());
+            var setting = settings.get(id);
+            var codec = getCodec(setting.getType());
             if (codec == null) {
                 Railroad.LOGGER.warn("No codec found for setting: {}", id);
                 continue;
             }
             //TODO fix this?????
-            Node item = codec.getNodeCreator().apply(setting.getDefaultValue());
+            var item = codec.getNodeCreator().apply(setting.getDefaultValue());
             tree.getRoot().getChildren().add(new TreeItem<>(item));
         }
 
