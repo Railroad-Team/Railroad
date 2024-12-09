@@ -44,7 +44,6 @@ public class L18n {
         try {
             String name = "lang/" + language.name().toLowerCase(Locale.ROOT) + ".lang";
             InputStream props = Railroad.getResourceAsStream(name);
-            System.out.println(name + " " + props);
             LOGGER.info("Reading language file {}", name);
 
             // Load cache and then change CURRENT_LANG otherwise binds will be triggered before cache changes

@@ -15,7 +15,7 @@ public class SettingCodec<T, N extends Node, J extends JsonElement>{
      */
     private final BiConsumer<N, T> valToNodeFunction;
     /**
-     * Creates a node with the default value of T
+     * Creates a node with the default value of Object
      */
     private final Function<Object, N> nodeCreator;
 

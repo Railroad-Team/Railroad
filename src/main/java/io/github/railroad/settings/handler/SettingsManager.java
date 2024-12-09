@@ -10,8 +10,6 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 
 public class SettingsManager {
-    public static final SettingsManager INSTANCE = new SettingsManager();
-
     private final ObservableMap<String, Setting<?>> settings = FXCollections.observableHashMap();
     private final ObservableMap<Class<?>, SettingCodec<?, ?, ?>> codecs = FXCollections.observableHashMap();
 
@@ -21,14 +19,16 @@ public class SettingsManager {
     }
 
     public void registerSetting(Setting<?> setting) {
+        Railroad.LOGGER.info("Registering setting: {}", setting.getId());
         settings.put(setting.getId(), setting);
     }
 
     public void registerCodec(SettingCodec<?, ?, ?> codec) {
-        if (codecs.put(codec.getType(), codec) != null) {
-            Railroad.LOGGER.warn("WARNING: SettingCodec for type: {} has been overwritten! This may cause unintended problems!", codec.getType());
+        Railroad.LOGGER.info("Registering codec for type: {}", codec.getType());
+        var res = codecs.put(codec.getType(), codec);
+        if (res != null) {
+            Railroad.LOGGER.warn("WARNING: SettingCodec for type: {} has been overwritten! This may cause problems!", codec.getType());
         }
-        Railroad.LOGGER.info("Registered codec for type: {}", codec.getType());
     }
 
     public Setting<?> getSetting(String id) {
@@ -40,15 +40,18 @@ public class SettingsManager {
     }
 
     private void defaultCodecs() {
+        Railroad.LOGGER.info("Registering default codecs");
         registerCodec(new SettingCodec<>(Language.class, ComboBox.class, JsonPrimitive.class,
                 comboBox -> Language.fromName((String) comboBox.getValue()),
                 (comboBox, language) -> comboBox.setValue(language.getName()),
                 language -> {
                     var nc = new ComboBox<>();
+
                     for (Language value : Language.values()) {
-                        nc.getItems().add(value);
+                        nc.getItems().add(value.getName());
                     }
-                    nc.setValue(language);
+
+                    nc.setValue(((Language) language).getName());
                     return nc;
                 },
                 language -> new JsonPrimitive(language.getName()),
@@ -57,24 +60,24 @@ public class SettingsManager {
     }
 
     private void defaultSettings() {
-        registerSetting(new Setting<>("language", Language.class, Language.EN_US));
+        Railroad.LOGGER.info("Registering default settings");
+        registerSetting(new Setting<>("railroad:language.select", Language.class, Language.EN_US));
     }
 
     public TreeView createTree() {
-        //find lowest level settings
-        var tree = new TreeView<>();
-        tree.setRoot(new TreeItem<>(null));
+        var tree = new TreeView<>(new TreeItem<>("Settings"));
 
         for (String id : settings.keySet()) {
-            var setting = settings.get(id);
+            var setting = getSetting(id);
             var codec = getCodec(setting.getType());
+
             if (codec == null) {
                 Railroad.LOGGER.warn("No codec found for setting: {}", id);
                 continue;
             }
-            //TODO fix this?????
+
             var item = codec.getNodeCreator().apply(setting.getDefaultValue());
-            tree.getRoot().getChildren().add(new TreeItem<>(item));
+            tree.getRoot().getChildren().add(new TreeItem(item));
         }
 
         return tree;
