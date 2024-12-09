@@ -47,10 +47,14 @@ public class SettingsManager {
                 language -> {
                     var nc = new ComboBox<>();
 
+                    var longest = "";
                     for (Language value : Language.values()) {
                         nc.getItems().add(value.getName());
+                        if (value.getName().length() > longest.length()) {
+                            longest = value.getName();
+                        }
                     }
-
+                    nc.setPrefSize(longest.length() * 10, 30);
                     nc.setValue(((Language) language).getName());
                     return nc;
                 },
