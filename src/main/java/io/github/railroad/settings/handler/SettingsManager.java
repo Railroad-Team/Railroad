@@ -49,9 +49,9 @@ public class SettingsManager {
                 continue;
             }
 
-            var item = codec.getNodeCreator().apply(setting.getDefaultValue());
-            ((Node)item).addEventHandler(setting.getEventType(), setting.getEventHandler());
-            ((Node)item).addEventHandler(ActionEvent.ANY, e -> {
+            Node item = (Node) codec.getNodeCreator().apply(setting.getDefaultValue());
+            item.addEventHandler(setting.getEventType(), setting.getEventHandler());
+            item.addEventHandler(ActionEvent.ANY, e -> {
                 //FIXME stupid generics
                 setting.setValue(codec.getNodeToValFunction().apply(item));
             });
