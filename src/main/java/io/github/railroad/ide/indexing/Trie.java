@@ -24,6 +24,7 @@ public class Trie {
                 return results;
             }
         }
+
         findAllWords(node, new StringBuilder(prefix), results);
         return results;
     }

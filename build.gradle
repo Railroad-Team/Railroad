@@ -56,6 +56,8 @@ dependencies {
     implementation 'io.github.bonede:tree-sitter-java:0.21.0a'
     implementation 'org.reflections:reflections:0.10.2'
 
+    implementation 'io.github.railroad:Locomotive'
+
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
     compileOnly 'org.projectlombok:lombok:1.18.32'
 }
