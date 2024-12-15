@@ -52,7 +52,6 @@ public class SettingsManager {
             Node item = (Node) codec.getNodeCreator().apply(setting.getDefaultValue());
             item.addEventHandler(setting.getEventType(), setting.getEventHandler());
             item.addEventHandler(ActionEvent.ANY, e -> {
-                //FIXME stupid generics
                 setting.setValue(codec.getNodeToValFunction().apply(item));
             });
 
@@ -65,7 +64,13 @@ public class SettingsManager {
     private void defaultCodecs() {
         Railroad.LOGGER.info("Registering default codecs");
         registerCodec(new SettingCodec<>(Language.class, ComboBox.class, JsonPrimitive.class,
-                comboBox -> Language.fromName((String) comboBox.getValue()),
+                node -> {
+                    if (node instanceof ComboBox<?> comboBox) {
+                        return Language.fromName((String) comboBox.getValue());
+                    }
+
+                    return null;
+                },
                 (comboBox, language) -> comboBox.setValue(language.getName()),
                 language -> {
                     var nc = new ComboBox<>();

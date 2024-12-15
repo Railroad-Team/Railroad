@@ -9,7 +9,7 @@ import java.util.function.Function;
 
 @Getter
 public class SettingCodec<T, N extends Node, J extends JsonElement>{
-    private final Function<N, T> nodeToValFunction;
+    private final Function<Node, T> nodeToValFunction;
     /**
      * Sets the current selected value of the node
      */
@@ -27,7 +27,7 @@ public class SettingCodec<T, N extends Node, J extends JsonElement>{
     private final Class<J> jsonType;
 
     public SettingCodec(Class<T> type, Class<N> nodeType, Class<J> jsonType,
-                        Function<N, T> nodeToValFunction, BiConsumer<N, T> valToNodeFunction, Function<T, N> nodeCreator,
+                        Function<Node, T> nodeToValFunction, BiConsumer<N, T> valToNodeFunction, Function<T, N> nodeCreator,
                         Function<T, J> jsonEncoder, Function<J, T> jsonDecoder)
     {
         this.type = type;

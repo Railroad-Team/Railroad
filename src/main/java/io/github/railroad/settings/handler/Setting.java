@@ -1,5 +1,6 @@
 package io.github.railroad.settings.handler;
 
+import io.github.railroad.Railroad;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.EventHandler;
 import javafx.event.EventType;
@@ -23,6 +24,10 @@ public class Setting<T> {
         this.eventType = eventType;
         this.eventHandler = eventHandler;
 
+        //TODO maybe instead of a default value, use the config value :skull:
+
+        //TODO instead of one event handler, pass in a Map of Event to EventHandler, and loop through them and add them.
+        //TODO also move the on action event handler to just a node.onAction(() -> {}) to avoid unnecessary calls
         setValue(defaultValue);
     }
 
@@ -30,7 +35,10 @@ public class Setting<T> {
         return value.getValue();
     }
 
-    public void setValue(T value) {
-        this.value.setValue(value);
+    //FIXME uh this is not my best piece of work
+    public void setValue(Object value) {
+        Railroad.LOGGER.debug("Setting value of {} to {}", id, value);
+        //TODO here, set the value in the config file
+        this.value.setValue((T) value);
     }
 }
