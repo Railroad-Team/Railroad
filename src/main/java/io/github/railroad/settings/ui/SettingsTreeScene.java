@@ -16,5 +16,6 @@ public class SettingsTreeScene {
 
         stage.setScene(scene);
         stage.show();
+        Railroad.SETTINGS_MANAGER.SaveSettings();
     }
 }

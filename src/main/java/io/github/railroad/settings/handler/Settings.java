@@ -26,16 +26,36 @@ public class Settings implements JsonSerializable<JsonObject> {
     public JsonObject toJson() {
         var json = new JsonObject();
         for (Setting setting : settingsMap.values()) {
-            //TODO: Create JSON based on settings tree
-            //Split setting id by . and : and create a json object for each part
-            //Once the last part is reached, create a json object of the type in the codec, and add the value
+            var parts = setting.getId().split("[.:]");
+            var current = json;
+            for (int i = 0; i < parts.length; i++) {
+                var part = parts[i];
+                if (i == parts.length - 1) {
+                    current.add(part, Railroad.SETTINGS_MANAGER.getCodec(setting.getType()).getJsonEncoder().apply(setting.getValue()));
+                } else {
+                    if (!current.has(part)) {
+                        current.add(part, new JsonObject());
+                    }
+                    current = current.getAsJsonObject(part);
+                }
+            }
         }
-        Railroad.LOGGER.debug("Settings JSON: {}", json);
-        return null;
+        return json;
     }
 
     @Override
     public void fromJson(JsonObject json) {
+        //TODO create a method to load settings from a JsonObject
+        //Either loop through the json object tree and find each child JsonElement
+        //Pros:
+        //Can flag unknown settings, easier debugging?
+
+        //Cons:
+        //Slow
+
+        //Or just search for each already defined setting in SettingsManager
+        //Pros:
+        //Faster
 
     }
 }

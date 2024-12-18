@@ -21,6 +21,17 @@ public class SettingsManager {
         defaultSettings();
     }
 
+    //Settings file management
+    public void SaveSettings() {
+        settings.toJson();
+    }
+
+
+
+
+
+
+
     public void registerCodec(SettingCodec<?, ?, ?> codec) {
         Railroad.LOGGER.info("Registering codec for type: {}", codec.getType());
         var res = codecs.put(codec.getType(), codec);
@@ -33,12 +44,14 @@ public class SettingsManager {
         return settings.getSetting(id);
     }
 
-    public SettingCodec<?, ?, ?> getCodec(Class<?> type) {
-        return codecs.get(type);
+    public <T> SettingCodec<T, ?, ?> getCodec(Class<?> type) {
+        return (SettingCodec<T, ?, ?>) codecs.get(type);
     }
 
     public TreeView createTree() {
         var tree = new TreeView<>(new TreeItem<>("Settings"));
+
+        //TODO rewrite this to only create leaf nodes/children
 
         for (String id : settings.getSettingsMap().keySet()) {
             var setting = getSetting(id);
