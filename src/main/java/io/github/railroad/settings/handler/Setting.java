@@ -6,29 +6,22 @@ import javafx.event.EventHandler;
 import javafx.event.EventType;
 import lombok.Getter;
 
+import java.util.Map;
+
 @Getter
 public class Setting<T> {
     private final Class<T> type;
     private final String id;
     private final T defaultValue;
 
-    private final EventType eventType;
-    private final EventHandler eventHandler;
+    private final Map<EventType, EventHandler> eventHandlers;
 
     private SimpleObjectProperty<T> value = new SimpleObjectProperty<>();
-    //TODO allow multiple event handlers
-    public Setting(String id, Class<T> type, T defaultValue, EventType eventType, EventHandler<?> eventHandler) {
+    public Setting(String id, Class<T> type, T defaultValue, Map<EventType, EventHandler> eventHandlers) {
         this.id = id;
         this.type = type;
         this.defaultValue = defaultValue;
-        this.eventType = eventType;
-        this.eventHandler = eventHandler;
-
-        //TODO maybe instead of a default value, use the config value :skull:
-
-        //TODO instead of one event handler, pass in a Map of Event to EventHandler, and loop through them and add them.
-        //TODO also move the on action event handler to just a node.onAction(() -> {}) to avoid unnecessary calls
-        setValue(defaultValue);
+        this.eventHandlers = eventHandlers;
     }
 
     public T getValue() {

@@ -20,7 +20,7 @@ public class SettingCodec<T, N extends Node, J extends JsonElement>{
     private final Function<T, N> nodeCreator;
 
     private final Function<T, J> jsonEncoder;
-    private final Function<J, T> jsonDecoder;
+    private final Function<JsonElement, T> jsonDecoder;
 
     private final Class<T> type;
     private final Class<N> nodeType;
@@ -28,7 +28,7 @@ public class SettingCodec<T, N extends Node, J extends JsonElement>{
 
     public SettingCodec(Class<T> type, Class<N> nodeType, Class<J> jsonType,
                         Function<Node, T> nodeToValFunction, BiConsumer<N, T> valToNodeFunction, Function<T, N> nodeCreator,
-                        Function<T, J> jsonEncoder, Function<J, T> jsonDecoder)
+                        Function<T, J> jsonEncoder, Function<JsonElement, T> jsonDecoder)
     {
         this.type = type;
         this.nodeType = nodeType;

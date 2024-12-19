@@ -19,6 +19,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+@Deprecated
 public class Settings implements JsonSerializable<JsonObject> {
     private final ObservableMap<String, PluginSettings> pluginsSettings = FXCollections.observableHashMap();
     private final StringProperty theme = new SimpleStringProperty("default-dark");

@@ -16,7 +16,6 @@ public enum Language {
 
     public static Language fromName(String name) {
         for (Language lang : Language.values()) {
-            LOGGER.info("LANG {} NAME {}", lang.getName(), name);
             if (lang.getName().equalsIgnoreCase(name)) {
                 return lang;
             }

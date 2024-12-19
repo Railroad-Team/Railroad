@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 
 public class Config implements JsonSerializable<JsonObject> {
-    private final ObjectProperty<Settings> settings = new ReadOnlyObjectWrapper<>(new Settings());
+    private final ObjectProperty<io.github.railroad.settings.handler.Settings> settings = new ReadOnlyObjectWrapper<>(new Settings());
 
     @Override
     public JsonObject toJson() {
@@ -83,9 +83,5 @@ public class Config implements JsonSerializable<JsonObject> {
             return;
 
         this.settings.get().copyFrom(config.getSettings());
-    }
-
-    public Settings getSettings() {
-        return settings.get();
     }
 }

@@ -1,19 +1,21 @@
 package io.github.railroad.settings.handler;
 
+import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.github.railroad.Railroad;
 import io.github.railroad.localization.Language;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import lombok.Getter;
 
 public class SettingsManager {
     private final ObservableMap<Class<?>, SettingCodec<?, ?, ?>> codecs = FXCollections.observableHashMap();
+    @Getter
     private final Settings settings = new Settings();
 
     public SettingsManager() {
@@ -21,16 +23,22 @@ public class SettingsManager {
         defaultSettings();
     }
 
-    //Settings file management
-    public void SaveSettings() {
+    /**
+     * Save the settings to the config file
+     */
+    public void saveSettings() {
+        //TODO save to config file
         settings.toJson();
     }
 
-
-
-
-
-
+    /**
+     * Load the settings from the config file into the settings object
+     */
+    public void loadFromFile() {
+        //TODO load from config file
+        JsonObject t = Railroad.GSON.fromJson("{\"railroad\": {\"language\": {\"select\": \"English\"}}}", JsonObject.class);
+        settings.fromJson(t);
+    }
 
     public void registerCodec(SettingCodec<?, ?, ?> codec) {
         Railroad.LOGGER.info("Registering codec for type: {}", codec.getType());
@@ -63,11 +71,12 @@ public class SettingsManager {
             }
 
             Node item = (Node) codec.getNodeCreator().apply(setting.getDefaultValue());
-            item.addEventHandler(setting.getEventType(), setting.getEventHandler());
-            item.addEventHandler(ActionEvent.ANY, e -> {
+            if (setting.getEventHandlers() != null)
+                setting.getEventHandlers().forEach((eventType, eventHandler) -> item.addEventHandler(eventType, eventHandler));
+
+            item.addEventHandler(ActionEvent.ACTION, event -> {
                 setting.setValue(codec.getNodeToValFunction().apply(item));
             });
-
             tree.getRoot().getChildren().add(new TreeItem(item));
         }
 
@@ -107,8 +116,6 @@ public class SettingsManager {
     private void defaultSettings() {
         Railroad.LOGGER.info("Registering default settings");
         settings.registerSetting(
-                new Setting<>("railroad:language.select", Language.class, Language.EN_US,
-                        Event.ANY,
-                        event -> Railroad.LOGGER.info("Language changed to: {}", ((ComboBox) event.getSource()).getValue())));
+                new Setting<>("railroad:language.select", Language.class, Language.EN_US, null));
     }
 }
