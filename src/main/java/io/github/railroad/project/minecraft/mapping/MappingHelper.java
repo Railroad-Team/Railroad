@@ -5,7 +5,10 @@ import io.github.railroad.project.minecraft.MinecraftVersion;
 import io.github.railroad.project.minecraft.VersionRange;
 import javafx.collections.ObservableList;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 // TODO: Fix mappings for pre-1.7.10 versions (MCP)
 public class MappingHelper {

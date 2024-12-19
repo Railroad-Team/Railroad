@@ -1,8 +1,6 @@
 package io.github.railroad.plugin.defaults.github.ui;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.config.ConfigHandler;
-import io.github.railroad.plugin.defaults.Github;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRStackPane;
 import io.github.railroad.ui.defaults.RRVBox;
@@ -13,8 +11,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
-
-import java.util.Objects;
 
 public class GithubProfilesListCell extends ListCell<Profile> {
     private final RRStackPane node = new RRStackPane();
