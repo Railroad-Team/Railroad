@@ -11,21 +11,13 @@ import java.util.Locale;
 import java.util.Properties;
 
 import static io.github.railroad.Railroad.LOGGER;
+import static io.github.railroad.Railroad.SETTINGS_HANDLER;
 
 public class L18n {
     private static final Properties LANG_CACHE = new Properties();
     private static final ObjectProperty<Language> CURRENT_LANG = new SimpleObjectProperty<>();
 
     private L18n() {
-    }
-
-    public static void setLanguage(Language language) {
-        // Updates the config and calls loadLanguage to update the cache and CURRENT_LANG
-        LOGGER.debug("Setting language to {}", language);
-
-        ConfigHandler.getConfig().getSettings().setLanguage(language);
-        ConfigHandler.saveConfig();
-        loadLanguage();
     }
 
     public static Language getCurrentLanguage() {
@@ -39,12 +31,11 @@ public class L18n {
     public static void loadLanguage() {
         // Loads the language into cache and sets the CURRENT_LANG
         LOGGER.info("Loading language file");
-        Language language = ConfigHandler.getConfig().getSettings().getLanguage();
+        Language language = (Language) SETTINGS_HANDLER.getSetting("railroad:appearance.language").getValue();
 
         try {
             String name = "lang/" + language.name().toLowerCase(Locale.ROOT) + ".lang";
             InputStream props = Railroad.getResourceAsStream(name);
-            System.out.println(name + " " + props);
             LOGGER.info("Reading language file {}", name);
 
             // Load cache and then change CURRENT_LANG otherwise binds will be triggered before cache changes

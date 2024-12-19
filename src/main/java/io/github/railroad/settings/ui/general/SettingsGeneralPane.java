@@ -27,7 +27,7 @@ public class SettingsGeneralPane extends RRVBox {
 
         langComboBox.setValue(L18n.getCurrentLanguage().getName());
         langComboBox.setOnAction(e -> {
-            L18n.setLanguage(Language.fromName(langComboBox.getValue().toString()));
+            //L18n.setLanguage(Language.fromName(langComboBox.getValue().toString()));
         });
 
         langBox.getChildren().addAll(langTitleLabel, langComboBox);
