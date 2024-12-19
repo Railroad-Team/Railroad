@@ -34,13 +34,13 @@ public class GithubProfilesListCell extends ListCell<Profile> {
         removeItem.setOnAction(event -> {
             Profile profile = profileListNode.profileProperty().get();
             if (profile != null) {
-                Github.GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", Github.GithubSettings.class);
-                for (Profile account : settings.getAccounts()) {
-                    if (Objects.equals(account, profile)) {
-                        settings.getAccounts().remove(account);
-                        ConfigHandler.saveConfig();
-                    }
-                }
+//                Github.GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", Github.GithubSettings.class);
+//                for (Profile account : settings.getAccounts()) {
+//                    if (Objects.equals(account, profile)) {
+//                        settings.getAccounts().remove(account);
+//                        ConfigHandler.saveConfig();
+//                    }
+//                }
 
                 Railroad.REPOSITORY_MANAGER.deleteProfile(profile);
             }

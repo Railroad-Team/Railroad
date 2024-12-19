@@ -2,7 +2,7 @@ package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
 import io.github.railroad.project.Project;
-import io.github.railroad.settings.ui.SettingsPane;
+import io.github.railroad.settings.ui.SettingsTreeScene;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.welcome.project.ui.NewProjectPane;
@@ -30,7 +30,7 @@ public class WelcomePane extends RRHBox {
     private final WelcomeImportProjectsPane importProjectsPane;
 
     private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
-    private final AtomicReference<SettingsPane> settingsPane = new AtomicReference<>();
+    private final AtomicReference<SettingsTreeScene> settingsPane = new AtomicReference<>();
 
     public WelcomePane() {
         leftPane = new WelcomeLeftPane();
@@ -91,11 +91,18 @@ public class WelcomePane extends RRHBox {
                             }
 
                             case SETTINGS -> {
-                                var settingsPane = this.settingsPane.updateAndGet(
-                                        pane -> Objects.requireNonNullElseGet(pane, SettingsPane::new));
-                                Railroad.getScene().setRoot(settingsPane);
-                                settingsPane.getBackButton().setOnAction(e ->
-                                        Railroad.getScene().setRoot(WelcomePane.this));
+//                                var settingsPane = this.settingsPane.updateAndGet(
+//                                        pane -> Objects.requireNonNullElseGet(pane, SettingsPane::new));
+//                                Railroad.getScene().setRoot(settingsPane);
+//                                settingsPane.getBackButton().setOnAction(e ->
+//                                        Railroad.getScene().setRoot(WelcomePane.this));
+                                var nw = new SettingsTreeScene();
+                                this.settingsPane.getAndUpdate(pane -> {
+                                    if (pane != null) {
+                                        pane.close();
+                                    }
+                                    return nw;
+                                });
                             }
 
                             default -> throw new IllegalStateException("Unexpected value: " + newValue);

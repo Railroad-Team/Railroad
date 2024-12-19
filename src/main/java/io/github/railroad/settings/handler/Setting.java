@@ -31,7 +31,8 @@ public class Setting<T> {
     //FIXME uh this is not my best piece of work
     public void setValue(Object value) {
         Railroad.LOGGER.debug("Setting value of {} to {}", id, value);
-        //TODO here, set the value in the config file
         this.value.setValue((T) value);
+        //TODO: maybe create a apply settings button? rather than updating the file every time a setting is changed
+        Railroad.SETTINGS_MANAGER.saveSettings();
     }
 }

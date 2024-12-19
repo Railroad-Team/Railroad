@@ -75,7 +75,7 @@ public class Railroad extends Application {
      * @param theme The new theme to apply
      */
     public static void updateTheme(String theme) {
-        getScene().getStylesheets().remove(ConfigHandler.getConfig().getSettings().getTheme() + ".css");
+        getScene().getStylesheets().remove(SETTINGS_MANAGER.getSetting("railroad:appearance.theme").getValue() + ".css");
 
         if (theme.startsWith("default")) {
             Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
@@ -83,8 +83,7 @@ public class Railroad extends Application {
             Application.setUserAgentStylesheet(new File(ThemeDownloadManager.getThemesDirectory() + "/" + theme + ".css").toURI().toString());
         }
 
-        ConfigHandler.getConfig().getSettings().setTheme(theme);
-        ConfigHandler.saveConfig();
+        SETTINGS_MANAGER.getSetting("railroad:appearance.theme").setValue(theme);
     }
 
     /**
@@ -97,7 +96,7 @@ public class Railroad extends Application {
      * @param scene The scene to apply the styles to
      */
     public static void handleStyles(Scene scene) {
-        updateTheme(ConfigHandler.getConfig().getSettings().getTheme());
+        updateTheme(SETTINGS_MANAGER.getSetting("railroad:appearance.theme").getValue().toString());
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();
@@ -217,7 +216,9 @@ public class Railroad extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        try {
         ConfigHandler.initConfig();
+        SETTINGS_MANAGER.initSettings();
         PLUGIN_MANAGER.start();
         PLUGIN_MANAGER.addCustomEventListener(event -> {
             Platform.runLater(() -> {
@@ -259,6 +260,10 @@ public class Railroad extends Application {
             HTTP_CLIENT.dispatcher().executorService().shutdown();
             HTTP_CLIENT.connectionPool().evictAll();
         });
+        } catch (Exception e) {
+            LOGGER.error("Error starting Railroad", e);
+            showErrorAlert("Error", "Error starting Railroad", "An error occurred while starting Railroad.");
+        }
     }
 
     @Override

@@ -28,6 +28,9 @@ public class Settings implements JsonSerializable<JsonObject> {
         for (Setting setting : settingsMap.values()) {
             var parts = setting.getId().split("[.:]");
             var current = json;
+            if (setting.getValue() == null) {
+                setting.setValue(setting.getDefaultValue());
+            }
             for (int i = 0; i < parts.length; i++) {
                 var part = parts[i];
                 if (i == parts.length - 1) {

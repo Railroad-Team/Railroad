@@ -27,11 +27,11 @@ public class Github extends Plugin {
         setName("Github");
         var phaseResult = new PluginPhaseResult();
         try {
-            GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", GithubSettings.class);
-            for (Profile profile : settings.getAccounts()) {
-                Railroad.LOGGER.info("Adding Github connection for {}", profile.getUsername());
-                Railroad.REPOSITORY_MANAGER.addConnection(new GithubConnection(profile));
-            }
+            //GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", GithubSettings.class);
+            //for (Profile profile : settings.getAccounts()) {
+            //    Railroad.LOGGER.info("Adding Github connection for {}", profile.getUsername());
+            //    Railroad.REPOSITORY_MANAGER.addConnection(new GithubConnection(profile));
+            //}
 
             updateStatus(PluginState.FINISHED_INIT);
         } catch (Exception exception) {

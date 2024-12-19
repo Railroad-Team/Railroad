@@ -7,6 +7,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 
 public class SettingsPluginsPane extends ScrollPane {
+    //TODO move over to new settings system
     private final ListView<Plugin> pluginList = new ListView<>();
 
     public SettingsPluginsPane() {

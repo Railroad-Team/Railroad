@@ -11,6 +11,7 @@ import java.util.Locale;
 import java.util.Properties;
 
 import static io.github.railroad.Railroad.LOGGER;
+import static io.github.railroad.Railroad.SETTINGS_MANAGER;
 
 public class L18n {
     private static final Properties LANG_CACHE = new Properties();
@@ -23,8 +24,8 @@ public class L18n {
         // Updates the config and calls loadLanguage to update the cache and CURRENT_LANG
         LOGGER.debug("Setting language to {}", language);
 
-        ConfigHandler.getConfig().getSettings().setLanguage(language);
-        ConfigHandler.saveConfig();
+        SETTINGS_MANAGER.getSetting("railroad:appearance.language").setValue(language.name());
+        SETTINGS_MANAGER.saveSettings();
         loadLanguage();
     }
 
@@ -39,7 +40,7 @@ public class L18n {
     public static void loadLanguage() {
         // Loads the language into cache and sets the CURRENT_LANG
         LOGGER.info("Loading language file");
-        Language language = ConfigHandler.getConfig().getSettings().getLanguage();
+        Language language = (Language) SETTINGS_MANAGER.getSetting("railroad:appearance.language").getValue();
 
         try {
             String name = "lang/" + language.name().toLowerCase(Locale.ROOT) + ".lang";

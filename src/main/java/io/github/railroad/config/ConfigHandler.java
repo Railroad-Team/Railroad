@@ -33,7 +33,7 @@ public final class ConfigHandler {
         Path railroadDataPath = getConfigDirectory();
         try {
             Files.createDirectories(railroadDataPath);
-            INSTANCE.config.copyFrom(newConfig);
+            //INSTANCE.config.copyFrom(newConfig);
             Files.writeString(railroadDataPath.resolve("config.json"), Railroad.GSON.toJson(INSTANCE.config.toJson()));
         } catch (IOException exception) {
             throw new IllegalStateException("Error updating config.json", exception);

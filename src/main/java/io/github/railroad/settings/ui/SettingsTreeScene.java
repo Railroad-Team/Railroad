@@ -5,8 +5,9 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 public class SettingsTreeScene {
+    private Stage stage;
     public SettingsTreeScene() {
-        var stage = new Stage();
+        stage = new Stage();
 
         stage.setTitle("Settings");
 
@@ -17,5 +18,9 @@ public class SettingsTreeScene {
         stage.setScene(scene);
         stage.show();
         Railroad.SETTINGS_MANAGER.loadFromFile();
+    }
+
+    public void close() {
+        stage.close();
     }
 }
