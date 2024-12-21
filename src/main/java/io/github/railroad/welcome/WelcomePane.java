@@ -91,17 +91,12 @@ public class WelcomePane extends RRHBox {
                             }
 
                             case SETTINGS -> {
-//                                var settingsPane = this.settingsPane.updateAndGet(
-//                                        pane -> Objects.requireNonNullElseGet(pane, SettingsPane::new));
-//                                Railroad.getScene().setRoot(settingsPane);
-//                                settingsPane.getBackButton().setOnAction(e ->
-//                                        Railroad.getScene().setRoot(WelcomePane.this));
-                                var nw = new TreeViewSettings();
                                 this.settingsPane.getAndUpdate(pane -> {
                                     if (pane != null) {
                                         pane.close();
                                     }
-                                    return nw;
+
+                                    return new TreeViewSettings();
                                 });
                             }
 
