@@ -1,7 +1,6 @@
 package io.github.railroad.localization;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.config.ConfigHandler;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 

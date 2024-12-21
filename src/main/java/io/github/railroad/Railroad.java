@@ -2,7 +2,6 @@ package io.github.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.kodedu.terminalfx.helper.ThreadHelper;
 import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.localization.L18n;
@@ -39,8 +38,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 

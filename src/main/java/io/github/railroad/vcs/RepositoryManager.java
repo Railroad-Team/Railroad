@@ -1,8 +1,6 @@
 package io.github.railroad.vcs;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.config.ConfigHandler;
-import io.github.railroad.plugin.defaults.Github;
 import io.github.railroad.utility.ShutdownHooks;
 import io.github.railroad.vcs.connections.AbstractConnection;
 import io.github.railroad.vcs.connections.Profile;

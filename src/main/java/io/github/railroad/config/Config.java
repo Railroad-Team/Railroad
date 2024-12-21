@@ -7,9 +7,6 @@ import io.github.railroad.Railroad;
 import io.github.railroad.plugin.Plugin;
 import io.github.railroad.project.Project;
 import io.github.railroad.utility.JsonSerializable;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.ReadOnlyObjectWrapper;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
