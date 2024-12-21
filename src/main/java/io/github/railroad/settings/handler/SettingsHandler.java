@@ -8,6 +8,8 @@ import io.github.railroad.Railroad;
 import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.localization.L18n;
 import io.github.railroad.localization.Language;
+import io.github.railroad.localization.ui.LocalizedButton;
+import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.settings.ui.themes.ThemeDownloadPane;
 import javafx.collections.FXCollections;
@@ -17,14 +19,15 @@ import javafx.event.EventHandler;
 import javafx.event.EventType;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 
-//TODO make sure everything is safe from exceptions caused by a broken settings.json file
 public class SettingsHandler {
     private final ObservableMap<String, Decoration> decorations = FXCollections.observableHashMap();
     private final ObservableMap<String, SettingCodec> codecs = FXCollections.observableHashMap();
@@ -133,7 +136,6 @@ public class SettingsHandler {
     public TreeView createTree() {
         var tv = new TreeView(new TreeItem(null));
         tv.setShowRoot(false);
-        tv.getRoot().setExpanded(true);
 
         for (Setting setting : settings.getSettings().values()) {
             var parts = setting.getTreeId().split("[.:]");
@@ -160,19 +162,21 @@ public class SettingsHandler {
                     Optional stringPart = currentPart.getChildren().stream()
                             .filter(TreeItem.class::isInstance)
                             .map(TreeItem.class::cast)
-                            .filter(a -> ((TreeItem)a).getValue() instanceof Label l && l.getText().equals(parts[finalI]))
+                            .filter(a -> ((TreeItem)a).getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
                             .findFirst();
 
                     if (stringPart.isPresent()) {
                         currentPart = (TreeItem) stringPart.get();
                     } else {
-                        TreeItem item = new TreeItem(new Label(parts[i]));
+                        TreeItem item = new TreeItem(new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")));
+                        Railroad.LOGGER.debug("Localizing label: {}", "settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), "."));
+                        item.setExpanded(true);
                         currentPart.getChildren().add(item);
 
                         Optional currPart = currentPart.getChildren().stream()
                                 .filter(TreeItem.class::isInstance)
                                 .map(TreeItem.class::cast)
-                                .filter(a -> ((TreeItem)a).getValue() instanceof Label l && l.getText().equals(parts[finalI]))
+                                .filter(a -> ((TreeItem)a).getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
                                 .findFirst();
 
                         if (currPart.isPresent()) {
@@ -202,19 +206,19 @@ public class SettingsHandler {
                 Optional part = currentPart.getChildren().stream()
                         .filter(TreeItem.class::isInstance)
                         .map(TreeItem.class::cast)
-                        .filter(a -> ((TreeItem)a).getValue() instanceof Label l && l.getText().equals(parts[finalI]))
+                        .filter(a -> ((TreeItem)a).getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
                         .findFirst();
 
                 if (part.isPresent()) {
                     currentPart = (TreeItem) part.get();
                 } else {
-                    TreeItem item = new TreeItem(new Label(parts[i]));
+                    TreeItem item = new TreeItem(new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")));
                     currentPart.getChildren().add(item);
 
                     Optional currPart = currentPart.getChildren().stream()
                             .filter(TreeItem.class::isInstance)
                             .map(TreeItem.class::cast)
-                            .filter(a -> ((TreeItem)a).getValue() instanceof Label l && l.getText().equals(parts[finalI]))
+                            .filter(a -> ((TreeItem)a).getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
                             .findFirst();
 
                     if (currPart.isPresent()) {
@@ -280,7 +284,7 @@ public class SettingsHandler {
 
     private void registerDefaultDecorations() {
         registerDecoration(new Decoration<>("railroad:appearance.themes.download", "railroad:theme.download", () -> {
-            var button = new Button("Download themes");
+            var button = new LocalizedButton("railroad.home.settings.appearance.downloadtheme");
             button.setOnAction(e -> new ThemeDownloadPane());
             return button;
         }));
