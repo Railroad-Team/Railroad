@@ -27,13 +27,13 @@ public final class ConfigHandler {
         }
     }
 
+    //What's even the point of this? It's not used anywhere
     public static void updateConfig(@Nullable Config newConfig) {
         Railroad.LOGGER.info("{} config file", newConfig == null ? "Initializing" : "Updating");
 
         Path railroadDataPath = getConfigDirectory();
         try {
             Files.createDirectories(railroadDataPath);
-            INSTANCE.config.copyFrom(newConfig);
             Files.writeString(railroadDataPath.resolve("config.json"), Railroad.GSON.toJson(INSTANCE.config.toJson()));
         } catch (IOException exception) {
             throw new IllegalStateException("Error updating config.json", exception);

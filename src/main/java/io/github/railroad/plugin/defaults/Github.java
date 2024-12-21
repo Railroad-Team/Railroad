@@ -20,20 +20,20 @@ import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
-
+//TODO rewrite github plugin, and settings to use the new settings system.
 public class Github extends Plugin {
     @Override
     public PluginPhaseResult init() {
         setName("Github");
         var phaseResult = new PluginPhaseResult();
         try {
-            GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", GithubSettings.class);
-            for (Profile profile : settings.getAccounts()) {
-                Railroad.LOGGER.info("Adding Github connection for {}", profile.getUsername());
-                Railroad.REPOSITORY_MANAGER.addConnection(new GithubConnection(profile));
-            }
-
-            updateStatus(PluginState.FINISHED_INIT);
+//            GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", GithubSettings.class);
+//            for (Profile profile : settings.getAccounts()) {
+//                Railroad.LOGGER.info("Adding Github connection for {}", profile.getUsername());
+//                Railroad.REPOSITORY_MANAGER.addConnection(new GithubConnection(profile));
+//            }
+//
+//            updateStatus(PluginState.FINISHED_INIT);
         } catch (Exception exception) {
             phaseResult.addError(new Error(exception.getMessage()));
         }

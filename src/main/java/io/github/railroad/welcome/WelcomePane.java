@@ -2,7 +2,6 @@ package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
 import io.github.railroad.project.Project;
-import io.github.railroad.settings.ui.SettingsPane;
 import io.github.railroad.settings.ui.TreeViewSettings;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;

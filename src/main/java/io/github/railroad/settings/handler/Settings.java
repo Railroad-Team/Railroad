@@ -21,6 +21,14 @@ public class Settings implements JsonSerializable<JsonObject> {
         return settings.get(id);
     }
 
+    /**
+     * Converts the settings to a json object.
+     * Loops through each setting, and then loops through each part in the ID.
+     * A variable - current - is used to keep track of the current position, essentially acting as a pointer.
+     * If the part is the last part, it will add the value to the json object.
+     * If it is not the last part, it will either create a new json object if it does not exist, or move to the next json object.
+     * @return {@link JsonObject} The json object to be written to a file.
+     */
     @Override
     public JsonObject toJson() {
         var json = new JsonObject();
@@ -44,12 +52,23 @@ public class Settings implements JsonSerializable<JsonObject> {
                 }
             }
         }
-
         return json;
     }
 
+    //TODO rewrite this method, possibly?
+
+    /**
+     * Converts the json object to settings.
+     * Loops through each setting, and then loops through each part in the ID.
+     * A variable - current - is used to keep track of the current position, essentially acting as a pointer.
+     * If the part is the last part, it will add the value to the setting.
+     * If the part is null, it will use the default value.
+     * If it is not the last part, it will set current to the part.
+     * @param json The json object to convert to settings.
+     * @throws IllegalStateException If the setting cannot be decoded.
+     */
     @Override
-    public void fromJson(JsonObject json) {
+    public void fromJson(JsonObject json) throws IllegalStateException {
         for (Setting setting : settings.values()) {
             var parts = setting.getId().split("[.:]");
             var current = json;
@@ -60,7 +79,7 @@ public class Settings implements JsonSerializable<JsonObject> {
                         var value = Railroad.SETTINGS_HANDLER.getCodec(setting.getCodecId()).getJsonDecoder().apply(current.get(part));
 
                         if (value == null) {
-                            Railroad.LOGGER.error("Failed to decode setting " + setting.getId());
+                            Railroad.LOGGER.error("Failed to decode setting {}", setting.getId());
                             setting.setValue(setting.getDefaultValue());
                         } else {
                             setting.setValue(value);

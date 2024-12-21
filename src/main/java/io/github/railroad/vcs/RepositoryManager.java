@@ -47,10 +47,10 @@ public class RepositoryManager implements Runnable {
         this.connections.add(connection);
     }
 
-    public ObservableList<Profile> getProfiles() {
-        Github.GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", Github.GithubSettings.class);
-        return settings.getAccounts();
-    }
+//    public ObservableList<Profile> getProfiles() {
+//        Github.GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", Github.GithubSettings.class);
+//        return settings.getAccounts();
+//    }
 
     public boolean deleteProfile(Profile profile) {
         for (AbstractConnection connection : connections) {

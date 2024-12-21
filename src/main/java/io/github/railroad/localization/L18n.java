@@ -31,7 +31,7 @@ public class L18n {
     public static void loadLanguage() {
         // Loads the language into cache and sets the CURRENT_LANG
         LOGGER.info("Loading language file");
-        Language language = (Language) SETTINGS_HANDLER.getSetting("railroad:appearance.language").getValue();
+        Language language = (Language) SETTINGS_HANDLER.getSetting("railroad:language").getValue();
 
         try {
             String name = "lang/" + language.name().toLowerCase(Locale.ROOT) + ".lang";

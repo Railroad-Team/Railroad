@@ -61,7 +61,8 @@ public class Railroad extends Application {
     private static Stage window;
 
     public static void updateTheme(String theme) {
-        getScene().getStylesheets().remove(ConfigHandler.getConfig().getSettings().getTheme() + ".css");
+        //TODO fix this - it needs to remove the currently applied theme
+        getScene().getStylesheets().remove(SETTINGS_HANDLER.getSetting("railroad:theme").getValue() + ".css");
 
         if (theme.startsWith("default")) {
             Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
@@ -71,7 +72,7 @@ public class Railroad extends Application {
     }
 
     public static void handleStyles(Scene scene) {
-        updateTheme((String) SETTINGS_HANDLER.getSetting("railroad:appearance.theme").getValue());
+        updateTheme((String) SETTINGS_HANDLER.getSetting("railroad:theme").getValue());
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();
