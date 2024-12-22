@@ -41,9 +41,16 @@ import java.net.URL;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+/**
+ * The main class of the application
+ * <p>
+ * This class is the main class of the application and is responsible for
+ * starting the application and handling the main window of the application
+ */
 public class Railroad extends Application {
     public static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
+    public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     public static final SettingsHandler SETTINGS_HANDLER = new SettingsHandler();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
@@ -57,6 +64,16 @@ public class Railroad extends Application {
     @Getter
     private static Stage window;
 
+    /**
+     * Update the theme of the application
+     * <p>
+     * This method updates the theme of the application by removing the old theme
+     * and adding the new theme to the scene
+     * <p>
+     * This method also updates the theme in the config file
+     *
+     * @param theme The new theme to apply
+     */
     public static void updateTheme(String theme) {
         //TODO fix this - it needs to remove the currently applied theme
         // probably not working *properly* because of new settings system
@@ -71,6 +88,15 @@ public class Railroad extends Application {
         SETTINGS_HANDLER.getSetting("railroad:theme").setValue(theme);
     }
 
+    /**
+     * Handles the styles of the application
+     * <p>
+     * This method adds the base theme and debug helper styles to the scene
+     * and allows the user to toggle the debug helper styles by pressing
+     * Ctrl + Shift + D
+     *
+     * @param scene The scene to apply the styles to
+     */
     public static void handleStyles(Scene scene) {
         updateTheme((String) SETTINGS_HANDLER.getSetting("railroad:theme").getValue());
 
@@ -98,14 +124,34 @@ public class Railroad extends Application {
         });
     }
 
+    /**
+     * Get a resource from the assets folder
+     *
+     * @param path The path to the resource
+     * @return The URL of the resource
+     */
     public static URL getResource(String path) {
         return Railroad.class.getClassLoader().getResource("assets/railroad/" + path);
     }
 
+    /**
+     * Get a resource from the assets folder as an InputStream
+     *
+     * @param path The path to the resource
+     * @return The InputStream of the resource
+     */
     public static InputStream getResourceAsStream(String path) {
         return Railroad.class.getClassLoader().getResourceAsStream("assets/railroad/" + path);
     }
 
+    /**
+     * Show an error alert
+     *
+     * @param title   The title of the alert
+     * @param header  The header of the alert
+     * @param content The content of the alert
+     * @param action  The action to perform when the alert is closed
+     */
     public static void showErrorAlert(String title, String header, String content, Consumer<ButtonType> action) {
         var alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
@@ -118,9 +164,52 @@ public class Railroad extends Application {
         }
     }
 
+    /**
+     * Show an error alert
+     *
+     * @param title   The title of the alert
+     * @param header  The header of the alert
+     * @param content The content of the alert
+     */
     public static void showErrorAlert(String title, String header, String content) {
-        showErrorAlert(title, header, content, buttonType -> {
-        });
+        showErrorAlert(title, header, content, buttonType -> {});
+    }
+
+    /**
+     * Switch to the IDE window
+     * <p>
+     *     This method switches the window to the IDE window
+     *     and sets the current project to the provided project
+     *     and notifies the plugins of the activity
+     *
+     * @param project The project to switch to
+     */
+    public static void switchToIDE(Project project) {
+        Stage window = IDESetup.createIDEWindow(project);
+        Railroad.window.close();
+        Railroad.window = window;
+        PROJECT_MANAGER.setCurrentProject(project);
+        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN, project);
+    }
+
+    /**
+     * Open a URL in the default browser
+     *
+     * @param url The URL to open
+     */
+    public static void openUrl(String url) {
+        if (!url.matches(URL_REGEX)) {
+            showErrorAlert("Invalid URL", "Invalid URL", "The URL provided is invalid.");
+            return;
+        }
+
+        try {
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().browse(new URI(url));
+            }
+        } catch (IOException | URISyntaxException exception) {
+            showErrorAlert("Error", "Error opening URL", "An error occurred while trying to open the URL.");
+        }
     }
 
     @Override
@@ -184,28 +273,5 @@ public class Railroad extends Application {
 
         Platform.exit();
         System.exit(0);
-    }
-
-    public static void switchToIDE(Project project) {
-        Stage window = IDESetup.createIDEWindow(project);
-        Railroad.window.close();
-        Railroad.window = window;
-        PROJECT_MANAGER.setCurrentProject(project);
-        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN, project);
-    }
-
-    public static void openUrl(String url) {
-        if (!url.matches(URL_REGEX)) {
-            showErrorAlert("Invalid URL", "Invalid URL", "The URL provided is invalid.");
-            return;
-        }
-
-        try {
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().browse(new URI(url));
-            }
-        } catch (IOException | URISyntaxException exception) {
-            showErrorAlert("Error", "Error opening URL", "An error occurred while trying to open the URL.");
-        }
     }
 }

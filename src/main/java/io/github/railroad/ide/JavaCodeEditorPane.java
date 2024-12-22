@@ -48,7 +48,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
         syntaxHighlight();
         errorHighlighting();
-        codeCompletion();
+        // codeCompletion();
 
         ShutdownHooks.addHook(executor0::shutdown);
     }

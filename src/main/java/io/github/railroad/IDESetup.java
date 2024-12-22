@@ -33,6 +33,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 public class IDESetup {
+    /**
+     * Create a new IDE window for the given project.
+     *
+     * @param project The project to create the IDE window for
+     * @return The created IDE window
+     */
     public static Stage createIDEWindow(Project project) {
         var stage = new Stage();
         stage.setTitle("Railroad IDE - " + project.getAlias());
@@ -122,26 +128,66 @@ public class IDESetup {
         return terminalBuilder.newTerminal().getTerminal();
     }
 
-    // search for a tab pane that has a code area in it and if it cant find one, return the first tab pane it finds
+    /**
+     * Find the best tab pane for files (CodeArea) in the given parent.
+     * If a tab pane with a CodeArea is found, it will be returned.
+     * If no tab pane with a CodeArea is found, the first tab pane found will be returned.
+     *
+     * @param parent The parent to search in
+     * @return The best tab pane for files
+     */
     public static Optional<DetachableTabPane> findBestPaneForFiles(Parent parent) {
         return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof CodeArea);
     }
 
+    /**
+     * Find the best tab pane for images (ImageViewerPane) in the given parent.
+     * If a tab pane with an ImageViewerPane is found, it will be returned.
+     * If no tab pane with an ImageViewerPane is found, the first tab pane found will be returned.
+     *
+     * @param parent The parent to search in
+     * @return The best tab pane for images
+     */
     public static Optional<DetachableTabPane> findBestPaneForImages(Parent parent) { // TODO: Priority based search
         return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof ImageViewerPane || tab.getContent() instanceof CodeArea);
     }
 
-    // search for a tab pane that has a terminal in it and if it cant find one, return the first tab pane it finds
+    /**
+     * Find the best tab pane for the terminal in the given parent.
+     * If a tab pane with a terminal is found, it will be returned.
+     * If no tab pane with a terminal is found, the first tab pane found will be returned.
+     *
+     * @param parent The parent to search in
+     * @return The best tab pane for the terminal
+     */
     public static Optional<DetachableTabPane> findBestPaneForTerminal(Parent parent) {
         return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof Terminal);
     }
 
+    /**
+     * Find the best tab pane for the files that match the given predicate in the given parent.
+     * If a tab pane with a file that matches the predicate is found, it will be returned.
+     *
+     * @param parent    The parent to search in
+     * @param predicate The predicate to match the file
+     * @return The best tab pane for the files that match the predicate
+     */
     private static Optional<DetachableTabPane> findBestPaneForFiles(Parent parent, Predicate<Tab> predicate) {
         var bestCandidate = new AtomicReference<DetachableTabPane>();
         Optional<DetachableTabPane> found = findBestPaneFor(parent, bestCandidate, predicate);
         return found.or(() -> Optional.ofNullable(bestCandidate.get()));
     }
 
+    /**
+     * Find the best tab pane for the given parent.
+     * If a tab pane with a file that matches the predicate is found, it will be returned.
+     * If no tab pane with a file that matches the predicate is found, the first tab pane found will be returned.
+     *
+     * @param parent    The parent to search in
+     * @param bestCandidate The best candidate found so far
+     * @param predicate The predicate to match the file
+     * @return The best tab pane for the files that match the predicate
+     */
     private static Optional<DetachableTabPane> findBestPaneFor(Parent parent, AtomicReference<DetachableTabPane> bestCandidate, Predicate<Tab> predicate) {
         if (parent instanceof DetachableTabPane tabPane) {
             if (tabPane.getTabs().stream().anyMatch(predicate))

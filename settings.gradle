@@ -1,1 +1,14 @@
+import java.nio.file.Files
+def cloneLocomotive(String relativePath) {
+    def resolvedLocation = rootDir.toPath().resolve(relativePath)
+    if (Files.notExists(resolvedLocation)) {
+        var process = new ProcessBuilder("git", "clone", "-b", "master", "https://github.com/Railroad-Team/Locomotive").directory(resolvedLocation.parent.toFile()).start()
+        process.waitFor()
+    }
+}
+
+def relLocomotiveLoc = "../Locomotive"
+cloneLocomotive(relLocomotiveLoc)
+includeBuild(relLocomotiveLoc)
+
 rootProject.name = "railroad"

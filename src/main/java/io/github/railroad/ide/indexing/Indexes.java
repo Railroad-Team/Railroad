@@ -1,11 +1,20 @@
 package io.github.railroad.ide.indexing;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.locomotive.Main;
+import io.github.railroad.locomotive.PacketHelper;
+import io.github.railroad.locomotive.Version;
+import io.github.railroad.locomotive.packet.Packet;
+import io.github.railroad.locomotive.packet.PacketMethod;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Enumeration;
+import java.util.Optional;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -42,6 +51,9 @@ public class Indexes {
     }
 
     private static void scanStandardLibrary(Trie trie) {
+        new Thread(() -> Main.main(new String[0])).start(); // TODO: Replace with starting up a service
+        LocomotiveHandler.INSTANCE.listen();
+
         Path javaHome = Path.of(System.getProperty("java.home"));
         // check if its using java 9 modules
         if (Files.notExists(javaHome.resolve("lib").resolve("modules"))) {
@@ -51,24 +63,18 @@ public class Indexes {
             // Scan the `java.base` module
             Path javaBase = jmods.resolve("java.base.jmod"); // this should be effectively a jar file
 
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             try(var jmod = new JarFile(javaBase.toFile())) {
                 Enumeration<JarEntry> entries = jmod.entries();
                 while (entries.hasMoreElements()) {
                     JarEntry entry = entries.nextElement();
                     String className = entry.getName();
-                    if (className.endsWith(".class")) {
-                        if(className.contains("module-info.class") || className.contains("package-info.class") || className.contains("com/sun") || className.contains("sun/"))
+                    if (className.startsWith("classes/java/") && className.endsWith(".class")) {
+                        className = className.substring("classes/java/".length(), className.length() - ".class".length());
+                        if(className.endsWith("module-info") || className.endsWith("package-info"))
                             continue;
 
-                        try {
-                            Class<?> clazz = classLoader.loadClass(className);
-                            trie.insert(clazz.getSimpleName());
-
-                            System.out.println("Loaded class: " + clazz.getSimpleName());
-                        } catch (ClassNotFoundException exception) {
-                            Railroad.LOGGER.error("Failed to load class: {}", className, exception);
-                        }
+                        className = className.replace("/", ".");
+                        trie.insert(className);
                     }
                 }
             } catch (IOException exception) {
@@ -77,27 +83,55 @@ public class Indexes {
         }
     }
 
-    public static class StandardLibraryClassLoader extends ClassLoader {
-        private final Path jmod;
+    public static class LocomotiveHandler {
+        private static final String HOST = "localhost"; // TODO: Configurable????
+        private static final int PORT = 29687; // TODO: Configurable?
 
-        public StandardLibraryClassLoader(Path jmod) {
-            this.jmod = jmod;
+        public static final LocomotiveHandler INSTANCE = new LocomotiveHandler();
+
+        private boolean isListening = false;
+
+        public void listen() {
+            if (isListening)
+                return;
+
+            isListening = true;
+            new Thread(this::run).start();
         }
 
-        @Override
-        protected Class<?> findClass(String name) throws ClassNotFoundException {
-            try (var jmod = new JarFile(this.jmod.toFile())) {
-                JarEntry entry = jmod.getJarEntry(name);
-                if (entry == null) {
-                    throw new ClassNotFoundException(name);
+        private void run() {
+            try (var serverSocket = new Socket(HOST, PORT)) {
+                System.out.println("Connected to server on port " + PORT);
+
+                InputStream inputStream = serverSocket.getInputStream();
+                OutputStream outputStream = serverSocket.getOutputStream();
+
+                long start = System.currentTimeMillis();
+                PacketHelper.sendPacket(outputStream, Version.VERSION_1, PacketMethod.PING, new byte[0]);
+                Optional<Packet> pingResponse = Optional.empty();
+                while (pingResponse.isEmpty()) {
+                    try {
+                        pingResponse = PacketHelper.readPacket(inputStream);
+                    } catch (IOException ignored) {
+                        Thread.onSpinWait();
+                    }
                 }
 
-                byte[] bytes = jmod.getInputStream(entry).readAllBytes();
+                Packet response = pingResponse.get();
+                if (response.getPacketMethod() != PacketMethod.PING) {
+                    System.err.println("Received invalid response from server: " + response.getPacketMethod());
+                    return;
+                }
 
-                String className = name.substring("classes/".length()).replace('/', '.');
-                return defineClass(className, bytes, 0, bytes.length);
+                long end = System.currentTimeMillis();
+                System.out.println("Ping response received in " + (end - start) + "ms");
+
+                while(serverSocket.isConnected()) {
+                    Thread.onSpinWait(); // TODO
+                }
             } catch (IOException exception) {
-                throw new ClassNotFoundException(name, exception);
+                System.err.println("Error starting server: " + exception.getMessage());
+                exception.printStackTrace();
             }
         }
     }

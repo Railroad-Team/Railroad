@@ -14,6 +14,7 @@ public class ThemeExamplePane {
         var stage = new Stage();
         var pane = new RRVBox();
 
+        //TODO add a way to fetch themes from a different source
         var image = new Image("https://github.com/Railroad-Team/Themes/blob/main/" + theme.replace(".css", "") + ".png?raw=true");
         LOGGER.debug("Getting image {}", image.getUrl());
         var view = new ImageView(image);
