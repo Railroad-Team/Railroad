@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,7 @@ public record FabricLoaderVersion(LoaderVersion loaderVersion, IntermediaryVersi
         try {
             List<FabricLoaderVersion> versions = new ArrayList<>();
 
-            JsonArray jsonVersions = Railroad.GSON.fromJson(new InputStreamReader(new URI(LOADER_VERSIONS_URL.formatted(minecraftVersion.id())).toURL().openStream()), JsonArray.class);
+            JsonArray jsonVersions = Railroad.GSON.fromJson(new InputStreamReader(new URI(LOADER_VERSIONS_URL.formatted(minecraftVersion.id())).toURL().openStream(), StandardCharsets.UTF_8), JsonArray.class);
             for (JsonElement versionElement : jsonVersions) {
                 if (!versionElement.isJsonObject())
                     continue;
@@ -93,7 +94,7 @@ public record FabricLoaderVersion(LoaderVersion loaderVersion, IntermediaryVersi
         }
 
         try {
-            JsonObject versionObject = Railroad.GSON.fromJson(new InputStreamReader(new URI(LOADER_VERSION_URL.formatted(minecraftVersion.id(), version)).toURL().openStream()), JsonObject.class);
+            JsonObject versionObject = Railroad.GSON.fromJson(new InputStreamReader(new URI(LOADER_VERSION_URL.formatted(minecraftVersion.id(), version)).toURL().openStream(), StandardCharsets.UTF_8), JsonObject.class);
             if (!versionObject.has("loader") || !versionObject.has("intermediary") || !versionObject.has("launcherMeta"))
                 return Optional.empty();
 

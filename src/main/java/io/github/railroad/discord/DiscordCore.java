@@ -9,15 +9,18 @@ import io.github.railroad.discord.event.DiscordEvents;
 import io.github.railroad.discord.impl.UnixDiscordIPCChannel;
 import io.github.railroad.discord.impl.WindowsDiscordIPCChannel;
 import javafx.util.Pair;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
 
-public class DiscordCore implements AutoCloseable {
+public final class DiscordCore implements AutoCloseable {
     public static final Consumer<DiscordResult> DEFAULT_CALLBACK = result -> {
         if (result != DiscordResult.OK)
             throw new DiscordException(result);
@@ -26,13 +29,18 @@ public class DiscordCore implements AutoCloseable {
     private final Queue<Pair<DiscordCommand, Consumer<DiscordCommand>>> commandQueue = new ArrayDeque<>();
     private final DiscordIPCChannel ipcChannel;
     private final String clientId;
+    @Getter
     private final DiscordActivityManager activityManager;
     private final Map<String, Consumer<DiscordCommand>> handlers = new HashMap<>();
     private final DiscordEvents events;
 
     private long nonce;
     private DiscordConnectionState connectionState;
+    @Setter
+    @Getter
     private DiscordUser currentUser;
+    @Setter
+    @Getter
     private long pid = ProcessHandle.current().pid();
     private boolean isShuttingDown = false;
 
@@ -105,10 +113,6 @@ public class DiscordCore implements AutoCloseable {
         }
     }
 
-    public void setPid(long pid) {
-        this.pid = pid;
-    }
-
     private DiscordResponse receiveString() throws IOException {
         var header = ByteBuffer.allocate(8);
         this.ipcChannel.read(header);
@@ -126,7 +130,7 @@ public class DiscordCore implements AutoCloseable {
             read += (int) this.ipcChannel.read(new ByteBuffer[]{data}, 0, 1);
         } while (read < length);
 
-        var message = new String(data.flip().array());
+        var message = new String(data.flip().array(), StandardCharsets.UTF_8);
         var state = DiscordConnectionState.VALUES[status];
         return new DiscordResponse(state, message);
     }
@@ -146,7 +150,7 @@ public class DiscordCore implements AutoCloseable {
     }
 
     private void sendString(String string) throws IOException {
-        sendBytes(string.getBytes());
+        sendBytes(string.getBytes(StandardCharsets.UTF_8));
     }
 
     public void onReady() {
@@ -200,22 +204,6 @@ public class DiscordCore implements AutoCloseable {
         }
 
         return DiscordResult.OK;
-    }
-
-    public long getPID() {
-        return this.pid;
-    }
-
-    public DiscordUser getCurrentUser() {
-        return this.currentUser;
-    }
-
-    public void setCurrentUser(DiscordUser user) {
-        this.currentUser = user;
-    }
-
-    public DiscordActivityManager getActivityManager() {
-        return this.activityManager;
     }
 
     public void sendCommand(DiscordCommand.Type type, Object args, Consumer<DiscordCommand> object) {

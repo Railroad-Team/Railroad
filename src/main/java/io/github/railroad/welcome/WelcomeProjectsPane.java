@@ -105,11 +105,11 @@ public class WelcomeProjectsPane extends ScrollPane {
     }
 
     public void setSortProperty(ObservableValue<ProjectSort> observable) {
-        sortProperty = observable;
+        this.sortProperty = observable;
 
-        observable.addListener((observableValue, oldValue, newValue) -> sortProjects(newValue));
-        projectsList.getItems().addListener((ListChangeListener<Project>) c -> sortProjects(observable.getValue()));
-        sortProjects(observable.getValue());
+        this.sortProperty.addListener((observableValue, oldValue, newValue) -> sortProjects(newValue));
+        projectsList.getItems().addListener((ListChangeListener<Project>) c -> sortProjects(this.sortProperty.getValue()));
+        sortProjects(this.sortProperty.getValue());
     }
 
     private void sortProjects(ProjectSort sort) {

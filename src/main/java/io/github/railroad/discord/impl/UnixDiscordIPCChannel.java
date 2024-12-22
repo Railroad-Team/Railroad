@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
-public class UnixDiscordIPCChannel implements DiscordIPCChannel {
+public final class UnixDiscordIPCChannel implements DiscordIPCChannel {
     private final SocketChannel channel;
 
     public UnixDiscordIPCChannel() throws IOException {
@@ -46,8 +46,7 @@ public class UnixDiscordIPCChannel implements DiscordIPCChannel {
         List<String> candidates = new ArrayList<>();
         candidates.add(System.getenv("XDG_RUNTIME_DIR"));
         candidates.add(System.getenv("TMPDIR"));
-        candidates.add(System.getenv("TMP"));
-        candidates.add(System.getenv("TEMP"));
+        candidates.add(System.getProperty("java.io.tmpdir"));
 
         candidates.removeIf(Objects::isNull);
         candidates.removeIf(path -> Files.notExists(Paths.get(path)));

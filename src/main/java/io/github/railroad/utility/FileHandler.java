@@ -139,9 +139,13 @@ public class FileHandler {
 
     public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty, Runnable onNotEmpty) throws IOException {
         if (Files.notExists(directory)) {
-            directory.toFile().mkdirs(); // We use IO instead of NIO so that we block the thread until it's created
-            onEmpty.run();
-            return true;
+            if(directory.toFile().mkdirs()) { // We use IO instead of NIO so that we block the thread until it's created
+                onEmpty.run();
+                return true;
+            }
+
+            onNotEmpty.run();
+            return false;
         }
 
         try (Stream<Path> paths = Files.list(directory)) {

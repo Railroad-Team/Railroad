@@ -130,6 +130,7 @@ public class Discord extends Plugin {
             updateStatus(PluginState.ACTIVITY_UPDATE_ERROR);
             var phaseResult = new PluginPhaseResult();
             phaseResult.addError(new Error(exception.getMessage()));
+            return phaseResult;
         }
 
         updateStatus(PluginState.ACTIVITY_UPDATE_FINISHED);

@@ -45,7 +45,7 @@ public class Project implements JsonSerializable<JsonObject> {
     }
 
     private static Image createIcon(Project project) {
-        var color = new Color(Math.abs(project.path.get().toAbsolutePath().toString().hashCode()) % 0xFFFFFF);
+        var color = new Color(Math.abs(project.path.get().toAbsolutePath().toString().hashCode() % 0xFFFFFF));
         String abbreviation = getAbbreviation(project.alias.get()).toUpperCase(Locale.ROOT);
         abbreviation = abbreviation.isBlank() ? "?" : abbreviation;
         abbreviation = abbreviation.length() > 4 ? abbreviation.substring(0, 4) : abbreviation;

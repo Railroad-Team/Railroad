@@ -1,7 +1,11 @@
 package io.github.railroad.plugin;
 
+import lombok.Getter;
+
+import java.util.Collections;
 import java.util.EventObject;
 
+@Getter
 public class PluginManagerErrorEvent extends EventObject {
     private final Plugin plugin;
     private final PluginPhaseResult phaseResult;
@@ -11,18 +15,10 @@ public class PluginManagerErrorEvent extends EventObject {
         super(source);
         this.message = message;
         this.plugin = plugin;
-        this.phaseResult = phaseResult;
+        this.phaseResult = new PluginPhaseResult();
+        for (Error error : phaseResult.getErrors()) {
+            this.phaseResult.addError(error);
+        }
     }
 
-    public String getMessage() {
-        return message;
-    }
-
-    public Plugin getPlugin() {
-        return plugin;
-    }
-
-    public PluginPhaseResult getPhaseResult() {
-        return phaseResult;
-    }
 }

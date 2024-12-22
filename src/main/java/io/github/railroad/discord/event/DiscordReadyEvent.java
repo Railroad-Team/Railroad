@@ -2,6 +2,7 @@ package io.github.railroad.discord.event;
 
 import io.github.railroad.discord.DiscordCore;
 import io.github.railroad.discord.data.DiscordUser;
+import lombok.Getter;
 
 public class DiscordReadyEvent {
     public static class Data {
@@ -19,9 +20,24 @@ public class DiscordReadyEvent {
         }
 
         static class Config {
-            private String cdn_host;
-            private String api_endpoint;
-            private String environment;
+            private final String cdn_host;
+            private final String api_endpoint;
+            @Getter
+            private final String environment;
+
+            public Config(String cdn_host, String api_endpoint, String environment) {
+                this.cdn_host = cdn_host;
+                this.api_endpoint = api_endpoint;
+                this.environment = environment;
+            }
+
+            public String getCdnHost() {
+                return cdn_host;
+            }
+
+            public String getApiEndpoint() {
+                return api_endpoint;
+            }
 
             @Override
             public String toString() {

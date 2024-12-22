@@ -1,14 +1,14 @@
 package io.github.railroad.plugin;
 
+import lombok.Getter;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PluginPhaseResult {
+@Getter
+public class PluginPhaseResult implements Serializable {
     private final List<Error> errors = new ArrayList<>();
-
-    public List<Error> getErrors() {
-        return this.errors;
-    }
 
     public void addError(Error error) {
         this.errors.add(error);

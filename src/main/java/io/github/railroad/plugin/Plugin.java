@@ -21,7 +21,7 @@ public abstract class Plugin implements JsonSerializable<JsonPrimitive> {
 
     public Plugin() {
         this.healthChecker = new PluginHealthChecker(this);
-        this.healthChecker.start();
+        this.healthChecker.start(); // TODO: Create start method so this doesn't run in the constructor
         this.pluginSettings.set(createSettings());
     }
 

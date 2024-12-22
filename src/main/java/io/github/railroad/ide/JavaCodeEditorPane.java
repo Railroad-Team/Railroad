@@ -183,7 +183,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
         Task<DiagnosticCollector<JavaFileObject>> task = new Task<>() {
             @Override
             protected DiagnosticCollector<JavaFileObject> call() {
-                JavaSourceFromString source = new JavaSourceFromString(JavaCodeEditorPane.this.filePath.getFileName().toString().replace(".java", ""), getText());
+                var source = new JavaSourceFromString(JavaCodeEditorPane.this.filePath.getFileName().toString().replace(".java", ""), getText());
                 DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
                 JavaCompiler.CompilationTask task = JAVA_COMPILER.getTask(null, null, diagnostics, List.of("-Xlint:all"), null, List.of(source));
                 task.call();

@@ -85,7 +85,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             // Open project in IDE
         });
 
-        new Thread(task).start();
+        new Thread(task).start(); // TODO: Don't create a thread in the constructor
 
         executor.scheduleAtFixedRate(() -> {
             long timeElapsed = System.currentTimeMillis() - startTime;

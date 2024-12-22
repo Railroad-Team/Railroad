@@ -1,5 +1,6 @@
 package io.github.railroad.settings.ui.themes;
 
+import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -112,7 +113,7 @@ public class ThemeDownloadManager {
      */
     public static List<Theme> fetchThemes(final String url) {
         if (LAST_REFRESHED.get() + 60_000 > System.currentTimeMillis())
-            return THEMES_CACHE;
+            return ImmutableList.copyOf(THEMES_CACHE);
 
         List<Theme> itemList = new ArrayList<>();
         JsonArray themesArray;
@@ -135,7 +136,7 @@ public class ThemeDownloadManager {
             themesArray = Railroad.GSON.fromJson(bodyStr, JsonArray.class);
         } catch (IOException exception) {
             LOGGER.warn("Error fetching themes", exception);
-            return THEMES_CACHE;
+            return ImmutableList.copyOf(THEMES_CACHE);
         }
 
         if (themesArray != null && !themesArray.isEmpty()) {
@@ -158,7 +159,7 @@ public class ThemeDownloadManager {
         THEMES_CACHE.clear();
         THEMES_CACHE.addAll(itemList);
         LAST_REFRESHED.set(System.currentTimeMillis());
-        return itemList;
+        return ImmutableList.copyOf(THEMES_CACHE);
     }
 
     public static Path getThemesDirectory() {

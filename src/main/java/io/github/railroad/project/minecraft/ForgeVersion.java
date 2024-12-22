@@ -173,9 +173,6 @@ public record ForgeVersion(MinecraftVersion minecraftVersion, String id,
                 throw new RuntimeException("Failed to request Forge promos: " + response.message());
 
             ResponseBody body = response.body();
-            if (body == null)
-                throw new RuntimeException("Failed to request Forge promos: Empty response body");
-
             String bodyStr = body.string();
             if (bodyStr.isBlank())
                 throw new RuntimeException("Failed to request Forge promos: Empty response");

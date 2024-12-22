@@ -8,6 +8,7 @@ import io.github.railroad.project.minecraft.MinecraftVersion;
 import io.github.railroad.project.minecraft.RecommendableVersion;
 
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class MCPVersion extends MappingVersion implements RecommendableVersion {
@@ -23,7 +24,7 @@ public class MCPVersion extends MappingVersion implements RecommendableVersion {
     public static Map<MinecraftVersion, List<MCPVersion>> getMCPVersions() {
         final Map<MinecraftVersion, List<MCPVersion>> versions = new HashMap<>();
 
-        var reader = new InputStreamReader(Railroad.getResourceAsStream("mcp_mappings.json"));
+        var reader = new InputStreamReader(Railroad.getResourceAsStream("mcp_mappings.json"), StandardCharsets.UTF_8);
         final JsonObject response = Railroad.GSON.fromJson(reader, JsonObject.class);
         for (Map.Entry<String, JsonElement> entry : response.entrySet()) {
             String mcVersionStr = entry.getKey();

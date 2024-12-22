@@ -1,6 +1,7 @@
 package io.github.railroad.discord.data;
 
 import com.google.gson.annotations.SerializedName;
+import lombok.Getter;
 
 public class DiscordUser {
     @SerializedName("id")
@@ -99,11 +100,13 @@ public class DiscordUser {
     }
 
     public static class AvatarDecorationData {
-        private String asset;
-        private String sku_id;
+        @Getter
+        private final String asset;
+        private final String sku_id;
 
-        public String getAsset() {
-            return asset;
+        public AvatarDecorationData(String asset, String sku_id) {
+            this.asset = asset;
+            this.sku_id = sku_id;
         }
 
         public String getSkuId() {

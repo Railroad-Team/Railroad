@@ -92,7 +92,7 @@ public class PluginManager extends Thread {
                 }
             }
 
-            plugin.unload();
+            PluginPhaseResult result = plugin.unload(); // TODO: Handle result
             showLog(plugin, "Unloaded");
         }
     }

@@ -2,10 +2,11 @@ package io.github.railroad.ide.projectexplorer;
 
 import javafx.scene.control.TreeItem;
 
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.util.Comparator;
 
-public class PathTreeItemComparator implements Comparator<TreeItem<PathItem>> {
+public class PathTreeItemComparator implements Comparator<TreeItem<PathItem>>, Serializable {
     @Override
     public int compare(TreeItem<PathItem> item1, TreeItem<PathItem> item2) {
         boolean isDir1 = Files.isDirectory(item1.getValue().getPath());

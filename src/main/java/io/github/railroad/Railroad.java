@@ -58,9 +58,9 @@ public class Railroad extends Application {
 
     private static boolean DEBUG = false;
     @Getter
-    private static Scene scene;
+    private static Scene scene; // TODO: Reconsider whether we need this
     @Getter
-    private static Stage window;
+    private static Stage window; // TODO: Reconsider whether we need this
 
     /**
      * Update the theme of the application

@@ -13,6 +13,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +48,7 @@ public class GithubConnection extends AbstractConnection {
                 con.setRequestProperty("Accept", "application/vnd.github+json");
                 con.setRequestProperty("X-GitHub-Api-Version", "2022-11-28");
                 con.setRequestProperty("Authorization", "Bearer " + account.getAccessToken());
-                var in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                var in = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8));
                 String inputLine;
                 var content = new StringBuilder();
                 var statusCode = con.getResponseCode();
@@ -137,8 +138,8 @@ public class GithubConnection extends AbstractConnection {
             try {
                 Process process = processBuilder.start();
                 var thread = new Thread(() -> {
-                    try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                         var errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                    try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+                         var errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
                         String line;
                         while ((line = reader.readLine()) != null) {
                             //updateOutput(line);

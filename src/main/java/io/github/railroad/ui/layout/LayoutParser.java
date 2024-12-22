@@ -9,6 +9,7 @@ import javafx.util.Pair;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ public class LayoutParser {
     }
 
     public static Layout parse(byte[] content) throws LayoutParseException {
-        return parse(new String(content));
+        return parse(new String(content, StandardCharsets.UTF_8));
     }
 
     public static Layout parse(InputStream input) throws LayoutParseException {
