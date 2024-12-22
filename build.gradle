@@ -46,7 +46,7 @@ dependencies {
     implementation 'io.github.palexdev:materialfx:11.17.0'
     implementation 'ch.qos.logback:logback-classic:1.5.6'
     implementation 'org.apache.groovy:groovy-all:5.0.0-alpha-9'
-    implementation 'org.gradle:gradle-tooling-api:7.3-20210825160000+0000'
+    implementation 'org.gradle:gradle-tooling-api:8.9'
     implementation 'com.panemu:tiwulfx-dock:0.3'
     implementation 'com.spencerwi:Either.java:2.9.0'
     implementation 'com.kodedu.terminalfx:terminalfx:1.2.0'
