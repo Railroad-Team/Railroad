@@ -22,6 +22,12 @@ public class Settings implements JsonSerializable<JsonObject> {
         return settings.get(id);
     }
 
+    public void reloadSettings() {
+        settings.values().forEach(setting -> {
+            setting.getApplySetting().accept(null);
+        });
+    }
+
     /**
      * Converts the settings to a json object.
      * Loops through each setting, and then loops through each part in the ID.
@@ -77,13 +83,14 @@ public class Settings implements JsonSerializable<JsonObject> {
     public void fromJson(JsonObject json) throws IllegalStateException {
         for (Setting<?> setting : settings.values()) {
             String[] parts = setting.getId().split("[.:]");
+            var position = json;
 
             for (String part : parts) {
                 if (Arrays.stream(parts).toList().indexOf(part) == parts.length - 1) {
-                    if (json.has(part)) {
+                    if (position.has(part)) {
                         @SuppressWarnings("unchecked")
                         SettingCodec<?, ?, JsonElement> codec = (SettingCodec<?, ?, JsonElement>) Railroad.SETTINGS_HANDLER.getCodec(setting.getCodecId());
-                        Object value = codec.jsonDecoder().apply(json.get(part));
+                        Object value = codec.jsonDecoder().apply(position.get(part));
 
                         if (value == null) {
                             Railroad.LOGGER.error("Failed to decode setting {}", setting.getId());
@@ -95,12 +102,12 @@ public class Settings implements JsonSerializable<JsonObject> {
                         setting.setValue(setting.getDefaultValue());
                     }
                 } else {
-                    if (!json.has(part)) {
+                    if (!position.has(part)) {
                         setting.setValue(setting.getDefaultValue());
                         break;
                     }
 
-                    json = json.getAsJsonObject(part);
+                    position = position.getAsJsonObject(part);
                 }
             }
         }

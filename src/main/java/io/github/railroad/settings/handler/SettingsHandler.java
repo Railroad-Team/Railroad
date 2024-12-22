@@ -20,6 +20,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.ComboBoxBase;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -32,6 +33,7 @@ import java.util.Optional;
 public class SettingsHandler {
     private final ObservableMap<String, Decoration<?>> decorations = FXCollections.observableHashMap();
     private final ObservableMap<String, SettingCodec<?, ?, ?>> codecs = FXCollections.observableHashMap();
+    @Getter
     private final Settings settings = new Settings();
     private final Path configPath;
 
@@ -87,6 +89,7 @@ public class SettingsHandler {
             }
 
             JsonObject json = Railroad.GSON.fromJson(fileInput, JsonObject.class);
+            Railroad.LOGGER.debug("Loaded settings file: {}", json);
             settings.fromJson(json);
         } catch (JsonSyntaxException e) {
             Railroad.LOGGER.error("Failed to parse settings file {}, resetting json file from: {} to defaults.", e, settings.toJson().toString());
@@ -98,6 +101,7 @@ public class SettingsHandler {
     }
 
     public void saveSettingsFile() {
+        Railroad.LOGGER.debug("Saving settings file");
         try {
             Files.writeString(configPath, settings.toJson().toString());
         } catch (IOException e) {
@@ -219,7 +223,10 @@ public class SettingsHandler {
     private <T> void addSettingToTree(Setting<T> setting, TreeItem<Node> currentPart) {
         SettingCodec<T, Node, ?> codec = getCodec(setting.getCodecId());
         Node node = codec.createNode().apply(setting.getValue());
+
+        // The apply setting consumer, used for reloading settings
         node.addEventHandler(ActionEvent.ACTION, e -> setting.setValue(codec.nodeToValue().apply(node)));
+        node.addEventHandler(ActionEvent.ACTION, e -> setting.getApplySetting().accept(null));
 
         if (setting.getEventHandlers() != null)
             setting.getEventHandlers().forEach(node::addEventHandler);
@@ -267,11 +274,13 @@ public class SettingsHandler {
 
     private void registerDefaultSettings() {
         registerSetting(new Setting<>(
-                "railroad:language",
-                "railroad:appearance.language.language",
-                "railroad:language",
-                Language.EN_US,
-                Map.of(ActionEvent.ACTION, e -> L18n.loadLanguage())));
+                    "railroad:language",
+                    "railroad:appearance.language.language",
+                    "railroad:language",
+                    Language.EN_US,
+                    e -> L18n.loadLanguage(),
+                    null
+                ));
 
         registerSetting(
                 new Setting<>(
@@ -279,7 +288,9 @@ public class SettingsHandler {
                         "railroad:appearance.themes.select",
                         "railroad:theme.select",
                         "default-dark",
-                        Map.of(ActionEvent.ACTION, e -> Railroad.updateTheme(Railroad.SETTINGS_HANDLER.getSetting("railroad:theme").getValue().toString()))));
+                        e -> Railroad.updateTheme(Railroad.SETTINGS_HANDLER.getSetting("railroad:theme").getValue().toString()),
+                        null
+                ));
     }
 
     private void registerDefaultDecorations() {

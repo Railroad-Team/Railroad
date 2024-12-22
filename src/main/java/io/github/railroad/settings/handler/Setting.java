@@ -6,6 +6,7 @@ import javafx.event.EventType;
 import lombok.Getter;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 @Getter
 @SuppressWarnings("rawtypes")
@@ -15,6 +16,8 @@ public class Setting<T> {
     private final String codecId;
 
     private final T defaultValue;
+    // The event handler to be applied to on action, should call a method that applies the setting.
+    private final Consumer applySetting;
     private final Map<EventType, EventHandler> eventHandlers;
 
     private T value;
@@ -27,11 +30,12 @@ public class Setting<T> {
      * @param defaultValue The default value of the setting.
      * @param eventHandlers The event handlers for the setting.
      */
-    public Setting(String id, String treeId, String codecId, T defaultValue, Map<EventType, EventHandler> eventHandlers) {
+    public Setting(String id, String treeId, String codecId, T defaultValue, Consumer applySetting, Map<EventType, EventHandler> eventHandlers) {
         this.id = id;
         this.treeId = treeId;
         this.codecId = codecId;
         this.defaultValue = defaultValue;
+        this.applySetting = applySetting;
         this.eventHandlers = eventHandlers;
     }
 

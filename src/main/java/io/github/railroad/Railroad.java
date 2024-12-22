@@ -59,6 +59,7 @@ public class Railroad extends Application {
 
     public static void updateTheme(String theme) {
         //TODO fix this - it needs to remove the currently applied theme
+        // probably not working *properly* because of new settings system
         getScene().getStylesheets().remove(SETTINGS_HANDLER.getSetting("railroad:theme").getValue() + ".css");
 
         if (theme.startsWith("default")) {
@@ -66,6 +67,8 @@ public class Railroad extends Application {
         } else {
             Application.setUserAgentStylesheet(new File(ThemeDownloadManager.getThemesDirectory() + "/" + theme + ".css").toURI().toString());
         }
+
+        SETTINGS_HANDLER.getSetting("railroad:theme").setValue(theme);
     }
 
     public static void handleStyles(Scene scene) {
@@ -73,6 +76,9 @@ public class Railroad extends Application {
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();
+        String baseTheme = getResource("styles/base.css").toExternalForm();
+        scene.getStylesheets().add(baseTheme);
+
         scene.setOnKeyReleased(event -> {
             if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.D) {
                 if (DEBUG) {
@@ -82,14 +88,7 @@ public class Railroad extends Application {
                 }
 
                 DEBUG = !DEBUG;
-            }
-        });
-
-        String baseTheme = getResource("styles/base.css").toExternalForm();
-        scene.getStylesheets().add(baseTheme);
-
-        scene.setOnKeyReleased(event -> {
-            if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.R) {
+            } else if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.R) {
                 for (String style : scene.getStylesheets()) {
                     scene.getStylesheets().remove(style);
                     scene.getStylesheets().add(style);
