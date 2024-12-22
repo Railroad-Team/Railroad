@@ -1,6 +1,5 @@
 package io.github.railroad.settings.ui.themes;
 
-import io.github.railroad.Railroad;
 import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
@@ -36,7 +35,6 @@ public class ThemeDownloadPane {
         pane.setAlignment(Pos.TOP_CENTER);
 
         var scene = new Scene(pane, 450, 450);
-        Railroad.handleStyles(scene);
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.setResizable(false);
         stage.setScene(scene);
