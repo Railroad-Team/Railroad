@@ -1,21 +1,22 @@
 package io.github.railroad.settings.handler;
 
+import io.github.railroad.Railroad;
 import javafx.event.EventHandler;
 import javafx.event.EventType;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.Map;
 
 @Getter
+@SuppressWarnings("rawtypes")
 public class Setting<T> {
     private final String id;
     private final String treeId;
     private final String codecId;
+
     private final T defaultValue;
     private final Map<EventType, EventHandler> eventHandlers;
 
-    @Setter
     private T value;
 
     /**
@@ -32,5 +33,18 @@ public class Setting<T> {
         this.codecId = codecId;
         this.defaultValue = defaultValue;
         this.eventHandlers = eventHandlers;
+    }
+
+    /**
+     * Sets the value of the setting.
+     * @param value The value to set the setting to.
+     */
+    @SuppressWarnings("unchecked")
+    public void setValue(Object value) {
+        try {
+            this.value = (T) value;
+        } catch (ClassCastException exception) {
+            Railroad.LOGGER.error("Error setting value for setting: {}", this.id, exception);
+        }
     }
 }

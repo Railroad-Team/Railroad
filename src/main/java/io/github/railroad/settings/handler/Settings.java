@@ -1,5 +1,6 @@
 package io.github.railroad.settings.handler;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.utility.JsonSerializable;
@@ -9,15 +10,15 @@ import lombok.Getter;
 
 import java.util.Arrays;
 
+@Getter
 public class Settings implements JsonSerializable<JsonObject> {
-    @Getter
-    private final ObservableMap<String, Setting> settings = FXCollections.observableHashMap();
+    private final ObservableMap<String, Setting<?>> settings = FXCollections.observableHashMap();
 
-    public void registerSetting(Setting setting) {
+    public void registerSetting(Setting<?> setting) {
         settings.put(setting.getId(), setting);
     }
 
-    public Setting getSetting(String id) {
+    public Setting<?> getSetting(String id) {
         return settings.get(id);
     }
 
@@ -27,12 +28,13 @@ public class Settings implements JsonSerializable<JsonObject> {
      * A variable - current - is used to keep track of the current position, essentially acting as a pointer.
      * If the part is the last part, it will add the value to the json object.
      * If it is not the last part, it will either create a new json object if it does not exist, or move to the next json object.
+     *
      * @return {@link JsonObject} The json object to be written to a file.
      */
     @Override
     public JsonObject toJson() {
         var json = new JsonObject();
-        for (Setting setting : settings.values()) {
+        for (Setting<?> setting : settings.values()) {
             var parts = setting.getId().split("[.:]");
             var current = json;
 
@@ -40,9 +42,9 @@ public class Settings implements JsonSerializable<JsonObject> {
                 setting.setValue(setting.getDefaultValue());
             }
 
-            for(String part : parts) {
+            for (String part : parts) {
                 if (Arrays.stream(parts).toList().indexOf(part) == parts.length - 1) {
-                    current.add(part, Railroad.SETTINGS_HANDLER.getCodec(setting.getCodecId()).getJsonEncoder().apply(setting.getValue()));
+                    current.add(part, Railroad.SETTINGS_HANDLER.getCodec(setting.getCodecId()).jsonEncoder().apply(setting.getValue()));
                 } else {
                     if (!current.has(part)) {
                         current.add(part, new JsonObject());
@@ -52,10 +54,9 @@ public class Settings implements JsonSerializable<JsonObject> {
                 }
             }
         }
+
         return json;
     }
-
-    //TODO rewrite this method, possibly?
 
     /**
      * Converts the json object to settings.
@@ -64,19 +65,25 @@ public class Settings implements JsonSerializable<JsonObject> {
      * If the part is the last part, it will add the value to the setting.
      * If the part is null, it will use the default value.
      * If it is not the last part, it will set current to the part.
+     *
+     * <p>
+     * TODO rewrite this method, possibly?
+     * </p>
+     *
      * @param json The json object to convert to settings.
      * @throws IllegalStateException If the setting cannot be decoded.
      */
     @Override
     public void fromJson(JsonObject json) throws IllegalStateException {
-        for (Setting setting : settings.values()) {
-            var parts = setting.getId().split("[.:]");
-            var current = json;
+        for (Setting<?> setting : settings.values()) {
+            String[] parts = setting.getId().split("[.:]");
 
             for (String part : parts) {
                 if (Arrays.stream(parts).toList().indexOf(part) == parts.length - 1) {
-                    if (current.has(part)) {
-                        var value = Railroad.SETTINGS_HANDLER.getCodec(setting.getCodecId()).getJsonDecoder().apply(current.get(part));
+                    if (json.has(part)) {
+                        @SuppressWarnings("unchecked")
+                        SettingCodec<?, ?, JsonElement> codec = (SettingCodec<?, ?, JsonElement>) Railroad.SETTINGS_HANDLER.getCodec(setting.getCodecId());
+                        Object value = codec.jsonDecoder().apply(json.get(part));
 
                         if (value == null) {
                             Railroad.LOGGER.error("Failed to decode setting {}", setting.getId());
@@ -88,12 +95,12 @@ public class Settings implements JsonSerializable<JsonObject> {
                         setting.setValue(setting.getDefaultValue());
                     }
                 } else {
-                    if (!current.has(part)) {
+                    if (!json.has(part)) {
                         setting.setValue(setting.getDefaultValue());
                         break;
                     }
 
-                    current = current.getAsJsonObject(part);
+                    json = json.getAsJsonObject(part);
                 }
             }
         }

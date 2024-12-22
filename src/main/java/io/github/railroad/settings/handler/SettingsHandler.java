@@ -15,10 +15,11 @@ import io.github.railroad.settings.ui.themes.ThemeDownloadPane;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.event.EventType;
 import javafx.scene.Node;
-import javafx.scene.control.*;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.ComboBoxBase;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeView;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -29,8 +30,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public class SettingsHandler {
-    private final ObservableMap<String, Decoration> decorations = FXCollections.observableHashMap();
-    private final ObservableMap<String, SettingCodec> codecs = FXCollections.observableHashMap();
+    private final ObservableMap<String, Decoration<?>> decorations = FXCollections.observableHashMap();
+    private final ObservableMap<String, SettingCodec<?, ?, ?>> codecs = FXCollections.observableHashMap();
     private final Settings settings = new Settings();
     private final Path configPath;
 
@@ -48,7 +49,7 @@ public class SettingsHandler {
      */
     public void initSettingsFile() {
         try {
-            if(!Files.exists(configPath)) {
+            if (!Files.exists(configPath)) {
                 createSettingsFile();
             }
 
@@ -104,83 +105,69 @@ public class SettingsHandler {
         }
     }
 
-    public void registerSetting(Setting setting) {
+    public void registerSetting(Setting<?> setting) {
         settings.registerSetting(setting);
     }
 
-    public void registerCodec(SettingCodec codec) {
-        codecs.put(codec.getId(), codec);
+    public void registerCodec(SettingCodec<?, ?, ?> codec) {
+        codecs.put(codec.id(), codec);
     }
 
-    public void registerDecoration(Decoration decoration) {
-        decorations.put(decoration.getId(), decoration);
+    public void registerDecoration(Decoration<?> decoration) {
+        decorations.put(decoration.id(), decoration);
     }
 
-    public Setting getSetting(String id) {
+    public Setting<?> getSetting(String id) {
         return settings.getSetting(id);
     }
 
-    public <N extends Node, J extends JsonElement> SettingCodec<Object, N, J> getCodec(String id) {
-        return codecs.get(id);
+    @SuppressWarnings("unchecked")
+    public <T> SettingCodec<T, Node, ?> getCodec(String id) {
+        return (SettingCodec<T, Node, ?>) codecs.get(id);
     }
 
-    public Decoration getDecoration(String id) {
+    public Decoration<?> getDecoration(String id) {
         return decorations.get(id);
     }
 
     /**
      * Loops through settings, using the same algorithm as {@link Settings#toJson()} to create a tree view.
      * Also does the same for decorations.
+     *
      * @return {@link TreeView} The tree view to be displayed.
      */
-    public TreeView createTree() {
-        var tv = new TreeView(new TreeItem(null));
-        tv.setShowRoot(false);
+    public TreeView<?> createTree() {
+        TreeView<Node> view = new TreeView<>(new TreeItem<>(null));
+        view.setShowRoot(false);
 
-        for (Setting setting : settings.getSettings().values()) {
-            var parts = setting.getTreeId().split("[.:]");
-            var currentPart = tv.getRoot();
+        for (Setting<?> setting : settings.getSettings().values()) {
+            String[] parts = setting.getTreeId().split("[.:]");
+            TreeItem<Node> currentPart = view.getRoot();
 
             for (int i = 0; i < parts.length; i++) {
                 if (i == parts.length - 1) {
-                    Node node = getCodec(setting.getCodecId()).getCreateNode().apply(setting.getValue());
-                    node.addEventHandler(ActionEvent.ACTION, e -> {
-                        setting.setValue(getCodec(setting.getCodecId()).getNodeToValue().apply(node));
-                    });
-
-                    if (setting.getEventHandlers() != null) {
-                        setting.getEventHandlers().forEach((type, handler) -> {
-                            node.addEventHandler((EventType) type, (EventHandler) handler);
-                        });
-                    }
-
-                    TreeItem item = new TreeItem(node);
-                    currentPart.getChildren().add(item);
+                    addSettingToTree(setting, currentPart);
                 } else {
                     int finalI = i;
 
-                    Optional stringPart = currentPart.getChildren().stream()
-                            .filter(TreeItem.class::isInstance)
-                            .map(TreeItem.class::cast)
-                            .filter(a -> ((TreeItem)a).getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
+                    Optional<TreeItem<Node>> stringPart = currentPart.getChildren().stream()
+                            .filter(a -> a.getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
                             .findFirst();
 
                     if (stringPart.isPresent()) {
-                        currentPart = (TreeItem) stringPart.get();
+                        currentPart = stringPart.get();
                     } else {
-                        TreeItem item = new TreeItem(new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")));
+                        TreeItem<Node> item = new TreeItem<>(new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")));
                         Railroad.LOGGER.debug("Localizing label: {}", "settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), "."));
                         item.setExpanded(true);
                         currentPart.getChildren().add(item);
 
-                        Optional currPart = currentPart.getChildren().stream()
-                                .filter(TreeItem.class::isInstance)
-                                .map(TreeItem.class::cast)
-                                .filter(a -> ((TreeItem)a).getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
+                        Optional<TreeItem<Node>> currPart = currentPart.getChildren().stream()
+                                .filter(a -> a.getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
                                 .findFirst();
 
                         if (currPart.isPresent()) {
-                            currentPart = (TreeItem) currPart.get();
+                            currentPart = currPart.get();
                         } else {
                             Railroad.LOGGER.error("Failed to find part that was just created: {} from {}", parts[i], setting.getTreeId());
                         }
@@ -191,49 +178,57 @@ public class SettingsHandler {
 
         for (String decId : decorations.keySet()) {
             var parts = decId.split("[.:]");
-            var currentPart = tv.getRoot();
+            var currentPart = view.getRoot();
 
             for (int i = 0; i < parts.length; i++) {
                 int finalI = i;
 
                 if (i == parts.length - 1) {
-                    Node node = (Node) decorations.get(decId).getNodeCreator().get();
-                    TreeItem item = new TreeItem(node);
+                    Node node = decorations.get(decId).nodeCreator().get();
+                    TreeItem<Node> item = new TreeItem<>(node);
                     currentPart.getChildren().add(item);
                     break;
                 }
 
-                Optional part = currentPart.getChildren().stream()
-                        .filter(TreeItem.class::isInstance)
-                        .map(TreeItem.class::cast)
-                        .filter(a -> ((TreeItem)a).getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
+                Optional<TreeItem<Node>> part = currentPart.getChildren().stream()
+                        .filter(a -> a.getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
                         .findFirst();
 
                 if (part.isPresent()) {
-                    currentPart = (TreeItem) part.get();
+                    currentPart = part.get();
                 } else {
-                    TreeItem item = new TreeItem(new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")));
+                    TreeItem<Node> item = new TreeItem<>(new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")));
                     currentPart.getChildren().add(item);
 
-                    Optional currPart = currentPart.getChildren().stream()
-                            .filter(TreeItem.class::isInstance)
-                            .map(TreeItem.class::cast)
-                            .filter(a -> ((TreeItem)a).getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
+                    Optional<TreeItem<Node>> currPart = currentPart.getChildren().stream()
+                            .filter(a -> a.getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
                             .findFirst();
 
                     if (currPart.isPresent()) {
-                        currentPart = (TreeItem) currPart.get();
+                        currentPart = currPart.get();
                     } else {
                         Railroad.LOGGER.error("Failed to find part that was just created: {} from {}", parts[i], decId);
                     }
                 }
             }
         }
-        return tv;
+
+        return view;
     }
 
+    private <T> void addSettingToTree(Setting<T> setting, TreeItem<Node> currentPart) {
+        SettingCodec<T, Node, ?> codec = getCodec(setting.getCodecId());
+        Node node = codec.createNode().apply(setting.getValue());
+        node.addEventHandler(ActionEvent.ACTION, e -> setting.setValue(codec.nodeToValue().apply(node)));
 
-    //Default settings & codecs
+        if (setting.getEventHandlers() != null)
+            setting.getEventHandlers().forEach(node::addEventHandler);
+
+        TreeItem<Node> item = new TreeItem<>(node);
+        currentPart.getChildren().add(item);
+    }
+
+    // Default settings & codecs
     private void registerDefaultCodecs() {
         registerCodec(
                 new SettingCodec<Language, ComboBox<String>, JsonElement>("railroad:language",
@@ -271,15 +266,20 @@ public class SettingsHandler {
     }
 
     private void registerDefaultSettings() {
-        registerSetting(
-                new Setting<>("railroad:language", "railroad:appearance.language.language", "railroad:language", Language.EN_US,
-                        Map.of(ActionEvent.ACTION,e -> L18n.loadLanguage()
-                        )));
+        registerSetting(new Setting<>(
+                "railroad:language",
+                "railroad:appearance.language.language",
+                "railroad:language",
+                Language.EN_US,
+                Map.of(ActionEvent.ACTION, e -> L18n.loadLanguage())));
 
         registerSetting(
-                new Setting<>("railroad:theme","railroad:appearance.themes.select", "railroad:theme.select", "default-dark",
-                        Map.of(ActionEvent.ACTION, e -> Railroad.updateTheme(Railroad.SETTINGS_HANDLER.getSetting("railroad:theme").getValue().toString())
-                        )));
+                new Setting<>(
+                        "railroad:theme",
+                        "railroad:appearance.themes.select",
+                        "railroad:theme.select",
+                        "default-dark",
+                        Map.of(ActionEvent.ACTION, e -> Railroad.updateTheme(Railroad.SETTINGS_HANDLER.getSetting("railroad:theme").getValue().toString()))));
     }
 
     private void registerDefaultDecorations() {

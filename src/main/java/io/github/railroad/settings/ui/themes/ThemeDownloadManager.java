@@ -99,11 +99,6 @@ public class ThemeDownloadManager {
             }
 
             ResponseBody body = response.body();
-            if (body == null) {
-                LOGGER.error("While fetching themes, the body was null");
-                return itemList;
-            }
-
             String bodyStr = body.string();
             if (bodyStr.isBlank()) {
                 LOGGER.error("While fetching themes, the body was empty");
