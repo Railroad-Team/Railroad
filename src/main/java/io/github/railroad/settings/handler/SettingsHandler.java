@@ -16,10 +16,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.ComboBoxBase;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
@@ -135,84 +133,31 @@ public class SettingsHandler {
     }
 
     /**
-     * Loops through settings, using the same algorithm as {@link Settings#toJson()} to create a tree view.
-     * Also does the same for decorations.
-     *
-     * @return {@link TreeView} The tree view to be displayed.
+     * Creates a tree of setting folders.
+     * @return {@link TreeView} The tree of folders
      */
-    public TreeView<?> createTree() {
+
+    public TreeView<?> createCategoryTree() {
         TreeView<Node> view = new TreeView<>(new TreeItem<>(null));
         view.setShowRoot(false);
 
         for (Setting<?> setting : settings.getSettings().values()) {
             String[] parts = setting.getTreeId().split("[.:]");
-            TreeItem<Node> currentPart = view.getRoot();
+            String finalPart = parts[parts.length - 1];
 
-            for (int i = 0; i < parts.length; i++) {
-                if (i == parts.length - 1) {
-                    addSettingToTree(setting, currentPart);
-                } else {
-                    int finalI = i;
-
-                    Optional<TreeItem<Node>> stringPart = currentPart.getChildren().stream()
-                            .filter(a -> a.getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
-                            .findFirst();
-
-                    if (stringPart.isPresent()) {
-                        currentPart = stringPart.get();
-                    } else {
-                        TreeItem<Node> item = new TreeItem<>(new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")));
-                        Railroad.LOGGER.debug("Localizing label: {}", "settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), "."));
-                        item.setExpanded(true);
-                        currentPart.getChildren().add(item);
-
-                        Optional<TreeItem<Node>> currPart = currentPart.getChildren().stream()
-                                .filter(a -> a.getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
-                                .findFirst();
-
-                        if (currPart.isPresent()) {
-                            currentPart = currPart.get();
-                        } else {
-                            Railroad.LOGGER.error("Failed to find part that was just created: {} from {}", parts[i], setting.getTreeId());
-                        }
-                    }
-                }
-            }
-        }
-
-        for (String decId : decorations.keySet()) {
-            var parts = decId.split("[.:]");
-            var currentPart = view.getRoot();
-
-            for (int i = 0; i < parts.length; i++) {
-                int finalI = i;
-
-                if (i == parts.length - 1) {
-                    Node node = decorations.get(decId).nodeCreator().get();
-                    TreeItem<Node> item = new TreeItem<>(node);
-                    currentPart.getChildren().add(item);
+            for (String part : parts) {
+                if (part.equals(finalPart)) {
                     break;
                 }
 
-                Optional<TreeItem<Node>> part = currentPart.getChildren().stream()
-                        .filter(a -> a.getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
+                Optional<TreeItem<Node>> stringPart = view.getRoot().getChildren().stream()
+                        .filter(a -> a.getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, parts.length - 2), ".")))
                         .findFirst();
 
-                if (part.isPresent()) {
-                    currentPart = part.get();
-                } else {
-                    TreeItem<Node> item = new TreeItem<>(new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")));
-                    currentPart.getChildren().add(item);
-
-                    Optional<TreeItem<Node>> currPart = currentPart.getChildren().stream()
-                            .filter(a -> a.getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, finalI + 1), ".")))
-                            .findFirst();
-
-                    if (currPart.isPresent()) {
-                        currentPart = currPart.get();
-                    } else {
-                        Railroad.LOGGER.error("Failed to find part that was just created: {} from {}", parts[i], decId);
-                    }
+                if (stringPart.isEmpty()) {
+                    TreeItem<Node> item = new TreeItem<>(new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(parts, parts.length - 2), ".")));
+                    item.setExpanded(true);
+                    view.getRoot().getChildren().add(item);
                 }
             }
         }
@@ -220,19 +165,64 @@ public class SettingsHandler {
         return view;
     }
 
-    private <T> void addSettingToTree(Setting<T> setting, TreeItem<Node> currentPart) {
-        SettingCodec<T, Node, ?> codec = getCodec(setting.getCodecId());
-        Node node = codec.createNode().apply(setting.getValue());
+    /***
+     * Creates the pane for the setting folder and adds the relevant settings and decorations to it.
+     * @param parent parent folder id (just one part e.g appearance)
+     * @return {@link VBox} The pane with the settings and decorations
+     */
+    public VBox createSettingsSection(String parent) {
+        var vbox = new VBox();
+        if (parent == null) {
+            vbox.getChildren().add(new Label("Wow this is such a cool IDE am I right??"));
+            return vbox;
+        }
+        parent = parent.toLowerCase();
 
-        // The apply setting consumer, used for reloading settings
-        node.addEventHandler(ActionEvent.ACTION, e -> setting.setValue(codec.nodeToValue().apply(node)));
-        node.addEventHandler(ActionEvent.ACTION, e -> setting.getApplySetting().accept(null));
 
-        if (setting.getEventHandlers() != null)
-            setting.getEventHandlers().forEach(node::addEventHandler);
+        for (Setting<?> setting : settings.getSettings().values()) {
+            String[] parts = setting.getTreeId().split("[.:]");
+            //Get the last folder present
+            String parentId = parts[parts.length - 3];
 
-        TreeItem<Node> item = new TreeItem<>(node);
-        currentPart.getChildren().add(item);
+            if (parentId.equals(parent)) {
+                Optional<Node> stringPart = vbox.getChildren().stream()
+                        .filter(a -> a instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, parts.length - 1), ".")))
+                        .findFirst();
+
+                if (stringPart.isEmpty()) {
+                    var label = new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(parts, parts.length - 1), "."));
+                    vbox.getChildren().add(label);
+
+                    var codec = getCodec(setting.getCodecId());
+                    Node node = codec.createNode().apply(setting.getValue());
+
+                    node.addEventHandler(ActionEvent.ACTION, e -> setting.setValue(codec.nodeToValue().apply(node)));
+                    node.addEventHandler(ActionEvent.ACTION, e -> setting.getApplySetting().accept(null));
+
+                    if (setting.getEventHandlers() != null)
+                        setting.getEventHandlers().forEach(node::addEventHandler);
+
+                    vbox.getChildren().add(node);
+                }
+            }
+        }
+
+        for (Decoration<?> decoration : decorations.values()) {
+            Optional<Node> stringPart = vbox.getChildren().stream()
+                    .filter(a -> a instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(decoration.id().split("[.:]"), decoration.id().split("[.:]").length - 1), ".")))
+                    .findFirst();
+            if (stringPart.isPresent()) {
+                var node = decoration.nodeCreator().get();
+                vbox.getChildren().add(node);
+            } else {
+                var label = new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(decoration.id().split("[.:]"), decoration.id().split("[.:]").length - 1), "."));
+                vbox.getChildren().add(label);
+                var node = decoration.nodeCreator().get();
+                vbox.getChildren().add(node);
+            }
+        }
+
+        return vbox;
     }
 
     // Default settings & codecs
