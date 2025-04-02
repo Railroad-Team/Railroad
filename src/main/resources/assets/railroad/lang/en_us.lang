@@ -17,17 +17,17 @@ railroad.home.welcome.importproject=Import Project
 railroad.home.welcome.settings=Settings
 
 #Settings
-settings.railroad=Railroad
-settings.railroad.appearance=Appearance
-settings.railroad.appearance.language=Language
-settings.railroad.appearance.themes=Themes
+railroad=Railroad
+railroad.appearance=Appearance
+railroad.appearance.language=Language
+railroad.appearance.themes=Themes
 
-settings.railroad.general=General
-settings.railroad.general.project_folder=Project Directory
-settings.railroad.appearance.themes.download_repo=Custom Themes Repository URL
-settings.railroad.appearance.themes.select=Select Theme
-settings.railroad.appearance.language.language=Select Language
-settings.railroad.appearance.themes.download=Download Themes
+railroad.general=General
+railroad.general.project_folder=Default Project Folder
+railroad.appearance.themes.download_repo=Specify a Github repository URL to download themes from.
+railroad.appearance.themes.select=
+railroad.appearance.language.language=
+railroad.appearance.themes.download=
 
 railroad.home.welcome.sort.none=None
 railroad.home.welcome.sort.name=Name

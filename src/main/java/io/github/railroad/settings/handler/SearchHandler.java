@@ -1,9 +1,11 @@
 package io.github.railroad.settings.handler;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.localization.L18n;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -14,9 +16,14 @@ public class SearchHandler {
 
     private final AtomicReference<String> query = new AtomicReference<>("");
 
+    //TODO fuzzy search
+
     public SearchHandler() {
-        settings.put("theme", "railroad:appearance.themes.select");
-        settings.put("language", "railroad:appearance.language.language");
+        L18n.getLANG_CACHE().forEach((k, v) -> {
+            settings.put(v.toString().toLowerCase(), (String) k);
+        });
+
+        Railroad.LOGGER.debug("Loaded {} settings", settings);
     }
 
     public void setQuery(String input) {
@@ -28,9 +35,12 @@ public class SearchHandler {
     }
 
     public String mostRelevantFolder(String query) {
+        Railroad.LOGGER.debug("Searching for most relevant folder for {}", query);
         if (settings.get(query.toLowerCase()) != null) {
-            var parts = settings.get(query.toLowerCase()).split("[:.]");
-            return parts[parts.length - 3];
+            var parts = settings.get(query.toLowerCase()).split("[.]");
+
+            Railroad.LOGGER.debug("Found {}", String.join(".", parts));
+            return String.join(".", Arrays.copyOfRange(parts, 0, parts.length - 1));
         } else {
             return null;
         }

@@ -2,14 +2,19 @@ package io.github.railroad.settings.ui;
 
 import io.github.railroad.Railroad;
 import io.github.railroad.localization.ui.LocalizedLabel;
+import io.github.railroad.settings.handler.SearchHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TreeItem;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class TreeViewSettings {
+    public final SearchHandler SEARCH_HANDLER = new SearchHandler();
     private Stage stage;
 
     //TODO make it, well, not look like this - fix button positioning, treeview border etc
@@ -34,15 +39,26 @@ public class TreeViewSettings {
             }
         });
 
+        hbox.setMaxWidth(Double.MAX_VALUE);
+        hbox.setPrefWidth(Region.USE_COMPUTED_SIZE);
+        HBox.setHgrow(hbox, Priority.ALWAYS);
+        HBox.setHgrow(treContent, Priority.ALWAYS);
+        treContent.setFitToWidth(true);
+        treContent.setFitToHeight(true);
+
+        vbox.setMaxWidth(Double.MAX_VALUE);
+        VBox.setVgrow(vbox, Priority.ALWAYS);
+        vbox.setSpacing(10);
+
         hbox.getChildren().addAll(tree, treContent);
 
         var searchBar = new TextField();
         searchBar.setPromptText("Search settings");
         searchBar.textProperty().addListener(event -> {
             var searchText = searchBar.getText();
-            Railroad.SETTINGS_HANDLER.SEARCH_HANDLER.setQuery(searchText);
+            SEARCH_HANDLER.setQuery(searchText);
             if (!searchText.isEmpty()) {
-                var res = Railroad.SETTINGS_HANDLER.SEARCH_HANDLER.mostRelevantFolder(searchText);
+                var res = SEARCH_HANDLER.mostRelevantFolder(searchText);
                 //If currently selected folder is the res
 //                if (tree.getSelectionModel().getSelectedItem().getValue().equals(res)) {
 //                    //Refresh right side pane
@@ -52,16 +68,33 @@ public class TreeViewSettings {
 //                }
 
                 if (res != null) {
-                    var node = tree.getRoot().getChildren().stream()
-                            .filter(item -> ((LocalizedLabel) item.getValue()).getText().equalsIgnoreCase(res))
-                            .findFirst()
-                            .orElse(null);
-                    if (node != null) {
-                        //Select the folder node, which in turn updates the right side pane/vbox
-                        tree.getSelectionModel().select(tree.getRoot().getChildren().indexOf(node));
-                    } else {
-                        Railroad.LOGGER.warn("Folder TreeNode not found when searching for {} folder", res);
+                    String[] parts = res.split("[.]");
+                    String lastPart = parts[parts.length - 1];
+                    var currentPart = tree.getRoot();
+                    TreeItem lastPartNode = null;
+
+                    Railroad.LOGGER.debug("Last part {}, parts: {}", lastPart, parts);
+
+                    for (String part : parts) {
+                        var node = currentPart.getChildren().stream()
+                                .filter(item -> ((LocalizedLabel) item.getValue()).getText().equalsIgnoreCase(part))
+                                .findFirst()
+                                .orElse(null);
+                        if (node != null) {
+                            if (part.equals(lastPart)){
+                                lastPartNode = node;
+                                break;
+                            }
+
+                            currentPart = node;
+                        } else {
+                            Railroad.LOGGER.warn("Folder TreeNode not found when searching for {} folder in parts {}", part, res);
+                            break;
+                        }
                     }
+
+                    tree.getSelectionModel().clearSelection();
+                    tree.getSelectionModel().select(lastPartNode);
                 }
             }
         });

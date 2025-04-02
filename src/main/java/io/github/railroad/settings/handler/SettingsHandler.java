@@ -12,11 +12,14 @@ import io.github.railroad.localization.ui.LocalizedButton;
 import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.settings.ui.themes.ThemeDownloadPane;
-import io.github.railroad.ui.defaults.RRHBox;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
@@ -29,7 +32,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SettingsHandler {
-    public final SearchHandler SEARCH_HANDLER = new SearchHandler();
     private final ObservableMap<String, Decoration<?>> decorations = FXCollections.observableHashMap();
     private final ObservableMap<String, SettingCodec<?, ?, ?>> codecs = FXCollections.observableHashMap();
     @Getter
@@ -162,12 +164,12 @@ public class SettingsHandler {
                 }
 
                 //Check if the folder already exists
-                var folder = currNode.getChildren().stream().filter(i -> i.getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(parts, ".", 0, finalIndex)))
+                var folder = currNode.getChildren().stream().filter(i -> i.getValue() instanceof LocalizedLabel l && l.getKey().equals(StringUtils.join(parts, ".", 0, finalIndex)))
                         .findFirst();
 
                 if (folder.isEmpty()) {
                     //If it does not exist, create it
-                    var newFolder = new TreeItem<Node>(new LocalizedLabel("settings." + StringUtils.join(parts, ".", 0, index)));
+                    var newFolder = new TreeItem<Node>(new LocalizedLabel( StringUtils.join(parts, ".", 0, index)));
                     currNode.getChildren().add(newFolder);
                     currNode = newFolder;
                 } else {
@@ -186,10 +188,15 @@ public class SettingsHandler {
      * @return {@link VBox} The pane with the settings and decorations
      */
     public VBox createSettingsSection(String parent) {
-        var vbox = new VBox();
-        Map<String, VBox> folderBoxes = new HashMap<>();
+        final Map<String, VBox> folderBoxes = new HashMap<>();
+        final VBox vbox = new VBox();
+
         if (parent == null) {
-            vbox.getChildren().add(new Label("Wow this is such a cool IDE am I right??"));
+            var title = new LocalizedLabel("railroad.home.settings.title");
+            title.setStyle("-fx-font-size: 24px;");
+            var desc = new LocalizedLabel("railroad.home.settings.description");
+            desc.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
+            vbox.getChildren().addAll(title, desc);
             return vbox;
         }
         parent = parent.toLowerCase();
@@ -209,11 +216,15 @@ public class SettingsHandler {
 
                 var folderBox = folderBoxes.get(innerFolder);
                 var settingNode = getCodec(setting.getCodecId()).createNode().apply(setting.getDefaultValue());
-                var settingLabel = new LocalizedLabel("settings." + setting.getTreeId().replace(":", "."));
 
-                settingLabel.setStyle("-fx-font-size: 6px;");
-
-                folderBox.getChildren().addAll(settingNode, settingLabel);
+                var settingLabel = new LocalizedLabel(setting.getTreeId().replace(":", "."));
+                //TODO jank
+                if (!settingLabel.getText().isBlank()) {
+                    settingLabel.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
+                    folderBox.getChildren().addAll(settingNode, settingLabel);
+                } else {
+                    folderBox.getChildren().add(settingNode);
+                }
             }
         }
 
@@ -232,20 +243,31 @@ public class SettingsHandler {
 
                 var folderBox = folderBoxes.get(innerFolder);
                 var decorationNode = decoration.nodeCreator().get();
-                var decorationLabel = new LocalizedLabel("settings." + decoration.treeId().replace(":", "."));
-                decorationLabel.setStyle("-fx-font-size: 12px;");
 
-                folderBox.getChildren().addAll(decorationNode, decorationLabel);
+                var decorationLabel = new LocalizedLabel( decoration.treeId().replace(":", "."));
+
+                if (decorationLabel.getText().isBlank()) {
+                    folderBox.getChildren().add(decorationNode);
+                } else {
+                    decorationLabel.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
+                    folderBox.getChildren().addAll(decorationNode, decorationLabel);
+                }
             }
         }
 
         for (Map.Entry<String, VBox> entry : folderBoxes.entrySet()) {
-            var sepBox = new RRHBox();
-            var sectionLabel = new LocalizedLabel("settings." + entry.getKey());
-            sectionLabel.setStyle("-fx-font-size: 24px;");
+            var sepBox = new HBox();
+            sepBox.setSpacing(10);
+            sepBox.setPadding(new Insets(5, 10, 5, 10));
+
+            var sectionLabel = new LocalizedLabel(entry.getKey());
+            sectionLabel.setStyle("-fx-font-size: 18px;");
 
             var sep = new Separator();
-            sep.setMaxWidth(300);
+            sep.setMaxWidth(Double.MAX_VALUE);
+            HBox.setHgrow(sep, Priority.ALWAYS);
+            vbox.setMaxWidth(Double.MAX_VALUE);
+            VBox.setVgrow(sep, Priority.ALWAYS);
 
             sepBox.getChildren().addAll(sectionLabel,sep);
             vbox.getChildren().addAll(sepBox, entry.getValue());
