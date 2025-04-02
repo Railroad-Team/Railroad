@@ -12,9 +12,9 @@ import io.github.railroad.localization.ui.LocalizedButton;
 import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.settings.ui.themes.ThemeDownloadPane;
+import io.github.railroad.ui.defaults.RRHBox;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
-import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
@@ -25,11 +25,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 public class SettingsHandler {
-    public final SearchHandler searchHandler = new SearchHandler();
+    public final SearchHandler SEARCH_HANDLER = new SearchHandler();
     private final ObservableMap<String, Decoration<?>> decorations = FXCollections.observableHashMap();
     private final ObservableMap<String, SettingCodec<?, ?, ?>> codecs = FXCollections.observableHashMap();
     @Getter
@@ -143,22 +143,36 @@ public class SettingsHandler {
         view.setShowRoot(false);
 
         for (Setting<?> setting : settings.getSettings().values()) {
-            String[] parts = setting.getTreeId().split("[.:]");
-            String finalPart = parts[parts.length - 1];
+            String[] parts = setting.getTreeId().split("[:.]");
+            String settingPart = parts[parts.length - 1];
+
+            var currNode = view.getRoot();
+            int index = 0;
 
             for (String part : parts) {
-                if (part.equals(finalPart)) {
+                index++;
+                if (part.equals(settingPart)) {
                     break;
                 }
 
-                Optional<TreeItem<Node>> stringPart = view.getRoot().getChildren().stream()
-                        .filter(a -> a.getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, parts.length - 2), ".")))
+                //If it is the last folder
+                int finalIndex = index;
+                if (index == (parts.length - 1)) {
+                    break;
+                }
+
+                //Check if the folder already exists
+                var folder = currNode.getChildren().stream().filter(i -> i.getValue() instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(parts, ".", 0, finalIndex)))
                         .findFirst();
 
-                if (stringPart.isEmpty()) {
-                    TreeItem<Node> item = new TreeItem<>(new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(parts, parts.length - 2), ".")));
-                    item.setExpanded(true);
-                    view.getRoot().getChildren().add(item);
+                if (folder.isEmpty()) {
+                    //If it does not exist, create it
+                    var newFolder = new TreeItem<Node>(new LocalizedLabel("settings." + StringUtils.join(parts, ".", 0, index)));
+                    currNode.getChildren().add(newFolder);
+                    currNode = newFolder;
+                } else {
+                    //If it exists, set the current node to the folder
+                    currNode = folder.get();
                 }
             }
         }
@@ -173,12 +187,12 @@ public class SettingsHandler {
      */
     public VBox createSettingsSection(String parent) {
         var vbox = new VBox();
+        Map<String, VBox> folderBoxes = new HashMap<>();
         if (parent == null) {
             vbox.getChildren().add(new Label("Wow this is such a cool IDE am I right??"));
             return vbox;
         }
         parent = parent.toLowerCase();
-
 
         for (Setting<?> setting : settings.getSettings().values()) {
             String[] parts = setting.getTreeId().split("[.:]");
@@ -186,28 +200,20 @@ public class SettingsHandler {
             String parentId = parts[parts.length - 3];
 
             if (parentId.equals(parent)) {
-                Optional<Node> stringPart = vbox.getChildren().stream()
-                        .filter(a -> a instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(parts, parts.length - 1), ".")))
-                        .findFirst();
+                String innerFolder = String.join(".", Arrays.copyOfRange(parts, 0, parts.length - 1));
 
-                if (stringPart.isEmpty()) {
-                    var label = new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(parts, parts.length - 1), "."));
-
-                    var codec = getCodec(setting.getCodecId());
-                    Node node = codec.createNode().apply(setting.getValue());
-
-                    node.addEventHandler(ActionEvent.ACTION, e -> setting.setValue(codec.nodeToValue().apply(node)));
-                    node.addEventHandler(ActionEvent.ACTION, e -> setting.getApplySetting().accept(null));
-
-                    if (setting.getEventHandlers() != null)
-                        setting.getEventHandlers().forEach(node::addEventHandler);
-
-                    if (searchHandler.nodeMatches(label)) {
-                        label = searchHandler.styleNode(label);
-                    }
-
-                    vbox.getChildren().addAll(label, node);
+                if (!folderBoxes.containsKey(innerFolder)) {
+                    var folderBox = new VBox();
+                    folderBoxes.put(innerFolder, folderBox);
                 }
+
+                var folderBox = folderBoxes.get(innerFolder);
+                var settingNode = getCodec(setting.getCodecId()).createNode().apply(setting.getDefaultValue());
+                var settingLabel = new LocalizedLabel("settings." + setting.getTreeId().replace(":", "."));
+
+                settingLabel.setStyle("-fx-font-size: 6px;");
+
+                folderBox.getChildren().addAll(settingNode, settingLabel);
             }
         }
 
@@ -217,18 +223,32 @@ public class SettingsHandler {
             String parentId = parts[parts.length - 3];
 
             if (parentId.equals(parent)) {
-                Optional<Node> stringPart = vbox.getChildren().stream()
-                        .filter(a -> a instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(decoration.id().split("[.:]"), decoration.id().split("[.:]").length - 1), ".")))
-                        .findFirst();
-                if (stringPart.isPresent()) {
-                    var node = decoration.nodeCreator().get();
-                    vbox.getChildren().add(node);
-                } else {
-                    var label = new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(decoration.id().split("[.:]"), decoration.id().split("[.:]").length - 1), "."));
-                    var node = decoration.nodeCreator().get();
-                    vbox.getChildren().addAll( label, node);
+                String innerFolder = String.join(".", Arrays.copyOfRange(parts, 0, parts.length - 1));
+
+                if (!folderBoxes.containsKey(innerFolder)) {
+                    var folderBox = new VBox();
+                    folderBoxes.put(innerFolder, folderBox);
                 }
+
+                var folderBox = folderBoxes.get(innerFolder);
+                var decorationNode = decoration.nodeCreator().get();
+                var decorationLabel = new LocalizedLabel("settings." + decoration.treeId().replace(":", "."));
+                decorationLabel.setStyle("-fx-font-size: 12px;");
+
+                folderBox.getChildren().addAll(decorationNode, decorationLabel);
             }
+        }
+
+        for (Map.Entry<String, VBox> entry : folderBoxes.entrySet()) {
+            var sepBox = new RRHBox();
+            var sectionLabel = new LocalizedLabel("settings." + entry.getKey());
+            sectionLabel.setStyle("-fx-font-size: 24px;");
+
+            var sep = new Separator();
+            sep.setMaxWidth(300);
+
+            sepBox.getChildren().addAll(sectionLabel,sep);
+            vbox.getChildren().addAll(sepBox, entry.getValue());
         }
 
         return vbox;
@@ -285,6 +305,21 @@ public class SettingsHandler {
 
                 )
         );
+
+        registerCodec(
+                new SettingCodec<String, TextField, JsonElement>(
+                        "railroad:theme_repo",
+                        TextField::getText,
+                        (t, n) -> n.setText(t),
+                        JsonElement::getAsString,
+                        JsonPrimitive::new,
+                        t -> {
+                            var tf = new TextField();
+                            tf.setText(t);
+                            return tf;
+                        }
+                )
+        );
     }
 
     private void registerDefaultSettings() {
@@ -313,6 +348,17 @@ public class SettingsHandler {
                         "railroad:general.project_folder",
                         "railroad:project_folder",
                         System.getProperty("user.home"),
+                        e -> {},
+                        null
+                )
+        );
+
+        registerSetting(
+                new Setting<>(
+                        "railroad:theme_repo",
+                        "railroad:appearance.themes.download_repo",
+                        "railroad:theme_repo",
+                        "https://github.com/",
                         e -> {},
                         null
                 )

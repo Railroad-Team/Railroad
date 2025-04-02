@@ -1,22 +1,12 @@
 package io.github.railroad.settings.ui;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.localization.ui.LocalizedButton;
 import io.github.railroad.localization.ui.LocalizedLabel;
-import io.github.railroad.settings.handler.SearchHandler;
-import io.github.railroad.ui.defaults.RRHBox;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TreeItem;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Paint;
 import javafx.stage.Stage;
 
 public class TreeViewSettings {
@@ -50,9 +40,9 @@ public class TreeViewSettings {
         searchBar.setPromptText("Search settings");
         searchBar.textProperty().addListener(event -> {
             var searchText = searchBar.getText();
-            Railroad.SETTINGS_HANDLER.searchHandler.setQuery(searchText);
+            Railroad.SETTINGS_HANDLER.SEARCH_HANDLER.setQuery(searchText);
             if (!searchText.isEmpty()) {
-                var res = Railroad.SETTINGS_HANDLER.searchHandler.mostRelevantFolder(searchText);
+                var res = Railroad.SETTINGS_HANDLER.SEARCH_HANDLER.mostRelevantFolder(searchText);
                 //If currently selected folder is the res
 //                if (tree.getSelectionModel().getSelectedItem().getValue().equals(res)) {
 //                    //Refresh right side pane

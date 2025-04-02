@@ -16,10 +16,18 @@ railroad.home.welcome.newproject=New Project
 railroad.home.welcome.importproject=Import Project
 railroad.home.welcome.settings=Settings
 
+#Settings
 settings.railroad=Railroad
 settings.railroad.appearance=Appearance
 settings.railroad.appearance.language=Language
 settings.railroad.appearance.themes=Themes
+
+settings.railroad.general=General
+settings.railroad.general.project_folder=Project Directory
+settings.railroad.appearance.themes.download_repo=Custom Themes Repository URL
+settings.railroad.appearance.themes.select=Select Theme
+settings.railroad.appearance.language.language=Select Language
+settings.railroad.appearance.themes.download=Download Themes
 
 railroad.home.welcome.sort.none=None
 railroad.home.welcome.sort.name=Name
@@ -34,8 +42,6 @@ railroad.home.settings.back=Back
 railroad.home.settings.general.github=Github Connection:
 railroad.home.settings.general.github.connect=Connect
 railroad.home.settings.general.github.disconnect=Disconnect
-
-railroad.home.settings.general.language=Language:
 
 railroad.home.settings.appearance.theme=Select a Theme
 railroad.home.settings.appearance.downloadtheme=Download themes
