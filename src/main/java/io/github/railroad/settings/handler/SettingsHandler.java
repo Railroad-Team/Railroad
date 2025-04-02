@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 
 public class SettingsHandler {
+    public final SearchHandler searchHandler = new SearchHandler();
     private final ObservableMap<String, Decoration<?>> decorations = FXCollections.observableHashMap();
     private final ObservableMap<String, SettingCodec<?, ?, ?>> codecs = FXCollections.observableHashMap();
     @Getter
@@ -165,7 +166,7 @@ public class SettingsHandler {
         return view;
     }
 
-    /***
+    /**
      * Creates the pane for the setting folder and adds the relevant settings and decorations to it.
      * @param parent parent folder id (just one part e.g appearance)
      * @return {@link VBox} The pane with the settings and decorations
@@ -191,7 +192,6 @@ public class SettingsHandler {
 
                 if (stringPart.isEmpty()) {
                     var label = new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(parts, parts.length - 1), "."));
-                    vbox.getChildren().add(label);
 
                     var codec = getCodec(setting.getCodecId());
                     Node node = codec.createNode().apply(setting.getValue());
@@ -202,23 +202,32 @@ public class SettingsHandler {
                     if (setting.getEventHandlers() != null)
                         setting.getEventHandlers().forEach(node::addEventHandler);
 
-                    vbox.getChildren().add(node);
+                    if (searchHandler.nodeMatches(label)) {
+                        label = searchHandler.styleNode(label);
+                    }
+
+                    vbox.getChildren().addAll(label, node);
                 }
             }
         }
 
         for (Decoration<?> decoration : decorations.values()) {
-            Optional<Node> stringPart = vbox.getChildren().stream()
-                    .filter(a -> a instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(decoration.id().split("[.:]"), decoration.id().split("[.:]").length - 1), ".")))
-                    .findFirst();
-            if (stringPart.isPresent()) {
-                var node = decoration.nodeCreator().get();
-                vbox.getChildren().add(node);
-            } else {
-                var label = new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(decoration.id().split("[.:]"), decoration.id().split("[.:]").length - 1), "."));
-                vbox.getChildren().add(label);
-                var node = decoration.nodeCreator().get();
-                vbox.getChildren().add(node);
+            String[] parts = decoration.treeId().split("[.:]");
+            //Get the last folder present
+            String parentId = parts[parts.length - 3];
+
+            if (parentId.equals(parent)) {
+                Optional<Node> stringPart = vbox.getChildren().stream()
+                        .filter(a -> a instanceof LocalizedLabel l && l.getKey().equals("settings." + StringUtils.join(Arrays.copyOf(decoration.id().split("[.:]"), decoration.id().split("[.:]").length - 1), ".")))
+                        .findFirst();
+                if (stringPart.isPresent()) {
+                    var node = decoration.nodeCreator().get();
+                    vbox.getChildren().add(node);
+                } else {
+                    var label = new LocalizedLabel("settings." + StringUtils.join(Arrays.copyOf(decoration.id().split("[.:]"), decoration.id().split("[.:]").length - 1), "."));
+                    var node = decoration.nodeCreator().get();
+                    vbox.getChildren().addAll( label, node);
+                }
             }
         }
 
@@ -260,6 +269,22 @@ public class SettingsHandler {
                             return combo;
                         })
         );
+
+        registerCodec(
+                new SettingCodec<String, TextField, JsonElement>(
+                        "railroad:project_folder",
+                        TextField::getText,
+                        (t, n) -> n.setText(t),
+                        JsonElement::getAsString,
+                        JsonPrimitive::new,
+                        t -> {
+                            var tf = new TextField();
+                            tf.setText(t);
+                            return tf;
+                        }
+
+                )
+        );
     }
 
     private void registerDefaultSettings() {
@@ -281,10 +306,21 @@ public class SettingsHandler {
                         e -> Railroad.updateTheme(Railroad.SETTINGS_HANDLER.getSetting("railroad:theme").getValue().toString()),
                         null
                 ));
+
+        registerSetting(
+                new Setting<>(
+                        "railroad:project_folder",
+                        "railroad:general.project_folder",
+                        "railroad:project_folder",
+                        System.getProperty("user.home"),
+                        e -> {},
+                        null
+                )
+        );
     }
 
     private void registerDefaultDecorations() {
-        registerDecoration(new Decoration<>("railroad:appearance.themes.download", "railroad:theme.download", () -> {
+        registerDecoration(new Decoration<>("railroad:appearance.themes.download", "railroad:appearance.themes.download", () -> {
             var button = new LocalizedButton("railroad.home.settings.appearance.downloadtheme");
             button.setOnAction(e -> new ThemeDownloadPane());
             return button;

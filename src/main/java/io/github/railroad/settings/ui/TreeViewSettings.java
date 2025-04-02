@@ -3,12 +3,15 @@ package io.github.railroad.settings.ui;
 import io.github.railroad.Railroad;
 import io.github.railroad.localization.ui.LocalizedButton;
 import io.github.railroad.localization.ui.LocalizedLabel;
+import io.github.railroad.settings.handler.SearchHandler;
 import io.github.railroad.ui.defaults.RRHBox;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TreeItem;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.HBox;
@@ -24,6 +27,8 @@ public class TreeViewSettings {
         stage = new Stage();
 
         stage.setTitle("Settings");
+
+        var vbox = new VBox();
 
         var hbox = new HBox();
 
@@ -41,7 +46,39 @@ public class TreeViewSettings {
 
         hbox.getChildren().addAll(tree, treContent);
 
-        var scene = new Scene(hbox, 600, 700);
+        var searchBar = new TextField();
+        searchBar.setPromptText("Search settings");
+        searchBar.textProperty().addListener(event -> {
+            var searchText = searchBar.getText();
+            Railroad.SETTINGS_HANDLER.searchHandler.setQuery(searchText);
+            if (!searchText.isEmpty()) {
+                var res = Railroad.SETTINGS_HANDLER.searchHandler.mostRelevantFolder(searchText);
+                //If currently selected folder is the res
+//                if (tree.getSelectionModel().getSelectedItem().getValue().equals(res)) {
+//                    //Refresh right side pane
+//                    //TODO refresh right side pane properly
+//                    tree.getSelectionModel().clearSelection();
+//                    tree.getSelectionModel().select(tree.getSelectionModel().getSelectedIndex());
+//                }
+
+                if (res != null) {
+                    var node = tree.getRoot().getChildren().stream()
+                            .filter(item -> ((LocalizedLabel) item.getValue()).getText().equalsIgnoreCase(res))
+                            .findFirst()
+                            .orElse(null);
+                    if (node != null) {
+                        //Select the folder node, which in turn updates the right side pane/vbox
+                        tree.getSelectionModel().select(tree.getRoot().getChildren().indexOf(node));
+                    } else {
+                        Railroad.LOGGER.warn("Folder TreeNode not found when searching for {} folder", res);
+                    }
+                }
+            }
+        });
+
+        vbox.getChildren().addAll(searchBar, hbox);
+
+        var scene = new Scene(vbox, 600, 700);
 
         Railroad.handleStyles(scene);
 
