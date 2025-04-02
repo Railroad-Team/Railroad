@@ -217,14 +217,15 @@ public class SettingsHandler {
                 var folderBox = folderBoxes.get(innerFolder);
                 var settingNode = getCodec(setting.getCodecId()).createNode().apply(setting.getDefaultValue());
 
-                var settingLabel = new LocalizedLabel(setting.getTreeId().replace(":", "."));
+                var settingTitleLabel = new LocalizedLabel(setting.getTreeId().replace(":", ".") + ".title");
+                var settingDescLabel = new LocalizedLabel(setting.getTreeId().replace(":", ".") + ".description");
                 //TODO jank
-                if (!settingLabel.getText().isBlank()) {
-                    settingLabel.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
-                    folderBox.getChildren().addAll(settingNode, settingLabel);
-                } else {
-                    folderBox.getChildren().add(settingNode);
-                }
+                //TODO if l18n.localized = "" don't add it to settings map for search and don't add to description (DESC ONLY)
+                //TODO remove test settings
+                //TODO add title and descr to decor? maybe not? if so allow nullable for each due to warnings being a use case for decor
+                settingTitleLabel.setStyle("-fx-font-size: 16px;");
+                settingDescLabel.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
+                folderBox.getChildren().addAll(settingTitleLabel, settingNode, settingDescLabel);
             }
         }
 

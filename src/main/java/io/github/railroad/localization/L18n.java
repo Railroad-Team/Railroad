@@ -3,7 +3,6 @@ package io.github.railroad.localization;
 import io.github.railroad.Railroad;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import lombok.Getter;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,7 +13,6 @@ import static io.github.railroad.Railroad.LOGGER;
 import static io.github.railroad.Railroad.SETTINGS_HANDLER;
 
 public class L18n {
-    @Getter
     private static final Properties LANG_CACHE = new Properties();
     private static final ObjectProperty<Language> CURRENT_LANG = new SimpleObjectProperty<>();
 

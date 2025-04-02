@@ -69,7 +69,7 @@ public class TreeViewSettings {
 
                 if (res != null) {
                     String[] parts = res.split("[.]");
-                    String lastPart = parts[parts.length - 1];
+                    String lastPart = parts[parts.length - 2];
                     var currentPart = tree.getRoot();
                     TreeItem lastPartNode = null;
 
@@ -94,6 +94,7 @@ public class TreeViewSettings {
                     }
 
                     tree.getSelectionModel().clearSelection();
+                    //TODO fix typing
                     tree.getSelectionModel().select(lastPartNode);
                 }
             }

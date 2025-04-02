@@ -19,9 +19,10 @@ public class SearchHandler {
     //TODO fuzzy search
 
     public SearchHandler() {
-        L18n.getLANG_CACHE().forEach((k, v) -> {
-            settings.put(v.toString().toLowerCase(), (String) k);
-        });
+        for (Setting setting : Railroad.SETTINGS_HANDLER.getSettings().getSettings().values()) {
+            var q = L18n.localize(setting.getTreeId().replace(":", "."));
+            settings.put(q, setting.getTreeId().replace(":", "."));
+        }
 
         Railroad.LOGGER.debug("Loaded {} settings", settings);
     }
@@ -36,14 +37,16 @@ public class SearchHandler {
 
     public String mostRelevantFolder(String query) {
         Railroad.LOGGER.debug("Searching for most relevant folder for {}", query);
-        if (settings.get(query.toLowerCase()) != null) {
-            var parts = settings.get(query.toLowerCase()).split("[.]");
-
-            Railroad.LOGGER.debug("Found {}", String.join(".", parts));
-            return String.join(".", Arrays.copyOfRange(parts, 0, parts.length - 1));
-        } else {
-            return null;
+        for (String key : settings.keySet()) {
+            //TODO turn into stream
+            if (key.toLowerCase().contains(query.toLowerCase())) {
+                var parts = settings.get(key).split("[.]");
+                Railroad.LOGGER.debug("Found {} for {}", key, query);
+                return String.join(".", Arrays.copyOfRange(parts, 0, parts.length - 1));
+            }
         }
+
+        return null;
     }
 
     public <T extends Node> boolean nodeMatches(T node) {
