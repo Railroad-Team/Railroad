@@ -4,12 +4,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
+import io.github.palexdev.materialfx.factories.InsetsFactory;
 import io.github.railroad.Railroad;
 import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.localization.L18n;
 import io.github.railroad.localization.Language;
 import io.github.railroad.localization.ui.LocalizedButton;
 import io.github.railroad.localization.ui.LocalizedLabel;
+import io.github.railroad.settings.ui.TreeViewSettings;
 import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.settings.ui.themes.ThemeDownloadPane;
 import javafx.collections.FXCollections;
@@ -30,6 +32,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class SettingsHandler {
     private final ObservableMap<String, Decoration<?>> decorations = FXCollections.observableHashMap();
@@ -140,8 +143,8 @@ public class SettingsHandler {
      * @return {@link TreeView} The tree of folders
      */
 
-    public TreeView<?> createCategoryTree() {
-        TreeView<Node> view = new TreeView<>(new TreeItem<>(null));
+    public TreeView<LocalizedLabel> createCategoryTree() {
+        TreeView<LocalizedLabel> view = new TreeView<>(new TreeItem<>(null));
         view.setShowRoot(false);
 
         for (Setting<?> setting : settings.getSettings().values()) {
@@ -169,7 +172,7 @@ public class SettingsHandler {
 
                 if (folder.isEmpty()) {
                     //If it does not exist, create it
-                    var newFolder = new TreeItem<Node>(new LocalizedLabel( StringUtils.join(parts, ".", 0, index)));
+                    TreeItem<LocalizedLabel> newFolder = new TreeItem<>(new LocalizedLabel( StringUtils.join(parts, ".", 0, index)));
                     currNode.getChildren().add(newFolder);
                     currNode = newFolder;
                 } else {
@@ -212,20 +215,28 @@ public class SettingsHandler {
                 if (!folderBoxes.containsKey(innerFolder)) {
                     var folderBox = new VBox();
                     folderBoxes.put(innerFolder, folderBox);
+                    VBox.setMargin(folderBox, InsetsFactory.of(5, 10, 5, 10));
                 }
 
                 var folderBox = folderBoxes.get(innerFolder);
+                var settingBundle = new VBox();
+                VBox.setMargin(settingBundle, InsetsFactory.all(5));
                 var settingNode = getCodec(setting.getCodecId()).createNode().apply(setting.getDefaultValue());
-
                 var settingTitleLabel = new LocalizedLabel(setting.getTreeId().replace(":", ".") + ".title");
-                var settingDescLabel = new LocalizedLabel(setting.getTreeId().replace(":", ".") + ".description");
-                //TODO jank
-                //TODO if l18n.localized = "" don't add it to settings map for search and don't add to description (DESC ONLY)
-                //TODO remove test settings
-                //TODO add title and descr to decor? maybe not? if so allow nullable for each due to warnings being a use case for decor
                 settingTitleLabel.setStyle("-fx-font-size: 16px;");
-                settingDescLabel.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
-                folderBox.getChildren().addAll(settingTitleLabel, settingNode, settingDescLabel);
+
+                VBox.setMargin(settingTitleLabel, InsetsFactory.bottom(5));
+
+                settingBundle.getChildren().addAll(TreeViewSettings.SEARCH_HANDLER.styleNodes(settingTitleLabel, settingNode));
+
+                var descKey = setting.getTreeId().replace(":", ".") + ".description";
+                if (L18n.isKeyValid(descKey)) {
+                    var settingDescLabel = new LocalizedLabel(descKey);
+                    settingDescLabel.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
+                    settingBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(settingDescLabel));
+                }
+
+                folderBox.getChildren().add(settingBundle);
             }
         }
 
@@ -240,19 +251,30 @@ public class SettingsHandler {
                 if (!folderBoxes.containsKey(innerFolder)) {
                     var folderBox = new VBox();
                     folderBoxes.put(innerFolder, folderBox);
+                    VBox.setMargin(folderBox, InsetsFactory.of(5, 10, 5, 10));
                 }
 
                 var folderBox = folderBoxes.get(innerFolder);
+                var decorBundle = new VBox();
+                VBox.setMargin(decorBundle, InsetsFactory.all(5));
                 var decorationNode = decoration.nodeCreator().get();
 
-                var decorationLabel = new LocalizedLabel( decoration.treeId().replace(":", "."));
+                var decorationLabelKey = decoration.treeId().replace(":", ".") + ".title";
+                var decorationDescKey =  decoration.treeId().replace(":", ".") + ".description";
 
-                if (decorationLabel.getText().isBlank()) {
-                    folderBox.getChildren().add(decorationNode);
-                } else {
-                    decorationLabel.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
-                    folderBox.getChildren().addAll(decorationNode, decorationLabel);
+                if (L18n.isKeyValid(decorationLabelKey)) {
+                    var decorationLabel = new LocalizedLabel(decorationLabelKey);
+                    decorationLabel.setStyle("-fx-font-size: 16px;");
+                    decorBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(decorationLabel));
                 }
+                decorBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(decorationNode));
+                if (L18n.isKeyValid(decorationDescKey)) {
+                    var decorationDesc = new LocalizedLabel(decorationDescKey);
+                    decorationDesc.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
+                    decorBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(decorationDesc));
+                }
+
+                folderBox.getChildren().add(decorBundle);
             }
         }
 
@@ -370,7 +392,7 @@ public class SettingsHandler {
                         "railroad:project_folder",
                         "railroad:general.project_folder",
                         "railroad:project_folder",
-                        System.getProperty("user.home"),
+                        System.getProperty("user.home") + "\\RailroadProjects",
                         e -> {},
                         null
                 )

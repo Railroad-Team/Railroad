@@ -3,14 +3,13 @@ package io.github.railroad.settings.handler;
 import io.github.railroad.Railroad;
 import io.github.railroad.localization.L18n;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
+import javafx.scene.control.Labeled;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SearchHandler {
+    private final String foundStyle = "-fx-background-color: #FF0000;";
     //A map of setting string e.g Theme, to the path e.g railroad.appearance.theme
     private final Map<String, String> settings = new HashMap<>();
 
@@ -20,8 +19,17 @@ public class SearchHandler {
 
     public SearchHandler() {
         for (Setting setting : Railroad.SETTINGS_HANDLER.getSettings().getSettings().values()) {
-            var q = L18n.localize(setting.getTreeId().replace(":", "."));
-            settings.put(q, setting.getTreeId().replace(":", "."));
+            var baseKey = setting.getTreeId().replace(":", ".");
+            var titleKey = baseKey + ".title";
+            var descKey = baseKey + ".description";
+
+            if (L18n.isKeyValid(titleKey)) {
+                settings.put(L18n.localize(titleKey), baseKey);
+            }
+
+            if (L18n.isKeyValid(descKey)) {
+                settings.put(L18n.localize(descKey), baseKey);
+            }
         }
 
         Railroad.LOGGER.debug("Loaded {} settings", settings);
@@ -36,12 +44,9 @@ public class SearchHandler {
     }
 
     public String mostRelevantFolder(String query) {
-        Railroad.LOGGER.debug("Searching for most relevant folder for {}", query);
         for (String key : settings.keySet()) {
-            //TODO turn into stream
             if (key.toLowerCase().contains(query.toLowerCase())) {
                 var parts = settings.get(key).split("[.]");
-                Railroad.LOGGER.debug("Found {} for {}", key, query);
                 return String.join(".", Arrays.copyOfRange(parts, 0, parts.length - 1));
             }
         }
@@ -49,26 +54,36 @@ public class SearchHandler {
         return null;
     }
 
-    public <T extends Node> boolean nodeMatches(T node) {
+    public <T extends Node> T styleNode(T n) {
         if (getQuery().isEmpty()) {
-            return false;
+            return n;
         }
-
-        if (node instanceof Label) {
-            if (((Label) node).getText().toLowerCase().contains(query.get().toLowerCase())) {
-                Railroad.LOGGER.info("Found label node: {}", node);
-                return true;
+        //TODO handle other types of node, and vbox/hbox ?
+        if (n instanceof Labeled) {
+            if (((Labeled) n).getText().toLowerCase().contains(query.get().toLowerCase())) {
+                n.setStyle(n.getStyle() + foundStyle);
+                //TODO better way for this? Maybe a style class or something
+                Railroad.LOGGER.debug("Text {} matches query {}", ((Labeled) n).getText(), query);
+            } else {
+                Railroad.LOGGER.debug("Text {} does not match query {}", ((Labeled) n).getText(), query);
+                n.setStyle(n.getStyle().replace(foundStyle, ""));
             }
         }
 
-        return false;
+        return n;
     }
 
-    public <T extends Node> T styleNode(T node) {
-        if (node instanceof Label) {
-            node.setStyle("-fx-text-fill: #FF0000;");
+    public <T extends Node> List<T> styleNodes(T... node) {
+        if (getQuery().isEmpty()) {
+            return Arrays.stream(node).toList();
         }
 
-        return node;
+        List<T> result = new ArrayList<>();
+
+        for (T n : node) {
+            result.add(styleNode(n));
+        }
+
+        return result;
     }
 }

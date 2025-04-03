@@ -23,14 +23,12 @@ railroad.appearance.language=Language
 railroad.appearance.themes=Themes
 
 railroad.general=General
-railroad.general.project_folder=Default Project Folder
+railroad.general.project_folder.title=Default Project Folder
 railroad.appearance.themes.download_repo.title=Custom Repository
 railroad.appearance.themes.download_repo.description=Specify a GitHub repository URL to download themes from.
 railroad.appearance.themes.select.title=Theme
 railroad.appearance.themes.select.description=Select a theme from our superb collection!
 railroad.appearance.language.language.title=Language
-railroad.appearance.language.language.description=Select a language for the application.
-railroad.appearance.themes.download=
 
 railroad.home.welcome.sort.none=None
 railroad.home.welcome.sort.name=Name

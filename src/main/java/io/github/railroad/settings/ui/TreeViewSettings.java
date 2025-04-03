@@ -7,6 +7,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -14,10 +15,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class TreeViewSettings {
-    public final SearchHandler SEARCH_HANDLER = new SearchHandler();
-    private Stage stage;
+    public static final SearchHandler SEARCH_HANDLER = new SearchHandler();
+    private final Stage stage;
 
-    //TODO make it, well, not look like this - fix button positioning, treeview border etc
     public TreeViewSettings() {
         stage = new Stage();
 
@@ -27,7 +27,7 @@ public class TreeViewSettings {
 
         var hbox = new HBox();
 
-        var tree = Railroad.SETTINGS_HANDLER.createCategoryTree();
+        TreeView<LocalizedLabel> tree = Railroad.SETTINGS_HANDLER.createCategoryTree();
         var treContent = new ScrollPane(Railroad.SETTINGS_HANDLER.createSettingsSection(null));
 
         tree.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
@@ -59,25 +59,16 @@ public class TreeViewSettings {
             SEARCH_HANDLER.setQuery(searchText);
             if (!searchText.isEmpty()) {
                 var res = SEARCH_HANDLER.mostRelevantFolder(searchText);
-                //If currently selected folder is the res
-//                if (tree.getSelectionModel().getSelectedItem().getValue().equals(res)) {
-//                    //Refresh right side pane
-//                    //TODO refresh right side pane properly
-//                    tree.getSelectionModel().clearSelection();
-//                    tree.getSelectionModel().select(tree.getSelectionModel().getSelectedIndex());
-//                }
 
                 if (res != null) {
                     String[] parts = res.split("[.]");
                     String lastPart = parts[parts.length - 2];
                     var currentPart = tree.getRoot();
-                    TreeItem lastPartNode = null;
-
-                    Railroad.LOGGER.debug("Last part {}, parts: {}", lastPart, parts);
+                    TreeItem<LocalizedLabel> lastPartNode = null;
 
                     for (String part : parts) {
                         var node = currentPart.getChildren().stream()
-                                .filter(item -> ((LocalizedLabel) item.getValue()).getText().equalsIgnoreCase(part))
+                                .filter(item -> item.getValue().getText().equalsIgnoreCase(part))
                                 .findFirst()
                                 .orElse(null);
                         if (node != null) {
@@ -94,7 +85,6 @@ public class TreeViewSettings {
                     }
 
                     tree.getSelectionModel().clearSelection();
-                    //TODO fix typing
                     tree.getSelectionModel().select(lastPartNode);
                 }
             }

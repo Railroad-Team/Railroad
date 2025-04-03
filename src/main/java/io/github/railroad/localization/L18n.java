@@ -57,4 +57,8 @@ public class L18n {
 
         return LANG_CACHE.get(key).toString();
     }
+
+    public static boolean isKeyValid(String key) {
+        return LANG_CACHE.get(key) != null && LANG_CACHE.get(key) != "";
+    }
 }

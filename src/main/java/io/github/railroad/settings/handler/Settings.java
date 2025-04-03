@@ -73,7 +73,7 @@ public class Settings implements JsonSerializable<JsonObject> {
      * If it is not the last part, it will set current to the part.
      *
      * <p>
-     * TODO rewrite this method, possibly?
+     * TODO rewrite this method, possibly? - I don't know why I wrote this comment, but I did.
      * </p>
      *
      * @param json The json object to convert to settings.
