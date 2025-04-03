@@ -1,8 +1,10 @@
 package io.github.railroad.settings.ui;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.localization.ui.LocalizedButton;
 import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.settings.handler.SearchHandler;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
@@ -34,7 +36,9 @@ public class TreeViewSettings {
             if (newValue != null) {
                 var selected = newValue.getValue();
                 if (selected != null) {
-                    treContent.setContent(Railroad.SETTINGS_HANDLER.createSettingsSection(((LocalizedLabel) selected).getText()));
+                    var k = selected.getKey();
+                    var parts = k.split("[.]");
+                    treContent.setContent(Railroad.SETTINGS_HANDLER.createSettingsSection(parts[parts.length - 1]));
                 }
             }
         });
@@ -90,7 +94,11 @@ public class TreeViewSettings {
             }
         });
 
-        vbox.getChildren().addAll(searchBar, hbox);
+        var apply = new LocalizedButton("railroad.generic.apply");
+        apply.setAlignment(Pos.BOTTOM_RIGHT);
+        apply.setOnAction(event -> Railroad.SETTINGS_HANDLER.saveSettingsFile());
+
+        vbox.getChildren().addAll(searchBar, hbox, apply);
 
         var scene = new Scene(vbox, 600, 700);
 

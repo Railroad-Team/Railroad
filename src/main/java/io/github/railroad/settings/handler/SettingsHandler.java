@@ -16,6 +16,7 @@ import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.settings.ui.themes.ThemeDownloadPane;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
+import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -221,7 +222,17 @@ public class SettingsHandler {
                 var folderBox = folderBoxes.get(innerFolder);
                 var settingBundle = new VBox();
                 VBox.setMargin(settingBundle, InsetsFactory.all(5));
-                var settingNode = getCodec(setting.getCodecId()).createNode().apply(setting.getDefaultValue());
+                var settingNode = getCodec(setting.getCodecId()).createNode().apply(setting.getValue());
+                settingNode.addEventHandler(
+                        ActionEvent.ACTION, e -> {
+                            setting.setValue(getCodec(setting.getCodecId()).nodeToValue().apply(settingNode));
+                        });
+                settingNode.addEventHandler(ActionEvent.ACTION, e -> {
+                    setting.getApplySetting().accept(null);
+                });
+                if (setting.getEventHandlers() != null)
+                    setting.getEventHandlers().forEach(settingNode::addEventHandler);
+
                 var settingTitleLabel = new LocalizedLabel(setting.getTreeId().replace(":", ".") + ".title");
                 settingTitleLabel.setStyle("-fx-font-size: 16px;");
 
@@ -257,6 +268,7 @@ public class SettingsHandler {
                 var folderBox = folderBoxes.get(innerFolder);
                 var decorBundle = new VBox();
                 VBox.setMargin(decorBundle, InsetsFactory.all(5));
+
                 var decorationNode = decoration.nodeCreator().get();
 
                 var decorationLabelKey = decoration.treeId().replace(":", ".") + ".title";
@@ -336,8 +348,7 @@ public class SettingsHandler {
         );
 
         registerCodec(
-                new SettingCodec<String, TextField, JsonElement>(
-                        "railroad:project_folder",
+                new SettingCodec<String, TextField, JsonElement>("railroad:project_folder",
                         TextField::getText,
                         (t, n) -> n.setText(t),
                         JsonElement::getAsString,
@@ -352,8 +363,7 @@ public class SettingsHandler {
         );
 
         registerCodec(
-                new SettingCodec<String, TextField, JsonElement>(
-                        "railroad:theme_repo",
+                new SettingCodec<String, TextField, JsonElement>("railroad:theme_repo",
                         TextField::getText,
                         (t, n) -> n.setText(t),
                         JsonElement::getAsString,
