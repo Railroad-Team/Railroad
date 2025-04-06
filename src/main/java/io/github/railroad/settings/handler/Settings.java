@@ -74,6 +74,7 @@ public class Settings implements JsonSerializable<JsonObject> {
      *
      * <p>
      * TODO rewrite this method, possibly? - I don't know why I wrote this comment, but I did.
+     * (Probably because it's kinda uh, not the best way to do it?)
      * </p>
      *
      * @param json The json object to convert to settings.

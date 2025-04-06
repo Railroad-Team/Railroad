@@ -2,8 +2,10 @@ package io.github.railroad.settings.handler;
 
 import io.github.railroad.Railroad;
 import io.github.railroad.localization.L18n;
+import io.github.railroad.utility.FuzzySearch;
 import javafx.scene.Node;
 import javafx.scene.control.Labeled;
+import javafx.scene.layout.Pane;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -12,10 +14,9 @@ public class SearchHandler {
     private final String foundStyle = "-fx-background-color: #FF0000;";
     //A map of setting string e.g Theme, to the path e.g railroad.appearance.theme
     private final Map<String, String> settings = new HashMap<>();
+    private final FuzzySearch<Map<String, String>, String> fuzzySearch;
 
     private final AtomicReference<String> query = new AtomicReference<>("");
-
-    //TODO fuzzy search
 
     public SearchHandler() {
         for (Setting setting : Railroad.SETTINGS_HANDLER.getSettings().getSettings().values()) {
@@ -33,6 +34,7 @@ public class SearchHandler {
         }
 
         Railroad.LOGGER.debug("Loaded {} settings", settings);
+        fuzzySearch = new FuzzySearch<>(settings, (s) -> s.keySet().stream().toList(), settings::get);
     }
 
     public void setQuery(String input) {
@@ -44,28 +46,30 @@ public class SearchHandler {
     }
 
     public String mostRelevantFolder(String query) {
-        for (String key : settings.keySet()) {
-            if (key.toLowerCase().contains(query.toLowerCase())) {
-                var parts = settings.get(key).split("[.]");
-                return String.join(".", Arrays.copyOfRange(parts, 0, parts.length - 1));
-            }
+        var res = fuzzySearch.search(query);
+
+        if (res == null) {
+            return null;
         }
 
-        return null;
+        var resParts = res.split("[:.]");
+        return String.join(".", Arrays.copyOfRange(resParts, 0, resParts.length - 1));
     }
 
     public <T extends Node> T styleNode(T n) {
         if (getQuery().isEmpty()) {
             return n;
         }
-        //TODO handle other types of node, and vbox/hbox ?
+        //IMPORTANT: Only supports a singular node per setting (so doesn't work for VBOX or HBOX)
+        if (n instanceof Pane) {
+            throw new IllegalArgumentException("Settings node cannot be a pane");
+        }
         if (n instanceof Labeled) {
-            if (((Labeled) n).getText().toLowerCase().contains(query.get().toLowerCase())) {
-                n.setStyle(n.getStyle() + foundStyle);
+            var sr = fuzzySearch.isSimilar(getQuery(), ((Labeled) n).getText());
+            if (sr) {
                 //TODO better way for this? Maybe a style class or something
-                Railroad.LOGGER.debug("Text {} matches query {}", ((Labeled) n).getText(), query);
+                n.setStyle(n.getStyle() + foundStyle);
             } else {
-                Railroad.LOGGER.debug("Text {} does not match query {}", ((Labeled) n).getText(), query);
                 n.setStyle(n.getStyle().replace(foundStyle, ""));
             }
         }
