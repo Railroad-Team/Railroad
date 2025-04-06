@@ -12,12 +12,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class SearchHandler {
     private final String foundStyle = "-fx-background-color: #FF0000;";
-    //A map of setting string e.g Theme, to the path e.g railroad.appearance.theme
     private final Map<String, String> settings = new HashMap<>();
     private final FuzzySearch<Map<String, String>, String> fuzzySearch;
 
     private final AtomicReference<String> query = new AtomicReference<>("");
 
+    /**
+     * Loads settings into a map of setting strings, with their text to their tree id
+     */
     public SearchHandler() {
         for (Setting setting : Railroad.SETTINGS_HANDLER.getSettings().getSettings().values()) {
             var baseKey = setting.getTreeId().replace(":", ".");
@@ -33,7 +35,6 @@ public class SearchHandler {
             }
         }
 
-        Railroad.LOGGER.debug("Loaded {} settings", settings);
         fuzzySearch = new FuzzySearch<>(settings, (s) -> s.keySet().stream().toList(), settings::get);
     }
 
@@ -45,6 +46,11 @@ public class SearchHandler {
         return query.get();
     }
 
+    /**
+     * Returns the most relevant folder for a given query
+     * @param query The search query
+     * @return The most relevant folder for the given query
+     */
     public String mostRelevantFolder(String query) {
         var res = fuzzySearch.search(query);
 
@@ -56,6 +62,12 @@ public class SearchHandler {
         return String.join(".", Arrays.copyOfRange(resParts, 0, resParts.length - 1));
     }
 
+    /**
+     * Styles a node based on the search query
+     * @param n The node to style
+     * @return The styled node
+     * @param <T> The type of the node
+     */
     public <T extends Node> T styleNode(T n) {
         if (getQuery().isEmpty()) {
             return n;
@@ -77,7 +89,14 @@ public class SearchHandler {
         return n;
     }
 
-    public <T extends Node> List<T> styleNodes(T... node) {
+    /**
+     * Styles the provided nodes
+     * @param node The nodes to style
+     * @return The styled nodes
+     * @param <T> The type of the nodes
+     */
+    @SafeVarargs
+    public final <T extends Node> List<T> styleNodes(T... node) {
         if (getQuery().isEmpty()) {
             return Arrays.stream(node).toList();
         }

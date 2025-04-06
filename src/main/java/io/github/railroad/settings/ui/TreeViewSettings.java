@@ -20,6 +20,10 @@ public class TreeViewSettings {
     public static final SearchHandler SEARCH_HANDLER = new SearchHandler();
     private final Stage stage;
 
+    /**
+     * Creates a new settings window,
+     * contains a tree view of the folders and then a scroll pane with the settings and their parent folders
+     */
     public TreeViewSettings() {
         stage = new Stage();
 
@@ -30,15 +34,14 @@ public class TreeViewSettings {
         var hbox = new HBox();
 
         TreeView<LocalizedLabel> tree = Railroad.SETTINGS_HANDLER.createCategoryTree();
-        var treContent = new ScrollPane(Railroad.SETTINGS_HANDLER.createSettingsSection(null));
+        var settingsContent = new ScrollPane(Railroad.SETTINGS_HANDLER.createSettingsSection(null));
 
         tree.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 var selected = newValue.getValue();
                 if (selected != null) {
-                    var k = selected.getKey();
-                    var parts = k.split("[.]");
-                    treContent.setContent(Railroad.SETTINGS_HANDLER.createSettingsSection(parts[parts.length - 1]));
+                    var parts = selected.getKey().split("[.]");
+                    settingsContent.setContent(Railroad.SETTINGS_HANDLER.createSettingsSection(parts[parts.length - 1]));
                 }
             }
         });
@@ -46,15 +49,15 @@ public class TreeViewSettings {
         hbox.setMaxWidth(Double.MAX_VALUE);
         hbox.setPrefWidth(Region.USE_COMPUTED_SIZE);
         HBox.setHgrow(hbox, Priority.ALWAYS);
-        HBox.setHgrow(treContent, Priority.ALWAYS);
-        treContent.setFitToWidth(true);
-        treContent.setFitToHeight(true);
+        HBox.setHgrow(settingsContent, Priority.ALWAYS);
+        settingsContent.setFitToWidth(true);
+        settingsContent.setFitToHeight(true);
 
         vbox.setMaxWidth(Double.MAX_VALUE);
         VBox.setVgrow(vbox, Priority.ALWAYS);
         vbox.setSpacing(10);
 
-        hbox.getChildren().addAll(tree, treContent);
+        hbox.getChildren().addAll(tree, settingsContent);
 
         var searchBar = new TextField();
         searchBar.setPromptText("Search settings");
@@ -83,7 +86,7 @@ public class TreeViewSettings {
 
                             currentPart = node;
                         } else {
-                            Railroad.LOGGER.warn("Folder TreeNode not found when searching for {} folder in parts {}", part, res);
+                            Railroad.LOGGER.error("Folder Tree Node not found when searching for {} folder in parts {}", part, res);
                             break;
                         }
                     }
@@ -110,7 +113,6 @@ public class TreeViewSettings {
 
         //Reset to settings saved when closed without applying
         stage.setOnCloseRequest(event -> {
-            Railroad.LOGGER.info("Settings window closed - Reloading settings");
             Railroad.SETTINGS_HANDLER.loadSettingsFromFile();
             Railroad.SETTINGS_HANDLER.getSettings().reloadSettings();
         });

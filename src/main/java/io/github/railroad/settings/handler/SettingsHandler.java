@@ -43,6 +43,7 @@ public class SettingsHandler {
     private final Path configPath;
 
     public SettingsHandler() {
+        //TODO register plugin settings
         registerDefaultSettings();
         registerDefaultCodecs();
         registerDefaultDecorations();
@@ -198,9 +199,11 @@ public class SettingsHandler {
         if (parent == null) {
             var title = new LocalizedLabel("railroad.home.settings.title");
             title.setStyle("-fx-font-size: 24px;");
+
             var desc = new LocalizedLabel("railroad.home.settings.description");
             desc.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
             vbox.getChildren().addAll(title, desc);
+
             return vbox;
         }
         parent = parent.toLowerCase();
@@ -212,17 +215,18 @@ public class SettingsHandler {
 
             if (parentId.equals(parent)) {
                 String innerFolder = String.join(".", Arrays.copyOfRange(parts, 0, parts.length - 1));
-
                 if (!folderBoxes.containsKey(innerFolder)) {
                     var folderBox = new VBox();
                     folderBoxes.put(innerFolder, folderBox);
                     VBox.setMargin(folderBox, InsetsFactory.of(5, 10, 5, 10));
                 }
-
                 var folderBox = folderBoxes.get(innerFolder);
+
                 var settingBundle = new VBox();
                 VBox.setMargin(settingBundle, InsetsFactory.all(5));
+
                 var settingNode = getCodec(setting.getCodecId()).createNode().apply(setting.getValue());
+
                 settingNode.addEventHandler(
                         ActionEvent.ACTION, e -> {
                             setting.setValue(getCodec(setting.getCodecId()).nodeToValue().apply(settingNode));
@@ -230,6 +234,7 @@ public class SettingsHandler {
                 settingNode.addEventHandler(ActionEvent.ACTION, e -> {
                     setting.getApplySetting().accept(null);
                 });
+
                 if (setting.getEventHandlers() != null)
                     setting.getEventHandlers().forEach(settingNode::addEventHandler);
 
@@ -264,13 +269,12 @@ public class SettingsHandler {
                     folderBoxes.put(innerFolder, folderBox);
                     VBox.setMargin(folderBox, InsetsFactory.of(5, 10, 5, 10));
                 }
-
                 var folderBox = folderBoxes.get(innerFolder);
+
                 var decorBundle = new VBox();
                 VBox.setMargin(decorBundle, InsetsFactory.all(5));
 
                 var decorationNode = decoration.nodeCreator().get();
-
                 var decorationLabelKey = decoration.treeId().replace(":", ".") + ".title";
                 var decorationDescKey =  decoration.treeId().replace(":", ".") + ".description";
 
@@ -279,7 +283,9 @@ public class SettingsHandler {
                     decorationLabel.setStyle("-fx-font-size: 16px;");
                     decorBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(decorationLabel));
                 }
+
                 decorBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(decorationNode));
+
                 if (L18n.isKeyValid(decorationDescKey)) {
                     var decorationDesc = new LocalizedLabel(decorationDescKey);
                     decorationDesc.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
@@ -346,35 +352,6 @@ public class SettingsHandler {
                             return combo;
                         })
         );
-
-        registerCodec(
-                new SettingCodec<String, TextField, JsonElement>("railroad:project_folder",
-                        TextField::getText,
-                        (t, n) -> n.setText(t),
-                        JsonElement::getAsString,
-                        JsonPrimitive::new,
-                        t -> {
-                            var tf = new TextField();
-                            tf.setText(t);
-                            return tf;
-                        }
-
-                )
-        );
-
-        registerCodec(
-                new SettingCodec<String, TextField, JsonElement>("railroad:theme_repo",
-                        TextField::getText,
-                        (t, n) -> n.setText(t),
-                        JsonElement::getAsString,
-                        JsonPrimitive::new,
-                        t -> {
-                            var tf = new TextField();
-                            tf.setText(t);
-                            return tf;
-                        }
-                )
-        );
     }
 
     private void registerDefaultSettings() {
@@ -396,28 +373,6 @@ public class SettingsHandler {
                         e -> Railroad.updateTheme(Railroad.SETTINGS_HANDLER.getSetting("railroad:theme").getValue().toString()),
                         null
                 ));
-
-        registerSetting(
-                new Setting<>(
-                        "railroad:project_folder",
-                        "railroad:general.project_folder",
-                        "railroad:project_folder",
-                        System.getProperty("user.home") + "\\RailroadProjects",
-                        e -> {},
-                        null
-                )
-        );
-
-        registerSetting(
-                new Setting<>(
-                        "railroad:theme_repo",
-                        "railroad:appearance.themes.download_repo",
-                        "railroad:theme_repo",
-                        "https://github.com/",
-                        e -> {},
-                        null
-                )
-        );
     }
 
     private void registerDefaultDecorations() {

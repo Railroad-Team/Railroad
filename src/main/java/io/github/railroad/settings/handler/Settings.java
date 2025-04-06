@@ -22,6 +22,9 @@ public class Settings implements JsonSerializable<JsonObject> {
         return settings.get(id);
     }
 
+    /**
+     * Reloads all settings by calling their apply method.
+     */
     public void reloadSettings() {
         settings.values().forEach(setting -> {
             setting.getApplySetting().accept(null);
