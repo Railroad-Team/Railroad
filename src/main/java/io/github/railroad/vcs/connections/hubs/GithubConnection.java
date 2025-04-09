@@ -14,10 +14,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class GithubConnection extends AbstractConnection {
     private final Profile account;
@@ -130,8 +132,31 @@ public class GithubConnection extends AbstractConnection {
 
     @Override
     public boolean cloneRepo(Repository repository, Path path) {
+        // check if the path is a directory and if its empty
+        if (Files.exists(path) && !Files.isDirectory(path)) {
+            Railroad.LOGGER.error("Path is not a directory at: {}", path);
+            return false;
+        }
+
+        try {
+            Files.createDirectories(path);
+        } catch (IOException exception) {
+            Railroad.LOGGER.error("Failed to create directory at: {}", path, exception);
+            return false;
+        }
+
+        try(Stream<Path> files = Files.list(path)) {
+            if (files.findAny().isPresent()) {
+                Railroad.LOGGER.error("Path is not empty");
+                return false;
+            }
+        } catch (IOException exception) {
+            Railroad.LOGGER.error("Something went wrong while checking the path", exception);
+            return false;
+        }
+
         if (repository.getRepositoryType() == RepositoryTypes.GIT) {
-            Railroad.LOGGER.info("Cloning Repo:{} to:{}", repository.getRepositoryCloneURL(), path.toAbsolutePath());
+            Railroad.LOGGER.info("Cloning Repo: {} to: {}", repository.getRepositoryCloneURL(), path.toAbsolutePath());
             var processBuilder = new ProcessBuilder();
             processBuilder.command("git", "clone", repository.getRepositoryCloneURL(), path.toAbsolutePath().resolve(repository.getRepositoryName()).toString());
 

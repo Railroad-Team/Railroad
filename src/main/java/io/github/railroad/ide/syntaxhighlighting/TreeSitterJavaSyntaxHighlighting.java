@@ -21,7 +21,7 @@ public class TreeSitterJavaSyntaxHighlighting {
         highlighter.traverseTree(null, highlighter.rootNode);
 
         var styles = highlighter.spansBuilder.create();
-        Railroad.LOGGER.info("Computed highlighting in {} ms", System.currentTimeMillis() - start);
+        Railroad.LOGGER.debug("Computed highlighting in {} ms", System.currentTimeMillis() - start);
         return styles;
     }
 
@@ -58,8 +58,8 @@ public class TreeSitterJavaSyntaxHighlighting {
                 if(!cursor.gotoFirstChild()) {
                     nodes.add(currentNode);
 
-                    String atNode = text.substring(start, end);
-                    System.out.println(type + ": " + atNode);
+                    //String atNode = text.substring(start, end);
+                    //System.out.println(type + ": " + atNode);
 
                     typeSwitch: switch (type) {
                         case "line_comment" ->

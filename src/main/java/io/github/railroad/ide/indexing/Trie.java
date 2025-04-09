@@ -15,7 +15,7 @@ public class Trie {
         node.isEndOfWord = true;
     }
 
-    public List<String> searchPrefix(String prefix) {
+    public List<String> findCompletions(String prefix) {
         List<String> results = new ArrayList<>();
         TrieNode node = root;
         for (char c : prefix.toCharArray()) {

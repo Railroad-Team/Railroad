@@ -1,149 +1,358 @@
 package io.github.railroad.ide;
 
+import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
+import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
 import io.github.railroad.Railroad;
+import io.github.railroad.ide.classparser.stub.ClassStub;
+import io.github.railroad.ide.indexing.Autocomplete;
 import io.github.railroad.ide.indexing.Indexes;
-import io.github.railroad.ide.indexing.Trie;
 import io.github.railroad.ide.syntaxhighlighting.TreeSitterJavaSyntaxHighlighting;
-import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.utility.ShutdownHooks;
 import io.github.railroad.utility.compiler.JavaSourceFromString;
+import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableMap;
 import javafx.concurrent.Task;
 import javafx.geometry.Bounds;
-import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.Region;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Popup;
-import org.fxmisc.richtext.LineNumberFactory;
+import javafx.util.Pair;
+import org.eclipse.jdt.core.dom.*;
 import org.fxmisc.richtext.event.MouseOverTextEvent;
 import org.fxmisc.richtext.model.StyleSpans;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import org.kordamp.ikonli.javafx.FontIcon;
+import org.jetbrains.annotations.Nullable;
 
 import javax.tools.*;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 
 public class JavaCodeEditorPane extends TextEditorPane {
     private static final JavaCompiler JAVA_COMPILER = ToolProvider.getSystemJavaCompiler();
 
     private final ExecutorService executor0 = Executors.newFixedThreadPool(2);
     private final ObservableMap<Diagnostic<? extends JavaFileObject>, Popup> errors = FXCollections.observableHashMap();
+    private final Map<Integer, Diagnostic.Kind> lineToSeverity = new HashMap<>();
+
+    private final List<ClassStub> stubs = Indexes.scanStandardLibrary();
+    private final Autocomplete autocomplete = new Autocomplete(stubs);
+    private final AtomicReference<Popup> autoCompletePopup = new AtomicReference<>(null);
+    private int dotPosition = -1;
+    private final List<String> fullSuggestions = new ArrayList<>();
+    private ChangeListener<String> textListener;
 
     public JavaCodeEditorPane(Path item) {
         super(item);
 
-        // marginErrors();
+        marginErrors();
 
         syntaxHighlight();
         errorHighlighting();
-        // codeCompletion();
+        codeCompletion();
+        highlightBracketPairs();
 
         ShutdownHooks.addHook(executor0::shutdown);
     }
 
-    private void marginErrors() {
-        IntFunction<? extends Node> lineNumberFactory = LineNumberFactory.get(this);
-        setParagraphGraphicFactory(value -> {
-            var hbox = new RRHBox();
-            hbox.setMinWidth(50);
-            Node node = lineNumberFactory.apply(value);
-            if(node instanceof Label label) {
-                label.setTextAlignment(TextAlignment.LEFT);
+    private void highlightBracketPairs() {
+        caretPositionProperty().addListener((observable, oldValue, newValue) -> {
+            String text = getText();
+            if(text.isBlank() || newValue < 0 || newValue > text.length())
+                return;
+
+            Map<Character, Character> bracketPairs = Map.of(
+                    '(', ')',
+                    '{', '}',
+                    '[', ']',
+                    ')', '(',
+                    '}', '{',
+                    ']', '['
+            );
+
+            char currentChar = newValue < text.length() ? text.charAt(newValue) : '\0';
+            if(!bracketPairs.containsKey(currentChar) && newValue > 0) {
+                currentChar = text.charAt(newValue - 1);
+                newValue--;
             }
 
-            hbox.getChildren().add(node);
-
-            int line = value + 1;
-            List<Diagnostic<? extends JavaFileObject>> diagnostics = errors.keySet().stream()
-                    .filter(diagnostic -> diagnostic.getLineNumber() == line)
-                    .toList();
-
-            if (diagnostics.isEmpty()) {
-                hbox.setPadding(new Insets(0, 5, 0, 0));
-                hbox.setMinWidth(Region.USE_PREF_SIZE);
-                return hbox;
+            if(!bracketPairs.containsKey(currentChar)) {
+                clearBracketHighlights();
+                return;
             }
 
-            var icon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
-            icon.setIconColor(Color.RED);
-            var popup = new Popup();
-            popup.getContent().add(diagnostics.size() == 1 ? new DiagnosticPane(diagnostics.getFirst()) : new DiagnosticPane(diagnostics));
+            boolean forward = (currentChar == '(' || currentChar == '{' || currentChar == '[');
 
-            icon.setOnMouseEntered(event -> {
-                Point2D screenPosition = icon.localToScreen(0, 0);
-                popup.show(icon, screenPosition.getX(), screenPosition.getY());
-            });
-
-            icon.setOnMouseExited(event -> popup.hide());
-
-            hbox.getChildren().addAll(icon);
-            return hbox;
+            highlightMatchingBracket(text, newValue, currentChar, bracketPairs.get(currentChar), forward);
         });
     }
 
+    private void highlightMatchingBracket(String text, int position, char currentChar, char matchingBracket, boolean lookForward) {
+        int matchPos = findMatchingBracketPosition(text, position, currentChar, matchingBracket, lookForward);
+        clearBracketHighlights();
+
+        if(matchPos != -1) {
+            setStyleClass(position, position + 1, "bracket-highlight");
+            setStyleClass(matchPos, matchPos + 1, "bracket-highlight");
+        }
+    }
+
+    private int findMatchingBracketPosition(String text, int pos, char open, char close, boolean forward) {
+        int balance = 0;
+        int length = text.length();
+
+        if (forward) {
+            for (int index = pos; index < length; index++) {
+                char c = text.charAt(index);
+                if (c == open)
+                    balance++;
+                else if (c == close)
+                    balance--;
+
+                if (balance == 0)
+                    return index;
+            }
+        } else {
+            for (int index = pos; index >= 0; index--) {
+                char c = text.charAt(index);
+                if (c == open)
+                    balance--;
+                else if (c == close)
+                    balance++;
+
+                if (balance == 0)
+                    return index;
+            }
+        }
+
+        return -1;
+    }
+
+    private void clearBracketHighlights() {
+        int length = getLength();
+        setStyle(0, length, Collections.emptyList());
+        applyHighlighting(computeHighlighting(getText()));
+    }
+
+    private void marginErrors() {
+        IntFunction<Node> factory = line -> {
+            // Create GridPane with two columns
+            var grid = new GridPane();
+            grid.setHgap(5); // Horizontal spacing between columns
+            grid.setStyle("-fx-background-color: #333742;"); // Darker background (dark gray)
+
+            // Column for line numbers (expands to fill space)
+            var lineNumberColumn = new ColumnConstraints();
+            lineNumberColumn.setHgrow(Priority.ALWAYS); // Grows to fill remaining space
+
+            // Column for icons (fixed width)
+            var iconColumn = new ColumnConstraints();
+            iconColumn.setPrefWidth(12); // Fixed width matching icon size
+            iconColumn.setHgrow(Priority.NEVER); // Prevents growing
+
+            grid.getColumnConstraints().addAll(lineNumberColumn, iconColumn);
+
+            // Line number label
+            var lineNumber = new Label(String.format("%4d", line + 1));
+            lineNumber.setTextAlignment(TextAlignment.RIGHT); // Right-align the line number
+            lineNumber.setTextFill(Color.LIGHTGRAY); // Optional: lighter text for contrast
+            grid.add(lineNumber, 0, 0); // Place in first column
+
+            // Add icon and tooltip if there’s an error or warning
+            Diagnostic.Kind kind = lineToSeverity.get(line + 1); // 1-based line numbers
+            if (kind != null) {
+                var icon = new MFXFontIcon(kind == Diagnostic.Kind.ERROR ?
+                        FontAwesomeSolid.CIRCLE_EXCLAMATION : FontAwesomeSolid.TRIANGLE_EXCLAMATION,
+                        12,
+                        kind == Diagnostic.Kind.ERROR ? Color.RED : Color.YELLOW);
+                grid.add(icon, 1, 0); // Place in second column
+
+                // Find the diagnostic message for this line
+                String message = errors.keySet().stream()
+                        .filter(d -> d.getLineNumber() == line + 1 &&
+                                (d.getKind() == kind || (kind == Diagnostic.Kind.WARNING &&
+                                        d.getKind() == Diagnostic.Kind.MANDATORY_WARNING)))
+                        .map(d -> d.getMessage(null))
+                        .findFirst()
+                        .orElse("Unknown issue");
+
+                // Add tooltip to the icon
+                var tooltip = new Tooltip(message);
+                tooltip.setShowDelay(javafx.util.Duration.millis(200)); // Slight delay for smoother UX
+                Tooltip.install(icon, tooltip);
+            }
+
+            return grid;
+        };
+
+        setParagraphGraphicFactory(factory);
+    }
+
     private void codeCompletion() {
-        final Trie trie = Indexes.createTrie();
         plainTextChanges()
                 .successionEnds(Duration.ofMillis(500))
                 .retainLatestUntilLater(executor0)
                 .filter(change -> !change.getInserted().equals(change.getRemoved()))
                 .subscribe(change -> {
                     String inserted = change.getInserted();
-                    if(inserted.endsWith(".")) {
-                        showAutoComplete(trie, change.getPosition());
-                    } else if(inserted.equals(" ")) {
-                        hideAutoComplete();
+                    if (inserted.endsWith(".")) {
+                        showAutoComplete(change.getPosition());
                     }
                 });
+
+        // if the user clicks outside of the popup, hide it
+        setOnMouseClicked(event -> {
+            if (autoCompletePopup.get() != null && autoCompletePopup.get().isShowing()) {
+                hideAutoComplete();
+            }
+        });
     }
 
-    private void showAutoComplete(Trie trie, int position) {
+    private @Nullable Pair<Integer, Integer> getIdentifierRangeBeforeDot(int dotPosition) {
         String text = getText();
-        int start = position;
-        while(start > 0 && Character.isJavaIdentifierPart(text.charAt(start - 1))) {
+        if (dotPosition < 0 || text.charAt(dotPosition) != '.') {
+            return null;
+        }
+
+        int start = dotPosition;
+        while (start > 0 && Character.isJavaIdentifierPart(text.charAt(start - 1))) {
             start--;
         }
 
-        String prefix = text.substring(start, position);
-        List<String> suggestions = trie.searchPrefix(prefix);
-        if(suggestions.isEmpty()) {
+        return new Pair<>(start, dotPosition - start + 1);
+    }
+
+    private void showAutoComplete(int position) {
+        ASTParser parser = ASTParser.newParser(AST.JLS21);
+        parser.setSource(getText().toCharArray());
+        parser.setKind(ASTParser.K_COMPILATION_UNIT);
+        parser.setResolveBindings(true);
+        parser.setBindingsRecovery(true);
+        parser.setStatementsRecovery(true);
+        parser.setUnitName(filePath.getFileName().toString());
+        String[] classpathEntries = {"D:/Program Files/Java/temurin-21.0.3/jmods/java.base.jmod"};
+
+        parser.setEnvironment(classpathEntries, null, null, false);
+
+        CompilationUnit compilationUnit = (CompilationUnit) parser.createAST(null);
+
+        Pair<Integer, Integer> range = getIdentifierRangeBeforeDot(position);
+        if (range == null) {
             hideAutoComplete();
             return;
         }
 
-        var popup = new Popup();
-        var listView = new RRListView<String>();
-        listView.getItems().addAll(suggestions);
+        int start = range.getKey();
+        int length = range.getValue();
 
-        final int finalStart = start;
-        listView.setOnMouseClicked(event -> {
-            String selected = listView.getSelectionModel().getSelectedItem();
-            replaceText(finalStart, position, selected);
+        var finder = new NodeFinder(compilationUnit, start, length);
+        ASTNode node = finder.getCoveredNode();
+        if (node == null) {
+            node = finder.getCoveringNode();
+        }
+
+        if (node == null) {
             hideAutoComplete();
+            return;
+        }
+
+        List<String> suggestions = new ArrayList<>();
+        if (node instanceof ExpressionStatement statement) {
+            node = statement.getExpression();
+        }
+
+        if (node instanceof Expression expr) {
+            ITypeBinding binding = expr.resolveTypeBinding();
+            if (binding != null) {
+                String typeName = binding.getQualifiedName();
+                suggestions.addAll(this.autocomplete.suggestMembers(typeName, ""));
+            }
+        }
+
+        if (suggestions.isEmpty()) {
+            hideAutoComplete();
+            return;
+        }
+
+        this.fullSuggestions.clear();
+        this.fullSuggestions.addAll(suggestions);
+        this.dotPosition = position;
+
+        Platform.runLater(() -> {
+            var popup = new Popup();
+            var listView = new RRListView<String>();
+            listView.getItems().addAll(suggestions);
+
+            listView.setOnMouseClicked(event -> {
+                String selected = listView.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    int currentCaret = getCaretPosition();
+                    int startPos = this.dotPosition + 1; // After the dot
+                    replaceText(startPos, currentCaret, selected); // Replace prefix with selection
+                    hideAutoComplete();
+                }
+            });
+
+            popup.getContent().add(listView);
+            int caretX = getCaretBounds().map(Bounds::getMaxX).map(Double::intValue).orElse(0);
+            int caretY = getCaretBounds().map(Bounds::getMaxY).map(Double::intValue).orElse(0);
+            popup.setAutoHide(true);
+            this.autoCompletePopup.set(popup);
+
+            textListener = (obs, oldText, newText) -> {
+                Popup currentPopup = autoCompletePopup.get();
+                if (currentPopup != null && currentPopup.isShowing()) {
+                    int currentCaret = getCaretPosition();
+                    if (currentCaret > dotPosition && getText().charAt(dotPosition) == '.') {
+                        String prefix = "";
+                        if (currentCaret > dotPosition + 1) {
+                            prefix = getText().substring(dotPosition + 1, currentCaret);
+                        }
+
+                        final String finalPrefix = prefix;
+                        List<String> filtered = fullSuggestions.stream()
+                                .filter(s -> s.startsWith(finalPrefix))
+                                .collect(Collectors.toList());
+                        listView.getItems().setAll(filtered);
+                    } else {
+                        hideAutoComplete();
+                    }
+                }
+            };
+
+            textProperty().addListener(textListener);
+            popup.show(this, caretX, caretY);
         });
-
-        popup.getContent().add(listView);
-
-        int caretX = getCaretBounds().map(Bounds::getMaxX).map(Double::intValue).orElse(0);
-        int caretY = getCaretBounds().map(Bounds::getMaxY).map(Double::intValue).orElse(0);
-
-        popup.show(this, caretX, caretY);
     }
 
     private void hideAutoComplete() {
+        Platform.runLater(() -> {
+            Popup currentPopup = autoCompletePopup.get();
+            if (currentPopup != null) {
+                currentPopup.hide();
+                autoCompletePopup.set(null);
+            }
 
+            if (textListener != null) {
+                textProperty().removeListener(textListener);
+                textListener = null;
+            }
+        });
     }
 
     private void errorHighlighting() {
@@ -198,18 +407,23 @@ public class JavaCodeEditorPane extends TextEditorPane {
     private void applyErrorHighlighting(DiagnosticCollector<JavaFileObject> diagnostics) {
         long startTime = System.currentTimeMillis();
 
-        Map<Diagnostic<? extends JavaFileObject>, Popup> errors = diagnostics.getDiagnostics().stream()
-                .filter(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR)
+        // Process diagnostics for both errors and warnings
+        Map<Diagnostic<? extends JavaFileObject>, Popup> diagnosticsMap = diagnostics.getDiagnostics().stream()
+                .filter(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR ||
+                        diagnostic.getKind() == Diagnostic.Kind.WARNING ||
+                        diagnostic.getKind() == Diagnostic.Kind.MANDATORY_WARNING)
                 .sorted(Comparator.comparingLong(Diagnostic::getStartPosition))
                 .collect(HashMap::new, (map, diagnostic) -> {
                     int start = (int) diagnostic.getStartPosition();
                     int end = (int) diagnostic.getEndPosition();
                     String message = diagnostic.getMessage(null);
+                    String styleClass = diagnostic.getKind() == Diagnostic.Kind.ERROR ? "error" : "warning";
+                    setStyleClass(start, end, styleClass);
 
                     var popup = new Popup();
                     popup.getContent().add(new DiagnosticPane(diagnostic));
 
-                    // show the popup if the mouse hovers over the error
+                    // Show popup on hover
                     addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_BEGIN, event -> {
                         int position = event.getCharacterIndex();
                         if (position >= start && position <= end) {
@@ -218,27 +432,45 @@ public class JavaCodeEditorPane extends TextEditorPane {
                         }
                     });
 
-                    // hide the popup if the mouse leaves the error
+                    // Hide popup when mouse leaves
                     addEventHandler(MouseEvent.MOUSE_MOVED, event -> {
-                        if (!popup.isShowing())
-                            return;
-
-                        int charIndex = JavaCodeEditorPane.this.hit(event.getX(), event.getY()).getCharacterIndex().orElse(-1);
+                        if (!popup.isShowing()) return;
+                        int charIndex = JavaCodeEditorPane.this.hit(event.getX(), event.getY())
+                                .getCharacterIndex().orElse(-1);
                         if (charIndex < start || charIndex > end) {
                             popup.hide();
                         }
                     });
 
                     map.put(diagnostic, popup);
-                    setStyleClass(start, end, "error");
-
-                    Railroad.LOGGER.error("Error at L{}:{} - {}", diagnostic.getLineNumber(), diagnostic.getColumnNumber(), message);
+                    Railroad.LOGGER.error("Issue at L{}:{} - {}", diagnostic.getLineNumber(),
+                            diagnostic.getColumnNumber(), message);
                 }, HashMap::putAll);
 
+        // Update the errors map
         this.errors.clear();
-        this.errors.putAll(errors);
+        this.errors.putAll(diagnosticsMap);
 
-        Railroad.LOGGER.info("Error highlighting took {}ms", System.currentTimeMillis() - startTime);
+        // Update lineToSeverity map
+        lineToSeverity.clear();
+        for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
+            Diagnostic.Kind kind = diagnostic.getKind();
+            if (kind == Diagnostic.Kind.ERROR || kind == Diagnostic.Kind.WARNING ||
+                    kind == Diagnostic.Kind.MANDATORY_WARNING) {
+                int line = (int) diagnostic.getLineNumber();
+                if (kind == Diagnostic.Kind.ERROR) {
+                    lineToSeverity.put(line, Diagnostic.Kind.ERROR); // Errors take precedence
+                } else if (!lineToSeverity.containsKey(line) ||
+                        lineToSeverity.get(line) != Diagnostic.Kind.ERROR) {
+                    lineToSeverity.put(line, Diagnostic.Kind.WARNING); // Warnings if no error
+                }
+            }
+        }
+
+        // Force redraw of margin graphics
+        requestLayout();
+
+        Railroad.LOGGER.debug("Error highlighting took {}ms", System.currentTimeMillis() - startTime);
     }
 
     private void syntaxHighlight() {

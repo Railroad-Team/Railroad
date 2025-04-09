@@ -148,6 +148,12 @@
     -fx-stroke: -color-danger-emphasis;
 }
 
+.code-area .bracket-highlighter {
+    -rtfx-border-color: red;
+    -rtfx-border-width: 0 0 0 1;
+    -rtfx-border-style: solid;
+}
+
 .diagnostic-pane {
     -fx-background-color: -color-bg-overlay;
     -fx-border-width: 0 0 1 0;
