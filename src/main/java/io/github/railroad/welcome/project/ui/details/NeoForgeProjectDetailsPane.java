@@ -14,7 +14,6 @@ import io.github.railroad.ui.BrowseButton;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ClassNameValidator;
-import io.github.railroad.welcome.project.ProjectType;
 import io.github.railroad.welcome.project.ui.widget.StarableListCell;
 import javafx.beans.binding.BooleanBinding;
 import javafx.geometry.Insets;

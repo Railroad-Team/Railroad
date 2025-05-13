@@ -12,6 +12,7 @@ import io.github.railroad.project.minecraft.FabricAPIVersion;
 import io.github.railroad.project.minecraft.ForgeVersion;
 import io.github.railroad.project.minecraft.MinecraftVersion;
 import io.github.railroad.project.minecraft.NeoForgeVersion;
+import io.github.railroad.settings.handler.SettingsHandler;
 import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.utility.ShutdownHooks;
 import io.github.railroad.vcs.RepositoryManager;
@@ -51,6 +52,7 @@ public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+    public static final SettingsHandler SETTINGS_HANDLER = new SettingsHandler();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
     public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
@@ -73,7 +75,9 @@ public class Railroad extends Application {
      * @param theme The new theme to apply
      */
     public static void updateTheme(String theme) {
-        getScene().getStylesheets().remove(ConfigHandler.getConfig().getSettings().getTheme() + ".css");
+        //TODO fix this - it needs to remove the currently applied theme
+        // probably not working *properly* because of new settings system
+        getScene().getStylesheets().remove(SETTINGS_HANDLER.getSetting("railroad:theme").getValue() + ".css");
 
         if (theme.startsWith("default")) {
             Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
@@ -81,8 +85,7 @@ public class Railroad extends Application {
             Application.setUserAgentStylesheet(new File(ThemeDownloadManager.getThemesDirectory() + "/" + theme + ".css").toURI().toString());
         }
 
-        ConfigHandler.getConfig().getSettings().setTheme(theme);
-        ConfigHandler.saveConfig();
+        SETTINGS_HANDLER.getSetting("railroad:theme").setValue(theme);
     }
 
     /**
@@ -95,7 +98,7 @@ public class Railroad extends Application {
      * @param scene The scene to apply the styles to
      */
     public static void handleStyles(Scene scene) {
-        updateTheme(ConfigHandler.getConfig().getSettings().getTheme());
+        updateTheme((String) SETTINGS_HANDLER.getSetting("railroad:theme").getValue());
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();
@@ -211,7 +214,9 @@ public class Railroad extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        try {
         ConfigHandler.initConfig();
+        SETTINGS_HANDLER.initSettingsFile();
         PLUGIN_MANAGER.start();
         PLUGIN_MANAGER.addCustomEventListener(event -> {
             Platform.runLater(() -> {
@@ -253,6 +258,10 @@ public class Railroad extends Application {
             HTTP_CLIENT.dispatcher().executorService().shutdown();
             HTTP_CLIENT.connectionPool().evictAll();
         });
+        } catch (Exception e) {
+            LOGGER.error("Error starting Railroad", e);
+            showErrorAlert("Error", "Error starting Railroad", "An error occurred while starting Railroad.");
+        }
     }
 
     @Override

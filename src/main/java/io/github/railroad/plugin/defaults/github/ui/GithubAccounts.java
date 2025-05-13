@@ -24,7 +24,7 @@ public class GithubAccounts extends RRVBox {
         var addButton = new Button("+ Add New Profile");
         addButton.setOnAction(event -> showAddProfileDialog());
 
-        profileListView.setItems(Railroad.REPOSITORY_MANAGER.getProfiles());
+        //profileListView.setItems(Railroad.REPOSITORY_MANAGER.getProfiles());
 
         var scrollPane = new ScrollPane();
         scrollPane.setFitToHeight(true);
@@ -49,7 +49,7 @@ public class GithubAccounts extends RRVBox {
                 if (connection.validateProfile()) {
                     Railroad.LOGGER.debug("Valid GitHub profile");
                     Railroad.REPOSITORY_MANAGER.addConnection(connection);
-                    Railroad.REPOSITORY_MANAGER.getProfiles().add(profile);
+                    //Railroad.REPOSITORY_MANAGER.getProfiles().add(profile);
                     ConfigHandler.saveConfig();
                 } else {
                     Railroad.LOGGER.debug("Invalid GitHub profile");

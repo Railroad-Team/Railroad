@@ -1,8 +1,6 @@
 package io.github.railroad.vcs;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.config.ConfigHandler;
-import io.github.railroad.plugin.defaults.Github;
 import io.github.railroad.utility.ShutdownHooks;
 import io.github.railroad.vcs.connections.AbstractConnection;
 import io.github.railroad.vcs.connections.Profile;
@@ -47,10 +45,10 @@ public class RepositoryManager implements Runnable {
         this.connections.add(connection);
     }
 
-    public ObservableList<Profile> getProfiles() {
-        Github.GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", Github.GithubSettings.class);
-        return settings.getAccounts();
-    }
+//    public ObservableList<Profile> getProfiles() {
+//        Github.GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", Github.GithubSettings.class);
+//        return settings.getAccounts();
+//    }
 
     public boolean deleteProfile(Profile profile) {
         for (AbstractConnection connection : connections) {

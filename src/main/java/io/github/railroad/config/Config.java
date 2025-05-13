@@ -7,18 +7,10 @@ import io.github.railroad.Railroad;
 import io.github.railroad.plugin.Plugin;
 import io.github.railroad.project.Project;
 import io.github.railroad.utility.JsonSerializable;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.ReadOnlyObjectWrapper;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
-/**
- * Parses the JSON config file into individual objects.
- */
 public class Config implements JsonSerializable<JsonObject> {
-    private final ObjectProperty<Settings> settings = new ReadOnlyObjectWrapper<>(new Settings());
-
     @Override
     public JsonObject toJson() {
         var json = new JsonObject();
@@ -36,7 +28,6 @@ public class Config implements JsonSerializable<JsonObject> {
         }
 
         json.add("Plugins", plugins);
-        json.add("Settings", this.settings.get().toJson());
 
         return json;
     }
@@ -72,27 +63,5 @@ public class Config implements JsonSerializable<JsonObject> {
                 }
             }
         }
-
-        if (json.has("Settings")) {
-            JsonElement settings = json.get("Settings");
-            if (settings.isJsonObject()) {
-                this.settings.get().fromJson(settings.getAsJsonObject());
-            }
-        }
-    }
-
-    /**
-     * Copies the settings from the given config object
-     * @param config {@link Config}
-     */
-    public void copyFrom(@Nullable Config config) {
-        if (config == null)
-            return;
-
-        this.settings.get().copyFrom(config.getSettings());
-    }
-
-    public Settings getSettings() {
-        return settings.get();
     }
 }
