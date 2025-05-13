@@ -22,7 +22,6 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
@@ -33,7 +32,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 public class SettingsHandler {
     private final ObservableMap<String, Decoration<?>> decorations = FXCollections.observableHashMap();
@@ -197,6 +195,7 @@ public class SettingsHandler {
         final VBox vbox = new VBox();
 
         if (parent == null) {
+            //TODO If no node is selected - Possibly make impossible? Maybe force onto railroad/general or last used node
             var title = new LocalizedLabel("railroad.home.settings.title");
             title.setStyle("-fx-font-size: 24px;");
 
@@ -218,7 +217,7 @@ public class SettingsHandler {
                 if (!folderBoxes.containsKey(innerFolder)) {
                     var folderBox = new VBox();
                     folderBoxes.put(innerFolder, folderBox);
-                    VBox.setMargin(folderBox, InsetsFactory.of(5, 10, 5, 10));
+                    VBox.setMargin(folderBox, InsetsFactory.of(5, 10, 0, 10));
                 }
                 var folderBox = folderBoxes.get(innerFolder);
 
@@ -232,7 +231,7 @@ public class SettingsHandler {
                             setting.setValue(getCodec(setting.getCodecId()).nodeToValue().apply(settingNode));
                         });
                 settingNode.addEventHandler(ActionEvent.ACTION, e -> {
-                    setting.getApplySetting().accept(null);
+                    setting.getApplySetting().accept(null); //TODO fix generics?
                 });
 
                 if (setting.getEventHandlers() != null)
@@ -267,7 +266,7 @@ public class SettingsHandler {
                 if (!folderBoxes.containsKey(innerFolder)) {
                     var folderBox = new VBox();
                     folderBoxes.put(innerFolder, folderBox);
-                    VBox.setMargin(folderBox, InsetsFactory.of(5, 10, 5, 10));
+                    VBox.setMargin(folderBox, InsetsFactory.of(5, 10, 0, 10));
                 }
                 var folderBox = folderBoxes.get(innerFolder);
 
@@ -299,7 +298,7 @@ public class SettingsHandler {
         for (Map.Entry<String, VBox> entry : folderBoxes.entrySet()) {
             var sepBox = new HBox();
             sepBox.setSpacing(10);
-            sepBox.setPadding(new Insets(5, 10, 5, 10));
+            sepBox.setPadding(new Insets(5, 10, 0, 10));
 
             var sectionLabel = new LocalizedLabel(entry.getKey());
             sectionLabel.setStyle("-fx-font-size: 18px;");
@@ -310,7 +309,7 @@ public class SettingsHandler {
             vbox.setMaxWidth(Double.MAX_VALUE);
             VBox.setVgrow(sep, Priority.ALWAYS);
 
-            sepBox.getChildren().addAll(sectionLabel,sep);
+            sepBox.getChildren().addAll(sectionLabel, sep);
             vbox.getChildren().addAll(sepBox, entry.getValue());
         }
 
@@ -357,7 +356,7 @@ public class SettingsHandler {
     private void registerDefaultSettings() {
         registerSetting(new Setting<>(
                     "railroad:language",
-                    "railroad:appearance.language.language",
+                    "railroad:general.language",
                     "railroad:language",
                     Language.EN_US,
                     e -> L18n.loadLanguage(),

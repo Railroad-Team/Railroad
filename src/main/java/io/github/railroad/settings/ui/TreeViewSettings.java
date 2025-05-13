@@ -4,17 +4,17 @@ import io.github.railroad.Railroad;
 import io.github.railroad.localization.ui.LocalizedButton;
 import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.settings.handler.SearchHandler;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+
+import java.util.Arrays;
 
 public class TreeViewSettings {
     public static final SearchHandler SEARCH_HANDLER = new SearchHandler();
@@ -31,24 +31,31 @@ public class TreeViewSettings {
 
         var vbox = new VBox();
 
-        var hbox = new HBox();
+        var leftVbox = new VBox();
+        var rightVbox = new VBox();
+        var pathLabel = new Label();
+        pathLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        pathLabel.setPadding(new Insets(10));
+        var splitPane = new SplitPane();
 
         TreeView<LocalizedLabel> tree = Railroad.SETTINGS_HANDLER.createCategoryTree();
         var settingsContent = new ScrollPane(Railroad.SETTINGS_HANDLER.createSettingsSection(null));
+        rightVbox.getChildren().addAll(pathLabel, settingsContent);
 
         tree.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 var selected = newValue.getValue();
                 if (selected != null) {
                     var parts = selected.getKey().split("[.]");
+                    pathLabel.setText(String.join(" > ", Arrays.stream(parts).map((s) -> Character.toUpperCase(s.charAt(0)) + s.substring(1)).toList()));
                     settingsContent.setContent(Railroad.SETTINGS_HANDLER.createSettingsSection(parts[parts.length - 1]));
                 }
             }
         });
 
-        hbox.setMaxWidth(Double.MAX_VALUE);
-        hbox.setPrefWidth(Region.USE_COMPUTED_SIZE);
-        HBox.setHgrow(hbox, Priority.ALWAYS);
+        splitPane.setMaxWidth(Double.MAX_VALUE);
+        splitPane.setPrefWidth(Region.USE_COMPUTED_SIZE);
+        HBox.setHgrow(splitPane, Priority.ALWAYS);
         HBox.setHgrow(settingsContent, Priority.ALWAYS);
         settingsContent.setFitToWidth(true);
         settingsContent.setFitToHeight(true);
@@ -56,8 +63,6 @@ public class TreeViewSettings {
         vbox.setMaxWidth(Double.MAX_VALUE);
         VBox.setVgrow(vbox, Priority.ALWAYS);
         vbox.setSpacing(10);
-
-        hbox.getChildren().addAll(tree, settingsContent);
 
         var searchBar = new TextField();
         searchBar.setPromptText("Search settings");
@@ -96,14 +101,26 @@ public class TreeViewSettings {
                 }
             }
         });
+        leftVbox.getChildren().addAll(searchBar, tree);
+        splitPane.getItems().addAll(leftVbox, rightVbox);
+
+        var buttons = new HBox();
 
         var apply = new LocalizedButton("railroad.generic.apply");
         apply.setAlignment(Pos.BOTTOM_RIGHT);
+        HBox.setMargin(apply, new Insets(5));
         apply.setOnAction(event -> Railroad.SETTINGS_HANDLER.saveSettingsFile());
 
-        vbox.getChildren().addAll(searchBar, hbox, apply);
+        var cancel = new LocalizedButton("railroad.generic.cancel");
+        cancel.setAlignment(Pos.BOTTOM_RIGHT);
+        HBox.setMargin(cancel, new Insets(5));
+        cancel.setOnAction(event -> {stage.close();});
 
-        var scene = new Scene(vbox, 600, 700);
+        buttons.getChildren().addAll(apply, cancel);
+        buttons.setAlignment(Pos.BOTTOM_RIGHT);
+        vbox.getChildren().addAll(splitPane, buttons);
+
+        var scene = new Scene(vbox, 600, 500);
 
         Railroad.handleStyles(scene);
 
