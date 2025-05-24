@@ -1,7 +1,6 @@
 package io.github.railroad.ide.indexing;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.locomotive.Main;
 import io.github.railroad.locomotive.PacketHelper;
 import io.github.railroad.locomotive.Version;
 import io.github.railroad.locomotive.packet.Packet;
@@ -51,7 +50,7 @@ public class Indexes {
     }
 
     private static void scanStandardLibrary(Trie trie) {
-        new Thread(() -> Main.main(new String[0])).start(); // TODO: Replace with starting up a service
+        //new Thread(() -> Main.main(new String[0])).start(); // TODO: Replace with starting up a service
         LocomotiveHandler.INSTANCE.listen();
 
         Path javaHome = Path.of(System.getProperty("java.home"));

@@ -200,6 +200,7 @@ public class SettingsHandler {
             title.setStyle("-fx-font-size: 24px;");
 
             var desc = new LocalizedLabel("railroad.home.settings.description");
+            VBox.setMargin(desc, InsetsFactory.top(5));
             desc.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
             vbox.getChildren().addAll(title, desc);
 
