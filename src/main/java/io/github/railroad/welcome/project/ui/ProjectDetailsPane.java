@@ -3,8 +3,6 @@ package io.github.railroad.welcome.project.ui;
 import io.github.railroad.welcome.project.ProjectType;
 import io.github.railroad.welcome.project.ui.details.FabricProjectDetailsPane;
 import io.github.railroad.welcome.project.ui.details.ForgeProjectDetailsPane;
-import io.github.railroad.welcome.project.ui.details.NeoForgeProjectDetailsPane;
-import io.github.railroad.welcome.project.ui.details.QuiltProjectDetailsPane;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
