@@ -46,27 +46,28 @@ public class ThemeDownloadManager {
         if (theme.getDownloadUrl() == null) {
             LOGGER.error("Theme download URL is null");
             return false;
-        } else {
-            String url = theme.getDownloadUrl();
-            String[] split = url.split("[/\\s]");
-            String fileName = split[split.length - 1];
-
-            LOGGER.info("Downloading theme: {}", fileName);
-            try {
-                FileHandler.copyUrlToFile(url, Paths.get(getThemesDirectory().toString(), fileName));
-                LOGGER.info("Completed theme download");
-            } catch (RuntimeException exception) {
-                LOGGER.error("Exception downloading theme", exception);
-            }
-
-            if (Files.exists(Path.of(getThemesDirectory().toString() + '\\' + fileName))) {
-                LOGGER.info("Downloaded theme: {} to {}", fileName, Path.of(getThemesDirectory().toString() + '\\' + fileName));
-                return true;
-            } else {
-                LOGGER.error("Error Downloading theme: {} to {}", fileName, Path.of(getThemesDirectory().toString() + '\\' + fileName));
-                return false;
-            }
         }
+        String url = theme.getDownloadUrl();
+        String[] split = url.split("[/\\s]");
+        String fileName = split[split.length - 1];
+        Path downloadPath = Paths.get(getThemesDirectory().toString(), fileName);
+
+        LOGGER.info("Downloading theme: {}", fileName);
+        try {
+            FileHandler.copyUrlToFile(url, downloadPath);
+            LOGGER.info("Completed theme download");
+        } catch (RuntimeException exception) {
+            LOGGER.error("Exception downloading theme", exception);
+        }
+
+        var downloaded = Files.exists(downloadPath);
+        if (downloaded) {
+            LOGGER.info("Downloaded theme: {} to {}", fileName, Path.of(getThemesDirectory().toString() + '\\' + fileName));
+        } else {
+            LOGGER.error("Error Downloading theme: {} to {}", fileName, Path.of(getThemesDirectory().toString() + '\\' + fileName));
+        }
+
+        return downloaded;
     }
 
     /**
