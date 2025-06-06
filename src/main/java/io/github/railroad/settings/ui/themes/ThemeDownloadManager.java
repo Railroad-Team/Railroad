@@ -66,7 +66,7 @@ public class ThemeDownloadManager {
             LOGGER.error("Error Downloading theme: {} to {}", fileName, downloadPath);
         }
 
-        return downloaded;
+        return Files.exists(downloadPath);
     }
 
     /**
