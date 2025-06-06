@@ -62,9 +62,9 @@ public class ThemeDownloadManager {
 
         var downloaded = Files.exists(downloadPath);
         if (downloaded) {
-            LOGGER.info("Downloaded theme: {} to {}", fileName, Path.of(getThemesDirectory().toString() + '\\' + fileName));
+            LOGGER.info("Downloaded theme: {} to {}", fileName, downloadPath);
         } else {
-            LOGGER.error("Error Downloading theme: {} to {}", fileName, Path.of(getThemesDirectory().toString() + '\\' + fileName));
+            LOGGER.error("Error Downloading theme: {} to {}", fileName, downloadPath);
         }
 
         return downloaded;
