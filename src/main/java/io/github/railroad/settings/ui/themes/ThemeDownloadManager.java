@@ -60,8 +60,7 @@ public class ThemeDownloadManager {
             LOGGER.error("Exception downloading theme", exception);
         }
 
-        var downloaded = Files.exists(downloadPath);
-        if (downloaded) {
+        if (Files.exists(downloadPath)) {
             LOGGER.info("Downloaded theme: {} to {}", fileName, downloadPath);
         } else {
             LOGGER.error("Error Downloading theme: {} to {}", fileName, downloadPath);
