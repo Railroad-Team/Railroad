@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'application'
     id 'org.javamodularity.moduleplugin' version '1.8.12'
-    id 'org.openjfx.javafxplugin' version '0.0.13'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
     id 'org.beryx.jlink' version '2.25.0'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
@@ -33,7 +33,7 @@ application {
 
 javafx {
     version = '21'
-    modules = ['javafx.controls', 'javafx.swing', 'javafx.web']
+    modules = ['javafx.controls', 'javafx.swing', 'javafx.web', 'javafx.fxml', 'javafx.graphics', 'javafx.media']
 }
 
 dependencies {

@@ -249,7 +249,6 @@ public class SettingsHandler {
      * Creates a tree of setting folders.
      * @return {@link TreeView} The tree of folders
      */
-
     public TreeView<LocalizedLabel> createCategoryTree() {
         TreeView<LocalizedLabel> view = new TreeView<>(new TreeItem<>(null));
         view.setShowRoot(false);

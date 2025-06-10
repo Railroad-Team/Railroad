@@ -84,8 +84,6 @@ public class Railroad extends Application {
         } else {
             Application.setUserAgentStylesheet(new File(ThemeDownloadManager.getThemesDirectory() + "/" + theme + ".css").toURI().toString());
         }
-
-        SETTINGS_HANDLER.setStringSetting("railroad:theme", theme);
     }
 
     /**
@@ -215,49 +213,49 @@ public class Railroad extends Application {
     @Override
     public void start(Stage primaryStage) {
         try {
-        ConfigHandler.initConfig();
-        SETTINGS_HANDLER.initSettingsFile();
-        PLUGIN_MANAGER.start();
-        PLUGIN_MANAGER.addCustomEventListener(event -> {
-            Platform.runLater(() -> {
-                Railroad.showErrorAlert("Plugin", event.getPlugin().getClass().getName(), event.getPhaseResult().getErrors().toString());
+            ConfigHandler.initConfig();
+            SETTINGS_HANDLER.initSettingsFile();
+            PLUGIN_MANAGER.start();
+            PLUGIN_MANAGER.addCustomEventListener(event -> {
+                Platform.runLater(() -> {
+                    Railroad.showErrorAlert("Plugin", event.getPlugin().getClass().getName(), event.getPhaseResult().getErrors().toString());
+                });
             });
-        });
-        REPOSITORY_MANAGER.start();
-        MinecraftVersion.load();
-        ForgeVersion.load();
-        FabricAPIVersion.load();
-        NeoForgeVersion.load();
-        L18n.loadLanguage();
-        window = primaryStage;
+            REPOSITORY_MANAGER.start();
+            MinecraftVersion.load();
+            ForgeVersion.load();
+            FabricAPIVersion.load();
+            NeoForgeVersion.load();
+            L18n.loadLanguage();
+            window = primaryStage;
 
-        // Calculate the primary screen size to better fit the window
-        Screen screen = Screen.getPrimary();
+            // Calculate the primary screen size to better fit the window
+            Screen screen = Screen.getPrimary();
 
-        double screenW = screen.getBounds().getWidth();
-        double screenH = screen.getBounds().getHeight();
+            double screenW = screen.getBounds().getWidth();
+            double screenH = screen.getBounds().getHeight();
 
-        double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
-        double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
+            double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
+            double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
 
-        // Start the welcome screen and window
-        scene = new Scene(new WelcomePane(), windowW, windowH);
-        handleStyles(scene);
+            // Start the welcome screen and window
+            scene = new Scene(new WelcomePane(), windowW, windowH);
+            handleStyles(scene);
 
-        // Open setup and show the window
-        primaryStage.setMinWidth(scene.getWidth() + 10);
-        primaryStage.setMinHeight(scene.getHeight() + 10);
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Railroad - 1.0.0(dev)");
-        primaryStage.getIcons().add(new Image(getResourceAsStream("images/logo.png")));
-        primaryStage.show();
+            // Open setup and show the window
+            primaryStage.setMinWidth(scene.getWidth() + 10);
+            primaryStage.setMinHeight(scene.getHeight() + 10);
+            primaryStage.setScene(scene);
+            primaryStage.setTitle("Railroad - 1.0.0(dev)");
+            primaryStage.getIcons().add(new Image(getResourceAsStream("images/logo.png")));
+            primaryStage.show();
 
-        LOGGER.info("Railroad started");
-        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
-        ShutdownHooks.addHook(() -> {
-            HTTP_CLIENT.dispatcher().executorService().shutdown();
-            HTTP_CLIENT.connectionPool().evictAll();
-        });
+            LOGGER.info("Railroad started");
+            PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
+            ShutdownHooks.addHook(() -> {
+                HTTP_CLIENT.dispatcher().executorService().shutdown();
+                HTTP_CLIENT.connectionPool().evictAll();
+            });
         } catch (Exception e) {
             LOGGER.error("Error starting Railroad", e);
             showErrorAlert("Error", "Error starting Railroad", "An error occurred while starting Railroad.");
@@ -270,8 +268,5 @@ public class Railroad extends Application {
         PLUGIN_MANAGER.unloadPlugins();
         ConfigHandler.saveConfig();
         ShutdownHooks.runHooks();
-
-        Platform.exit();
-        System.exit(0);
     }
 }
