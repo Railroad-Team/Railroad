@@ -120,6 +120,8 @@ public class Railroad extends Application {
                 }
             }
         });
+
+        scene.getStylesheets().add(Railroad.getResource("styles/code-area.css").toExternalForm());
     }
 
     /**

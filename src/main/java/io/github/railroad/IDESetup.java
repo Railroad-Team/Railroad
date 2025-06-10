@@ -107,7 +107,6 @@ public class IDESetup {
 
         var scene = new Scene(mainPane);
         Railroad.handleStyles(scene);
-        scene.getStylesheets().add(Railroad.getResource("styles/code-area.css").toExternalForm());
         stage.getIcons().add(new Image(Railroad.getResourceAsStream("images/logo.png")));
 
         stage.setScene(scene);
