@@ -77,7 +77,7 @@ public class Railroad extends Application {
     public static void updateTheme(String theme) {
         //TODO fix this - it needs to remove the currently applied theme
         // probably not working *properly* because of new settings system
-        getScene().getStylesheets().remove(SETTINGS_HANDLER.getSetting("railroad:theme").getValue() + ".css");
+        getScene().getStylesheets().remove(SETTINGS_HANDLER.getStringSetting("railroad:theme") + ".css");
 
         if (theme.startsWith("default")) {
             Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
@@ -85,7 +85,7 @@ public class Railroad extends Application {
             Application.setUserAgentStylesheet(new File(ThemeDownloadManager.getThemesDirectory() + "/" + theme + ".css").toURI().toString());
         }
 
-        SETTINGS_HANDLER.getSetting("railroad:theme").setValue(theme);
+        SETTINGS_HANDLER.setStringSetting("railroad:theme", theme);
     }
 
     /**
@@ -98,7 +98,7 @@ public class Railroad extends Application {
      * @param scene The scene to apply the styles to
      */
     public static void handleStyles(Scene scene) {
-        updateTheme((String) SETTINGS_HANDLER.getSetting("railroad:theme").getValue());
+        updateTheme(SETTINGS_HANDLER.getStringSetting("railroad:theme"));
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();

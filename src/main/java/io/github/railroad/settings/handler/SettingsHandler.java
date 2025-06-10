@@ -129,6 +129,113 @@ public class SettingsHandler {
         return settings.getSetting(id);
     }
 
+    public <V> V getSettingValue(String id, Class<V> type) {
+        Setting<V> setting = getSetting(id, type);
+        return setting == null ? null : setting.getValue();
+    }
+
+    public <V> void setSettingValue(String id, Class<V> clazz, V value) {
+        Setting<V> setting = getSetting(id, clazz);
+        if (setting == null) {
+            throw new IllegalArgumentException("Setting " + id + " does not exist or is not of type " + value.getClass().getName());
+        }
+
+        setting.setValue(value);
+        setting.getApplySetting().accept(null); //TODO fix generics?
+    }
+
+    public boolean getBooleanSetting(String id) {
+        Setting<Boolean> setting = getSetting(id, Boolean.class);
+        if (setting == null) {
+            throw new IllegalArgumentException("Setting " + id + " does not exist or is not a boolean setting.");
+        }
+
+        return setting.getValue();
+    }
+
+    public void setBooleanSetting(String id, boolean value) {
+        setSettingValue(id, Boolean.class, value);
+    }
+
+    public String getStringSetting(String id) {
+        Setting<String> setting = getSetting(id, String.class);
+        if (setting == null) {
+            throw new IllegalArgumentException("Setting " + id + " does not exist or is not a string setting.");
+        }
+
+        return setting.getValue();
+    }
+
+    public void setStringSetting(String id, String value) {
+        setSettingValue(id, String.class, value);
+    }
+
+    public int getIntSetting(String id) {
+        Setting<Integer> setting = getSetting(id, Integer.class);
+        if (setting == null) {
+            throw new IllegalArgumentException("Setting " + id + " does not exist or is not an integer setting.");
+        }
+
+        return setting.getValue();
+    }
+
+    public void setIntSetting(String id, int value) {
+        setSettingValue(id, Integer.class, value);
+    }
+
+    public double getDoubleSetting(String id) {
+        Setting<Double> setting = getSetting(id, Double.class);
+        if (setting == null) {
+            throw new IllegalArgumentException("Setting " + id + " does not exist or is not a double setting.");
+        }
+
+        return setting.getValue();
+    }
+
+    public void setDoubleSetting(String id, double value) {
+        setSettingValue(id, Double.class, value);
+    }
+
+    public float getFloatSetting(String id) {
+        Setting<Float> setting = getSetting(id, Float.class);
+        if (setting == null) {
+            throw new IllegalArgumentException("Setting " + id + " does not exist or is not a float setting.");
+        }
+
+        return setting.getValue();
+    }
+
+    public void setFloatSetting(String id, float value) {
+        setSettingValue(id, Float.class, value);
+    }
+
+    public long getLongSetting(String id) {
+        Setting<Long> setting = getSetting(id, Long.class);
+        if (setting == null) {
+            throw new IllegalArgumentException("Setting " + id + " does not exist or is not a long setting.");
+        }
+
+        return setting.getValue();
+    }
+
+    public void setLongSetting(String id, long value) {
+        setSettingValue(id, Long.class, value);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <V> Setting<V> getSetting(String id, Class<V> type) {
+        Setting<?> setting = settings.getSetting(id);
+        if (setting == null) {
+            return null;
+        }
+
+        if (!type.isAssignableFrom(setting.getValue().getClass())) {
+            throw new ClassCastException("Setting " + id + " is not of type " + type.getName());
+        }
+
+        return (Setting<V>) setting;
+    }
+
     @SuppressWarnings("unchecked")
     public <T> SettingCodec<T, Node, ?> getCodec(String id) {
         return (SettingCodec<T, Node, ?>) codecs.get(id);
@@ -370,7 +477,17 @@ public class SettingsHandler {
                         "railroad:appearance.themes.select",
                         "railroad:theme.select",
                         "default-dark",
-                        e -> Railroad.updateTheme(Railroad.SETTINGS_HANDLER.getSetting("railroad:theme").getValue().toString()),
+                        e -> Railroad.updateTheme(Railroad.SETTINGS_HANDLER.getStringSetting("railroad:theme")),
+                        null
+                ));
+
+        registerSetting(
+                new Setting<>(
+                        "railroad:auto_pair_inside_strings",
+                        "railroad:ide.auto_pair_inside_strings",
+                        "railroad:ide.auto_pair_inside_strings",
+                        true,
+                        $ -> {},
                         null
                 ));
     }

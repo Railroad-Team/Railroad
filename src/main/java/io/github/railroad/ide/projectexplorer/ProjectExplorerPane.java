@@ -6,6 +6,7 @@ import io.github.railroad.IDESetup;
 import io.github.railroad.Railroad;
 import io.github.railroad.ide.ImageViewerPane;
 import io.github.railroad.ide.JavaCodeEditorPane;
+import io.github.railroad.ide.JsonCodeEditorPane;
 import io.github.railroad.ide.TextEditorPane;
 import io.github.railroad.ide.projectexplorer.dialog.CopyModalDialog;
 import io.github.railroad.ide.projectexplorer.dialog.CreateFileDialog;
@@ -30,6 +31,7 @@ import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.stage.Window;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -267,8 +269,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         if (!FileHandler.isBinaryFile(path)) {
             Optional<DetachableTabPane> pane = IDESetup.findBestPaneForFiles(mainPane);
             pane.ifPresent(detachableTabPane -> { // TODO: Some kind of text editor registry
-                if (path.toString().endsWith(".java")) {
+                String fileName = path.getFileName().toString();
+                if (fileName.endsWith(".java")) {
                     detachableTabPane.addTab(path.getFileName().toString(), new JavaCodeEditorPane(path));
+                } else if (fileName.endsWith(".json")) {
+                    detachableTabPane.addTab(path.getFileName().toString(), new JsonCodeEditorPane(path));
                 } else {
                     detachableTabPane.addTab(path.getFileName().toString(), new TextEditorPane(path));
                 }
@@ -494,13 +499,13 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         try {
             Files.walkFileTree(rootPath, new SimpleFileVisitor<>() {
                 @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                public @NotNull FileVisitResult visitFile(@NotNull Path file, @NotNull BasicFileAttributes attrs) {
                     addPathToTree(file);
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                public @NotNull FileVisitResult preVisitDirectory(@NotNull Path dir, @NotNull BasicFileAttributes attrs) {
                     addPathToTree(dir);
                     return FileVisitResult.CONTINUE;
                 }
