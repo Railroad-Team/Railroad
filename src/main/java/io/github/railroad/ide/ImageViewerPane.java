@@ -17,7 +17,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,6 +57,8 @@ public class ImageViewerPane extends BorderPane {
     private Text colorSpaceText;
     private Text numberOfColorsText;
 
+    private StackPane canvasContainer;
+
     public ImageViewerPane(Path imagePath) {
         super();
         initComponents();
@@ -96,21 +97,39 @@ public class ImageViewerPane extends BorderPane {
         numberOfColorsText = new Text("Number of Colors: ");
         infoPane.getChildren().addAll(dimensionsText, fileNameText, fileSizeText, typeText, colorDepthText, colorSpaceText, numberOfColorsText);
 
-        var canvasContainer = new StackPane(canvas, infoPane);
+        canvasContainer = new StackPane(canvas, infoPane);
         canvasContainer.setStyle("-fx-background-color: #333;");
 
-        StackPane.setAlignment(infoPane, Pos.TOP_RIGHT);
+        StackPane.setAlignment(infoPane, Pos.TOP_LEFT);
         StackPane.setMargin(infoPane, new Insets(10));
 
         canvas.widthProperty().bind(canvasContainer.widthProperty());
         canvas.heightProperty().bind(canvasContainer.heightProperty());
 
-        canvas.widthProperty().addListener(obs -> {
-            if (currentImage != null) redrawCanvas();
+        canvas.widthProperty().addListener((obs, oldVal, newVal) -> {
+            if (currentImage != null && zoomLevel > 0) {
+                double oldCanvasW = oldVal.doubleValue();
+                double newCanvasW = newVal.doubleValue();
+                if (oldCanvasW > 0) { // Skip initial sizing from 0
+                    double centerX = offsetX + (oldCanvasW / 2) / zoomLevel;
+                    offsetX = centerX - (newCanvasW / 2) / zoomLevel;
+                    clampOffsets();
+                }
+                redrawCanvas();
+            }
         });
 
-        canvas.heightProperty().addListener(obs -> {
-            if (currentImage != null) redrawCanvas();
+        canvas.heightProperty().addListener((obs, oldVal, newVal) -> {
+            if (currentImage != null && zoomLevel > 0) {
+                double oldCanvasH = oldVal.doubleValue();
+                double newCanvasH = newVal.doubleValue();
+                if (oldCanvasH > 0) { // Skip initial sizing from 0
+                    double centerY = offsetY + (oldCanvasH / 2) / zoomLevel;
+                    offsetY = centerY - (newCanvasH / 2) / zoomLevel;
+                    clampOffsets();
+                }
+                redrawCanvas();
+            }
         });
 
         setCenter(canvasContainer);
@@ -156,7 +175,7 @@ public class ImageViewerPane extends BorderPane {
             return;
         }
 
-        if(canvas.getCursor() != Cursor.CLOSED_HAND) {
+        if (canvas.getCursor() != Cursor.CLOSED_HAND) {
             canvas.setCursor(Cursor.CLOSED_HAND);
         }
 
@@ -246,7 +265,7 @@ public class ImageViewerPane extends BorderPane {
 
         boolean isImageValid = false;
         if (this.currentImage != null) {
-            if(this.currentImage.isError()) {
+            if (this.currentImage.isError()) {
                 System.err.println("Error loading image: " + this.currentImage.getException().getMessage());
                 this.currentImage = null;
                 this.isPngSource = false;
@@ -255,16 +274,22 @@ public class ImageViewerPane extends BorderPane {
             }
         }
 
-        if(isImageValid) {
+        if (isImageValid) {
             infoPane.setVisible(true);
             updateInfoPane();
+            resetViewToFitImage();
         } else {
+            zoomLevel = 1.0;
+            offsetX = 0;
+            offsetY = 0;
+            redrawCanvas();
+            updateInfoPane();
             infoPane.setVisible(false);
         }
 
         canvas.setCursor(currentImage == null ? Cursor.DEFAULT : Cursor.OPEN_HAND);
 
-        resetViewToFitImage();
+        if (canvasContainer != null) canvasContainer.requestLayout();
     }
 
     private void updateInfoPane() {
@@ -272,7 +297,7 @@ public class ImageViewerPane extends BorderPane {
             dimensionsText.setText(("Dimensions: " + currentImage.getWidth() + " x " + currentImage.getHeight()).replace(".0", ""));
             fileNameText.setText("File Name: " + imagePath.getFileName());
             fileSizeText.setText("File Size: " + FileHandler.humanReadableByteCount(imagePath));
-            typeText.setText("Type: " +  FileHandler.getExtension(imagePath).toUpperCase(Locale.ROOT));
+            typeText.setText("Type: " + FileHandler.getExtension(imagePath).toUpperCase(Locale.ROOT));
             colorDepthText.setText("Color Depth: " + FileHandler.getColorDepth(currentImage));
             colorSpaceText.setText("Color Space: " + FileHandler.getColorSpace(currentImage));
             numberOfColorsText.setText("Number of Colors: " + FileHandler.getNumberOfColors(currentImage));
@@ -285,6 +310,8 @@ public class ImageViewerPane extends BorderPane {
             colorSpaceText.setText("Color Space: Unknown");
             numberOfColorsText.setText("Number of Colors: ?");
         }
+
+        infoPane.requestLayout();
     }
 
     /**
@@ -298,6 +325,7 @@ public class ImageViewerPane extends BorderPane {
 
     /**
      * Draws a checkerboard pattern onto the canvas background.
+     *
      * @param canvasW The width of the canvas.
      * @param canvasH The height of the canvas.
      */
@@ -326,7 +354,7 @@ public class ImageViewerPane extends BorderPane {
         double canvasW = canvas.getWidth();
         double canvasH = canvas.getHeight();
 
-        if(currentImage == null || currentImage.isError()) {
+        if (currentImage == null || currentImage.isError()) {
             zoomLevel = 1.0;
             offsetX = 0;
             offsetY = 0;
@@ -427,12 +455,16 @@ public class ImageViewerPane extends BorderPane {
         double scaledImgW = imgW * zoomLevel;
         double scaledImgH = imgH * zoomLevel;
         if (scaledImgW < canvasW) {
-            srcX = 0; srcW = imgW;
-            destW = scaledImgW; destX = (canvasW - destW) / 2;
+            srcX = 0;
+            srcW = imgW;
+            destW = scaledImgW;
+            destX = (canvasW - destW) / 2;
         }
         if (scaledImgH < canvasH) {
-            srcY = 0; srcH = imgH;
-            destH = scaledImgH; destY = (canvasH - destH) / 2;
+            srcY = 0;
+            srcH = imgH;
+            destH = scaledImgH;
+            destY = (canvasH - destH) / 2;
         }
 
         // Final clamping/validation of source rectangle
