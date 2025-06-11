@@ -144,8 +144,9 @@
 }
 
 .code-area .error {
-    -fx-underline: true;
-    -fx-stroke: -color-danger-emphasis;
+    -rtfx-underline-color: -color-danger-emphasis;
+    -rtfx-underline-width: 1;
+    -rtfx-underline-wave-radius: 1.5;
 }
 
 .code-area .bracket-highlighter {
