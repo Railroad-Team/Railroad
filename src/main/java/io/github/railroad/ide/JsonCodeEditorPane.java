@@ -8,6 +8,7 @@ import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableMap;
 import javafx.concurrent.Task;
 import javafx.geometry.Point2D;
+import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
@@ -154,7 +155,6 @@ public class JsonCodeEditorPane extends TextEditorPane {
             char next = !after.isEmpty() ? after.charAt(0) : '\0';
 
             boolean special = (prev == '{' && next == '}') || (prev == '[' && next == ']');
-
             if (special) {
                 String indent = baseIndent.toString();
                 String inner = indent + "    ";
@@ -166,6 +166,7 @@ public class JsonCodeEditorPane extends TextEditorPane {
                 if (prev == '{' || prev == '[') {
                     indent.append("    ");
                 }
+
                 if ((next == '}' || next == ']') && indent.length() >= 4 && prev != '{' && prev != '[') {
                     indent.setLength(indent.length() - 4);
                 }
@@ -233,6 +234,7 @@ public class JsonCodeEditorPane extends TextEditorPane {
         if (exceptions.isEmpty()) {
             exceptions = List.of(rootEx);
         }
+
         String text = getText();
         for (ValidationException ex : exceptions) {
             Pair<Integer, Integer> range = findRangeForPointer(ex.getPointerToViolation(), text);
@@ -241,10 +243,11 @@ public class JsonCodeEditorPane extends TextEditorPane {
             if (start < 0 || end <= start) {
                 continue;
             }
+
             addStyleClass(start, end, "error");
 
             var popup = new Popup();
-            var label = new javafx.scene.control.Label(ex.getMessage());
+            var label = new Label(ex.getMessage());
             label.getStyleClass().add("diagnostic-pane");
             popup.getContent().add(label);
 
@@ -257,7 +260,9 @@ public class JsonCodeEditorPane extends TextEditorPane {
             });
 
             addEventHandler(MouseEvent.MOUSE_MOVED, event -> {
-                if (!popup.isShowing()) return;
+                if (!popup.isShowing())
+                    return;
+
                 int pos = JsonCodeEditorPane.this.hit(event.getX(), event.getY())
                         .getCharacterIndex().orElse(-1);
                 if (pos < start || pos > end) {
@@ -273,6 +278,7 @@ public class JsonCodeEditorPane extends TextEditorPane {
         if (pointer == null || "#".equals(pointer)) {
             return new Pair<>(0, getLength());
         }
+
         String prop = pointer.substring(pointer.lastIndexOf('/') + 1)
                 .replace("~1", "/")
                 .replace("~0", "~");
@@ -281,18 +287,19 @@ public class JsonCodeEditorPane extends TextEditorPane {
         if (nameIdx < 0) {
             return new Pair<>(-1, -1);
         }
+
         int colonIdx = text.indexOf(':', nameIdx + search.length());
         if (colonIdx < 0) {
             return new Pair<>(nameIdx, nameIdx + search.length());
         }
+
         int valueStart = colonIdx + 1;
         while (valueStart < text.length() && Character.isWhitespace(text.charAt(valueStart))) {
             valueStart++;
         }
+
         int valueEnd = valueStart;
-        if (valueStart >= text.length()) {
-            valueEnd = valueStart;
-        } else {
+        if (valueStart < text.length()) {
             char ch = text.charAt(valueStart);
             if (ch == '"') {
                 valueEnd++;
@@ -316,8 +323,11 @@ public class JsonCodeEditorPane extends TextEditorPane {
                 valueEnd++;
                 while (valueEnd < text.length() && depth > 0) {
                     char c = text.charAt(valueEnd);
-                    if (c == open) depth++;
-                    else if (c == close) depth--;
+                    if (c == open)
+                        depth++;
+                    else if (c == close)
+                        depth--;
+
                     valueEnd++;
                 }
             } else {
@@ -326,10 +336,12 @@ public class JsonCodeEditorPane extends TextEditorPane {
                     if (c == ',' || c == '}' || c == ']' || Character.isWhitespace(c)) {
                         break;
                     }
+
                     valueEnd++;
                 }
             }
         }
+
         return new Pair<>(nameIdx, valueEnd);
     }
 
@@ -355,11 +367,11 @@ public class JsonCodeEditorPane extends TextEditorPane {
         try {
             clearErrorHighlights();
             schema.validate(new JSONObject(getText()));
-        } catch (ValidationException ex) {
-            Railroad.LOGGER.error("JSON validation error: {}", ex.getMessage());
-            highlightValidationErrors(ex);
-        } catch (JSONException ex) {
-            Railroad.LOGGER.error("JSON parse error: {}", ex.getMessage());
+        } catch (ValidationException exception) {
+            Railroad.LOGGER.error("JSON validation error: {}", exception.getMessage());
+            highlightValidationErrors(exception);
+        } catch (JSONException exception) {
+            Railroad.LOGGER.error("JSON parse error: {}", exception.getMessage());
             addStyleClass(0, getLength(), "error");
         }
     }
