@@ -66,3 +66,7 @@ LocalizedText {
 .warning {
     -fx-border-color: -color-warning-emphasis;
 }
+
+.icon-bar-horizontal, .icon-bar-vertical {
+    -fx-background-color: -color-bg-inset;
+}
