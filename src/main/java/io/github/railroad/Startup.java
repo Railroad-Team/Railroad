@@ -1,19 +1,19 @@
 package io.github.railroad;
 
+import io.github.railroad.logging.Logger;
 import io.github.railroad.ui.layout.Layout;
 import io.github.railroad.ui.layout.LayoutParseException;
 import io.github.railroad.ui.layout.LayoutParser;
 import javafx.application.Application;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 
 public class Startup {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
+    private static final Logger LOGGER = new Logger("Startup");
     private static final boolean TEST = false;
 
     public static void main(String[] args) {
+        Logger.initialise();
         if (TEST) {
             LOGGER.debug("Running tests...");
             try {
