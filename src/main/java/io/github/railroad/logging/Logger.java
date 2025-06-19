@@ -23,7 +23,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.regex.Matcher;
 
-// TODO: Ability to define a logger to a class instead of a name
 // TODO: Allow for additional argument (java.lang.Throwable) that will put the throwable in the log too
 // TODO: Consider creating a log event stream, so that we can batch write to the log file
 public class Logger {
@@ -36,6 +35,10 @@ public class Logger {
 
     public Logger(String name) {
         this.name = name;
+    }
+
+    public Logger(Class<?> clazz) {
+        this(clazz.getSimpleName());
     }
 
     public static void initialise() {
