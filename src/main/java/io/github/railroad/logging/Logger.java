@@ -4,10 +4,7 @@ import io.github.railroad.Railroad;
 import io.github.railroad.config.ConfigHandler;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -21,13 +18,16 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-// TODO: Allow for additional argument (java.lang.Throwable) that will put the throwable in the log too
 // TODO: Consider creating a log event stream, so that we can batch write to the log file
 public class Logger {
     private final String name;
 
+    private static final String BRACE_REGEX = "(?<!\\\\)\\{}";
     private static final DateTimeFormatter LOGGING_DATE_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static final DateTimeFormatter LOG_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
     private static final Path LOG_DIRECTORY = ConfigHandler.getConfigDirectory().resolve("logs");
@@ -80,12 +80,33 @@ public class Logger {
     }
 
     public void log(String message, LoggingLevel level, Object... objects) {
-        for (Object object : objects) {
-            message = message.replaceFirst("(?<!\\\\)\\{\\}", Matcher.quoteReplacement(object.toString()));
+        long bracesCount = Pattern.compile(BRACE_REGEX).matcher(message).results().count();
+
+        List<Throwable> throwables = new ArrayList<>();
+        for (int i = 0; i < objects.length; i++) {
+            Object object = objects[i];
+            // We check if the last object is a throwable and skip replacement if so.
+            // This is to allow for cases such as: Railroad.LOGGER.error("Failed to compress log file {}", exception, exception);
+            if (object instanceof Throwable throwable && i >= bracesCount) {
+                throwables.add(throwable);
+                continue;
+            }
+
+            message = message.replaceFirst(BRACE_REGEX, Matcher.quoteReplacement(object.toString()));
         }
 
-        message = getPaddedTime() + " [" + Thread.currentThread().getName() + "] " + level.name() + " " + this.name + " - " + message;
+        var messageBuilder = new StringBuilder(getPaddedTime() + " [" + Thread.currentThread().getName() + "] " + level.name() + " " + this.name + " - " + message);
+        for (Throwable throwable : throwables) {
+            var stringWriter = new StringWriter();
+            try (var printWriter = new PrintWriter(stringWriter)) {
+                throwable.printStackTrace(printWriter);
+            }
 
+            String fullTrace = stringWriter.toString();
+            messageBuilder.append("\n").append(fullTrace);
+        }
+
+        message = messageBuilder.toString();
         System.out.println(message);
 
         try {

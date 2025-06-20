@@ -14,6 +14,7 @@ public class Startup {
 
     public static void main(String[] args) {
         Logger.initialise();
+        LOGGER.info("test {}", new String("hello"));
         if (TEST) {
             LOGGER.debug("Running tests...");
             try {
