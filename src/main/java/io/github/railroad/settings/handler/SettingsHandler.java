@@ -86,10 +86,8 @@ public class SettingsHandler {
     public void loadSettingsFromFile() {
         try {
             String fileInput = Files.readString(configPath);
-
-            if (fileInput.isEmpty()) {
-                Railroad.LOGGER.error("Settings file is empty!");
-                throw new JsonSyntaxException("Settings file is empty!");
+            if(fileInput.isBlank() || fileInput.trim().replace(" ", "").equals("{}")) {
+                saveSettingsFile();
             }
 
             JsonObject json = Railroad.GSON.fromJson(fileInput, JsonObject.class);
@@ -107,7 +105,7 @@ public class SettingsHandler {
     public void saveSettingsFile() {
         Railroad.LOGGER.debug("Saving settings file");
         try {
-            Files.writeString(configPath, settings.toJson().toString());
+            Files.writeString(configPath, Railroad.GSON.toJson(settings.toJson()));
         } catch (IOException e) {
             Railroad.LOGGER.error("Failed to save settings file", e);
         }
@@ -456,6 +454,19 @@ public class SettingsHandler {
                             combo.getItems().addAll("default-dark", "default-light");
                             combo.setValue(t);
                             return combo;
+                        })
+        );
+
+        registerCodec(
+                new SettingCodec<Boolean, CheckBox, JsonElement>("railroad:ide.auto_pair_inside_strings",
+                        CheckBox::isSelected,
+                        (selected, checkBox) -> checkBox.setSelected(selected),
+                        JsonElement::getAsBoolean,
+                        JsonPrimitive::new,
+                        selected -> {
+                            var checkBox = new CheckBox();
+                            checkBox.setSelected(selected);
+                            return checkBox;
                         })
         );
     }
