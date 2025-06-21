@@ -9,12 +9,11 @@ import javafx.application.Application;
 import java.nio.file.Path;
 
 public class Startup {
-    private static final Logger LOGGER = new Logger("Startup");
+    private static final Logger LOGGER = new Logger(Startup.class);
     private static final boolean TEST = false;
 
     public static void main(String[] args) {
         Logger.initialise();
-        LOGGER.info("test {}", new String("hello"));
         if (TEST) {
             LOGGER.debug("Running tests...");
             try {

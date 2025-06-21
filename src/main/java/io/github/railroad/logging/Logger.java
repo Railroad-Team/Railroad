@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-// TODO: Consider creating a log event stream, so that we can batch write to the log file
 public class Logger {
     private final String name;
 
@@ -148,7 +147,7 @@ public class Logger {
         }
     }
 
-    public static void writeLog() {
+    private static void writeLog() {
         SCHEDULER.scheduleAtFixedRate(() -> {
             if(LOGGING_MESSAGES.isEmpty())
                 return;
