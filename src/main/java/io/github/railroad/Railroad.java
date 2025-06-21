@@ -47,7 +47,7 @@ import java.util.function.Consumer;
  * starting the application and handling the main window of the application
  */
 public class Railroad extends Application {
-    public static final Logger LOGGER = new Logger("Railroad");
+    public static final Logger LOGGER = new Logger(Railroad.class);
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
