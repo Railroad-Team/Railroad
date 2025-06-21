@@ -147,7 +147,7 @@ public class Logger {
         }
     }
 
-    public static void writeLog() {
+    private static void writeLog() {
         SCHEDULER.scheduleAtFixedRate(() -> {
             if(LOGGING_MESSAGES.isEmpty())
                 return;
