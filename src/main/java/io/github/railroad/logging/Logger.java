@@ -20,6 +20,10 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +37,10 @@ public class Logger {
     private static final Path LOG_DIRECTORY = ConfigHandler.getConfigDirectory().resolve("logs");
     private static final Path LATEST_LOG = LOG_DIRECTORY.resolve("latest.log");
 
+    private static final List<String> LOGGING_MESSAGES = new CopyOnWriteArrayList<>();
+
+    private static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor();
+
     public Logger(String name) {
         this.name = name;
     }
@@ -44,20 +52,21 @@ public class Logger {
     public static void initialise() {
         try {
             Files.createDirectories(LOG_DIRECTORY);
-            if (Files.notExists(LATEST_LOG))
-                return;
+            if (Files.exists(LATEST_LOG)) {
+                FileTime dateCreated = Files.readAttributes(LATEST_LOG, BasicFileAttributes.class).creationTime();
+                Path archivedLogPath = LOG_DIRECTORY.resolve(formatFileTime(dateCreated) + ".log");
 
-            FileTime dateCreated = Files.readAttributes(LATEST_LOG, BasicFileAttributes.class).creationTime();
-            Path archivedLogPath = LOG_DIRECTORY.resolve(formatFileTime(dateCreated) + ".log");
+                // We copy the file instead of moving, and then set the creation time manually so that we can bypass
+                // window's file-system tunneling
+                Files.copy(LATEST_LOG, archivedLogPath, StandardCopyOption.REPLACE_EXISTING);
+                Files.setAttribute(LATEST_LOG, "creationTime", FileTime.from(Instant.now()));
+                Files.write(LATEST_LOG, new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
 
-            // We copy the file instead of moving, and then set the creation time manually so that we can bypass
-            // window's file-system tunneling
-            Files.copy(LATEST_LOG, archivedLogPath, StandardCopyOption.REPLACE_EXISTING);
-            Files.setAttribute(LATEST_LOG, "creationTime", FileTime.from(Instant.now()));
-            Files.write(LATEST_LOG, new byte[0], StandardOpenOption.WRITE);
+                compress(archivedLogPath);
+                Files.deleteIfExists(archivedLogPath);
+            }
 
-            compress(archivedLogPath);
-            Files.deleteIfExists(archivedLogPath);
+            writeLog();
         } catch (IOException exception) {
             throw new RuntimeException("Failed to initialize logging", exception);
         }
@@ -109,11 +118,7 @@ public class Logger {
         message = messageBuilder.toString();
         System.out.println(message);
 
-        try {
-            Files.writeString(LATEST_LOG, message + "\n", StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-        } catch (IOException exception) {
-            throw new RuntimeException("Failed to log message", exception);
-        }
+        LOGGING_MESSAGES.add(message);
     }
 
     private static String getPaddedTime() {
@@ -141,5 +146,20 @@ public class Logger {
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to compress log file", exception);
         }
+    }
+
+    public static void writeLog() {
+        SCHEDULER.scheduleAtFixedRate(() -> {
+            if(LOGGING_MESSAGES.isEmpty())
+                return;
+
+            try {
+                var logText = String.join("\n", LOGGING_MESSAGES);
+                LOGGING_MESSAGES.clear();
+                Files.writeString(LATEST_LOG, logText, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+            } catch (IOException exception) {
+                System.exit(-1);
+            }
+        }, 0, 1, TimeUnit.SECONDS);
     }
 }
