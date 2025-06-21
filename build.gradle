@@ -58,6 +58,7 @@ dependencies {
     implementation 'org.ow2.asm:asm:9.8'
     implementation 'org.eclipse.jdt:org.eclipse.jdt.core:3.41.0'
     implementation 'com.github.erosb:everit-json-schema:1.14.6'
+    implementation 'org.apache.commons:commons-compress:1.27.1'
 
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
     compileOnly 'org.projectlombok:lombok:1.18.32'

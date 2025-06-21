@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.discord.activity.RailroadActivities;
 import io.github.railroad.localization.L18n;
+import io.github.railroad.logging.Logger;
 import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.ProjectManager;
@@ -28,8 +29,6 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import lombok.Getter;
 import okhttp3.OkHttpClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.File;
@@ -48,7 +47,7 @@ import java.util.function.Consumer;
  * starting the application and handling the main window of the application
  */
 public class Railroad extends Application {
-    public static final Logger LOGGER = LoggerFactory.getLogger(Railroad.class);
+    public static final Logger LOGGER = new Logger(Railroad.class);
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
