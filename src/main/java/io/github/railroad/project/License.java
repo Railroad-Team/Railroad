@@ -1,5 +1,8 @@
 package io.github.railroad.project;
 
+import lombok.Getter;
+
+@Getter
 public enum License {
     MIT("MIT License", "MIT"),
     ARR("All Rights Reserved", "All Rights Reserved"),
@@ -42,13 +45,5 @@ public enum License {
         }
 
         return null;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getSpdxId() {
-        return spdxId;
     }
 }

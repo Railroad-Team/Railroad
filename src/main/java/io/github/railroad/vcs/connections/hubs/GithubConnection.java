@@ -8,16 +8,18 @@ import io.github.railroad.vcs.RepositoryTypes;
 import io.github.railroad.vcs.connections.AbstractConnection;
 import io.github.railroad.vcs.connections.Profile;
 import javafx.scene.image.Image;
-import okhttp3.internal.http.HttpStatusCodesKt;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class GithubConnection extends AbstractConnection {
     private final Profile account;
@@ -48,7 +50,7 @@ public class GithubConnection extends AbstractConnection {
                 con.setRequestProperty("Accept", "application/vnd.github+json");
                 con.setRequestProperty("X-GitHub-Api-Version", "2022-11-28");
                 con.setRequestProperty("Authorization", "Bearer " + account.getAccessToken());
-                var in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                var in = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8));
                 String inputLine;
                 var content = new StringBuilder();
                 var statusCode = con.getResponseCode();
@@ -130,16 +132,39 @@ public class GithubConnection extends AbstractConnection {
 
     @Override
     public boolean cloneRepo(Repository repository, Path path) {
+        // check if the path is a directory and if its empty
+        if (Files.exists(path) && !Files.isDirectory(path)) {
+            Railroad.LOGGER.error("Path is not a directory at: {}", path);
+            return false;
+        }
+
+        try {
+            Files.createDirectories(path);
+        } catch (IOException exception) {
+            Railroad.LOGGER.error("Failed to create directory at: {}", path, exception);
+            return false;
+        }
+
+        try(Stream<Path> files = Files.list(path)) {
+            if (files.findAny().isPresent()) {
+                Railroad.LOGGER.error("Path is not empty");
+                return false;
+            }
+        } catch (IOException exception) {
+            Railroad.LOGGER.error("Something went wrong while checking the path", exception);
+            return false;
+        }
+
         if (repository.getRepositoryType() == RepositoryTypes.GIT) {
-            Railroad.LOGGER.info("Cloning Repo:{} to:{}", repository.getRepositoryCloneURL(), path.toAbsolutePath());
+            Railroad.LOGGER.info("Cloning Repo: {} to: {}", repository.getRepositoryCloneURL(), path.toAbsolutePath());
             var processBuilder = new ProcessBuilder();
             processBuilder.command("git", "clone", repository.getRepositoryCloneURL(), path.toAbsolutePath().resolve(repository.getRepositoryName()).toString());
 
             try {
                 Process process = processBuilder.start();
-                new Thread(() -> {
-                    try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                         var errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                var thread = new Thread(() -> {
+                    try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+                         var errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
                         String line;
                         while ((line = reader.readLine()) != null) {
                             //updateOutput(line);
@@ -150,7 +175,10 @@ public class GithubConnection extends AbstractConnection {
                     } catch (IOException exception) {
                         Railroad.LOGGER.error("Something went wrong trying to clone a github repo", exception);
                     }
-                }).start();
+                });
+
+                thread.setDaemon(true);
+                thread.start();
 
                 int exitCode = process.waitFor();
                 if (exitCode == 0) {

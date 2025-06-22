@@ -1,9 +1,13 @@
 package io.github.railroad.discord.activity;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+@Getter
 public class DiscordActivity {
     private final DiscordActivityTimestamps timestamps;
     private final DiscordActivityAssets assets;
@@ -11,10 +15,14 @@ public class DiscordActivity {
     private transient final DiscordActivitySecrets secretsBak;
     private transient final List<DiscordActivityButton> buttonsBak;
     private Long applicationId;
+    @Setter
     private String name;
     private int type;
+    @Setter
     private String state;
+    @Setter
     private String details;
+    @Setter
     private boolean instance;
     private List<DiscordActivityButton> buttons;
     private DiscordActivitySecrets secrets;
@@ -29,28 +37,8 @@ public class DiscordActivity {
         setActivityButtonsMode(ActivityButtonsMode.SECRETS);
     }
 
-    public long getApplicationId() {
-        return applicationId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getState() {
-        return state;
-    }
-
-    public void setState(String state) {
-        this.state = state;
-    }
-
-    public String getDetails() {
-        return details;
-    }
-
-    public void setDetails(String details) {
-        this.details = details;
+    public void setApplicationId(long applicationId) {
+        this.applicationId = applicationId;
     }
 
     public ActivityType getType() {
@@ -59,30 +47,6 @@ public class DiscordActivity {
 
     public void setType(ActivityType type) {
         this.type = type.ordinal();
-    }
-
-    public DiscordActivityTimestamps getTimestamps() {
-        return timestamps;
-    }
-
-    public DiscordActivityAssets getAssets() {
-        return assets;
-    }
-
-    public DiscordActivityParty getParty() {
-        return party;
-    }
-
-    public DiscordActivitySecrets getSecrets() {
-        return secrets;
-    }
-
-    public boolean isInstance() {
-        return instance;
-    }
-
-    public void setInstance(boolean instance) {
-        this.instance = instance;
     }
 
     public List<DiscordActivityButton> getButtons() {

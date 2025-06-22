@@ -1,9 +1,7 @@
 plugins {
     id 'java'
     id 'application'
-    id 'org.javamodularity.moduleplugin' version '1.8.12'
-    id 'org.openjfx.javafxplugin' version '0.0.13'
-    id 'org.beryx.jlink' version '2.25.0'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
@@ -13,6 +11,8 @@ version '1.0-SNAPSHOT'
 repositories {
     mavenCentral()
     maven { url 'https://repo.gradle.org/gradle/libs-releases' }
+    maven { url 'https://github.com/javaterminal/terminalfx/raw/master/releases' }
+    maven { url 'https://packages.jetbrains.team/maven/p/ij/intellij-dependencies' }
 }
 
 java {
@@ -25,13 +25,12 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 application {
-    mainModule = 'io.github.railroad'
     mainClass = 'io.github.railroad.Startup'
 }
 
 javafx {
     version = '21'
-    modules = ['javafx.controls', 'javafx.swing']
+    modules = ['javafx.controls', 'javafx.swing', 'javafx.web', 'javafx.fxml', 'javafx.graphics', 'javafx.media']
 }
 
 dependencies {
@@ -43,23 +42,23 @@ dependencies {
     implementation 'org.json:json:20240303'
     implementation 'io.github.palexdev:materialfx:11.17.0'
     implementation 'ch.qos.logback:logback-classic:1.5.6'
-    implementation 'org.apache.groovy:groovy-all:5.0.0-alpha-8'
-    implementation 'org.gradle:gradle-tooling-api:7.3-20210825160000+0000'
+    implementation 'org.apache.groovy:groovy-all:5.0.0-alpha-9'
+    implementation 'org.gradle:gradle-tooling-api:8.9'
+    implementation 'com.panemu:tiwulfx-dock:0.3'
+    implementation 'com.spencerwi:Either.java:2.9.0'
+    implementation 'com.kodedu.terminalfx:terminalfx:1.2.0'
+    implementation 'org.fxmisc.richtext:richtextfx:0.11.3'
+    implementation 'com.github.javaparser:javaparser-symbol-solver-core:3.26.1'
+    implementation 'io.github.bonede:tree-sitter:0.22.6a'
+    implementation 'io.github.bonede:tree-sitter-java:0.21.0a'
+    implementation 'org.reflections:reflections:0.10.2'
+    implementation 'org.ow2.asm:asm:9.8'
+    implementation 'org.eclipse.jdt:org.eclipse.jdt.core:3.41.0'
+    implementation 'com.github.erosb:everit-json-schema:1.14.6'
+    implementation 'org.apache.commons:commons-compress:1.27.1'
 
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
     compileOnly 'org.projectlombok:lombok:1.18.32'
-}
-
-jlink {
-    imageZip = project.file("${layout.buildDirectory}/distributions/app-${javafx.platform.classifier}.zip")
-    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
-    launcher {
-        name = 'app'
-    }
-}
-
-jlinkZip {
-    group = 'distribution'
 }
 
 jar {
@@ -75,4 +74,52 @@ jar {
 shadowJar {
     zip64 true
     mergeServiceFiles()
+    archiveClassifier = '' // This makes shadowJar the default jar
 }
+
+// Configure jpackage to use the shadow jar
+tasks.register('jpackageImage', Exec) {
+    dependsOn shadowJar
+
+    def inputDir = file("${layout.buildDirectory.get()}/libs")
+    def outputDir = file("${layout.buildDirectory.get()}/jpackage")
+    if(outputDir.exists()) {
+        inputDir.deleteDir()
+    }
+
+    commandLine 'jpackage',
+            '--input', inputDir,
+            '--dest', outputDir,
+            '--name', 'Railroad',
+            '--main-jar', shadowJar.archiveFileName.get(),
+            '--main-class', 'io.github.railroad.Startup',
+            '--type', 'app-image',
+            '--java-options', '-Xmx2048m'
+}
+
+tasks.register('jpackageInstaller', Exec) {
+    dependsOn jpackageImage
+
+    def outputDir = file("${layout.buildDirectory.get()}/jpackage")
+    if(outputDir.exists()) {
+        outputDir.deleteDir()
+    }
+
+    commandLine 'jpackage',
+            '--app-image', "${outputDir}/Railroad",
+            '--dest', outputDir,
+            '--name', 'Railroad',
+            '--app-version', '1.0.0',
+            '--vendor', 'Railroad Team',
+            '--description', 'Railroad Application'
+
+    // Add platform-specific options
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        args '--win-dir-chooser', '--win-menu', '--win-shortcut'
+    } else if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+        args '--mac-package-name', 'Railroad'
+    }
+}
+
+// Make build depend on shadowJar instead of jar
+build.dependsOn shadowJar

@@ -41,7 +41,7 @@ public class DiscordActivityManager {
      * https://discordapp.com/developers/docs/game-sdk/activities#updateactivity</a>
      */
     public void updateActivity(DiscordActivity activity, Consumer<DiscordResult> callback) {
-        this.core.sendCommand(DiscordCommand.Type.SET_ACTIVITY, new DiscordSetActivity.Args(this.core.getPID(), activity), response -> {
+        this.core.sendCommand(DiscordCommand.Type.SET_ACTIVITY, new DiscordSetActivity.Args(this.core.getPid(), activity), response -> {
             callback.accept(this.core.checkError(response));
         });
     }

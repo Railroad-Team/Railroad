@@ -7,7 +7,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-public class WindowsDiscordIPCChannel implements DiscordIPCChannel {
+public final class WindowsDiscordIPCChannel implements DiscordIPCChannel {
     private final RandomAccessFile raf;
     private final FileChannel channel;
     private boolean blocking = true;

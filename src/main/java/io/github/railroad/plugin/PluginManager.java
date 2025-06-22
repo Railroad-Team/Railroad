@@ -13,6 +13,11 @@ public class PluginManager extends Thread {
     private final ObservableList<Plugin> pluginList = FXCollections.observableArrayList();
     private PluginManagerErrorEventListener listener;
 
+    public static Plugin createPlugin(String pluginName) throws Exception {
+        return (Plugin) Class.forName("io.github.railroad.plugin.defaults." + pluginName)
+                .getDeclaredConstructor().newInstance();
+    }
+
     public void addCustomEventListener(PluginManagerErrorEventListener listener) {
         this.listener = listener;
     }
@@ -43,11 +48,6 @@ public class PluginManager extends Thread {
                 }
             } else showError(plugin, null, "No Phase result");
         }
-    }
-
-    public static Plugin createPlugin(String pluginName) throws Exception {
-        return (Plugin) Class.forName("io.github.railroad.plugin.defaults." + pluginName)
-                .getDeclaredConstructor().newInstance();
     }
 
     public void showError(Plugin plugin, PluginPhaseResult pluginPhaseResult, String message) {
@@ -88,10 +88,11 @@ public class PluginManager extends Thread {
             while (plugin.getHealthChecker().isAlive()) {
                 try {
                     plugin.getHealthChecker().join(50);
-                } catch (InterruptedException ignored) {}
+                } catch (InterruptedException ignored) {
+                }
             }
 
-            plugin.unload();
+            PluginPhaseResult result = plugin.unload(); // TODO: Handle result
             showLog(plugin, "Unloaded");
         }
     }
@@ -101,9 +102,9 @@ public class PluginManager extends Thread {
         showLog(plugin, "Added plugin");
     }
 
-    public void notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
+    public void notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes railroadActivityTypes, Object... data) {
         for (Plugin plugin : this.pluginList) {
-            PluginPhaseResult phaseResult = plugin.railroadActivityChange(railroadActivityTypes);
+            PluginPhaseResult phaseResult = plugin.railroadActivityChange(railroadActivityTypes, data);
             if (plugin.getState() == PluginState.ACTIVITY_UPDATE_ERROR) {
                 showError(plugin, phaseResult, "Update Activity");
             }

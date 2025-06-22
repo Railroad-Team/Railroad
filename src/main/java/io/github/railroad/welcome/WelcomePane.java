@@ -1,12 +1,11 @@
 package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.project.ProjectManager;
-import io.github.railroad.project.data.Project;
-import io.github.railroad.project.ui.create.NewProjectPane;
-import io.github.railroad.settings.ui.SettingsPane;
+import io.github.railroad.project.Project;
+import io.github.railroad.settings.ui.TreeViewSettings;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.welcome.project.ui.NewProjectPane;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -31,7 +30,7 @@ public class WelcomePane extends RRHBox {
     private final WelcomeImportProjectsPane importProjectsPane;
 
     private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
-    private final AtomicReference<SettingsPane> settingsPane = new AtomicReference<>();
+    private final AtomicReference<TreeViewSettings> settingsPane = new AtomicReference<>();
 
     public WelcomePane() {
         leftPane = new WelcomeLeftPane();
@@ -82,7 +81,7 @@ public class WelcomePane extends RRHBox {
                                 File selected = directoryChooser.showDialog(getScene().getWindow());
                                 Railroad.LOGGER.debug("Dir Selected: {}\n", selected);
 
-                                if(selected != null) {
+                                if (selected != null) {
                                     Railroad.PROJECT_MANAGER.newProject(new Project(selected.toPath()));
                                 }
                             }
@@ -92,11 +91,13 @@ public class WelcomePane extends RRHBox {
                             }
 
                             case SETTINGS -> {
-                                var settingsPane = this.settingsPane.updateAndGet(
-                                        pane -> Objects.requireNonNullElseGet(pane, SettingsPane::new));
-                                Railroad.getScene().setRoot(settingsPane);
-                                settingsPane.getBackButton().setOnAction(e ->
-                                        Railroad.getScene().setRoot(WelcomePane.this));
+                                this.settingsPane.getAndUpdate(pane -> {
+                                    if (pane != null) {
+                                        pane.close();
+                                    }
+
+                                    return new TreeViewSettings();
+                                });
                             }
 
                             default -> throw new IllegalStateException("Unexpected value: " + newValue);

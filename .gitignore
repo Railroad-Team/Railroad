@@ -43,3 +43,7 @@ bin/
 
 ### Dev-time ###
 *-parchment.xml
+*.class
+
+### Logs ###
+hs_err_pid*.log

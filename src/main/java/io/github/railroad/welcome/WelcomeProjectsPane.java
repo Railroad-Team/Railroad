@@ -1,12 +1,13 @@
 package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.project.ProjectSort;
-import io.github.railroad.project.data.Project;
-import io.github.railroad.project.ui.create.widget.ProjectListCell;
+import io.github.railroad.localization.ui.LocalizedTextField;
+import io.github.railroad.project.Project;
 import io.github.railroad.ui.defaults.RRListView;
-import io.github.railroad.ui.localized.LocalizedTextField;
+import io.github.railroad.welcome.project.ProjectSort;
+import io.github.railroad.welcome.project.ui.widget.ProjectListCell;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
@@ -15,6 +16,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * The pane that displays the list of projects in the welcome screen.
+ */
 public class WelcomeProjectsPane extends ScrollPane {
     private final RRListView<Project> projectsList = new RRListView<>();
 
@@ -101,21 +105,21 @@ public class WelcomeProjectsPane extends ScrollPane {
     }
 
     public void setSortProperty(ObservableValue<ProjectSort> observable) {
-        sortProperty = observable;
+        this.sortProperty = observable;
 
-        observable.addListener((observableValue, oldValue, newValue) -> sortProjects(newValue));
-        projectsList.getItems().addListener((ListChangeListener<Project>) c -> sortProjects(observable.getValue()));
-        sortProjects(observable.getValue());
+        this.sortProperty.addListener((observableValue, oldValue, newValue) -> sortProjects(newValue));
+        projectsList.getItems().addListener((ListChangeListener<Project>) c -> sortProjects(this.sortProperty.getValue()));
+        sortProjects(this.sortProperty.getValue());
     }
 
     private void sortProjects(ProjectSort sort) {
-        List<Project> copy = new ArrayList<>(List.copyOf(projectsList.getItems()));
+        List<Project> copy = new ArrayList<>(projectsList.getItems());
         if (sort == null) return;
         copy.sort(sort.getComparator());
 
         if (copy.equals(projectsList.getItems()))
             return;
 
-        projectsList.getItems().setAll(copy);
+        projectsList.getItems().setAll(FXCollections.observableArrayList(copy));
     }
 }

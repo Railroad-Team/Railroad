@@ -1,8 +1,8 @@
 package io.github.railroad.settings.ui.themes;
 
+import io.github.railroad.localization.ui.LocalizedButton;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRStackPane;
-import io.github.railroad.ui.localized.LocalizedButton;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
@@ -39,7 +39,7 @@ public class ThemeDownloadCell extends ListCell<Theme> {
         previewButton.setBackground(Background.EMPTY);
 
         downloadButton.setPrefWidth(87.2);
-        downloadButton.setAlignment(Pos.CENTER_RIGHT);
+        downloadButton.setAlignment(Pos.CENTER);
         downloadButton.setTextAlignment(TextAlignment.JUSTIFY);
 
         themeDownloadNode.setAlignment(Pos.CENTER_LEFT);

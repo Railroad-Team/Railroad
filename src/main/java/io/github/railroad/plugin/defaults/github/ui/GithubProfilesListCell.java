@@ -1,10 +1,8 @@
 package io.github.railroad.plugin.defaults.github.ui;
 
-import io.github.railroad.Railroad;
-import io.github.railroad.plugin.defaults.Github;
 import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.defaults.RRStackPane;
 import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.vcs.connections.Profile;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -12,9 +10,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
-import io.github.railroad.ui.defaults.RRStackPane;
-
-import java.util.Objects;
 
 public class GithubProfilesListCell extends ListCell<Profile> {
     private final RRStackPane node = new RRStackPane();
@@ -31,20 +26,20 @@ public class GithubProfilesListCell extends ListCell<Profile> {
         var dropdown = new ContextMenu();
         var removeItem = new MenuItem("Remove");
 
-        removeItem.setOnAction(event -> {
-            Profile profile = profileListNode.profileProperty().get();
-            if (profile != null) {
-                Github.GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", Github.GithubSettings.class);
-                for (Profile account : settings.getAccounts()) {
-                    if (Objects.equals(account, profile)) {
-                        settings.getAccounts().remove(account);
-                        ConfigHandler.saveConfig();
-                    }
-                }
-                
-                Railroad.REPOSITORY_MANAGER.deleteProfile(profile);
-            }
-        });
+//        removeItem.setOnAction(event -> {
+//            Profile profile = profileListNode.profileProperty().get();
+//            if (profile != null) {
+//                Github.GithubSettings settings = ConfigHandler.getConfig().getSettings().getPluginSettings("Github", Github.GithubSettings.class);
+//                for (Profile account : settings.getAccounts()) {
+//                    if (Objects.equals(account, profile)) {
+//                        settings.getAccounts().remove(account);
+//                        ConfigHandler.saveConfig();
+//                    }
+//                }
+//
+//                Railroad.REPOSITORY_MANAGER.deleteProfile(profile);
+//            }
+//        });
 
         dropdown.getItems().addAll(removeItem);
 

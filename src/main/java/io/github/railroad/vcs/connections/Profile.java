@@ -16,7 +16,8 @@ public class Profile implements JsonSerializable<JsonObject> {
     private final StringProperty alias = new SimpleStringProperty();
     private final BooleanProperty toDelete = new SimpleBooleanProperty(false);
 
-    public Profile() {}
+    public Profile() {
+    }
 
     public String getUsername() {
         return username.get();
@@ -78,30 +79,30 @@ public class Profile implements JsonSerializable<JsonObject> {
 
     @Override
     public void fromJson(JsonObject json) {
-        if(json.has("Username") && json.get("Username").isJsonPrimitive()) {
+        if (json.has("Username") && json.get("Username").isJsonPrimitive()) {
             JsonPrimitive username = json.getAsJsonPrimitive("Username");
-            if(username.isString()) {
+            if (username.isString()) {
                 this.username.set(username.getAsString());
             }
         }
 
-        if(json.has("Password") && json.get("Password").isJsonPrimitive()) {
+        if (json.has("Password") && json.get("Password").isJsonPrimitive()) {
             JsonPrimitive password = json.getAsJsonPrimitive("Password");
-            if(password.isString()) {
+            if (password.isString()) {
                 this.password.set(password.getAsString());
             }
         }
 
-        if(json.has("AccessToken") && json.get("AccessToken").isJsonPrimitive()) {
+        if (json.has("AccessToken") && json.get("AccessToken").isJsonPrimitive()) {
             JsonPrimitive accessToken = json.getAsJsonPrimitive("AccessToken");
-            if(accessToken.isString()) {
+            if (accessToken.isString()) {
                 this.accessToken.set(accessToken.getAsString());
             }
         }
 
-        if(json.has("Alias") && json.get("Alias").isJsonPrimitive()) {
+        if (json.has("Alias") && json.get("Alias").isJsonPrimitive()) {
             JsonPrimitive alias = json.getAsJsonPrimitive("Alias");
-            if(alias.isString()) {
+            if (alias.isString()) {
                 this.alias.set(alias.getAsString());
             }
         }

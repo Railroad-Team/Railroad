@@ -1,3 +1,13 @@
+#Generic
+railroad.generic.apply=Apply
+railroad.generic.ok=Ok
+railroad.generic.cancel=Cancel
+railroad.generic.close=Close
+railroad.generic.back=Back
+railroad.generic.next=Next
+railroad.generic.finish=Finish
+
+
 railroad.home.welcome.projects=Projects List
 railroad.home.welcome.projectsearch=Search projects...
 railroad.home.welcome.home=Home
@@ -5,6 +15,22 @@ railroad.home.welcome.openproject=Open Project
 railroad.home.welcome.newproject=New Project
 railroad.home.welcome.importproject=Import Project
 railroad.home.welcome.settings=Settings
+
+#Settings
+railroad=Railroad
+railroad.home.settings.title=Settings
+railroad.home.settings.description=Configure your settings here.
+railroad.appearance=Appearance
+railroad.general.language.title=Language
+railroad.appearance.themes=Themes
+
+railroad.general=General
+railroad.general.project_folder.title=Default Project Folder
+railroad.appearance.themes.download_repo.title=Custom Repository
+railroad.appearance.themes.download_repo.description=Specify a GitHub repository URL to download themes from.
+railroad.appearance.themes.select.title=Theme
+railroad.appearance.themes.select.description=Select a theme from your specified repository.
+railroad.appearance.language.language.title=Language
 
 railroad.home.welcome.sort.none=None
 railroad.home.welcome.sort.name=Name
@@ -16,19 +42,9 @@ railroad.home.welcome.project.remove=Remove
 railroad.home.settings.search=Search settings...
 railroad.home.settings.back=Back
 
-railroad.home.settings.general=General
-railroad.home.settings.appearance=Appearance
-railroad.home.settings.behavior=Behavior
-railroad.home.settings.keymaps=Keymaps
-railroad.home.settings.plugins=Plugins
-railroad.home.settings.projects=Projects
-railroad.home.settings.tools=Tools
-
 railroad.home.settings.general.github=Github Connection:
 railroad.home.settings.general.github.connect=Connect
 railroad.home.settings.general.github.disconnect=Disconnect
-
-railroad.home.settings.general.language=Language:
 
 railroad.home.settings.appearance.theme=Select a Theme
 railroad.home.settings.appearance.downloadtheme=Download themes
@@ -44,56 +60,143 @@ railroad.home.settings.keymaps.action.runproject=Run Project
 railroad.home.settings.keymaps.action.termproject=Terminate Project
 
 railroad.home.project=Project
+railroad.home.project.browse=Browse
 railroad.home.project.create=Create
 railroad.home.project.creating=Creating project...
 railroad.home.welcome.project.searchtype=Search Project Types
 
-railroad.home.project.mappings=Mappings
-railroad.home.project.mappingchannel=Mapping Channel:
-railroad.home.project.mappingversion=Mapping Version:
+railroad.project.creation.name=Name
+railroad.project.creation.name.prompt=Enter project name
+railroad.project.creation.name.error.required=You must enter a project name
+railroad.project.creation.name.error.length_long=Project name is too long
+railroad.project.creation.name.error.length_short=Project name is too short
+railroad.project.creation.name.error.invalid_characters=Project name contains invalid characters
 
-railroad.home.project.details=Details (Optional)
-railroad.home.project.details.author=Author:
-railroad.home.project.details.credits=Credits:
-railroad.home.project.details.description=Description:
-railroad.home.project.details.issues=Issues:
-railroad.home.project.details.jsonurl=Update JSON URL:
-railroad.home.project.details.displayurl=Display URL:
-railroad.home.project.details.displaytest=Display Test:
-railroad.home.project.details.client=Client Side Only:
-railroad.home.project.details.homepage=Homepage:
-railroad.home.project.details.sources=Sources:
+railroad.project.creation.location=Location
+railroad.project.creation.location.error.required=You must enter a project location
+railroad.project.creation.location.error.invalid_characters=Project location contains invalid characters
+railroad.project.creation.location.error.not_exists=Project location does not exist
+railroad.project.creation.location.error.not_directory=Project location is not a directory
+railroad.project.creation.location.error.invalid_path=Project location is invalid
+railroad.project.creation.location.warning.onedrive=It is not recommended to create projects in OneDrive as it has a tendency to cause problems.
+railroad.project.creation.location.info=This will be created at: %s
 
-railroad.home.minecraft=Minecraft
-railroad.home.minecraft.version=Minecraft Version:
+railroad.project.creation.git=Create Git Repository
 
-railroad.home.project.name=Name:
-railroad.home.project.location=Location:
-railroad.home.project.browse=Browse
-railroad.home.project.destination=This will be created at:
-railroad.home.project.git=Create Git Repository:
-railroad.home.project.license=License:
+railroad.project.creation.license=License
+railroad.project.creation.license.custom=Custom License
+railroad.project.creation.license.custom.prompt=Enter custom license
+railroad.project.creation.license.custom.error.required=You must enter a custom license
 
-railroad.home.project.maven=Maven
-railroad.home.project.maven.group=Group ID:
-railroad.home.project.maven.artifact=Artifact ID:
-railroad.home.project.maven.version=Version:
+railroad.project.creation.minecraft_version=Minecraft Version
+railroad.project.creation.forge_version=Forge Version
+railroad.project.creation.fabric_loader_version=Fabric Loader Version
+railroad.project.creation.include_fapi=Include Fabric API
+railroad.project.creation.fabric_api_version=Fabric API Version
 
-railroad.home.project.forge.version=Forge Version:
+railroad.project.creation.mod_id=Mod ID
+railroad.project.creation.mod_id.prompt=Enter mod ID
+railroad.project.creation.mod_id.error.required=You must enter a mod ID
+railroad.project.creation.mod_id.error.length_short=Mod ID is too short
+railroad.project.creation.mod_id.error.length_long=Mod ID is too long
+railroad.project.creation.mod_id.error.invalid_characters=Mod ID contains invalid characters
 
-railroad.home.project.fabric.version=Fabric Version:
-railroad.home.project.fabric.api=Include Fabric API:
-railroad.home.project.fabric.apiversion=Fabric API Version:
-railroad.home.project.fabric.uaw=Use Access Widener:
-railroad.home.project.fabric.split=Split Sources:
+railroad.project.creation.mod_name=Mod Name
+railroad.project.creation.mod_name.prompt=Enter mod name
+railroad.project.creation.mod_name.error.required=You must enter a mod name
+railroad.project.creation.mod_name.error.length_long=Mod name is too long
 
-railroad.home.project.neoforged.version=NeoForged Version:
+railroad.project.creation.main_class=Main Class
+railroad.project.creation.main_class.prompt=Enter the name of the main class
+railroad.project.creation.main_class.error.required=You must enter the name of the main class
+railroad.project.creation.main_class.error.invalid_characters=Main class name contains invalid characters
 
-railroad.home.project.modid=Mod ID:
-railroad.home.project.modname=Mod Name:
-railroad.home.project.mainclass=Main Class:
-railroad.home.project.mixins=Use Mixins:
-railroad.home.project.uat=Use Access Transformer:
-railroad.home.project.grf=Generate Run Folders:
+railroad.project.creation.use_mixins=Use Mixins
+railroad.project.creation.use_access_transformer=Use Access Transformer
+railroad.project.creation.use_access_widener=Use Access Widener
+railroad.project.creation.gen_run_folders=Generate Run Folders
+railroad.project.creation.split_sources=Split Sources
 
-railroad.home.project.tooltips.projectcreated=The project will be created in this directory.
+railroad.project.creation.mapping_channel=Mapping Channel
+railroad.project.creation.mapping_version=Mapping Version
+
+railroad.project.creation.author=Author
+railroad.project.creation.author.prompt=Enter author name
+railroad.project.creation.author.error.length_long=Author name is too long
+
+railroad.project.creation.credits=Credits
+railroad.project.creation.credits.prompt=Enter credits
+railroad.project.creation.credits.error.length_long=Credits are too long
+
+railroad.project.creation.description=Description
+railroad.project.creation.description.prompt=Enter description
+railroad.project.creation.description.error.length_long=Description is too long
+
+railroad.project.creation.issues=Issues URL
+railroad.project.creation.issues.prompt=Enter issues URL
+railroad.project.creation.issues.error.length_long=Issues URL is too long
+railroad.project.creation.issues.error.invalid_url=Issues URL is invalid
+
+railroad.project.creation.update_json_url=Update JSON URL
+railroad.project.creation.update_json_url.prompt=Enter update JSON URL
+railroad.project.creation.update_json_url.error.length_long=Update JSON URL is too long
+railroad.project.creation.update_json_url.error.invalid_url=Update JSON URL is invalid
+
+railroad.project.creation.display_url=Display URL
+railroad.project.creation.display_url.prompt=Enter display URL
+railroad.project.creation.display_url.error.length_long=Display URL is too long
+railroad.project.creation.display_url.error.invalid_url=Display URL is invalid
+
+railroad.project.creation.homepage=Homepage URL
+railroad.project.creation.homepage.prompt=Enter homepage URL
+railroad.project.creation.homepage.error.length_long=Homepage URL is too long
+railroad.project.creation.homepage.error.invalid_url=Homepage URL is invalid
+
+railroad.project.creation.sources=Sources URL
+railroad.project.creation.sources.prompt=Enter sources URL
+railroad.project.creation.sources.error.length_long=Sources URL is too long
+railroad.project.creation.sources.error.invalid_url=Sources URL is invalid
+
+railroad.project.creation.display_test=Display Test
+railroad.project.creation.client_side_only=Client Side Only
+
+railroad.project.creation.group_id=Group ID
+railroad.project.creation.group_id.prompt=Enter group ID
+railroad.project.creation.group_id.error.required=You must enter a group ID
+railroad.project.creation.group_id.error.length_long=Group ID is too long
+railroad.project.creation.group_id.error.invalid_characters=Group ID contains invalid characters
+
+railroad.project.creation.artifact_id=Artifact ID
+railroad.project.creation.artifact_id.prompt=Enter artifact ID
+railroad.project.creation.artifact_id.error.required=You must enter an artifact ID
+railroad.project.creation.artifact_id.error.length_long=Artifact ID is too long
+railroad.project.creation.artifact_id.error.invalid_characters=Artifact ID contains invalid characters
+
+railroad.project.creation.version=Version
+railroad.project.creation.version.prompt=Enter version
+railroad.project.creation.version.error.required=You must enter a version
+railroad.project.creation.version.error.length_long=Version is too long
+railroad.project.creation.version.error.invalid_characters=Version contains invalid characters
+
+railroad.project.creation.section.project=Project
+railroad.project.creation.section.minecraft=Minecraft
+railroad.project.creation.section.optional=Optional
+railroad.project.creation.section.mappings=Mappings
+railroad.project.creation.section.maven=Maven
+
+railroad.ide.welcome.message=Welcome to Railroad!
+railroad.ide.welcome.message.description=To get started, create a new file or open an existing one.
+railroad.ide.welcome.features=Features
+
+railroad.ide.welcome.feature.model_viewer_editor=Model Viewer & Editor
+railroad.ide.welcome.feature.structure_viewer_editor=Structure Viewer & Editor
+railroad.ide.welcome.feature.texture_viewer_editor=Texture Viewer & Editor
+railroad.ide.welcome.feature.sound_visualizer=Sound Visualizer
+railroad.ide.welcome.feature.mixin_support=Mixin Support
+
+railroad.ide.welcome.getting_started=Getting Started
+railroad.ide.welcome.getting_started.description=Learn how to use Railroad with our wiki and tutorials.
+railroad.ide.welcome.getting_started.wiki=Wiki
+railroad.ide.welcome.getting_started.tutorials=Tutorials
+
+railroad.ide.project_explorer.search_field=Search files...

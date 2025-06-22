@@ -1,0 +1,200 @@
+// fileName: defaultName
+buildscript {
+    repositories {
+        // These repositories are only for Gradle plugins, put any other repositories in the repository block further below
+        maven { url = 'https://maven.minecraftforge.net' }
+        mavenCentral()
+        <% if(props.useMixins) {
+            out.print("\n        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }")
+        } %>
+        <% if(mappings.channel == 'parchment') {
+            out.print("\n    maven { url = 'https://maven.parchmentmc.org' }")
+        } %>
+    }
+    dependencies {
+        <% if(props.useMixins) {
+            out.print("\n        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'")
+        } %>
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
+        <% if(mappings.channel == 'parchment') {
+            out.print("\n        classpath 'org.parchmentmc:librarian:1.+'")
+        }
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'eclipse'
+apply plugin: 'maven-publish'
+<% if(mappings.channel == 'parchment') {
+    out.print("\napply plugin: 'org.parchmentmc.librarian.forgegradle'")
+}
+
+version = mod_version
+group = mod_group_id
+archivesBaseName = mod_id
+
+// Mojang ships Java 16 to end users in 1.17+ instead of Java 8 in 1.16 or lower, so your mod should target Java 16.
+java.toolchain.languageVersion = JavaLanguageVersion.of(16)
+
+println "Java: \${System.getProperty 'java.version'}, JVM: \${System.getProperty 'java.vm.version'} (\${System.getProperty 'java.vendor'}), Arch: \${System.getProperty 'os.arch'}"
+minecraft {
+    mappings channel: mapping_channel, version: mapping_version
+
+    <% if(props.genRunFolders) {
+        out.print("\n    generateRunFolders = true")
+    } %>
+
+    <% if(props.useAccessTransformer) {
+        out.print("\n    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')")
+    } %>
+
+    runs {
+        client {
+            <% if(props.useMixins) {
+                out.print("\n        properties 'mixin.env.remapRefMap': 'true'")
+                out.print("\n        property 'mixin.env.refMapRemappingFile', \"\${project.projectDir}/build/createSrgToMcp/output.srg\"")
+                out.print("\n        arg \"-mixin.config=\"+archivesBaseName+\".mixins.json\"")
+            } %>
+
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                "\${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        client {
+            <% if(props.useMixins) {
+                out.print("\n        properties 'mixin.env.remapRefMap': 'true'")
+                out.print("\n        property 'mixin.env.refMapRemappingFile', \"\${project.projectDir}/build/createSrgToMcp/output.srg\"")
+                out.print("\n        arg \"-mixin.config=\"+archivesBaseName+\".mixins.json\"")
+            } %>
+
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                "\${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        gameTestServer {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                "\${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        data {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
+            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+
+            mods {
+                "\${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+    // Put repositories for dependencies here
+    // ForgeGradle automatically adds the Forge maven and Maven Central for you
+
+    // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
+    // See https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver
+    // flatDir {
+    //     dir 'libs'
+    // }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:\${minecraft_version}-\${forge_version}"
+
+    // Example mod dependency with JEI
+    // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
+    // compileOnly "mezz.jei:jei-\${minecraft_version}-common-api:\${jei_version}"
+    // compileOnly "mezz.jei:jei-\${minecraft_version}-forge-api:\${jei_version}"
+    // runtimeOnly "mezz.jei:jei-\${minecraft_version}-forge:\${jei_version}"
+
+    // Example mod dependency using a mod jar from ./libs with a flat dir repository
+    // This maps to ./libs/coolmod-\${minecraft_version}-\${coolmod_version}.jar
+    // The group id is ignored when searching -- in this case, it is "blank"
+    // implementation fg.deobf("blank:coolmod-\${minecraft_version}:\${coolmod_version}")
+    <% if(props.useMixins) {
+        out.print("\n    annotationProcessor 'org.spongepowered:mixin:0.8.4:processor'")
+    } %>
+
+    // For more info:
+    // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
+    // http://www.gradle.org/docs/current/userguide/dependency_management.html
+}
+
+jar {
+    final manifestAttributes = [
+            'Specification-Title'     : mod_id,
+            'Specification-Vendor'    : mod_authors,
+            'Specification-Version'   : '1',
+            'Implementation-Title'    : project.name,
+            'Implementation-Version'  : project.jar.archiveVersion,
+            'Implementation-Vendor'   : mod_authors,
+            'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+    ]
+
+    <% if(props.useMixins) {
+        out.println("manifestAttributes.put('MixinConfigs', '\${mod_id}.mixins.json')")
+    } %>
+
+    manifest {
+        attributes(manifestAttributes)
+    }
+}
+
+// Example configuration to allow publishing using the maven-publish plugin
+// This is the preferred method to reobfuscate your jar file
+jar.finalizedBy('reobfJar')
+// However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing
+// publish.dependsOn('reobfJar')
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/mcmodsrepo"
+        }
+    }
+}
+
+<% if(props.useMixins) {
+    out.print("\napply plugin: 'org.spongepowered.mixin'")
+    out.print("\nmixin {\n" +
+            "    add sourceSets.main, \"\${mod_id}.refmap.json\"\n" +
+            "}")
+} %>

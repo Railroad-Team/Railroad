@@ -30,6 +30,7 @@
 
 .list-cell {
     -fx-background-color: -color-bg-overlay;
+    -fx-cell-size: 40;
 }
 
 .list-cell:hover {
@@ -41,7 +42,7 @@
 }
 
 .settings-title {
-    -fx-font-size: 20pt; 
+    -fx-font-size: 20pt;
     -fx-font-weight: bold;
 }
 
@@ -56,4 +57,16 @@ LocalizedText {
 
 .theme-selector .list-view {
     -fx-pref-height: 400
+}
+
+.error {
+    -fx-border-color: -color-danger-emphasis;
+}
+
+.warning {
+    -fx-border-color: -color-warning-emphasis;
+}
+
+.icon-bar-horizontal, .icon-bar-vertical {
+    -fx-background-color: -color-bg-inset;
 }

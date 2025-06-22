@@ -9,9 +9,13 @@ import io.github.railroad.plugin.BlankPluginSettings;
 import io.github.railroad.plugin.Plugin;
 import io.github.railroad.plugin.PluginPhaseResult;
 import io.github.railroad.plugin.PluginState;
+import io.github.railroad.project.Project;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ShutdownHooks;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 
 public class Discord extends Plugin {
@@ -49,7 +53,7 @@ public class Discord extends Plugin {
     }
 
     @Override
-    public PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes) {
+    public PluginPhaseResult railroadActivityChange(RailroadActivities.RailroadActivityTypes railroadActivityTypes, Object... data) {
         if (getState() != PluginState.LOADED) {
             Railroad.LOGGER.warn("Plugin not loaded, unable to send the update!");
             return getNewPhase();
@@ -67,11 +71,50 @@ public class Discord extends Plugin {
                     activity.getAssets().setLargeImage("logo");
                     break;
                 case EDIT_FILE:
-                    activity.setDetails("Editing FILE");
+                    if(data.length == 0) {
+                        Railroad.LOGGER.warn("No file path provided for EDIT_FILE activity");
+                        return getNewPhase();
+                    }
+
+                    if(data[0] instanceof Path path) {
+                        if(Files.notExists(path)) {
+                            activity.setDetails("Editing Unknown File");
+                        } else {
+                            activity.setDetails("Editing " + path.getFileName());
+                        }
+                    } else if (data[0] instanceof File file) {
+                        if(!file.exists()) {
+                            activity.setDetails("Editing Unknown File");
+                        } else {
+                            activity.setDetails("Editing " + file.getName());
+                        }
+                    } else {
+                        activity.setDetails("Editing Unknown File");
+                    }
+
                     activity.setType(DiscordActivity.ActivityType.PLAYING);
                     activity.setState("v0.1.0");
                     activity.getTimestamps().setStart(Instant.now());
-                    activity.getAssets().setLargeImage("logo");
+                    activity.getAssets().setLargeImage("logo"); // TODO: Set the image to the file type
+
+                    break;
+                case RAILROAD_PROJECT_OPEN:
+                    if(data.length == 0) {
+                        Railroad.LOGGER.warn("No project provided for RAILROAD_PROJECT_OPEN activity");
+                        return getNewPhase();
+                    }
+
+                    if(data[0] instanceof Project project) {
+                        activity.setDetails("Working on " + project.getAlias());
+                        activity.setType(DiscordActivity.ActivityType.PLAYING);
+                        activity.setState("v0.1.0");
+                        activity.getTimestamps().setStart(Instant.now());
+                        activity.getAssets().setLargeImage("logo");
+                    } else {
+                        Railroad.LOGGER.warn("Invalid project provided for RAILROAD_PROJECT_OPEN activity");
+                        return getNewPhase();
+                    }
+
                     break;
                 default:
                     activity.setDetails("Modding Minecraft");
@@ -87,6 +130,7 @@ public class Discord extends Plugin {
             updateStatus(PluginState.ACTIVITY_UPDATE_ERROR);
             var phaseResult = new PluginPhaseResult();
             phaseResult.addError(new Error(exception.getMessage()));
+            return phaseResult;
         }
 
         updateStatus(PluginState.ACTIVITY_UPDATE_FINISHED);
