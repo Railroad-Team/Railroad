@@ -83,6 +83,9 @@ tasks.register('jpackageImage', Exec) {
 
     def inputDir = file("${layout.buildDirectory.get()}/libs")
     def outputDir = file("${layout.buildDirectory.get()}/jpackage")
+    if(outputDir.exists()) {
+        inputDir.deleteDir()
+    }
 
     commandLine 'jpackage',
             '--input', inputDir,
@@ -97,7 +100,10 @@ tasks.register('jpackageImage', Exec) {
 tasks.register('jpackageInstaller', Exec) {
     dependsOn jpackageImage
 
-    def outputDir = file("${layout.buildDirectory}/jpackage")
+    def outputDir = file("${layout.buildDirectory.get()}/jpackage")
+    if(outputDir.exists()) {
+        outputDir.deleteDir()
+    }
 
     commandLine 'jpackage',
             '--app-image', "${outputDir}/Railroad",
