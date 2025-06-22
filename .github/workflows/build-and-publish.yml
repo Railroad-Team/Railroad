@@ -38,40 +38,20 @@ jobs:
     - name: Make gradlew executable
       run: chmod +x ./gradlew
     
-    # Build the project
-    - name: Build with Gradle
-      run: ./gradlew build
-    
     # Run tests
     - name: Run tests
       run: ./gradlew test
     
     # Create JavaFX distribution packages
     - name: Create JavaFX packages
-      run: ./gradlew jpackage
+      run: ./gradlew jpackageInstaller
     
     # Upload build artifacts (so you can download them)
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: javafx-app-${{ github.sha }}
+        name: railroad-${{ github.sha }}
         path: |
           build/distributions/
           build/jpackage/
         retention-days: 30
-  
-  # Only run on main branch pushes
-  deploy:
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Deploy to production
-      run: |
-        echo "🚀 Deploying to production..."
-        # Add your deployment commands here
-        # For example: copy files to server, update containers, etc.
