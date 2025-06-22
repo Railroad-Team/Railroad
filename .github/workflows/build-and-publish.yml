@@ -52,7 +52,7 @@ jobs:
     
     # Upload build artifacts (so you can download them)
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: javafx-app-${{ github.sha }}
         path: |
