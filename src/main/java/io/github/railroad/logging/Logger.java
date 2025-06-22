@@ -20,6 +20,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -88,6 +89,9 @@ public class Logger {
     }
 
     public void log(String message, LoggingLevel level, Object... objects) {
+        if(message == null || message.isEmpty())
+            return;
+
         long bracesCount = Pattern.compile(BRACE_REGEX).matcher(message).results().count();
 
         List<Throwable> throwables = new ArrayList<>();
@@ -100,7 +104,7 @@ public class Logger {
                 continue;
             }
 
-            message = message.replaceFirst(BRACE_REGEX, Matcher.quoteReplacement(object.toString()));
+            message = message.replaceFirst(BRACE_REGEX, Matcher.quoteReplacement(Objects.toString(object)));
         }
 
         var messageBuilder = new StringBuilder(getPaddedTime() + " [" + Thread.currentThread().getName() + "] " + level.name() + " " + this.name + " - " + message);
