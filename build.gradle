@@ -78,35 +78,35 @@ shadowJar {
 }
 
 // Configure jpackage to use the shadow jar
-task jpackageImage(type: Exec) {
+tasks.register('jpackageImage', Exec) {
     dependsOn shadowJar
-    
-    def inputDir = file("${layout.buildDirectory}/libs")
-    def outputDir = file("${layout.buildDirectory}/jpackage")
-    
+
+    def inputDir = file("${layout.buildDirectory.get()}/libs")
+    def outputDir = file("${layout.buildDirectory.get()}/jpackage")
+
     commandLine 'jpackage',
-        '--input', inputDir,
-        '--dest', outputDir,
-        '--name', 'Railroad',
-        '--main-jar', shadowJar.archiveFileName.get(),
-        '--main-class', 'io.github.railroad.Startup',
-        '--type', 'app-image',
-        '--java-options', '-Xmx2048m'
+            '--input', inputDir,
+            '--dest', outputDir,
+            '--name', 'Railroad',
+            '--main-jar', shadowJar.archiveFileName.get(),
+            '--main-class', 'io.github.railroad.Startup',
+            '--type', 'app-image',
+            '--java-options', '-Xmx2048m'
 }
 
-task jpackageInstaller(type: Exec) {
+tasks.register('jpackageInstaller', Exec) {
     dependsOn jpackageImage
-    
+
     def outputDir = file("${layout.buildDirectory}/jpackage")
-    
+
     commandLine 'jpackage',
-        '--app-image', "${outputDir}/Railroad",
-        '--dest', outputDir,
-        '--name', 'Railroad',
-        '--app-version', '1.0.0',
-        '--vendor', 'Your Company',
-        '--description', 'Railroad Application'
-    
+            '--app-image', "${outputDir}/Railroad",
+            '--dest', outputDir,
+            '--name', 'Railroad',
+            '--app-version', '1.0.0',
+            '--vendor', 'Railroad Team',
+            '--description', 'Railroad Application'
+
     // Add platform-specific options
     if (System.getProperty('os.name').toLowerCase().contains('windows')) {
         args '--win-dir-chooser', '--win-menu', '--win-shortcut'
