@@ -1,9 +1,7 @@
 plugins {
     id 'java'
     id 'application'
-    id 'org.javamodularity.moduleplugin' version '1.8.12'
     id 'org.openjfx.javafxplugin' version '0.1.0'
-    id 'org.beryx.jlink' version '2.25.0'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
@@ -18,8 +16,8 @@ repositories {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_23
+    targetCompatibility = JavaVersion.VERSION_23
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -27,12 +25,11 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 application {
-    mainModule = 'io.github.railroad'
     mainClass = 'io.github.railroad.Startup'
 }
 
 javafx {
-    version = '21'
+    version = '24'
     modules = ['javafx.controls', 'javafx.swing', 'javafx.web', 'javafx.fxml', 'javafx.graphics', 'javafx.media']
 }
 
@@ -64,18 +61,6 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.32'
 }
 
-jlink {
-    imageZip = project.file("${layout.buildDirectory}/distributions/app-${javafx.platform.classifier}.zip")
-    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
-    launcher {
-        name = 'app'
-    }
-}
-
-jlinkZip {
-    group = 'distribution'
-}
-
 jar {
     manifest {
         attributes(
@@ -89,4 +74,46 @@ jar {
 shadowJar {
     zip64 true
     mergeServiceFiles()
+    archiveClassifier = '' // This makes shadowJar the default jar
 }
+
+// Configure jpackage to use the shadow jar
+task jpackageImage(type: Exec) {
+    dependsOn shadowJar
+    
+    def inputDir = file("${layout.buildDirectory}/libs")
+    def outputDir = file("${layout.buildDirectory}/jpackage")
+    
+    commandLine 'jpackage',
+        '--input', inputDir,
+        '--dest', outputDir,
+        '--name', 'Railroad',
+        '--main-jar', shadowJar.archiveFileName.get(),
+        '--main-class', 'io.github.railroad.Startup',
+        '--type', 'app-image',
+        '--java-options', '-Xmx2048m'
+}
+
+task jpackageInstaller(type: Exec) {
+    dependsOn jpackageImage
+    
+    def outputDir = file("${layout.buildDirectory}/jpackage")
+    
+    commandLine 'jpackage',
+        '--app-image', "${outputDir}/Railroad",
+        '--dest', outputDir,
+        '--name', 'Railroad',
+        '--app-version', '1.0.0',
+        '--vendor', 'Your Company',
+        '--description', 'Railroad Application'
+    
+    // Add platform-specific options
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        args '--win-dir-chooser', '--win-menu', '--win-shortcut'
+    } else if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+        args '--mac-package-name', 'Railroad'
+    }
+}
+
+// Make build depend on shadowJar instead of jar
+build.dependsOn shadowJar
