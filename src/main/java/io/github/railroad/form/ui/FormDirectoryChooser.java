@@ -10,6 +10,7 @@ import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+import io.github.railroad.localization.L18n;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -79,7 +80,7 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
             browseButton.textFieldProperty().set(textField);
             browseButton.browseTypeProperty().set(BrowseButton.BrowseType.DIRECTORY);
             browseButton.setGraphic(browseButtonIcon);
-            browseButton.setTooltip(new Tooltip("Browse"));
+            browseButton.setTooltip(new Tooltip(L18n.localize("railroad.tooltip.browse")));
             browseButton.getStyleClass().add("rr-button");
         }
 

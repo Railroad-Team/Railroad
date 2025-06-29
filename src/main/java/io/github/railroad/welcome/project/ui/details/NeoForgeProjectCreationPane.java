@@ -7,6 +7,7 @@ import groovy.lang.GroovyShell;
 import groovy.text.StreamingTemplateEngine;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import io.github.railroad.Railroad;
+import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.project.NeoForgeProjectData;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.minecraft.mapping.MappingChannel;
@@ -20,7 +21,6 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import org.codehaus.groovy.runtime.StringBufferWriter;
 import org.gradle.tooling.BuildException;
@@ -48,8 +48,8 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
     private final NeoForgeProjectData data;
     private final MFXProgressSpinner progressSpinner = new MFXProgressSpinner();
     private final RRVBox progressBox = new RRVBox(10), centerBox = new RRVBox(10);
-    private final Label timeElapsedLabel = new Label("");
-    private final Label taskLabel = new Label();
+    private final LocalizedLabel timeElapsedLabel = new LocalizedLabel("railroad.project.creation.status.time_elapsed", "");
+    private final LocalizedLabel taskLabel = new LocalizedLabel("railroad.project.creation.status.task", "");
     private final long startTime = System.currentTimeMillis();
     private final TextArea outputArea = new TextArea();
 
@@ -72,7 +72,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
         progressBox.getChildren().addAll(timeElapsedLabel, taskLabel);
         setBottom(progressBox);
 
-        setTop(new Label("Creating project..."));
+        setTop(new LocalizedLabel("railroad.project.creation.status.creating"));
         setAlignment(getTop(), Pos.CENTER);
         progressSpinner.setProgress(0);
 
@@ -108,7 +108,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
             }
 
             final String finalTimeElapsedString = timeElapsedString;
-            Platform.runLater(() -> timeElapsedLabel.setText("Time elapsed: " + finalTimeElapsedString));
+            Platform.runLater(() -> timeElapsedLabel.setKey("railroad.project.creation.status.time_elapsed", finalTimeElapsedString));
         }, 1, 1, TimeUnit.SECONDS);
 
         ShutdownHooks.addHook(() -> {
@@ -154,7 +154,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
         @Override
         protected Void call() {
             try {
-                updateLabel("Creating project directory...");
+                updateLabel("railroad.project.creation.task.creating_directory");
                 Path projectPath = data.projectPath().resolve(data.projectName());
                 Files.createDirectories(projectPath);
                 updateProgress(1, 17);
@@ -163,28 +163,31 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
                 downloadExampleMod(projectPath);
                 updateGradleProperties(projectPath);
 
-                Path mainJava = projectPath.resolve("src/main/java/");
-                Path oldPath = mainJava.resolve("com/example/examplemod/");
+                Path mainJava = projectPath.resolve("src/main/java");
                 String newFolderPath = data.groupId().replace(".", "/") + "/" + data.modId();
+                Path oldPath = mainJava.resolve("com/example/examplemod");
                 Path newPath = mainJava.resolve(newFolderPath);
-                renamePackages(oldPath, newPath, mainJava);
 
+                renamePackages(oldPath, newPath, mainJava);
                 updateModsToml(projectPath);
                 refactorExampleClasses(newPath);
 
+                Map<String, Object> args = createArgs(data);
                 var shell = new GroovyShell();
                 var templateEngine = new StreamingTemplateEngine();
-                Map<String, Object> args = createArgs(data);
-                if (!updateBuildGradle(projectPath, args, shell, templateEngine))
-                    return null;
 
-                if (!updateSettingsGradle(projectPath, args, shell, templateEngine))
+                if (!updateBuildGradle(projectPath, args, shell, templateEngine)) {
                     return null;
+                }
+
+                if (!updateSettingsGradle(projectPath, args, shell, templateEngine)) {
+                    return null;
+                }
 
                 createMixinsJson(projectPath);
                 createAccessTransformer(projectPath);
 
-                updateLabel("Creating project...");
+                updateLabel("railroad.project.creation.task.creating_project");
                 Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
                 updateProgress(14, 17);
                 Railroad.LOGGER.info("Project created successfully.");
@@ -194,7 +197,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
 
                 updateProgress(17, 17);
                 Railroad.LOGGER.info("Project created successfully.");
-                updateLabel("Project created successfully.");
+                updateLabel("railroad.project.creation.task.project_created");
             } catch (Exception exception) {
                 // Handle errors
                 Platform.runLater(() -> Railroad.showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage()));
@@ -204,8 +207,12 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
             return null;
         }
 
-        public void updateLabel(String text) {
-            Platform.runLater(() -> taskLabel.setText(text));
+        public void updateLabel(String translationKey) {
+            Platform.runLater(() -> taskLabel.setKey(translationKey));
+        }
+
+        public void updateLabel(String translationKey, Object... args) {
+            Platform.runLater(() -> taskLabel.setKey(translationKey, args));
         }
 
         private void downloadExampleMod(Path projectPath) throws IOException {
@@ -216,22 +223,22 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
 
             Path zipPath = projectPath.resolve(branch + ".zip");
 
-            updateLabel("Downloading NeoForge MDK...");
+            updateLabel("railroad.project.creation.task.downloading_mdk", "NeoForge");
             FileHandler.copyUrlToFile(MDK_URL.formatted(branch), zipPath);
             updateProgress(2, 17);
             Railroad.LOGGER.info("NeoForge MDK downloaded successfully.");
 
-            updateLabel("Unzipping NeoForge MDK...");
+            updateLabel("railroad.project.creation.task.unzipping_mdk", "NeoForge");
             FileHandler.unzipFile(zipPath, projectPath);
             updateProgress(3, 17);
             Railroad.LOGGER.info("NeoForge MDK unzipped successfully.");
 
-            updateLabel("Deleting NeoForge MDK zip...");
+            updateLabel("railroad.project.creation.task.deleting_zip", "NeoForge");
             Files.deleteIfExists(zipPath);
             updateProgress(4, 17);
             Railroad.LOGGER.info("NeoForge MDK zip deleted successfully.");
 
-            updateLabel("Deleting unnecessary files...");
+            updateLabel("railroad.project.creation.task.deleting_files");
             FileHandler.deleteFolder(projectPath.resolve(".github"));
             Files.deleteIfExists(projectPath.resolve("TEMPLATE_LICENSE.txt"));
             Files.deleteIfExists(projectPath.resolve("README.md"));
@@ -240,6 +247,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
         }
 
         private void updateGradleProperties(Path projectPath) throws IOException {
+            updateLabel("railroad.project.creation.task.updating_gradle");
             Path gradlePropertiesFile = projectPath.resolve("gradle.properties");
             String mappingChannel = data.mappingChannel().getName().toLowerCase(Locale.ROOT);
             if (data.mappingChannel() == MappingChannel.MOJMAP) {
@@ -267,7 +275,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
         }
 
         private void renamePackages(Path oldPath, Path newPath, Path mainJava) throws IOException {
-            updateLabel("Updating package name...");
+            updateLabel("railroad.project.creation.task.updating_package");
             Files.createDirectories(newPath.getParent());
             Files.move(oldPath, newPath);
 
@@ -280,7 +288,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
         }
 
         private void updateModsToml(Path projectPath) throws IOException {
-            updateLabel("Updating mods.toml...");
+            updateLabel("railroad.project.creation.task.updating_mods_toml");
             Path modsToml = projectPath.resolve("src/main/resources/META-INF/mods.toml");
             List<String> lines = Files.readAllLines(modsToml);
             lines = lines.stream()
@@ -309,7 +317,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
         }
 
         private void refactorExampleClasses(Path newPath) throws IOException {
-            updateLabel("Refactoring example classes...");
+            updateLabel("railroad.project.creation.task.refactoring_classes");
             Path mainClass = newPath.resolve("ExampleMod.java");
             Path configClass = newPath.resolve("Config.java");
 
@@ -329,7 +337,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
         }
 
         private boolean updateBuildGradle(Path projectPath, Map<String, Object> args, GroovyShell shell, StreamingTemplateEngine templateEngine) throws IOException, ClassNotFoundException {
-            updateLabel("Updating build.gradle...");
+            updateLabel("railroad.project.creation.task.updating_build_gradle");
             Path buildGradle = projectPath.resolve("build.gradle");
             String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(data.minecraftVersion().id().substring(2));
             FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
@@ -361,7 +369,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
         }
 
         private boolean updateSettingsGradle(Path projectPath, Map<String, Object> args, GroovyShell shell, StreamingTemplateEngine templateEngine) throws IOException, ClassNotFoundException {
-            updateLabel("Updating settings.gradle...");
+            updateLabel("railroad.project.creation.task.updating_settings_gradle");
             Path settingsGradle = projectPath.resolve("settings.gradle");
             String templateSettingsGradleUrl = TEMPLATE_SETTINGS_GRADLE_URL.formatted(data.minecraftVersion().id().substring(2));
             FileHandler.copyUrlToFile(templateSettingsGradleUrl, settingsGradle);
@@ -395,7 +403,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
 
         private void createMixinsJson(Path projectPath) throws IOException {
             if (data.useMixins()) {
-                updateLabel("Creating " + data.modId() + ".mixins.json...");
+                updateLabel("railroad.project.creation.task.creating_mixins");
                 Path mixinsJson = projectPath.resolve("src/main/resources/" + data.modId() + ".mixins.json");
 
                 var mixins = new JsonObject();
@@ -418,7 +426,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
 
         private void createAccessTransformer(Path projectPath) throws IOException {
             if (data.useAccessTransformer()) {
-                updateLabel("Creating accesstransformer.cfg...");
+                updateLabel("railroad.project.creation.task.creating_access_transformer");
                 Path accessTransformer = projectPath.resolve("src/main/resources/META-INF/accesstransformer.cfg");
                 Files.createFile(accessTransformer);
                 updateProgress(13, 17);
@@ -427,7 +435,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
         }
 
         private void setupGradle(Path projectPath) {
-            updateLabel("Running Gradle tasks...");
+            updateLabel("railroad.project.creation.task.setup_gradle");
             var connector = GradleConnector.newConnector();
             connector.forProjectDirectory(projectPath.toFile());
             try (ProjectConnection connection = connector.connect()) {
@@ -452,7 +460,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
         private void createGitRepository(Path projectPath) {
             // Create git repository
             if (data.createGit()) {
-                updateLabel("Creating git repository...");
+                updateLabel("railroad.project.creation.task.creating_git");
                 try {
                     var processBuilder = new ProcessBuilder("git", "init");
                     processBuilder.directory(projectPath.toFile());

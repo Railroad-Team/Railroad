@@ -1,6 +1,8 @@
 package io.github.railroad.welcome.project.ui.details;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.localization.L18n;
+import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.project.DisplayTest;
 import io.github.railroad.project.License;
 import io.github.railroad.project.NeoForgeProjectData;
@@ -27,6 +29,7 @@ import javafx.util.StringConverter;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
@@ -79,43 +82,43 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var projectNameBox = new RRHBox(10);
         projectNameBox.setAlignment(Pos.CENTER_LEFT);
-        var projectNameLabel = new Label("Name:");
+        var projectNameLabel = new LocalizedLabel("railroad.project.creation.name");
         projectNameLabel.setLabelFor(projectNameField);
         projectNameBox.getChildren().addAll(projectNameLabel, createAsterisk(), projectNameField);
 
         var projectPathVBox = new RRVBox(10);
         projectPathVBox.setAlignment(Pos.CENTER_LEFT);
 
-        var createdAtLabel = new Label("This will be created at: " + System.getProperty("user.home"));
+        var createdAtLabel = new LocalizedLabel("railroad.project.creation.location.info", System.getProperty("user.home"));
         createdAtLabel.setGraphic(new FontIcon(FontAwesomeSolid.INFO_CIRCLE));
-        createdAtLabel.setTooltip(new Tooltip("The project will be created in this directory."));
+        createdAtLabel.setTooltip(new Tooltip(L18n.localize("railroad.tooltip.project.location.info")));
         createdAtLabel.setTextFill(Color.SLATEGRAY);
 
         var projectPathBox = new RRHBox(10);
         projectPathBox.setAlignment(Pos.CENTER_LEFT);
-        var projectPathLabel = new Label("Location:");
+        var projectPathLabel = new LocalizedLabel("railroad.project.creation.location");
         projectPathLabel.setLabelFor(projectPathField);
         projectPathField.setPrefWidth(300);
         projectPathField.setText(System.getProperty("user.home"));
         projectPathField.setEditable(false);
         Border projectPathFieldBorder = projectPathField.getBorder();
         projectPathField.textProperty().addListener((observable, oldValue, newValue) -> {
-            // Validate the project path
+            // Validate the project path - only check if it's a directory if it exists
             Path path = Path.of(newValue);
-            if (Files.notExists(path) || !Files.isDirectory(path))
+            if (Files.exists(path) && !Files.isDirectory(path))
                 setValidationError(projectPathField);
             else
                 clearValidation(projectPathField);
 
             // Update the created at label
             String fullPath = fixPath(projectPathField.getText().trim() + "/" + projectNameField.getText().trim());
-            createdAtLabel.setText("This will be created at: " + fullPath);
+            createdAtLabel.setText(L18n.localize("railroad.project.creation.location.info", fullPath));
 
             // If the project is in OneDrive, warn the user
             if (fullPath.contains("OneDrive") && hasOneDriveWarning.compareAndSet(false, true)) {
                 setValidationWarning(projectPathField);
 
-                var tooltip = new Tooltip("It is not recommended to create projects in OneDrive as it has a tendency to cause problems.");
+                var tooltip = new Tooltip(L18n.localize("railroad.tooltip.project.location.onedrive_warning"));
                 Tooltip.install(projectPathField, tooltip);
 
                 var warningIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
@@ -141,14 +144,14 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         browseButton.textFieldProperty().set(projectPathField);
         browseButton.browseTypeProperty().set(BrowseButton.BrowseType.DIRECTORY);
         browseButton.setGraphic(browseButtonIcon);
-        browseButton.setTooltip(new Tooltip("Browse"));
+        browseButton.setTooltip(new Tooltip(L18n.localize("railroad.tooltip.browse")));
         projectPathBox.getChildren().addAll(projectPathLabel, createAsterisk(), projectPathField, browseButton);
 
         projectPathVBox.getChildren().addAll(projectPathBox, createdAtLabel);
 
         var gitBox = new RRHBox(10);
         gitBox.setAlignment(Pos.CENTER_LEFT);
-        var createGitLabel = new Label("Create Git Repository:");
+        var createGitLabel = new LocalizedLabel("railroad.project.creation.git");
         createGitLabel.setLabelFor(createGitCheckBox);
         gitBox.getChildren().addAll(createGitLabel, createGitCheckBox);
 
@@ -156,7 +159,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         licenseVBox.setAlignment(Pos.CENTER_LEFT);
         var licenseBox = new RRHBox(10);
         licenseBox.setAlignment(Pos.CENTER_LEFT);
-        var licenseLabel = new Label("License:");
+        var licenseLabel = new LocalizedLabel("railroad.project.creation.license");
         licenseLabel.setLabelFor(licenseComboBox);
         licenseComboBox.getItems().addAll(License.values());
         licenseComboBox.setValue(License.MIT);
@@ -189,7 +192,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var minecraftVersionBox = new RRHBox(10);
         minecraftVersionBox.setAlignment(Pos.CENTER_LEFT);
-        var minecraftVersionLabel = new Label("Minecraft Version:");
+        var minecraftVersionLabel = new LocalizedLabel("railroad.project.creation.minecraft_version");
         minecraftVersionLabel.setLabelFor(minecraftVersionComboBox);
         //minecraftVersionComboBox.getItems().addAll(MinecraftVersion.getSupportedVersions(ProjectType.NEOFORGED));
         minecraftVersionComboBox.setValue(MinecraftVersion.getLatestStableVersion());
@@ -208,7 +211,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var neoForgeVersionBox = new RRHBox(10);
         neoForgeVersionBox.setAlignment(Pos.CENTER_LEFT);
-        var neoForgeVersionLabel = new Label("NeoForge Version:");
+        var neoForgeVersionLabel = new LocalizedLabel("railroad.project.creation.neo_forge_version");
         neoForgeVersionLabel.setLabelFor(neoForgeVersionComboBox);
         minecraftVersionComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             neoForgeVersionComboBox.getItems().setAll(NeoForgeVersion.getVersions(newValue));
@@ -231,7 +234,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var modIdBox = new RRHBox(10);
         modIdBox.setAlignment(Pos.CENTER_LEFT);
-        var modIdLabel = new Label("Mod ID:");
+        var modIdLabel = new LocalizedLabel("railroad.project.creation.mod_id");
         modIdLabel.setLabelFor(modIdField);
         Border modidFieldBorder = modIdField.getBorder();
         modIdField.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -257,7 +260,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
             if ((newValue.length() < 5 && newValue.length() > 2) && hasModidWarning.compareAndSet(false, true)) {
                 setValidationWarning(modIdField);
 
-                var tooltip = new Tooltip("Short mod IDs are discouraged as they may conflict with other mods.");
+                var tooltip = new Tooltip(L18n.localize("railroad.tooltip.mod_id.short_warning"));
                 Tooltip.install(modIdField, tooltip);
 
                 var warningIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
@@ -289,7 +292,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var modNameBox = new RRHBox(10);
         modNameBox.setAlignment(Pos.CENTER_LEFT);
-        var modNameLabel = new Label("Mod Name:");
+        var modNameLabel = new LocalizedLabel("railroad.project.creation.mod_name");
         modNameLabel.setLabelFor(modNameField);
         modNameField.textProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue.length() > 256) {
@@ -307,7 +310,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var mainClassBox = new RRHBox(10);
         mainClassBox.setAlignment(Pos.CENTER_LEFT);
-        var mainClassLabel = new Label("Main Class:");
+        var mainClassLabel = new LocalizedLabel("railroad.project.creation.main_class");
         mainClassLabel.setLabelFor(mainClassField);
         mainClassField.textProperty().addListener((observable, oldValue, newValue) -> {
             if (!ClassNameValidator.isValid(newValue)) {
@@ -325,19 +328,19 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var useMixinsBox = new RRHBox(10);
         useMixinsBox.setAlignment(Pos.CENTER_LEFT);
-        var useMixinsLabel = new Label("Use Mixins:");
+        var useMixinsLabel = new LocalizedLabel("railroad.project.creation.use_mixins");
         useMixinsLabel.setLabelFor(useMixinsCheckBox);
         useMixinsBox.getChildren().addAll(useMixinsLabel, useMixinsCheckBox);
 
         var useAccessTransformerBox = new RRHBox(10);
         useAccessTransformerBox.setAlignment(Pos.CENTER_LEFT);
-        var useAccessTransformerLabel = new Label("Use Access Transformer:");
+        var useAccessTransformerLabel = new LocalizedLabel("railroad.project.creation.use_access_transformer");
         useAccessTransformerLabel.setLabelFor(useAccessTransformerCheckBox);
         useAccessTransformerBox.getChildren().addAll(useAccessTransformerLabel, useAccessTransformerCheckBox);
 
         var genRunFoldersBox = new RRHBox(10);
         genRunFoldersBox.setAlignment(Pos.CENTER_LEFT);
-        var genRunFoldersLabel = new Label("Generate Run Folders:");
+        var genRunFoldersLabel = new LocalizedLabel("railroad.project.creation.gen_run_folders");
         genRunFoldersLabel.setLabelFor(genRunFoldersCheckBox);
         genRunFoldersBox.getChildren().addAll(genRunFoldersLabel, genRunFoldersCheckBox);
 
@@ -350,7 +353,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var mappingChannelBox = new RRHBox(10);
         mappingChannelBox.setAlignment(Pos.CENTER_LEFT);
-        var mappingChannelLabel = new Label("Mapping Channel:");
+        var mappingChannelLabel = new LocalizedLabel("railroad.project.creation.mapping_channel");
         mappingChannelLabel.setLabelFor(mappingChannelComboBox);
         MappingHelper.loadMappings(mappingChannelComboBox.getItems(), minecraftVersionComboBox.getValue());
         mappingChannelComboBox.setValue(MappingChannel.PARCHMENT);
@@ -376,7 +379,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var mappingVersionBox = new RRHBox(10);
         mappingVersionBox.setAlignment(Pos.CENTER_LEFT);
-        var mappingVersionLabel = new Label("Mapping Version:");
+        var mappingVersionLabel = new LocalizedLabel("railroad.project.creation.mapping_version");
         mappingVersionLabel.setLabelFor(mappingVersionComboBox);
         mappingVersionComboBox.setCellFactory(param -> new StarableListCell<>(
                 version -> version instanceof RecommendableVersion recommendableVersion && recommendableVersion.isRecommended(),
@@ -398,7 +401,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var authorBox = new RRHBox(10);
         authorBox.setAlignment(Pos.CENTER_LEFT);
-        var authorLabel = new Label("Author:");
+        var authorLabel = new LocalizedLabel("railroad.project.creation.author");
         authorLabel.setLabelFor(authorField);
         authorField.textProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue.length() > 256) {
@@ -409,7 +412,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var creditsBox = new RRHBox(10);
         creditsBox.setAlignment(Pos.CENTER_LEFT);
-        var creditsLabel = new Label("Credits:");
+        var creditsLabel = new LocalizedLabel("railroad.project.creation.credits");
         creditsLabel.setLabelFor(creditsField);
         creditsField.textProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue.length() > 256) {
@@ -420,7 +423,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var descriptionBox = new RRHBox(10);
         descriptionBox.setAlignment(Pos.CENTER_LEFT);
-        var descriptionLabel = new Label("Description:");
+        var descriptionLabel = new LocalizedLabel("railroad.project.creation.description");
         descriptionLabel.setLabelFor(descriptionArea);
         descriptionArea.setWrapText(true);
         descriptionArea.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -434,25 +437,25 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var issuesBox = new RRHBox(10);
         issuesBox.setAlignment(Pos.CENTER_LEFT);
-        var issuesLabel = new Label("Issues:");
+        var issuesLabel = new LocalizedLabel("railroad.project.creation.issues");
         issuesLabel.setLabelFor(issuesField);
         issuesBox.getChildren().addAll(issuesLabel, issuesField);
 
         var updateJsonUrlBox = new RRHBox(10);
         updateJsonUrlBox.setAlignment(Pos.CENTER_LEFT);
-        var updateJsonUrlLabel = new Label("Update JSON URL:");
+        var updateJsonUrlLabel = new LocalizedLabel("railroad.project.creation.update_json_url");
         updateJsonUrlLabel.setLabelFor(updateJsonUrlField);
         updateJsonUrlBox.getChildren().addAll(updateJsonUrlLabel, updateJsonUrlField);
 
         var displayUrlBox = new RRHBox(10);
         displayUrlBox.setAlignment(Pos.CENTER_LEFT);
-        var displayUrlLabel = new Label("Display URL:");
+        var displayUrlLabel = new LocalizedLabel("railroad.project.creation.display_url");
         displayUrlLabel.setLabelFor(displayUrlField);
         displayUrlBox.getChildren().addAll(displayUrlLabel, displayUrlField);
 
         var displayTestBox = new RRHBox(10);
         displayTestBox.setAlignment(Pos.CENTER_LEFT);
-        var displayTestLabel = new Label("Display Test:");
+        var displayTestLabel = new LocalizedLabel("railroad.project.creation.display_test");
         displayTestLabel.setLabelFor(displayTestComboBox);
         displayTestComboBox.getItems().addAll(DisplayTest.values());
         displayTestComboBox.setValue(DisplayTest.MATCH_VERSION);
@@ -471,10 +474,10 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var clientSideOnlyBox = new RRHBox(10);
         clientSideOnlyBox.setAlignment(Pos.CENTER_LEFT);
-        var clientSideOnlyLabel = new Label("Client Side Only:");
+        var clientSideOnlyLabel = new LocalizedLabel("railroad.project.creation.client_side_only");
         clientSideOnlyLabel.setLabelFor(clientSideOnlyCheckBox);
         clientSideOnlyCheckBox.setSelected(false);
-        clientSideOnlyCheckBox.setTooltip(new Tooltip("If checked, the mod will only run on the client side."));
+        clientSideOnlyCheckBox.setTooltip(new Tooltip(L18n.localize("railroad.tooltip.client_side_only")));
         clientSideOnlyCheckBox.setOnAction(event -> {
             displayTestComboBox.setValue(clientSideOnlyCheckBox.isSelected() ?
                     DisplayTest.IGNORE_ALL_VERSION : DisplayTest.MATCH_VERSION);
@@ -490,19 +493,19 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var groupIdBox = new RRHBox(10);
         groupIdBox.setAlignment(Pos.CENTER_LEFT);
-        var groupIdLabel = new Label("Group ID:");
+        var groupIdLabel = new LocalizedLabel("railroad.project.creation.group_id");
         groupIdLabel.setLabelFor(groupIdField);
         groupIdBox.getChildren().addAll(groupIdLabel, createAsterisk(), groupIdField);
 
         var artifactIdBox = new RRHBox(10);
         artifactIdBox.setAlignment(Pos.CENTER_LEFT);
-        var artifactIdLabel = new Label("Artifact ID:");
+        var artifactIdLabel = new LocalizedLabel("railroad.project.creation.artifact_id");
         artifactIdLabel.setLabelFor(artifactIdField);
         artifactIdBox.getChildren().addAll(artifactIdLabel, createAsterisk(), artifactIdField);
 
         var versionBox = new RRHBox(10);
         versionBox.setAlignment(Pos.CENTER_LEFT);
-        var versionLabel = new Label("Version:");
+        var versionLabel = new LocalizedLabel("railroad.project.creation.version");
         versionLabel.setLabelFor(versionField);
         versionBox.getChildren().addAll(versionLabel, createAsterisk(), versionField);
 
@@ -533,7 +536,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
             // Update the created at label
             String path = fixPath(projectPathField.getText().trim() + "/" + projectNameField.getText().trim());
-            createdAtLabel.setText("This will be created at: " + path);
+            createdAtLabel.setText(L18n.localize("railroad.project.creation.location.info", path));
 
             // Update the mod ID field if it is empty
             if (!hasTypedInModid.get() || modIdField.getText().isBlank())
@@ -598,7 +601,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
     private static Text createAsterisk() {
         var asterisk = new Text("*");
         asterisk.setFill(Color.RED);
-        Tooltip.install(asterisk, new Tooltip("Required"));
+        Tooltip.install(asterisk, new Tooltip(L18n.localize("railroad.tooltip.required")));
         return asterisk;
     }
 
@@ -670,11 +673,16 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         Path path = Path.of(projectPathField.getText());
         if (Files.notExists(path)) {
-            setValidationError(projectPathField);
-            projectPathField.requestFocus();
+            // Create the directory if it doesn't exist
+            try {
+                Files.createDirectories(path);
+            } catch (IOException e) {
+                setValidationError(projectPathField);
+                projectPathField.requestFocus();
 
-            createAlert("Invalid Project Path", "The specified path does not exist.");
-            return false;
+                createAlert("Cannot Create Directory", "Unable to create the specified directory. Please check the path and permissions.");
+                return false;
+            }
         }
 
         if (!Files.isDirectory(path)) {

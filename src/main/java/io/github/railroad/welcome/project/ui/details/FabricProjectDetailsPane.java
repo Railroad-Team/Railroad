@@ -393,7 +393,8 @@ public class FabricProjectDetailsPane extends RRVBox {
 
         getChildren().add(form.createUI());
 
-        projectPathComponent.getComponent().addInformationLabel("railroad.project.creation.location.info", createdAtPath, (projectPathField.get().getText() == null ? "" : projectPathField.get().getText()) + "\\" + (projectNameField.get().getText() == null ? "" : projectNameField.get().getText()));
+        String path = projectPathField.get().getText() == null ? "" : projectPathField.get().getText();
+        projectPathComponent.getComponent().addInformationLabel("railroad.project.creation.location.info", path + "\\" + projectNameField.get().getText().trim());
 
         ComboBox<MappingVersion> mappingVersionComboBox = this.mappingVersionComboBox.get();
         MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.get().getValue(), mappingChannelComboBox.get().getValue());

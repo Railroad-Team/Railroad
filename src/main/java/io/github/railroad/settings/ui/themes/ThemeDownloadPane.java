@@ -128,7 +128,7 @@ public class ThemeDownloadPane {
                     statusLabel.setKey("railroad.home.settings.appearance.notfound");
                     themeListView.setVisible(false);
                 } else {
-                    statusLabel.setText(String.format(L18n.localize("railroad.home.settings.appearance.themes.found"), themes.size()));
+                    statusLabel.setText(L18n.localize("railroad.home.settings.appearance.themes.found", themes.size()));
                     themeListView.getItems().addAll(themes);
                     themeListView.setVisible(true);
                 }

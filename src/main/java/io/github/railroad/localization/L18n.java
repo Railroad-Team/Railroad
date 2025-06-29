@@ -47,6 +47,12 @@ public class L18n {
         }
     }
 
+    /**
+     * Localizes a string.
+     *
+     * @param key the localization key
+     * @return the localized string
+     */
     public static String localize(String key) {
         LOGGER.debug("Getting localized string for key {}", key);
 
@@ -62,6 +68,19 @@ public class L18n {
         }
 
         return LANG_CACHE.get(key).toString();
+    }
+
+    /**
+     * Localizes a string and formats it with the given arguments.
+     * This is equivalent to String.format(L18n.localize(key), args...).
+     *
+     * @param key the localization key
+     * @param args the format arguments
+     * @return the localized and formatted string
+     */
+    public static String localize(String key, Object... args) {
+        String localizedString = localize(key);
+        return String.format(localizedString, args);
     }
 
     public static boolean isKeyValid(String key) {

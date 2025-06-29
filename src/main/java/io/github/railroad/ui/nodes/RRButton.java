@@ -52,7 +52,7 @@ public class RRButton extends Button {
     }
 
     public RRButton(String localizationKey, Object... args) {
-        super(L18n.localize(localizationKey).formatted(args));
+        super(L18n.localize(localizationKey, args));
         initialize();
         this.localizationKey = localizationKey;
         this.localizationArgs = args;
@@ -148,7 +148,7 @@ public class RRButton extends Button {
         if (localizationKey != null) {
             L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) -> {
                 if (!isLoading) {
-                    setText(L18n.localize(localizationKey).formatted(localizationArgs));
+                    setText(L18n.localize(localizationKey, localizationArgs));
                 }
             });
         }
@@ -165,7 +165,7 @@ public class RRButton extends Button {
         this.localizationKey = localizationKey;
         this.localizationArgs = args;
         if (!isLoading) {
-            setText(L18n.localize(localizationKey).formatted(args));
+            setText(L18n.localize(localizationKey, args));
         }
 
         addLocalizationListener();

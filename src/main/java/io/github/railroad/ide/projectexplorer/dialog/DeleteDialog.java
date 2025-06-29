@@ -1,11 +1,11 @@
 package io.github.railroad.ide.projectexplorer.dialog;
 
+import io.github.railroad.localization.ui.LocalizedButton;
+import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.ui.defaults.RRGridPane;
 import io.github.railroad.utility.FileHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -20,15 +20,15 @@ public class DeleteDialog {
         var stage = new Stage(StageStyle.UTILITY);
         stage.initOwner(owner);
         stage.initModality(Modality.APPLICATION_MODAL);
-        stage.setTitle("Delete file?"); // TODO: Localize
+        stage.setTitle("railroad.dialog.delete.title");
 
         var root = new RRGridPane();
         root.setPadding(new Insets(30));
         root.setHgap(5);
         root.setVgap(10);
 
-        var label = new Label("Are you sure you want to delete the file?"); // TODO: Localize
-        var okButton = new Button("Ok"); // TODO: Localize
+        var label = new LocalizedLabel("railroad.dialog.delete.message");
+        var okButton = new LocalizedButton("railroad.generic.ok");
         okButton.setOnAction(event -> {
             try {
                 if(Files.isDirectory(path)) {
@@ -43,7 +43,7 @@ public class DeleteDialog {
             }
         });
 
-        var cancelButton = new Button("Cancel"); // TODO: Localize
+        var cancelButton = new LocalizedButton("railroad.generic.cancel");
         cancelButton.setOnAction(event -> stage.hide());
 
         root.add(label, 0, 0, 2, 1);

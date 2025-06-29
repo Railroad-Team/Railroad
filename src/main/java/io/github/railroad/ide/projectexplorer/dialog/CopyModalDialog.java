@@ -1,11 +1,11 @@
 package io.github.railroad.ide.projectexplorer.dialog;
 
+import io.github.railroad.localization.ui.LocalizedButton;
+import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.ui.defaults.RRGridPane;
 import javafx.beans.property.BooleanProperty;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -16,21 +16,21 @@ public class CopyModalDialog {
         var dialog = new Stage(StageStyle.UTILITY);
         dialog.initOwner(owner);
         dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle("Replace file?"); // TODO: Localize
+        dialog.setTitle("railroad.dialog.copy.title");
 
         var root = new RRGridPane();
         root.setPadding(new Insets(30));
         root.setHgap(5);
         root.setVgap(10);
 
-        var label = new Label("The item already exists in this location. Do you want to replace it?"); // TODO: Localize
-        var okButton = new Button("Ok"); // TODO: Localize
+        var label = new LocalizedLabel("railroad.dialog.copy.message");
+        var okButton = new LocalizedButton("railroad.generic.ok");
         okButton.setOnAction(event -> {
             replaceProperty.set(true);
             dialog.hide();
         });
 
-        var cancelButton = new Button("Cancel"); // TODO: Localize
+        var cancelButton = new LocalizedButton("railroad.generic.cancel");
         cancelButton.setOnAction(event -> {
             replaceProperty.set(false);
             dialog.hide();

@@ -35,8 +35,14 @@ public class LocalizedLabel extends Label {
         this.args.setAll(args);
         this.key = key;
 
-        L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                setText(L18n.localize(key).formatted(args)));
-        setText(L18n.localize(this.key).formatted(args));
+        // Only set up localization if the key is not empty
+        if (key != null && !key.trim().isEmpty()) {
+            L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
+                    setText(L18n.localize(key, args)));
+            setText(L18n.localize(this.key, args));
+        } else {
+            // Clear the text if the key is empty
+            setText("");
+        }
     }
 }

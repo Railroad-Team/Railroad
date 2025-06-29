@@ -25,6 +25,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
+import io.github.railroad.localization.L18n;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -390,7 +391,8 @@ public class ForgeProjectDetailsPane extends RRVBox {
 
         getChildren().add(form.createUI());
 
-        projectPathComponent.getComponent().addInformationLabel("railroad.project.creation.location.info", createdAtPath, (projectPathField.get().getText() == null ? "" : projectPathField.get().getText()) + "\\" + (projectNameField.get().getText() == null ? "" : projectNameField.get().getText()));
+        String path = projectPathField.get().getText() == null ? "" : projectPathField.get().getText();
+        projectPathComponent.getComponent().addInformationLabel("railroad.project.creation.location.info", path + "\\" + projectNameField.get().getText().trim());
 
         ComboBox<MappingVersion> mappingVersionComboBox = this.mappingVersionComboBox.get();
         MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.get().getValue(), mappingChannelComboBox.get().getValue());

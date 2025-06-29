@@ -209,10 +209,10 @@ public class RRTextField extends TextField {
     }
 
     public void setLocalizedPlaceholder(String localizationKey, Object... args) {
-        setPromptText(L18n.localize(localizationKey).formatted(args));
+        setPromptText(L18n.localize(localizationKey, args));
         if (localizationKey != null) {
             L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                    setPromptText(L18n.localize(localizationKey).formatted(args)));
+                    setPromptText(L18n.localize(localizationKey, args)));
         }
     }
 
