@@ -36,17 +36,14 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> {
         TextArea textArea = translate ? new LocalizedTextArea(promptText) : new TextArea();
         textArea.setText(text);
         textArea.setEditable(editable);
-
+        textArea.getStyleClass().add("rr-text-area");
         if (resizable) {
             textArea.textProperty().addListener((observable, oldValue, newValue) ->
                     textArea.setMinHeight(newValue.lines().count() * 20 + 40));
         }
-
         textArea.setWrapText(wrapText);
-
         if (!translate)
             textArea.setPromptText(promptText);
-
         return textArea;
     }
 

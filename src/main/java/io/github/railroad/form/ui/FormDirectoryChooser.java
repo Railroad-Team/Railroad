@@ -1,10 +1,9 @@
 package io.github.railroad.form.ui;
 
-import io.github.railroad.localization.ui.LocalizedTextField;
-import io.github.railroad.ui.BrowseButton;
+import io.github.railroad.ui.nodes.BrowseButton;
 import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.nodes.RRTextField;
 import javafx.scene.Scene;
-import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.paint.Color;
 import lombok.Getter;
@@ -37,7 +36,8 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
         var defaultPath = (String) params.get("defaultPath");
         var includeButton = (boolean) params.get("includeButton");
 
-        var textField = new LocalizedTextField(null);
+        RRTextField textField = new RRTextField();
+        textField.getStyleClass().add("rr-text-field");
         if (defaultPath != null) {
             textField.setText(defaultPath);
         }
@@ -54,6 +54,7 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
             browseButton.browseTypeProperty().set(BrowseButton.BrowseType.DIRECTORY);
             browseButton.setGraphic(browseButtonIcon);
             browseButton.setTooltip(new Tooltip("Browse"));
+            browseButton.getStyleClass().add("rr-button");
         }
 
         var hbox = new TextFieldWithButton(textField, browseButton);
@@ -64,10 +65,10 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
 
     @Getter
     public static class TextFieldWithButton extends RRHBox {
-        private final TextField textField;
+        private final RRTextField textField;
         private final @Nullable BrowseButton browseButton;
 
-        public TextFieldWithButton(TextField textField, @Nullable BrowseButton browseButton) {
+        public TextFieldWithButton(RRTextField textField, @Nullable BrowseButton browseButton) {
             super(5);
 
             this.textField = textField;

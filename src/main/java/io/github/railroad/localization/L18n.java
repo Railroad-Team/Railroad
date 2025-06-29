@@ -49,9 +49,15 @@ public class L18n {
 
     public static String localize(String key) {
         LOGGER.debug("Getting localized string for key {}", key);
+
+        if (key == null) {
+            LOGGER.error("Localize called with null key");
+            return "null";
+        }
+        
         if (LANG_CACHE.get(key) == null) {
             //TODO create a popup/toast to ask if user wants to swap to english as key is missing
-            LOGGER.error("Error finding translations for {} {}", key, CURRENT_LANG);
+            LOGGER.error("Error finding translations for key '{}' in language {}", key, CURRENT_LANG.getValue());
             return key;
         }
 

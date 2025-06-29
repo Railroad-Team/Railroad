@@ -1,29 +1,46 @@
 package io.github.railroad.welcome.project.ui;
 
 import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.nodes.RRCard;
 import io.github.railroad.welcome.project.ProjectType;
-import javafx.scene.control.Button;
+import javafx.geometry.Insets;
 import javafx.scene.layout.Priority;
 
-public class NewProjectPane extends RRHBox {
+public class NewProjectPane extends RRCard {
     private final ProjectTypePane projectTypePane;
     private final ProjectDetailsPane projectDetailsPane;
 
     public NewProjectPane() {
+        super(18, new Insets(24, 32, 24, 32));
+        setSpacing(18);
+        getStyleClass().add("new-project-pane");
+
         projectTypePane = new ProjectTypePane();
         projectDetailsPane = new ProjectDetailsPane();
 
-        getChildren().addAll(projectTypePane, projectDetailsPane);
+        var contentBox = new RRHBox(0);
+        contentBox.getChildren().addAll(projectTypePane, projectDetailsPane);
+        RRHBox.setHgrow(projectDetailsPane, Priority.ALWAYS);
+
+        getChildren().add(contentBox);
 
         projectTypePane.getProjectTypeListView().setOnMouseClicked(event -> {
             ProjectType selected = projectTypePane.getProjectTypeListView().getSelectionModel().getSelectedItem();
-            projectDetailsPane.projectTypeProperty().set(selected);
+            if (selected != null) {
+                projectDetailsPane.projectTypeProperty().set(selected);
+            }
         });
 
-        RRHBox.setHgrow(projectDetailsPane, Priority.ALWAYS);
-    }
-
-    public Button getBackButton() {
-        return this.projectTypePane.getBackButton();
+        projectDetailsPane.projectTypeProperty().addListener((obs, oldType, newType) -> {
+            if (newType == null) return;
+            var listView = projectTypePane.getProjectTypeListView();
+            for (int i = 0; i < listView.getItems().size(); i++) {
+                if (listView.getItems().get(i) == newType) {
+                    listView.getSelectionModel().select(i);
+                    listView.scrollTo(i);
+                    break;
+                }
+            }
+        });
     }
 }

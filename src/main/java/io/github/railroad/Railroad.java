@@ -62,6 +62,7 @@ public class Railroad extends Application {
     private static Scene scene; // TODO: Reconsider whether we need this
     @Getter
     private static Stage window; // TODO: Reconsider whether we need this
+    private static boolean isSwitchingToIDE = false;
 
     /**
      * Update the theme of the application
@@ -74,6 +75,11 @@ public class Railroad extends Application {
      * @param theme The new theme to apply
      */
     public static void updateTheme(String theme) {
+        if(theme == null || theme.isEmpty()) {
+            LOGGER.warn("Theme is null or empty, skipping theme update.");
+            return;
+        }
+
         //TODO fix this - it needs to remove the currently applied theme
         // probably not working *properly* because of new settings system
         getScene().getStylesheets().remove(SETTINGS_HANDLER.getStringSetting("railroad:theme") + ".css");
@@ -100,7 +106,9 @@ public class Railroad extends Application {
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();
         String baseTheme = getResource("styles/base.css").toExternalForm();
+        String components = getResource("styles/components.css").toExternalForm();
         scene.getStylesheets().add(baseTheme);
+        scene.getStylesheets().add(components);
 
         scene.setOnKeyReleased(event -> {
             if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.D) {
@@ -184,11 +192,36 @@ public class Railroad extends Application {
      * @param project The project to switch to
      */
     public static void switchToIDE(Project project) {
-        Stage window = IDESetup.createIDEWindow(project);
-        Railroad.window.close();
-        Railroad.window = window;
-        PROJECT_MANAGER.setCurrentProject(project);
-        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN, project);
+        if (isSwitchingToIDE)
+            return; // Prevent multiple simultaneous IDE window creations
+        
+        isSwitchingToIDE = true;
+        
+        try {
+            // Close the current window first
+            if (Railroad.window != null) {
+                Railroad.window.close();
+                // Use Platform.runLater to ensure the new window is created after the old one is closed
+                Platform.runLater(() -> {
+                    try {
+                        Railroad.window = IDESetup.createIDEWindow(project);
+                        PROJECT_MANAGER.setCurrentProject(project);
+                        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN, project);
+                    } finally {
+                        isSwitchingToIDE = false;
+                    }
+                });
+            } else {
+                // Create the new IDE window immediately if there's no existing window
+                Railroad.window = IDESetup.createIDEWindow(project);
+                PROJECT_MANAGER.setCurrentProject(project);
+                PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN, project);
+                isSwitchingToIDE = false;
+            }
+        } catch (Exception exception) {
+            isSwitchingToIDE = false;
+            throw exception;
+        }
     }
 
     /**
@@ -236,8 +269,8 @@ public class Railroad extends Application {
             double screenW = screen.getBounds().getWidth();
             double screenH = screen.getBounds().getHeight();
 
-            double windowW = Math.max(500, Math.min(screenW * 0.75, 1024));
-            double windowH = Math.max(500, Math.min(screenH * 0.75, 768));
+            double windowW = screenW * 0.75;
+            double windowH = screenH * 0.75;
 
             // Start the welcome screen and window
             scene = new Scene(new WelcomePane(), windowW, windowH);

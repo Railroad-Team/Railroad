@@ -1,16 +1,20 @@
 package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.localization.ui.LocalizedTextField;
+import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.project.Project;
-import io.github.railroad.ui.defaults.RRListView;
+import io.github.railroad.ui.nodes.RRListView;
+import io.github.railroad.ui.nodes.ProjectListCell;
+import io.github.railroad.ui.nodes.RRTextField;
 import io.github.railroad.welcome.project.ProjectSort;
-import io.github.railroad.welcome.project.ui.widget.ProjectListCell;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +28,9 @@ public class WelcomeProjectsPane extends ScrollPane {
 
     private ObservableValue<ProjectSort> sortProperty;
 
-    public WelcomeProjectsPane(LocalizedTextField searchField) {
+    private static volatile boolean isProcessingClick = false;
+
+    public WelcomeProjectsPane(RRTextField searchField) {
         setFitToWidth(true);
         setFitToHeight(true);
         setHbarPolicy(ScrollBarPolicy.NEVER);
@@ -38,21 +44,60 @@ public class WelcomeProjectsPane extends ScrollPane {
         projectsList.getStyleClass().add("welcome-projects-list");
         projectsList.setCellFactory(param -> new ProjectListCell());
 
+        projectsList.setFocusTraversable(false);
+
         projectsList.setOnMouseClicked(event -> {
             if (event.getClickCount() != 2)
                 return;
 
-            Project project = projectsList.getSelectionModel().getSelectedItem();
-            if (project != null) {
-                project.open();
+            if (isProcessingClick) {
+                return; // Prevent rapid successive clicks
+            }
+
+            isProcessingClick = true;
+            
+            try {
+                Project project = projectsList.getSelectionModel().getSelectedItem();
+                if (project != null) {
+                    project.open();
+                }
+            } finally {
+                // Reset the flag after a short delay
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(300);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } finally {
+                        isProcessingClick = false;
+                    }
+                }).start();
             }
         });
 
         projectsList.setOnKeyReleased(event -> {
             if (event.getCode() == KeyCode.ENTER) {
-                Project project = projectsList.getSelectionModel().getSelectedItem();
-                if (project != null) {
-                    project.open();
+                if (isProcessingClick)
+                    return;
+
+                isProcessingClick = true;
+                
+                try {
+                    Project project = projectsList.getSelectionModel().getSelectedItem();
+                    if (project != null) {
+                        project.open();
+                    }
+                } finally {
+                    // Reset the flag after a short delay
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(300);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        } finally {
+                            isProcessingClick = false;
+                        }
+                    }).start();
                 }
 
                 event.consume();
@@ -76,10 +121,27 @@ public class WelcomeProjectsPane extends ScrollPane {
                     projectsList.getItems().removeAll(c.getRemoved());
                 }
             }
+            updateEmptyState();
         });
 
         filterProjects("");
-        setContent(projectsList);
+        updateEmptyState();
+    }
+
+    private void updateEmptyState() {
+        if (projectsList.getItems().isEmpty()) {
+            // Show empty state illustration and message
+            var emptyBox = new VBox(12);
+            emptyBox.setAlignment(javafx.geometry.Pos.CENTER);
+            emptyBox.setPadding(new javafx.geometry.Insets(40, 0, 40, 0));
+            var illustration = new ImageView(new Image(Railroad.getResourceAsStream("images/logo.png"), 96, 96, true, true));
+            var message = new LocalizedLabel("railroad.home.welcome.projects.empty");
+            message.getStyleClass().add("welcome-projects-message");
+            emptyBox.getChildren().addAll(illustration, message);
+            setContent(emptyBox);
+        } else {
+            setContent(projectsList);
+        }
     }
 
     public void removeProject(Project project) {
@@ -91,6 +153,7 @@ public class WelcomeProjectsPane extends ScrollPane {
 
         if (value == null || value.isEmpty()) {
             projectsList.getItems().addAll(Railroad.PROJECT_MANAGER.getProjects());
+            updateEmptyState();
             return;
         }
 
@@ -102,6 +165,7 @@ public class WelcomeProjectsPane extends ScrollPane {
         }
 
         projectsList.getItems().addAll(filteredProjects);
+        updateEmptyState();
     }
 
     public void setSortProperty(ObservableValue<ProjectSort> observable) {

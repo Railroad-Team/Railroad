@@ -63,7 +63,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
 
         outputArea.setEditable(false);
         outputArea.setWrapText(true);
-        outputArea.setStyle("-fx-font-family: 'Consolas', monospace;");
+        outputArea.getStyleClass().add("project-creation-output");
         outputArea.textProperty().addListener((observable, oldValue, newValue) -> {
             outputArea.setScrollTop(Double.MAX_VALUE);
         });

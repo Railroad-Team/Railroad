@@ -19,8 +19,12 @@ public class DiagnosticPane extends BorderPane {
 
         setTop(locationText);
         setCenter(messageText);
-        setStyle("-fx-border-color: " + (diagnostic.getKind() == Diagnostic.Kind.ERROR ? "red" : "orange") + ";");
         getStyleClass().add("diagnostic-pane");
+        if (diagnostic.getKind() == Diagnostic.Kind.ERROR) {
+            getStyleClass().add("error");
+        } else {
+            getStyleClass().add("warning");
+        }
     }
 
     public DiagnosticPane(Collection<Diagnostic<? extends JavaFileObject>> diagnostics) {
@@ -34,8 +38,12 @@ public class DiagnosticPane extends BorderPane {
 
         setTop(locationText);
         setCenter(messageText);
-        setStyle("-fx-border-color: " + (diagnostics.stream().anyMatch(d -> d.getKind() == Diagnostic.Kind.ERROR) ? "red" : "orange") + ";");
         getStyleClass().add("diagnostic-pane");
+        if (diagnostics.stream().anyMatch(d -> d.getKind() == Diagnostic.Kind.ERROR)) {
+            getStyleClass().add("error");
+        } else {
+            getStyleClass().add("warning");
+        }
     }
 
     @SafeVarargs

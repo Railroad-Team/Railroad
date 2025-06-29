@@ -79,10 +79,9 @@ public class SearchHandler {
         if (n instanceof Labeled) {
             var sr = fuzzySearch.isSimilar(getQuery(), ((Labeled) n).getText());
             if (sr) {
-                //TODO better way for this? Maybe a style class or something
-                n.setStyle(n.getStyle() + foundStyle);
+                n.getStyleClass().add("search-highlight");
             } else {
-                n.setStyle(n.getStyle().replace(foundStyle, ""));
+                n.getStyleClass().remove("search-highlight");
             }
         }
 

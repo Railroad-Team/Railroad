@@ -1,4 +1,10 @@
-#Generic
+# =============================================================================
+# Railroad Language File - English (en_us)
+# =============================================================================
+
+# =============================================================================
+# GENERIC/COMMON
+# =============================================================================
 railroad.generic.apply=Apply
 railroad.generic.ok=Ok
 railroad.generic.cancel=Cancel
@@ -7,64 +13,118 @@ railroad.generic.back=Back
 railroad.generic.next=Next
 railroad.generic.finish=Finish
 
+# =============================================================================
+# APPLICATION
+# =============================================================================
+railroad.app.name=Railroad
+railroad.app.version=1.0.0 (dev)
 
+# =============================================================================
+# WINDOW TITLES
+# =============================================================================
+railroad.home.window.title=Railroad
+railroad.ide.window.title=Railroad IDE
+
+# =============================================================================
+# HOME/WELCOME SCREEN
+# =============================================================================
+railroad.home.welcome.greeting=Welcome to Railroad!
 railroad.home.welcome.projects=Projects List
+railroad.home.welcome.projects.subtitle=Manage your projects with ease
+railroad.home.welcome.projects.empty=No projects yet! Create your first project.
 railroad.home.welcome.projectsearch=Search projects...
+railroad.home.welcome.projectsearch.subtitle=Search for projects
 railroad.home.welcome.home=Home
 railroad.home.welcome.openproject=Open Project
 railroad.home.welcome.newproject=New Project
 railroad.home.welcome.importproject=Import Project
 railroad.home.welcome.settings=Settings
 
-#Settings
-railroad=Railroad
-railroad.home.settings.title=Settings
-railroad.home.settings.description=Configure your settings here.
-railroad.appearance=Appearance
-railroad.general.language.title=Language
-railroad.appearance.themes=Themes
-
-railroad.general=General
-railroad.general.project_folder.title=Default Project Folder
-railroad.appearance.themes.download_repo.title=Custom Repository
-railroad.appearance.themes.download_repo.description=Specify a GitHub repository URL to download themes from.
-railroad.appearance.themes.select.title=Theme
-railroad.appearance.themes.select.description=Select a theme from your specified repository.
-railroad.appearance.language.language.title=Language
-
+# Project sorting
 railroad.home.welcome.sort.none=None
 railroad.home.welcome.sort.name=Name
 railroad.home.welcome.sort.date=Date
 
+# Project actions
 railroad.home.welcome.project.open=Open
 railroad.home.welcome.project.remove=Remove
+railroad.home.welcome.project.searchtype=Search Project Types
 
+# =============================================================================
+# SETTINGS
+# =============================================================================
+railroad.home.settings.title=Settings
+railroad.home.settings.description=Configure your settings here.
 railroad.home.settings.search=Search settings...
 railroad.home.settings.back=Back
 
+# Settings categories
+railroad.general=General
+railroad.appearance=Appearance
+railroad.ide=IDE
+
+# General settings
+railroad.general.language.title=Language
+railroad.general.language.description=Select the language for the Railroad interface.
+railroad.general.project_folder.title=Default Project Folder
+
+# GitHub connection
 railroad.home.settings.general.github=Github Connection:
 railroad.home.settings.general.github.connect=Connect
 railroad.home.settings.general.github.disconnect=Disconnect
 
+# Appearance settings
+railroad.appearance.themes=Themes
+railroad.appearance.themes.description=Customize the appearance of Railroad by selecting from available themes or downloading new ones from the theme repository.
+railroad.appearance.themes.download_repo.title=Custom Repository
+railroad.appearance.themes.download_repo.description=Specify a GitHub repository URL to download themes from.
+railroad.appearance.themes.select.title=Theme
+railroad.appearance.themes.select.description=
+railroad.appearance.language.language.title=Language
+
+# Theme management
 railroad.home.settings.appearance.theme=Select a Theme
 railroad.home.settings.appearance.downloadtheme=Download themes
+railroad.home.settings.appearance.downloadtheme.description=Browse and download themes from the official Railroad theme repository.
 railroad.home.settings.appearance.notfound=Themes not found
+railroad.home.settings.appearance.loading=Loading themes...
+railroad.home.settings.appearance.themes=Available Themes
+railroad.home.settings.appearance.themes.found=%d themes found
 railroad.home.settings.appearance.download=Download
 railroad.home.settings.appearance.installed=Installed
 railroad.home.settings.appearance.preview=Preview
+railroad.home.settings.appearance.preview.error=Failed to load preview
+railroad.home.settings.appearance.preview.loaded=Preview loaded
+railroad.home.settings.appearance.selecttheme=Select Theme
 
+# Theme preview
+railroad.home.settings.appearance.preview.title=Theme Preview
+railroad.home.settings.appearance.preview.subtitle=This preview shows how various UI components will look with the selected theme.
+railroad.home.settings.appearance.preview.form.components=Form Components
+railroad.home.settings.appearance.preview.list.components=List Components
+railroad.home.settings.appearance.preview.button.components=Button Components
+railroad.home.settings.appearance.preview.close=Close Preview
+railroad.home.settings.appearance.preview.apply=Apply Theme
+
+# Keymaps
 railroad.home.settings.keymaps.key=Key
 railroad.home.settings.keymaps.action=Action
-
 railroad.home.settings.keymaps.action.runproject=Run Project
 railroad.home.settings.keymaps.action.termproject=Terminate Project
 
+# IDE settings
+railroad.ide.auto_pair_inside_strings.title=Auto Pair Inside Strings
+railroad.ide.auto_pair_inside_strings.description=Enable or disable auto-pairing of brackets and quotes inside strings.
+
+# =============================================================================
+# PROJECT CREATION
+# =============================================================================
 railroad.home.project=Project
 railroad.home.project.browse=Browse
 railroad.home.project.create=Create
 railroad.home.project.creating=Creating project...
-railroad.home.welcome.project.searchtype=Search Project Types
 
+# Project basic info
 railroad.project.creation.name=Name
 railroad.project.creation.name.prompt=Enter project name
 railroad.project.creation.name.error.required=You must enter a project name
@@ -88,12 +148,14 @@ railroad.project.creation.license.custom=Custom License
 railroad.project.creation.license.custom.prompt=Enter custom license
 railroad.project.creation.license.custom.error.required=You must enter a custom license
 
+# Minecraft settings
 railroad.project.creation.minecraft_version=Minecraft Version
 railroad.project.creation.forge_version=Forge Version
 railroad.project.creation.fabric_loader_version=Fabric Loader Version
 railroad.project.creation.include_fapi=Include Fabric API
 railroad.project.creation.fabric_api_version=Fabric API Version
 
+# Mod settings
 railroad.project.creation.mod_id=Mod ID
 railroad.project.creation.mod_id.prompt=Enter mod ID
 railroad.project.creation.mod_id.error.required=You must enter a mod ID
@@ -111,15 +173,18 @@ railroad.project.creation.main_class.prompt=Enter the name of the main class
 railroad.project.creation.main_class.error.required=You must enter the name of the main class
 railroad.project.creation.main_class.error.invalid_characters=Main class name contains invalid characters
 
+# Project features
 railroad.project.creation.use_mixins=Use Mixins
 railroad.project.creation.use_access_transformer=Use Access Transformer
 railroad.project.creation.use_access_widener=Use Access Widener
 railroad.project.creation.gen_run_folders=Generate Run Folders
 railroad.project.creation.split_sources=Split Sources
 
+# Mappings
 railroad.project.creation.mapping_channel=Mapping Channel
 railroad.project.creation.mapping_version=Mapping Version
 
+# Project metadata
 railroad.project.creation.author=Author
 railroad.project.creation.author.prompt=Enter author name
 railroad.project.creation.author.error.length_long=Author name is too long
@@ -132,6 +197,7 @@ railroad.project.creation.description=Description
 railroad.project.creation.description.prompt=Enter description
 railroad.project.creation.description.error.length_long=Description is too long
 
+# URLs
 railroad.project.creation.issues=Issues URL
 railroad.project.creation.issues.prompt=Enter issues URL
 railroad.project.creation.issues.error.length_long=Issues URL is too long
@@ -157,9 +223,11 @@ railroad.project.creation.sources.prompt=Enter sources URL
 railroad.project.creation.sources.error.length_long=Sources URL is too long
 railroad.project.creation.sources.error.invalid_url=Sources URL is invalid
 
+# Project options
 railroad.project.creation.display_test=Display Test
 railroad.project.creation.client_side_only=Client Side Only
 
+# Maven settings
 railroad.project.creation.group_id=Group ID
 railroad.project.creation.group_id.prompt=Enter group ID
 railroad.project.creation.group_id.error.required=You must enter a group ID
@@ -178,12 +246,16 @@ railroad.project.creation.version.error.required=You must enter a version
 railroad.project.creation.version.error.length_long=Version is too long
 railroad.project.creation.version.error.invalid_characters=Version contains invalid characters
 
+# Project creation sections
 railroad.project.creation.section.project=Project
 railroad.project.creation.section.minecraft=Minecraft
 railroad.project.creation.section.optional=Optional
 railroad.project.creation.section.mappings=Mappings
 railroad.project.creation.section.maven=Maven
 
+# =============================================================================
+# IDE
+# =============================================================================
 railroad.ide.welcome.message=Welcome to Railroad!
 railroad.ide.welcome.message.description=To get started, create a new file or open an existing one.
 railroad.ide.welcome.features=Features
@@ -200,3 +272,13 @@ railroad.ide.welcome.getting_started.wiki=Wiki
 railroad.ide.welcome.getting_started.tutorials=Tutorials
 
 railroad.ide.project_explorer.search_field=Search files...
+
+# =============================================================================
+# DIALOGS
+# =============================================================================
+railroad.dialog.open_project.title=Open Project
+railroad.dialog.open_project.error.invalid_directory=Invalid Project Directory
+railroad.dialog.open_project.error.invalid_directory.message=The selected directory does not appear to be a valid project. Please select a directory containing a valid project.
+
+not_implemented.title=Not Implemented Yet
+not_implemented.subtitle=This feature is under construction. Stay tuned!

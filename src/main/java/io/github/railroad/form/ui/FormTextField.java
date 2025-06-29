@@ -1,6 +1,6 @@
 package io.github.railroad.form.ui;
 
-import io.github.railroad.localization.ui.LocalizedTextField;
+import io.github.railroad.ui.nodes.RRTextField;
 import javafx.scene.control.TextField;
 
 import java.util.HashMap;
@@ -29,10 +29,10 @@ public class FormTextField extends InformativeLabeledHBox<TextField> {
         boolean editable = (boolean) params.get("editable");
         boolean translate = (boolean) params.get("translate");
 
-        TextField textField = translate ? new LocalizedTextField(promptText) : new TextField();
+        RRTextField textField = translate ? new RRTextField(promptText) : new RRTextField();
         textField.setText(text);
         textField.setEditable(editable);
-
+        textField.getStyleClass().add("rr-text-field");
         if (!translate)
             textField.setPromptText(promptText);
 

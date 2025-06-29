@@ -13,6 +13,7 @@ public class FormCheckBox extends InformativeLabeledHBox<CheckBox> {
     public CheckBox createPrimaryComponent(Map<String, Object> params) {
         var checkBox = new CheckBox();
         checkBox.setSelected(params.get("selected") != null && (boolean) params.get("selected"));
+        checkBox.getStyleClass().add("rr-check-box");
         return checkBox;
     }
 }

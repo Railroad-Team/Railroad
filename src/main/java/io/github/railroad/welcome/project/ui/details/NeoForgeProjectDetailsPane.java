@@ -10,7 +10,7 @@ import io.github.railroad.project.minecraft.RecommendableVersion;
 import io.github.railroad.project.minecraft.mapping.MappingChannel;
 import io.github.railroad.project.minecraft.mapping.MappingHelper;
 import io.github.railroad.project.minecraft.mapping.MappingVersion;
-import io.github.railroad.ui.BrowseButton;
+import io.github.railroad.ui.nodes.BrowseButton;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ClassNameValidator;
@@ -103,9 +103,9 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
             // Validate the project path
             Path path = Path.of(newValue);
             if (Files.notExists(path) || !Files.isDirectory(path))
-                projectPathField.setStyle("-fx-border-color: red;");
+                setValidationError(projectPathField);
             else
-                projectPathField.setBorder(projectPathFieldBorder);
+                clearValidation(projectPathField);
 
             // Update the created at label
             String fullPath = fixPath(projectPathField.getText().trim() + "/" + projectNameField.getText().trim());
@@ -113,7 +113,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
             // If the project is in OneDrive, warn the user
             if (fullPath.contains("OneDrive") && hasOneDriveWarning.compareAndSet(false, true)) {
-                projectPathField.setStyle("-fx-border-color: orange;");
+                setValidationWarning(projectPathField);
 
                 var tooltip = new Tooltip("It is not recommended to create projects in OneDrive as it has a tendency to cause problems.");
                 Tooltip.install(projectPathField, tooltip);
@@ -123,15 +123,13 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
                 warningIcon.setIconColor(Color.ORANGE);
                 projectPathBox.getChildren().add(warningIcon);
             } else if (!fullPath.contains("OneDrive") && hasOneDriveWarning.compareAndSet(true, false)) {
-                projectPathField.setBorder(projectPathFieldBorder);
+                clearValidation(projectPathField);
 
                 Tooltip.uninstall(projectPathField, projectPathField.getTooltip());
 
                 projectPathBox.getChildren().removeLast();
             } else if (fullPath.contains("OneDrive")) {
-                projectPathField.setStyle("-fx-border-color: orange;");
-            } else {
-                projectPathField.setBorder(projectPathFieldBorder);
+                setValidationWarning(projectPathField);
             }
         });
 
@@ -251,13 +249,13 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
             // Validate the mod ID
             if (newValue.length() < 3 || !newValue.matches("^[a-z][a-z0-9_]{1,63}$"))
-                modIdField.setStyle("-fx-border-color: red;");
+                setValidationError(modIdField);
             else
-                modIdField.setBorder(modidFieldBorder);
+                clearValidation(modIdField);
 
             // If the mod ID is not valid, show a warning
             if ((newValue.length() < 5 && newValue.length() > 2) && hasModidWarning.compareAndSet(false, true)) {
-                modIdField.setStyle("-fx-border-color: orange;");
+                setValidationWarning(modIdField);
 
                 var tooltip = new Tooltip("Short mod IDs are discouraged as they may conflict with other mods.");
                 Tooltip.install(modIdField, tooltip);
@@ -267,12 +265,12 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
                 warningIcon.setIconColor(Color.ORANGE);
                 modIdBox.getChildren().add(warningIcon);
             } else if (newValue.length() >= 5 && hasModidWarning.compareAndSet(true, false)) {
-                modIdField.setBorder(modidFieldBorder);
+                clearValidation(modIdField);
 
                 Tooltip.uninstall(modIdField, modIdField.getTooltip());
                 modIdBox.getChildren().removeLast();
             } else if (newValue.length() < 3 && hasModidWarning.compareAndSet(true, false)) {
-                Tooltip.uninstall(modIdField, modIdField.getTooltip());
+                clearValidation(modIdField);
                 modIdBox.getChildren().removeLast();
             }
 
@@ -529,9 +527,9 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
             // Validate the project name
             if (newValue.isBlank())
-                projectNameField.setStyle("-fx-border-color: red;");
+                setValidationError(projectNameField);
             else
-                projectNameField.setBorder(projectNameFieldBorder);
+                clearValidation(projectNameField);
 
             // Update the created at label
             String path = fixPath(projectPathField.getText().trim() + "/" + projectNameField.getText().trim());
@@ -606,7 +604,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
     private static Text createTitle(String title) {
         var text = new Text(title);
-        text.setStyle("-fx-font-size: 1.5em;");
+        text.getStyleClass().add("form-section-title");
         return text;
     }
 
@@ -654,7 +652,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
     protected boolean validate() {
         // Validate the project name
         if (projectNameField.getText().isBlank()) {
-            projectNameField.setStyle("-fx-border-color: red;");
+            setValidationError(projectNameField);
             projectNameField.requestFocus();
 
             createAlert("Project Name is Required", "Please enter a name for your project.");
@@ -663,7 +661,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         // Validate the project path
         if (projectPathField.getText().isBlank()) {
-            projectPathField.setStyle("-fx-border-color: red;");
+            setValidationError(projectPathField);
             projectPathField.requestFocus();
 
             createAlert("Project Path is Required", "Please enter a path for your project.");
@@ -672,7 +670,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         Path path = Path.of(projectPathField.getText());
         if (Files.notExists(path)) {
-            projectPathField.setStyle("-fx-border-color: red;");
+            setValidationError(projectPathField);
             projectPathField.requestFocus();
 
             createAlert("Invalid Project Path", "The specified path does not exist.");
@@ -680,7 +678,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         }
 
         if (!Files.isDirectory(path)) {
-            projectPathField.setStyle("-fx-border-color: red;");
+            setValidationError(projectPathField);
             projectPathField.requestFocus();
 
             createAlert("Invalid Project Path", "The specified path is not a directory.");
@@ -689,7 +687,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         // Validate the mod ID
         if (modIdField.getText().isBlank()) {
-            modIdField.setStyle("-fx-border-color: red;");
+            setValidationError(modIdField);
             modIdField.requestFocus();
 
             createAlert("Mod ID is Required", "Please enter a mod ID for your project.");
@@ -697,7 +695,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         }
 
         if (modIdField.getText().length() < 2) {
-            modIdField.setStyle("-fx-border-color: red;");
+            setValidationError(modIdField);
             modIdField.requestFocus();
 
             createAlert("Invalid Mod ID", "The mod ID must be at least 2 characters long.");
@@ -705,7 +703,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         }
 
         if (!modIdField.getText().matches("^[a-z][a-z0-9_]{1,63}$")) {
-            modIdField.setStyle("-fx-border-color: red;");
+            setValidationError(modIdField);
             modIdField.requestFocus();
 
             createAlert("Invalid Mod ID", "The mod ID must start with a lowercase letter and contain only lowercase letters, numbers, and underscores.");
@@ -714,7 +712,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         // Validate the mod name
         if (modNameField.getText().isBlank()) {
-            modNameField.setStyle("-fx-border-color: red;");
+            setValidationError(modNameField);
             modNameField.requestFocus();
 
             createAlert("Mod Name is Required", "Please enter a mod name for your project.");
@@ -722,7 +720,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         }
 
         if (modNameField.getText().length() < 2) {
-            modNameField.setStyle("-fx-border-color: red;");
+            setValidationError(modNameField);
             modNameField.requestFocus();
 
             createAlert("Invalid Mod Name", "The mod name must be at least 2 characters long.");
@@ -730,7 +728,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         }
 
         if (modNameField.getText().length() > 256) {
-            modNameField.setStyle("-fx-border-color: red;");
+            setValidationError(modNameField);
             modNameField.requestFocus();
 
             createAlert("Invalid Mod Name", "The mod name must be at most 256 characters long.");
@@ -739,7 +737,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         // Validate the main class
         if (mainClassField.getText().isBlank()) {
-            mainClassField.setStyle("-fx-border-color: red;");
+            setValidationError(mainClassField);
             mainClassField.requestFocus();
 
             createAlert("Main Class is Required", "Please enter a main class for your project.");
@@ -747,7 +745,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         }
 
         if (!ClassNameValidator.isValid(mainClassField.getText())) {
-            mainClassField.setStyle("-fx-border-color: red;");
+            setValidationError(mainClassField);
             mainClassField.requestFocus();
 
             createAlert("Invalid Main Class", "The main class must be a valid Java class name.");
@@ -756,7 +754,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         // Validate the group ID
         if (groupIdField.getText().isBlank()) {
-            groupIdField.setStyle("-fx-border-color: red;");
+            setValidationError(groupIdField);
             groupIdField.requestFocus();
 
             createAlert("Group ID is Required", "Please enter a group ID for your project.");
@@ -764,7 +762,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         }
 
         if (!groupIdField.getText().matches("[a-zA-Z0-9.]+")) {
-            groupIdField.setStyle("-fx-border-color: red;");
+            setValidationError(groupIdField);
             groupIdField.requestFocus();
 
             createAlert("Invalid Group ID", "The group ID must contain only letters, numbers, and periods.");
@@ -773,7 +771,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         // Validate the artifact ID
         if (artifactIdField.getText().isBlank()) {
-            artifactIdField.setStyle("-fx-border-color: red;");
+            setValidationError(artifactIdField);
             artifactIdField.requestFocus();
 
             createAlert("Artifact ID is Required", "Please enter an artifact ID for your project.");
@@ -781,7 +779,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         }
 
         if (!artifactIdField.getText().matches("[a-z0-9-]+")) {
-            artifactIdField.setStyle("-fx-border-color: red;");
+            setValidationError(artifactIdField);
             artifactIdField.requestFocus();
 
             createAlert("Invalid Artifact ID", "The artifact ID must contain only lowercase letters, numbers, and hyphens.");
@@ -790,7 +788,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         // Validate the version
         if (versionField.getText().isBlank()) {
-            versionField.setStyle("-fx-border-color: red;");
+            setValidationError(versionField);
             versionField.requestFocus();
 
             createAlert("Version is Required", "Please enter a version for your project.");
@@ -798,7 +796,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         }
 
         if (!versionField.getText().matches("[0-9]+(\\.[0-9]+){0,2}(-[a-zA-Z0-9]+)?")) {
-            versionField.setStyle("-fx-border-color: red;");
+            setValidationError(versionField);
             versionField.requestFocus();
 
             createAlert("Invalid Version", "The version must be in the format of x.y.z or x.y.z-tag.");
@@ -807,7 +805,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         // Validate the license
         if (licenseComboBox.getValue() == License.CUSTOM && licenseCustomField.getText().isBlank()) {
-            licenseCustomField.setStyle("-fx-border-color: red;");
+            setValidationError(licenseCustomField);
             licenseCustomField.requestFocus();
 
             createAlert("Custom License is Required", "Please enter a custom license for your project.");
@@ -816,7 +814,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         // Validate issues, update json and display URL
         if (!issuesField.getText().isBlank() && !issuesField.getText().matches(Railroad.URL_REGEX)) {
-            issuesField.setStyle("-fx-border-color: red;");
+            setValidationError(issuesField);
             issuesField.requestFocus();
 
             createAlert("Invalid Issues URL", "The issues URL must be a valid URL.");
@@ -824,7 +822,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         }
 
         if (!updateJsonUrlField.getText().isBlank() && !updateJsonUrlField.getText().matches(Railroad.URL_REGEX) && !updateJsonUrlField.getText().endsWith(".json")) {
-            updateJsonUrlField.setStyle("-fx-border-color: red;");
+            setValidationError(updateJsonUrlField);
             updateJsonUrlField.requestFocus();
 
             createAlert("Invalid Update JSON URL", "The update JSON URL must be a valid URL.");
@@ -832,7 +830,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         }
 
         if (!displayUrlField.getText().isBlank() && !displayUrlField.getText().matches(Railroad.URL_REGEX)) {
-            displayUrlField.setStyle("-fx-border-color: red;");
+            setValidationError(displayUrlField);
             displayUrlField.requestFocus();
 
             createAlert("Invalid Display URL", "The display URL must be a valid URL.");
@@ -875,5 +873,18 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
                 mappingChannel, mappingVersion,
                 author, credits, description, issues, updateJsonUrl, displayUrl, displayTest, clientSideOnly,
                 groupId, artifactId, version);
+    }
+
+    private void setValidationError(TextField field) {
+        field.getStyleClass().add("validation-error");
+    }
+
+    private void setValidationWarning(TextField field) {
+        field.getStyleClass().add("validation-warning");
+    }
+
+    private void clearValidation(TextField field) {
+        field.getStyleClass().remove("validation-error");
+        field.getStyleClass().remove("validation-warning");
     }
 }

@@ -33,7 +33,7 @@ public class TextEditorPane extends CodeArea {
     }
 
     private void resizableFont() {
-        setStyle("-fx-font-size: " + FONT_SIZES[fontSizeIndex] + "px;");
+        updateFontSizeClass();
 
         setOnKeyPressed(event -> {
             if (!event.isControlDown())
@@ -48,8 +48,13 @@ public class TextEditorPane extends CodeArea {
                 return;
 
             fontSizeIndex = index;
-            setStyle("-fx-font-size: " + FONT_SIZES[fontSizeIndex] + "px;");
+            updateFontSizeClass();
         });
+    }
+
+    private void updateFontSizeClass() {
+        getStyleClass().removeIf(styleClass -> styleClass.startsWith("text-editor-font-size-"));
+        getStyleClass().add("text-editor-font-size-" + FONT_SIZES[fontSizeIndex]);
     }
 
     private void listenForChanges() {

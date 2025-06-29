@@ -74,11 +74,11 @@ public class GithubProfilesListCell extends ListCell<Profile> {
 
             var aliasLabel = new Label();
             aliasLabel.textProperty().bind(profile.map(Profile::getAlias));
-            aliasLabel.setStyle("-fx-font-size: 16px;");
+            aliasLabel.getStyleClass().add("github-alias-label");
 
             var accessTokenLabel = new Label();
             accessTokenLabel.textProperty().bind(profile.map(Profile::getShortAccessToken));
-            accessTokenLabel.setStyle("-fx-font-size: 16px;");
+            accessTokenLabel.getStyleClass().add("github-access-token-label");
 
             var icon = new ImageView();
             icon.setFitWidth(32);

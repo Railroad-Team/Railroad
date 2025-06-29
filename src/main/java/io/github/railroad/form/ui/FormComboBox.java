@@ -29,7 +29,7 @@ public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> {
         ComboBox<T> comboBox = translate ? new LocalizedComboBox<>(keyFunction, valueOfFunction) : new ComboBox<>();
         comboBox.getItems().addAll(items);
         comboBox.setEditable(editable);
-
+        comboBox.getStyleClass().add("rr-combo-box");
         return comboBox;
     }
 }

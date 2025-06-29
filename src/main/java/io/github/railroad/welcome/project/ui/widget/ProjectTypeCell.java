@@ -21,10 +21,18 @@ public class ProjectTypeCell extends ListCell<ProjectType> {
         if (empty || item == null) {
             setGraphic(null);
             setText(null);
+            getStyleClass().remove("project-type-cell");
+            getStyleClass().remove("selected");
         } else {
             this.imageView.setImage(item.getIcon());
             setGraphic(this.imageView);
             setText(item.getName());
+            getStyleClass().add("project-type-cell");
+            if (isSelected() || isFocused()) {
+                getStyleClass().add("selected");
+            } else {
+                getStyleClass().remove("selected");
+            }
         }
     }
 }

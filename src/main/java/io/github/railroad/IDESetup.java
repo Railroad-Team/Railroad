@@ -13,19 +13,30 @@ import io.github.railroad.project.Project;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.nodes.RRCard;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.application.Platform;
 import org.fxmisc.richtext.CodeArea;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+import io.github.railroad.localization.L18n;
+import io.github.railroad.localization.ui.LocalizedLabel;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -52,7 +63,7 @@ public class IDESetup {
         leftPane.addTab("Project", new ProjectExplorerPane(project, root));
 
         var rightPane = new DetachableTabPane();
-        rightPane.addTab("Properties", new Label("Properties Pane (not implemented yet)"));
+        rightPane.addTab("Properties", createNotImplementedPane());
 
         var editorPane = new DetachableTabPane();
         editorPane.addTab("Welcome", new IDEWelcomePane());
@@ -113,11 +124,181 @@ public class IDESetup {
     }
 
     private static MenuBar createMenuBar() {
-        return new MenuBar(
-                new Menu("File"), new Menu("Edit"),
-                new Menu("View"), new Menu("Run"),
-                new Menu("Help")
+        var menuBar = new MenuBar();
+        menuBar.getStyleClass().add("rr-menu-bar");
+
+        var fileMenu = new Menu("File");
+        fileMenu.getStyleClass().add("rr-menu");
+
+        fileMenu.getItems().clear();
+        
+        var newFileItem = new MenuItem("New File");
+        newFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE));
+        newFileItem.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN));
+        
+        var openFileItem = new MenuItem("Open File...");
+        openFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
+        openFileItem.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.CONTROL_DOWN));
+        
+        var saveItem = new MenuItem("Save");
+        saveItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
+        saveItem.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN));
+        
+        var saveAsItem = new MenuItem("Save As...");
+        saveAsItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
+        saveAsItem.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
+        
+        var separator1 = new SeparatorMenuItem();
+        
+        var exitItem = new MenuItem("Exit");
+        exitItem.setGraphic(new FontIcon(FontAwesomeSolid.SIGN_OUT_ALT));
+        exitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN));
+        exitItem.setOnAction(e -> Platform.exit());
+
+        fileMenu.getItems().addAll(
+                newFileItem, openFileItem, separator1,
+                saveItem, saveAsItem, separator1,
+                exitItem
         );
+
+        var editMenu = new Menu("Edit");
+        editMenu.getStyleClass().add("rr-menu");
+
+        editMenu.getItems().clear();
+        
+        var undoItem = new MenuItem("Undo");
+        undoItem.setGraphic(new FontIcon(FontAwesomeSolid.UNDO));
+        undoItem.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN));
+        
+        var redoItem = new MenuItem("Redo");
+        redoItem.setGraphic(new FontIcon(FontAwesomeSolid.REDO));
+        redoItem.setAccelerator(new KeyCodeCombination(KeyCode.Y, KeyCombination.CONTROL_DOWN));
+        
+        var separator2 = new SeparatorMenuItem();
+        
+        var cutItem = new MenuItem("Cut");
+        cutItem.setGraphic(new FontIcon(FontAwesomeSolid.CUT));
+        cutItem.setAccelerator(new KeyCodeCombination(KeyCode.X, KeyCombination.CONTROL_DOWN));
+        
+        var copyItem = new MenuItem("Copy");
+        copyItem.setGraphic(new FontIcon(FontAwesomeSolid.COPY));
+        copyItem.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN));
+        
+        var pasteItem = new MenuItem("Paste");
+        pasteItem.setGraphic(new FontIcon(FontAwesomeSolid.PASTE));
+        pasteItem.setAccelerator(new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN));
+        
+        var separator3 = new SeparatorMenuItem();
+        
+        var findItem = new MenuItem("Find...");
+        findItem.setGraphic(new FontIcon(FontAwesomeSolid.SEARCH));
+        findItem.setAccelerator(new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN));
+        
+        var replaceItem = new MenuItem("Replace...");
+        replaceItem.setGraphic(new FontIcon(FontAwesomeSolid.SEARCH_PLUS));
+        replaceItem.setAccelerator(new KeyCodeCombination(KeyCode.H, KeyCombination.CONTROL_DOWN));
+
+        editMenu.getItems().addAll(
+                undoItem, redoItem, separator2,
+                cutItem, copyItem, pasteItem, separator3,
+                findItem, replaceItem
+        );
+
+        var viewMenu = new Menu("View");
+        viewMenu.getStyleClass().add("rr-menu");
+
+        viewMenu.getItems().clear();
+        
+        var projectExplorerItem = new CheckMenuItem("Project Explorer");
+        projectExplorerItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER));
+        projectExplorerItem.setAccelerator(new KeyCodeCombination(KeyCode.DIGIT1, KeyCombination.CONTROL_DOWN));
+        
+        var propertiesItem = new CheckMenuItem("Properties");
+        propertiesItem.setGraphic(new FontIcon(FontAwesomeSolid.INFO_CIRCLE));
+        propertiesItem.setAccelerator(new KeyCodeCombination(KeyCode.DIGIT2, KeyCombination.CONTROL_DOWN));
+        
+        var consoleItem = new CheckMenuItem("Console");
+        consoleItem.setGraphic(new FontIcon(FontAwesomeSolid.TERMINAL));
+        consoleItem.setAccelerator(new KeyCodeCombination(KeyCode.DIGIT3, KeyCombination.CONTROL_DOWN));
+        
+        var separator4 = new SeparatorMenuItem();
+        
+        var fullScreenItem = new MenuItem("Toggle Full Screen");
+        fullScreenItem.setGraphic(new FontIcon(FontAwesomeSolid.EXPAND));
+        fullScreenItem.setAccelerator(new KeyCodeCombination(KeyCode.F11));
+
+        viewMenu.getItems().addAll(
+                projectExplorerItem, propertiesItem, consoleItem, separator4,
+                fullScreenItem
+        );
+
+        var runMenu = new Menu("Run");
+        runMenu.getStyleClass().add("rr-menu");
+
+        runMenu.getItems().clear();
+        
+        var runItem = new MenuItem("Run");
+        runItem.setGraphic(new FontIcon(FontAwesomeSolid.PLAY));
+        runItem.setAccelerator(new KeyCodeCombination(KeyCode.F5));
+        
+        var debugItem = new MenuItem("Debug");
+        debugItem.setGraphic(new FontIcon(FontAwesomeSolid.BUG));
+        debugItem.setAccelerator(new KeyCodeCombination(KeyCode.F6));
+        
+        var stopItem = new MenuItem("Stop");
+        stopItem.setGraphic(new FontIcon(FontAwesomeSolid.STOP));
+        stopItem.setAccelerator(new KeyCodeCombination(KeyCode.F7));
+
+        runMenu.getItems().addAll(
+                runItem, debugItem, stopItem
+        );
+
+        var toolsMenu = new Menu("Tools");
+        toolsMenu.getStyleClass().add("rr-menu");
+
+        toolsMenu.getItems().clear();
+        
+        var settingsItem = new MenuItem("Settings");
+        settingsItem.setGraphic(new FontIcon(FontAwesomeSolid.COG));
+        settingsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.CONTROL_DOWN));
+        
+        var pluginsItem = new MenuItem("Plugins");
+        pluginsItem.setGraphic(new FontIcon(FontAwesomeSolid.PUZZLE_PIECE));
+        
+        var terminalItem = new MenuItem("Terminal");
+        terminalItem.setGraphic(new FontIcon(FontAwesomeSolid.TERMINAL));
+        terminalItem.setAccelerator(new KeyCodeCombination(KeyCode.T, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
+
+        toolsMenu.getItems().addAll(
+                settingsItem, pluginsItem, terminalItem
+        );
+
+        var helpMenu = new Menu("Help");
+        helpMenu.getStyleClass().add("rr-menu");
+
+        helpMenu.getItems().clear();
+        
+        var documentationItem = new MenuItem("Documentation");
+        documentationItem.setGraphic(new FontIcon(FontAwesomeSolid.BOOK));
+        documentationItem.setAccelerator(new KeyCodeCombination(KeyCode.F1));
+        documentationItem.setOnAction(e -> Railroad.openUrl("https://railroad.turtywurty.dev/wiki"));
+        
+        var tutorialsItem = new MenuItem("Tutorials");
+        tutorialsItem.setGraphic(new FontIcon(FontAwesomeSolid.GRADUATION_CAP));
+        tutorialsItem.setOnAction(e -> Railroad.openUrl("https://tutorials.turtywurty.dev/"));
+        
+        var separator5 = new SeparatorMenuItem();
+        
+        var aboutItem = new MenuItem("About Railroad");
+        aboutItem.setGraphic(new FontIcon(FontAwesomeSolid.INFO));
+
+        helpMenu.getItems().addAll(
+                documentationItem, tutorialsItem, separator5, aboutItem
+        );
+
+        menuBar.getMenus().clear();
+        menuBar.getMenus().addAll(fileMenu, editMenu, viewMenu, runMenu, toolsMenu, helpMenu);
+        return menuBar;
     }
 
     /**
@@ -213,13 +394,20 @@ public class IDESetup {
 
     /**
      * Find the best tab pane for files (CodeArea) in the given parent.
-     * If a tab pane with a CodeArea is found, it will be returned.
+     * If a welcome tab is found, it will be returned to replace it.
+     * If no welcome tab is found, it will look for a tab pane with a CodeArea.
      * If no tab pane with a CodeArea is found, the first tab pane found will be returned.
      *
      * @param parent The parent to search in
      * @return The best tab pane for files
      */
     public static Optional<DetachableTabPane> findBestPaneForFiles(Parent parent) {
+        // First, try to find a pane with a welcome tab to replace it
+        var welcomePane = findBestPaneForFiles(parent, tab -> tab.getContent() instanceof IDEWelcomePane);
+        if (welcomePane.isPresent())
+            return welcomePane;
+        
+        // If no welcome tab found, fall back to the original behavior
         return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof CodeArea);
     }
 
@@ -292,5 +480,31 @@ public class IDESetup {
         }
 
         return Optional.empty();
+    }
+
+    private static Node createNotImplementedPane() {
+        var card = new RRCard(16);
+        card.setPadding(new Insets(32, 32, 32, 32));
+        card.setMaxWidth(Double.MAX_VALUE);
+        card.setAlignment(Pos.CENTER);
+
+        var icon = new FontIcon(FontAwesomeSolid.TOOLS);
+        icon.setIconSize(48);
+        icon.getStyleClass().add("not-implemented-icon");
+
+        var title = new LocalizedLabel("not_implemented.title");
+        title.getStyleClass().add("not-implemented-title");
+        title.setAlignment(Pos.CENTER);
+        title.setTextAlignment(TextAlignment.CENTER);
+        title.setWrapText(true);
+
+        var subtitle = new LocalizedLabel("not_implemented.subtitle");
+        subtitle.getStyleClass().add("not-implemented-subtitle");
+        subtitle.setWrapText(true);
+        subtitle.setAlignment(Pos.CENTER);
+        subtitle.setTextAlignment(TextAlignment.CENTER);
+
+        card.addContent(icon, title, subtitle);
+        return card;
     }
 }
