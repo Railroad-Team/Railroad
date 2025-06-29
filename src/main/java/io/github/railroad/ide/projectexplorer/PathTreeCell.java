@@ -160,6 +160,10 @@ public class PathTreeCell extends TreeCell<PathItem> {
         return menu;
     }
 
+    /**
+     * Starts the editing mode for the tree cell.
+     * Creates a text field for renaming the file or directory.
+     */
     @Override
     public void startEdit() {
         if (allowEdit) {
@@ -184,6 +188,12 @@ public class PathTreeCell extends TreeCell<PathItem> {
         }
     }
 
+    /**
+     * Commits the edit by renaming the file or directory.
+     * Moves the file to the new path and updates the item.
+     * 
+     * @param newValue the new PathItem with the updated path
+     */
     @Override
     public void commitEdit(PathItem newValue) {
         if (editingPath != null) {
@@ -205,6 +215,9 @@ public class PathTreeCell extends TreeCell<PathItem> {
         setGraphic(FileHandler.getIcon(newValue.getPath()));
     }
 
+    /**
+     * Cancels the editing mode and restores the original display.
+     */
     @Override
     public void cancelEdit() {
         super.cancelEdit();

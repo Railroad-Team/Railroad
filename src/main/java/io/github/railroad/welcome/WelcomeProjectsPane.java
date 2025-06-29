@@ -144,10 +144,21 @@ public class WelcomeProjectsPane extends ScrollPane {
         }
     }
 
+    /**
+     * Removes a project from the projects list.
+     * 
+     * @param project the project to remove
+     */
     public void removeProject(Project project) {
         projectsList.getItems().remove(project);
     }
 
+    /**
+     * Filters the projects list based on the provided search value.
+     * Projects whose alias contains the search value (case-insensitive) will be displayed.
+     * 
+     * @param value the search term to filter projects by
+     */
     public void filterProjects(String value) {
         projectsList.getItems().clear();
 
@@ -168,6 +179,12 @@ public class WelcomeProjectsPane extends ScrollPane {
         updateEmptyState();
     }
 
+    /**
+     * Sets the sort property for the projects list.
+     * The projects will be automatically sorted when the sort property changes or when new projects are added.
+     * 
+     * @param observable the observable value containing the sort criteria
+     */
     public void setSortProperty(ObservableValue<ProjectSort> observable) {
         this.sortProperty = observable;
 

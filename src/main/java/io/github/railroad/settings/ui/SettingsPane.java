@@ -20,9 +20,20 @@ import javafx.scene.layout.VBox;
 
 import java.util.Arrays;
 
+/**
+ * A comprehensive settings pane that provides a modern, searchable interface for managing application settings.
+ * Features a split-pane layout with a searchable category tree on the left and detailed settings content on the right.
+ * Supports real-time search functionality and automatic category navigation.
+ */
 public class SettingsPane extends VBox {
+    /** The search handler instance for filtering settings */
     public static final SearchHandler SEARCH_HANDLER = new SearchHandler();
 
+    /**
+     * Constructs a new SettingsPane with a modern split-pane layout.
+     * The left panel contains a search bar and category tree, while the right panel
+     * displays the selected category's settings with apply/cancel buttons.
+     */
     public SettingsPane() {
         setPadding(new Insets(24));
         setSpacing(10);

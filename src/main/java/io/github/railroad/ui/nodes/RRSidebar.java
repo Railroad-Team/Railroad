@@ -26,10 +26,18 @@ public class RRSidebar extends VBox {
     @Getter
     private VBox footer;
 
+    /**
+     * Constructs a new sidebar with default left positioning and medium size.
+     */
     public RRSidebar() {
         initialize();
     }
 
+    /**
+     * Constructs a new sidebar with the specified position.
+     * 
+     * @param position the position of the sidebar (LEFT or RIGHT)
+     */
     public RRSidebar(SidebarPosition position) {
         this.position = position;
         initialize();

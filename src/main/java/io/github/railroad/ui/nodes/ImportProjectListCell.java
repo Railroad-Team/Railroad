@@ -21,6 +21,11 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
 
+/**
+ * A modern list cell component for displaying repository items in import project lists.
+ * Features a card-based design with repository icon, name, URL, and context menu actions.
+ * Supports clone functionality through a directory chooser dialog.
+ */
 public class ImportProjectListCell extends ListCell<Repository> {
     private final RRCard card = new RRCard(12, new Insets(12, 18, 12, 18));
     private final HBox content = new HBox(14);
@@ -28,6 +33,11 @@ public class ImportProjectListCell extends ListCell<Repository> {
     private final VBox infoBox = new VBox(4);
     private final RRButton ellipsisButton = new RRButton("...");
 
+    /**
+     * Constructs a new ImportProjectListCell with modern styling and context menu functionality.
+     * Sets up the card layout with repository icon, information display, and ellipsis button
+     * for accessing clone and other repository actions.
+     */
     public ImportProjectListCell() {
         card.getStyleClass().add("import-project-card");
         icon.setFitWidth(32);

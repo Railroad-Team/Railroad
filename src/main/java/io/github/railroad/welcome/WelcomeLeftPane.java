@@ -101,6 +101,11 @@ public class WelcomeLeftPane extends RRSidebar {
             setGraphic(navItem);
         }
 
+        /**
+         * Updates the selected state of the navigation item when the cell selection changes.
+         * 
+         * @param selected true if the cell is selected, false otherwise
+         */
         @Override
         public void updateSelected(boolean selected) {
             super.updateSelected(selected);

@@ -6,11 +6,39 @@ import javafx.scene.control.TextArea;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A form text area component that extends InformativeLabeledHBox to provide
+ * a labeled text area with validation, localization, and styling support.
+ * Supports auto-resizing and text wrapping features.
+ */
 public class FormTextArea extends InformativeLabeledHBox<TextArea> {
+    /**
+     * Constructs a new FormTextArea with the specified configuration.
+     * 
+     * @param labelKey the localization key for the label text
+     * @param required whether the text area is required
+     * @param text the initial text content
+     * @param promptText the placeholder text to display when empty
+     * @param editable whether the text area is editable
+     * @param resizable whether the text area should auto-resize based on content
+     * @param wrapText whether text should wrap to new lines
+     * @param translate whether to use localization for the prompt text
+     */
     public FormTextArea(String labelKey, boolean required, String text, String promptText, boolean editable, boolean resizable, boolean wrapText, boolean translate) {
         super(labelKey, required, createParams(text, promptText, editable, resizable, wrapText, translate));
     }
 
+    /**
+     * Creates the parameters map for the text area component.
+     * 
+     * @param text the initial text content
+     * @param promptText the placeholder text
+     * @param editable whether the text area is editable
+     * @param resizable whether the text area should auto-resize
+     * @param wrapText whether text should wrap
+     * @param translate whether to use localization
+     * @return a map containing the component parameters
+     */
     private static Map<String, Object> createParams(String text, String promptText, boolean editable, boolean resizable, boolean wrapText, boolean translate) {
         Map<String, Object> params = new HashMap<>();
         if (text != null)
@@ -24,6 +52,12 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> {
         return params;
     }
 
+    /**
+     * Creates the primary text area component with the specified parameters.
+     * 
+     * @param params a map containing the parameters for the text area
+     * @return a new TextArea instance with the specified configuration
+     */
     @Override
     public TextArea createPrimaryComponent(Map<String, Object> params) {
         String text = (String) params.get("text");
@@ -47,6 +81,11 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> {
         return textArea;
     }
 
+    /**
+     * Gets the underlying text area component.
+     * 
+     * @return the text area component
+     */
     public TextArea getTextArea() {
         return getPrimaryComponent();
     }

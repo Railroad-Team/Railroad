@@ -126,6 +126,11 @@ public class WelcomePane extends HBox {
                path.resolve("build").toFile().exists();
     }
 
+    /**
+     * Opens the settings window in a new stage.
+     * If the settings window is already open, it will be brought to the front.
+     * The window is automatically cleaned up when closed.
+     */
     public void openSettingsWindow() {
         Platform.runLater(() -> {
             if (settingsStage == null || !settingsStage.isShowing()) {

@@ -24,15 +24,30 @@ public class RRTextField extends TextField {
     @Getter
     private HBox container;
 
+    /**
+     * Constructs a new text field with empty text and default styling.
+     */
     public RRTextField() {
         this("");
     }
 
+    /**
+     * Constructs a new text field with localized placeholder text and a prefix icon.
+     * 
+     * @param localizationKey the localization key for the placeholder text
+     * @param prefixIcon the icon to display before the text field
+     */
     public RRTextField(String localizationKey, Ikon prefixIcon) {
         this(localizationKey);
         setPrefixIcon(prefixIcon);
     }
 
+    /**
+     * Constructs a new text field with localized placeholder text.
+     * 
+     * @param localizationKey the localization key for the placeholder text
+     * @param args optional formatting arguments for the localized text
+     */
     public RRTextField(String localizationKey, Object... args) {
         super();
         setLocalizedPlaceholder(localizationKey, args);

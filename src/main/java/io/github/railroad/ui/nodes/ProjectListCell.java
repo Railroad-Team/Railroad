@@ -19,6 +19,11 @@ import javafx.scene.paint.Color;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+/**
+ * A modern list cell component for displaying project items in project lists.
+ * Features a card-based design with project icon, name, path, last opened date, and context menu actions.
+ * Supports open and remove project functionality through a context menu.
+ */
 public class ProjectListCell extends ListCell<Project> {
     private final RRCard card = new RRCard(14, new Insets(12, 32, 12, 32));
     private final HBox root = new HBox(16);
@@ -29,6 +34,11 @@ public class ProjectListCell extends ListCell<Project> {
     private final Label lastOpenedLabel = new Label();
     private final RRButton ellipsisButton = new RRButton();
 
+    /**
+     * Constructs a new ProjectListCell with modern styling and context menu functionality.
+     * Sets up the card layout with project icon, information display, and ellipsis button
+     * for accessing open and remove project actions.
+     */
     public ProjectListCell() {
         super();
         getStyleClass().add("project-list-cell");

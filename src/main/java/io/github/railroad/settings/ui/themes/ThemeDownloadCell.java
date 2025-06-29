@@ -31,6 +31,10 @@ public class ThemeDownloadCell extends ListCell<Theme> {
     private final RRButton previewButton;
     private final ObjectProperty<Theme> themeProperty = new SimpleObjectProperty<>();
 
+    /**
+     * Constructs a new ThemeDownloadCell with modern card-based layout and action buttons.
+     * Sets up the visual components including theme information display and download/preview buttons.
+     */
     public ThemeDownloadCell() {
         super();
         getStyleClass().add("theme-download-cell");

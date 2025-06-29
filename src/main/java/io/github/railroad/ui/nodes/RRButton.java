@@ -154,6 +154,13 @@ public class RRButton extends Button {
         }
     }
 
+    /**
+     * Set the button text using a localization key with optional formatting arguments.
+     * The text will automatically update when the application language changes.
+     * 
+     * @param localizationKey the localization key for the text
+     * @param args optional formatting arguments for the localized text
+     */
     public void setLocalizedText(String localizationKey, Object... args) {
         this.localizationKey = localizationKey;
         this.localizationArgs = args;
