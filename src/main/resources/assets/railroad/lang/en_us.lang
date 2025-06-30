@@ -324,28 +324,53 @@ railroad.theme.preview.password=Password:
 railroad.theme.preview.dropdown=Dropdown:
 
 # Project Creation Status
-railroad.project.creation.status.creating=Creating project...
+railroad.project.creation.status.creating=Creating Project...
+railroad.project.creation.status.creating_fabric=Creating Fabric Project
+railroad.project.creation.status.creating_fabric.subtitle=Setting up your new Fabric mod project: %s
+railroad.project.creation.status.creating_forge=Creating Forge Project
+railroad.project.creation.status.creating_forge.subtitle=Setting up your new Forge mod project: %s
 railroad.project.creation.status.time_elapsed=Time elapsed: %s
-railroad.project.creation.status.task=Task: %s
+railroad.project.creation.status.task=Current task: %s
 
-# Generic Project Creation Task Messages
-railroad.project.creation.task.creating_directory=Creating project directory...
-railroad.project.creation.task.creating_project=Creating project...
-railroad.project.creation.task.project_created=Project created successfully.
-railroad.project.creation.task.downloading_mdk=Downloading %s MDK...
-railroad.project.creation.task.unzipping_mdk=Unzipping %s MDK...
-railroad.project.creation.task.deleting_zip=Deleting %s MDK zip...
-railroad.project.creation.task.deleting_files=Deleting unnecessary files...
-railroad.project.creation.task.updating_gradle=Updating gradle.properties...
-railroad.project.creation.task.updating_package=Updating package name...
-railroad.project.creation.task.updating_mods_toml=Updating mods.toml...
-railroad.project.creation.task.refactoring_classes=Refactoring example classes...
-railroad.project.creation.task.updating_build_gradle=Updating build.gradle...
-railroad.project.creation.task.updating_settings_gradle=Updating settings.gradle...
-railroad.project.creation.task.creating_mixins=Creating mixins.json...
-railroad.project.creation.task.creating_access_transformer=Creating access transformer...
-railroad.project.creation.task.setup_gradle=Setting up Gradle...
-railroad.project.creation.task.creating_git=Creating Git repository...
+# Project creation tasks
+railroad.project.creation.task.creating_directory=Creating project directory
+railroad.project.creation.task.downloading_example_mod=Downloading example mod
+railroad.project.creation.task.extracting_example_mod=Extracting example mod
+railroad.project.creation.task.deleting_example_zip=Cleaning up temporary files
+railroad.project.creation.task.copying_project=Copying project files
+railroad.project.creation.task.updating_gradle=Updating Gradle configuration
+railroad.project.creation.task.renaming_packages=Renaming packages
+railroad.project.creation.task.updating_fabric_mod_json=Updating fabric.mod.json
+railroad.project.creation.task.renaming_mixins=Renaming mixin files
+railroad.project.creation.task.renaming_main_classes=Renaming main classes
+railroad.project.creation.task.refactoring_mixins=Refactoring mixins
+railroad.project.creation.task.updating_build_gradle=Updating build.gradle
+railroad.project.creation.task.creating_project=Creating project
+railroad.project.creation.task.running_gen_sources=Running genSources task
+railroad.project.creation.task.creating_git=Creating Git repository
+railroad.project.creation.task.fabric_completed=Fabric project created successfully!
+railroad.project.creation.task.project_created=Project created successfully!
+
+# Forge-specific tasks
+railroad.project.creation.task.updating_settings_gradle=Updating settings.gradle
+railroad.project.creation.task.refactoring_classes=Refactoring example classes
+railroad.project.creation.task.creating_mixins=Creating mixins configuration
+railroad.project.creation.task.creating_access_transformer=Creating access transformer
+railroad.project.creation.task.setup_gradle=Setting up Gradle
+
+# Project creation errors
+railroad.project.creation.error.title=Project Creation Error
+railroad.project.creation.error.fabric.header=Failed to create Fabric project
+railroad.project.creation.error.forge.header=Failed to create Forge project
+railroad.project.creation.error.content=An error occurred while creating your project. Please check the details below and try again.
+railroad.project.creation.error.open_ide.title=Failed to Open Project
+railroad.project.creation.error.open_ide.header=Project created but failed to open in IDE
+railroad.project.creation.error.open_ide.content=Your project was created successfully, but there was an error opening it in the IDE. You can manually open the project from the welcome screen.
+
+# Project creation cancel
+railroad.project.creation.cancel.title=Cancel Project Creation
+railroad.project.creation.cancel.header=Are you sure you want to cancel?
+railroad.project.creation.cancel.content=This will stop the project creation process and return you to the welcome screen. Any partially created files will remain on disk.
 
 # Project List Display
 railroad.project.list.name=Name

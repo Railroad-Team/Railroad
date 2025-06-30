@@ -121,6 +121,15 @@ public record MinecraftVersion(String id, VersionType type, String url, LocalDat
         return fromId(majorVersion);
     }
 
+    public String getMajorVersion() {
+        String[] split = id.split("\\.");
+        if (split.length < 2) {
+            return id;
+        }
+
+        return split[0] + "." + split[1];
+    }
+
     public static List<MinecraftVersion> getVersions() {
         return List.copyOf(MINECRAFT_VERSIONS);
     }

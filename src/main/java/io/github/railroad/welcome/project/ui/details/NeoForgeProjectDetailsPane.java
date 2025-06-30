@@ -101,7 +101,6 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         projectPathField.setPrefWidth(300);
         projectPathField.setText(System.getProperty("user.home"));
         projectPathField.setEditable(false);
-        Border projectPathFieldBorder = projectPathField.getBorder();
         projectPathField.textProperty().addListener((observable, oldValue, newValue) -> {
             // Validate the project path - only check if it's a directory if it exists
             Path path = Path.of(newValue);
