@@ -9,12 +9,12 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.gradle.internal.impldep.org.apache.commons.lang.WordUtils;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import javafx.scene.control.Tooltip;
 
 /**
  * A modernized theme download cell with improved visual design and user experience.

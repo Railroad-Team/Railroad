@@ -1,11 +1,11 @@
 package io.github.railroad.ui.nodes;
 
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-import javafx.beans.binding.Bindings;
 
 /**
  * A modern card component with enhanced styling and hover effects.

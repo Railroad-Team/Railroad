@@ -3,7 +3,6 @@ package io.github.railroad.settings.ui.themes;
 import io.github.railroad.Railroad;
 import io.github.railroad.localization.L18n;
 import io.github.railroad.localization.ui.LocalizedLabel;
-import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.ui.nodes.RRButton;
 import io.github.railroad.ui.nodes.RRFormSection;
 import javafx.beans.property.SimpleStringProperty;
@@ -18,9 +17,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.util.StringConverter;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.nio.file.Path;
 import java.util.Arrays;

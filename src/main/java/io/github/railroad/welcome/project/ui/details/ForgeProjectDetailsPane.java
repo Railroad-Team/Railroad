@@ -1,6 +1,9 @@
 package io.github.railroad.welcome.project.ui.details;
 
-import io.github.railroad.form.*;
+import io.github.railroad.form.Form;
+import io.github.railroad.form.FormComponent;
+import io.github.railroad.form.FormData;
+import io.github.railroad.form.FormSection;
 import io.github.railroad.form.impl.*;
 import io.github.railroad.project.DisplayTest;
 import io.github.railroad.project.ForgeProjectData;
@@ -25,7 +28,6 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
-import io.github.railroad.localization.L18n;
 
 import java.nio.file.Path;
 import java.util.*;

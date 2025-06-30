@@ -3,7 +3,6 @@ package io.github.railroad.ui.nodes;
 import io.github.railroad.localization.ui.LocalizedLabel;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;

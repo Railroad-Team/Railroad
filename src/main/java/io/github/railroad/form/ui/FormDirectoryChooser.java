@@ -1,7 +1,8 @@
 package io.github.railroad.form.ui;
 
-import io.github.railroad.ui.nodes.BrowseButton;
+import io.github.railroad.localization.L18n;
 import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.nodes.BrowseButton;
 import io.github.railroad.ui.nodes.RRTextField;
 import javafx.scene.Scene;
 import javafx.scene.control.Tooltip;
@@ -10,7 +11,6 @@ import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
-import io.github.railroad.localization.L18n;
 
 import java.util.HashMap;
 import java.util.Map;
