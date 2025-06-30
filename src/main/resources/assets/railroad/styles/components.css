@@ -1220,16 +1220,13 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 2, 0.1, 0, 1);
     -fx-min-width: 32px;
     -fx-min-height: 32px;
-    -fx-pref-width: 32px;
-    -fx-pref-height: 32px;
     -fx-max-width: 32px;
     -fx-max-height: 32px;
     -fx-font-size: 16px;
     -fx-transition: all 0.18s cubic-bezier(0.4,0.2,0.2,1);
 }
 
-.project-list-ellipsis-button:hover,
-.project-list-ellipsis-button-hover {
+.project-list-ellipsis-button:hover {
     -fx-background-color: -color-accent-subtle;
     -fx-border-color: -color-accent-emphasis;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 4, 0.15, 0, 2);
@@ -1903,8 +1900,6 @@
     -fx-text-alignment: center;
 }
 
-/* ===== STYLE REPLACEMENTS FOR SETSTYLE CALLS ===== */
-
 /* Welcome pane card styling */
 .welcome-card {
     -fx-background-color: -color-card-bg;
@@ -1929,17 +1924,6 @@
 .project-type-cell.selected {
     -fx-background-color: -color-accent-emphasis;
     -fx-text-fill: white;
-}
-
-/* Project list cell styling */
-.project-list-cell {
-    -fx-background-color: transparent;
-}
-
-.project-list-ellipsis-button {
-    -fx-background-radius: 50%;
-    -fx-padding: 0;
-    -fx-alignment: center;
 }
 
 /* Theme download cell styling */

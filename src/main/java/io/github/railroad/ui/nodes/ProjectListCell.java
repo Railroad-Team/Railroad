@@ -25,7 +25,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
  * Supports open and remove project functionality through a context menu.
  */
 public class ProjectListCell extends ListCell<Project> {
-    private final RRCard card = new RRCard(14, new Insets(12, 32, 12, 32));
+    private final RRCard card = new RRCard(14, new Insets(8, 32, 8, 32));
     private final HBox root = new HBox(16);
     private final ImageView icon = new ImageView();
     private final VBox infoBox = new VBox(7);
@@ -44,13 +44,9 @@ public class ProjectListCell extends ListCell<Project> {
         getStyleClass().add("project-list-cell");
 
         setPrefHeight(80);
-        setMinHeight(80);
-        setMaxHeight(80);
 
         card.getStyleClass().add("project-list-card");
-        card.setPadding(InsetsBuilder.left(5));
-        card.setOnMouseEntered($ -> card.getStyleClass().add("rr-card-hover"));
-        card.setOnMouseExited($ -> card.getStyleClass().remove("rr-card-hover"));
+        card.setPadding(InsetsBuilder.of(10, 5, 10, 5));
         root.setAlignment(Pos.CENTER_LEFT);
         root.setPadding(new Insets(0));
 
@@ -72,15 +68,10 @@ public class ProjectListCell extends ListCell<Project> {
         ellipsisIcon.setIconSize(16);
         ellipsisButton.setGraphic(ellipsisIcon);
         ellipsisButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        ellipsisButton.setVariant(RRButton.ButtonVariant.GHOST);
         ellipsisButton.setPrefWidth(32);
         ellipsisButton.setPrefHeight(32);
-        ellipsisButton.setMinWidth(32);
-        ellipsisButton.setMinHeight(32);
-        ellipsisButton.setMaxWidth(32);
-        ellipsisButton.setMaxHeight(32);
         ellipsisButton.getStyleClass().add("project-list-ellipsis-button");
-        ellipsisButton.setOnMouseEntered($ -> ellipsisButton.getStyleClass().add("project-list-ellipsis-button-hover"));
-        ellipsisButton.setOnMouseExited($ -> ellipsisButton.getStyleClass().remove("project-list-ellipsis-button-hover"));
 
         root.getChildren().addAll(icon, infoBox, ellipsisButton);
         HBox.setHgrow(infoBox, Priority.ALWAYS);
@@ -114,6 +105,7 @@ public class ProjectListCell extends ListCell<Project> {
         if (empty || project == null) {
             setText(null);
             setGraphic(null);
+            setPadding(Insets.EMPTY);
         } else {
             icon.setImage(project.getIcon());
             nameLabel.setText(project.getAlias());
