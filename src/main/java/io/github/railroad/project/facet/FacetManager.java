@@ -20,6 +20,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
+/**
+ * Utility class for managing project facets and their detection.
+ * <p>
+ * The FacetManager is responsible for registering facet types and detectors, scanning projects for applicable facets,
+ * and providing access to all known facet types and detectors. It is not instantiable.
+ * </p>
+ */
 public class FacetManager {
     private static final Map<String, FacetType<?>> TYPES = new ConcurrentHashMap<>();
     private static final List<FacetDetector<?>> DETECTORS = new CopyOnWriteArrayList<>();
@@ -28,6 +35,9 @@ public class FacetManager {
         throw new UnsupportedOperationException("FacetManager is a utility class and cannot be instantiated");
     }
 
+    /**
+     * The facet type for Java language support.
+     */
     public static final FacetType<JavaFacetData> JAVA = registerFacet(
             new FacetType.Builder<>("java", JavaFacetData.class)
                     .name("Java")
@@ -36,6 +46,9 @@ public class FacetManager {
             new JavaFacetDetector()
     );
 
+    /**
+     * The facet type for Gradle build system support.
+     */
     public static final FacetType<GradleFacetData> GRADLE = registerFacet(
             new FacetType.Builder<>("gradle", GradleFacetData.class)
                     .name("Gradle")
@@ -44,6 +57,9 @@ public class FacetManager {
             new GradleFacetDetector()
     );
 
+    /**
+     * The facet type for Maven build system support.
+     */
     public static final FacetType<MavenFacetData> MAVEN = registerFacet(
             new FacetType.Builder<>("maven", MavenFacetData.class)
                     .name("Maven")
@@ -52,6 +68,9 @@ public class FacetManager {
             new MavenFacetDetector()
     );
 
+    /**
+     * The facet type for Fabric modding platform support.
+     */
     public static final FacetType<FabricFacetData> FABRIC = registerFacet(
             new FacetType.Builder<>("fabric", FabricFacetData.class)
                     .name("Fabric")

@@ -1,5 +1,11 @@
 package io.github.railroad.project.facet;
 
+/**
+ * Describes the type of a project facet, including its unique ID, display name, description, icon, and associated data class.
+ * Used to distinguish between different kinds of facets (e.g., Java, Gradle, Fabric).
+ *
+ * @param <D> the type of data associated with this facet type
+ */
 public record FacetType<D>(
     String id,
     String name,
@@ -28,6 +34,11 @@ public record FacetType<D>(
         }
     }
 
+    /**
+     * Builder for creating {@link FacetType} instances with custom properties.
+     *
+     * @param <D> the type of data associated with the facet type
+     */
     public static class Builder<D> {
         private final String id;
         private final Class<D> dataClass;

@@ -20,7 +20,17 @@ import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Detects the presence of Fabric modding platform support in a project directory by searching for fabric.mod.json and extracting metadata.
+ * This detector is used by the facet system to identify Fabric mod projects and extract relevant configuration data.
+ */
 public class FabricFacetDetector implements FacetDetector<FabricFacetData> {
+    /**
+     * Detects a Fabric facet in the given path by searching for fabric.mod.json and extracting mod metadata and build info.
+     *
+     * @param path the project directory to analyze
+     * @return an Optional containing the Fabric facet if detected, or empty if not found
+     */
     @Override
     public Optional<Facet<FabricFacetData>> detect(@NotNull Path path) {
         Path fabricModJson = path.resolve("src").resolve("main").resolve("resources").resolve("fabric.mod.json");
@@ -89,6 +99,12 @@ public class FabricFacetDetector implements FacetDetector<FabricFacetData> {
         }
     }
 
+    /**
+     * Extracts the Gradle init script for Fabric metadata extraction to a temporary file.
+     *
+     * @return the path to the extracted init script
+     * @throws IOException if the script cannot be extracted
+     */
     private static Path extractInitScript() throws IOException {
         try (InputStream inputStream = Railroad.getResourceAsStream("scripts/init-fabric-extractor.gradle")) {
             if (inputStream == null)
