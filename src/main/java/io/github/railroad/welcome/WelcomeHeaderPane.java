@@ -21,7 +21,6 @@ public class WelcomeHeaderPane extends RRCard {
         setSpacing(18);
         getStyleClass().add("welcome-card");
 
-        // Add a friendly welcome message
         var welcomeMessage = new LocalizedText("railroad.home.welcome.greeting");
         welcomeMessage.getStyleClass().add("welcome-message");
 

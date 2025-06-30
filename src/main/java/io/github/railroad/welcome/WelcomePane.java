@@ -89,6 +89,8 @@ public class WelcomePane extends HBox {
                 default -> throw new IllegalStateException("Unexpected value: " + newValue);
             }
         });
+
+        Platform.runLater(() -> requestFocus());
     }
 
     private void openProjectDialog() {
