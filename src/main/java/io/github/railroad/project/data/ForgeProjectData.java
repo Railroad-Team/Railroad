@@ -1,5 +1,7 @@
-package io.github.railroad.project;
+package io.github.railroad.project.data;
 
+import io.github.railroad.project.DisplayTest;
+import io.github.railroad.project.License;
 import io.github.railroad.project.minecraft.ForgeVersion;
 import io.github.railroad.project.minecraft.MinecraftVersion;
 import io.github.railroad.project.minecraft.mapping.MappingChannel;

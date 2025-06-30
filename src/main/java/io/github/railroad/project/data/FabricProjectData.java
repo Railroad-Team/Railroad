@@ -1,6 +1,7 @@
-package io.github.railroad.project;
+package io.github.railroad.project.data;
 
 
+import io.github.railroad.project.License;
 import io.github.railroad.project.minecraft.FabricAPIVersion;
 import io.github.railroad.project.minecraft.FabricLoaderVersion;
 import io.github.railroad.project.minecraft.MinecraftVersion;

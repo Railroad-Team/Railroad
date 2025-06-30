@@ -7,7 +7,7 @@ import groovy.lang.GroovyShell;
 import groovy.text.StreamingTemplateEngine;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import io.github.railroad.Railroad;
-import io.github.railroad.project.FabricProjectData;
+import io.github.railroad.project.data.FabricProjectData;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.minecraft.FabricAPIVersion;
 import io.github.railroad.project.minecraft.MinecraftVersion;

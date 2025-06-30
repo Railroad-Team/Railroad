@@ -1,0 +1,13 @@
+initscript {
+    repositories {
+        mavenLocal()
+    }
+
+    dependencies {
+        classpath "io.github.railroad:javaversion:1.0.0"
+    }
+}
+
+allprojects {
+    apply plugin: io.github.railroad.javaversion.JavaVersionModelPlugin
+}

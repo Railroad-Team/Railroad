@@ -1,23 +1,26 @@
 package io.github.railroad.project;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.github.railroad.Railroad;
+import io.github.railroad.project.facet.Facet;
+import io.github.railroad.project.facet.FacetManager;
+import io.github.railroad.project.facet.FacetType;
 import io.github.railroad.utility.JsonSerializable;
+import io.github.railroad.utility.StringUtils;
 import io.github.railroad.vcs.Repository;
 import javafx.beans.property.*;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableSet;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
-import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,9 +29,10 @@ public class Project implements JsonSerializable<JsonObject> {
     private final ObjectProperty<Path> path = new ReadOnlyObjectWrapper<>();
     private final StringProperty alias = new SimpleStringProperty();
     private final ObjectProperty<Image> icon = new SimpleObjectProperty<>();
-    private final LongProperty lastOpened = new SimpleLongProperty();
+    private final LongProperty lastOpened = new SimpleLongProperty(-1);
     private final ObjectProperty<Repository> repository = new SimpleObjectProperty<>();
     private final StringProperty id = new SimpleStringProperty();
+    private final ObservableSet<Facet<?>> facets = FXCollections.observableSet();
 
     public Project(Path path) {
         this(path, path.getFileName().toString());
@@ -44,9 +48,22 @@ public class Project implements JsonSerializable<JsonObject> {
         this.icon.set(icon == null ? createIcon(this) : icon);
     }
 
+    private void discoverFacets() {
+        this.facets.clear();
+        FacetManager.scan(this).thenAcceptAsync(facets -> {
+            for (Facet<?> facet : facets) {
+                if (facet != null) {
+                    this.facets.add(facet);
+                } else {
+                    Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
+                }
+            }
+        });
+    }
+
     private static Image createIcon(Project project) {
         var color = new Color(Math.abs(project.path.get().toAbsolutePath().toString().hashCode() % 0xFFFFFF));
-        String abbreviation = getAbbreviation(project.alias.get()).toUpperCase(Locale.ROOT);
+        String abbreviation = StringUtils.getAbbreviation(project.alias.get()).toUpperCase(Locale.ROOT);
         abbreviation = abbreviation.isBlank() ? "?" : abbreviation;
         abbreviation = abbreviation.length() > 4 ? abbreviation.substring(0, 4) : abbreviation;
 
@@ -67,53 +84,6 @@ public class Project implements JsonSerializable<JsonObject> {
         return SwingFXUtils.toFXImage(image, null);
     }
 
-    // Take the first character of each word in the alias
-    private static String getAbbreviation(String alias) {
-        var abbreviation = new StringBuilder();
-        for (String word : alias.split(" ")) {
-            if (word.isBlank())
-                continue;
-
-            abbreviation.append(word.charAt(0));
-        }
-
-        return abbreviation.toString();
-    }
-
-    // TODO: Extract for reusability purposes
-    public static String getLastOpenedFriendly(@NotNull Number time) {
-        var instant = Instant.ofEpochMilli(time.longValue());
-        ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
-        var currentTime = ZonedDateTime.now();
-        long daysDifference = ChronoUnit.DAYS.between(zonedDateTime, currentTime);
-        long secondsDifference = ChronoUnit.SECONDS.between(zonedDateTime, currentTime);
-        if (daysDifference > 4000) {
-            return "You forgot me ;(";
-        } else {
-            if (secondsDifference < 60) {
-                return secondsDifference + " seconds ago";
-            } else if (secondsDifference < 3600) {
-                long minutes = secondsDifference / 60;
-                return minutes + (minutes == 1 ? " minute ago" : " minutes ago");
-            } else if (secondsDifference < 86400) {
-                long hours = secondsDifference / 3600;
-                return hours + (hours == 1 ? " hour ago" : " hours ago");
-            } else if (secondsDifference < 604800) {
-                long days = secondsDifference / 86400;
-                return days + (days == 1 ? " day ago" : " days ago");
-            } else if (secondsDifference < 2419200) {
-                long weeks = secondsDifference / 604800;
-                return weeks + (weeks == 1 ? " week ago" : " weeks ago");
-            } else if (secondsDifference < 29030400) {
-                long months = secondsDifference / 2419200;
-                return months + (months == 1 ? " month ago" : " months ago");
-            } else {
-                long years = secondsDifference / 29030400;
-                return years + (years == 1 ? " year ago" : " years ago");
-            }
-        }
-    }
-
     public static Optional<Project> createFromJson(JsonObject json) {
         if (!json.has("Path"))
             return Optional.empty();
@@ -132,8 +102,12 @@ public class Project implements JsonSerializable<JsonObject> {
         return Optional.of(project);
     }
 
+    public Path getPath() {
+        return this.path.get();
+    }
+
     public String getPathString() {
-        return this.path.get().toString();
+        return getPath().toAbsolutePath().toString();
     }
 
     public void open() {
@@ -141,6 +115,7 @@ public class Project implements JsonSerializable<JsonObject> {
         setLastOpened(System.currentTimeMillis());
         Railroad.PROJECT_MANAGER.updateProjectInfo(this);
         Railroad.switchToIDE(this);
+        discoverFacets();
     }
 
     @Override
@@ -183,6 +158,17 @@ public class Project implements JsonSerializable<JsonObject> {
         json.addProperty("LastOpened", lastOpened.get());
         json.addProperty("Id", getId());
         json.addProperty("Icon", this.icon.map(Image::getUrl).orElse("").getValue());
+        if (!this.facets.isEmpty()) {
+            var facetsArray = new JsonArray();
+            for (Facet<?> facet : this.facets) {
+                var facetJson = new JsonObject();
+                facetJson.addProperty("Type", facet.getType().id());
+                facetJson.add("Data", Railroad.GSON.toJsonTree(facet));
+                facetsArray.add(facetJson);
+            }
+
+            json.add("Facets", facetsArray);
+        }
 
         return json;
     }
@@ -196,36 +182,58 @@ public class Project implements JsonSerializable<JsonObject> {
             JsonElement pathElement = json.get("Path");
             if (pathElement.isJsonPrimitive()) {
                 JsonPrimitive pathPrimitive = pathElement.getAsJsonPrimitive();
-                if (pathPrimitive.isString())
+                if (pathPrimitive.isString()) {
                     this.path.set(Path.of(pathElement.getAsString()));
-            }
+                } else if (pathPrimitive.isNumber()) {
+                    try {
+                        this.path.set(Path.of(String.valueOf(pathPrimitive.getAsNumber())));
+                    } catch (Exception exception) {
+                        Railroad.LOGGER.warn("Project JSON 'Path' is not a valid path: {}", pathElement, exception);
+                    }
+                } else Railroad.LOGGER.warn("Project JSON 'Path' is not a string or number: {}", pathElement);
+            } else Railroad.LOGGER.warn("Project JSON 'Path' is not a string: {}", pathElement);
         }
 
         if (json.has("Alias")) {
             JsonElement aliasElement = json.get("Alias");
             if (aliasElement.isJsonPrimitive()) {
                 JsonPrimitive aliasPrimitive = aliasElement.getAsJsonPrimitive();
-                if (aliasPrimitive.isString())
+                if (aliasPrimitive.isString()) {
                     this.alias.set(aliasElement.getAsString());
-            }
+                } else if (aliasPrimitive.isNumber()) {
+                    this.alias.set(String.valueOf(aliasPrimitive.getAsNumber()));
+                } else Railroad.LOGGER.warn("Project JSON 'Alias' is not a string or number: {}", aliasElement);
+            } else Railroad.LOGGER.warn("Project JSON 'Alias' is not a string: {}", aliasElement);
         }
 
         if (json.has("LastOpened")) {
             JsonElement lastOpenedElement = json.get("LastOpened");
             if (lastOpenedElement.isJsonPrimitive()) {
                 JsonPrimitive lastOpenedPrimitive = lastOpenedElement.getAsJsonPrimitive();
-                if (lastOpenedPrimitive.isNumber())
+                if (lastOpenedPrimitive.isNumber()) {
                     this.lastOpened.set(lastOpenedElement.getAsLong());
-            }
+                } else if (lastOpenedPrimitive.isString()) {
+                    try {
+                        this.lastOpened.set(Long.parseLong(lastOpenedElement.getAsString()));
+                    } catch (NumberFormatException exception) {
+                        Railroad.LOGGER.warn("Project JSON 'LastOpened' is not a valid number: {}", lastOpenedElement, exception);
+                    }
+                } else {
+                    Railroad.LOGGER.warn("Project JSON 'LastOpened' is not a number or string: {}", lastOpenedElement);
+                }
+            } else Railroad.LOGGER.warn("Project JSON 'LastOpened' is not a primitive: {}", lastOpenedElement);
         }
 
         if (json.has("Id")) {
             JsonElement idElement = json.get("Id");
             if (idElement.isJsonPrimitive()) {
                 JsonPrimitive idPrimitive = idElement.getAsJsonPrimitive();
-                if (idPrimitive.isString())
+                if (idPrimitive.isString()) {
                     this.id.set(idElement.getAsString());
-            }
+                } else if (idPrimitive.isNumber()) {
+                    this.id.set(String.valueOf(idPrimitive.getAsNumber()));
+                } else Railroad.LOGGER.warn("Project JSON 'Id' is not a string or number: {}", idElement);
+            } else Railroad.LOGGER.warn("Project JSON 'Id' is not a string: {}", idElement);
         }
 
         boolean hasIcon = false;
@@ -236,12 +244,48 @@ public class Project implements JsonSerializable<JsonObject> {
                 if (iconPrimitive.isString() && !iconElement.getAsString().isBlank()) {
                     this.icon.set(new Image(iconElement.getAsString()));
                     hasIcon = true;
+                } else if (iconPrimitive.isNumber()) {
+                    try {
+                        this.icon.set(new Image(String.valueOf(iconPrimitive.getAsNumber())));
+                        hasIcon = true;
+                    } catch (Exception exception) {
+                        Railroad.LOGGER.warn("Project JSON 'Icon' is not a valid URL or number: {}", iconElement, exception);
+                    }
+                } else Railroad.LOGGER.warn("Project JSON 'Icon' is not a string or number: {}", iconElement);
+            } else if (iconElement.isJsonNull()) {
+                Railroad.LOGGER.warn("Project JSON 'Icon' is null, using default icon.");
+            } else Railroad.LOGGER.warn("Project JSON 'Icon' is not a primitive: {}", iconElement);
+        }
+
+        if (json.has("Facets")) {
+            JsonElement facetsElement = json.get("Facets");
+            if (facetsElement.isJsonArray()) {
+                JsonArray facetsArray = facetsElement.getAsJsonArray();
+                for (JsonElement facetElement : facetsArray) {
+                    if (facetElement.isJsonObject()) {
+                        JsonObject facetJson = facetElement.getAsJsonObject();
+                        if (facetJson.has("Type") && facetJson.has("Data")) {
+                            JsonElement typeElement = facetJson.get("Type");
+                            JsonElement dataElement = facetJson.get("Data");
+
+                            if (typeElement.isJsonPrimitive()) {
+                                String typeId = typeElement.getAsString();
+                                FacetType<?> type = FacetManager.getType(typeId);
+                                if (type != null) {
+                                    this.facets.add(Railroad.GSON.fromJson(dataElement, Facet.class));
+                                } else Railroad.LOGGER.warn("Invalid project facet type: {}", typeId);
+                            } else Railroad.LOGGER.warn("Invalid project facet JSON: {}", facetJson);
+                        } else Railroad.LOGGER.warn("Project facet JSON missing 'Type' or 'Data': {}", facetJson);
+                    } else Railroad.LOGGER.warn("Invalid project facet JSON element: {}", facetElement);
                 }
-            }
+            } else Railroad.LOGGER.warn("Project facets JSON is not an array: {}", facetsElement);
         }
 
         if (!hasIcon)
             this.icon.set(createIcon(this));
+
+        if (facets.isEmpty())
+            discoverFacets();
     }
 
     public String getAlias() {
@@ -266,6 +310,14 @@ public class Project implements JsonSerializable<JsonObject> {
 
     public ObjectProperty<Image> iconProperty() {
         return icon;
+    }
+
+    public SetProperty<Facet<?>> facetsProperty() {
+        return new ReadOnlySetWrapper<>(facets);
+    }
+
+    public List<Facet<?>> getFacets() {
+        return List.copyOf(facets);
     }
 
     public StringProperty aliasProperty() {

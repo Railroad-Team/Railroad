@@ -5,6 +5,7 @@ import io.github.railroad.project.Project;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ShutdownHooks;
+import io.github.railroad.utility.StringUtils;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -110,7 +111,8 @@ public class ProjectListCell extends ListCell<Project> {
             executor.scheduleAtFixedRate(() -> {
                 Project project = this.project.get();
                 if (project != null) {
-                    Platform.runLater(() -> lastOpened.setText(Project.getLastOpenedFriendly(project.getLastOpened())));
+                    String text = project.getLastOpened() == -1 ? "Never opened" : "Opened " + StringUtils.formatElapsed(project.getLastOpened());
+                    Platform.runLater(() -> lastOpened.setText(text));
                 }
             }, 0, 1, TimeUnit.SECONDS);
             lastOpened.setStyle("-fx-font-size: 14px; -fx-text-fill: #808080;");

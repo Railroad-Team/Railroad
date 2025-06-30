@@ -7,7 +7,7 @@ import groovy.lang.GroovyShell;
 import groovy.text.StreamingTemplateEngine;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import io.github.railroad.Railroad;
-import io.github.railroad.project.NeoForgeProjectData;
+import io.github.railroad.project.data.NeoForgeProjectData;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.minecraft.mapping.MappingChannel;
 import io.github.railroad.ui.defaults.RRBorderPane;

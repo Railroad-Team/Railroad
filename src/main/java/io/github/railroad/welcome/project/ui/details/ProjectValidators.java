@@ -2,6 +2,7 @@ package io.github.railroad.welcome.project.ui.details;
 
 import io.github.railroad.Railroad;
 import io.github.railroad.form.ValidationResult;
+import io.github.railroad.utility.StringUtils;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
@@ -158,7 +159,7 @@ public class ProjectValidators {
             return ValidationResult.error("railroad.project.creation.issues.error.length_long");
 
         if (!text.isBlank()) {
-            if (!text.matches(Railroad.URL_REGEX))
+            if (!text.matches(StringUtils.URL_REGEX))
                 return ValidationResult.warning("railroad.project.creation.issues.error.invalid_url");
 
             if (text.contains("github.com") && !text.contains("/issues"))
@@ -185,7 +186,7 @@ public class ProjectValidators {
             return ValidationResult.error("railroad.project.creation.update_json.error.length_long");
 
         if (!text.isBlank()) {
-            if (!text.matches(Railroad.URL_REGEX))
+            if (!text.matches(StringUtils.URL_REGEX))
                 return ValidationResult.warning("railroad.project.creation.update_json.error.invalid_url");
 
             try (Response response = Railroad.HTTP_CLIENT_NO_FOLLOW.newCall(new Request.Builder()
@@ -212,7 +213,7 @@ public class ProjectValidators {
             return ValidationResult.error("railroad.project.creation." + errorKey + ".error.length_long");
 
         if (!text.isBlank()) {
-            if (!text.matches(Railroad.URL_REGEX))
+            if (!text.matches(StringUtils.URL_REGEX))
                 return ValidationResult.warning("railroad.project.creation." + errorKey + ".error.invalid_url");
 
             try (Response response = Railroad.HTTP_CLIENT_NO_FOLLOW.newCall(new Request.Builder()

@@ -9,6 +9,8 @@ import io.github.railroad.logging.Logger;
 import io.github.railroad.plugin.PluginManager;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.ProjectManager;
+import io.github.railroad.project.facet.Facet;
+import io.github.railroad.project.facet.FacetTypeAdapter;
 import io.github.railroad.project.minecraft.FabricAPIVersion;
 import io.github.railroad.project.minecraft.ForgeVersion;
 import io.github.railroad.project.minecraft.MinecraftVersion;
@@ -16,6 +18,7 @@ import io.github.railroad.project.minecraft.NeoForgeVersion;
 import io.github.railroad.settings.handler.SettingsHandler;
 import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.utility.ShutdownHooks;
+import io.github.railroad.utility.StringUtils;
 import io.github.railroad.vcs.RepositoryManager;
 import io.github.railroad.welcome.WelcomePane;
 import javafx.application.Application;
@@ -50,12 +53,15 @@ public class Railroad extends Application {
     public static final Logger LOGGER = new Logger(Railroad.class);
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build();
-    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+    public static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting()
+            .disableHtmlEscaping()
+            .registerTypeAdapter(Facet.class, new FacetTypeAdapter())
+            .create();
     public static final SettingsHandler SETTINGS_HANDLER = new SettingsHandler();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final PluginManager PLUGIN_MANAGER = new PluginManager();
     public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
-    public static final String URL_REGEX = "(?:http(s)?:\\/\\/)?[\\w.-]+(?:\\.[\\w\\.-]+)+[\\w\\-\\._~:/?#\\[\\]@!\\$&'\\(\\)\\*\\+,;=.]+$";
 
     private static boolean DEBUG = false;
     @Getter
@@ -197,7 +203,7 @@ public class Railroad extends Application {
      * @param url The URL to open
      */
     public static void openUrl(String url) {
-        if (!url.matches(URL_REGEX)) {
+        if (!url.matches(StringUtils.URL_REGEX)) {
             showErrorAlert("Invalid URL", "Invalid URL", "The URL provided is invalid.");
             return;
         }

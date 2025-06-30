@@ -65,7 +65,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     public ProjectExplorerPane(Project project, RRBorderPane mainPane) {
-        Path rootPath = Path.of(project.getPathString());
+        Path rootPath = project.getPath();
         setPadding(new Insets(10));
         setSpacing(10);
 

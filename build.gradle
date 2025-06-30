@@ -13,6 +13,7 @@ repositories {
     maven { url 'https://repo.gradle.org/gradle/libs-releases' }
     maven { url 'https://github.com/javaterminal/terminalfx/raw/master/releases' }
     maven { url 'https://packages.jetbrains.team/maven/p/ij/intellij-dependencies' }
+    maven { url 'https://jitpack.io' }
 }
 
 java {
@@ -56,6 +57,17 @@ dependencies {
     implementation 'org.eclipse.jdt:org.eclipse.jdt.core:3.41.0'
     implementation 'com.github.erosb:everit-json-schema:1.14.6'
     implementation 'org.apache.commons:commons-compress:1.27.1'
+
+    implementation 'com.google.guava:guava:33.4.8-jre'
+    implementation "org.apache.maven:maven-core:3.9.10"
+    implementation "org.apache.maven:maven-project:3.0-alpha-2"
+    implementation "org.apache.maven:maven-settings:3.9.10"
+    implementation "org.apache.maven:maven-settings-builder:3.9.10"
+    implementation "org.apache.maven:maven-repository-metadata:3.9.10"
+    implementation "org.codehaus.plexus:plexus-container-default:2.1.0"
+
+    implementation 'com.github.railroad-team.java-version-extractor-plugin:java-version-extractor-plugin:v1.0.1'
+    implementation 'com.github.railroad-team.fabric-extractor-plugin:fabric-extractor-plugin:v1.0.1'
 
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
     compileOnly 'org.projectlombok:lombok:1.18.32'

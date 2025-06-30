@@ -1,9 +1,8 @@
 package io.github.railroad.welcome.project.ui.details;
 
-import io.github.railroad.Railroad;
 import io.github.railroad.project.DisplayTest;
 import io.github.railroad.project.License;
-import io.github.railroad.project.NeoForgeProjectData;
+import io.github.railroad.project.data.NeoForgeProjectData;
 import io.github.railroad.project.minecraft.MinecraftVersion;
 import io.github.railroad.project.minecraft.NeoForgeVersion;
 import io.github.railroad.project.minecraft.RecommendableVersion;
@@ -14,6 +13,7 @@ import io.github.railroad.ui.BrowseButton;
 import io.github.railroad.ui.defaults.RRHBox;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.utility.ClassNameValidator;
+import io.github.railroad.utility.StringUtils;
 import io.github.railroad.welcome.project.ui.widget.StarableListCell;
 import javafx.beans.binding.BooleanBinding;
 import javafx.geometry.Insets;
@@ -815,7 +815,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         }
 
         // Validate issues, update json and display URL
-        if (!issuesField.getText().isBlank() && !issuesField.getText().matches(Railroad.URL_REGEX)) {
+        if (!issuesField.getText().isBlank() && !issuesField.getText().matches(StringUtils.URL_REGEX)) {
             issuesField.setStyle("-fx-border-color: red;");
             issuesField.requestFocus();
 
@@ -823,7 +823,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
             return false;
         }
 
-        if (!updateJsonUrlField.getText().isBlank() && !updateJsonUrlField.getText().matches(Railroad.URL_REGEX) && !updateJsonUrlField.getText().endsWith(".json")) {
+        if (!updateJsonUrlField.getText().isBlank() && !updateJsonUrlField.getText().matches(StringUtils.URL_REGEX) && !updateJsonUrlField.getText().endsWith(".json")) {
             updateJsonUrlField.setStyle("-fx-border-color: red;");
             updateJsonUrlField.requestFocus();
 
@@ -831,7 +831,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
             return false;
         }
 
-        if (!displayUrlField.getText().isBlank() && !displayUrlField.getText().matches(Railroad.URL_REGEX)) {
+        if (!displayUrlField.getText().isBlank() && !displayUrlField.getText().matches(StringUtils.URL_REGEX)) {
             displayUrlField.setStyle("-fx-border-color: red;");
             displayUrlField.requestFocus();
 

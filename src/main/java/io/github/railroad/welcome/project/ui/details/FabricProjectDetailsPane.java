@@ -2,7 +2,7 @@ package io.github.railroad.welcome.project.ui.details;
 
 import io.github.railroad.form.*;
 import io.github.railroad.form.impl.*;
-import io.github.railroad.project.FabricProjectData;
+import io.github.railroad.project.data.FabricProjectData;
 import io.github.railroad.project.License;
 import io.github.railroad.project.minecraft.FabricAPIVersion;
 import io.github.railroad.project.minecraft.FabricLoaderVersion;

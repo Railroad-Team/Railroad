@@ -363,7 +363,7 @@ public class LayoutParser {
     }
 
     public static Layout loadLayout(Project project) {
-        Path projectPath = Path.of(project.getPathString());
+        Path projectPath = project.getPath();
         Path layoutPath = projectPath.resolve(".railroad").resolve(".railayout");
 
         try {
