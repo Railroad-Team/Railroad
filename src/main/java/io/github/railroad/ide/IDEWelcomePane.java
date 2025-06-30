@@ -18,27 +18,22 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 public class IDEWelcomePane extends ScrollPane {
     public IDEWelcomePane() {
-        // Create the main content container
         var content = new RRVBox();
         content.setAlignment(Pos.CENTER);
         content.setSpacing(24);
         content.setPadding(new Insets(32));
         content.setMaxWidth(Double.MAX_VALUE);
-        content.setPrefWidth(800); // Set a reasonable preferred width
+        content.setPrefWidth(800);
 
-        // Main welcome section
         var welcomeCard = createWelcomeCard();
         content.getChildren().add(welcomeCard);
 
-        // Features section
         var featuresCard = createFeaturesCard();
         content.getChildren().add(featuresCard);
 
-        // Getting started section
         var gettingStartedCard = createGettingStartedCard();
         content.getChildren().add(gettingStartedCard);
 
-        // Configure the ScrollPane
         setContent(content);
         setFitToWidth(true);
         setFitToHeight(false);
@@ -46,7 +41,6 @@ public class IDEWelcomePane extends ScrollPane {
         setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         setPannable(true);
         
-        // Style the ScrollPane
         getStyleClass().add("welcome-scroll-pane");
         setPadding(Insets.EMPTY);
     }
@@ -56,12 +50,10 @@ public class IDEWelcomePane extends ScrollPane {
         card.setAlignment(Pos.CENTER);
         card.setSpacing(16);
 
-        // Welcome icon
         var welcomeIcon = new FontIcon(FontAwesomeSolid.ROCKET);
         welcomeIcon.setIconSize(48);
         welcomeIcon.getStyleClass().add("welcome-icon");
 
-        // Welcome text
         var welcomeText = new LocalizedText("railroad.ide.welcome.message");
         welcomeText.getStyleClass().addAll("ide-welcome-text", "welcome-title");
 
@@ -76,7 +68,6 @@ public class IDEWelcomePane extends ScrollPane {
         var card = new RRCard(16, new Insets(24));
         card.setSpacing(20);
 
-        // Features header
         var featuresHeader = new HBox(12);
         featuresHeader.setAlignment(Pos.CENTER_LEFT);
 
@@ -89,11 +80,9 @@ public class IDEWelcomePane extends ScrollPane {
 
         featuresHeader.getChildren().addAll(featuresIcon, featuresTitle);
 
-        // Features grid
         var featuresGrid = new VBox(16);
         featuresGrid.getStyleClass().add("features-grid");
 
-        // Feature items with icons
         var features = new FeatureItem[]{
             new FeatureItem(FontAwesomeSolid.CUBE, "railroad.ide.welcome.feature.model_viewer_editor"),
             new FeatureItem(FontAwesomeSolid.BUILDING, "railroad.ide.welcome.feature.structure_viewer_editor"),
@@ -130,7 +119,6 @@ public class IDEWelcomePane extends ScrollPane {
         var card = new RRCard(16, new Insets(24));
         card.setSpacing(20);
 
-        // Getting started header
         var header = new HBox(12);
         header.setAlignment(Pos.CENTER_LEFT);
 
@@ -143,11 +131,9 @@ public class IDEWelcomePane extends ScrollPane {
 
         header.getChildren().addAll(headerIcon, headerTitle);
 
-        // Description
         var descriptionText = new LocalizedText("railroad.ide.welcome.getting_started.description");
         descriptionText.getStyleClass().addAll("ide-getting-started-description", "section-description");
 
-        // Action buttons
         var buttonsContainer = new RRHBox();
         buttonsContainer.setAlignment(Pos.CENTER);
         buttonsContainer.setSpacing(12);
