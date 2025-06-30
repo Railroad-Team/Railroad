@@ -127,30 +127,30 @@ public class IDESetup {
         var menuBar = new MenuBar();
         menuBar.getStyleClass().add("rr-menu-bar");
 
-        var fileMenu = new Menu("File");
+        var fileMenu = new Menu(L18n.localize("railroad.menu.file"));
         fileMenu.getStyleClass().add("rr-menu");
 
         fileMenu.getItems().clear();
         
-        var newFileItem = new MenuItem("New File");
+        var newFileItem = new MenuItem(L18n.localize("railroad.menu.file.new_file"));
         newFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE));
         newFileItem.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN));
         
-        var openFileItem = new MenuItem("Open File...");
+        var openFileItem = new MenuItem(L18n.localize("railroad.menu.file.open_file"));
         openFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
         openFileItem.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.CONTROL_DOWN));
         
-        var saveItem = new MenuItem("Save");
+        var saveItem = new MenuItem(L18n.localize("railroad.menu.file.save"));
         saveItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
         saveItem.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN));
         
-        var saveAsItem = new MenuItem("Save As...");
+        var saveAsItem = new MenuItem(L18n.localize("railroad.menu.file.save_as"));
         saveAsItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
         saveAsItem.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
         
         var separator1 = new SeparatorMenuItem();
         
-        var exitItem = new MenuItem("Exit");
+        var exitItem = new MenuItem(L18n.localize("railroad.menu.file.exit"));
         exitItem.setGraphic(new FontIcon(FontAwesomeSolid.SIGN_OUT_ALT));
         exitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN));
         exitItem.setOnAction(e -> Platform.exit());
@@ -161,40 +161,40 @@ public class IDESetup {
                 exitItem
         );
 
-        var editMenu = new Menu("Edit");
+        var editMenu = new Menu(L18n.localize("railroad.menu.edit"));
         editMenu.getStyleClass().add("rr-menu");
 
         editMenu.getItems().clear();
         
-        var undoItem = new MenuItem("Undo");
+        var undoItem = new MenuItem(L18n.localize("railroad.menu.edit.undo"));
         undoItem.setGraphic(new FontIcon(FontAwesomeSolid.UNDO));
         undoItem.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN));
         
-        var redoItem = new MenuItem("Redo");
+        var redoItem = new MenuItem(L18n.localize("railroad.menu.edit.redo"));
         redoItem.setGraphic(new FontIcon(FontAwesomeSolid.REDO));
         redoItem.setAccelerator(new KeyCodeCombination(KeyCode.Y, KeyCombination.CONTROL_DOWN));
         
         var separator2 = new SeparatorMenuItem();
         
-        var cutItem = new MenuItem("Cut");
+        var cutItem = new MenuItem(L18n.localize("railroad.menu.edit.cut"));
         cutItem.setGraphic(new FontIcon(FontAwesomeSolid.CUT));
         cutItem.setAccelerator(new KeyCodeCombination(KeyCode.X, KeyCombination.CONTROL_DOWN));
         
-        var copyItem = new MenuItem("Copy");
+        var copyItem = new MenuItem(L18n.localize("railroad.menu.edit.copy"));
         copyItem.setGraphic(new FontIcon(FontAwesomeSolid.COPY));
         copyItem.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN));
         
-        var pasteItem = new MenuItem("Paste");
+        var pasteItem = new MenuItem(L18n.localize("railroad.menu.edit.paste"));
         pasteItem.setGraphic(new FontIcon(FontAwesomeSolid.PASTE));
         pasteItem.setAccelerator(new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN));
         
         var separator3 = new SeparatorMenuItem();
         
-        var findItem = new MenuItem("Find...");
+        var findItem = new MenuItem(L18n.localize("railroad.menu.edit.find"));
         findItem.setGraphic(new FontIcon(FontAwesomeSolid.SEARCH));
         findItem.setAccelerator(new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN));
         
-        var replaceItem = new MenuItem("Replace...");
+        var replaceItem = new MenuItem(L18n.localize("railroad.menu.edit.replace"));
         replaceItem.setGraphic(new FontIcon(FontAwesomeSolid.SEARCH_PLUS));
         replaceItem.setAccelerator(new KeyCodeCombination(KeyCode.H, KeyCombination.CONTROL_DOWN));
 
@@ -204,26 +204,26 @@ public class IDESetup {
                 findItem, replaceItem
         );
 
-        var viewMenu = new Menu("View");
+        var viewMenu = new Menu(L18n.localize("railroad.menu.view"));
         viewMenu.getStyleClass().add("rr-menu");
 
         viewMenu.getItems().clear();
         
-        var projectExplorerItem = new CheckMenuItem("Project Explorer");
+        var projectExplorerItem = new CheckMenuItem(L18n.localize("railroad.menu.view.project_explorer"));
         projectExplorerItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER));
         projectExplorerItem.setAccelerator(new KeyCodeCombination(KeyCode.DIGIT1, KeyCombination.CONTROL_DOWN));
         
-        var propertiesItem = new CheckMenuItem("Properties");
+        var propertiesItem = new CheckMenuItem(L18n.localize("railroad.menu.view.properties"));
         propertiesItem.setGraphic(new FontIcon(FontAwesomeSolid.INFO_CIRCLE));
         propertiesItem.setAccelerator(new KeyCodeCombination(KeyCode.DIGIT2, KeyCombination.CONTROL_DOWN));
         
-        var consoleItem = new CheckMenuItem("Console");
+        var consoleItem = new CheckMenuItem(L18n.localize("railroad.menu.view.console"));
         consoleItem.setGraphic(new FontIcon(FontAwesomeSolid.TERMINAL));
         consoleItem.setAccelerator(new KeyCodeCombination(KeyCode.DIGIT3, KeyCombination.CONTROL_DOWN));
         
         var separator4 = new SeparatorMenuItem();
         
-        var fullScreenItem = new MenuItem("Toggle Full Screen");
+        var fullScreenItem = new MenuItem(L18n.localize("railroad.menu.view.full_screen"));
         fullScreenItem.setGraphic(new FontIcon(FontAwesomeSolid.EXPAND));
         fullScreenItem.setAccelerator(new KeyCodeCombination(KeyCode.F11));
 
@@ -232,20 +232,20 @@ public class IDESetup {
                 fullScreenItem
         );
 
-        var runMenu = new Menu("Run");
+        var runMenu = new Menu(L18n.localize("railroad.menu.run"));
         runMenu.getStyleClass().add("rr-menu");
 
         runMenu.getItems().clear();
         
-        var runItem = new MenuItem("Run");
+        var runItem = new MenuItem(L18n.localize("railroad.menu.run.run"));
         runItem.setGraphic(new FontIcon(FontAwesomeSolid.PLAY));
         runItem.setAccelerator(new KeyCodeCombination(KeyCode.F5));
         
-        var debugItem = new MenuItem("Debug");
+        var debugItem = new MenuItem(L18n.localize("railroad.menu.run.debug"));
         debugItem.setGraphic(new FontIcon(FontAwesomeSolid.BUG));
         debugItem.setAccelerator(new KeyCodeCombination(KeyCode.F6));
         
-        var stopItem = new MenuItem("Stop");
+        var stopItem = new MenuItem(L18n.localize("railroad.menu.run.stop"));
         stopItem.setGraphic(new FontIcon(FontAwesomeSolid.STOP));
         stopItem.setAccelerator(new KeyCodeCombination(KeyCode.F7));
 
@@ -253,19 +253,19 @@ public class IDESetup {
                 runItem, debugItem, stopItem
         );
 
-        var toolsMenu = new Menu("Tools");
+        var toolsMenu = new Menu(L18n.localize("railroad.menu.tools"));
         toolsMenu.getStyleClass().add("rr-menu");
 
         toolsMenu.getItems().clear();
         
-        var settingsItem = new MenuItem("Settings");
+        var settingsItem = new MenuItem(L18n.localize("railroad.menu.tools.settings"));
         settingsItem.setGraphic(new FontIcon(FontAwesomeSolid.COG));
         settingsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.CONTROL_DOWN));
         
-        var pluginsItem = new MenuItem("Plugins");
+        var pluginsItem = new MenuItem(L18n.localize("railroad.menu.tools.plugins"));
         pluginsItem.setGraphic(new FontIcon(FontAwesomeSolid.PUZZLE_PIECE));
         
-        var terminalItem = new MenuItem("Terminal");
+        var terminalItem = new MenuItem(L18n.localize("railroad.menu.tools.terminal"));
         terminalItem.setGraphic(new FontIcon(FontAwesomeSolid.TERMINAL));
         terminalItem.setAccelerator(new KeyCodeCombination(KeyCode.T, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
 
@@ -273,23 +273,23 @@ public class IDESetup {
                 settingsItem, pluginsItem, terminalItem
         );
 
-        var helpMenu = new Menu("Help");
+        var helpMenu = new Menu(L18n.localize("railroad.menu.help"));
         helpMenu.getStyleClass().add("rr-menu");
 
         helpMenu.getItems().clear();
         
-        var documentationItem = new MenuItem("Documentation");
+        var documentationItem = new MenuItem(L18n.localize("railroad.menu.help.documentation"));
         documentationItem.setGraphic(new FontIcon(FontAwesomeSolid.BOOK));
         documentationItem.setAccelerator(new KeyCodeCombination(KeyCode.F1));
         documentationItem.setOnAction(e -> Railroad.openUrl("https://railroad.turtywurty.dev/wiki"));
         
-        var tutorialsItem = new MenuItem("Tutorials");
+        var tutorialsItem = new MenuItem(L18n.localize("railroad.menu.help.tutorials"));
         tutorialsItem.setGraphic(new FontIcon(FontAwesomeSolid.GRADUATION_CAP));
         tutorialsItem.setOnAction(e -> Railroad.openUrl("https://tutorials.turtywurty.dev/"));
         
         var separator5 = new SeparatorMenuItem();
         
-        var aboutItem = new MenuItem("About Railroad");
+        var aboutItem = new MenuItem(L18n.localize("railroad.menu.help.about"));
         aboutItem.setGraphic(new FontIcon(FontAwesomeSolid.INFO));
 
         helpMenu.getItems().addAll(

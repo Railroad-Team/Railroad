@@ -397,3 +397,43 @@ railroad.ide.error.message=Error: %s
 
 not_implemented.title=Not Implemented Yet
 not_implemented.subtitle=This feature is under construction. Stay tuned!
+
+# =============================================================================
+# IDE MENUS
+# =============================================================================
+railroad.menu.file=File
+railroad.menu.file.new_file=New File
+railroad.menu.file.open_file=Open File...
+railroad.menu.file.save=Save
+railroad.menu.file.save_as=Save As...
+railroad.menu.file.exit=Exit
+
+railroad.menu.edit=Edit
+railroad.menu.edit.undo=Undo
+railroad.menu.edit.redo=Redo
+railroad.menu.edit.cut=Cut
+railroad.menu.edit.copy=Copy
+railroad.menu.edit.paste=Paste
+railroad.menu.edit.find=Find...
+railroad.menu.edit.replace=Replace...
+
+railroad.menu.view=View
+railroad.menu.view.project_explorer=Project Explorer
+railroad.menu.view.properties=Properties
+railroad.menu.view.console=Console
+railroad.menu.view.full_screen=Toggle Full Screen
+
+railroad.menu.run=Run
+railroad.menu.run.run=Run
+railroad.menu.run.debug=Debug
+railroad.menu.run.stop=Stop
+
+railroad.menu.tools=Tools
+railroad.menu.tools.settings=Settings
+railroad.menu.tools.plugins=Plugins
+railroad.menu.tools.terminal=Terminal
+
+railroad.menu.help=Help
+railroad.menu.help.documentation=Documentation
+railroad.menu.help.tutorials=Tutorials
+railroad.menu.help.about=About Railroad
