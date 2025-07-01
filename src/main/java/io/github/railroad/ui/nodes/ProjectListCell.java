@@ -3,6 +3,7 @@ package io.github.railroad.ui.nodes;
 import io.github.palexdev.mfxcore.builders.InsetsBuilder;
 import io.github.railroad.Railroad;
 import io.github.railroad.project.Project;
+import io.github.railroad.utility.StringUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
@@ -110,7 +111,7 @@ public class ProjectListCell extends ListCell<Project> {
             icon.setImage(project.getIcon());
             nameLabel.setText(project.getAlias());
             pathLabel.setText(project.getPathString());
-            lastOpenedLabel.setText(Project.getLastOpenedFriendly(project.getLastOpened()));
+            lastOpenedLabel.setText(StringUtils.formatElapsed(project.getLastOpened()));
             setGraphic(card);
         }
     }
