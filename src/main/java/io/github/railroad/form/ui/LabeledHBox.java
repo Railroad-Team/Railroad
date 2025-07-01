@@ -2,9 +2,14 @@ package io.github.railroad.form.ui;
 
 import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.ui.defaults.RRVBox;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Tooltip;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import lombok.Getter;
@@ -13,7 +18,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 
 /**
- * A labeled {@link RRHBox} that contains a label and a primary component.
+ * A labeled container that can switch between horizontal and vertical layout based on available space.
+ * Uses horizontal layout by default, but switches to vertical when labels are truncated.
  *
  * @param <T> The type of the primary component.
  */
@@ -22,9 +28,11 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
     private final LocalizedLabel label;
     private final T primaryComponent;
     private final boolean required;
+    private final VBox verticalLayout;
+    private boolean isVerticalLayout = false;
 
     /**
-     * Creates a new labeled HBox.
+     * Creates a new labeled container.
      *
      * @param labelKey The key of the label.
      * @param required Whether the field is required.
@@ -37,9 +45,76 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
         this.label = createLabel(this, labelKey, required);
         this.primaryComponent = createPrimaryComponent(params);
         this.label.setLabelFor(primaryComponent);
-        getChildren().add(primaryComponent);
+
+        this.verticalLayout = new RRVBox(8);
+        this.verticalLayout.setAlignment(Pos.CENTER_LEFT);
+        
+        if (primaryComponent instanceof Region) {
+            HBox.setHgrow(primaryComponent, Priority.ALWAYS);
+        }
 
         this.required = required;
+        
+        setupHorizontalLayout();
+        setupResponsiveLayout();
+    }
+
+    private void setupHorizontalLayout() {
+        getChildren().clear();
+        getChildren().addAll(label, primaryComponent);
+        if (required) {
+            getChildren().add(createAsterisk());
+        }
+    }
+
+    private void setupVerticalLayout() {
+        getChildren().clear();
+        verticalLayout.getChildren().clear();
+        verticalLayout.getChildren().addAll(label, primaryComponent);
+        if (required) {
+            verticalLayout.getChildren().add(createAsterisk());
+        }
+        getChildren().add(verticalLayout);
+        HBox.setHgrow(verticalLayout, Priority.ALWAYS);
+    }
+
+    private void setupResponsiveLayout() {
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                newScene.getWindow().widthProperty().addListener((obs2, oldWidth, newWidth) -> {
+                    checkAndSwitchLayout();
+                });
+            }
+        });
+        
+        layoutBoundsProperty().addListener((obs, oldBounds, newBounds) -> {
+            if (newBounds.getWidth() > 0) {
+                checkAndSwitchLayout();
+            }
+        });
+    }
+
+    private void checkAndSwitchLayout() {
+        if (label.getText().isEmpty()) return;
+        
+        // Get the actual width needed for the label text
+        double textWidth = label.getFont().getSize() * label.getText().length() * 0.6; // Rough estimate
+        double availableWidth = getWidth() - 30; // Account for padding and spacing
+        double componentMinWidth = primaryComponent instanceof Region ? 
+            ((Region) primaryComponent).getMinWidth() : 100;
+        
+        // Check if we need vertical layout (not enough space for horizontal)
+        boolean needsVertical = availableWidth < (textWidth + componentMinWidth + 20); // 20px buffer
+        
+        if (needsVertical && !isVerticalLayout) {
+            isVerticalLayout = true;
+            setupVerticalLayout();
+            getStyleClass().add("vertical-layout");
+        } else if (!needsVertical && isVerticalLayout) {
+            isVerticalLayout = false;
+            setupHorizontalLayout();
+            getStyleClass().remove("vertical-layout");
+        }
     }
 
     /**
@@ -52,6 +127,11 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
      */
     protected static LocalizedLabel createLabel(RRHBox hBox, @NotNull String label, boolean required) {
         var labelNode = new LocalizedLabel(label);
+        labelNode.getStyleClass().add("field-label");
+        labelNode.setMinWidth(Region.USE_PREF_SIZE);
+        labelNode.setPrefWidth(Region.USE_COMPUTED_SIZE);
+        labelNode.setWrapText(true);
+        HBox.setHgrow(labelNode, Priority.ALWAYS);
         hBox.getChildren().add(labelNode);
         if (required) {
             hBox.getChildren().add(createAsterisk());
@@ -68,6 +148,7 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
     protected static Text createAsterisk() {
         var asterisk = new Text("*");
         asterisk.setFill(Color.RED);
+        asterisk.getStyleClass().add("field-required");
         Tooltip.install(asterisk, new Tooltip("Required"));
         return asterisk;
     }

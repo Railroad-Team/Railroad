@@ -1,4 +1,4 @@
-package io.github.railroad.ui;
+package io.github.railroad.ui.nodes;
 
 import io.github.railroad.localization.ui.LocalizedButton;
 import javafx.beans.property.ObjectProperty;

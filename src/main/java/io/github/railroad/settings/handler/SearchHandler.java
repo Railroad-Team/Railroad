@@ -11,7 +11,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SearchHandler {
-    private final String foundStyle = "-fx-background-color: #FF0000;";
     private final Map<String, String> settings = new HashMap<>();
     private final FuzzySearch<Map<String, String>, String> fuzzySearch;
 
@@ -38,10 +37,20 @@ public class SearchHandler {
         fuzzySearch = new FuzzySearch<>(settings, (s) -> s.keySet().stream().toList(), settings::get);
     }
 
+    /**
+     * Sets the current search query.
+     * 
+     * @param input the search query string
+     */
     public void setQuery(String input) {
         query.set(input);
     }
 
+    /**
+     * Gets the current search query.
+     * 
+     * @return the current search query string
+     */
     public String getQuery() {
         return query.get();
     }
@@ -79,10 +88,9 @@ public class SearchHandler {
         if (n instanceof Labeled) {
             var sr = fuzzySearch.isSimilar(getQuery(), ((Labeled) n).getText());
             if (sr) {
-                //TODO better way for this? Maybe a style class or something
-                n.setStyle(n.getStyle() + foundStyle);
+                n.getStyleClass().add("search-highlight");
             } else {
-                n.setStyle(n.getStyle().replace(foundStyle, ""));
+                n.getStyleClass().remove("search-highlight");
             }
         }
 

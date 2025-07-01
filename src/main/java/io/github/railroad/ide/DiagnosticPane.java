@@ -8,7 +8,17 @@ import javax.tools.JavaFileObject;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * A pane component for displaying Java compilation diagnostics (errors and warnings).
+ * Provides a structured layout with location information and diagnostic messages.
+ * Automatically applies styling based on the diagnostic kind (error or warning).
+ */
 public class DiagnosticPane extends BorderPane {
+    /**
+     * Constructs a new DiagnosticPane for a single diagnostic.
+     * 
+     * @param diagnostic the diagnostic to display
+     */
     public DiagnosticPane(Diagnostic<? extends JavaFileObject> diagnostic) {
         var message = diagnostic.getMessage(null);
         var line = diagnostic.getLineNumber();
@@ -19,10 +29,19 @@ public class DiagnosticPane extends BorderPane {
 
         setTop(locationText);
         setCenter(messageText);
-        setStyle("-fx-border-color: " + (diagnostic.getKind() == Diagnostic.Kind.ERROR ? "red" : "orange") + ";");
         getStyleClass().add("diagnostic-pane");
+        if (diagnostic.getKind() == Diagnostic.Kind.ERROR) {
+            getStyleClass().add("error");
+        } else {
+            getStyleClass().add("warning");
+        }
     }
 
+    /**
+     * Constructs a new DiagnosticPane for multiple diagnostics.
+     * 
+     * @param diagnostics the collection of diagnostics to display
+     */
     public DiagnosticPane(Collection<Diagnostic<? extends JavaFileObject>> diagnostics) {
         var message = new StringBuilder();
         for (var diagnostic : diagnostics) {
@@ -34,10 +53,19 @@ public class DiagnosticPane extends BorderPane {
 
         setTop(locationText);
         setCenter(messageText);
-        setStyle("-fx-border-color: " + (diagnostics.stream().anyMatch(d -> d.getKind() == Diagnostic.Kind.ERROR) ? "red" : "orange") + ";");
         getStyleClass().add("diagnostic-pane");
+        if (diagnostics.stream().anyMatch(d -> d.getKind() == Diagnostic.Kind.ERROR)) {
+            getStyleClass().add("error");
+        } else {
+            getStyleClass().add("warning");
+        }
     }
 
+    /**
+     * Constructs a new DiagnosticPane for multiple diagnostics using varargs.
+     * 
+     * @param diagnostics the diagnostics to display
+     */
     @SafeVarargs
     public DiagnosticPane(Diagnostic<? extends JavaFileObject>... diagnostics) {
         this(List.of(diagnostics));

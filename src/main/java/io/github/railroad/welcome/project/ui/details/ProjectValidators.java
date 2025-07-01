@@ -30,8 +30,14 @@ public class ProjectValidators {
 
         try {
             Path path = Path.of(text);
-            if (Files.notExists(path))
-                return ValidationResult.error("railroad.project.creation.location.error.not_exists");
+            if (Files.notExists(path)) {
+                // Create the directory if it doesn't exist
+                try {
+                    Files.createDirectories(path);
+                } catch (IOException e) {
+                    return ValidationResult.error("railroad.project.creation.location.error.cannot_create");
+                }
+            }
 
             if (!Files.isDirectory(path))
                 return ValidationResult.error("railroad.project.creation.location.error.not_directory");

@@ -9,11 +9,9 @@ import io.github.railroad.Railroad;
 import io.github.railroad.config.ConfigHandler;
 import io.github.railroad.localization.L18n;
 import io.github.railroad.localization.Language;
-import io.github.railroad.localization.ui.LocalizedButton;
 import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.settings.ui.TreeViewSettings;
-import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
-import io.github.railroad.settings.ui.themes.ThemeDownloadPane;
+import io.github.railroad.settings.ui.themes.ThemeSettingsSection;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
 import javafx.event.ActionEvent;
@@ -41,7 +39,7 @@ public class SettingsHandler {
     private final Path configPath;
 
     public SettingsHandler() {
-        //TODO register plugin settings
+        // TODO register plugin settings
         registerDefaultSettings();
         registerDefaultCodecs();
         registerDefaultDecorations();
@@ -86,7 +84,7 @@ public class SettingsHandler {
     public void loadSettingsFromFile() {
         try {
             String fileInput = Files.readString(configPath);
-            if(fileInput.isBlank() || fileInput.trim().replace(" ", "").equals("{}")) {
+            if (fileInput.isBlank() || fileInput.trim().replace(" ", "").equals("{}")) {
                 saveSettingsFile();
             }
 
@@ -139,7 +137,7 @@ public class SettingsHandler {
         }
 
         setting.setValue(value);
-        setting.getApplySetting().accept(null); //TODO fix generics?
+        setting.getApplySetting().accept(null); // TODO fix generics (?)
     }
 
     public boolean getBooleanSetting(String id) {
@@ -245,6 +243,7 @@ public class SettingsHandler {
 
     /**
      * Creates a tree of setting folders.
+     *
      * @return {@link TreeView} The tree of folders
      */
     public TreeView<LocalizedLabel> createCategoryTree() {
@@ -264,23 +263,58 @@ public class SettingsHandler {
                     break;
                 }
 
-                //If it is the last folder
+                // If it is the last folder
                 int finalIndex = index;
                 if (index == (parts.length - 1)) {
                     break;
                 }
 
-                //Check if the folder already exists
+                // Check if the folder already exists
                 var folder = currNode.getChildren().stream().filter(i -> i.getValue() instanceof LocalizedLabel l && l.getKey().equals(StringUtils.join(parts, ".", 0, finalIndex)))
                         .findFirst();
 
                 if (folder.isEmpty()) {
-                    //If it does not exist, create it
-                    TreeItem<LocalizedLabel> newFolder = new TreeItem<>(new LocalizedLabel( StringUtils.join(parts, ".", 0, index)));
+                    // If it does not exist, create it
+                    TreeItem<LocalizedLabel> newFolder = new TreeItem<>(new LocalizedLabel(StringUtils.join(parts, ".", 0, index)));
                     currNode.getChildren().add(newFolder);
                     currNode = newFolder;
                 } else {
-                    //If it exists, set the current node to the folder
+                    // If it exists, set the current node to the folder
+                    currNode = folder.get();
+                }
+            }
+        }
+
+        for (Decoration<?> decoration : decorations.values()) {
+            String[] parts = decoration.treeId().split("[:.]");
+            String decorationPart = parts[parts.length - 1];
+
+            var currNode = view.getRoot();
+            int index = 0;
+
+            for (String part : parts) {
+                index++;
+                if (part.equals(decorationPart)) {
+                    break;
+                }
+
+                // If it is the last folder
+                int finalIndex = index;
+                if (index == (parts.length - 1)) {
+                    break;
+                }
+
+                // Check if the folder already exists
+                var folder = currNode.getChildren().stream().filter(i -> i.getValue() instanceof LocalizedLabel l && l.getKey().equals(StringUtils.join(parts, ".", 0, finalIndex)))
+                        .findFirst();
+
+                if (folder.isEmpty()) {
+                    // If it does not exist, create it
+                    TreeItem<LocalizedLabel> newFolder = new TreeItem<>(new LocalizedLabel(StringUtils.join(parts, ".", 0, index)));
+                    currNode.getChildren().add(newFolder);
+                    currNode = newFolder;
+                } else {
+                    // If it exists, set the current node to the folder
                     currNode = folder.get();
                 }
             }
@@ -291,6 +325,7 @@ public class SettingsHandler {
 
     /**
      * Creates the pane for the setting folder and adds the relevant settings and decorations to it.
+     *
      * @param parent parent folder id (just one part e.g appearance)
      * @return {@link VBox} The pane with the settings and decorations
      */
@@ -299,22 +334,23 @@ public class SettingsHandler {
         final VBox vbox = new VBox();
 
         if (parent == null) {
-            //TODO If no node is selected - Possibly make impossible? Maybe force onto railroad/general or last used node
+            // TODO If no node is selected - Possibly make impossible (?) Maybe force onto railroad/general or last used node
             var title = new LocalizedLabel("railroad.home.settings.title");
-            title.setStyle("-fx-font-size: 24px;");
+            title.getStyleClass().add("settings-title");
 
             var desc = new LocalizedLabel("railroad.home.settings.description");
+            desc.getStyleClass().add("settings-description");
             VBox.setMargin(desc, InsetsFactory.top(5));
-            desc.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
             vbox.getChildren().addAll(title, desc);
 
             return vbox;
         }
+
         parent = parent.toLowerCase();
 
         for (Setting<?> setting : settings.getSettings().values()) {
             String[] parts = setting.getTreeId().split("[.:]");
-            //Get the last folder present
+            // Get the last folder present
             String parentId = parts[parts.length - 3];
 
             if (parentId.equals(parent)) {
@@ -336,25 +372,20 @@ public class SettingsHandler {
                             setting.setValue(getCodec(setting.getCodecId()).nodeToValue().apply(settingNode));
                         });
                 settingNode.addEventHandler(ActionEvent.ACTION, e -> {
-                    setting.getApplySetting().accept(null); //TODO fix generics?
+                    setting.getApplySetting().accept(null); // TODO fix generics (?)
                 });
 
                 if (setting.getEventHandlers() != null)
                     setting.getEventHandlers().forEach(settingNode::addEventHandler);
 
                 var settingTitleLabel = new LocalizedLabel(setting.getTreeId().replace(":", ".") + ".title");
-                settingTitleLabel.setStyle("-fx-font-size: 16px;");
+                settingTitleLabel.getStyleClass().add("setting-title-label");
 
-                VBox.setMargin(settingTitleLabel, InsetsFactory.bottom(5));
+                var settingDescLabel = new LocalizedLabel(setting.getTreeId().replace(":", ".") + ".description");
+                settingDescLabel.getStyleClass().add("setting-description-label");
 
                 settingBundle.getChildren().addAll(TreeViewSettings.SEARCH_HANDLER.styleNodes(settingTitleLabel, settingNode));
-
-                var descKey = setting.getTreeId().replace(":", ".") + ".description";
-                if (L18n.isKeyValid(descKey)) {
-                    var settingDescLabel = new LocalizedLabel(descKey);
-                    settingDescLabel.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
-                    settingBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(settingDescLabel));
-                }
+                settingBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(settingDescLabel));
 
                 folderBox.getChildren().add(settingBundle);
             }
@@ -362,7 +393,7 @@ public class SettingsHandler {
 
         for (Decoration<?> decoration : decorations.values()) {
             String[] parts = decoration.treeId().split("[.:]");
-            //Get the last folder present
+            // Get the last folder present
             String parentId = parts[parts.length - 3];
 
             if (parentId.equals(parent)) {
@@ -373,6 +404,7 @@ public class SettingsHandler {
                     folderBoxes.put(innerFolder, folderBox);
                     VBox.setMargin(folderBox, InsetsFactory.of(5, 10, 0, 10));
                 }
+
                 var folderBox = folderBoxes.get(innerFolder);
 
                 var decorBundle = new VBox();
@@ -380,11 +412,11 @@ public class SettingsHandler {
 
                 var decorationNode = decoration.nodeCreator().get();
                 var decorationLabelKey = decoration.treeId().replace(":", ".") + ".title";
-                var decorationDescKey =  decoration.treeId().replace(":", ".") + ".description";
+                var decorationDescKey = decoration.treeId().replace(":", ".") + ".description";
 
                 if (L18n.isKeyValid(decorationLabelKey)) {
                     var decorationLabel = new LocalizedLabel(decorationLabelKey);
-                    decorationLabel.setStyle("-fx-font-size: 16px;");
+                    decorationLabel.getStyleClass().add("decoration-label");
                     decorBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(decorationLabel));
                 }
 
@@ -392,7 +424,7 @@ public class SettingsHandler {
 
                 if (L18n.isKeyValid(decorationDescKey)) {
                     var decorationDesc = new LocalizedLabel(decorationDescKey);
-                    decorationDesc.setStyle("-fx-font-size: 14px; -fx-wrap-text: true;");
+                    decorationDesc.getStyleClass().add("decoration-description");
                     decorBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(decorationDesc));
                 }
 
@@ -406,7 +438,7 @@ public class SettingsHandler {
             sepBox.setPadding(new Insets(5, 10, 0, 10));
 
             var sectionLabel = new LocalizedLabel(entry.getKey());
-            sectionLabel.setStyle("-fx-font-size: 18px;");
+            sectionLabel.getStyleClass().add("section-label");
 
             var sep = new Separator();
             sep.setMaxWidth(Double.MAX_VALUE);
@@ -440,20 +472,15 @@ public class SettingsHandler {
         );
 
         registerCodec(
-                new SettingCodec<String, ComboBox<String>, JsonElement>("railroad:theme.select",
-                        ComboBoxBase::getValue,
-                        (t, n) -> n.setValue(t),
+                new SettingCodec<String, ThemeSettingsSection, JsonElement>("railroad:theme.select",
+                        ThemeSettingsSection::getSelectedTheme,
+                        (t, n) -> n.setSelectedTheme(t),
                         JsonElement::getAsString,
                         JsonPrimitive::new,
                         t -> {
-                            var combo = new ComboBox<String>();
-                            for (Path file : ThemeDownloadManager.getDownloaded()) {
-                                combo.getItems().add(file.getFileName().toString().replace(".css", ""));
-                            }
-
-                            combo.getItems().addAll("default-dark", "default-light");
-                            combo.setValue(t);
-                            return combo;
+                            var section = new ThemeSettingsSection();
+                            section.setSelectedTheme(t);
+                            return section;
                         })
         );
 
@@ -473,13 +500,13 @@ public class SettingsHandler {
 
     private void registerDefaultSettings() {
         registerSetting(new Setting<>(
-                    "railroad:language",
-                    "railroad:general.language",
-                    "railroad:language",
-                    Language.EN_US,
-                    e -> L18n.loadLanguage(),
-                    null
-                ));
+                "railroad:language",
+                "railroad:general.language",
+                "railroad:language",
+                Language.EN_US,
+                e -> L18n.loadLanguage(),
+                null
+        ));
 
         registerSetting(
                 new Setting<>(
@@ -497,16 +524,13 @@ public class SettingsHandler {
                         "railroad:ide.auto_pair_inside_strings",
                         "railroad:ide.auto_pair_inside_strings",
                         true,
-                        $ -> {},
+                        $ -> {
+                        },
                         null
                 ));
     }
 
     private void registerDefaultDecorations() {
-        registerDecoration(new Decoration<>("railroad:appearance.themes.download", "railroad:appearance.themes.download", () -> {
-            var button = new LocalizedButton("railroad.home.settings.appearance.downloadtheme");
-            button.setOnAction(e -> new ThemeDownloadPane());
-            return button;
-        }));
+
     }
 }

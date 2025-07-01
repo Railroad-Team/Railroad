@@ -1,12 +1,12 @@
 package io.github.railroad.ide.projectexplorer.dialog;
 
 import io.github.railroad.ide.projectexplorer.FileCreateType;
+import io.github.railroad.localization.ui.LocalizedButton;
+import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.ui.defaults.RRGridPane;
 import io.github.railroad.ui.defaults.RRListView;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
@@ -26,12 +26,12 @@ public class CreateFileDialog {
         var dialog = new Stage(StageStyle.UTILITY);
         dialog.initOwner(owner);
         dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle(switch (type) { // TODO: Localize
-            case FILE -> "Create File";
-            case FOLDER -> "Create Folder";
-            case JAVA_CLASS -> "Create Java Class";
-            case JSON -> "Create JSON File";
-            case TXT -> "Create Text File";
+        dialog.setTitle(switch (type) {
+            case FILE -> "railroad.dialog.create_file.title.file";
+            case FOLDER -> "railroad.dialog.create_file.title.folder";
+            case JAVA_CLASS -> "railroad.dialog.create_file.title.java_class";
+            case JSON -> "railroad.dialog.create_file.title.json";
+            case TXT -> "railroad.dialog.create_file.title.txt";
         });
 
         var root = new RRGridPane();
@@ -39,12 +39,12 @@ public class CreateFileDialog {
         root.setHgap(5);
         root.setVgap(10);
 
-        var title = new Label(switch (type) { // TODO: Localize
-            case FILE -> "Create File";
-            case FOLDER -> "Create Folder";
-            case JAVA_CLASS -> "Create Java Class";
-            case JSON -> "Create JSON File";
-            case TXT -> "Create Text File";
+        var title = new LocalizedLabel(switch (type) {
+            case FILE -> "railroad.dialog.create_file.title.file";
+            case FOLDER -> "railroad.dialog.create_file.title.folder";
+            case JAVA_CLASS -> "railroad.dialog.create_file.title.java_class";
+            case JSON -> "railroad.dialog.create_file.title.json";
+            case TXT -> "railroad.dialog.create_file.title.txt";
         });
 
         var textField = new TextField();
@@ -74,7 +74,7 @@ public class CreateFileDialog {
 
         listView.getSelectionModel().selectFirst();
 
-        var okButton = new Button("Ok"); // TODO: Localize
+        var okButton = new LocalizedButton("railroad.generic.ok");
         okButton.setOnAction(event -> {
             dialog.hide();
 
@@ -109,7 +109,7 @@ public class CreateFileDialog {
             }
         });
 
-        var cancelButton = new Button("Cancel"); // TODO: Localize
+        var cancelButton = new LocalizedButton("railroad.generic.cancel");
         cancelButton.setOnAction(event -> dialog.hide());
 
         root.add(title, 0, 0, 2, 1);

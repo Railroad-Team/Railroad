@@ -1,8 +1,8 @@
 package io.github.railroad.utility;
 
 import javafx.scene.Node;
-import javafx.scene.image.Image;
 import javafx.scene.image.*;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeRegular;
 import org.kordamp.ikonli.javafx.FontIcon;

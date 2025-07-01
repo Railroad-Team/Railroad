@@ -4,10 +4,7 @@ import com.kodedu.terminalfx.Terminal;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import io.github.railroad.IDESetup;
 import io.github.railroad.Railroad;
-import io.github.railroad.ide.ImageViewerPane;
-import io.github.railroad.ide.JavaCodeEditorPane;
-import io.github.railroad.ide.JsonCodeEditorPane;
-import io.github.railroad.ide.TextEditorPane;
+import io.github.railroad.ide.*;
 import io.github.railroad.ide.projectexplorer.dialog.CopyModalDialog;
 import io.github.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import io.github.railroad.ide.projectexplorer.dialog.DeleteDialog;
@@ -18,6 +15,7 @@ import io.github.railroad.localization.ui.LocalizedTextField;
 import io.github.railroad.project.Project;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.nodes.RRButton;
 import io.github.railroad.utility.FileHandler;
 import io.github.railroad.utility.ShutdownHooks;
 import javafx.application.Platform;
@@ -28,10 +26,16 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.stage.Window;
 import org.jetbrains.annotations.NotNull;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,20 +69,27 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     public ProjectExplorerPane(Project project, RRBorderPane mainPane) {
-        Path rootPath = project.getPath();
-        setPadding(new Insets(10));
-        setSpacing(10);
+        Path rootPath = Path.of(project.getPathString());
+        setPadding(new Insets(0));
+        setSpacing(0);
+        getStyleClass().add("rr-project-explorer");
 
+        this.searchField = new LocalizedTextField("railroad.ide.project_explorer.search_field");
+        this.searchField.getStyleClass().add("rr-search-field");
+
+        var header = createModernHeader(project);
+        
         this.treeView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         this.treeView.setRoot(new PathTreeItem(new PathItem(rootPath)));
         this.treeView.setEditable(true);
+        this.treeView.getStyleClass().add("rr-tree-view");
         this.treeView.setCellFactory(param -> {
             var cell = new PathTreeCell(messageProperty, mainPane);
             handleDragDrop(cell);
             return cell;
         });
         this.treeView.getRoot().setExpanded(true);
-        this.treeView.prefHeightProperty().bind(heightProperty());
+        this.treeView.prefHeightProperty().bind(heightProperty().subtract(60));
         this.treeView.setOnKeyReleased(event -> {
             TreeItem<PathItem> selectedItem = this.treeView.getSelectionModel().getSelectedItem();
             if (selectedItem == null)
@@ -155,16 +166,80 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         });
         sortTreeItems(this.treeView.getRoot());
 
-        this.searchField = new LocalizedTextField("railroad.ide.project_explorer.search_field");
-
         handleSearchEvents(rootPath);
 
         var watchTask = new WatchTask(rootPath, this);
         this.executorService.submit(watchTask);
 
-        getChildren().addAll(searchField, this.treeView);
+        getChildren().addAll(header, this.treeView);
 
         ShutdownHooks.addHook(this.executorService::shutdownNow);
+    }
+
+    private Node createModernHeader(Project project) {
+        var header = new HBox(8);
+        header.getStyleClass().add("project-explorer-header");
+        header.setPadding(new Insets(12, 16, 8, 16));
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        // Project icon and name (never cut off)
+        var projectInfo = new HBox(8);
+        projectInfo.setAlignment(Pos.CENTER_LEFT);
+        var projectIcon = new FontIcon(FontAwesomeSolid.FOLDER_OPEN);
+        projectIcon.getStyleClass().add("project-icon");
+        projectIcon.setIconSize(16);
+        var projectName = new Label(project.getAlias());
+        projectName.getStyleClass().add("project-name");
+        projectName.setMinWidth(Label.USE_PREF_SIZE); // Prevent truncation
+        projectInfo.getChildren().addAll(projectIcon, projectName);
+
+        // Search field (grows, but max width)
+        this.searchField.setPromptText("Search files...");
+        this.searchField.setPrefWidth(200);
+        this.searchField.setMaxWidth(260);
+        HBox.setHgrow(this.searchField, Priority.ALWAYS);
+
+        // Action buttons (compact, right-aligned)
+        var actionButtons = new HBox(4);
+        actionButtons.setAlignment(Pos.CENTER_RIGHT);
+        
+        var refreshButton = new RRButton("", FontAwesomeSolid.SYNC_ALT);
+        refreshButton.setVariant(RRButton.ButtonVariant.GHOST);
+        refreshButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        refreshButton.getStyleClass().add("project-explorer-button");
+        refreshButton.setTooltip(new Tooltip("Refresh"));
+        refreshButton.setOnAction(e -> refreshProjectExplorer());
+        
+        var collapseAllButton = new RRButton("", FontAwesomeSolid.COMPRESS_ALT);
+        collapseAllButton.setVariant(RRButton.ButtonVariant.GHOST);
+        collapseAllButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        collapseAllButton.getStyleClass().add("project-explorer-button");
+        collapseAllButton.setTooltip(new Tooltip("Collapse All"));
+        collapseAllButton.setOnAction(e -> ProjectExplorerPane.collapseAll(this.treeView.getRoot()));
+        
+        var expandAllButton = new RRButton("", FontAwesomeSolid.EXPAND_ALT);
+        expandAllButton.setVariant(RRButton.ButtonVariant.GHOST);
+        expandAllButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        expandAllButton.getStyleClass().add("project-explorer-button");
+        expandAllButton.setTooltip(new Tooltip("Expand All"));
+        expandAllButton.setOnAction(e -> ProjectExplorerPane.expandAll(this.treeView.getRoot()));
+        
+        actionButtons.getChildren().addAll(refreshButton, collapseAllButton, expandAllButton);
+
+        // Layout: projectInfo | searchField | actionButtons
+        header.getChildren().addAll(projectInfo, this.searchField, actionButtons);
+        HBox.setHgrow(actionButtons, Priority.NEVER);
+        HBox.setHgrow(projectInfo, Priority.NEVER);
+        // The search field will take up the remaining space, but not shrink projectInfo
+        
+        return header;
+    }
+
+    private void refreshProjectExplorer() {
+        Path rootPath = Path.of(this.treeView.getRoot().getValue().getPath().toString());
+        this.treeView.setRoot(new PathTreeItem(new PathItem(rootPath)));
+        this.treeView.getRoot().setExpanded(true);
+        sortTreeItems(this.treeView.getRoot());
     }
 
     public static void cut(PathTreeItem pathItem, TreeView<PathItem> treeView) {
@@ -270,19 +345,54 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             Optional<DetachableTabPane> pane = IDESetup.findBestPaneForFiles(mainPane);
             pane.ifPresent(detachableTabPane -> { // TODO: Some kind of text editor registry
                 String fileName = path.getFileName().toString();
+                
+                // Check if there's a welcome tab to replace
+                Tab welcomeTab = detachableTabPane.getTabs().stream()
+                    .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
+                    .findFirst()
+                    .orElse(null);
+                
+                Node editorContent;
                 if (fileName.endsWith(".java")) {
-                    detachableTabPane.addTab(path.getFileName().toString(), new JavaCodeEditorPane(path));
+                    editorContent = new JavaCodeEditorPane(path);
                 } else if (fileName.endsWith(".json")) {
-                    detachableTabPane.addTab(path.getFileName().toString(), new JsonCodeEditorPane(path));
+                    editorContent = new JsonCodeEditorPane(path);
                 } else {
-                    detachableTabPane.addTab(path.getFileName().toString(), new TextEditorPane(path));
+                    editorContent = new TextEditorPane(path);
+                }
+                
+                if (welcomeTab != null) {
+                    // Replace the welcome tab
+                    welcomeTab.setContent(editorContent);
+                    welcomeTab.setText(fileName);
+                    detachableTabPane.getSelectionModel().select(welcomeTab);
+                } else {
+                    // Add a new tab
+                    detachableTabPane.addTab(fileName, editorContent);
                 }
             });
         } else {
             if (FileHandler.isImageFile(path)) {
                 Optional<DetachableTabPane> pane = IDESetup.findBestPaneForImages(mainPane);
-                pane.ifPresent(detachableTabPane ->
-                        detachableTabPane.addTab(path.getFileName().toString(), new ImageViewerPane(path)));
+                pane.ifPresent(detachableTabPane -> {
+                    String fileName = path.getFileName().toString();
+                    
+                    // Check if there's a welcome tab to replace
+                    Tab welcomeTab = detachableTabPane.getTabs().stream()
+                        .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
+                        .findFirst()
+                        .orElse(null);
+                    
+                    if (welcomeTab != null) {
+                        // Replace the welcome tab
+                        welcomeTab.setContent(new ImageViewerPane(path));
+                        welcomeTab.setText(fileName);
+                        detachableTabPane.getSelectionModel().select(welcomeTab);
+                    } else {
+                        // Add a new tab
+                        detachableTabPane.addTab(fileName, new ImageViewerPane(path));
+                    }
+                });
             } else {
                 FileHandler.openInDefaultApplication(path);
             }
@@ -362,7 +472,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 var sourceCell = (PathTreeCell) event.getGestureSource(); // TODO: This breaks if from external source
                 Path sourceParentPath = sourceCell.getTreeItem().getValue().getPath().getParent();
                 if (sourceParentPath.compareTo(targetPath) != 0) {
-                    cell.setStyle("-fx-background-color: -color-accent-4");
+                    cell.getStyleClass().add("project-explorer-drag-target");
                 }
             }
 
@@ -370,7 +480,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         });
 
         cell.setOnDragExited(event -> {
-            cell.setStyle(null);
+            cell.getStyleClass().remove("project-explorer-drag-target");
             event.consume();
         });
 

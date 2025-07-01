@@ -82,11 +82,11 @@ public class ImageViewerPane extends BorderPane {
 
         infoPane = new RRVBox(5);
         infoPane.setPadding(new Insets(10));
-        infoPane.setStyle("-fx-background-color: #444444ee; -fx-border-color: #444; -fx-border-width: 1px;");
         infoPane.setVisible(false);
         infoPane.setMouseTransparent(true);
         infoPane.setMaxWidth(VBox.USE_PREF_SIZE);
         infoPane.setMaxHeight(VBox.USE_PREF_SIZE);
+        infoPane.getStyleClass().add("ide-image-viewer-info-pane");
 
         dimensionsText = new Text("Dimensions: ");
         fileNameText = new Text("File Name: ");
@@ -98,7 +98,7 @@ public class ImageViewerPane extends BorderPane {
         infoPane.getChildren().addAll(dimensionsText, fileNameText, fileSizeText, typeText, colorDepthText, colorSpaceText, numberOfColorsText);
 
         canvasContainer = new StackPane(canvas, infoPane);
-        canvasContainer.setStyle("-fx-background-color: #333;");
+        canvasContainer.getStyleClass().add("ide-image-viewer-canvas-container");
 
         StackPane.setAlignment(infoPane, Pos.TOP_LEFT);
         StackPane.setMargin(infoPane, new Insets(10));

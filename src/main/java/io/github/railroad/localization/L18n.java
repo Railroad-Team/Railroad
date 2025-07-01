@@ -47,15 +47,40 @@ public class L18n {
         }
     }
 
+    /**
+     * Localizes a string.
+     *
+     * @param key the localization key
+     * @return the localized string
+     */
     public static String localize(String key) {
         LOGGER.debug("Getting localized string for key {}", key);
+
+        if (key == null) {
+            LOGGER.error("Localize called with null key");
+            return "null";
+        }
+        
         if (LANG_CACHE.get(key) == null) {
             //TODO create a popup/toast to ask if user wants to swap to english as key is missing
-            LOGGER.error("Error finding translations for {} {}", key, CURRENT_LANG);
+            LOGGER.error("Error finding translations for key '{}' in language {}", key, CURRENT_LANG.getValue());
             return key;
         }
 
         return LANG_CACHE.get(key).toString();
+    }
+
+    /**
+     * Localizes a string and formats it with the given arguments.
+     * This is equivalent to String.format(L18n.localize(key), args...).
+     *
+     * @param key the localization key
+     * @param args the format arguments
+     * @return the localized and formatted string
+     */
+    public static String localize(String key, Object... args) {
+        String localizedString = localize(key);
+        return String.format(localizedString, args);
     }
 
     public static boolean isKeyValid(String key) {

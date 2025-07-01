@@ -1,7 +1,6 @@
 package io.github.railroad.settings.handler;
 
 import javafx.scene.Node;
-import lombok.Getter;
 
 import java.util.function.Supplier;
 

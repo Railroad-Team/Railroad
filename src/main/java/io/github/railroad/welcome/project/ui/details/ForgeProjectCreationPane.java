@@ -7,21 +7,27 @@ import groovy.lang.GroovyShell;
 import groovy.text.StreamingTemplateEngine;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import io.github.railroad.Railroad;
+import io.github.railroad.localization.L18n;
+import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.project.data.ForgeProjectData;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.minecraft.mapping.MappingChannel;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.nodes.RRButton;
 import io.github.railroad.utility.FileHandler;
 import io.github.railroad.utility.ShutdownHooks;
 import io.github.railroad.utility.function.ExceptionlessRunnable;
 import io.github.railroad.utility.javafx.TextAreaOutputStream;
+import io.github.railroad.welcome.WelcomePane;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
+import javafx.scene.layout.HBox;
 import org.codehaus.groovy.runtime.StringBufferWriter;
 import org.gradle.tooling.BuildException;
 import org.gradle.tooling.GradleConnector;
@@ -43,37 +49,83 @@ public class ForgeProjectCreationPane extends RRBorderPane {
     private static final String TEMPLATE_SETTINGS_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/forge/%s/template_settings.gradle";
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    private final RRVBox centerBox = new RRVBox(10);
-    private final Label timeElapsedLabel = new Label("");
-    private final Label taskLabel = new Label();
+    private final RRVBox centerBox = new RRVBox(20);
+    private final LocalizedLabel timeElapsedLabel = new LocalizedLabel("railroad.project.creation.status.time_elapsed", "");
+    private final LocalizedLabel taskLabel = new LocalizedLabel("railroad.project.creation.status.task", "");
     private final long startTime = System.currentTimeMillis();
     private final TextArea outputArea = new TextArea();
+    private final MFXProgressSpinner progressSpinner = new MFXProgressSpinner();
+    private final RRButton cancelButton = new RRButton("railroad.generic.cancel");
+    private final ForgeProjectData data;
 
     public ForgeProjectCreationPane(ForgeProjectData data) {
+        this.data = data;
+        setupUI();
+        startProjectCreation();
+    }
+
+    private void setupUI() {
+        setPadding(new Insets(24));
+
+        var headerBox = new RRVBox(8);
+        headerBox.setAlignment(Pos.CENTER);
+        var titleLabel = new LocalizedLabel("railroad.project.creation.status.creating_forge");
+        titleLabel.getStyleClass().add("project-creation-title");
+        var subtitleLabel = new LocalizedLabel("railroad.project.creation.status.creating_forge.subtitle", data.projectName());
+        subtitleLabel.getStyleClass().add("project-creation-subtitle");
+        headerBox.getChildren().addAll(titleLabel, subtitleLabel);
+        setTop(headerBox);
+
         centerBox.setAlignment(Pos.CENTER);
-        var progressSpinner = new MFXProgressSpinner();
-        centerBox.getChildren().addAll(progressSpinner);
-        progressSpinner.setRadius(50);
+        centerBox.setMaxWidth(600);
+
+        progressSpinner.setRadius(60);
+        progressSpinner.setProgress(0);
+
+        var progressInfoBox = new RRVBox(12);
+        progressInfoBox.setAlignment(Pos.CENTER);
+        progressInfoBox.getChildren().addAll(taskLabel, timeElapsedLabel);
+        
+        centerBox.getChildren().addAll(progressSpinner, progressInfoBox);
         setCenter(centerBox);
 
         outputArea.setEditable(false);
         outputArea.setWrapText(true);
-        outputArea.setStyle("-fx-font-family: 'Consolas', monospace;");
+        outputArea.setPrefRowCount(8);
+        outputArea.getStyleClass().add("project-creation-output");
         outputArea.textProperty().addListener((observable, oldValue, newValue) -> {
             outputArea.setScrollTop(Double.MAX_VALUE);
         });
+        
+        var outputScrollPane = new ScrollPane(outputArea);
+        outputScrollPane.setFitToWidth(true);
+        outputScrollPane.setFitToHeight(true);
+        outputScrollPane.setPrefHeight(200);
+        outputScrollPane.getStyleClass().add("project-creation-output-scroll");
 
-        var progressBox = new RRVBox(10);
-        progressBox.setAlignment(Pos.CENTER);
-        progressBox.getChildren().addAll(timeElapsedLabel, taskLabel);
-        setBottom(progressBox);
+        var bottomBox = new RRVBox(16);
+        bottomBox.setAlignment(Pos.CENTER);
+        
+        var buttonBox = new HBox(12);
+        buttonBox.setAlignment(Pos.CENTER);
+        
+        cancelButton.setVariant(RRButton.ButtonVariant.SECONDARY);
+        cancelButton.setOnAction(e -> handleCancel());
+        
+        buttonBox.getChildren().add(cancelButton);
+        bottomBox.getChildren().addAll(outputScrollPane, buttonBox);
+        setBottom(bottomBox);
 
-        setTop(new Label("Creating project..."));
-        setAlignment(getTop(), Pos.CENTER);
-        progressSpinner.setProgress(0);
+        ShutdownHooks.addHook(() -> {
+            if (!executor.isShutdown())
+                executor.shutdownNow();
+        });
+    }
 
+    private void startProjectCreation() {
         var task = new ProjectCreationTask(data);
         progressSpinner.progressProperty().bind(task.progressProperty());
+        
         task.setOnSucceeded(event -> {
             try {
                 if (!executor.awaitTermination(1, TimeUnit.SECONDS))
@@ -81,11 +133,33 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             } catch (InterruptedException exception) {
                 Railroad.LOGGER.error("An error occurred while waiting for the executor to terminate.", exception);
             }
-
-            // Open project in IDE
+            
+            // Project created successfully - open in IDE
+            Platform.runLater(() -> {
+                try {
+                    Path projectPath = data.projectPath().resolve(data.projectName());
+                    Project project = new Project(projectPath, data.projectName());
+                    Railroad.switchToIDE(project);
+                } catch (Exception e) {
+                    Railroad.LOGGER.error("Failed to open project in IDE", e);
+                    showErrorAndReturnToWelcome("railroad.project.creation.error.open_ide.title", 
+                                              "railroad.project.creation.error.open_ide.header", 
+                                              "railroad.project.creation.error.open_ide.content");
+                }
+            });
+        });
+        
+        task.setOnFailed(event -> {
+            Throwable exception = task.getException();
+            Railroad.LOGGER.error("Project creation failed", exception);
+            
+            String errorMessage = exception != null ? exception.getMessage() : "Unknown error";
+            showErrorAndReturnToWelcome("railroad.project.creation.error.title", 
+                                      "railroad.project.creation.error.forge.header", 
+                                      "railroad.project.creation.error.content", errorMessage);
         });
 
-        new Thread(task).start(); // TODO: Don't create a thread in the constructor
+        new Thread(task).start();
 
         executor.scheduleAtFixedRate(() -> {
             long timeElapsed = System.currentTimeMillis() - startTime;
@@ -98,29 +172,52 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             if (minutes > 0) {
                 timeElapsedString = "%d minutes, ".formatted(minutes) + timeElapsedString;
             }
-
             if (hours > 0) {
                 timeElapsedString = "%d hours, ".formatted(hours) + timeElapsedString;
             }
 
             final String finalTimeElapsedString = timeElapsedString;
-            Platform.runLater(() -> timeElapsedLabel.setText("Time elapsed: " + finalTimeElapsedString));
+            Platform.runLater(() -> timeElapsedLabel.setKey("railroad.project.creation.status.time_elapsed", finalTimeElapsedString));
         }, 1, 1, TimeUnit.SECONDS);
+    }
 
-        ShutdownHooks.addHook(() -> {
-            if (!executor.isShutdown())
+    private void handleCancel() {
+        Railroad.showErrorAlert("railroad.project.creation.cancel.title", 
+                               "railroad.project.creation.cancel.header", 
+                               "railroad.project.creation.cancel.content", 
+                               buttonType -> {
+            if (buttonType == ButtonType.OK) {
                 executor.shutdownNow();
+                returnToWelcome();
+            }
         });
     }
 
-    private static void showErrorAlert(String title, String header, String content) {
-        Platform.runLater(() -> {
-            var alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle(title);
-            alert.setHeaderText(header);
-            alert.setContentText(content);
+    private void showErrorAndReturnToWelcome(String titleKey, String headerKey, String contentKey) {
+        showErrorAndReturnToWelcome(titleKey, headerKey, contentKey, null);
+    }
 
-            alert.showAndWait();
+    private void showErrorAndReturnToWelcome(String titleKey, String headerKey, String contentKey, String additionalInfo) {
+        Platform.runLater(() -> {
+            String title = L18n.localize(titleKey);
+            String header = L18n.localize(headerKey);
+            String content = L18n.localize(contentKey);
+            
+            if (additionalInfo != null) {
+                content += "\n\n" + additionalInfo;
+            }
+            
+            Railroad.showErrorAlert(title, header, content, buttonType -> {
+                if (buttonType == ButtonType.OK) {
+                    returnToWelcome();
+                }
+            });
+        });
+    }
+
+    private void returnToWelcome() {
+        Platform.runLater(() -> {
+            getScene().setRoot(new WelcomePane());
         });
     }
 
@@ -150,7 +247,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
         @Override
         protected Void call() {
             try {
-                updateLabel("Creating project directory...");
+                updateLabel("railroad.project.creation.task.creating_directory");
                 Path projectPath = data.projectPath().resolve(data.projectName());
                 Files.createDirectories(projectPath);
                 updateProgress(1, 17);
@@ -159,28 +256,31 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 downloadExampleMod(projectPath);
                 updateGradleProperties(projectPath);
 
-                Path mainJava = projectPath.resolve("src/main/java/");
-                Path oldPath = mainJava.resolve("com/example/examplemod/");
+                Path mainJava = projectPath.resolve("src/main/java");
                 String newFolderPath = data.groupId().replace(".", "/") + "/" + data.modId();
+                Path oldPath = mainJava.resolve("com/example/examplemod");
                 Path newPath = mainJava.resolve(newFolderPath);
-                renamePackages(oldPath, newPath, mainJava);
 
+                renamePackages(oldPath, newPath, mainJava);
                 updateModsToml(projectPath);
                 refactorExampleClasses(newPath);
 
+                Map<String, Object> args = createArgs(data);
                 var shell = new GroovyShell();
                 var templateEngine = new StreamingTemplateEngine();
-                Map<String, Object> args = createArgs(data);
-                if (!updateBuildGradle(projectPath, args, shell, templateEngine))
-                    return null;
 
-                if (!updateSettingsGradle(projectPath, args, shell, templateEngine))
-                    return null;
+                if (!updateBuildGradle(projectPath, args, shell, templateEngine)) {
+                    throw new RuntimeException("Failed to update build.gradle");
+                }
+
+                if (!updateSettingsGradle(projectPath, args, shell, templateEngine)) {
+                    throw new RuntimeException("Failed to update settings.gradle");
+                }
 
                 createMixinsJson(projectPath);
                 createAccessTransformer(projectPath);
 
-                updateLabel("Creating project...");
+                updateLabel("railroad.project.creation.task.creating_project");
                 Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, this.data.projectName()));
                 updateProgress(14, 17);
                 Railroad.LOGGER.info("Project created successfully.");
@@ -190,39 +290,41 @@ public class ForgeProjectCreationPane extends RRBorderPane {
 
                 updateProgress(17, 17);
                 Railroad.LOGGER.info("Project created successfully.");
-                updateLabel("Project created successfully.");
+                updateLabel("railroad.project.creation.task.project_created");
             } catch (Exception exception) {
-                // Handle errors
-                Platform.runLater(() -> Railroad.showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage()));
                 Railroad.LOGGER.error("An error occurred while creating the project.", exception);
+                throw new RuntimeException("Project creation failed: " + exception.getMessage(), exception);
             }
-
             return null;
         }
 
-        public void updateLabel(String text) {
-            Platform.runLater(() -> taskLabel.setText(text));
+        public void updateLabel(String translationKey) {
+            Platform.runLater(() -> taskLabel.setKey(translationKey));
+        }
+
+        public void updateLabel(String translationKey, Object... args) {
+            Platform.runLater(() -> taskLabel.setKey(translationKey, args));
         }
 
         private void downloadExampleMod(Path projectPath) throws IOException {
-            updateLabel("Downloading Forge MDK...");
+            updateLabel("railroad.project.creation.task.downloading_mdk", "Forge");
             String fileName = data.minecraftVersion().id() + "-" + data.forgeVersion().id();
             FileHandler.copyUrlToFile("https://maven.minecraftforge.net/net/minecraftforge/forge/" + fileName + "/forge-" + fileName + "-mdk.zip",
                     Path.of(projectPath.resolve(fileName) + ".zip"));
             updateProgress(2, 17);
             Railroad.LOGGER.info("Forge MDK downloaded successfully.");
 
-            updateLabel("Unzipping Forge MDK...");
+            updateLabel("railroad.project.creation.task.unzipping_mdk", "Forge");
             FileHandler.unzipFile(projectPath.resolve(fileName + ".zip"), projectPath);
             updateProgress(3, 17);
             Railroad.LOGGER.info("Forge MDK unzipped successfully.");
 
-            updateLabel("Deleting Forge MDK zip...");
+            updateLabel("railroad.project.creation.task.deleting_zip", "Forge");
             Files.deleteIfExists(Path.of(projectPath.resolve(fileName) + ".zip"));
             updateProgress(4, 17);
             Railroad.LOGGER.info("Forge MDK zip deleted successfully.");
 
-            updateLabel("Deleting unnecessary files...");
+            updateLabel("railroad.project.creation.task.deleting_files");
             Files.deleteIfExists(projectPath.resolve("changelog.txt"));
             Files.deleteIfExists(projectPath.resolve("CREDITS.txt"));
             Files.deleteIfExists(projectPath.resolve("LICENSE.txt"));
@@ -232,6 +334,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
         }
 
         private void updateGradleProperties(Path projectPath) throws IOException {
+            updateLabel("railroad.project.creation.task.updating_gradle");
             Path gradlePropertiesFile = projectPath.resolve("gradle.properties");
             String mappingChannel = data.mappingChannel().getName().toLowerCase(Locale.ROOT);
             if (data.mappingChannel() == MappingChannel.MOJMAP) {
@@ -259,7 +362,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
         }
 
         private void renamePackages(Path oldPath, Path newPath, Path mainJava) throws IOException {
-            updateLabel("Updating package name...");
+            updateLabel("railroad.project.creation.task.updating_package");
             Files.createDirectories(newPath.getParent());
             Files.move(oldPath, newPath);
 
@@ -272,7 +375,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
         }
 
         private void updateModsToml(Path projectPath) throws IOException {
-            updateLabel("Updating mods.toml...");
+            updateLabel("railroad.project.creation.task.updating_mods_toml");
             Path modsToml = projectPath.resolve("src/main/resources/META-INF/mods.toml");
             List<String> lines = Files.readAllLines(modsToml);
             lines = lines.stream()
@@ -301,7 +404,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
         }
 
         private void refactorExampleClasses(Path newPath) throws IOException {
-            updateLabel("Refactoring example classes...");
+            updateLabel("railroad.project.creation.task.refactoring_classes");
             Path mainClass = newPath.resolve("ExampleMod.java");
             Path configClass = newPath.resolve("Config.java");
 
@@ -321,7 +424,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
         }
 
         private boolean updateBuildGradle(Path projectPath, Map<String, Object> args, GroovyShell shell, StreamingTemplateEngine templateEngine) throws IOException, ClassNotFoundException {
-            updateLabel("Updating build.gradle...");
+            updateLabel("railroad.project.creation.task.updating_build_gradle");
             Path buildGradle = projectPath.resolve("build.gradle");
             String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(data.minecraftVersion().id().substring(2));
             if(FileHandler.is404(templateBuildGradleUrl)) {
@@ -329,15 +432,13 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             }
 
             if(FileHandler.is404(templateBuildGradleUrl)) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "No build.gradle template found for the specified Minecraft version.");
-                return false;
+                throw new RuntimeException("No build.gradle template found for the specified Minecraft version.");
             }
 
             FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
             String buildGradleContent = Files.readString(buildGradle);
             if (!buildGradleContent.startsWith("// fileName:")) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "build.gradle template is invalid.");
-                return false;
+                throw new RuntimeException("build.gradle template is invalid.");
             }
 
             int newLineIndex = buildGradleContent.indexOf("\n");
@@ -347,8 +448,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
 
             Object result = shell.parse(buildGradleContent.substring("// fileName:".length() + 1, newLineIndex), binding).run();
             if (result == null) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "build.gradle template is invalid.");
-                return false;
+                throw new RuntimeException("build.gradle template is invalid.");
             }
 
             var buffer = new StringBuffer();
@@ -362,7 +462,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
         }
 
         private boolean updateSettingsGradle(Path projectPath, Map<String, Object> args, GroovyShell shell, StreamingTemplateEngine templateEngine) throws IOException, ClassNotFoundException {
-            updateLabel("Updating settings.gradle...");
+            updateLabel("railroad.project.creation.task.updating_settings_gradle");
             Path settingsGradle = projectPath.resolve("settings.gradle");
             String templateSettingsGradleUrl = TEMPLATE_SETTINGS_GRADLE_URL.formatted(data.minecraftVersion().id().substring(2));
             if(FileHandler.is404(templateSettingsGradleUrl)) {
@@ -370,15 +470,13 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             }
 
             if(FileHandler.is404(templateSettingsGradleUrl)) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "No settings.gradle template found for the specified Minecraft version.");
-                return false;
+                throw new RuntimeException("No settings.gradle template found for the specified Minecraft version.");
             }
 
             FileHandler.copyUrlToFile(templateSettingsGradleUrl, settingsGradle);
             String settingsGradleContent = Files.readString(settingsGradle);
             if (!settingsGradleContent.startsWith("// fileName:")) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "settings.gradle template is invalid.");
-                return false;
+                throw new RuntimeException("settings.gradle template is invalid.");
             }
 
             int newLineIndex = settingsGradleContent.indexOf("\n");
@@ -388,8 +486,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
 
             Object result = shell.parse(settingsGradleContent.substring("// fileName:".length() + 1, newLineIndex), binding).run();
             if (result == null) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "settings.gradle template is invalid.");
-                return false;
+                throw new RuntimeException("settings.gradle template is invalid.");
             }
 
             var buffer = new StringBuffer();
@@ -404,7 +501,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
 
         private void createMixinsJson(Path projectPath) throws IOException {
             if (data.useMixins()) {
-                updateLabel("Creating " + data.modId() + ".mixins.json...");
+                updateLabel("railroad.project.creation.task.creating_mixins");
                 Path mixinsJson = projectPath.resolve("src/main/resources/" + data.modId() + ".mixins.json");
 
                 var mixins = new JsonObject();
@@ -427,7 +524,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
 
         private void createAccessTransformer(Path projectPath) throws IOException {
             if (data.useAccessTransformer()) {
-                updateLabel("Creating accesstransformer.cfg...");
+                updateLabel("railroad.project.creation.task.creating_access_transformer");
                 Path accessTransformer = projectPath.resolve("src/main/resources/META-INF/accesstransformer.cfg");
                 Files.createFile(accessTransformer);
                 updateProgress(13, 17);
@@ -436,7 +533,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
         }
 
         private void setupGradle(Path projectPath) {
-            updateLabel("Running Gradle tasks...");
+            updateLabel("railroad.project.creation.task.setup_gradle");
             var connector = GradleConnector.newConnector();
             connector.forProjectDirectory(projectPath.toFile());
             try (ProjectConnection connection = connector.connect()) {
@@ -453,15 +550,14 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 Railroad.LOGGER.info("Gradle tasks run successfully.");
                 Platform.runLater(() -> centerBox.getChildren().remove(outputArea));
             } catch (BuildException exception) {
-                showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
-                Railroad.LOGGER.error("An error occurred while running Gradle tasks.", exception);
+                throw new RuntimeException("Failed to run Gradle tasks: " + exception.getMessage(), exception);
             }
         }
 
         private void createGitRepository(Path projectPath) {
             // Create git repository
             if (data.createGit()) {
-                updateLabel("Creating git repository...");
+                updateLabel("railroad.project.creation.task.creating_git");
                 try {
                     var processBuilder = new ProcessBuilder("git", "init");
                     processBuilder.directory(projectPath.toFile());
@@ -471,8 +567,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                     updateProgress(16, 17);
                     Railroad.LOGGER.info("Git repository created successfully.");
                 } catch (IOException | InterruptedException exception) {
-                    showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
-                    Railroad.LOGGER.error("An error occurred while creating the git repository.", exception);
+                    throw new RuntimeException("Failed to create git repository: " + exception.getMessage(), exception);
                 }
             }
         }

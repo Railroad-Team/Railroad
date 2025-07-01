@@ -2,7 +2,6 @@ package io.github.railroad.plugin;
 
 import lombok.Getter;
 
-import java.util.Collections;
 import java.util.EventObject;
 
 @Getter

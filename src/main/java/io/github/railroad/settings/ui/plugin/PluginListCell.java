@@ -73,7 +73,7 @@ public class PluginListCell extends ListCell<Plugin> {
 
             var nameLabel = new Label();
             nameLabel.textProperty().bind(plugin.flatMap(Plugin::nameProperty));
-            nameLabel.setStyle("-fx-font-size: 16px;");
+            nameLabel.getStyleClass().add("plugin-name-label");
 
             var icon = new ImageView();
             icon.setFitWidth(32);

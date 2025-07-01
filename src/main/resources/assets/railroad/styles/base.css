@@ -4,7 +4,6 @@
 }
 
 .project-list-cell {
-    -fx-padding: 2px;
     -fx-background-color: transparent, -color-bg-inset;
     -fx-background-insets: 0px, 2px;
 }
@@ -23,32 +22,29 @@
     -fx-background-color: -color-bg-inset;
 }
 
+.project-type-pane {
+    -fx-background-color: transparent;
+}
+
 .welcome-left-pane-list, .welcome-projects-list, .project-type-list, .settings-categories-list {
     -fx-background-color: -color-bg-inset;
     -fx-border-width: 0;
 }
 
 .list-cell {
-    -fx-background-color: -color-bg-overlay;
     -fx-cell-size: 40;
-}
-
-.list-cell:hover {
-    -fx-background-color: -color-base-8;
-}
-
-.list-cell:empty {
-    -fx-background-color: inherit;
 }
 
 .settings-title {
     -fx-font-size: 20pt;
     -fx-font-weight: bold;
+    -fx-padding: 0;
 }
 
 .combo-box-base {
     -fx-border-width: 1;
     -fx-border-color: -color-border-default;
+    -fx-padding: 0 0 0 12px;
 }
 
 LocalizedText {
@@ -69,4 +65,30 @@ LocalizedText {
 
 .icon-bar-horizontal, .icon-bar-vertical {
     -fx-background-color: -color-bg-inset;
+}
+
+/* Remove border/background for selected sidebar items in the sidebar */
+.welcome-left-pane-list .list-cell:selected,
+.rr-navigation-item.selected {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-effect: none;
+}
+
+.rr-card.elevated-1 {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 12, 0.2, 0, 2);
+}
+.rr-card.elevated-2 {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 12, 0.2, 0, 2);
+}
+
+.list-cell,
+.list-cell:filled,
+.list-cell:empty,
+.list-cell:selected,
+.list-cell:focused,
+.list-cell:hover {
+    -fx-background-color: transparent !important;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
 }

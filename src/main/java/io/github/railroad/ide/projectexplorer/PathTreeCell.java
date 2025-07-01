@@ -8,10 +8,10 @@ import io.github.railroad.utility.FileHandler;
 import javafx.application.Platform;
 import javafx.beans.property.StringProperty;
 import javafx.scene.Node;
+import javafx.scene.control.*;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
-import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyCode;
 import javafx.stage.Window;
@@ -26,6 +26,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
     private Path editingPath;
     private final StringProperty messageProperty;
     private final RRBorderPane mainPane;
+    private boolean allowEdit = false;
 
     public PathTreeCell(StringProperty messageProperty, RRBorderPane mainPane) {
         super();
@@ -41,6 +42,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
         if (empty) {
             setText(null);
             setGraphic(null);
+            setOnMouseClicked(null);
         } else {
             String text = getString();
             Node image = FileHandler.getIcon(item.getPath());
@@ -54,16 +56,26 @@ public class PathTreeCell extends TreeCell<PathItem> {
                 var hbox = new RRHBox();
                 hbox.getChildren().addAll(image, textField);
                 setGraphic(hbox);
+                setOnMouseClicked(null);
             } else {
                 setText(text);
                 setGraphic(image);
 
                 setContextMenu(createContextMenu(this, mainPane));
 
-                // TODO: Find a way to do this
-//                styleProperty().bind(itemProperty()
-//                        .flatMap(PathItem::cutProperty)
-//                        .map(cut -> cut != null && cut ? "-fx-text-fill: #f0f0f0;" : ""));
+                // Double-click to open, not rename
+                setOnMouseClicked(event -> {
+                    if (event.getClickCount() == 2 && !event.isConsumed() && getItem() != null) {
+                        Path path = getItem().getPath();
+                        if (Files.isDirectory(path)) {
+                            TreeItem<PathItem> treeItem = getTreeItem();
+                            treeItem.setExpanded(!treeItem.isExpanded());
+                        } else {
+                            ProjectExplorerPane.openFile(getItem(), mainPane);
+                        }
+                        event.consume();
+                    }
+                });
             }
         }
     }
@@ -108,7 +120,10 @@ public class PathTreeCell extends TreeCell<PathItem> {
         var rename = new MenuItem("Rename");
         var delete = new MenuItem("Delete");
 
-        rename.setOnAction(event -> cell.startEdit());
+        rename.setOnAction(event -> {
+            cell.allowEdit = true;
+            cell.startEdit();
+        });
         delete.setOnAction(event -> DeleteDialog.open(window, currentPath));
 
         var openIn = new Menu("Open In");
@@ -145,27 +160,40 @@ public class PathTreeCell extends TreeCell<PathItem> {
         return menu;
     }
 
+    /**
+     * Starts the editing mode for the tree cell.
+     * Creates a text field for renaming the file or directory.
+     */
     @Override
     public void startEdit() {
-        super.startEdit();
-        if (textField == null) {
-            createTextField();
-        }
+        if (allowEdit) {
+            allowEdit = false;
+            super.startEdit();
+            if (textField == null) {
+                createTextField();
+            }
 
-        setText(null);
+            setText(null);
 
-        var hbox = new RRHBox();
-        hbox.getChildren().addAll(FileHandler.getIcon(getItem().getPath()), textField);
-        setGraphic(hbox);
-        textField.selectAll();
+            var hbox = new RRHBox();
+            hbox.getChildren().addAll(FileHandler.getIcon(getItem().getPath()), textField);
+            setGraphic(hbox);
+            textField.selectAll();
 
-        if (getItem() == null) {
-            editingPath = null;
-        } else {
-            editingPath = getItem().getPath();
+            if (getItem() == null) {
+                editingPath = null;
+            } else {
+                editingPath = getItem().getPath();
+            }
         }
     }
 
+    /**
+     * Commits the edit by renaming the file or directory.
+     * Moves the file to the new path and updates the item.
+     * 
+     * @param newValue the new PathItem with the updated path
+     */
     @Override
     public void commitEdit(PathItem newValue) {
         if (editingPath != null) {
@@ -187,6 +215,9 @@ public class PathTreeCell extends TreeCell<PathItem> {
         setGraphic(FileHandler.getIcon(newValue.getPath()));
     }
 
+    /**
+     * Cancels the editing mode and restores the original display.
+     */
     @Override
     public void cancelEdit() {
         super.cancelEdit();

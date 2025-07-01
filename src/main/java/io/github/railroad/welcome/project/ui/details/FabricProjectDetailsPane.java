@@ -1,6 +1,9 @@
 package io.github.railroad.welcome.project.ui.details;
 
-import io.github.railroad.form.*;
+import io.github.railroad.form.Form;
+import io.github.railroad.form.FormComponent;
+import io.github.railroad.form.FormData;
+import io.github.railroad.form.FormSection;
 import io.github.railroad.form.impl.*;
 import io.github.railroad.project.data.FabricProjectData;
 import io.github.railroad.project.License;
@@ -14,7 +17,10 @@ import io.github.railroad.project.minecraft.mapping.MappingVersion;
 import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.welcome.project.ProjectType;
 import io.github.railroad.welcome.project.ui.widget.StarableListCell;
-import javafx.beans.property.*;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.CheckBox;
@@ -393,7 +399,8 @@ public class FabricProjectDetailsPane extends RRVBox {
 
         getChildren().add(form.createUI());
 
-        projectPathComponent.getComponent().addInformationLabel("railroad.project.creation.location.info", createdAtPath, (projectPathField.get().getText() == null ? "" : projectPathField.get().getText()) + "\\" + (projectNameField.get().getText() == null ? "" : projectNameField.get().getText()));
+        String path = projectPathField.get().getText() == null ? "" : projectPathField.get().getText();
+        projectPathComponent.getComponent().addInformationLabel("railroad.project.creation.location.info", path + "\\" + projectNameField.get().getText().trim());
 
         ComboBox<MappingVersion> mappingVersionComboBox = this.mappingVersionComboBox.get();
         MappingHelper.loadMappingsVersions(mappingVersionComboBox.getItems(), minecraftVersionComboBox.get().getValue(), mappingChannelComboBox.get().getValue());

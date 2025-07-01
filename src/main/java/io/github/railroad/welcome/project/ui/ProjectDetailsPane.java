@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class ProjectDetailsPane extends ScrollPane {
     private final Map<ProjectType, Node> projectDetailsPanes = new HashMap<>();
-    private final ObjectProperty<ProjectType> projectType = new SimpleObjectProperty<>(ProjectType.FORGE);
+    private final ObjectProperty<ProjectType> projectType = new SimpleObjectProperty<>(ProjectType.FABRIC);
 
     public ProjectDetailsPane() {
         setFitToWidth(true);

@@ -1,67 +1,144 @@
 package io.github.railroad.settings.ui.themes;
 
-import io.github.railroad.localization.ui.LocalizedButton;
-import io.github.railroad.ui.defaults.RRHBox;
-import io.github.railroad.ui.defaults.RRStackPane;
+import io.github.railroad.ui.nodes.RRButton;
+import io.github.railroad.ui.nodes.RRCard;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
-import javafx.scene.layout.Background;
-import javafx.scene.text.TextAlignment;
-import javafx.stage.Screen;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import org.gradle.internal.impldep.org.apache.commons.lang.WordUtils;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import org.kordamp.ikonli.javafx.FontIcon;
 
+/**
+ * A modernized theme download cell with improved visual design and user experience.
+ * Features a card-based layout with clear action buttons and better information hierarchy.
+ */
 public class ThemeDownloadCell extends ListCell<Theme> {
-    private final RRStackPane node = new RRStackPane();
-    private final ThemeDownloadNode themeDownloadNode = new ThemeDownloadNode();
-    private final LocalizedButton downloadButton = new LocalizedButton("railroad.home.settings.appearance.download");
-    private final Button previewButton = new Button();
+    private final RRCard card;
+    private final HBox content;
+    private final VBox infoSection;
+    private final HBox actionSection;
+    private final Label themeNameLabel;
+    private final Label themeSizeLabel;
+    private final RRButton downloadButton;
+    private final RRButton previewButton;
+    private final ObjectProperty<Theme> themeProperty = new SimpleObjectProperty<>();
 
+    /**
+     * Constructs a new ThemeDownloadCell with modern card-based layout and action buttons.
+     * Sets up the visual components including theme information display and download/preview buttons.
+     */
     public ThemeDownloadCell() {
-        setPrefHeight(75);
+        super();
+        getStyleClass().add("theme-download-cell");
 
-        var box = new RRHBox();
-        box.setAlignment(Pos.CENTER_RIGHT);
-        box.setSpacing(10);
+        card = new RRCard(12, new Insets(16));
+        card.setInteractive(false);
+        card.getStyleClass().add("theme-download-card");
 
-        setPadding(new Insets(5));
-        setMaxWidth(Screen.getPrimary().getBounds().getMaxX());
+        content = new HBox(16);
+        content.setAlignment(Pos.CENTER_LEFT);
 
-        previewButton.setAlignment(Pos.BASELINE_CENTER);
-        previewButton.setGraphic(new FontIcon(FontAwesomeSolid.EYE));
-        previewButton.setBackground(Background.EMPTY);
+        infoSection = new VBox(4);
+        infoSection.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(infoSection, Priority.ALWAYS);
 
-        downloadButton.setPrefWidth(87.2);
-        downloadButton.setAlignment(Pos.CENTER);
-        downloadButton.setTextAlignment(TextAlignment.JUSTIFY);
+        themeNameLabel = new Label();
+        themeNameLabel.getStyleClass().add("theme-download-name");
 
-        themeDownloadNode.setAlignment(Pos.CENTER_LEFT);
+        themeSizeLabel = new Label();
+        themeSizeLabel.getStyleClass().add("theme-download-size");
 
-        downloadButton.setOnAction(action -> {
-            boolean resolved = ThemeDownloadManager.downloadTheme(themeDownloadNode.themePropertyProperty().get());
-            this.downloadButton.setKey(resolved ? "railroad.home.settings.appearance.installed" : "railroad.home.settings.appearance.download");
-            this.downloadButton.setDisable(resolved);
+        infoSection.getChildren().addAll(themeNameLabel, themeSizeLabel);
+
+        actionSection = new HBox(8);
+        actionSection.setAlignment(Pos.CENTER_RIGHT);
+
+        previewButton = new RRButton();
+        previewButton.setIcon(FontAwesomeSolid.EYE);
+        previewButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        previewButton.setVariant(RRButton.ButtonVariant.GHOST);
+        previewButton.setTooltip(new Tooltip("Preview theme"));
+
+        downloadButton = new RRButton("railroad.home.settings.appearance.download");
+        downloadButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        downloadButton.setVariant(RRButton.ButtonVariant.PRIMARY);
+
+        actionSection.getChildren().addAll(previewButton, downloadButton);
+
+        content.getChildren().addAll(infoSection, actionSection);
+        card.addContent(content);
+
+        setupEventHandlers();
+        setupPropertyBindings();
+    }
+
+    private void setupEventHandlers() {
+        downloadButton.setOnAction(e -> {
+            Theme theme = themeProperty.get();
+            if (theme != null) {
+                boolean success = ThemeDownloadManager.downloadTheme(theme);
+                updateDownloadButtonState(success);
+            }
         });
 
-        themeDownloadNode.themePropertyProperty().addListener((observable, oldValue, newValue) -> {
-            boolean isDownloaded = newValue != null && ThemeDownloadManager.isDownloaded(newValue);
-            this.downloadButton.setKey(isDownloaded ? "railroad.home.settings.appearance.installed" : "railroad.home.settings.appearance.download");
-            this.downloadButton.setDisable(isDownloaded);
+        previewButton.setOnAction(e -> {
+            Theme theme = themeProperty.get();
+            if (theme != null) {
+                new ThemeExamplePane(theme.getName());
+            }
         });
+    }
 
-        previewButton.setOnAction(action -> {
-            new ThemeExamplePane(themeDownloadNode.themePropertyProperty().map(Theme::getName).getValue());
+    private void setupPropertyBindings() {
+        ObservableValue<String> themeName = themeProperty.map(theme ->
+                WordUtils.capitalize(
+                        theme.getName()
+                                .replace("\"", "")
+                                .replace(".css", "")
+                                .replace("-", " ")
+                ));
+        themeNameLabel.textProperty().bind(themeName);
+
+        ObservableValue<String> themeSize = themeProperty.map(theme -> {
+            if (theme.getSize() > 0) {
+                double sizeKB = theme.getSize() / 1024.0;
+                if (sizeKB < 1024) {
+                    return String.format("%.1f KB", sizeKB);
+                } else {
+                    double sizeMB = sizeKB / 1024.0;
+                    return String.format("%.1f MB", sizeMB);
+                }
+            }
+            return "";
         });
+        themeSizeLabel.textProperty().bind(themeSize);
 
-        box.getChildren().addAll(downloadButton, previewButton);
-        node.getChildren().addAll(themeDownloadNode, box);
+        themeProperty.addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                boolean isDownloaded = ThemeDownloadManager.isDownloaded(newValue);
+                updateDownloadButtonState(isDownloaded);
+            }
+        });
+    }
+
+    private void updateDownloadButtonState(boolean isDownloaded) {
+        if (isDownloaded) {
+            downloadButton.setLocalizedText("railroad.home.settings.appearance.installed");
+            downloadButton.setVariant(RRButton.ButtonVariant.SUCCESS);
+            downloadButton.setDisable(true);
+        } else {
+            downloadButton.setLocalizedText("railroad.home.settings.appearance.download");
+            downloadButton.setVariant(RRButton.ButtonVariant.PRIMARY);
+            downloadButton.setDisable(false);
+        }
     }
 
     @Override
@@ -71,44 +148,10 @@ public class ThemeDownloadCell extends ListCell<Theme> {
         if (empty || item == null) {
             setText(null);
             setGraphic(null);
-            themeDownloadNode.themePropertyProperty().set(null);
+            themeProperty.set(null);
         } else {
-            themeDownloadNode.themePropertyProperty().set(item);
-            setGraphic(node);
+            themeProperty.set(item);
+            setGraphic(card);
         }
     }
-
-    public static class ThemeDownloadNode extends RRHBox {
-        private final ObjectProperty<Theme> themeProperty = new SimpleObjectProperty<>();
-
-        public ThemeDownloadNode() {
-            getStyleClass().add("project-list-node");
-            setSpacing(5);
-            setPadding(new Insets(10));
-
-            ObservableValue<String> themeName = themeProperty.map(theme ->
-                    WordUtils.capitalize(
-                            theme.getName()
-                                    .replace("\"", "")
-                                    .replace(".css", "")
-                                    .replace("-", " ")
-                    ));
-
-            var themeLabel = new Label();
-            themeLabel.textProperty().bind(themeName);
-            themeLabel.setAlignment(Pos.BASELINE_LEFT);
-            themeLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16;");
-
-            getChildren().addAll(themeLabel);
-        }
-
-        public ThemeDownloadNode(Theme obj) {
-            this();
-            this.themeProperty.set(obj);
-        }
-
-        public ObjectProperty<Theme> themePropertyProperty() {
-            return themeProperty;
-        }
-    }
-}
+} 

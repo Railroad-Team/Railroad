@@ -93,7 +93,7 @@ public class FormSection {
         vbox.setPadding(padding);
 
         var title = new LocalizedText(titleKey);
-        title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+        title.getStyleClass().add("form-section-title");
         titleConsumer.accept(title);
         vbox.getChildren().add(title);
 

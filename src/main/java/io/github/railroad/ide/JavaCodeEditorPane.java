@@ -154,7 +154,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
             // Create GridPane with two columns
             var grid = new GridPane();
             grid.setHgap(5); // Horizontal spacing between columns
-            grid.setStyle("-fx-background-color: #333742;"); // Darker background (dark gray)
+            grid.getStyleClass().add("ide-java-code-editor-grid");
 
             // Column for line numbers (expands to fill space)
             var lineNumberColumn = new ColumnConstraints();
@@ -173,7 +173,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
             lineNumber.setTextFill(Color.LIGHTGRAY); // Optional: lighter text for contrast
             grid.add(lineNumber, 0, 0); // Place in first column
 
-            // Add icon and tooltip if there’s an error or warning
+            // Add icon and tooltip if there's an error or warning
             Diagnostic.Kind kind = lineToSeverity.get(line + 1); // 1-based line numbers
             if (kind != null) {
                 var icon = new MFXFontIcon(kind == Diagnostic.Kind.ERROR ?

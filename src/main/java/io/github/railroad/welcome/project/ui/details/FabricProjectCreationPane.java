@@ -7,6 +7,8 @@ import groovy.lang.GroovyShell;
 import groovy.text.StreamingTemplateEngine;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import io.github.railroad.Railroad;
+import io.github.railroad.localization.L18n;
+import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.project.data.FabricProjectData;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.minecraft.FabricAPIVersion;
@@ -14,16 +16,20 @@ import io.github.railroad.project.minecraft.MinecraftVersion;
 import io.github.railroad.project.minecraft.mapping.MappingChannel;
 import io.github.railroad.ui.defaults.RRBorderPane;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.nodes.RRButton;
 import io.github.railroad.utility.FileHandler;
 import io.github.railroad.utility.ShutdownHooks;
 import io.github.railroad.utility.function.ExceptionlessRunnable;
 import io.github.railroad.utility.javafx.TextAreaOutputStream;
+import io.github.railroad.welcome.WelcomePane;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
+import javafx.scene.layout.HBox;
 import org.codehaus.groovy.runtime.StringBufferWriter;
 import org.gradle.tooling.BuildException;
 import org.gradle.tooling.GradleConnector;
@@ -49,37 +55,83 @@ public class FabricProjectCreationPane extends RRBorderPane {
     private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/fabric/%s/template_build.gradle";
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    private final RRVBox centerBox = new RRVBox(10);
-    private final Label timeElapsedLabel = new Label("");
-    private final Label taskLabel = new Label();
+    private final RRVBox centerBox = new RRVBox(20);
+    private final LocalizedLabel timeElapsedLabel = new LocalizedLabel("railroad.project.creation.status.time_elapsed", "");
+    private final LocalizedLabel taskLabel = new LocalizedLabel("railroad.project.creation.status.task", "");
     private final long startTime = System.currentTimeMillis();
     private final TextArea outputArea = new TextArea();
+    private final MFXProgressSpinner progressSpinner = new MFXProgressSpinner();
+    private final RRButton cancelButton = new RRButton("railroad.generic.cancel");
+    private final FabricProjectData data;
 
     public FabricProjectCreationPane(FabricProjectData data) {
+        this.data = data;
+        setupUI();
+        startProjectCreation();
+    }
+
+    private void setupUI() {
+        setPadding(new Insets(24));
+        
+        var headerBox = new RRVBox(8);
+        headerBox.setAlignment(Pos.CENTER);
+        var titleLabel = new LocalizedLabel("railroad.project.creation.status.creating_fabric");
+        titleLabel.getStyleClass().add("project-creation-title");
+        var subtitleLabel = new LocalizedLabel("railroad.project.creation.status.creating_fabric.subtitle", data.projectName());
+        subtitleLabel.getStyleClass().add("project-creation-subtitle");
+        headerBox.getChildren().addAll(titleLabel, subtitleLabel);
+        setTop(headerBox);
+
         centerBox.setAlignment(Pos.CENTER);
-        var progressSpinner = new MFXProgressSpinner();
-        centerBox.getChildren().addAll(progressSpinner);
-        progressSpinner.setRadius(50);
+        centerBox.setMaxWidth(600);
+
+        progressSpinner.setRadius(60);
+        progressSpinner.setProgress(0);
+
+        var progressInfoBox = new RRVBox(12);
+        progressInfoBox.setAlignment(Pos.CENTER);
+        progressInfoBox.getChildren().addAll(taskLabel, timeElapsedLabel);
+        
+        centerBox.getChildren().addAll(progressSpinner, progressInfoBox);
         setCenter(centerBox);
 
         outputArea.setEditable(false);
         outputArea.setWrapText(true);
-        outputArea.setStyle("-fx-font-family: 'Consolas', monospace;");
+        outputArea.setPrefRowCount(8);
+        outputArea.getStyleClass().add("project-creation-output");
         outputArea.textProperty().addListener((observable, oldValue, newValue) -> {
             outputArea.setScrollTop(Double.MAX_VALUE);
         });
+        
+        var outputScrollPane = new ScrollPane(outputArea);
+        outputScrollPane.setFitToWidth(true);
+        outputScrollPane.setFitToHeight(true);
+        outputScrollPane.setPrefHeight(200);
+        outputScrollPane.getStyleClass().add("project-creation-output-scroll");
 
-        var progressBox = new RRVBox(10);
-        progressBox.setAlignment(Pos.CENTER);
-        progressBox.getChildren().addAll(timeElapsedLabel, taskLabel);
-        setBottom(progressBox);
+        var bottomBox = new RRVBox(16);
+        bottomBox.setAlignment(Pos.CENTER);
+        
+        var buttonBox = new HBox(12);
+        buttonBox.setAlignment(Pos.CENTER);
+        
+        cancelButton.setVariant(RRButton.ButtonVariant.SECONDARY);
+        cancelButton.setOnAction(e -> handleCancel());
+        
+        buttonBox.getChildren().add(cancelButton);
+        bottomBox.getChildren().addAll(outputScrollPane, buttonBox);
+        setBottom(bottomBox);
 
-        setTop(new Label("Creating project..."));
-        setAlignment(getTop(), Pos.CENTER);
-        progressSpinner.setProgress(0);
+        ShutdownHooks.addHook(() -> {
+            if (!executor.isShutdown())
+                executor.shutdownNow();
+        });
+    }
 
+    private void startProjectCreation() {
         var task = new ProjectCreationTask(data);
         progressSpinner.progressProperty().bind(task.progressProperty());
+        
         task.setOnSucceeded(event -> {
             try {
                 if (!executor.awaitTermination(1, TimeUnit.SECONDS))
@@ -87,11 +139,33 @@ public class FabricProjectCreationPane extends RRBorderPane {
             } catch (InterruptedException exception) {
                 Railroad.LOGGER.error("An error occurred while waiting for the executor to terminate.", exception);
             }
-
-            // Open project in IDE
+            
+            // Project created successfully - open in IDE
+            Platform.runLater(() -> {
+                try {
+                    Path projectPath = data.projectPath().resolve(data.projectName());
+                    Project project = new Project(projectPath, data.projectName());
+                    Railroad.switchToIDE(project);
+                } catch (Exception exception) {
+                    Railroad.LOGGER.error("Failed to open project in IDE", exception);
+                    showErrorAndReturnToWelcome("railroad.project.creation.error.open_ide.title", 
+                                              "railroad.project.creation.error.open_ide.header", 
+                                              "railroad.project.creation.error.open_ide.content");
+                }
+            });
+        });
+        
+        task.setOnFailed(event -> {
+            Throwable exception = task.getException();
+            Railroad.LOGGER.error("Project creation failed", exception);
+            
+            String errorMessage = exception != null ? exception.getMessage() : "Unknown error";
+            showErrorAndReturnToWelcome("railroad.project.creation.error.title", 
+                                      "railroad.project.creation.error.fabric.header", 
+                                      "railroad.project.creation.error.content", errorMessage);
         });
 
-        new Thread(task).start(); // TODO: Don't create a thread in the constructor
+        new Thread(task).start();
 
         executor.scheduleAtFixedRate(() -> {
             long timeElapsed = System.currentTimeMillis() - startTime;
@@ -110,24 +184,46 @@ public class FabricProjectCreationPane extends RRBorderPane {
             }
 
             final String finalTimeElapsedString = timeElapsedString;
-            Platform.runLater(() -> timeElapsedLabel.setText("Time elapsed: " + finalTimeElapsedString));
+            Platform.runLater(() -> timeElapsedLabel.setKey("railroad.project.creation.status.time_elapsed", finalTimeElapsedString));
         }, 1, 1, TimeUnit.SECONDS);
+    }
 
-        ShutdownHooks.addHook(() -> {
-            if (!executor.isShutdown())
+    private void handleCancel() {
+        Railroad.showErrorAlert("railroad.project.creation.cancel.title", 
+                               "railroad.project.creation.cancel.header", 
+                               "railroad.project.creation.cancel.content", 
+                               buttonType -> {
+            if (buttonType == ButtonType.OK) {
                 executor.shutdownNow();
+                returnToWelcome();
+            }
         });
     }
 
-    private static void showErrorAlert(String title, String header, String content) {
-        Platform.runLater(() -> {
-            var alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle(title);
-            alert.setHeaderText(header);
-            alert.setContentText(content);
+    private void showErrorAndReturnToWelcome(String titleKey, String headerKey, String contentKey) {
+        showErrorAndReturnToWelcome(titleKey, headerKey, contentKey, null);
+    }
 
-            alert.showAndWait();
+    private void showErrorAndReturnToWelcome(String titleKey, String headerKey, String contentKey, String additionalInfo) {
+        Platform.runLater(() -> {
+            String title = L18n.localize(titleKey);
+            String header = L18n.localize(headerKey);
+            String content = L18n.localize(contentKey);
+            
+            if (additionalInfo != null) {
+                content += "\n\n" + additionalInfo;
+            }
+            
+            Railroad.showErrorAlert(title, header, content, buttonType -> {
+                if (buttonType == ButtonType.OK) {
+                    returnToWelcome();
+                }
+            });
         });
+    }
+
+    private void returnToWelcome() {
+        Platform.runLater(() -> getScene().setRoot(new WelcomePane()));
     }
 
     private static Map<String, Object> createArgs(FabricProjectData data) {
@@ -157,37 +253,33 @@ public class FabricProjectCreationPane extends RRBorderPane {
         @Override
         protected Void call() {
             try {
-                updateLabel("Creating project directory...");
+                updateLabel("railroad.project.creation.task.creating_directory");
                 Path projectPath = data.projectPath().resolve(data.projectName());
+                Files.createDirectories(projectPath);
+                updateProgress(1, 16);
+                Railroad.LOGGER.info("Project directory created successfully.");
 
-                MinecraftVersion version = data.minecraftVersion();
-                MinecraftVersion mdkVersion = determineMdkVersion(version);
+                MinecraftVersion mdkVersion = determineMdkVersion(data.minecraftVersion());
                 if (mdkVersion == null)
-                    return null;
+                    throw new RuntimeException("Failed to determine MDK version for Minecraft " + data.minecraftVersion().id());
 
-                String minecraftId = mdkVersion.id();
-                if (mdkVersion.id().split("\\.").length > 2) {
-                    minecraftId = mdkVersion.id().substring(0, mdkVersion.id().lastIndexOf("."));
-                }
+                downloadExampleMod(projectPath, mdkVersion.getMajorVersion());
+                updateGradleProperties(projectPath, mdkVersion);
 
-                downloadExampleMod(projectPath, minecraftId);
-                updateGradleProperties(projectPath, version);
-
-                Path mainJava = projectPath.resolve("src/main/java/");
-                Path clientJava = projectPath.resolve("src/client/java/");
+                Path mainJava = projectPath.resolve("src/main/java");
+                Path clientJava = projectPath.resolve("src/client/java");
                 String newFolderPath = data.groupId().replace(".", "/") + "/" + data.modId();
-                renamePackages(projectPath, mainJava, clientJava, newFolderPath);
 
-                Path resources = projectPath.resolve("src/main/resources");
-                updateFabricModJson(resources, version);
-                renameMixins(projectPath, resources);
+                renamePackages(projectPath, mainJava, clientJava, newFolderPath);
+                updateFabricModJson(projectPath.resolve("src/main/resources"), mdkVersion);
+                renameMixins(projectPath, projectPath.resolve("src/main/resources"));
                 renameMainClasses(newFolderPath, mainJava, clientJava);
                 refactorMixins(newFolderPath, mainJava, clientJava);
 
                 if (!updateBuildGradle(projectPath, mdkVersion))
-                    return null;
+                    throw new RuntimeException("Failed to update build.gradle");
 
-                updateLabel("Creating project...");
+                updateLabel("railroad.project.creation.task.creating_project");
                 Railroad.PROJECT_MANAGER.newProject(new Project(projectPath, data.projectName()));
                 updateProgress(13, 16);
                 Railroad.LOGGER.info("Project created successfully.");
@@ -197,25 +289,26 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
                 updateProgress(16, 16);
                 Railroad.LOGGER.info("Project creation completed successfully.");
-                updateLabel("Project created successfully.");
+                updateLabel("railroad.project.creation.task.fabric_completed");
             } catch (Exception exception) {
-                // Handle errors
-                Platform.runLater(() -> showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage()));
                 Railroad.LOGGER.error("An error occurred while creating the project.", exception);
+                throw new RuntimeException("Project creation failed: " + exception.getMessage(), exception);
             }
-
             return null;
         }
 
-        public void updateLabel(String text) {
-            Platform.runLater(() -> taskLabel.setText(text));
+        public void updateLabel(String translationKey) {
+            Platform.runLater(() -> taskLabel.setKey(translationKey));
+        }
+
+        public void updateLabel(String translationKey, Object... args) {
+            Platform.runLater(() -> taskLabel.setKey(translationKey, args));
         }
 
         private MinecraftVersion determineMdkVersion(MinecraftVersion version) {
             MinecraftVersion mdkVersion = version;
             if (version.type() == MinecraftVersion.VersionType.OLD_ALPHA || version.type() == MinecraftVersion.VersionType.OLD_BETA) {
-                showErrorAlert("Error", "Unsupported Minecraft version", "Fabric does not support Minecraft versions older than 1.14.");
-                return null;
+                throw new RuntimeException("Fabric does not support Minecraft versions older than 1.14.");
             }
 
             if (version.type() == MinecraftVersion.VersionType.SNAPSHOT) {
@@ -224,8 +317,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
                     mdkVersion = MinecraftVersion.fromId(id.substring(0, id.indexOf("-")))
                             .orElse(null);
                     if (mdkVersion == null) {
-                        showErrorAlert("Error", "Unsupported Minecraft version", "Fabric does not support Minecraft versions older than 1.14.");
-                        return null;
+                        throw new RuntimeException("Fabric does not support Minecraft versions older than 1.14.");
                     }
                 } else {
                     LocalDateTime releaseDate = version.releaseTime();
@@ -249,8 +341,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             }
 
             if (mdkVersion == null) {
-                showErrorAlert("Error", "Unsupported Minecraft version", "Fabric does not support Minecraft versions older than 1.14.");
-                return null;
+                throw new RuntimeException("Fabric does not support Minecraft versions older than 1.14.");
             }
 
             return mdkVersion;
@@ -261,23 +352,23 @@ public class FabricProjectCreationPane extends RRBorderPane {
             updateProgress(1, 16);
             Railroad.LOGGER.info("Project directory created successfully.");
 
-            updateLabel("Downloading example mod...");
+            updateLabel("railroad.project.creation.task.downloading_example_mod");
             String modUrl = String.format(EXAMPLE_MOD_URL, minecraftId);
             FileHandler.copyUrlToFile(modUrl, Path.of(projectPath.resolve("example-mod.zip").toString()));
             updateProgress(2, 16);
             Railroad.LOGGER.info("Example mod downloaded successfully.");
 
-            updateLabel("Extracting example mod...");
+            updateLabel("railroad.project.creation.task.extracting_example_mod");
             FileHandler.unzipFile(projectPath.resolve("example-mod.zip"), projectPath);
             updateProgress(3, 16);
             Railroad.LOGGER.info("Example mod extracted successfully.");
 
-            updateLabel("Deleting example mod zip...");
+            updateLabel("railroad.project.creation.task.deleting_example_zip");
             Files.delete(Path.of(projectPath.resolve("example-mod.zip").toString()));
             updateProgress(4, 16);
             Railroad.LOGGER.info("Example mod zip deleted successfully.");
 
-            updateLabel("Copying project...");
+            updateLabel("railroad.project.creation.task.copying_project");
             Path folder = projectPath.resolve("fabric-example-mod-" + minecraftId);
             FileHandler.copyFolder(folder, projectPath);
             FileHandler.deleteFolder(folder);
@@ -286,7 +377,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         }
 
         private void updateGradleProperties(Path projectPath, MinecraftVersion version) throws IOException {
-            updateLabel("Updating gradle.properties...");
+            updateLabel("railroad.project.creation.task.updating_gradle");
             Path gradlePropertiesFile = projectPath.resolve("gradle.properties");
             FileHandler.updateKeyValuePairByLine("org.gradle.jvmargs", "-Xmx4G", gradlePropertiesFile);
             FileHandler.updateKeyValuePairByLine("minecraft_version", version.id(), gradlePropertiesFile);
@@ -307,7 +398,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         }
 
         private void renamePackages(Path projectPath, Path mainJava, Path clientJava, String newFolderPath) throws IOException {
-            updateLabel("Renaming packages...");
+            updateLabel("railroad.project.creation.task.renaming_packages");
             if (!data.splitSources()) {
                 FileHandler.deleteFolder(projectPath.resolve("src/client/"));
             }
@@ -339,7 +430,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         }
 
         private void updateFabricModJson(Path resources, MinecraftVersion version) throws IOException {
-            updateLabel("Updating fabric.mod.json...");
+            updateLabel("railroad.project.creation.task.updating_fabric_mod_json");
             FileHandler.deleteFolder(resources.resolve("assets"));
 
             // TODO: Change based on schema version
@@ -410,7 +501,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         }
 
         private void renameMixins(Path projectPath, Path resources) throws IOException {
-            updateLabel("Renaming mixins files...");
+            updateLabel("railroad.project.creation.task.renaming_mixins");
             Files.move(resources.resolve("modid.mixins.json"), resources.resolve(data.modId() + ".mixins.json"));
             String content = Files.readString(resources.resolve(data.modId() + ".mixins.json"));
             content = content.replace("com.example", data.groupId() + "." + data.modId());
@@ -429,7 +520,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         }
 
         private void renameMainClasses(String newFolderPath, Path mainJava, Path clientJava) throws IOException {
-            updateLabel("Renaming main classes...");
+            updateLabel("railroad.project.creation.task.renaming_main_classes");
             // Rename ExampleMod.java and ExampleModClient.java
             Path mainClass = mainJava.resolve(newFolderPath).resolve("ExampleMod.java");
             Files.move(mainClass, mainClass.resolveSibling(data.mainClass() + ".java"));
@@ -452,7 +543,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         }
 
         private void refactorMixins(String newFolderPath, Path mainJava, Path clientJava) throws IOException {
-            updateLabel("Refactoring mixins...");
+            updateLabel("railroad.project.creation.task.refactoring_mixins");
             // Refactor ExampleMixin.java and ExampleClientMixin.java to be in the correct package
             Path mainMixin = mainJava.resolve(newFolderPath).resolve("mixin").resolve("ExampleMixin.java");
             String mainMixinContent = Files.readString(mainMixin);
@@ -471,7 +562,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         }
 
         private boolean updateBuildGradle(Path projectPath, MinecraftVersion mdkVersion) throws IOException, ClassNotFoundException {
-            updateLabel("Updating build.gradle...");
+            updateLabel("railroad.project.creation.task.updating_build_gradle");
             // Download template build.gradle
             Path buildGradle = projectPath.resolve("build.gradle");
             String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(mdkVersion.id().split("\\.")[1]);
@@ -480,15 +571,13 @@ public class FabricProjectCreationPane extends RRBorderPane {
             }
 
             if (FileHandler.is404(templateBuildGradleUrl)) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "build.gradle template not found.");
-                return false;
+                throw new RuntimeException("build.gradle template not found.");
             }
 
             FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
             String buildGradleContent = Files.readString(buildGradle);
             if (!buildGradleContent.startsWith("// fileName:")) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "build.gradle template is invalid.");
-                return false;
+                throw new RuntimeException("build.gradle template is invalid.");
             }
 
             int newLineIndex = buildGradleContent.indexOf('\n');
@@ -500,8 +589,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             var shell = new GroovyShell();
             Object result = shell.parse(buildGradleContent.substring("// fileName:".length() + 1, newLineIndex), binding).run();
             if (result == null) {
-                showErrorAlert("Error", "An error occurred while creating the project.", "build.gradle template is invalid.");
-                return false;
+                throw new RuntimeException("build.gradle template is invalid.");
             }
 
             var buffer = new StringBuffer();
@@ -517,7 +605,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         }
 
         private void runGenSources(Path projectPath) {
-            updateLabel("Running genSources task...");
+            updateLabel("railroad.project.creation.task.running_gen_sources");
             // Run gradlew genSources
             var connector = GradleConnector.newConnector();
             connector.forProjectDirectory(projectPath.toFile());
@@ -535,15 +623,14 @@ public class FabricProjectCreationPane extends RRBorderPane {
                 Railroad.LOGGER.info("genSources task completed successfully.");
                 Platform.runLater(() -> centerBox.getChildren().remove(outputArea));
             } catch (BuildException exception) {
-                showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
-                Railroad.LOGGER.error("An error occurred while running the genSources task.", exception);
+                throw new RuntimeException("Failed to run genSources task: " + exception.getMessage(), exception);
             }
         }
 
         private void createGitRepository(Path projectPath) {
             // Create git repository
             if (data.createGit()) {
-                updateLabel("Creating git repository...");
+                updateLabel("railroad.project.creation.task.creating_git");
                 try {
                     var processBuilder = new ProcessBuilder("git", "init");
                     processBuilder.directory(projectPath.toFile());
@@ -553,8 +640,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
                     updateProgress(15, 16);
                     Railroad.LOGGER.info("Git repository created successfully.");
                 } catch (IOException | InterruptedException exception) {
-                    showErrorAlert("Error", "An error occurred while creating the project.", exception.getClass().getSimpleName() + ": " + exception.getMessage());
-                    Railroad.LOGGER.error("An error occurred while creating the git repository.", exception);
+                    throw new RuntimeException("Failed to create git repository: " + exception.getMessage(), exception);
                 }
             }
         }

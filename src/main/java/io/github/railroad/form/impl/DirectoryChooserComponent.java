@@ -2,7 +2,7 @@ package io.github.railroad.form.impl;
 
 import io.github.railroad.form.*;
 import io.github.railroad.form.ui.FormDirectoryChooser;
-import io.github.railroad.ui.BrowseButton;
+import io.github.railroad.ui.nodes.BrowseButton;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
 import javafx.beans.value.ChangeListener;

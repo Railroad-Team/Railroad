@@ -187,29 +187,44 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
         public InformationLabel(String key, InformationType informationType, Object... args) {
             super(key, args);
             this.informationType = informationType;
-            if (informationType == InformationType.ERROR) {
-                setStyle("-fx-font-weight: bold;");
+
+            switch (informationType) {
+                case ERROR -> {
+                    getStyleClass().addAll("field-error", "rr-info-label", "information-label-bold");
+                }
+                case WARNING -> {
+                    getStyleClass().addAll("field-warning", "rr-info-label");
+                }
+                case NOTE -> {
+                    getStyleClass().addAll("field-info", "rr-info-label");
+                    setTextFill(Color.SLATEGRAY);
+                }
+                case INFO -> {
+                    getStyleClass().addAll("field-info", "rr-info-label");
+                }
             }
 
-            if (informationType == InformationType.NOTE) {
-                setTextFill(Color.SLATEGRAY);
-            }
-
-            var fontIcon = new FontIcon(switch (informationType) {
-                case INFO -> FontAwesomeSolid.INFO_CIRCLE;
-                case NOTE -> FontAwesomeSolid.LIGHTBULB;
-                case WARNING -> FontAwesomeSolid.EXCLAMATION_TRIANGLE;
-                case ERROR -> FontAwesomeSolid.TIMES_CIRCLE;
-            });
-            fontIcon.setIconSize(16);
-            fontIcon.setIconColor(switch (informationType) {
-                case INFO -> Color.BLUE;
-                case NOTE -> Color.GREEN;
-                case WARNING -> Color.ORANGE;
-                case ERROR -> Color.RED;
-            });
-
+            var fontIcon = createFontIcon(informationType);
             setGraphic(fontIcon);
         }
+    }
+
+    private static @NotNull FontIcon createFontIcon(InformationType informationType) {
+        var fontIcon = new FontIcon(switch (informationType) {
+            case INFO -> FontAwesomeSolid.INFO_CIRCLE;
+            case NOTE -> FontAwesomeSolid.LIGHTBULB;
+            case WARNING -> FontAwesomeSolid.EXCLAMATION_TRIANGLE;
+            case ERROR -> FontAwesomeSolid.TIMES_CIRCLE;
+        });
+
+        fontIcon.setIconSize(16);
+        fontIcon.setIconColor(switch (informationType) {
+            case INFO -> Color.BLUE;
+            case NOTE -> Color.GREEN;
+            case WARNING -> Color.ORANGE;
+            case ERROR -> Color.RED;
+        });
+
+        return fontIcon;
     }
 }

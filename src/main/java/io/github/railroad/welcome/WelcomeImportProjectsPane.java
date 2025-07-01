@@ -1,44 +1,38 @@
 package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.ui.ImportProjectListCell;
-import io.github.railroad.ui.defaults.RRListView;
-import io.github.railroad.ui.defaults.RRStackPane;
+import io.github.railroad.ui.nodes.ImportProjectListCell;
+import io.github.railroad.ui.nodes.RRCard;
+import io.github.railroad.ui.nodes.RRListView;
 import io.github.railroad.vcs.Repository;
 import javafx.beans.binding.Bindings;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.StackPane;
+import lombok.Getter;
 
-public class WelcomeImportProjectsPane extends ScrollPane {
+@Getter
+public class WelcomeImportProjectsPane extends RRCard {
     private final RRListView<Repository> repositoryListView = new RRListView<>();
     private final ProgressIndicator progressIndicator = new ProgressIndicator();
 
     public WelcomeImportProjectsPane() {
-        setFitToWidth(true);
-        setFitToHeight(true);
-        setHbarPolicy(ScrollBarPolicy.NEVER);
-        setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
+        super(18, new Insets(24, 32, 24, 32));
+        setSpacing(18);
+        getStyleClass().add("welcome-card");
 
         repositoryListView.setCellFactory(param -> new ImportProjectListCell());
-
-        repositoryListView.setOnMouseClicked(event -> {
-            // Handle mouse click events here
-        });
-
-        repositoryListView.setOnKeyReleased(event -> {
-            // Handle key release events here
-        });
-
-        // Bind the visibility of the progress indicator to the emptiness of the repository list
-        progressIndicator.visibleProperty().bind(Bindings.isEmpty(Railroad.REPOSITORY_MANAGER.getRepositories()));
-
-        // Set the items of the repository list view
         repositoryListView.setItems(Railroad.REPOSITORY_MANAGER.getRepositories());
+        repositoryListView.setPrefHeight(400);
 
-        // Create a StackPane to hold both the ListView and the ProgressIndicator
-        var stackPane = new RRStackPane();
-        stackPane.getChildren().addAll(repositoryListView, progressIndicator);
+        progressIndicator.visibleProperty().bind(Bindings.isEmpty(Railroad.REPOSITORY_MANAGER.getRepositories()));
+        progressIndicator.setMaxSize(48, 48);
 
-        setContent(stackPane);
+        var stackPane = new StackPane(repositoryListView, progressIndicator);
+        StackPane.setAlignment(progressIndicator, Pos.CENTER);
+        stackPane.setPadding(new Insets(8, 0, 8, 0));
+
+        getChildren().add(stackPane);
     }
 }

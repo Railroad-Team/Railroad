@@ -34,7 +34,7 @@ public class TreeViewSettings {
         var leftVbox = new VBox();
         var rightVbox = new VBox();
         var pathLabel = new Label();
-        pathLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        pathLabel.getStyleClass().add("settings-path-label");
         pathLabel.setPadding(new Insets(10));
         var splitPane = new SplitPane();
 

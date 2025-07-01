@@ -1,62 +1,73 @@
 package io.github.railroad.welcome.project.ui;
 
-import io.github.railroad.localization.ui.LocalizedTextField;
-import io.github.railroad.ui.defaults.RRListView;
 import io.github.railroad.ui.defaults.RRVBox;
+import io.github.railroad.ui.nodes.RRListView;
+import io.github.railroad.ui.nodes.RRTextField;
 import io.github.railroad.welcome.project.ProjectType;
 import io.github.railroad.welcome.project.ui.widget.ProjectTypeCell;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Separator;
 import javafx.scene.layout.Priority;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import org.kordamp.ikonli.javafx.FontIcon;
+import lombok.Getter;
 
 public class ProjectTypePane extends RRVBox {
-    private final Button backButton;
-    private final LocalizedTextField projectTypeSearchField;
+    private final RRTextField projectTypeSearchField;
     private final ScrollPane projectTypesScroller;
+    @Getter
     private final RRListView<ProjectType> projectTypeListView;
+    private final ObservableList<ProjectType> allProjectTypes = FXCollections.observableArrayList(ProjectType.values());
 
     public ProjectTypePane() {
-        super(10);
+        super(16);
 
-        setPadding(new Insets(10));
+        setPadding(new Insets(18, 18, 18, 18));
         getStyleClass().add("project-type-pane");
 
-        setMinWidth(200);
-        setMaxWidth(200);
+        setMinWidth(240);
+        setMaxWidth(320);
 
-        backButton = new Button("Back");
-        backButton.setGraphic(new FontIcon(FontAwesomeSolid.BACKSPACE));
-        backButton.prefWidthProperty().bind(widthProperty());
-
-        projectTypeSearchField = new LocalizedTextField("railroad.home.welcome.project.searchtype");
+        projectTypeSearchField = new RRTextField("railroad.home.welcome.project.searchtype");
+        projectTypeSearchField.setPromptText("Search project types...");
+        projectTypeSearchField.setPrefHeight(36);
+        projectTypeSearchField.getStyleClass().add("project-type-search-field");
 
         projectTypesScroller = new ScrollPane();
         projectTypesScroller.setFitToWidth(true);
         projectTypesScroller.setFitToHeight(true);
+        projectTypesScroller.getStyleClass().add("project-types-scroller");
 
         projectTypeListView = new RRListView<>();
         projectTypeListView.getStyleClass().add("project-type-list");
         projectTypeListView.setCellFactory(param -> new ProjectTypeCell());
-        projectTypeListView.getItems().addAll(ProjectType.values());
+        projectTypeListView.getItems().addAll(allProjectTypes);
         projectTypeListView.getSelectionModel().selectFirst();
+        projectTypeListView.setListViewSize(RRListView.ListViewSize.MEDIUM);
+        projectTypeListView.setDense(true);
+        projectTypeListView.setBordered(true);
+        projectTypeListView.setPrefHeight(220);
+        projectTypeListView.setFocusTraversable(false);
+        projectTypeListView.getStyleClass().add("hide-empty-cells");
 
         projectTypesScroller.setContent(projectTypeListView);
+        projectTypesScroller.setFitToWidth(true);
+        projectTypesScroller.setFitToHeight(true);
+        projectTypesScroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        projectTypesScroller.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        projectTypesScroller.getStyleClass().add("project-types-scroller");
 
-        var separator = new Separator();
-        separator.setPadding(new Insets(0, -10, 0, -10));
-        getChildren().addAll(backButton, separator, projectTypeSearchField, projectTypesScroller);
+        getChildren().addAll(projectTypeSearchField, projectTypesScroller);
         RRVBox.setVgrow(projectTypesScroller, Priority.ALWAYS);
-    }
 
-    public RRListView<ProjectType> getProjectTypeListView() {
-        return projectTypeListView;
-    }
-
-    public Button getBackButton() {
-        return backButton;
+        projectTypeSearchField.textProperty().addListener((obs, oldText, newText) -> {
+            String filter = newText == null ? "" : newText.trim().toLowerCase();
+            projectTypeListView.getItems().setAll(
+                allProjectTypes.filtered(pt -> pt.getName().toLowerCase().contains(filter))
+            );
+            if (!projectTypeListView.getItems().isEmpty()) {
+                projectTypeListView.getSelectionModel().selectFirst();
+            }
+        });
     }
 }
