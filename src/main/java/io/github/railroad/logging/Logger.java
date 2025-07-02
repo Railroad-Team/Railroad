@@ -28,6 +28,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// TODO: Move to separate library (https://github.com/Railroad-Team/RailroadLogger)
+// TODO: Add support for colouring the log output
+// TODO: Add support for customizing the log format
+// TODO: Add support for time based log deletion (e.g., delete logs older than 7 days) - should be configurable
+// TODO: Add support for customizing the log directory and file names (useful for plugins)
+// TODO: Add support for logging to multiple files (e.g., latest.log and pluginName.log)
+// TODO: Add support for logging to a remote server (?)
+// TODO: Add support for configuring the write frequency (e.g., write every 5 seconds instead of 1 second)
+// TODO: Add support for disabling log compression (e.g., for debugging purposes)
+// TODO: Add support for uploading a log file to a remote server (e.g., for bug reports)
 public class Logger {
     private final String name;
 
