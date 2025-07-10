@@ -1,9 +1,12 @@
 package io.github.railroad.ide.projectexplorer;
 
+import io.github.railroad.Railroad;
+import io.github.railroad.core.ui.RRBorderPane;
+import io.github.railroad.core.ui.RRHBox;
 import io.github.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import io.github.railroad.ide.projectexplorer.dialog.DeleteDialog;
-import io.github.railroad.ui.defaults.RRBorderPane;
-import io.github.railroad.ui.defaults.RRHBox;
+import io.github.railroad.plugin.defaults.DefaultDocument;
+import io.github.railroad.railroadpluginapi.events.FileRenamedEvent;
 import io.github.railroad.utility.FileHandler;
 import javafx.application.Platform;
 import javafx.beans.property.StringProperty;
@@ -200,8 +203,12 @@ public class PathTreeCell extends TreeCell<PathItem> {
             try {
                 ProjectExplorerPane.disableFileChangeListener();
 
+                String oldName = editingPath.getFileName().toString();
+                String newName = newValue.getPath().getFileName().toString();
+
                 Files.move(editingPath, newValue.getPath());
                 getItem().setPath(newValue.getPath());
+                Railroad.EVENT_BUS.publish(new FileRenamedEvent(new DefaultDocument(newName, newValue.getPath()), oldName, newName));
             } catch (IOException exception) {
                 cancelEdit();
                 messageProperty.setValue("Renaming %s failed".formatted(editingPath.getFileName()));

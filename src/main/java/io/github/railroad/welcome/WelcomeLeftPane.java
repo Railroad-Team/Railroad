@@ -1,10 +1,10 @@
 package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.localization.ui.LocalizedLabel;
-import io.github.railroad.ui.nodes.RRListView;
-import io.github.railroad.ui.nodes.RRNavigationItem;
-import io.github.railroad.ui.nodes.RRSidebar;
+import io.github.railroad.core.ui.RRListView;
+import io.github.railroad.core.ui.RRNavigationItem;
+import io.github.railroad.core.ui.RRSidebar;
+import io.github.railroad.core.ui.localized.LocalizedLabel;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;

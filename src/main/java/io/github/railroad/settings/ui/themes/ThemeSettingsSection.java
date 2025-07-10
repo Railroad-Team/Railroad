@@ -1,6 +1,6 @@
 package io.github.railroad.settings.ui.themes;
 
-import io.github.railroad.localization.ui.LocalizedLabel;
+import io.github.railroad.core.ui.localized.LocalizedLabel;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.Priority;

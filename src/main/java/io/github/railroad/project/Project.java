@@ -8,6 +8,7 @@ import io.github.railroad.Railroad;
 import io.github.railroad.project.facet.Facet;
 import io.github.railroad.project.facet.FacetManager;
 import io.github.railroad.project.facet.FacetType;
+import io.github.railroad.railroadpluginapi.events.ProjectAliasChangedEvent;
 import io.github.railroad.utility.JsonSerializable;
 import io.github.railroad.utility.StringUtils;
 import io.github.railroad.vcs.Repository;
@@ -16,6 +17,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableSet;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -25,7 +27,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
-public class Project implements JsonSerializable<JsonObject> {
+public class Project implements JsonSerializable<JsonObject>, io.github.railroad.railroadpluginapi.dto.Project {
     private final ObjectProperty<Path> path = new ReadOnlyObjectWrapper<>();
     private final StringProperty alias = new SimpleStringProperty();
     private final ObjectProperty<Image> icon = new SimpleObjectProperty<>();
@@ -102,6 +104,7 @@ public class Project implements JsonSerializable<JsonObject> {
         return Optional.of(project);
     }
 
+    @Override
     public Path getPath() {
         return this.path.get();
     }
@@ -290,6 +293,16 @@ public class Project implements JsonSerializable<JsonObject> {
 
     public String getAlias() {
         return alias.get();
+    }
+
+    @Override
+    public void setAlias(@NotNull String alias) {
+        if (alias == null || alias.isBlank())
+            throw new IllegalArgumentException("Alias cannot be null or blank");
+
+        String originalAlias = this.alias.get();
+        this.alias.set(alias);
+        Railroad.EVENT_BUS.publish(new ProjectAliasChangedEvent(this, originalAlias, alias));
     }
 
     public long getLastOpened() {

@@ -1,11 +1,11 @@
 package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.localization.ui.LocalizedLabel;
+import io.github.railroad.core.ui.RRListView;
+import io.github.railroad.core.ui.RRTextField;
+import io.github.railroad.core.ui.localized.LocalizedLabel;
 import io.github.railroad.project.Project;
 import io.github.railroad.ui.nodes.ProjectListCell;
-import io.github.railroad.ui.nodes.RRListView;
-import io.github.railroad.ui.nodes.RRTextField;
 import io.github.railroad.welcome.project.ProjectSort;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;

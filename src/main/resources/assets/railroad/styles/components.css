@@ -1406,6 +1406,214 @@
     -fx-font-size: 16px;
 }
 
+/* Plugins Pane Styles */
+.plugins-pane {
+    -fx-background-color: -color-bg-default;
+}
+
+.plugins-pane .split-pane-divider {
+    -fx-background-color: -color-border-subtle;
+    -fx-padding: 0 1px 0 1px;
+}
+
+.plugins-pane .split-pane-divider:hover {
+    -fx-background-color: -color-border-default;
+}
+
+/* Plugin Item Styles */
+.plugin-item {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-cursor: hand;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.plugin-item:hover {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-default;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 4, 0, 0, 2);
+}
+
+.plugin-item.selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(94, 129, 172, 0.2), 6, 0, 0, 3);
+}
+
+.plugin-item .plugin-name {
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.plugin-item .plugin-version {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.plugin-item .check-box {
+    -fx-padding: 0;
+}
+
+.plugin-item .check-box .box {
+    -fx-background-color: -color-bg-inset;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-min-width: 16px;
+    -fx-min-height: 16px;
+    -fx-max-width: 16px;
+    -fx-max-height: 16px;
+}
+
+.plugin-item .check-box:hover .box {
+    -fx-border-color: -color-accent-emphasis;
+    -fx-background-color: -color-bg-subtle;
+}
+
+.plugin-item .check-box:selected .box {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-border-color: -color-accent-emphasis;
+}
+
+.plugin-item .check-box:selected .mark {
+    -fx-background-color: -color-fg-emphasis;
+    -fx-stroke: -color-fg-emphasis;
+    -fx-stroke-width: 2;
+    -fx-translate-x: 1;
+    -fx-translate-y: 1;
+}
+
+/* Plugin Details Styles */
+.plugin-details-card {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 8, 0, 0, 2);
+}
+
+.plugin-details-name {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.plugin-details-version {
+    -fx-font-size: 14px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-weight: 500;
+}
+
+.plugin-icon {
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-opacity: 0.9;
+}
+
+.plugin-info-box {
+    -fx-spacing: 16px;
+}
+
+.plugin-description {
+    -fx-font-size: 15px;
+    -fx-text-fill: -color-fg-default;
+    -fx-line-spacing: 1.4;
+    -fx-padding: 0 0 8 0;
+}
+
+.plugin-info-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -color-fg-emphasis;
+    -fx-min-width: 100px;
+}
+
+.plugin-info-value {
+    -fx-font-size: 14px;
+    -fx-text-fill: -color-fg-default;
+    -fx-line-spacing: 1.2;
+}
+
+.plugin-dependency {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-padding: 2 0 2 16;
+}
+
+/* Plugin Search Field */
+.plugins-pane .text-field {
+    -fx-background-color: -color-bg-inset;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 8 12;
+    -fx-font-size: 14px;
+    -fx-text-fill: -color-fg-default;
+}
+
+.plugins-pane .text-field:focused {
+    -fx-border-color: -color-accent-emphasis;
+    -fx-background-color: -color-bg-default;
+}
+
+.plugins-pane .text-field:hover {
+    -fx-border-color: -color-border-default;
+}
+
+/* Scroll Pane Styles */
+.plugins-pane .scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+.plugins-pane .scroll-pane .viewport {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.plugins-pane .scroll-pane .scroll-bar {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.plugins-pane .scroll-pane .scroll-bar .thumb {
+    -fx-background-color: -color-border-subtle;
+    -fx-background-radius: 4px;
+    -fx-background-insets: 2;
+}
+
+.plugins-pane .scroll-pane .scroll-bar .thumb:hover {
+    -fx-background-color: -color-border-default;
+}
+
+.plugins-pane .scroll-pane .scroll-bar .track {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.plugins-pane .scroll-pane .scroll-bar .increment-button,
+.plugins-pane .scroll-pane .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+    -fx-shape: "";
+}
+
+.plugins-pane .scroll-pane .scroll-bar .increment-arrow,
+.plugins-pane .scroll-pane .scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-shape: "";
+}
+
 /* Github styles */
 .github-alias-label {
     -fx-font-size: 16px;

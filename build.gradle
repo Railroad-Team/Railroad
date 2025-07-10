@@ -9,6 +9,7 @@ group 'io.github'
 version '1.0-SNAPSHOT'
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven { url 'https://repo.gradle.org/gradle/libs-releases' }
     maven { url 'https://github.com/javaterminal/terminalfx/raw/master/releases' }
@@ -68,6 +69,10 @@ dependencies {
 
     implementation 'com.github.railroad-team.java-version-extractor-plugin:java-version-extractor-plugin:v1.0.1'
     implementation 'com.github.railroad-team.fabric-extractor-plugin:fabric-extractor-plugin:v1.0.1'
+
+    implementation 'io.github.railroad:RailroadPluginAPI:1.0-SNAPSHOT'
+    implementation 'io.github.railroad:RailroadCore:1.0-SNAPSHOT'
+    //implementation 'com.github.railroad-team:railroadpluginapi:v1.0.0'
 
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
     compileOnly 'org.projectlombok:lombok:1.18.32'

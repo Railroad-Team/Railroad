@@ -1,8 +1,8 @@
 package io.github.railroad.welcome;
 
-import io.github.railroad.localization.ui.LocalizedText;
-import io.github.railroad.ui.nodes.RRCard;
-import io.github.railroad.ui.nodes.RRTextField;
+import io.github.railroad.core.ui.RRCard;
+import io.github.railroad.core.ui.RRTextField;
+import io.github.railroad.core.ui.localized.LocalizedText;
 import io.github.railroad.welcome.project.ui.widget.ProjectSortComboBox;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

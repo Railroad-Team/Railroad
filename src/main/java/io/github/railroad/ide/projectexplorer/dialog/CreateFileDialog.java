@@ -1,10 +1,10 @@
 package io.github.railroad.ide.projectexplorer.dialog;
 
+import io.github.railroad.core.ui.RRGridPane;
+import io.github.railroad.core.ui.RRListView;
+import io.github.railroad.core.ui.localized.LocalizedButton;
+import io.github.railroad.core.ui.localized.LocalizedLabel;
 import io.github.railroad.ide.projectexplorer.FileCreateType;
-import io.github.railroad.localization.ui.LocalizedButton;
-import io.github.railroad.localization.ui.LocalizedLabel;
-import io.github.railroad.ui.defaults.RRGridPane;
-import io.github.railroad.ui.defaults.RRListView;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.ListCell;

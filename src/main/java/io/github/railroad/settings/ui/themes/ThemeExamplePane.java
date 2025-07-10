@@ -1,10 +1,10 @@
 package io.github.railroad.settings.ui.themes;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.core.ui.RRButton;
+import io.github.railroad.core.ui.RRFormSection;
+import io.github.railroad.core.ui.localized.LocalizedLabel;
 import io.github.railroad.localization.L18n;
-import io.github.railroad.localization.ui.LocalizedLabel;
-import io.github.railroad.ui.nodes.RRButton;
-import io.github.railroad.ui.nodes.RRFormSection;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

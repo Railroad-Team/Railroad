@@ -1,7 +1,7 @@
 package io.github.railroad.welcome.project.ui.widget;
 
-import io.github.railroad.localization.ui.LocalizedComboBox;
-import io.github.railroad.localization.ui.LocalizedListCell;
+import io.github.railroad.core.ui.localized.LocalizedComboBox;
+import io.github.railroad.core.ui.localized.LocalizedListCell;
 import io.github.railroad.welcome.project.ProjectSort;
 import javafx.collections.FXCollections;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;

@@ -1,7 +1,6 @@
 package io.github.railroad.utility;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.project.facet.data.JavaFacetData;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Locale;

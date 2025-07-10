@@ -1,8 +1,8 @@
 package io.github.railroad.welcome.project.ui;
 
-import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.ui.nodes.RRListView;
-import io.github.railroad.ui.nodes.RRTextField;
+import io.github.railroad.core.ui.RRListView;
+import io.github.railroad.core.ui.RRTextField;
+import io.github.railroad.core.ui.RRVBox;
 import io.github.railroad.welcome.project.ProjectType;
 import io.github.railroad.welcome.project.ui.widget.ProjectTypeCell;
 import javafx.collections.FXCollections;

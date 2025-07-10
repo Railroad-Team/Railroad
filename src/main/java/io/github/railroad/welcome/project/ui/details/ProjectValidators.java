@@ -1,8 +1,8 @@
 package io.github.railroad.welcome.project.ui.details;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.form.ValidationResult;
-import io.github.railroad.utility.StringUtils;
+import io.github.railroad.core.form.ValidationResult;
+import io.github.railroad.core.utility.StringUtils;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;

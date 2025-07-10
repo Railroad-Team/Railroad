@@ -1,119 +1,71 @@
 package io.github.railroad.settings.handler;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
-import io.github.railroad.utility.JsonSerializable;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableMap;
-import lombok.Getter;
+import io.github.railroad.core.settings.DefaultSettingCodecs;
+import io.github.railroad.core.settings.Setting;
+import io.github.railroad.core.settings.SettingCategory;
+import io.github.railroad.localization.L18n;
+import io.github.railroad.localization.Languages;
+import io.github.railroad.plugin.PluginManager;
+import io.github.railroad.railroadpluginapi.PluginDescriptor;
+import java.util.HashMap;
+import java.util.Map;
 
-import java.util.Arrays;
+import static io.github.railroad.settings.handler.SettingsHandler.registerSetting;
 
-@Getter
-public class Settings implements JsonSerializable<JsonObject> {
-    private final ObservableMap<String, Setting<?>> settings = FXCollections.observableHashMap();
+public class Settings {
+    public static final Setting<Languages> LANGUAGE = registerSetting(Setting.builder(Languages.class, "railroad:language")
+            .treePath("general")
+            .category(SettingCategory.simple("railroad.settings.general.language"))
+            .codec(SettingCodecs.LANGUAGE)
+            .defaultValue(Languages.EN_US)
+            .addListener($ -> L18n.loadLanguage())
+            .canBeNull(false)
+            .build());
 
-    public void registerSetting(Setting<?> setting) {
-        settings.put(setting.getId(), setting);
-    }
+    public static final Setting<String> THEME = registerSetting(Setting.builder(String.class, "railroad:theme")
+            .treePath("appearance")
+            .category(SettingCategory.simple("railroad.settings.themes"))
+            .codec(SettingCodecs.THEME)
+            .defaultValue("default-dark")
+            .addListener(Railroad::updateTheme)
+            .canBeNull(false)
+            .build());
 
-    public Setting<?> getSetting(String id) {
-        return settings.get(id);
-    }
+    public static final Setting<Boolean> AUTO_PAIR_INSIDE_STRINGS = registerSetting(Setting.builder(Boolean.class, "railroad:auto_pair_inside_strings")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad.settings.code_style"))
+            .codec(DefaultSettingCodecs.BOOLEAN)
+            .defaultValue(true)
+            .build());
 
-    /**
-     * Reloads all settings by calling their apply method.
-     */
-    public void reloadSettings() {
-        settings.values().forEach(setting -> {
-            setting.getApplySetting().accept(null);
-        });
-    }
-
-    /**
-     * Converts the settings to a json object.
-     * Loops through each setting, and then loops through each part in the ID.
-     * A variable - current - is used to keep track of the current position, essentially acting as a pointer.
-     * If the part is the last part, it will add the value to the json object.
-     * If it is not the last part, it will either create a new json object if it does not exist, or move to the next json object.
-     *
-     * @return {@link JsonObject} The json object to be written to a file.
-     */
-    @Override
-    public JsonObject toJson() {
-        var json = new JsonObject();
-        for (Setting<?> setting : settings.values()) {
-            var parts = setting.getId().split("[.:]");
-            var current = json;
-
-            if (setting.getValue() == null) {
-                setting.setValue(setting.getDefaultValue());
-            }
-
-            for (String part : parts) {
-                if (Arrays.stream(parts).toList().indexOf(part) == parts.length - 1) {
-                    current.add(part, Railroad.SETTINGS_HANDLER.getCodec(setting.getCodecId()).jsonEncoder().apply(setting.getValue()));
-                } else {
-                    if (!current.has(part)) {
-                        current.add(part, new JsonObject());
-                    }
-
-                    current = current.getAsJsonObject(part);
+    public static final Setting<Map<PluginDescriptor, Boolean>> ENABLED_PLUGINS = registerSetting(Setting.builder((Class<Map<PluginDescriptor, Boolean>>) (Class<?>) Map.class, "railroad:enabled_plugins")
+            .treePath("plugins")
+            .category(SettingCategory.builder("railroad.settings.plugins")
+                    .noTitle()
+                    .noDescription()
+                    .build())
+            .codec(SettingCodecs.ENABLED_PLUGINS)
+            .addListener(enabledPlugins -> {
+                if(enabledPlugins == null) {
+                    enabledPlugins = new HashMap<>();
                 }
-            }
-        }
 
-        return json;
-    }
+                for (Map.Entry<PluginDescriptor, Boolean> entry : enabledPlugins.entrySet()) {
+                    PluginDescriptor plugin = entry.getKey();
+                    boolean enabled = entry.getValue();
 
-    /**
-     * Converts the json object to settings.
-     * Loops through each setting, and then loops through each part in the ID.
-     * A variable - current - is used to keep track of the current position, essentially acting as a pointer.
-     * If the part is the last part, it will add the value to the setting.
-     * If the part is null, it will use the default value.
-     * If it is not the last part, it will set current to the part.
-     *
-     * <p>
-     * TODO rewrite this method, possibly? - I don't know why I wrote this comment, but I did.
-     * (Probably because it's kinda uh, not the best way to do it?)
-     * </p>
-     *
-     * @param json The json object to convert to settings.
-     * @throws IllegalStateException If the setting cannot be decoded.
-     */
-    @Override
-    public void fromJson(JsonObject json) throws IllegalStateException {
-        for (Setting<?> setting : settings.values()) {
-            String[] parts = setting.getId().split("[.:]");
-            var position = json;
-
-            for (String part : parts) {
-                if (Arrays.stream(parts).toList().indexOf(part) == parts.length - 1) {
-                    if (position.has(part)) {
-                        @SuppressWarnings("unchecked")
-                        SettingCodec<?, ?, JsonElement> codec = (SettingCodec<?, ?, JsonElement>) Railroad.SETTINGS_HANDLER.getCodec(setting.getCodecId());
-                        Object value = codec.jsonDecoder().apply(position.get(part));
-
-                        if (value == null) {
-                            Railroad.LOGGER.error("Failed to decode setting {}", setting.getId());
-                            setting.setValue(setting.getDefaultValue());
+                    if(PluginManager.isPluginEnabledForce(plugin) != enabled) {
+                        if (enabled) {
+                            PluginManager.enablePlugin(plugin);
                         } else {
-                            setting.setValue(value);
+                            PluginManager.disablePlugin(plugin);
                         }
-                    } else {
-                        setting.setValue(setting.getDefaultValue());
                     }
-                } else {
-                    if (!position.has(part)) {
-                        setting.setValue(setting.getDefaultValue());
-                        break;
-                    }
-
-                    position = position.getAsJsonObject(part);
                 }
-            }
-        }
-    }
+            })
+            .defaultValue(new HashMap<>())
+            .build());
+
+    public static void initialize() {}
 }

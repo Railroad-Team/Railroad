@@ -1,7 +1,7 @@
 package io.github.railroad.welcome.project.ui;
 
-import io.github.railroad.ui.defaults.RRHBox;
-import io.github.railroad.ui.nodes.RRCard;
+import io.github.railroad.core.ui.RRCard;
+import io.github.railroad.core.ui.RRHBox;
 import io.github.railroad.welcome.project.ProjectType;
 import javafx.geometry.Insets;
 import javafx.scene.layout.Priority;

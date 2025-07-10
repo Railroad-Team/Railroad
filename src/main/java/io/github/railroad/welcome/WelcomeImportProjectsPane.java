@@ -1,9 +1,9 @@
 package io.github.railroad.welcome;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.core.ui.RRCard;
+import io.github.railroad.core.ui.RRListView;
 import io.github.railroad.ui.nodes.ImportProjectListCell;
-import io.github.railroad.ui.nodes.RRCard;
-import io.github.railroad.ui.nodes.RRListView;
 import io.github.railroad.vcs.Repository;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;

@@ -1,7 +1,11 @@
 package io.github.railroad.welcome.project.ui.details;
 
+import io.github.railroad.core.ui.BrowseButton;
+import io.github.railroad.core.ui.RRHBox;
+import io.github.railroad.core.ui.RRVBox;
+import io.github.railroad.core.ui.localized.LocalizedLabel;
+import io.github.railroad.core.utility.StringUtils;
 import io.github.railroad.localization.L18n;
-import io.github.railroad.localization.ui.LocalizedLabel;
 import io.github.railroad.project.DisplayTest;
 import io.github.railroad.project.License;
 import io.github.railroad.project.data.NeoForgeProjectData;
@@ -11,11 +15,7 @@ import io.github.railroad.project.minecraft.RecommendableVersion;
 import io.github.railroad.project.minecraft.mapping.MappingChannel;
 import io.github.railroad.project.minecraft.mapping.MappingHelper;
 import io.github.railroad.project.minecraft.mapping.MappingVersion;
-import io.github.railroad.ui.defaults.RRHBox;
-import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.ui.nodes.BrowseButton;
 import io.github.railroad.utility.ClassNameValidator;
-import io.github.railroad.utility.StringUtils;
 import io.github.railroad.welcome.project.ui.widget.StarableListCell;
 import javafx.beans.binding.BooleanBinding;
 import javafx.geometry.Insets;

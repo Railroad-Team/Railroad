@@ -3,10 +3,17 @@ package io.github.railroad;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.railroad.config.ConfigHandler;
-import io.github.railroad.discord.activity.RailroadActivities;
+import io.github.railroad.core.localization.Language;
+import io.github.railroad.core.localization.LocalizationService;
+import io.github.railroad.core.localization.LocalizationServiceLocator;
+import io.github.railroad.core.logger.LoggerServiceLocator;
+import io.github.railroad.core.utility.StringUtils;
+import io.github.railroad.ide.IDESetup;
 import io.github.railroad.localization.L18n;
+import io.github.railroad.logger.LoggingLevel;
 import io.github.railroad.logging.Logger;
 import io.github.railroad.plugin.PluginManager;
+import io.github.railroad.plugin.defaults.DefaultEventBus;
 import io.github.railroad.project.Project;
 import io.github.railroad.project.ProjectManager;
 import io.github.railroad.project.facet.Facet;
@@ -15,14 +22,17 @@ import io.github.railroad.project.minecraft.FabricAPIVersion;
 import io.github.railroad.project.minecraft.ForgeVersion;
 import io.github.railroad.project.minecraft.MinecraftVersion;
 import io.github.railroad.project.minecraft.NeoForgeVersion;
+import io.github.railroad.railroadpluginapi.event.EventBus;
+import io.github.railroad.railroadpluginapi.events.ProjectEvent;
+import io.github.railroad.settings.handler.Settings;
 import io.github.railroad.settings.handler.SettingsHandler;
 import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.utility.ShutdownHooks;
-import io.github.railroad.utility.StringUtils;
 import io.github.railroad.vcs.RepositoryManager;
 import io.github.railroad.welcome.WelcomePane;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.property.ObjectProperty;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -41,6 +51,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
 /**
@@ -58,10 +69,9 @@ public class Railroad extends Application {
             .disableHtmlEscaping()
             .registerTypeAdapter(Facet.class, new FacetTypeAdapter())
             .create();
-    public static final SettingsHandler SETTINGS_HANDLER = new SettingsHandler();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
-    public static final PluginManager PLUGIN_MANAGER = new PluginManager();
     public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
+    public static final EventBus EVENT_BUS = new DefaultEventBus();
 
     private static boolean DEBUG = false;
     @Getter
@@ -81,14 +91,13 @@ public class Railroad extends Application {
      * @param theme The new theme to apply
      */
     public static void updateTheme(String theme) {
-        if(theme == null || theme.isEmpty()) {
+        if (theme == null || theme.isEmpty()) {
             LOGGER.warn("Theme is null or empty, skipping theme update.");
             return;
         }
 
-        //TODO fix this - it needs to remove the currently applied theme
-        // probably not working *properly* because of new settings system
-        getScene().getStylesheets().remove(SETTINGS_HANDLER.getStringSetting("railroad:theme") + ".css");
+        // TODO fix this - it needs to remove the currently applied theme (should store this somewhere)
+        getScene().getStylesheets().remove(theme + ".css");
 
         if (theme.startsWith("default")) {
             Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
@@ -107,7 +116,7 @@ public class Railroad extends Application {
      * @param scene The scene to apply the styles to
      */
     public static void handleStyles(Scene scene) {
-        updateTheme(SETTINGS_HANDLER.getStringSetting("railroad:theme"));
+        updateTheme(SettingsHandler.getValue(Settings.THEME));
 
         // setting up debug helper style
         String debugStyles = getResource("styles/debug.css").toExternalForm();
@@ -185,24 +194,25 @@ public class Railroad extends Application {
      * @param content The content of the alert
      */
     public static void showErrorAlert(String title, String header, String content) {
-        showErrorAlert(title, header, content, buttonType -> {});
+        showErrorAlert(title, header, content, buttonType -> {
+        });
     }
 
     /**
      * Switch to the IDE window
      * <p>
-     *     This method switches the window to the IDE window
-     *     and sets the current project to the provided project
-     *     and notifies the plugins of the activity
+     * This method switches the window to the IDE window
+     * and sets the current project to the provided project
+     * and notifies the plugins of the activity
      *
      * @param project The project to switch to
      */
     public static void switchToIDE(Project project) {
         if (isSwitchingToIDE)
             return; // Prevent multiple simultaneous IDE window creations
-        
+
         isSwitchingToIDE = true;
-        
+
         try {
             // Close the current window first
             if (Railroad.window != null) {
@@ -212,7 +222,7 @@ public class Railroad extends Application {
                     try {
                         Railroad.window = IDESetup.createIDEWindow(project);
                         PROJECT_MANAGER.setCurrentProject(project);
-                        PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN, project);
+                        Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.OPENED));
                     } finally {
                         isSwitchingToIDE = false;
                     }
@@ -221,7 +231,7 @@ public class Railroad extends Application {
                 // Create the new IDE window immediately if there's no existing window
                 Railroad.window = IDESetup.createIDEWindow(project);
                 PROJECT_MANAGER.setCurrentProject(project);
-                PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_PROJECT_OPEN, project);
+                Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.OPENED));
                 isSwitchingToIDE = false;
             }
         } catch (Exception exception) {
@@ -253,14 +263,52 @@ public class Railroad extends Application {
     @Override
     public void start(Stage primaryStage) {
         try {
-            ConfigHandler.initConfig();
-            SETTINGS_HANDLER.initSettingsFile();
-            PLUGIN_MANAGER.start();
-            PLUGIN_MANAGER.addCustomEventListener(event -> {
-                Platform.runLater(() -> {
-                    Railroad.showErrorAlert("Plugin", event.getPlugin().getClass().getName(), event.getPhaseResult().getErrors().toString());
-                });
+            LocalizationServiceLocator.setInstance(new LocalizationService() {
+                @Override
+                public String get(String key, Object... objects) {
+                    return L18n.localize(key, objects);
+                }
+
+                @Override
+                public ObjectProperty<? extends Language> currentLanguageProperty() {
+                    return L18n.currentLanguageProperty();
+                }
+
+                @Override
+                public boolean isKeyValid(String key) {
+                    return L18n.isKeyValid(key);
+                }
             });
+            LoggerServiceLocator.setInstance(() -> new io.github.railroad.logger.Logger() {
+                @Override
+                public void error(String s, Object... objects) {
+                    LOGGER.error(s, objects);
+                }
+
+                @Override
+                public void warn(String s, Object... objects) {
+                    LOGGER.warn(s, objects);
+                }
+
+                @Override
+                public void info(String s, Object... objects) {
+                    LOGGER.info(s, objects);
+                }
+
+                @Override
+                public void debug(String s, Object... objects) {
+                    LOGGER.debug(s, objects);
+                }
+
+                @Override
+                public void log(String s, LoggingLevel loggingLevel, Object... objects) {
+                    LOGGER.log(s, io.github.railroad.logging.LoggingLevel.valueOf(loggingLevel.name()), objects);
+                }
+            });
+            ConfigHandler.initConfig();
+            PluginManager.loadPlugins(ConfigHandler.getConfigDirectory().resolve("plugins"));
+            Settings.initialize();
+            SettingsHandler.init();
             REPOSITORY_MANAGER.start();
             MinecraftVersion.load();
             ForgeVersion.load();
@@ -291,13 +339,18 @@ public class Railroad extends Application {
             primaryStage.show();
 
             LOGGER.info("Railroad started");
-            PLUGIN_MANAGER.notifyPluginsOfActivity(RailroadActivities.RailroadActivityTypes.RAILROAD_DEFAULT);
+            PluginManager.enableEnabledPlugins();
+            PluginManager.loadReadyPlugins();
+            // TODO: Notify plugins of the application start
             ShutdownHooks.addHook(() -> {
-                HTTP_CLIENT.dispatcher().executorService().shutdown();
+                try (ExecutorService executorService = HTTP_CLIENT.dispatcher().executorService()) {
+                    executorService.shutdown();
+                }
+
                 HTTP_CLIENT.connectionPool().evictAll();
             });
-        } catch (Exception e) {
-            LOGGER.error("Error starting Railroad", e);
+        } catch (Exception exception) {
+            LOGGER.error("Error starting Railroad", exception);
             showErrorAlert("Error", "Error starting Railroad", "An error occurred while starting Railroad.");
         }
     }
@@ -305,7 +358,6 @@ public class Railroad extends Application {
     @Override
     public void stop() {
         LOGGER.info("Stopping Railroad");
-        PLUGIN_MANAGER.unloadPlugins();
         ConfigHandler.saveConfig();
         ShutdownHooks.runHooks();
     }

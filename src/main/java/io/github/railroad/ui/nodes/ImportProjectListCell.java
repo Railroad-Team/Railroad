@@ -1,6 +1,8 @@
 package io.github.railroad.ui.nodes;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.core.ui.RRButton;
+import io.github.railroad.core.ui.RRCard;
 import io.github.railroad.vcs.Repository;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

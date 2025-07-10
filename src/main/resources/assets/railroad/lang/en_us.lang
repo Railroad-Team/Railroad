@@ -59,9 +59,11 @@ railroad.home.settings.search=Search settings...
 railroad.home.settings.back=Back
 
 # Settings categories
+railroad=Railroad
 railroad.general=General
 railroad.appearance=Appearance
 railroad.ide=IDE
+railroad.plugins=Plugins
 
 # General settings
 railroad.general.language.title=Language
@@ -115,6 +117,11 @@ railroad.home.settings.keymaps.action.termproject=Terminate Project
 # IDE settings
 railroad.ide.auto_pair_inside_strings.title=Auto Pair Inside Strings
 railroad.ide.auto_pair_inside_strings.description=Enable or disable auto-pairing of brackets and quotes inside strings.
+
+# Plugins
+railroad.plugins.plugins=Plugins
+railroad.plugins.plugins.enabled_plugins.title=Enabled Plugins
+railroad.plugins.plugins.enabled_plugins.description=List of currently enabled plugins.
 
 # =============================================================================
 # PROJECT CREATION
@@ -386,6 +393,16 @@ railroad.settings.tree.path=Path
 
 # Plugin Display
 railroad.plugin.name=Plugin Name
+railroad.plugin.info=Plugin Information
+railroad.plugin.actions=Plugin Actions
+railroad.plugin.version=Version
+railroad.plugin.author=Author
+railroad.plugin.website=Website
+railroad.plugin.license=License
+railroad.plugin.dependencies=Dependencies
+railroad.plugin.enable=Enable
+railroad.plugin.disable=Disable
+railroad.generic.refresh=Refresh
 
 # GitHub Profile Display
 railroad.github.profile.alias=Alias

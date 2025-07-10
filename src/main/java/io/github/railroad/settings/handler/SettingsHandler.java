@@ -1,536 +1,207 @@
 package io.github.railroad.settings.handler;
 
-import com.google.gson.JsonElement;
+import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
-import io.github.palexdev.materialfx.factories.InsetsFactory;
 import io.github.railroad.Railroad;
 import io.github.railroad.config.ConfigHandler;
-import io.github.railroad.localization.L18n;
-import io.github.railroad.localization.Language;
-import io.github.railroad.localization.ui.LocalizedLabel;
-import io.github.railroad.settings.ui.TreeViewSettings;
-import io.github.railroad.settings.ui.themes.ThemeSettingsSection;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableMap;
-import javafx.event.ActionEvent;
-import javafx.geometry.Insets;
-import javafx.scene.Node;
-import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
-import lombok.Getter;
-import org.apache.commons.lang3.StringUtils;
+import io.github.railroad.core.settings.Setting;
+import io.github.railroad.railroadpluginapi.registry.Registry;
+import io.github.railroad.registry.RegistryManager;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.file.StandardOpenOption;
 
 public class SettingsHandler {
-    private final ObservableMap<String, Decoration<?>> decorations = FXCollections.observableHashMap();
-    private final ObservableMap<String, SettingCodec<?, ?, ?>> codecs = FXCollections.observableHashMap();
-    @Getter
-    private final Settings settings = new Settings();
-    private final Path configPath;
+    private static final SettingsHolder SETTINGS_HOLDER = new SettingsHolder();
+    private static final Path SETTINGS_PATH = ConfigHandler.getConfigDirectory().resolve("settings.json");
+    public static final Registry<Setting<?>> SETTINGS_REGISTRY = RegistryManager.createRegistry("settings", new TypeToken<>() {});
 
-    public SettingsHandler() {
-        // TODO register plugin settings
-        registerDefaultSettings();
-        registerDefaultCodecs();
-        registerDefaultDecorations();
-
-        configPath = ConfigHandler.getConfigDirectory().resolve("settings.json");
-    }
-
-    /**
-     * If the settings file does not exist, create it
-     * also loads the settings from the file
-     */
-    public void initSettingsFile() {
+    public static void init() {
         try {
-            if (!Files.exists(configPath)) {
-                createSettingsFile();
+            if (Files.notExists(SETTINGS_PATH)) {
+                createSettings();
             }
 
-            loadSettingsFromFile();
-        } catch (Exception e) {
-            Railroad.LOGGER.error("Failed to initialize settings file", e);
+            loadSettings();
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to initialize settings file", exception);
         }
     }
 
-    /**
-     * Creates the settings file and applies the default settings to it.
-     */
-    public void createSettingsFile() {
+    public static void createSettings() {
         try {
-            Files.createDirectories(configPath.getParent());
-            Files.createFile(configPath);
-
-            saveSettingsFile();
-        } catch (IOException e) {
-            Railroad.LOGGER.error("Failed to create settings file", e);
+            Files.createDirectories(SETTINGS_PATH.getParent());
+            saveSettings();
+        } catch (IOException exception) {
+            Railroad.LOGGER.error("Failed to create settings file", exception);
         }
     }
 
-    /**
-     * Loads the settings from the file.
-     * If the file is empty, or not a valid json object, it will reset the file to the default settings.
-     */
-    public void loadSettingsFromFile() {
+    public static void loadSettings() {
         try {
-            String fileInput = Files.readString(configPath);
-            if (fileInput.isBlank() || fileInput.trim().replace(" ", "").equals("{}")) {
-                saveSettingsFile();
+            String content = Files.readString(SETTINGS_PATH);
+            if (content.isBlank() || content.replace(" ", "").equals("{}")) {
+                Railroad.LOGGER.warn("Settings file is empty, resetting to default");
+                saveSettings();
+                return;
             }
 
-            JsonObject json = Railroad.GSON.fromJson(fileInput, JsonObject.class);
-            Railroad.LOGGER.debug("Loaded settings file: {}", json);
-            settings.fromJson(json);
-        } catch (JsonSyntaxException e) {
-            Railroad.LOGGER.error("Failed to parse settings file {}, resetting json file from: {} to defaults.", e, settings.toJson().toString());
-            saveSettingsFile();
-            loadSettingsFromFile();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            SETTINGS_HOLDER.fromJson(Railroad.GSON.fromJson(content, JsonObject.class));
+        } catch (JsonSyntaxException exception) {
+            Railroad.LOGGER.error("Failed to parse settings file, resetting file to default", exception);
+            saveSettings();
+        } catch (IOException exception) {
+            throw new RuntimeException(exception);
         }
     }
 
-    public void saveSettingsFile() {
+    public static void saveSettings() {
         Railroad.LOGGER.debug("Saving settings file");
+
         try {
-            Files.writeString(configPath, Railroad.GSON.toJson(settings.toJson()));
-        } catch (IOException e) {
-            Railroad.LOGGER.error("Failed to save settings file", e);
+            String json = Railroad.GSON.toJson(SETTINGS_HOLDER.toJson());
+            Files.writeString(SETTINGS_PATH, json, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
+        } catch (IOException exception) {
+            Railroad.LOGGER.error("Failed to save settings file", exception);
         }
     }
 
-    public void registerSetting(Setting<?> setting) {
-        settings.registerSetting(setting);
+    public static <T> Setting<T> registerSetting(Setting<T> setting) {
+        SETTINGS_REGISTRY.register(setting.getId(), setting);
+        return setting;
     }
 
-    public void registerCodec(SettingCodec<?, ?, ?> codec) {
-        codecs.put(codec.id(), codec);
+    public static Setting<?> getSetting(String id) {
+        return SETTINGS_REGISTRY.get(id);
     }
 
-    public void registerDecoration(Decoration<?> decoration) {
-        decorations.put(decoration.id(), decoration);
+    public static <T> T getValue(Setting<T> setting) {
+        if (setting == null)
+            throw new IllegalArgumentException("Setting cannot be null");
+
+        T value = setting.getValue();
+        if (value == null && !setting.isCanBeNull())
+            throw new IllegalStateException("Setting " + setting.getId() + " cannot be null");
+
+        return value;
     }
 
-    public Setting<?> getSetting(String id) {
-        return settings.getSetting(id);
-    }
-
-    public <V> V getSettingValue(String id, Class<V> type) {
-        Setting<V> setting = getSetting(id, type);
+    public static <T> T getValue(String id, Class<T> type) {
+        Setting<T> setting = getSetting(id, type);
         return setting == null ? null : setting.getValue();
     }
 
-    public <V> void setSettingValue(String id, Class<V> clazz, V value) {
-        Setting<V> setting = getSetting(id, clazz);
-        if (setting == null) {
+    public static <T> void setValue(String id, Class<T> clazz, T value) {
+        Setting<T> setting = getSetting(id, clazz);
+        if (setting == null)
             throw new IllegalArgumentException("Setting " + id + " does not exist or is not of type " + value.getClass().getName());
-        }
 
         setting.setValue(value);
-        setting.getApplySetting().accept(null); // TODO fix generics (?)
     }
 
-    public boolean getBooleanSetting(String id) {
+    public static boolean getBooleanValue(String id) {
         Setting<Boolean> setting = getSetting(id, Boolean.class);
-        if (setting == null) {
+        if (setting == null)
             throw new IllegalArgumentException("Setting " + id + " does not exist or is not a boolean setting.");
-        }
 
-        return setting.getValue();
+        Boolean value = setting.getValue();
+        return value != null && value; // Return false if the value is null
     }
 
-    public void setBooleanSetting(String id, boolean value) {
-        setSettingValue(id, Boolean.class, value);
+    public static void setBooleanValue(String id, boolean value) {
+        setValue(id, Boolean.class, value);
     }
 
-    public String getStringSetting(String id) {
+    public static String getStringValue(String id) {
         Setting<String> setting = getSetting(id, String.class);
-        if (setting == null) {
+        if (setting == null)
             throw new IllegalArgumentException("Setting " + id + " does not exist or is not a string setting.");
-        }
 
         return setting.getValue();
     }
 
-    public void setStringSetting(String id, String value) {
-        setSettingValue(id, String.class, value);
+    public static void setStringValue(String id, String value) {
+        setValue(id, String.class, value);
     }
 
-    public int getIntSetting(String id) {
+    public static int getIntValue(String id) {
         Setting<Integer> setting = getSetting(id, Integer.class);
-        if (setting == null) {
+        if (setting == null)
             throw new IllegalArgumentException("Setting " + id + " does not exist or is not an integer setting.");
-        }
 
-        return setting.getValue();
+        Integer value = setting.getValue();
+        return value == null ? 0 : value; // Return 0 if the value is null
     }
 
-    public void setIntSetting(String id, int value) {
-        setSettingValue(id, Integer.class, value);
+    public static void setIntValue(String id, int value) {
+        setValue(id, Integer.class, value);
     }
 
-    public double getDoubleSetting(String id) {
+    public static double getDoubleValue(String id) {
         Setting<Double> setting = getSetting(id, Double.class);
-        if (setting == null) {
+        if (setting == null)
             throw new IllegalArgumentException("Setting " + id + " does not exist or is not a double setting.");
-        }
 
-        return setting.getValue();
+        Double value = setting.getValue();
+        return value == null ? 0.0 : value; // Return 0.0 if the value is null
     }
 
-    public void setDoubleSetting(String id, double value) {
-        setSettingValue(id, Double.class, value);
+    public static <T> void setValue(Setting<T> setting, T value) {
+        if (setting == null)
+            throw new IllegalArgumentException("Setting cannot be null");
+
+        setting.setValue(value);
     }
 
-    public float getFloatSetting(String id) {
+    public void setDoubleValue(String id, double value) {
+        setValue(id, Double.class, value);
+    }
+
+    public static float getFloatValue(String id) {
         Setting<Float> setting = getSetting(id, Float.class);
-        if (setting == null) {
+        if (setting == null)
             throw new IllegalArgumentException("Setting " + id + " does not exist or is not a float setting.");
-        }
 
-        return setting.getValue();
+        Float value = setting.getValue();
+        return value == null ? 0.0f : value; // Return 0.0f if the value is null
     }
 
-    public void setFloatSetting(String id, float value) {
-        setSettingValue(id, Float.class, value);
+    public static void setFloatValue(String id, float value) {
+        setValue(id, Float.class, value);
     }
 
-    public long getLongSetting(String id) {
+    public static long getLongValue(String id) {
         Setting<Long> setting = getSetting(id, Long.class);
-        if (setting == null) {
+        if (setting == null)
             throw new IllegalArgumentException("Setting " + id + " does not exist or is not a long setting.");
-        }
 
-        return setting.getValue();
+        Long value = setting.getValue();
+        return value == null ? 0L : value; // Return 0L if the value is null
     }
 
-    public void setLongSetting(String id, long value) {
-        setSettingValue(id, Long.class, value);
+    public static void setLongValue(String id, long value) {
+        setValue(id, Long.class, value);
     }
 
     @SuppressWarnings("unchecked")
-    public <V> Setting<V> getSetting(String id, Class<V> type) {
-        Setting<?> setting = settings.getSetting(id);
-        if (setting == null) {
+    public static <T> Setting<T> getSetting(String id, Class<T> type) {
+        Setting<?> setting = SETTINGS_REGISTRY.get(id);
+        if (setting == null)
             return null;
-        }
 
-        if (!type.isAssignableFrom(setting.getValue().getClass())) {
-            throw new ClassCastException("Setting " + id + " is not of type " + type.getName());
-        }
+        Class<?> settingType = setting.getType();
+        if (!type.isAssignableFrom(settingType))
+            throw new ClassCastException(
+                    "Setting with ID '" + id + "' is of type " + settingType.getName() + ", cannot cast to " + type.getName());
 
-        return (Setting<V>) setting;
+        return (Setting<T>) setting;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> SettingCodec<T, Node, ?> getCodec(String id) {
-        return (SettingCodec<T, Node, ?>) codecs.get(id);
-    }
-
-    public Decoration<?> getDecoration(String id) {
-        return decorations.get(id);
-    }
-
-    /**
-     * Creates a tree of setting folders.
-     *
-     * @return {@link TreeView} The tree of folders
-     */
-    public TreeView<LocalizedLabel> createCategoryTree() {
-        TreeView<LocalizedLabel> view = new TreeView<>(new TreeItem<>(null));
-        view.setShowRoot(false);
-
-        for (Setting<?> setting : settings.getSettings().values()) {
-            String[] parts = setting.getTreeId().split("[:.]");
-            String settingPart = parts[parts.length - 1];
-
-            var currNode = view.getRoot();
-            int index = 0;
-
-            for (String part : parts) {
-                index++;
-                if (part.equals(settingPart)) {
-                    break;
-                }
-
-                // If it is the last folder
-                int finalIndex = index;
-                if (index == (parts.length - 1)) {
-                    break;
-                }
-
-                // Check if the folder already exists
-                var folder = currNode.getChildren().stream().filter(i -> i.getValue() instanceof LocalizedLabel l && l.getKey().equals(StringUtils.join(parts, ".", 0, finalIndex)))
-                        .findFirst();
-
-                if (folder.isEmpty()) {
-                    // If it does not exist, create it
-                    TreeItem<LocalizedLabel> newFolder = new TreeItem<>(new LocalizedLabel(StringUtils.join(parts, ".", 0, index)));
-                    currNode.getChildren().add(newFolder);
-                    currNode = newFolder;
-                } else {
-                    // If it exists, set the current node to the folder
-                    currNode = folder.get();
-                }
-            }
-        }
-
-        for (Decoration<?> decoration : decorations.values()) {
-            String[] parts = decoration.treeId().split("[:.]");
-            String decorationPart = parts[parts.length - 1];
-
-            var currNode = view.getRoot();
-            int index = 0;
-
-            for (String part : parts) {
-                index++;
-                if (part.equals(decorationPart)) {
-                    break;
-                }
-
-                // If it is the last folder
-                int finalIndex = index;
-                if (index == (parts.length - 1)) {
-                    break;
-                }
-
-                // Check if the folder already exists
-                var folder = currNode.getChildren().stream().filter(i -> i.getValue() instanceof LocalizedLabel l && l.getKey().equals(StringUtils.join(parts, ".", 0, finalIndex)))
-                        .findFirst();
-
-                if (folder.isEmpty()) {
-                    // If it does not exist, create it
-                    TreeItem<LocalizedLabel> newFolder = new TreeItem<>(new LocalizedLabel(StringUtils.join(parts, ".", 0, index)));
-                    currNode.getChildren().add(newFolder);
-                    currNode = newFolder;
-                } else {
-                    // If it exists, set the current node to the folder
-                    currNode = folder.get();
-                }
-            }
-        }
-
-        return view;
-    }
-
-    /**
-     * Creates the pane for the setting folder and adds the relevant settings and decorations to it.
-     *
-     * @param parent parent folder id (just one part e.g appearance)
-     * @return {@link VBox} The pane with the settings and decorations
-     */
-    public VBox createSettingsSection(String parent) {
-        final Map<String, VBox> folderBoxes = new HashMap<>();
-        final VBox vbox = new VBox();
-
-        if (parent == null) {
-            // TODO If no node is selected - Possibly make impossible (?) Maybe force onto railroad/general or last used node
-            var title = new LocalizedLabel("railroad.home.settings.title");
-            title.getStyleClass().add("settings-title");
-
-            var desc = new LocalizedLabel("railroad.home.settings.description");
-            desc.getStyleClass().add("settings-description");
-            VBox.setMargin(desc, InsetsFactory.top(5));
-            vbox.getChildren().addAll(title, desc);
-
-            return vbox;
-        }
-
-        parent = parent.toLowerCase();
-
-        for (Setting<?> setting : settings.getSettings().values()) {
-            String[] parts = setting.getTreeId().split("[.:]");
-            // Get the last folder present
-            String parentId = parts[parts.length - 3];
-
-            if (parentId.equals(parent)) {
-                String innerFolder = String.join(".", Arrays.copyOfRange(parts, 0, parts.length - 1));
-                if (!folderBoxes.containsKey(innerFolder)) {
-                    var folderBox = new VBox();
-                    folderBoxes.put(innerFolder, folderBox);
-                    VBox.setMargin(folderBox, InsetsFactory.of(5, 10, 0, 10));
-                }
-                var folderBox = folderBoxes.get(innerFolder);
-
-                var settingBundle = new VBox();
-                VBox.setMargin(settingBundle, InsetsFactory.all(5));
-
-                var settingNode = getCodec(setting.getCodecId()).createNode().apply(setting.getValue());
-
-                settingNode.addEventHandler(
-                        ActionEvent.ACTION, e -> {
-                            setting.setValue(getCodec(setting.getCodecId()).nodeToValue().apply(settingNode));
-                        });
-                settingNode.addEventHandler(ActionEvent.ACTION, e -> {
-                    setting.getApplySetting().accept(null); // TODO fix generics (?)
-                });
-
-                if (setting.getEventHandlers() != null)
-                    setting.getEventHandlers().forEach(settingNode::addEventHandler);
-
-                var settingTitleLabel = new LocalizedLabel(setting.getTreeId().replace(":", ".") + ".title");
-                settingTitleLabel.getStyleClass().add("setting-title-label");
-
-                var settingDescLabel = new LocalizedLabel(setting.getTreeId().replace(":", ".") + ".description");
-                settingDescLabel.getStyleClass().add("setting-description-label");
-
-                settingBundle.getChildren().addAll(TreeViewSettings.SEARCH_HANDLER.styleNodes(settingTitleLabel, settingNode));
-                settingBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(settingDescLabel));
-
-                folderBox.getChildren().add(settingBundle);
-            }
-        }
-
-        for (Decoration<?> decoration : decorations.values()) {
-            String[] parts = decoration.treeId().split("[.:]");
-            // Get the last folder present
-            String parentId = parts[parts.length - 3];
-
-            if (parentId.equals(parent)) {
-                String innerFolder = String.join(".", Arrays.copyOfRange(parts, 0, parts.length - 1));
-
-                if (!folderBoxes.containsKey(innerFolder)) {
-                    var folderBox = new VBox();
-                    folderBoxes.put(innerFolder, folderBox);
-                    VBox.setMargin(folderBox, InsetsFactory.of(5, 10, 0, 10));
-                }
-
-                var folderBox = folderBoxes.get(innerFolder);
-
-                var decorBundle = new VBox();
-                VBox.setMargin(decorBundle, InsetsFactory.all(5));
-
-                var decorationNode = decoration.nodeCreator().get();
-                var decorationLabelKey = decoration.treeId().replace(":", ".") + ".title";
-                var decorationDescKey = decoration.treeId().replace(":", ".") + ".description";
-
-                if (L18n.isKeyValid(decorationLabelKey)) {
-                    var decorationLabel = new LocalizedLabel(decorationLabelKey);
-                    decorationLabel.getStyleClass().add("decoration-label");
-                    decorBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(decorationLabel));
-                }
-
-                decorBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(decorationNode));
-
-                if (L18n.isKeyValid(decorationDescKey)) {
-                    var decorationDesc = new LocalizedLabel(decorationDescKey);
-                    decorationDesc.getStyleClass().add("decoration-description");
-                    decorBundle.getChildren().add(TreeViewSettings.SEARCH_HANDLER.styleNode(decorationDesc));
-                }
-
-                folderBox.getChildren().add(decorBundle);
-            }
-        }
-
-        for (Map.Entry<String, VBox> entry : folderBoxes.entrySet()) {
-            var sepBox = new HBox();
-            sepBox.setSpacing(10);
-            sepBox.setPadding(new Insets(5, 10, 0, 10));
-
-            var sectionLabel = new LocalizedLabel(entry.getKey());
-            sectionLabel.getStyleClass().add("section-label");
-
-            var sep = new Separator();
-            sep.setMaxWidth(Double.MAX_VALUE);
-            HBox.setHgrow(sep, Priority.ALWAYS);
-            vbox.setMaxWidth(Double.MAX_VALUE);
-            VBox.setVgrow(sep, Priority.ALWAYS);
-
-            sepBox.getChildren().addAll(sectionLabel, sep);
-            vbox.getChildren().addAll(sepBox, entry.getValue());
-        }
-
-        return vbox;
-    }
-
-    // Default settings & codecs
-    private void registerDefaultCodecs() {
-        registerCodec(
-                new SettingCodec<Language, ComboBox<String>, JsonElement>("railroad:language",
-                        n -> Language.fromName(n.getValue()),
-                        (t, n) -> n.setValue(t.getName()),
-                        j -> Language.valueOf(j.getAsString()),
-                        t -> new JsonPrimitive(t.name()),
-                        t -> {
-                            var combo = new ComboBox<String>();
-                            for (Language language : Language.values()) {
-                                combo.getItems().add(language.getName());
-                            }
-                            combo.setValue(t.getName());
-                            return combo;
-                        })
-        );
-
-        registerCodec(
-                new SettingCodec<String, ThemeSettingsSection, JsonElement>("railroad:theme.select",
-                        ThemeSettingsSection::getSelectedTheme,
-                        (t, n) -> n.setSelectedTheme(t),
-                        JsonElement::getAsString,
-                        JsonPrimitive::new,
-                        t -> {
-                            var section = new ThemeSettingsSection();
-                            section.setSelectedTheme(t);
-                            return section;
-                        })
-        );
-
-        registerCodec(
-                new SettingCodec<Boolean, CheckBox, JsonElement>("railroad:ide.auto_pair_inside_strings",
-                        CheckBox::isSelected,
-                        (selected, checkBox) -> checkBox.setSelected(selected),
-                        JsonElement::getAsBoolean,
-                        JsonPrimitive::new,
-                        selected -> {
-                            var checkBox = new CheckBox();
-                            checkBox.setSelected(selected);
-                            return checkBox;
-                        })
-        );
-    }
-
-    private void registerDefaultSettings() {
-        registerSetting(new Setting<>(
-                "railroad:language",
-                "railroad:general.language",
-                "railroad:language",
-                Language.EN_US,
-                e -> L18n.loadLanguage(),
-                null
-        ));
-
-        registerSetting(
-                new Setting<>(
-                        "railroad:theme",
-                        "railroad:appearance.themes.select",
-                        "railroad:theme.select",
-                        "default-dark",
-                        e -> Railroad.updateTheme(Railroad.SETTINGS_HANDLER.getStringSetting("railroad:theme")),
-                        null
-                ));
-
-        registerSetting(
-                new Setting<>(
-                        "railroad:auto_pair_inside_strings",
-                        "railroad:ide.auto_pair_inside_strings",
-                        "railroad:ide.auto_pair_inside_strings",
-                        true,
-                        $ -> {
-                        },
-                        null
-                ));
-    }
-
-    private void registerDefaultDecorations() {
-
+    public static SettingsHolder getSettingsHolder() {
+        return SETTINGS_HOLDER;
     }
 }

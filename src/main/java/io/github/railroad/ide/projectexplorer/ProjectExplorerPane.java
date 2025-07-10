@@ -2,20 +2,22 @@ package io.github.railroad.ide.projectexplorer;
 
 import com.kodedu.terminalfx.Terminal;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
-import io.github.railroad.IDESetup;
 import io.github.railroad.Railroad;
-import io.github.railroad.ide.*;
+import io.github.railroad.core.ui.RRBorderPane;
+import io.github.railroad.core.ui.RRButton;
+import io.github.railroad.core.ui.RRVBox;
+import io.github.railroad.core.ui.localized.LocalizedTextField;
+import io.github.railroad.ide.IDESetup;
 import io.github.railroad.ide.projectexplorer.dialog.CopyModalDialog;
 import io.github.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import io.github.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import io.github.railroad.ide.projectexplorer.task.FileCopyTask;
 import io.github.railroad.ide.projectexplorer.task.SearchTask;
 import io.github.railroad.ide.projectexplorer.task.WatchTask;
-import io.github.railroad.localization.ui.LocalizedTextField;
+import io.github.railroad.ide.ui.*;
+import io.github.railroad.plugin.defaults.DefaultDocument;
 import io.github.railroad.project.Project;
-import io.github.railroad.ui.defaults.RRBorderPane;
-import io.github.railroad.ui.defaults.RRVBox;
-import io.github.railroad.ui.nodes.RRButton;
+import io.github.railroad.railroadpluginapi.events.FileEvent;
 import io.github.railroad.utility.FileHandler;
 import io.github.railroad.utility.ShutdownHooks;
 import javafx.application.Platform;
@@ -182,7 +184,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         header.setPadding(new Insets(12, 16, 8, 16));
         header.setAlignment(Pos.CENTER_LEFT);
 
-        // Project icon and name (never cut off)
+        // Project icon and name
         var projectInfo = new HBox(8);
         projectInfo.setAlignment(Pos.CENTER_LEFT);
         var projectIcon = new FontIcon(FontAwesomeSolid.FOLDER_OPEN);
@@ -193,13 +195,13 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         projectName.setMinWidth(Label.USE_PREF_SIZE); // Prevent truncation
         projectInfo.getChildren().addAll(projectIcon, projectName);
 
-        // Search field (grows, but max width)
+        // Search field
         this.searchField.setPromptText("Search files...");
         this.searchField.setPrefWidth(200);
         this.searchField.setMaxWidth(260);
         HBox.setHgrow(this.searchField, Priority.ALWAYS);
 
-        // Action buttons (compact, right-aligned)
+        // Action buttons
         var actionButtons = new HBox(4);
         actionButtons.setAlignment(Pos.CENTER_RIGHT);
         
@@ -360,16 +362,36 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 } else {
                     editorContent = new TextEditorPane(path);
                 }
-                
+
+                Tab tab;
                 if (welcomeTab != null) {
-                    // Replace the welcome tab
                     welcomeTab.setContent(editorContent);
                     welcomeTab.setText(fileName);
-                    detachableTabPane.getSelectionModel().select(welcomeTab);
+                    tab = welcomeTab;
                 } else {
-                    // Add a new tab
-                    detachableTabPane.addTab(fileName, editorContent);
+                    tab = detachableTabPane.addTab(fileName, editorContent);
                 }
+
+                detachableTabPane.getSelectionModel().select(tab);
+
+                var document = new DefaultDocument(fileName, path);
+                Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.OPENED));
+                Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.ACTIVATED));
+
+                tab.setOnClosed(event -> {
+                    Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.CLOSED));
+                    if(tab.isSelected()) {
+                        Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.DEACTIVATED));
+                    }
+                });
+
+                tab.setOnSelectionChanged(event -> {
+                    if (tab.isSelected()) {
+                        Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.ACTIVATED));
+                    } else {
+                        Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.DEACTIVATED));
+                    }
+                });
             });
         } else {
             if (FileHandler.isImageFile(path)) {
@@ -382,19 +404,21 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                         .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
                         .findFirst()
                         .orElse(null);
-                    
+
                     if (welcomeTab != null) {
-                        // Replace the welcome tab
                         welcomeTab.setContent(new ImageViewerPane(path));
                         welcomeTab.setText(fileName);
                         detachableTabPane.getSelectionModel().select(welcomeTab);
                     } else {
-                        // Add a new tab
                         detachableTabPane.addTab(fileName, new ImageViewerPane(path));
                     }
+
+                    Railroad.EVENT_BUS.publish(new FileEvent(new DefaultDocument(fileName, path), FileEvent.EventType.OPENED));
                 });
             } else {
                 FileHandler.openInDefaultApplication(path);
+
+                Railroad.EVENT_BUS.publish(new FileEvent(new DefaultDocument(path.getFileName().toString(), path), FileEvent.EventType.OPENED));
             }
         }
     }

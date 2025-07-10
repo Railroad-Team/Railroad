@@ -1,8 +1,11 @@
 package io.github.railroad.ide.projectexplorer.dialog;
 
-import io.github.railroad.localization.ui.LocalizedButton;
-import io.github.railroad.localization.ui.LocalizedLabel;
-import io.github.railroad.ui.defaults.RRGridPane;
+import io.github.railroad.Railroad;
+import io.github.railroad.core.ui.RRGridPane;
+import io.github.railroad.core.ui.localized.LocalizedButton;
+import io.github.railroad.core.ui.localized.LocalizedLabel;
+import io.github.railroad.plugin.defaults.DefaultDocument;
+import io.github.railroad.railroadpluginapi.events.FileEvent;
 import io.github.railroad.utility.FileHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -38,6 +41,8 @@ public class DeleteDialog {
                 }
 
                 stage.hide();
+
+                Railroad.EVENT_BUS.publish(new FileEvent(new DefaultDocument(path.getFileName().toString(), path), FileEvent.EventType.DELETED));
             } catch (IOException exception) {
                 exception.printStackTrace(); // TODO: Handle exception
             }

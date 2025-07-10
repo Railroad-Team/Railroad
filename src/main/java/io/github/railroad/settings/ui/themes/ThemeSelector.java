@@ -1,8 +1,10 @@
 package io.github.railroad.settings.ui.themes;
 
 import io.github.railroad.Railroad;
-import io.github.railroad.ui.nodes.RRButton;
-import io.github.railroad.ui.nodes.RRFormSection;
+import io.github.railroad.core.ui.RRButton;
+import io.github.railroad.core.ui.RRFormSection;
+import io.github.railroad.settings.handler.Settings;
+import io.github.railroad.settings.handler.SettingsHandler;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
@@ -26,7 +28,7 @@ public class ThemeSelector extends VBox {
     private final ObjectProperty<String> selectedThemeProperty;
 
     public ThemeSelector() {
-        this(Railroad.SETTINGS_HANDLER.getStringSetting("railroad:theme"));
+        this(SettingsHandler.getValue(Settings.THEME));
     }
 
     public ThemeSelector(String currentTheme) {

@@ -2,6 +2,8 @@ package io.github.railroad.ui.nodes;
 
 import io.github.palexdev.mfxcore.builders.InsetsBuilder;
 import io.github.railroad.Railroad;
+import io.github.railroad.core.ui.RRButton;
+import io.github.railroad.core.ui.RRCard;
 import io.github.railroad.project.Project;
 import io.github.railroad.utility.StringUtils;
 import javafx.geometry.Insets;

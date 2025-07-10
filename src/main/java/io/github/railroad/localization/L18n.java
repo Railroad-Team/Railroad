@@ -1,6 +1,8 @@
 package io.github.railroad.localization;
 
 import io.github.railroad.Railroad;
+import io.github.railroad.settings.handler.Settings;
+import io.github.railroad.settings.handler.SettingsHandler;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
@@ -10,27 +12,25 @@ import java.util.Locale;
 import java.util.Properties;
 
 import static io.github.railroad.Railroad.LOGGER;
-import static io.github.railroad.Railroad.SETTINGS_HANDLER;
 
 public class L18n {
     private static final Properties LANG_CACHE = new Properties();
-    private static final ObjectProperty<Language> CURRENT_LANG = new SimpleObjectProperty<>();
+    private static final ObjectProperty<Languages> CURRENT_LANG = new SimpleObjectProperty<>();
 
-    private L18n() {
-    }
+    private L18n() {}
 
-    public static Language getCurrentLanguage() {
+    public static Languages getCurrentLanguage() {
         return CURRENT_LANG.getValue();
     }
 
-    public static ObjectProperty<Language> currentLanguageProperty() {
+    public static ObjectProperty<Languages> currentLanguageProperty() {
         return CURRENT_LANG;
     }
 
     public static void loadLanguage() {
         // Loads the language into cache and sets the CURRENT_LANG
         LOGGER.info("Loading language file");
-        Language language = SETTINGS_HANDLER.getSettingValue("railroad:language", Language.class);
+        Languages language = SettingsHandler.getValue(Settings.LANGUAGE);
 
         try {
             String name = "lang/" + language.name().toLowerCase(Locale.ROOT) + ".lang";
@@ -60,7 +60,7 @@ public class L18n {
             LOGGER.error("Localize called with null key");
             return "null";
         }
-        
+
         if (LANG_CACHE.get(key) == null) {
             //TODO create a popup/toast to ask if user wants to swap to english as key is missing
             LOGGER.error("Error finding translations for key '{}' in language {}", key, CURRENT_LANG.getValue());
@@ -74,7 +74,7 @@ public class L18n {
      * Localizes a string and formats it with the given arguments.
      * This is equivalent to String.format(L18n.localize(key), args...).
      *
-     * @param key the localization key
+     * @param key  the localization key
      * @param args the format arguments
      * @return the localized and formatted string
      */

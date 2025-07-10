@@ -1,7 +1,7 @@
 package io.github.railroad.settings.ui.themes;
 
-import io.github.railroad.ui.nodes.RRButton;
-import io.github.railroad.ui.nodes.RRCard;
+import io.github.railroad.core.ui.RRButton;
+import io.github.railroad.core.ui.RRCard;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;

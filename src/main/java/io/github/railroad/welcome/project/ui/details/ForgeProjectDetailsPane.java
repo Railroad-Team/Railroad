@@ -1,20 +1,20 @@
 package io.github.railroad.welcome.project.ui.details;
 
-import io.github.railroad.form.Form;
-import io.github.railroad.form.FormComponent;
-import io.github.railroad.form.FormData;
-import io.github.railroad.form.FormSection;
-import io.github.railroad.form.impl.*;
+import io.github.railroad.core.form.Form;
+import io.github.railroad.core.form.FormComponent;
+import io.github.railroad.core.form.FormData;
+import io.github.railroad.core.form.FormSection;
+import io.github.railroad.core.form.impl.*;
+import io.github.railroad.core.ui.RRVBox;
 import io.github.railroad.project.DisplayTest;
-import io.github.railroad.project.data.ForgeProjectData;
 import io.github.railroad.project.License;
+import io.github.railroad.project.data.ForgeProjectData;
 import io.github.railroad.project.minecraft.ForgeVersion;
 import io.github.railroad.project.minecraft.MinecraftVersion;
 import io.github.railroad.project.minecraft.RecommendableVersion;
 import io.github.railroad.project.minecraft.mapping.MappingChannel;
 import io.github.railroad.project.minecraft.mapping.MappingHelper;
 import io.github.railroad.project.minecraft.mapping.MappingVersion;
-import io.github.railroad.ui.defaults.RRVBox;
 import io.github.railroad.welcome.project.ProjectType;
 import io.github.railroad.welcome.project.ui.widget.StarableListCell;
 import javafx.beans.property.ObjectProperty;
