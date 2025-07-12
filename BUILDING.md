@@ -29,6 +29,8 @@
    git pull
    ```
 
+---
+
 ### Using IntelliJ IDEA (Recommended)
 
 1. Open the `build.gradle` file in _IntelliJ IDEA_.
@@ -45,6 +47,8 @@
 1. Go to `File > Settings > Plugins`
 2. IntelliJ will usually suggest the **Lombok** plugin automatically.
    If not, search for `Lombok` manually and install it.
+
+---
 
 ### Manual Setup (No IDE)
 
