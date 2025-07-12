@@ -33,10 +33,10 @@
 
 1. Open the `build.gradle` file in _IntelliJ IDEA_.
 2. Go to `File > Project Structure > Project`
-   - For `SDK`, select `21`
+   - For `SDK`, select `Java 21 SDK` (may also appear only as `21`)
    - For `Language level`, select `SDK default`.
    - Then hit `Apply`
-3. Go to `File > Settings > Build, Execution, Deployment > Build Tools > Gradle`, and set **Gradle JVM** to `21`.
+3. Go to `File > Settings > Build, Execution, Deployment > Build Tools > Gradle`, and set **Gradle JVM** to `Java 21 SDK` (may also appear only as `21`).
 4. Open the **Gradle tab** (right sidebar) and click the _looping circular arrow icon_ to **Reload All Gradle Projects**.
    (The tooltip may say "Reload All Gradle Projects" or "Sync All Gradle Projects", depending on your IDE version.)
 
