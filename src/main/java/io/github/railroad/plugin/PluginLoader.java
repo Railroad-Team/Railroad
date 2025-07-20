@@ -5,20 +5,34 @@ import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.plugin.defaults.DefaultPluginDescriptor;
 import io.github.railroad.railroadpluginapi.PluginDescriptor;
+import io.github.railroad.railroadpluginapi.deps.MavenDep;
+import io.github.railroad.railroadpluginapi.deps.MavenDeps;
+import io.github.railroad.railroadpluginapi.deps.MavenRepo;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+/**
+ * PluginLoader is responsible for loading plugins from JAR files.
+ * It reads the plugin descriptor from the JAR and validates its contents.
+ */
 public class PluginLoader {
+    /**
+     * Loads a plugin from the specified JAR file path.
+     *
+     * @param pluginPath the path to the plugin JAR file
+     * @return a PluginLoadResult containing the loaded plugin descriptor and path
+     * @throws IllegalArgumentException if the plugin path is invalid
+     * @throws RuntimeException if there is an error reading the plugin JAR or descriptor
+     */
     public static PluginLoadResult loadPlugin(Path pluginPath) {
         if (pluginPath == null || !pluginPath.toString().endsWith(".jar"))
             throw new IllegalArgumentException("Invalid plugin path: " + pluginPath);
@@ -34,18 +48,6 @@ public class PluginLoader {
         } catch (IOException exception) {
             throw new RuntimeException("Failed to read plugin JAR: " + pluginPath, exception);
         }
-    }
-
-    private static String readMainClass(URLClassLoader classLoader, String mainClass) throws Exception {
-        if (mainClass == null || mainClass.isBlank())
-            throw new IllegalArgumentException("Main class cannot be null or empty");
-
-        try(var inputStream = classLoader.getResourceAsStream(mainClass.replace('.', '/') + ".class")) {
-            if (inputStream == null)
-                throw new IOException("Main class " + mainClass + " not found in JAR");
-        }
-
-        return mainClass;
     }
 
     private static PluginDescriptor readDescriptor(JarFile jarFile) throws IOException {
@@ -100,14 +102,42 @@ public class PluginLoader {
             String license = getAsString(json, "license", false);
             String iconPath = getAsString(json, "icon", false);
 
-            Map<String, String> dependencies = new HashMap<>();
+            List<MavenRepo> repositories = new ArrayList<>();
+            List<MavenDep> artifacts = new ArrayList<>();
             if (json.has("dependencies") && json.get("dependencies").isJsonObject()) {
                 JsonObject dependenciesJson = json.getAsJsonObject("dependencies");
-                for (Map.Entry<String, JsonElement> entry : dependenciesJson.entrySet()) {
-                    if (entry.getValue().isJsonPrimitive() && entry.getValue().getAsJsonPrimitive().isString()) {
-                        dependencies.put(entry.getKey(), entry.getValue().getAsString());
-                    } else {
-                        throw new IOException("plugin.json 'dependencies' field must be a string map");
+
+                if (dependenciesJson.has("repositories") && dependenciesJson.get("repositories").isJsonArray()) {
+                    for (JsonElement repoElement : dependenciesJson.getAsJsonArray("repositories")) {
+                        if (repoElement.isJsonObject()) {
+                            JsonObject repoObject = repoElement.getAsJsonObject();
+                            String idRepo = getAsString(repoObject, "id", true);
+                            String url = getAsString(repoObject, "url", true);
+                            repositories.add(new MavenRepo(idRepo, url));
+                        } else if (repoElement.isJsonPrimitive() && repoElement.getAsJsonPrimitive().isString()) {
+                            String url = repoElement.getAsString();
+                            repositories.add(new MavenRepo("unknown", url));
+                        } else {
+                            throw new IOException("plugin.json 'dependencies.repositories' must be an array of objects or strings");
+                        }
+                    }
+                }
+
+                if (dependenciesJson.has("artifacts") && dependenciesJson.get("artifacts").isJsonArray()) {
+                    for (JsonElement artifactElement : dependenciesJson.getAsJsonArray("artifacts")) {
+                        if (artifactElement.isJsonObject()) {
+                            JsonObject artifactObject = artifactElement.getAsJsonObject();
+                            String groupId = getAsString(artifactObject, "groupId", true);
+                            String artifactId = getAsString(artifactObject, "artifactId", true);
+                            String versionArtifact = getAsString(artifactObject, "version", true);
+
+                            artifacts.add(new MavenDep(groupId, artifactId, versionArtifact));
+                        } else if (artifactElement.isJsonPrimitive() && artifactElement.getAsJsonPrimitive().isString()) {
+                            String artifact = artifactElement.getAsString();
+                            artifacts.add(MavenDep.fromFullName(artifact));
+                        } else {
+                            throw new IOException("plugin.json 'dependencies.artifacts' must be an array of objects or strings");
+                        }
                     }
                 }
             }
@@ -121,7 +151,7 @@ public class PluginLoader {
                     .license(license)
                     .iconPath(iconPath)
                     .mainClass(mainClass)
-                    .dependencies(dependencies)
+                    .dependencies(new MavenDeps(repositories, artifacts))
                     .build();
         }
     }

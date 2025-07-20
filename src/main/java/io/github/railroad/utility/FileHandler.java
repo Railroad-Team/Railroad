@@ -4,7 +4,7 @@ import javafx.scene.Node;
 import javafx.scene.image.*;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeRegular;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import javax.imageio.ImageIO;
@@ -137,47 +137,50 @@ public class FileHandler {
         }
     }
 
-    public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty, Runnable onNotEmpty) throws IOException {
-        if (Files.notExists(directory)) {
-            if(directory.toFile().mkdirs()) { // We use IO instead of NIO so that we block the thread until it's created
-                onEmpty.run();
-                return true;
+    public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty, Runnable onNotEmpty) {
+        try {
+            if (Files.notExists(directory)) {
+                if (directory.toFile().mkdirs()) { // We use IO instead of NIO so that we block the thread until it's created
+                    onEmpty.run();
+                    return true;
+                }
+
+                onNotEmpty.run();
+                return false;
             }
-
-            onNotEmpty.run();
-            return false;
-        }
-
-        try (Stream<Path> paths = Files.list(directory)) {
-            List<Path> pathList = paths.toList();
-            if (pathList.isEmpty()) {
-                onEmpty.run();
-                return true;
-            } else {
-                for (Path path : pathList) {
-                    if (Files.isDirectory(path)) {
-                        if (!isDirectoryEmpty(path)) {
+            try (Stream<Path> paths = Files.list(directory)) {
+                List<Path> pathList = paths.toList();
+                if (pathList.isEmpty()) {
+                    onEmpty.run();
+                    return true;
+                } else {
+                    for (Path path : pathList) {
+                        if (Files.isDirectory(path)) {
+                            if (!isDirectoryEmpty(path)) {
+                                onNotEmpty.run();
+                                return false;
+                            }
+                        } else {
                             onNotEmpty.run();
                             return false;
                         }
-                    } else {
-                        onNotEmpty.run();
-                        return false;
                     }
                 }
             }
-        }
 
-        onEmpty.run();
-        return true;
+            onEmpty.run();
+            return true;
+        } catch (IOException exception) {
+            return false; // If we can't read the directory, we assume it's not empty
+        }
     }
 
-    public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty) throws IOException {
+    public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty) {
         return isDirectoryEmpty(directory, onEmpty, () -> {
         });
     }
 
-    public static boolean isDirectoryEmpty(Path directory) throws IOException {
+    public static boolean isDirectoryEmpty(Path directory) {
         return isDirectoryEmpty(directory, () -> {
         });
     }

@@ -3,7 +3,7 @@ package io.github.railroad.settings.ui.themes;
 import io.github.railroad.Railroad;
 import io.github.railroad.core.ui.RRButton;
 import io.github.railroad.core.ui.RRFormSection;
-import io.github.railroad.settings.handler.Settings;
+import io.github.railroad.settings.Settings;
 import io.github.railroad.settings.handler.SettingsHandler;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -12,7 +12,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.nio.file.Path;
 import java.util.List;

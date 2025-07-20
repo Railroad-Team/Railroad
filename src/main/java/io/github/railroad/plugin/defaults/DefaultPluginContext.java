@@ -2,16 +2,15 @@ package io.github.railroad.plugin.defaults;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-import io.github.railroad.Railroad;
 import io.github.railroad.Services;
 import io.github.railroad.config.ConfigHandler;
+import io.github.railroad.core.logger.LoggerServiceLocator;
+import io.github.railroad.core.registry.Registry;
+import io.github.railroad.core.registry.RegistryManager;
 import io.github.railroad.logger.Logger;
-import io.github.railroad.logger.LoggingLevel;
 import io.github.railroad.railroadpluginapi.PluginContext;
 import io.github.railroad.railroadpluginapi.PluginDescriptor;
 import io.github.railroad.railroadpluginapi.event.EventBus;
-import io.github.railroad.railroadpluginapi.registry.Registry;
-import io.github.railroad.registry.RegistryManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
@@ -35,32 +34,7 @@ public class DefaultPluginContext implements PluginContext {
         this.eventBus = bus;
 
         // TODO: Remove this logger when the logging module is fully integrated
-        this.logger = new Logger() {
-            @Override
-            public void error(String message, Object... objects) {
-                Railroad.LOGGER.error(message, objects);
-            }
-
-            @Override
-            public void warn(String message, Object... objects) {
-                Railroad.LOGGER.warn(message, objects);
-            }
-
-            @Override
-            public void info(String message, Object... objects) {
-                Railroad.LOGGER.info(message, objects);
-            }
-
-            @Override
-            public void debug(String message, Object... objects) {
-                Railroad.LOGGER.debug(message, objects);
-            }
-
-            @Override
-            public void log(String message, LoggingLevel loggingLevel, Object... objects) {
-                Railroad.LOGGER.log(message, io.github.railroad.logging.LoggingLevel.valueOf(loggingLevel.name()), objects);
-            }
-        };
+        this.logger = LoggerServiceLocator.getInstance().getLogger();
     }
 
     @Override

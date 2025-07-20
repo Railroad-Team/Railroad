@@ -24,46 +24,64 @@ public final class PluginLoadResult {
         this.descriptor = descriptor;
     }
 
+    /**
+     * @return The path to the loaded plugin JAR file.
+     */
     public Path pluginPath() {
         return pluginPath;
     }
 
+    /**
+     * @return The descriptor of the loaded plugin.
+     */
     public PluginDescriptor descriptor() {
         return descriptor;
     }
 
+    /**
+     * @return The instance of the loaded plugin, or null if not set.
+     */
     public Plugin pluginInstance() {
         return pluginInstance;
     }
 
+    /**
+     * @return The class loader used to load the plugin, or null if not set.
+     */
     public PluginClassLoader classLoader() {
         return classLoader;
     }
 
+    /**
+     * Sets the plugin instance and its class loader.
+     *
+     * @param plugin The plugin instance to set.
+     * @param classLoader The class loader used to load the plugin.
+     */
     public void setPlugin(Plugin plugin, PluginClassLoader classLoader) {
         this.pluginInstance = plugin;
         this.classLoader = classLoader;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (PluginLoadResult) obj;
-        return Objects.equals(this.pluginPath, that.pluginPath) &&
-                Objects.equals(this.descriptor, that.descriptor);
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        PluginLoadResult that = (PluginLoadResult) o;
+        return Objects.equals(pluginPath, that.pluginPath) && Objects.equals(descriptor, that.descriptor) && Objects.equals(pluginInstance, that.pluginInstance) && Objects.equals(classLoader, that.classLoader);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(pluginPath, descriptor);
+        return Objects.hash(pluginPath, descriptor, pluginInstance, classLoader);
     }
 
     @Override
     public String toString() {
-        return "PluginLoadResult[" +
-                "pluginPath=" + pluginPath + ", " +
-                "descriptor=" + descriptor + ']';
+        return "PluginLoadResult{" +
+                "pluginPath=" + pluginPath +
+                ", descriptor=" + descriptor +
+                ", pluginInstance=" + pluginInstance +
+                ", classLoader=" + classLoader +
+                '}';
     }
-
 }

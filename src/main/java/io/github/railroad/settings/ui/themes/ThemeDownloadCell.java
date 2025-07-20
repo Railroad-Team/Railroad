@@ -2,6 +2,7 @@ package io.github.railroad.settings.ui.themes;
 
 import io.github.railroad.core.ui.RRButton;
 import io.github.railroad.core.ui.RRCard;
+import io.github.railroad.core.ui.localized.LocalizedTooltip;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
@@ -14,7 +15,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.gradle.internal.impldep.org.apache.commons.lang.WordUtils;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 /**
  * A modernized theme download cell with improved visual design and user experience.
@@ -65,7 +66,7 @@ public class ThemeDownloadCell extends ListCell<Theme> {
         previewButton.setIcon(FontAwesomeSolid.EYE);
         previewButton.setButtonSize(RRButton.ButtonSize.SMALL);
         previewButton.setVariant(RRButton.ButtonVariant.GHOST);
-        previewButton.setTooltip(new Tooltip("Preview theme"));
+        previewButton.setTooltip(new LocalizedTooltip("railroad.home.settings.appearance.preview.tooltip"));
 
         downloadButton = new RRButton("railroad.home.settings.appearance.download");
         downloadButton.setButtonSize(RRButton.ButtonSize.SMALL);

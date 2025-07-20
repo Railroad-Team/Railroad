@@ -151,27 +151,23 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
     private void marginErrors() {
         IntFunction<Node> factory = line -> {
-            // Create GridPane with two columns
             var grid = new GridPane();
-            grid.setHgap(5); // Horizontal spacing between columns
+            grid.setHgap(5);
             grid.getStyleClass().add("ide-java-code-editor-grid");
 
-            // Column for line numbers (expands to fill space)
             var lineNumberColumn = new ColumnConstraints();
-            lineNumberColumn.setHgrow(Priority.ALWAYS); // Grows to fill remaining space
+            lineNumberColumn.setHgrow(Priority.ALWAYS);
 
-            // Column for icons (fixed width)
             var iconColumn = new ColumnConstraints();
-            iconColumn.setPrefWidth(12); // Fixed width matching icon size
-            iconColumn.setHgrow(Priority.NEVER); // Prevents growing
+            iconColumn.setPrefWidth(12);
+            iconColumn.setHgrow(Priority.NEVER);
 
             grid.getColumnConstraints().addAll(lineNumberColumn, iconColumn);
 
-            // Line number label
             var lineNumber = new Label(String.format("%4d", line + 1));
-            lineNumber.setTextAlignment(TextAlignment.RIGHT); // Right-align the line number
-            lineNumber.setTextFill(Color.LIGHTGRAY); // Optional: lighter text for contrast
-            grid.add(lineNumber, 0, 0); // Place in first column
+            lineNumber.setTextAlignment(TextAlignment.RIGHT);
+            lineNumber.setTextFill(Color.LIGHTGRAY);
+            grid.add(lineNumber, 0, 0);
 
             // Add icon and tooltip if there's an error or warning
             Diagnostic.Kind kind = lineToSeverity.get(line + 1); // 1-based line numbers
@@ -180,7 +176,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
                         FontAwesomeSolid.CIRCLE_EXCLAMATION : FontAwesomeSolid.TRIANGLE_EXCLAMATION,
                         12,
                         kind == Diagnostic.Kind.ERROR ? Color.RED : Color.YELLOW);
-                grid.add(icon, 1, 0); // Place in second column
+                grid.add(icon, 1, 0);
 
                 // Find the diagnostic message for this line
                 String message = errors.keySet().stream()
@@ -191,7 +187,6 @@ public class JavaCodeEditorPane extends TextEditorPane {
                         .findFirst()
                         .orElse("Unknown issue");
 
-                // Add tooltip to the icon
                 var tooltip = new Tooltip(message);
                 tooltip.setShowDelay(javafx.util.Duration.millis(200)); // Slight delay for smoother UX
                 Tooltip.install(icon, tooltip);
@@ -215,7 +210,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
                     }
                 });
 
-        // if the user clicks outside of the popup, hide it
+        // if the user clicks outside the popup, hide it
         setOnMouseClicked(event -> {
             if (autoCompletePopup.get() != null && autoCompletePopup.get().isShowing()) {
                 hideAutoComplete();

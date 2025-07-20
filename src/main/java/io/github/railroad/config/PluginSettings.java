@@ -1,7 +1,7 @@
 package io.github.railroad.config;
 
 import com.google.gson.JsonObject;
-import io.github.railroad.utility.JsonSerializable;
+import io.github.railroad.core.utility.JsonSerializable;
 
 /**
  * An interface that allows for the settings of a plugin to be saved and loaded.

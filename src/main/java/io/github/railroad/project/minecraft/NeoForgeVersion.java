@@ -1,5 +1,6 @@
 package io.github.railroad.project.minecraft;
 
+import io.github.railroad.Railroad;
 import io.github.railroad.utility.XMLParser;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -21,7 +22,11 @@ public record NeoForgeVersion(MinecraftVersion minecraftVersion, String id,
     private static final ObjectProperty<NeoForgeVersion> LATEST = new SimpleObjectProperty<>();
 
     public static void load() {
-        NeoForgeVersion.requestNeoForgeVersions();
+        try {
+            requestNeoForgeVersions();
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to load NeoForge versions", exception);
+        }
     }
 
     private static void requestNeoForgeVersions() {

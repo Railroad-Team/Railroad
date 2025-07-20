@@ -1,13 +1,13 @@
 package io.github.railroad.settings.handler;
 
-import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import io.github.railroad.Railroad;
 import io.github.railroad.config.ConfigHandler;
+import io.github.railroad.core.registry.Registry;
+import io.github.railroad.core.registry.RegistryManager;
 import io.github.railroad.core.settings.Setting;
-import io.github.railroad.railroadpluginapi.registry.Registry;
-import io.github.railroad.registry.RegistryManager;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

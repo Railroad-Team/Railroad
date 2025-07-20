@@ -306,7 +306,6 @@
 }
 
 .rr-list-view .list-cell {
-    -fx-background-color: transparent;
     -fx-padding: 8px 12px;
     -fx-border-width: 0;
     -fx-transition: all 0.15s ease-in-out;
@@ -1055,7 +1054,258 @@
     -fx-text-fill: -color-fg-muted;
 }
 
-/* ===== ADDITIONAL STYLES FOR REPLACING SETSTYLE CALLS ===== */
+/* Modern Menu Bar Styles */
+.rr-menu-bar {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 2, 0, 0, 1);
+}
+
+.rr-menu-bar > .container {
+    -fx-padding: 0;
+}
+
+.rr-menu-bar > .container > .menu-button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-padding: 8px 16px;
+    -fx-effect: none;
+    -fx-border-width: 0;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.rr-menu-bar > .container > .menu-button:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.rr-menu-bar > .container > .menu-button:showing {
+    -fx-background-color: -color-accent-subtle;
+}
+
+.rr-menu-bar > .container > .menu-button > .label {
+    -fx-padding: 0;
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+}
+
+.rr-menu-bar > .container > .menu-button > .arrow-button {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+.rr-menu-bar > .container > .menu-button > .arrow-button > .arrow {
+    -fx-padding: 0;
+    -fx-background-color: -color-fg-muted;
+    -fx-shape: "M 0 0 L 4 4 L 8 0 Z";
+    -fx-scale-shape: false;
+}
+
+.rr-menu {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-padding: 4;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 4);
+}
+
+.rr-menu .menu-item {
+    -fx-background-color: transparent;
+    -fx-padding: 8px 12px;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-transition: all 0.15s ease-in-out;
+}
+
+.rr-menu .menu-item:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.rr-menu .menu-item:focused {
+    -fx-background-color: -color-accent-subtle;
+}
+
+.rr-menu .menu-item > .label {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 13px;
+    -fx-padding: 0 8px 0 0;
+}
+
+.rr-menu .menu-item > .graphic-container {
+    -fx-padding: 0 8px 0 0;
+}
+
+.rr-menu .menu-item .ikonli-font-icon {
+    -fx-icon-size: 14px;
+    -fx-fill: -color-fg-default;
+}
+
+.rr-menu .separator {
+    -fx-padding: 4px 0;
+}
+
+.rr-menu .separator .line {
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0.5px;
+    -fx-border-insets: 0 8px;
+}
+
+.rr-menu .check-menu-item > .left-container > .check {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-background-radius: 2;
+    -fx-min-width: 12px;
+    -fx-min-height: 12px;
+    -fx-max-width: 12px;
+    -fx-max-height: 12px;
+}
+
+.rr-menu .check-menu-item:checked > .left-container > .check {
+    -fx-background-color: -color-accent-emphasis;
+}
+
+.rr-menu .check-menu-item:checked > .left-container > .check > .mark {
+    -fx-background-color: white;
+    -fx-shape: "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z";
+    -fx-scale-shape: true;
+    -fx-min-width: 8px;
+    -fx-min-height: 8px;
+    -fx-max-width: 8px;
+    -fx-max-height: 8px;
+}
+
+/* Text editor font size classes */
+.text-editor-font-size-6 { -fx-font-size: 6px; }
+.text-editor-font-size-8 { -fx-font-size: 8px; }
+.text-editor-font-size-10 { -fx-font-size: 10px; }
+.text-editor-font-size-12 { -fx-font-size: 12px; }
+.text-editor-font-size-14 { -fx-font-size: 14px; }
+.text-editor-font-size-16 { -fx-font-size: 16px; }
+.text-editor-font-size-18 { -fx-font-size: 18px; }
+.text-editor-font-size-20 { -fx-font-size: 20px; }
+.text-editor-font-size-24 { -fx-font-size: 24px; }
+.text-editor-font-size-26 { -fx-font-size: 26px; }
+.text-editor-font-size-28 { -fx-font-size: 28px; }
+.text-editor-font-size-30 { -fx-font-size: 30px; }
+.text-editor-font-size-36 { -fx-font-size: 36px; }
+.text-editor-font-size-40 { -fx-font-size: 40px; }
+.text-editor-font-size-48 { -fx-font-size: 48px; }
+.text-editor-font-size-56 { -fx-font-size: 56px; }
+.text-editor-font-size-60 { -fx-font-size: 60px; }
+
+.rr-search-field {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6px 12px;
+    -fx-font-size: 13px;
+    -fx-prompt-text-fill: -color-fg-muted;
+    -fx-text-fill: -color-fg-default;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.rr-search-field:focused {
+    -fx-border-color: -color-accent-emphasis;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 2);
+}
+
+.rr-search-field:hover {
+    -fx-border-color: -color-border-default;
+}
+
+/* Modern Tree View Styles */
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:filled:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:filled:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-fg-default;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:filled:selected:hover {
+    -fx-background-color: -color-accent-muted;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell > .tree-disclosure-node {
+    -fx-padding: 2px 4px 2px 2px;
+    -fx-background-color: transparent;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell > .tree-disclosure-node > .arrow {
+    -fx-background-color: -color-fg-muted;
+    -fx-shape: "M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z";
+    -fx-scale-shape: false;
+    -fx-padding: 4px;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:expanded > .tree-disclosure-node > .arrow {
+    -fx-rotate: 90;
+    -fx-background-color: -color-accent-emphasis;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell > .tree-disclosure-node:hover > .arrow {
+    -fx-background-color: -color-fg-default;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:expanded > .tree-disclosure-node:hover > .arrow {
+    -fx-background-color: -color-accent-emphasis;
+}
+
+/* File type icons in tree cells */
+.rr-tree-view .ikonli-font-icon {
+    -fx-icon-size: 14px;
+    -fx-fill: -color-fg-default;
+    -fx-opacity: 0.8;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:selected .ikonli-font-icon {
+    -fx-fill: -color-fg-default;
+    -fx-opacity: 1;
+}
+
+/* Scroll bar styling for tree view */
+.rr-tree-view > .virtual-flow > .scroll-bar {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.rr-tree-view > .virtual-flow > .scroll-bar .thumb {
+    -fx-background-color: -color-border-subtle;
+    -fx-background-radius: 4;
+    -fx-background-insets: 2;
+}
+
+.rr-tree-view > .virtual-flow > .scroll-bar .thumb:hover {
+    -fx-background-color: -color-border-default;
+}
+
+.rr-tree-view > .virtual-flow > .scroll-bar .track {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.rr-tree-view > .virtual-flow > .scroll-bar .increment-button,
+.rr-tree-view > .virtual-flow > .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+    -fx-shape: "";
+}
+
+.rr-tree-view > .virtual-flow > .scroll-bar .increment-arrow,
+.rr-tree-view > .virtual-flow > .scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-shape: "";
+}
 
 /* Welcome pane styles */
 .welcome-app-name {
@@ -1074,12 +1324,6 @@
 
 .welcome-message {
     -fx-font-size: 24px;
-    -fx-font-weight: bold;
-    -fx-fill: -color-fg-default;
-}
-
-.welcome-title {
-    -fx-font-size: 18px;
     -fx-font-weight: bold;
     -fx-fill: -color-fg-default;
 }
@@ -1243,9 +1487,23 @@
     -fx-background-color: -color-card-bg;
 }
 
-.import-project-ellipsis-button {
-    -fx-font-size: 16px;
-    -fx-background-radius: 16px;
+.import-project-card-selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 12, 0.2, 0, 2);
+}
+
+.import-project-card-selected:hover {
+    -fx-background-color: -color-accent-muted;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 16, 0.25, 0, 4);
+}
+
+.import-project-content {
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
 }
 
 .import-project-name {
@@ -1294,25 +1552,6 @@
     -fx-min-width: 0;
 }
 
-/* Settings handler styles */
-.settings-title {
-    -fx-font-size: 24px;
-}
-
-.settings-description {
-    -fx-font-size: 14px;
-    -fx-wrap-text: true;
-}
-
-.setting-title-label {
-    -fx-font-size: 16px;
-}
-
-.setting-description-label {
-    -fx-font-size: 14px;
-    -fx-wrap-text: true;
-}
-
 .decoration-label {
     -fx-font-size: 16px;
 }
@@ -1324,6 +1563,12 @@
 
 .section-label {
     -fx-font-size: 18px;
+}
+
+.section-description-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-wrap-text: true;
 }
 
 /* Theme styles */
@@ -1611,6 +1856,7 @@
 .plugins-pane .scroll-pane .scroll-bar .increment-arrow,
 .plugins-pane .scroll-pane .scroll-bar .decrement-arrow {
     -fx-background-color: transparent;
+    -fx-background: transparent;
     -fx-shape: "";
 }
 
@@ -1810,128 +2056,40 @@
     -fx-shape: "";
 }
 
-/* Modern Menu Bar Styles */
-.rr-menu-bar {
+.account-list-cell-container {
     -fx-background-color: -color-bg-default;
     -fx-border-color: -color-border-subtle;
-    -fx-border-width: 0 0 1 0;
-    -fx-padding: 0;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 2, 0, 0, 1);
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px;
+    -fx-cursor: hand;
 }
 
-.rr-menu-bar > .container {
-    -fx-padding: 0;
-}
-
-.rr-menu-bar > .container > .menu-button {
-    -fx-background-color: transparent;
-    -fx-background-insets: 0;
-    -fx-background-radius: 0;
-    -fx-padding: 8px 16px;
-    -fx-effect: none;
-    -fx-border-width: 0;
-    -fx-transition: all 0.2s ease-in-out;
-}
-
-.rr-menu-bar > .container > .menu-button:hover {
-    -fx-background-color: -color-bg-subtle;
-}
-
-.rr-menu-bar > .container > .menu-button:showing {
+.account-list-cell-container.selected {
     -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(94, 129, 172, 0.2), 6, 0, 0, 3);
 }
 
-.rr-menu-bar > .container > .menu-button > .label {
-    -fx-padding: 0;
-    -fx-text-fill: -color-fg-default;
+.account-list-cell-icon {
+    -mfx-color: -color-fg-emphasis;
+}
+
+.account-list-cell-title-container {
+    -fx-background-color: transparent;
+}
+
+.account-list-cell-title {
     -fx-font-size: 14px;
-    -fx-font-weight: 500;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-emphasis;
 }
 
-.rr-menu-bar > .container > .menu-button > .arrow-button {
-    -fx-padding: 0;
-    -fx-background-color: transparent;
-}
-
-.rr-menu-bar > .container > .menu-button > .arrow-button > .arrow {
-    -fx-padding: 0;
-    -fx-background-color: -color-fg-muted;
-    -fx-shape: "M 0 0 L 4 4 L 8 0 Z";
-    -fx-scale-shape: false;
-}
-
-.rr-menu {
-    -fx-background-color: -color-bg-default;
-    -fx-border-color: -color-border-subtle;
-    -fx-border-width: 1;
-    -fx-background-radius: 6;
-    -fx-border-radius: 6;
-    -fx-padding: 4;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 4);
-}
-
-.rr-menu .menu-item {
-    -fx-background-color: transparent;
-    -fx-padding: 8px 12px;
-    -fx-background-radius: 4;
-    -fx-border-radius: 4;
-    -fx-transition: all 0.15s ease-in-out;
-}
-
-.rr-menu .menu-item:hover {
-    -fx-background-color: -color-bg-subtle;
-}
-
-.rr-menu .menu-item:focused {
-    -fx-background-color: -color-accent-subtle;
-}
-
-.rr-menu .menu-item > .label {
-    -fx-text-fill: -color-fg-default;
-    -fx-font-size: 13px;
-    -fx-padding: 0 8px 0 0;
-}
-
-.rr-menu .menu-item > .graphic-container {
-    -fx-padding: 0 8px 0 0;
-}
-
-.rr-menu .menu-item .ikonli-font-icon {
-    -fx-icon-size: 14px;
-    -fx-fill: -color-fg-default;
-}
-
-.rr-menu .separator {
-    -fx-padding: 4px 0;
-}
-
-.rr-menu .separator .line {
-    -fx-border-color: -color-border-subtle;
-    -fx-border-width: 0.5px;
-    -fx-border-insets: 0 8px;
-}
-
-.rr-menu .check-menu-item > .left-container > .check {
-    -fx-background-color: -color-accent-emphasis;
-    -fx-background-radius: 2;
-    -fx-min-width: 12px;
-    -fx-min-height: 12px;
-    -fx-max-width: 12px;
-    -fx-max-height: 12px;
-}
-
-.rr-menu .check-menu-item:checked > .left-container > .check {
-    -fx-background-color: -color-accent-emphasis;
-}
-
-.rr-menu .check-menu-item:checked > .left-container > .check > .mark {
-    -fx-background-color: white;
-    -fx-shape: "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z";
-    -fx-scale-shape: true;
-    -fx-min-width: 8px;
-    -fx-min-height: 8px;
-    -fx-max-width: 8px;
-    -fx-max-height: 8px;
+.account-list-cell-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-muted;
 }
 
 /* Modern Project Explorer Styles */
@@ -1957,123 +2115,6 @@
     -fx-font-weight: 600;
     -fx-font-size: 14px;
     -fx-text-fill: -color-fg-default;
-}
-
-.rr-search-field {
-    -fx-background-color: -color-bg-default;
-    -fx-border-color: -color-border-subtle;
-    -fx-border-width: 1;
-    -fx-border-radius: 6;
-    -fx-background-radius: 6;
-    -fx-padding: 6px 12px;
-    -fx-font-size: 13px;
-    -fx-prompt-text-fill: -color-fg-muted;
-    -fx-text-fill: -color-fg-default;
-    -fx-transition: all 0.2s ease-in-out;
-}
-
-.rr-search-field:focused {
-    -fx-border-color: -color-accent-emphasis;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 2);
-}
-
-.rr-search-field:hover {
-    -fx-border-color: -color-border-default;
-}
-
-/* Modern Tree View Styles */
-.rr-tree-view {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-border-width: 0;
-    -fx-padding: 0;
-}
-
-.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:filled:hover {
-    -fx-background-color: -color-bg-subtle;
-}
-
-.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:filled:selected {
-    -fx-background-color: -color-accent-subtle;
-    -fx-text-fill: -color-fg-default;
-}
-
-.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:filled:selected:hover {
-    -fx-background-color: -color-accent-muted;
-}
-
-.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell > .tree-disclosure-node {
-    -fx-padding: 2px 4px 2px 2px;
-    -fx-background-color: transparent;
-}
-
-.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell > .tree-disclosure-node > .arrow {
-    -fx-background-color: -color-fg-muted;
-    -fx-shape: "M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z";
-    -fx-scale-shape: false;
-    -fx-padding: 4px;
-    -fx-transition: all 0.2s ease-in-out;
-}
-
-.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:expanded > .tree-disclosure-node > .arrow {
-    -fx-rotate: 90;
-    -fx-background-color: -color-accent-emphasis;
-}
-
-.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell > .tree-disclosure-node:hover > .arrow {
-    -fx-background-color: -color-fg-default;
-}
-
-.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:expanded > .tree-disclosure-node:hover > .arrow {
-    -fx-background-color: -color-accent-emphasis;
-}
-
-/* File type icons in tree cells */
-.rr-tree-view .ikonli-font-icon {
-    -fx-icon-size: 14px;
-    -fx-fill: -color-fg-default;
-    -fx-opacity: 0.8;
-}
-
-.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:selected .ikonli-font-icon {
-    -fx-fill: -color-fg-default;
-    -fx-opacity: 1;
-}
-
-/* Scroll bar styling for tree view */
-.rr-tree-view > .virtual-flow > .scroll-bar {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
-}
-
-.rr-tree-view > .virtual-flow > .scroll-bar .thumb {
-    -fx-background-color: -color-border-subtle;
-    -fx-background-radius: 4;
-    -fx-background-insets: 2;
-}
-
-.rr-tree-view > .virtual-flow > .scroll-bar .thumb:hover {
-    -fx-background-color: -color-border-default;
-}
-
-.rr-tree-view > .virtual-flow > .scroll-bar .track {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
-}
-
-.rr-tree-view > .virtual-flow > .scroll-bar .increment-button,
-.rr-tree-view > .virtual-flow > .scroll-bar .decrement-button {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
-    -fx-padding: 0;
-    -fx-shape: "";
-}
-
-.rr-tree-view > .virtual-flow > .scroll-bar .increment-arrow,
-.rr-tree-view > .virtual-flow > .scroll-bar .decrement-arrow {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
-    -fx-shape: "";
 }
 
 /* Project Explorer Header Buttons - Extra Small */
@@ -2138,25 +2179,6 @@
 .theme-download-cell {
     -fx-background-color: transparent;
 }
-
-/* Text editor font size classes */
-.text-editor-font-size-6 { -fx-font-size: 6px; }
-.text-editor-font-size-8 { -fx-font-size: 8px; }
-.text-editor-font-size-10 { -fx-font-size: 10px; }
-.text-editor-font-size-12 { -fx-font-size: 12px; }
-.text-editor-font-size-14 { -fx-font-size: 14px; }
-.text-editor-font-size-16 { -fx-font-size: 16px; }
-.text-editor-font-size-18 { -fx-font-size: 18px; }
-.text-editor-font-size-20 { -fx-font-size: 20px; }
-.text-editor-font-size-24 { -fx-font-size: 24px; }
-.text-editor-font-size-26 { -fx-font-size: 26px; }
-.text-editor-font-size-28 { -fx-font-size: 28px; }
-.text-editor-font-size-30 { -fx-font-size: 30px; }
-.text-editor-font-size-36 { -fx-font-size: 36px; }
-.text-editor-font-size-40 { -fx-font-size: 40px; }
-.text-editor-font-size-48 { -fx-font-size: 48px; }
-.text-editor-font-size-56 { -fx-font-size: 56px; }
-.text-editor-font-size-60 { -fx-font-size: 60px; }
 
 /* Project explorer drag target styling */
 .project-explorer-drag-target {

@@ -15,7 +15,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.List;
 
@@ -128,7 +128,7 @@ public class ThemeDownloadPane {
                     statusLabel.setKey("railroad.home.settings.appearance.notfound");
                     themeListView.setVisible(false);
                 } else {
-                    statusLabel.setText(L18n.localize("railroad.home.settings.appearance.themes.found", themes.size()));
+                    statusLabel.setKey("railroad.home.settings.appearance.themes.found", themes.size());
                     themeListView.getItems().addAll(themes);
                     themeListView.setVisible(true);
                 }

@@ -7,6 +7,7 @@ import io.github.railroad.core.ui.RRBorderPane;
 import io.github.railroad.core.ui.RRButton;
 import io.github.railroad.core.ui.RRVBox;
 import io.github.railroad.core.ui.localized.LocalizedTextField;
+import io.github.railroad.core.ui.localized.LocalizedTooltip;
 import io.github.railroad.ide.IDESetup;
 import io.github.railroad.ide.projectexplorer.dialog.CopyModalDialog;
 import io.github.railroad.ide.projectexplorer.dialog.CreateFileDialog;
@@ -36,7 +37,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.stage.Window;
 import org.jetbrains.annotations.NotNull;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
@@ -209,21 +210,21 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         refreshButton.setVariant(RRButton.ButtonVariant.GHOST);
         refreshButton.setButtonSize(RRButton.ButtonSize.SMALL);
         refreshButton.getStyleClass().add("project-explorer-button");
-        refreshButton.setTooltip(new Tooltip("Refresh"));
+        refreshButton.setTooltip(new LocalizedTooltip("railroad.generic.refresh"));
         refreshButton.setOnAction(e -> refreshProjectExplorer());
         
         var collapseAllButton = new RRButton("", FontAwesomeSolid.COMPRESS_ALT);
         collapseAllButton.setVariant(RRButton.ButtonVariant.GHOST);
         collapseAllButton.setButtonSize(RRButton.ButtonSize.SMALL);
         collapseAllButton.getStyleClass().add("project-explorer-button");
-        collapseAllButton.setTooltip(new Tooltip("Collapse All"));
+        collapseAllButton.setTooltip(new LocalizedTooltip("railroad.generic.collapse_all"));
         collapseAllButton.setOnAction(e -> ProjectExplorerPane.collapseAll(this.treeView.getRoot()));
         
         var expandAllButton = new RRButton("", FontAwesomeSolid.EXPAND_ALT);
         expandAllButton.setVariant(RRButton.ButtonVariant.GHOST);
         expandAllButton.setButtonSize(RRButton.ButtonSize.SMALL);
         expandAllButton.getStyleClass().add("project-explorer-button");
-        expandAllButton.setTooltip(new Tooltip("Expand All"));
+        expandAllButton.setTooltip(new LocalizedTooltip("railroad.generic.expand_all"));
         expandAllButton.setOnAction(e -> ProjectExplorerPane.expandAll(this.treeView.getRoot()));
         
         actionButtons.getChildren().addAll(refreshButton, collapseAllButton, expandAllButton);

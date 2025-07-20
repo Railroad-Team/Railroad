@@ -35,12 +35,6 @@
     -fx-cell-size: 40;
 }
 
-.settings-title {
-    -fx-font-size: 20pt;
-    -fx-font-weight: bold;
-    -fx-padding: 0;
-}
-
 .combo-box-base {
     -fx-border-width: 1;
     -fx-border-color: -color-border-default;

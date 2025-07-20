@@ -8,22 +8,29 @@
 railroad.generic.apply=Apply
 railroad.generic.ok=Ok
 railroad.generic.cancel=Cancel
-railroad.generic.close=Close
 railroad.generic.back=Back
 railroad.generic.next=Next
 railroad.generic.finish=Finish
+railroad.generic.close=Close
+railroad.generic.confirm=Confirm
+railroad.generic.save=Save
+railroad.generic.delete=Delete
+railroad.generic.edit=Edit
+railroad.generic.create=Create
+railroad.generic.search=Search
+railroad.generic.select=Select
+railroad.generic.load=Load
+railroad.generic.refresh=Refresh
+railroad.generic.collapse=Collapse
+railroad.generic.collapse_all=Collapse All
+railroad.generic.expand=Expand
+railroad.generic.expand_all=Expand All
 
 # =============================================================================
 # APPLICATION
 # =============================================================================
 railroad.app.name=Railroad
 railroad.app.version=1.0.0 (dev)
-
-# =============================================================================
-# WINDOW TITLES
-# =============================================================================
-railroad.home.window.title=Railroad
-railroad.ide.window.title=Railroad IDE
 
 # =============================================================================
 # HOME/WELCOME SCREEN
@@ -33,7 +40,6 @@ railroad.home.welcome.projects=Projects List
 railroad.home.welcome.projects.subtitle=Manage your projects with ease
 railroad.home.welcome.projects.empty=No projects yet! Create your first project.
 railroad.home.welcome.projectsearch=Search projects...
-railroad.home.welcome.projectsearch.subtitle=Search for projects
 railroad.home.welcome.home=Home
 railroad.home.welcome.openproject=Open Project
 railroad.home.welcome.newproject=New Project
@@ -54,35 +60,24 @@ railroad.home.welcome.project.searchtype=Search Project Types
 # SETTINGS
 # =============================================================================
 railroad.home.settings.title=Settings
-railroad.home.settings.description=Configure your settings here.
 railroad.home.settings.search=Search settings...
-railroad.home.settings.back=Back
 
 # Settings categories
-railroad=Railroad
-railroad.general=General
-railroad.appearance=Appearance
-railroad.ide=IDE
-railroad.plugins=Plugins
+settings.tree.general=General
+settings.tree.appearance=Appearance
+settings.tree.ide=IDE
+settings.tree.plugins=Plugins
 
 # General settings
-railroad.general.language.title=Language
-railroad.general.language.description=Select the language for the Railroad interface.
-railroad.general.project_folder.title=Default Project Folder
+railroad.settings.general.language.title=Language
+railroad.settings.general.language.description=Select the language for the Railroad interface.
 
-# GitHub connection
-railroad.home.settings.general.github=Github Connection:
-railroad.home.settings.general.github.connect=Connect
-railroad.home.settings.general.github.disconnect=Disconnect
+# Plugin settings
+railroad.settings.plugins.title=Plugins
 
 # Appearance settings
-railroad.appearance.themes=Themes
-railroad.appearance.themes.description=Customize the appearance of Railroad by selecting from available themes or downloading new ones from the theme repository.
-railroad.appearance.themes.download_repo.title=Custom Repository
-railroad.appearance.themes.download_repo.description=Specify a GitHub repository URL to download themes from.
-railroad.appearance.themes.select.title=Theme
-railroad.appearance.themes.select.description=
-railroad.appearance.language.language.title=Language
+railroad.settings.appearance.themes.title=Themes
+railroad.settings.appearance.themes.description=Customize the appearance of Railroad by selecting from available themes or downloading new ones from the theme repository.
 
 # Theme management
 railroad.home.settings.appearance.theme=Select a Theme
@@ -107,45 +102,23 @@ railroad.home.settings.appearance.preview.list.components=List Components
 railroad.home.settings.appearance.preview.button.components=Button Components
 railroad.home.settings.appearance.preview.close=Close Preview
 railroad.home.settings.appearance.preview.apply=Apply Theme
-
-# Keymaps
-railroad.home.settings.keymaps.key=Key
-railroad.home.settings.keymaps.action=Action
-railroad.home.settings.keymaps.action.runproject=Run Project
-railroad.home.settings.keymaps.action.termproject=Terminate Project
+railroad.home.settings.appearance.preview.tooltip=Preview theme
 
 # IDE settings
-railroad.ide.auto_pair_inside_strings.title=Auto Pair Inside Strings
-railroad.ide.auto_pair_inside_strings.description=Enable or disable auto-pairing of brackets and quotes inside strings.
-
-# Plugins
-railroad.plugins.plugins=Plugins
-railroad.plugins.plugins.enabled_plugins.title=Enabled Plugins
-railroad.plugins.plugins.enabled_plugins.description=List of currently enabled plugins.
+railroad.settings.ide.code_style.title=Code Style
+railroad.settings.ide.code_style.description=Configure the code style settings for your projects, including indentation, line breaks, and formatting options.
+railroad.settings.ide.code_style.auto_pair_inside_strings.title=Auto-pair inside strings
+railroad.settings.ide.code_style.auto_pair_inside_strings.description=Enable or disable automatic pairing of brackets, braces and parenthesis inside string literals.
 
 # =============================================================================
 # PROJECT CREATION
 # =============================================================================
-railroad.home.project=Project
-railroad.home.project.browse=Browse
-railroad.home.project.create=Create
-railroad.home.project.creating=Creating project...
-
 # Project basic info
 railroad.project.creation.name=Name
 railroad.project.creation.name.prompt=Enter project name
 railroad.project.creation.name.error.required=You must enter a project name
-railroad.project.creation.name.error.length_long=Project name is too long
-railroad.project.creation.name.error.length_short=Project name is too short
-railroad.project.creation.name.error.invalid_characters=Project name contains invalid characters
 
 railroad.project.creation.location=Location
-railroad.project.creation.location.error.required=You must enter a project location
-railroad.project.creation.location.error.invalid_characters=Project location contains invalid characters
-railroad.project.creation.location.error.not_exists=Project location does not exist
-railroad.project.creation.location.error.cannot_create=Unable to create the specified directory. Please check the path and permissions.
-railroad.project.creation.location.error.not_directory=Project location is not a directory
-railroad.project.creation.location.error.invalid_path=Project location is invalid
 railroad.project.creation.location.warning.onedrive=It is not recommended to create projects in OneDrive as it has a tendency to cause problems.
 railroad.project.creation.location.warning.not_empty=The selected directory is not empty. Creating a project here may overwrite existing files.
 railroad.project.creation.location.info=This will be created at: %s
@@ -153,43 +126,29 @@ railroad.project.creation.location.info=This will be created at: %s
 railroad.project.creation.git=Create Git Repository
 
 railroad.project.creation.license=License
-railroad.project.creation.license.custom=Custom License
-railroad.project.creation.license.custom.prompt=Enter custom license
-railroad.project.creation.license.custom.error.required=You must enter a custom license
 
 # Minecraft settings
-railroad.project.creation.minecraft_version=Minecraft Version
 railroad.project.creation.forge_version=Forge Version
 railroad.project.creation.neo_forge_version=NeoForge Version
 railroad.project.creation.fabric_loader_version=Fabric Loader Version
-railroad.project.creation.include_fapi=Include Fabric API
-railroad.project.creation.fabric_api_version=Fabric API Version
 
 # Mod settings
 railroad.project.creation.mod_id=Mod ID
 railroad.project.creation.mod_id.prompt=Enter mod ID
 railroad.project.creation.mod_id.error.required=You must enter a mod ID
-railroad.project.creation.mod_id.error.length_short=Mod ID is too short
-railroad.project.creation.mod_id.error.length_long=Mod ID is too long
-railroad.project.creation.mod_id.error.invalid_characters=Mod ID contains invalid characters
 
 railroad.project.creation.mod_name=Mod Name
 railroad.project.creation.mod_name.prompt=Enter mod name
 railroad.project.creation.mod_name.error.required=You must enter a mod name
-railroad.project.creation.mod_name.error.length_short=Mod name is too short
-railroad.project.creation.mod_name.error.length_long=Mod name is too long
 
 railroad.project.creation.main_class=Main Class
 railroad.project.creation.main_class.prompt=Enter the name of the main class
 railroad.project.creation.main_class.error.required=You must enter the name of the main class
-railroad.project.creation.main_class.error.invalid_characters=Main class name contains invalid characters
 
 # Project features
 railroad.project.creation.use_mixins=Use Mixins
 railroad.project.creation.use_access_transformer=Use Access Transformer
-railroad.project.creation.use_access_widener=Use Access Widener
 railroad.project.creation.gen_run_folders=Generate Run Folders
-railroad.project.creation.split_sources=Split Sources
 
 # Mappings
 railroad.project.creation.mapping_channel=Mapping Channel
@@ -198,74 +157,32 @@ railroad.project.creation.mapping_version=Mapping Version
 # Project metadata
 railroad.project.creation.author=Author
 railroad.project.creation.author.prompt=Enter author name
-railroad.project.creation.author.error.length_short=Author name is too short
-railroad.project.creation.author.error.length_long=Author name is too long
 
 railroad.project.creation.credits=Credits
 railroad.project.creation.credits.prompt=Enter credits
-railroad.project.creation.credits.error.length_long=Credits are too long
 
 railroad.project.creation.description=Description
 railroad.project.creation.description.prompt=Enter description
-railroad.project.creation.description.error.required=You must enter a description
-railroad.project.creation.description.error.length_short=Description is too short
-railroad.project.creation.description.error.length_long=Description is too long
 
 # URLs
 railroad.project.creation.issues=Issues URL
 railroad.project.creation.issues.prompt=Enter issues URL
-railroad.project.creation.issues.error.length_long=Issues URL is too long
-railroad.project.creation.issues.error.invalid_url=Issues URL is invalid
-railroad.project.creation.issues.error.no_issues=GitHub URL should point to issues page
 
 railroad.project.creation.update_json_url=Update JSON URL
 railroad.project.creation.update_json_url.prompt=Enter update JSON URL
-railroad.project.creation.update_json_url.error.length_long=Update JSON URL is too long
-railroad.project.creation.update_json_url.error.invalid_url=Update JSON URL is invalid
-railroad.project.creation.update_json_url.error.invalid_extension=Update JSON URL should end with .json
-
-railroad.project.creation.update_json=Update JSON URL
-railroad.project.creation.update_json.error.length_long=Update JSON URL is too long
-railroad.project.creation.update_json.error.invalid_url=Update JSON URL is invalid
-railroad.project.creation.update_json.error.invalid_extension=Update JSON URL should end with .json
-
-railroad.project.creation.display_url=Display URL
-railroad.project.creation.display_url.prompt=Enter display URL
-railroad.project.creation.display_url.error.length_long=Display URL is too long
-railroad.project.creation.display_url.error.invalid_url=Display URL is invalid
-
-railroad.project.creation.homepage=Homepage URL
-railroad.project.creation.homepage.prompt=Enter homepage URL
-railroad.project.creation.homepage.error.length_long=Homepage URL is too long
-railroad.project.creation.homepage.error.invalid_url=Homepage URL is invalid
-
-railroad.project.creation.sources=Sources URL
-railroad.project.creation.sources.prompt=Enter sources URL
-railroad.project.creation.sources.error.length_long=Sources URL is too long
-railroad.project.creation.sources.error.invalid_url=Sources URL is invalid
-
-# Project options
-railroad.project.creation.display_test=Display Test
-railroad.project.creation.client_side_only=Client Side Only
 
 # Maven settings
 railroad.project.creation.group_id=Group ID
 railroad.project.creation.group_id.prompt=Enter group ID
 railroad.project.creation.group_id.error.required=You must enter a group ID
-railroad.project.creation.group_id.error.length_long=Group ID is too long
-railroad.project.creation.group_id.error.invalid_characters=Group ID contains invalid characters
 
 railroad.project.creation.artifact_id=Artifact ID
 railroad.project.creation.artifact_id.prompt=Enter artifact ID
 railroad.project.creation.artifact_id.error.required=You must enter an artifact ID
-railroad.project.creation.artifact_id.error.length_long=Artifact ID is too long
-railroad.project.creation.artifact_id.error.invalid_characters=Artifact ID contains invalid characters
 
 railroad.project.creation.version=Version
 railroad.project.creation.version.prompt=Enter version
 railroad.project.creation.version.error.required=You must enter a version
-railroad.project.creation.version.error.length_long=Version is too long
-railroad.project.creation.version.error.invalid_characters=Version contains invalid characters
 
 # Project creation sections
 railroad.project.creation.section.project=Project
@@ -276,15 +193,6 @@ railroad.project.creation.section.maven=Maven
 
 # Tooltips
 railroad.tooltip.project.location.info=The project will be created in this directory.
-railroad.tooltip.project.location.onedrive_warning=It is not recommended to create projects in OneDrive as it has a tendency to cause problems.
-railroad.tooltip.browse=Browse
-railroad.tooltip.mod_id.short_warning=Short mod IDs are discouraged as they may conflict with other mods.
-railroad.tooltip.client_side_only=If checked, the mod will only run on the client side.
-railroad.tooltip.required=Required
-railroad.tooltip.preview_theme=Preview theme
-railroad.tooltip.refresh=Refresh
-railroad.tooltip.collapse_all=Collapse All
-railroad.tooltip.expand_all=Expand All
 
 # =============================================================================
 # IDE
@@ -379,41 +287,29 @@ railroad.project.creation.cancel.title=Cancel Project Creation
 railroad.project.creation.cancel.header=Are you sure you want to cancel?
 railroad.project.creation.cancel.content=This will stop the project creation process and return you to the welcome screen. Any partially created files will remain on disk.
 
-# Project List Display
-railroad.project.list.name=Name
-railroad.project.list.path=Path
-railroad.project.list.last_opened=Last opened
-
-# Import Project Display
-railroad.import.project.name=Repository Name
-railroad.import.project.url=Repository URL
-
-# Settings Tree
-railroad.settings.tree.path=Path
-
-# Plugin Display
-railroad.plugin.name=Plugin Name
-railroad.plugin.info=Plugin Information
-railroad.plugin.actions=Plugin Actions
-railroad.plugin.version=Version
-railroad.plugin.author=Author
-railroad.plugin.website=Website
-railroad.plugin.license=License
-railroad.plugin.dependencies=Dependencies
-railroad.plugin.enable=Enable
-railroad.plugin.disable=Disable
-railroad.generic.refresh=Refresh
-
-# GitHub Profile Display
-railroad.github.profile.alias=Alias
-railroad.github.profile.access_token=Access Token
-
-# IDE Components
-railroad.ide.project_name=Project Name
-railroad.ide.error.message=Error: %s
-
 not_implemented.title=Not Implemented Yet
 not_implemented.subtitle=This feature is under construction. Stay tuned!
+
+# =============================================================================
+# IMPORT PROJECTS PANE
+# =============================================================================
+railroad.importprojects.title=Import Projects
+railroad.importprojects.search=Search repositories...
+railroad.importprojects.empty=No repositories found. Try adding a VCS profile or check your connection.
+railroad.importprojects.loading=Loading repositories...
+railroad.importprojects.error=Failed to load repositories.
+railroad.importprojects.clone=Clone
+railroad.importprojects.clone.success=Repository cloned successfully!
+railroad.importprojects.clone.invalid_url=Invalid Repository URL
+railroad.importprojects.clone.invalid_directory=Invalid Directory
+railroad.importprojects.clone.invalid_selection=Invalid Repository
+railroad.importprojects.clone.directory_not_empty=The selected directory is not empty. Please choose an empty directory or a different location.
+railroad.importprojects.clone.title=Clone Repository
+railroad.importprojects.clone.loading=Cloning repository...
+railroad.importprojects.repositoryurl=Repository URL
+railroad.importprojects.directory=Directory
+railroad.importprojects.choosedirectory=Choose Directory
+railroad.importprojects.repositoryurl.placeholder=Enter the repository URL to clone.
 
 # =============================================================================
 # IDE MENUS

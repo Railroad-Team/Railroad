@@ -2,7 +2,7 @@ package io.github.railroad.ide.ui;
 
 import io.github.railroad.Railroad;
 import io.github.railroad.ide.syntaxhighlighting.JsonSyntaxHighlighting;
-import io.github.railroad.settings.handler.Settings;
+import io.github.railroad.settings.Settings;
 import io.github.railroad.settings.handler.SettingsHandler;
 import io.github.railroad.utility.ShutdownHooks;
 import javafx.collections.FXCollections;

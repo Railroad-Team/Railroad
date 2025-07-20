@@ -4,6 +4,7 @@ import io.github.railroad.Railroad;
 import io.github.railroad.localization.L18n;
 import io.github.railroad.project.Project;
 import io.github.railroad.settings.ui.SettingsPane;
+import io.github.railroad.welcome.imports.WelcomeImportProjectsPane;
 import io.github.railroad.welcome.project.ui.NewProjectPane;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -28,7 +29,6 @@ public class WelcomePane extends HBox {
     private final WelcomeHeaderPane headerPane;
     @Getter
     private final WelcomeProjectsPane projectsPane;
-    private final WelcomeImportProjectsPane importProjectsPane;
 
     private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
     private static Stage settingsStage = null;
@@ -41,7 +41,6 @@ public class WelcomePane extends HBox {
         headerPane = new WelcomeHeaderPane();
         projectsPane = new WelcomeProjectsPane(headerPane.getSearchField());
         projectsPane.setSortProperty(headerPane.getSortComboBox().valueProperty());
-        importProjectsPane = new WelcomeImportProjectsPane();
         headerPane.setPrefHeight(80);
 
         var rightPane = new VBox(18);
@@ -49,7 +48,6 @@ public class WelcomePane extends HBox {
         rightPane.getStyleClass().add("welcome-right-pane");
         rightPane.getChildren().addAll(headerPane, projectsPane);
         VBox.setVgrow(projectsPane, Priority.ALWAYS);
-        VBox.setVgrow(importProjectsPane, Priority.ALWAYS);
         rightPane.setMinWidth(340);
         rightPane.setMaxWidth(Double.MAX_VALUE);
 
@@ -79,8 +77,9 @@ public class WelcomePane extends HBox {
                     rightPane.getChildren().addAll(headerPane, newProjectPane.get());
                 }
                 case IMPORT_PROJECT -> {
-                    rightPane.getChildren().clear();
-                    rightPane.getChildren().addAll(headerPane, importProjectsPane);
+                    var importProjectsPane = new WelcomeImportProjectsPane();
+                    rightPane.getChildren().setAll(importProjectsPane);
+                    VBox.setVgrow(importProjectsPane, Priority.ALWAYS);
                 }
                 case SETTINGS -> {
                     openSettingsWindow();

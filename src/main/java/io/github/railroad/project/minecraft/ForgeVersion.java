@@ -31,8 +31,12 @@ public record ForgeVersion(MinecraftVersion minecraftVersion, String id,
     private static final ObjectProperty<ForgeVersion> LATEST = new SimpleObjectProperty<>();
 
     public static void load() {
-        Promos.requestForgePromos();
-        ForgeVersion.requestForgeVersions();
+        try {
+            Promos.requestForgePromos();
+            ForgeVersion.requestForgeVersions();
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to load Forge versions", exception);
+        }
     }
 
     private static void requestForgeVersions() {

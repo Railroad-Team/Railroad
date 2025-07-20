@@ -6,6 +6,7 @@ import io.github.railroad.core.ui.RRTextField;
 import io.github.railroad.core.ui.RRVBox;
 import io.github.railroad.core.ui.localized.LocalizedLabel;
 import io.github.railroad.railroadpluginapi.PluginDescriptor;
+import io.github.railroad.railroadpluginapi.deps.MavenDep;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -18,14 +19,16 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
 import lombok.Setter;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
 public class PluginsPane extends SplitPane {
+    @Getter
     private final Map<PluginDescriptor, Boolean> enabledPlugins = new HashMap<>();
 
     private final VBox pluginsList;
@@ -77,8 +80,8 @@ public class PluginsPane extends SplitPane {
             PluginDescriptor descriptor = entry.getKey();
             boolean isEnabled = entry.getValue();
             var pluginItem = new PluginItem(descriptor, isEnabled);
-            pluginItem.setOnMouseClicked(e -> selectPlugin(pluginItem));
-            pluginItem.setOnEnableChange(enabled -> enabledPlugins.put(descriptor, enabled));
+            pluginItem.setOnMouseClicked($ -> selectPlugin(pluginItem));
+            pluginItem.setOnEnableChange(enabled -> PluginsPane.this.enabledPlugins.put(descriptor, enabled));
             pluginsList.getChildren().add(pluginItem);
         }
 
@@ -179,8 +182,8 @@ public class PluginsPane extends SplitPane {
         var mainClassBox = createInfoRow("Main Class", descriptor.getMainClass());
         infoBox.getChildren().add(mainClassBox);
 
-        if (descriptor.getDependencies() != null && !descriptor.getDependencies().isEmpty()) {
-            var dependenciesBox = createDependenciesSection(descriptor.getDependencies());
+        if (descriptor.getDependencies() != null && !descriptor.getDependencies().artifacts().isEmpty()) {
+            var dependenciesBox = createDependenciesSection(descriptor.getDependencies().artifacts());
             infoBox.getChildren().add(dependenciesBox);
         }
 
@@ -205,15 +208,15 @@ public class PluginsPane extends SplitPane {
         return row;
     }
 
-    private VBox createDependenciesSection(Map<String, String> dependencies) {
+    private VBox createDependenciesSection(List<MavenDep> dependencies) {
         var section = new RRVBox(8);
 
         var sectionLabel = new Label("Dependencies:");
         sectionLabel.getStyleClass().add("plugin-info-label");
 
         var dependenciesList = new RRVBox(4);
-        for (Map.Entry<String, String> entry : dependencies.entrySet()) {
-            var depLabel = new Label("• " + entry.getKey() + ": " + entry.getValue());
+        for (MavenDep dep : dependencies) {
+            var depLabel = new Label("• " + dep.getFullName());
             depLabel.getStyleClass().add("plugin-dependency");
             dependenciesList.getChildren().add(depLabel);
         }
@@ -222,14 +225,9 @@ public class PluginsPane extends SplitPane {
         return section;
     }
 
-    public Map<PluginDescriptor, Boolean> getEnabledPlugins() {
-        return this.enabledPlugins;
-    }
-
-    public class PluginItem extends RRCard {
+    public static class PluginItem extends RRCard {
         @Getter
         private final PluginDescriptor descriptor;
-        private final CheckBox enableCheckBox;
         @Getter
         private boolean selected = false;
         @Setter
@@ -242,10 +240,12 @@ public class PluginsPane extends SplitPane {
             getStyleClass().add("plugin-item");
             setInteractive(true);
 
-            enableCheckBox = new CheckBox();
+            var enableCheckBox = new CheckBox();
             enableCheckBox.setSelected(enabled);
             enableCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-                PluginsPane.this.enabledPlugins.put(descriptor, newValue);
+                if (onEnableChange != null) {
+                    onEnableChange.accept(newValue);
+                }
             });
 
             var infoBox = new RRVBox(4);

@@ -4,7 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
 import io.github.railroad.core.settings.Setting;
-import io.github.railroad.utility.JsonSerializable;
+import io.github.railroad.core.utility.JsonSerializable;
 import lombok.Getter;
 
 import java.util.List;

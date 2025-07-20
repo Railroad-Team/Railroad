@@ -1,5 +1,6 @@
 package io.github.railroad.project.minecraft;
 
+import io.github.railroad.Railroad;
 import io.github.railroad.utility.XMLParser;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -21,7 +22,11 @@ public record FabricAPIVersion(String version, MinecraftVersion minecraftVersion
     private static final MinecraftVersion ONE_FOURTEEN = MinecraftVersion.fromId("1.14").orElseThrow();
 
     public static void load() {
-        requestFabricVersions();
+        try {
+            requestFabricVersions();
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to load Fabric API versions", exception);
+        }
     }
 
     private static void requestFabricVersions() {

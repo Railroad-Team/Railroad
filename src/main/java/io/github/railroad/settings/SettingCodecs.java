@@ -1,7 +1,8 @@
-package io.github.railroad.settings.handler;
+package io.github.railroad.settings;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
+import io.github.railroad.core.localization.Language;
 import io.github.railroad.core.settings.SettingCodec;
 import io.github.railroad.localization.Languages;
 import io.github.railroad.plugin.PluginManager;
@@ -9,31 +10,25 @@ import io.github.railroad.plugin.ui.PluginsPane;
 import io.github.railroad.railroadpluginapi.PluginDescriptor;
 import io.github.railroad.settings.ui.themes.ThemeSettingsSection;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ComboBoxBase;
 
 import java.util.Map;
 
 public class SettingCodecs {
-    public static final SettingCodec<Languages, ComboBox<String>> LANGUAGE =
-            SettingCodec.<Languages, ComboBox<String>>builder()
+    public static final SettingCodec<Language, ComboBox<Language>> LANGUAGE =
+            SettingCodec.<Language, ComboBox<Language>>builder()
                     .id("railroad.language")
-                    .nodeToValue(comboBox -> comboBox.getValue() == null ? Languages.EN_US : Languages.fromName(comboBox.getValue()))
-                    .valueToNode((lang, comboBox) -> {
-                        if (lang == null) {
-                            lang = Languages.EN_US; // Default to English if null
-                        }
-
-                        comboBox.setValue(lang.getName());
-                    })
-                    .jsonDecoder(json -> Languages.valueOf(json.getAsString()))
-                    .jsonEncoder(lang -> new JsonPrimitive(lang.name()))
+                    .nodeToValue(ComboBoxBase::getValue)
+                    .valueToNode((lang, comboBox) ->
+                            comboBox.setValue(lang == null ? Languages.EN_US : lang))
+                    .jsonDecoder(json -> Language.fromCode(json.getAsString()).orElse(Languages.EN_US))
+                    .jsonEncoder(lang ->
+                            new JsonPrimitive((lang == null ? Languages.EN_US : lang).getFullCode()))
                     .createNode(lang -> {
-                        var combo = new ComboBox<String>();
-                        for (Languages language : Languages.values()) {
-                            combo.getItems().add(language.getName());
-                        }
-
-                        combo.setValue(lang.getName());
-                        return combo;
+                        var comboBox = new ComboBox<Language>();
+                        comboBox.getItems().addAll(Language.REGISTRY.values());
+                        comboBox.setValue(lang == null ? Languages.EN_US : lang);
+                        return comboBox;
                     })
                     .build();
 
@@ -43,9 +38,9 @@ public class SettingCodecs {
                     .valueToNode((theme, section) -> section.setSelectedTheme(theme))
                     .jsonDecoder(JsonElement::getAsString)
                     .jsonEncoder(JsonPrimitive::new)
-                    .createNode(t -> {
+                    .createNode(theme -> {
                         var section = new ThemeSettingsSection();
-                        section.setSelectedTheme(t);
+                        section.setSelectedTheme(theme);
                         return section;
                     })
                     .build();

@@ -28,7 +28,11 @@ public record MinecraftVersion(String id, VersionType type, String url, LocalDat
     private static final ObjectProperty<MinecraftVersion> LATEST_SNAPSHOT = new SimpleObjectProperty<>();
 
     public static void load() {
-        requestMinecraftVersions();
+        try {
+            requestMinecraftVersions();
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to load Minecraft versions", exception);
+        }
     }
 
     private static void requestMinecraftVersions() {

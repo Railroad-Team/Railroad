@@ -17,7 +17,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import lombok.Getter;
 import org.kordamp.ikonli.Ikon;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 public class WelcomeLeftPane extends RRSidebar {
     @Getter

@@ -4,6 +4,7 @@ import io.github.railroad.core.ui.BrowseButton;
 import io.github.railroad.core.ui.RRHBox;
 import io.github.railroad.core.ui.RRVBox;
 import io.github.railroad.core.ui.localized.LocalizedLabel;
+import io.github.railroad.core.ui.localized.LocalizedTooltip;
 import io.github.railroad.core.utility.StringUtils;
 import io.github.railroad.localization.L18n;
 import io.github.railroad.project.DisplayTest;
@@ -26,7 +27,7 @@ import javafx.scene.layout.Border;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.util.StringConverter;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
@@ -90,7 +91,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
         var createdAtLabel = new LocalizedLabel("railroad.project.creation.location.info", System.getProperty("user.home"));
         createdAtLabel.setGraphic(new FontIcon(FontAwesomeSolid.INFO_CIRCLE));
-        createdAtLabel.setTooltip(new Tooltip(L18n.localize("railroad.tooltip.project.location.info")));
+        createdAtLabel.setTooltip(new LocalizedTooltip("railroad.tooltip.project.location.info"));
         createdAtLabel.setTextFill(Color.SLATEGRAY);
 
         var projectPathBox = new RRHBox(10);
@@ -110,13 +111,13 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
             // Update the created at label
             String fullPath = fixPath(projectPathField.getText().trim() + "/" + projectNameField.getText().trim());
-            createdAtLabel.setText(L18n.localize("railroad.project.creation.location.info", fullPath));
+            createdAtLabel.setKey("railroad.project.creation.location.info", fullPath);
 
             // If the project is in OneDrive, warn the user
             if (fullPath.contains("OneDrive") && hasOneDriveWarning.compareAndSet(false, true)) {
                 setValidationWarning(projectPathField);
 
-                var tooltip = new Tooltip(L18n.localize("railroad.tooltip.project.location.onedrive_warning"));
+                var tooltip = new LocalizedTooltip("railroad.tooltip.project.location.onedrive_warning");
                 Tooltip.install(projectPathField, tooltip);
 
                 var warningIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
@@ -142,7 +143,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         browseButton.textFieldProperty().set(projectPathField);
         browseButton.browseTypeProperty().set(BrowseButton.BrowseType.DIRECTORY);
         browseButton.setGraphic(browseButtonIcon);
-        browseButton.setTooltip(new Tooltip(L18n.localize("railroad.tooltip.browse")));
+        browseButton.setTooltip(new LocalizedTooltip("railroad.tooltip.browse"));
         projectPathBox.getChildren().addAll(projectPathLabel, createAsterisk(), projectPathField, browseButton);
 
         projectPathVBox.getChildren().addAll(projectPathBox, createdAtLabel);
@@ -258,7 +259,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
             if ((newValue.length() < 5 && newValue.length() > 2) && hasModidWarning.compareAndSet(false, true)) {
                 setValidationWarning(modIdField);
 
-                var tooltip = new Tooltip(L18n.localize("railroad.tooltip.mod_id.short_warning"));
+                var tooltip = new LocalizedTooltip("railroad.tooltip.mod_id.short_warning");
                 Tooltip.install(modIdField, tooltip);
 
                 var warningIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
@@ -475,7 +476,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
         var clientSideOnlyLabel = new LocalizedLabel("railroad.project.creation.client_side_only");
         clientSideOnlyLabel.setLabelFor(clientSideOnlyCheckBox);
         clientSideOnlyCheckBox.setSelected(false);
-        clientSideOnlyCheckBox.setTooltip(new Tooltip(L18n.localize("railroad.tooltip.client_side_only")));
+        clientSideOnlyCheckBox.setTooltip(new LocalizedTooltip("railroad.tooltip.client_side_only"));
         clientSideOnlyCheckBox.setOnAction(event -> {
             displayTestComboBox.setValue(clientSideOnlyCheckBox.isSelected() ?
                     DisplayTest.IGNORE_ALL_VERSION : DisplayTest.MATCH_VERSION);
@@ -534,7 +535,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
 
             // Update the created at label
             String path = fixPath(projectPathField.getText().trim() + "/" + projectNameField.getText().trim());
-            createdAtLabel.setText(L18n.localize("railroad.project.creation.location.info", path));
+            createdAtLabel.setKey("railroad.project.creation.location.info", path);
 
             // Update the mod ID field if it is empty
             if (!hasTypedInModid.get() || modIdField.getText().isBlank())
@@ -599,7 +600,7 @@ public class NeoForgeProjectDetailsPane extends RRVBox {
     private static Text createAsterisk() {
         var asterisk = new Text("*");
         asterisk.setFill(Color.RED);
-        Tooltip.install(asterisk, new Tooltip(L18n.localize("railroad.tooltip.required")));
+        Tooltip.install(asterisk, new LocalizedTooltip("railroad.tooltip.required"));
         return asterisk;
     }
 

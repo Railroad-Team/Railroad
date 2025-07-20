@@ -36,8 +36,8 @@ javafx {
 }
 
 dependencies {
-    implementation 'org.kordamp.ikonli:ikonli-javafx:12.3.1'
-    implementation 'org.kordamp.ikonli:ikonli-fontawesome5-pack:12.3.1'
+    implementation 'org.kordamp.ikonli:ikonli-javafx:12.4.0'
+    implementation 'org.kordamp.ikonli:ikonli-fontawesome6-pack:12.4.0'
     implementation 'org.jetbrains:annotations:24.1.0'
     implementation 'com.google.code.gson:gson:2.10'
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.14'
@@ -69,6 +69,9 @@ dependencies {
 
     implementation 'com.github.railroad-team.java-version-extractor-plugin:java-version-extractor-plugin:v1.0.1'
     implementation 'com.github.railroad-team.fabric-extractor-plugin:fabric-extractor-plugin:v1.0.1'
+
+    implementation 'io.get-coursier:interface:1.0.29-M1'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r'
 
     implementation 'io.github.railroad:RailroadPluginAPI:1.0-SNAPSHOT'
     implementation 'io.github.railroad:RailroadCore:1.0-SNAPSHOT'

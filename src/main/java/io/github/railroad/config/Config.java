@@ -4,8 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.railroad.Railroad;
+import io.github.railroad.core.utility.JsonSerializable;
 import io.github.railroad.project.Project;
-import io.github.railroad.utility.JsonSerializable;
 
 import java.util.Optional;
 

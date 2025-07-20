@@ -5,13 +5,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.github.railroad.Railroad;
+import io.github.railroad.core.utility.JsonSerializable;
+import io.github.railroad.core.vcs.Repository;
 import io.github.railroad.project.facet.Facet;
 import io.github.railroad.project.facet.FacetManager;
 import io.github.railroad.project.facet.FacetType;
 import io.github.railroad.railroadpluginapi.events.ProjectAliasChangedEvent;
-import io.github.railroad.utility.JsonSerializable;
 import io.github.railroad.utility.StringUtils;
-import io.github.railroad.vcs.Repository;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableSet;
@@ -60,6 +60,9 @@ public class Project implements JsonSerializable<JsonObject>, io.github.railroad
                     Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
                 }
             }
+        }).exceptionally(ex -> {
+            Railroad.LOGGER.error("Failed to discover facets for project: {}", getPathString(), ex);
+            return null;
         });
     }
 

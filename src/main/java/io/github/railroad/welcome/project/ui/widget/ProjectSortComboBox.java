@@ -4,7 +4,7 @@ import io.github.railroad.core.ui.localized.LocalizedComboBox;
 import io.github.railroad.core.ui.localized.LocalizedListCell;
 import io.github.railroad.welcome.project.ProjectSort;
 import javafx.collections.FXCollections;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {

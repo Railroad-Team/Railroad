@@ -2,7 +2,9 @@ package io.github.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.sun.javafx.application.HostServicesDelegate;
 import io.github.railroad.config.ConfigHandler;
+import io.github.railroad.core.gson.GsonLocator;
 import io.github.railroad.core.localization.Language;
 import io.github.railroad.core.localization.LocalizationService;
 import io.github.railroad.core.localization.LocalizationServiceLocator;
@@ -24,7 +26,7 @@ import io.github.railroad.project.minecraft.MinecraftVersion;
 import io.github.railroad.project.minecraft.NeoForgeVersion;
 import io.github.railroad.railroadpluginapi.event.EventBus;
 import io.github.railroad.railroadpluginapi.events.ProjectEvent;
-import io.github.railroad.settings.handler.Settings;
+import io.github.railroad.settings.Settings;
 import io.github.railroad.settings.handler.SettingsHandler;
 import io.github.railroad.settings.ui.themes.ThemeDownloadManager;
 import io.github.railroad.utility.ShutdownHooks;
@@ -305,16 +307,16 @@ public class Railroad extends Application {
                     LOGGER.log(s, io.github.railroad.logging.LoggingLevel.valueOf(loggingLevel.name()), objects);
                 }
             });
+            GsonLocator.setInstance(GSON);
             ConfigHandler.initConfig();
             PluginManager.loadPlugins(ConfigHandler.getConfigDirectory().resolve("plugins"));
             Settings.initialize();
             SettingsHandler.init();
-            REPOSITORY_MANAGER.start();
             MinecraftVersion.load();
             ForgeVersion.load();
             FabricAPIVersion.load();
             NeoForgeVersion.load();
-            L18n.loadLanguage();
+            L18n.loadLanguage(SettingsHandler.getValue(Settings.LANGUAGE));
             window = primaryStage;
 
             // Calculate the primary screen size to better fit the window
@@ -341,6 +343,7 @@ public class Railroad extends Application {
             LOGGER.info("Railroad started");
             PluginManager.enableEnabledPlugins();
             PluginManager.loadReadyPlugins();
+            SettingsHandler.loadSettings();
             // TODO: Notify plugins of the application start
             ShutdownHooks.addHook(() -> {
                 try (ExecutorService executorService = HTTP_CLIENT.dispatcher().executorService()) {
@@ -349,6 +352,8 @@ public class Railroad extends Application {
 
                 HTTP_CLIENT.connectionPool().evictAll();
             });
+
+            HostServicesDelegate.getInstance(this);
         } catch (Exception exception) {
             LOGGER.error("Error starting Railroad", exception);
             showErrorAlert("Error", "Error starting Railroad", "An error occurred while starting Railroad.");
