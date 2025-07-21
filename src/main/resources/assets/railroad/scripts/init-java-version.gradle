@@ -4,10 +4,10 @@ initscript {
     }
 
     dependencies {
-        classpath "io.github.railroad:javaversion:1.0.0"
+        classpath "dev.railroadide.railroad:javaversion:1.0.0"
     }
 }
 
 allprojects {
-    apply plugin: io.github.railroad.javaversion.JavaVersionModelPlugin
+    apply plugin: dev.railroadide.railroad.javaversion.JavaVersionModelPlugin
 }

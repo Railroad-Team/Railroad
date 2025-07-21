@@ -3,7 +3,7 @@ initscript {
         mavenLocal()
     }
     dependencies {
-        classpath "io.github.railroad:fabricextractor:1.0.0"
+        classpath "dev.railroadide.railroad:fabricextractor:1.0.0"
     }
 }
 
@@ -29,6 +29,6 @@ gradle.projectsLoaded { rootProject ->
             project.extensions.extraProperties.set('fabricLoomVersion', capturedLoomVersion)
         }
         // Apply your extractor plugin (on the initscript classpath)
-        project.plugins.apply io.github.railroad.fabricextractor.FabricExtractorPlugin
+        project.plugins.apply dev.railroadide.railroad.fabricextractor.FabricExtractorPlugin
     }
 }

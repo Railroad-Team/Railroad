@@ -67,6 +67,7 @@ settings.tree.general=General
 settings.tree.appearance=Appearance
 settings.tree.ide=IDE
 settings.tree.plugins=Plugins
+settings.tree.projects=Projects
 
 # General settings
 railroad.settings.general.language.title=Language
@@ -78,6 +79,12 @@ railroad.settings.plugins.title=Plugins
 # Appearance settings
 railroad.settings.appearance.themes.title=Themes
 railroad.settings.appearance.themes.description=Customize the appearance of Railroad by selecting from available themes or downloading new ones from the theme repository.
+
+# Projects Settings
+railroad.settings.projects.import.title=Importing Projects
+railroad.settings.projects.import.description=Configure how projects are imported into Railroad. You can set up VCS profiles and other import options.
+railroad.settings.projects.import.switch_to_ide_after_import.title=Switch to IDE after import
+railroad.settings.projects.import.switch_to_ide_after_import.description=Automatically switch to the IDE after importing a project. This allows you to start working on your project immediately without additional steps.
 
 # Theme management
 railroad.home.settings.appearance.theme=Select a Theme
