@@ -39,7 +39,7 @@ dependencies {
     api 'com.google.code.gson:gson:2.13.1'
     api 'com.github.javakeyring:java-keyring:1.0.4'
 
-    implementation 'io.github.railroad:RailroadLogger:1.0-SNAPSHOT'
+    implementation 'com.github.Railroad-Team:RailroadLogger:1.0.0'
     implementation 'org.apache.commons:commons-lang3:3.17.0'
 
     compileOnly 'org.jetbrains:annotations:24.0.0'
