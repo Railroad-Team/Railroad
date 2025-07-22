@@ -1,5 +1,8 @@
 package dev.railroadide.core.settings.keybinds;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
@@ -7,10 +10,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.util.Pair;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class Keybind {
@@ -62,6 +62,52 @@ public class Keybind {
         }
 
         return false;
+    }
+
+    public JsonElement toJson() {
+        var keyList = new JsonArray();
+
+        for (Pair<KeyCode, KeyCombination.Modifier[]> combo : getKeys()) {
+            StringBuilder comboString = new StringBuilder(combo.getKey().toString() + ";");
+            for (KeyCombination.Modifier modifier : combo.getValue()) {
+                comboString.append(",").append(modifier.toString());
+            }
+            comboString.deleteCharAt(comboString.length() - 1);
+            keyList.add(comboString.toString());
+        }
+
+        return keyList;
+    }
+
+    public void fromJson(JsonArray json) {
+        for (JsonElement keyCombo : json) {
+            String[] parts = keyCombo.getAsString().split(";");
+            KeyCode keyCode = KeyCode.valueOf(parts[0]);
+            KeyCombination.Modifier[] modifiers = new KeyCombination.Modifier[parts.length - 1];
+
+            var modParts = parts[1].split(",");
+
+            for (int i = 0; i < modParts.length; i++) {
+                switch (modParts[i]) {
+                    case "SHORTCUT_DOWN":
+                        modifiers[i] = KeyCombination.SHORTCUT_DOWN;
+                        break;
+                    case "CONTROL_DOWN":
+                        modifiers[i] = KeyCombination.CONTROL_DOWN;
+                        break;
+                    case "SHIFT_DOWN":
+                        modifiers[i] = KeyCombination.SHIFT_DOWN;
+                        break;
+                    case "ALT_DOWN":
+                        modifiers[i] = KeyCombination.ALT_DOWN;
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown modifier: " + Arrays.toString(modParts));
+                }
+            }
+
+            addKey(keyCode, modifiers);
+        }
     }
 
     public static Builder builder() {
