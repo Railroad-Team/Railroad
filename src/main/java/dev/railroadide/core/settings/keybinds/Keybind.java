@@ -7,21 +7,41 @@ import javafx.scene.input.KeyEvent;
 import javafx.util.Pair;
 import lombok.Getter;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class Keybind { //todo make a builder, and hold a default & current value/valuelist
-    private final List<Pair<KeyCode, KeyCombination.Modifier[]>> keys;
+public class Keybind {
+    @Getter
+    private final String id;
+    private final List<Pair<KeyCode, KeyCombination.Modifier[]>> defaultKeys;
+    @Getter
+    private final List<Pair<KeyCode, KeyCombination.Modifier[]>> keys = new ArrayList<>();
     @Getter
     private final List<KeybindContexts.KeybindContext> validContexts;
     @Getter
-    private Map<KeybindContexts.KeybindContext, Consumer<Node>> actions = new HashMap<>(); //todo possibly pass in event too
+    private final Map<KeybindContexts.KeybindContext, Consumer<Node>> actions;
 
-    public Keybind(List<Pair<KeyCode, KeyCombination.Modifier[]>> keys, List<KeybindContexts.KeybindContext> contexts) {
-        this.keys = keys;
+    private Keybind(String id, List<Pair<KeyCode, KeyCombination.Modifier[]>> defaultKeys, List<KeybindContexts.KeybindContext> contexts, Map<KeybindContexts.KeybindContext, Consumer<Node>> actions) {
+        this.id = id;
+        this.defaultKeys = defaultKeys;
         this.validContexts = contexts;
+        this.actions = actions;
+    }
+
+    public void addKey(KeyCode keyCode, KeyCombination.Modifier... modifiers) {
+        keys.add(new Pair<>(keyCode, modifiers));
+    }
+
+    public void removeKey(KeyCode keyCode, KeyCombination.Modifier... modifiers) {
+        keys.remove(new Pair<>(keyCode, modifiers));
+    }
+
+    public void resetKeys() {
+        keys.clear();
+        keys.addAll(defaultKeys);
     }
 
     public boolean matches(KeyEvent keyEvent) {
@@ -44,7 +64,50 @@ public class Keybind { //todo make a builder, and hold a default & current value
         return false;
     }
 
-    public void addAction(KeybindContexts.KeybindContext context, Consumer<Node> action) {
-        actions.put(context, action);
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private String id;
+        private List<Pair<KeyCode, KeyCombination.Modifier[]>> defaultKeys = new ArrayList<>();
+        private List<KeybindContexts.KeybindContext> validContexts = new ArrayList<>();
+        private boolean ignoreAll = false;
+        private Map<KeybindContexts.KeybindContext, Consumer<Node>> actions = new HashMap<>();
+
+        public Builder id(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder addDefaultKey(KeyCode keyCode, KeyCombination.Modifier... modifiers) {
+            defaultKeys.add(new Pair<>(keyCode, modifiers));
+            return this;
+        }
+
+        public Builder addValidContext(KeybindContexts.KeybindContext context) {
+            validContexts.add(context);
+            return this;
+        }
+
+        public Builder ignoreAllContext() {
+            this.ignoreAll = true;
+            return this;
+        }
+
+        public Builder addAction(KeybindContexts.KeybindContext context, Consumer<Node> action) {
+            actions.put(context, action);
+            return this;
+        }
+
+        public Keybind build() {
+            if (id == null || actions.isEmpty())
+                throw new IllegalStateException("Keybind must have an ID and at least one action defined.");
+
+            if(!ignoreAll)
+                validContexts.add(KeybindContexts.ALL);
+
+            return new Keybind(id, defaultKeys, validContexts, actions);
+        }
     }
 }
