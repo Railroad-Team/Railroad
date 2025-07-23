@@ -2,6 +2,7 @@ package dev.railroadide.core.settings.keybinds;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import dev.railroadide.core.logger.LoggerServiceLocator;
 import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
@@ -15,6 +16,7 @@ import java.util.function.Consumer;
 public class Keybind {
     @Getter
     private final String id;
+    @Getter
     private final List<Pair<KeyCode, KeyCombination.Modifier[]>> defaultKeys;
     @Getter
     private final List<Pair<KeyCode, KeyCombination.Modifier[]>> keys = new ArrayList<>();
@@ -88,16 +90,16 @@ public class Keybind {
 
             for (int i = 0; i < modParts.length; i++) {
                 switch (modParts[i]) {
-                    case "SHORTCUT_DOWN":
+                    case "Shortcut":
                         modifiers[i] = KeyCombination.SHORTCUT_DOWN;
                         break;
-                    case "CONTROL_DOWN":
+                    case "Control":
                         modifiers[i] = KeyCombination.CONTROL_DOWN;
                         break;
-                    case "SHIFT_DOWN":
+                    case "Shift":
                         modifiers[i] = KeyCombination.SHIFT_DOWN;
                         break;
-                    case "ALT_DOWN":
+                    case "Alt":
                         modifiers[i] = KeyCombination.ALT_DOWN;
                         break;
                     default:
