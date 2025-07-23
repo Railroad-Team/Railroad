@@ -26,6 +26,7 @@ import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import dev.railroadide.railroad.project.minecraft.NeoForgeVersion;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
+import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import dev.railroadide.railroad.settings.ui.themes.ThemeDownloadManager;
 import dev.railroadide.railroad.utility.ShutdownHooks;
@@ -290,6 +291,7 @@ public class Railroad extends Application {
             Settings.initialize();
             SettingsHandler.init();
             Keybinds.initialize();
+            KeybindHandler.init();
             MinecraftVersion.load();
             ForgeVersion.load();
             FabricAPIVersion.load();
