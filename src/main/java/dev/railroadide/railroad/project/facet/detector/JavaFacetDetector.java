@@ -15,6 +15,7 @@ import org.apache.maven.shared.utils.xml.pull.XmlPullParserException;
 import org.codehaus.plexus.configuration.PlexusConfigurationException;
 import org.codehaus.plexus.configuration.xml.XmlPlexusConfiguration;
 import org.gradle.api.GradleException;
+import org.gradle.tooling.BuildException;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
 import org.jetbrains.annotations.NotNull;
@@ -202,9 +203,8 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
                     targetVersion;
         } catch (IOException exception) {
             Railroad.LOGGER.error("IO exception while detecting Java version in path: {}", path, exception);
-        } catch (GradleException exception) {
-            Railroad.LOGGER.error("Gradle exception while detecting Java version in path: {}", path, exception);
-        } catch (Exception exception) {
+        } catch (GradleException | BuildException ignored) {}
+        catch (Exception exception) {
             Railroad.LOGGER.error("Unexpected error while detecting Java version in path: {}", path, exception);
         }
 
