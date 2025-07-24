@@ -8,7 +8,10 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import lombok.Getter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class Keybind {
@@ -45,10 +48,14 @@ public class Keybind {
 
     public boolean matches(KeyEvent keyEvent) {
         for (KeybindData key : keys) {
-            KeyCode keyCode = key.keyCode();
-            KeyCombination.Modifier[] modifiers = key.modifiers();
+            var keyCode = key.keyCode();
+            var modifiers = key.modifiers();
 
             if (keyCode != keyEvent.getCode()) continue;
+
+            if (modifiers == null) {
+                return true;
+            }
 
             for (KeyCombination.Modifier modifier : modifiers) {
                 if (!keyEvent.isShortcutDown() && modifier == KeyCombination.SHORTCUT_DOWN) continue;
@@ -63,49 +70,39 @@ public class Keybind {
         return false;
     }
 
-    public JsonElement toJson() {
-        var keyList = new JsonArray();
-
-        for (KeybindData combo : getKeys()) {
-            StringBuilder comboString = new StringBuilder(combo.keyCode().toString() + ";");
-            for (KeyCombination.Modifier modifier : combo.modifiers()) {
-                comboString.append(",").append(modifier.toString());
-            }
-            comboString.deleteCharAt(comboString.length() - 1);
-            keyList.add(comboString.toString());
-        }
-
-        return keyList;
-    }
-
     public void fromJson(JsonArray json) {
         for (JsonElement keyCombo : json) {
             String[] parts = keyCombo.getAsString().split(";");
             KeyCode keyCode = KeyCode.valueOf(parts[0]);
-            KeyCombination.Modifier[] modifiers = new KeyCombination.Modifier[parts.length - 1];
 
-            var modParts = parts[1].split(",");
+            if (parts.length < 2 || parts[1].isBlank()) {
+                addKey(keyCode, null);
+                continue;
+            }
 
-            for (int i = 0; i < modParts.length; i++) {
-                switch (modParts[i]) {
+            String[] modParts = parts[1].split(",");
+            List<KeyCombination.Modifier> modifiers = new ArrayList<>();
+
+            for (String mod : modParts) {
+                switch (mod.trim()) {
                     case "Shortcut":
-                        modifiers[i] = KeyCombination.SHORTCUT_DOWN;
+                        modifiers.add(KeyCombination.SHORTCUT_DOWN);
                         break;
-                    case "Control":
-                        modifiers[i] = KeyCombination.CONTROL_DOWN;
+                    case "Ctrl":
+                        modifiers.add(KeyCombination.CONTROL_DOWN);
                         break;
                     case "Shift":
-                        modifiers[i] = KeyCombination.SHIFT_DOWN;
+                        modifiers.add(KeyCombination.SHIFT_DOWN);
                         break;
                     case "Alt":
-                        modifiers[i] = KeyCombination.ALT_DOWN;
+                        modifiers.add(KeyCombination.ALT_DOWN);
                         break;
                     default:
-                        throw new IllegalArgumentException("Unknown modifier: " + Arrays.toString(modParts));
+                        throw new IllegalArgumentException("Unknown modifier: " + mod);
                 }
             }
 
-            addKey(keyCode, modifiers);
+            addKey(keyCode, modifiers.toArray(new KeyCombination.Modifier[0]));
         }
     }
 
