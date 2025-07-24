@@ -1,0 +1,130 @@
+name: "🐛 Bug Report"
+description: "Report a bug in Railroad IDE"
+title: "[Bug]: "
+labels: ["bug"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🐞 Bug Report
+        Thanks for taking the time to report a bug in **Railroad IDE**.  
+        Please provide as much detail as possible to help us reproduce and resolve the issue.
+
+  - type: input
+    id: summary
+    attributes:
+      label: "Bug Summary"
+      description: "Brief description of the issue"
+      placeholder: "Mod project fails to load after creation"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Detailed Description"
+      description: "Explain what the issue is, what behavior you expected, and what actually happened."
+      placeholder: |
+        I tried to create a new Fabric mod using the built-in wizard.  
+        After finishing, the project view is empty and no files are generated.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Steps to Reproduce"
+      description: "Provide step-by-step instructions to reproduce the bug."
+      placeholder: |
+        1. Launch Railroad IDE
+        2. Click 'Create New Project'
+        3. Select 'Fabric', choose template, fill out fields
+        4. Click Finish
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected Behavior"
+      description: "Describe what you expected to happen."
+      placeholder: "A basic mod template with build.gradle and main class should be created."
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Actual Behavior"
+      description: "Describe what actually happened."
+      placeholder: "No files were generated. Project view is blank."
+
+  - type: dropdown
+    id: mod-loader
+    attributes:
+      label: "Mod Loader"
+      description: "Which mod loader is the project using?"
+      options:
+        - Fabric
+        - Forge
+        - Both
+        - Not Applicable
+
+  - type: input
+    id: ide-version
+    attributes:
+      label: "Railroad IDE Version"
+      description: "The version of Railroad IDE you are using"
+      placeholder: "v0.9.2-beta"
+    validations:
+      required: true
+
+  - type: input
+    id: java-version
+    attributes:
+      label: "Java Version"
+      description: "Java version used with Railroad IDE"
+      placeholder: "OpenJDK 21.0.5"
+
+  - type: input
+    id: javafx-version
+    attributes:
+      label: "JavaFX Version"
+      description: "JavaFX version (if known or different from default)"
+      placeholder: "JavaFX 20.0.1"
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: "Operating System"
+      description: "Which OS are you running Railroad IDE on?"
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other (specify in OS version)
+
+  - type: input
+    id: os-version
+    attributes:
+      label: "OS Version"
+      description: "e.g., Windows 11, macOS 14.2, Ubuntu 22.04"
+      placeholder: "Windows 11 Pro 23H2"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Logs or Stack Trace"
+      description: "Paste any error logs or exceptions you encountered"
+      render: shell
+      placeholder: |
+        Exception in thread "JavaFX Application Thread" java.lang.NullPointerException
+            at dev.railroadide.project.ModWizard.finish(ModWizard.java:152)
+            ...
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: "Additional Context"
+      description: "Any other context or screenshots that might help us debug the issue"
+      placeholder: "Was working in v0.9.1, possibly broke after recent update to project creation logic."
