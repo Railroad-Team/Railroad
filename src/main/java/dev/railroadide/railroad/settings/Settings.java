@@ -92,7 +92,6 @@ public class Settings {
             .category(SettingCategory.builder("railroad:keybinds").build())
             .defaultValue(KeybindHandler.getDefaults())
             .codec(SettingCodecs.KEYBINDS)
-            .addListener(KeybindHandler::update)
             .treePath("railroad:keybinds")
             .build());
 

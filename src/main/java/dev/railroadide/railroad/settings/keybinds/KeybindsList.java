@@ -10,11 +10,14 @@ import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.VBox;
+import lombok.Getter;
 
 import java.util.*;
 
 public class KeybindsList extends VBox {
+    @Getter
     private final Map<String, List<KeybindData>> keybinds = new HashMap<>();
+
     public KeybindsList(Map<String, List<KeybindData>> map) {
         super();
 
@@ -31,10 +34,6 @@ public class KeybindsList extends VBox {
             });
             this.getChildren().addAll(title, keySelector, test);
         }
-    }
-
-    public Map<String, List<KeybindData>> getKeybinds() {
-        return keybinds;
     }
 
     public void loadKeybinds(Map<String, List<KeybindData>> keybinds) {
@@ -68,7 +67,7 @@ public class KeybindsList extends VBox {
         for (Map.Entry<String, JsonElement> keybindJson : json.getAsJsonObject().entrySet()) {
             String key = keybindJson.getKey();
             JsonArray keyList = keybindJson.getValue().getAsJsonArray();
-            KeybindHandler.KEYBIND_REGISTRY.get(key).fromJson(keyList);
+            KeybindHandler.getKeybind(key).fromJson(keyList);
 
             List<KeybindData> keyCombos;
 

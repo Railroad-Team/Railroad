@@ -2,14 +2,9 @@ package dev.railroadide.railroad.settings.keybinds;
 
 import dev.railroadide.core.registry.Registry;
 import dev.railroadide.core.registry.RegistryManager;
-import dev.railroadide.core.settings.Setting;
-import dev.railroadide.core.settings.SettingCategory;
-import dev.railroadide.core.settings.SettingCodec;
 import dev.railroadide.core.settings.keybinds.Keybind;
 import dev.railroadide.core.settings.keybinds.KeybindContexts;
 import dev.railroadide.core.settings.keybinds.KeybindData;
-import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import javafx.scene.Node;
 import javafx.scene.input.KeyEvent;
 
@@ -19,11 +14,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class KeybindHandler {
-    public static final Registry<Keybind> KEYBIND_REGISTRY = RegistryManager.createRegistry("keybinds", Keybind.class);
-
-    public static void update(Object oldMap, Object newMap) {
-        Railroad.LOGGER.info("Updated keybinds from {} to {}", oldMap, newMap);
-    }
+    private static final Registry<Keybind> KEYBIND_REGISTRY = RegistryManager.createRegistry("keybinds", Keybind.class);
 
     public static <T extends Node> void registerCapture(KeybindContexts.KeybindContext context, T captureNode) {
         KEYBIND_REGISTRY.values().forEach(keybind -> {
@@ -56,5 +47,13 @@ public class KeybindHandler {
     public static Keybind registerKeybind(Keybind keybind) {
         KEYBIND_REGISTRY.register(keybind.getId(), keybind);
         return keybind;
+    }
+
+    public static void unregisterKeybind(Keybind keybind) {
+        KEYBIND_REGISTRY.unregister(keybind.getId());
+    }
+
+    public static Keybind getKeybind(String id) {
+        return KEYBIND_REGISTRY.get(id);
     }
 }
