@@ -1,0 +1,62 @@
+name: "✨ Feature Request"
+description: "Suggest a new feature or enhancement for Railroad IDE"
+title: "[Feature]: "
+labels: ["enhancement"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ✨ Feature Request
+        Thank you for helping improve **Railroad IDE**!  
+        Please describe your feature idea clearly to help us understand and evaluate it.
+
+  - type: input
+    id: summary
+    attributes:
+      label: "Feature Summary"
+      description: "A concise title or summary of your feature request"
+      placeholder: "Add built-in Gradle tasks runner"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description"
+      description: "Explain the feature in more detail and how it would improve Railroad IDE."
+      placeholder: |
+        It would be useful to have a built-in interface to run Gradle tasks (e.g., build, runClient) directly from the IDE without opening a terminal. This would simplify development for beginners.
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: "Use Case / Motivation"
+      description: "Why do you need this feature? What problem does it solve?"
+      placeholder: |
+        Running builds and Minecraft clients manually from the terminal adds complexity for new modders. Having this in the IDE would streamline the development workflow.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives Considered"
+      description: "Have you considered other tools, plugins, or workarounds?"
+      placeholder: |
+        Currently using external terminal or IntelliJ. A native solution would be more seamless.
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: "Proposed Implementation (Optional)"
+      description: "If you have an idea for how this could be implemented, share it here."
+      placeholder: |
+        Could be a panel on the side with buttons for common Gradle tasks and an output log area.
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: "Additional Context"
+      description: "Anything else you’d like to add? Links, mockups, etc."
+      placeholder: |
+        Here's a sketch of how it might look: [link to image]
