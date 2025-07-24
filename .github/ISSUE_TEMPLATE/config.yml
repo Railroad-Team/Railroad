@@ -1,0 +1,16 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Ask a Question or Get Help
+    url: https://discord.turtywurty.dev/
+    about: Ask questions, discuss ideas, or request support in the discord server (go to the Railroad category after you've joined)
+
+issue_templates:
+  - name: 🐛 Bug Report
+    description: Report a bug in Railroad IDE
+    labels: ["bug"]
+    file: bug_report.yml
+
+  - name: ✨ Feature Request
+    description: Suggest a new feature or enhancement
+    labels: ["enhancement"]
+    file: feature_request.yml
