@@ -7,6 +7,8 @@ import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.data.FabricFacetData;
+import org.gradle.api.GradleException;
+import org.gradle.tooling.BuildException;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
 import org.jetbrains.annotations.NotNull;
@@ -96,7 +98,9 @@ public class FabricFacetDetector implements FacetDetector<FabricFacetData> {
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to read fabric.mod.json at {}", fabricModJson, exception);
             return Optional.empty();
-        }
+        } catch (GradleException | BuildException ignored) {}
+
+        return Optional.empty();
     }
 
     /**

@@ -289,9 +289,6 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
 
         if (!hasIcon)
             this.icon.set(createIcon(this));
-
-        if (facets.isEmpty())
-            discoverFacets();
     }
 
     public String getAlias() {
