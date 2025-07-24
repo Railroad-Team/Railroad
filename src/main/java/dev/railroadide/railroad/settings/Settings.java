@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.settings;
 
+import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.localization.Language;
 import dev.railroadide.core.settings.DefaultSettingCodecs;
@@ -8,9 +9,12 @@ import dev.railroadide.core.settings.SettingCategory;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.localization.Languages;
 import dev.railroadide.railroad.plugin.PluginManager;
+import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
+import dev.railroadide.railroad.settings.keybinds.KeybindsList;
 import dev.railroadide.railroadpluginapi.PluginDescriptor;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static dev.railroadide.railroad.settings.handler.SettingsHandler.registerSetting;
@@ -79,6 +83,17 @@ public class Settings {
                 }
             })
             .defaultValue(new HashMap<>())
+            .build());
+
+    public static final Setting<Map<String, List<KeybindData>>> KEYBINDS = registerSetting(Setting.builder((Class<Map<String, List<KeybindData>>>) (Class<?>) Map.class)
+            .id("railroad:keybinds")
+            .title("Keybinds")
+            .description("Keybinds for various actions in Railroad IDE")
+            .category(SettingCategory.builder("railroad:keybinds").build())
+            .defaultValue(KeybindHandler.getDefaults())
+            .codec(SettingCodecs.KEYBINDS)
+            .addListener(KeybindHandler::update)
+            .treePath("railroad:keybinds")
             .build());
 
     public static void initialize() {}

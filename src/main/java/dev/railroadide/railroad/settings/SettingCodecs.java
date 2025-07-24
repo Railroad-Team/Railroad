@@ -4,14 +4,18 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 import dev.railroadide.core.localization.Language;
 import dev.railroadide.core.settings.SettingCodec;
+import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.localization.Languages;
 import dev.railroadide.railroad.plugin.PluginManager;
 import dev.railroadide.railroad.plugin.ui.PluginsPane;
+import dev.railroadide.railroad.settings.keybinds.KeybindsList;
 import dev.railroadide.railroadpluginapi.PluginDescriptor;
 import dev.railroadide.railroad.settings.ui.themes.ThemeSettingsSection;
+import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ComboBoxBase;
 
+import java.util.List;
 import java.util.Map;
 
 public class SettingCodecs {
@@ -54,4 +58,13 @@ public class SettingCodecs {
                     .jsonEncoder(PluginManager::encodeEnabledPlugins)
                     .createNode(PluginsPane::new)
                     .build();
+
+    public static final SettingCodec<Map<String, List<KeybindData>>, KeybindsList> KEYBINDS =
+            SettingCodec.<Map<String, List<KeybindData>>, KeybindsList>builder()
+                    .id("railroad:keybinds")
+                    .createNode(KeybindsList::new)
+                    .nodeToValue(KeybindsList::getKeybinds)
+                    .valueToNode((map, kl) -> kl.loadKeybinds(map))
+                    .jsonEncoder(KeybindsList::toJson)
+                    .jsonDecoder(KeybindsList::fromJson).build();
 }

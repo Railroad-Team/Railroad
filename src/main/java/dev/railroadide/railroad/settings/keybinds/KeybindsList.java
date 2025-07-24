@@ -3,54 +3,53 @@ package dev.railroadide.railroad.settings.keybinds;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import dev.railroadide.core.settings.keybinds.KeybindData;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.VBox;
-import javafx.util.Pair;
 
 import java.util.*;
 
 public class KeybindsList extends VBox {
-    private final Map<String, List<Pair<KeyCode, KeyCombination.Modifier[]>>> keybinds = new HashMap<>();
-    public KeybindsList(Map<String, List<Pair<KeyCode, KeyCombination.Modifier[]>>> map) {
+    private final Map<String, List<KeybindData>> keybinds = new HashMap<>();
+    public KeybindsList(Map<String, List<KeybindData>> map) {
         super();
 
         loadKeybinds(map);
 
-        for (Map.Entry<String, List<Pair<KeyCode, KeyCombination.Modifier[]>>> entry : keybinds.entrySet()) {
+        for (Map.Entry<String, List<KeybindData>> entry : keybinds.entrySet()) {
             Label title = new Label(entry.getKey());
             ComboBox<KeyCode> keySelector = new ComboBox<>();
             keySelector.getItems().addAll(KeyCode.values());
-            keySelector.getSelectionModel().select(entry.getValue().getFirst().getKey());
+            keySelector.getSelectionModel().select(entry.getValue().getFirst().keyCode());
             Button test = new Button("Accept");
             test.setOnAction(e -> {
-                keybinds.get(entry.getKey()).set(0, new Pair<>(keySelector.getValue(), new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
+                keybinds.get(entry.getKey()).set(0, new KeybindData(keySelector.getValue(), new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
             });
             this.getChildren().addAll(title, keySelector, test);
         }
     }
 
-    public Map<String, List<Pair<KeyCode, KeyCombination.Modifier[]>>> getKeybinds() {
+    public Map<String, List<KeybindData>> getKeybinds() {
         return keybinds;
     }
 
-    public void loadKeybinds(Map<String, List<Pair<KeyCode, KeyCombination.Modifier[]>>> keybinds) {
+    public void loadKeybinds(Map<String, List<KeybindData>> keybinds) {
         this.keybinds.clear();
         this.keybinds.putAll(keybinds);
     }
 
-    public static JsonElement toJson(Map<String, List<Pair<KeyCode, KeyCombination.Modifier[]>>> keybinds) {
+    public static JsonElement toJson(Map<String, List<KeybindData>> keybinds) {
         var jsonObject = new JsonObject();
-        for (Map.Entry<String, List<Pair<KeyCode, KeyCombination.Modifier[]>>> entry : keybinds.entrySet()) {
+        for (Map.Entry<String, List<KeybindData>> entry : keybinds.entrySet()) {
             var keyList = new JsonArray();
 
-            for (Pair<KeyCode, KeyCombination.Modifier[]> combo : entry.getValue()) {
-                StringBuilder comboString = new StringBuilder(combo.getKey().toString() + ";");
-                for (KeyCombination.Modifier modifier : combo.getValue()) {
+            for (KeybindData combo : entry.getValue()) {
+                StringBuilder comboString = new StringBuilder(combo.keyCode().toString() + ";");
+                for (KeyCombination.Modifier modifier : combo.modifiers()) {
                     comboString.append(modifier.toString()).append(",");
                 }
                 comboString.deleteCharAt(comboString.length() - 1);
@@ -63,15 +62,15 @@ public class KeybindsList extends VBox {
         return jsonObject;
     }
 
-    public static Map<String, List<Pair<KeyCode, KeyCombination.Modifier[]>>> fromJson(JsonElement json) {
-        var map = new HashMap<String, List<Pair<KeyCode, KeyCombination.Modifier[]>>>();
+    public static Map<String, List<KeybindData>> fromJson(JsonElement json) {
+        var map = new HashMap<String, List<KeybindData>>();
 
         for (Map.Entry<String, JsonElement> keybindJson : json.getAsJsonObject().entrySet()) {
             String key = keybindJson.getKey();
             JsonArray keyList = keybindJson.getValue().getAsJsonArray();
             KeybindHandler.KEYBIND_REGISTRY.get(key).fromJson(keyList);
 
-            List<Pair<KeyCode, KeyCombination.Modifier[]>> keyCombos;
+            List<KeybindData> keyCombos;
 
             for (JsonElement keyCombo : keyList) {
                 String[] parts = keyCombo.getAsString().split(";");
@@ -99,8 +98,8 @@ public class KeybindsList extends VBox {
                     }
                 }
 
-                var l = new ArrayList<Pair<KeyCode, KeyCombination.Modifier[]>>();
-                l.add(new Pair<>(keyCode, modifiers));
+                var l = new ArrayList<KeybindData>();
+                l.add(new KeybindData(keyCode, modifiers));
 
                 map.put(key, l);
             }
