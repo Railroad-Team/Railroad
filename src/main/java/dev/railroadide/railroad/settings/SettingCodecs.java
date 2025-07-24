@@ -66,5 +66,6 @@ public class SettingCodecs {
                     .nodeToValue(KeybindsList::getKeybinds)
                     .valueToNode((map, kl) -> kl.loadKeybinds(map))
                     .jsonEncoder(KeybindsList::toJson)
-                    .jsonDecoder(KeybindsList::fromJson).build();
+                    .jsonDecoder(KeybindsList::fromJson)
+                    .build();
 }

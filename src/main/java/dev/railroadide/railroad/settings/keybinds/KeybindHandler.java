@@ -11,7 +11,6 @@ import javafx.scene.input.KeyEvent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class KeybindHandler {
     private static final Registry<Keybind> KEYBIND_REGISTRY = RegistryManager.createRegistry("keybinds", Keybind.class);
@@ -36,9 +35,7 @@ public class KeybindHandler {
         var map = new HashMap<String, List<KeybindData>>();
 
         for (Keybind keybind : KEYBIND_REGISTRY.values()) {
-            map.put(keybind.getId(), keybind.getDefaultKeys().stream()
-                    .map(pair -> new KeybindData(pair.keyCode(), pair.modifiers()))
-                    .collect(Collectors.toList()));
+            map.put(keybind.getId(), keybind.getDefaultKeys());
         }
 
         return map;

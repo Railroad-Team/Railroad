@@ -91,6 +91,7 @@ public class Settings {
             .description("Keybinds for various actions in Railroad IDE")
             .category(SettingCategory.builder("railroad:keybinds").build())
             .defaultValue(KeybindHandler.getDefaults())
+            .canBeNull(false)
             .codec(SettingCodecs.KEYBINDS)
             .treePath("railroad:keybinds")
             .build());

@@ -287,9 +287,9 @@ public class Railroad extends Application {
             GsonLocator.setInstance(GSON);
             ConfigHandler.initConfig();
             PluginManager.loadPlugins(ConfigHandler.getConfigDirectory().resolve("plugins"));
+            Keybinds.initialize();
             Settings.initialize();
             SettingsHandler.init();
-            Keybinds.initialize();
             MinecraftVersion.load();
             ForgeVersion.load();
             FabricAPIVersion.load();
