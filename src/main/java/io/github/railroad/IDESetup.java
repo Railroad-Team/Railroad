@@ -52,6 +52,14 @@ public class IDESetup {
         t.setGraphic(img);
 
     }
+    public static void addPane(Pane pane) {
+        DetachableTab t = editorPane.addTab(pane.getPaneName(), pane);
+
+        t.setGraphic(new ImageView (
+                new Image(pane.getLogo(),16,16,true,true)
+        ));
+    }
+
 
     public static Stage createIDEWindow(Project project) {
         var stage = new Stage();
@@ -69,8 +77,8 @@ public class IDESetup {
 
         editorPane = new DetachableTabPane();
         editorPane.addTab("Welcome", new IDEWelcomePane());
-        editorPane.addTab("Test", new CodeEditorPaneUsingCanvas(Path.of("D:\\.Projects\\java\\railroad fork\\Railroad\\src\\main\\java\\io\\github\\railroad\\welcome\\project\\ui\\ProjectTypePane.java")));
-        IDESetup.addEditorWindow("D:\\.Projects\\java\\railroad fork\\Railroad\\src\\main\\java\\io\\github\\railroad\\welcome\\project\\ui\\ProjectTypePane.java");
+        addPane(new Calculator());
+
         var consolePane = new DetachableTabPane();
         consolePane.addTab("Console", new ConsolePane());
         consolePane.addTab("Terminal", createTerminal(Path.of(project.getPathString())));

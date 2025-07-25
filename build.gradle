@@ -34,6 +34,7 @@ javafx {
 }
 
 dependencies {
+    implementation 'net.objecthunter:exp4j:0.4.8'
     implementation 'org.kordamp.ikonli:ikonli-javafx:12.3.1'
     implementation 'org.kordamp.ikonli:ikonli-fontawesome5-pack:12.3.1'
     implementation 'org.jetbrains:annotations:24.1.0'
