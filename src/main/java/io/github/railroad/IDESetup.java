@@ -3,11 +3,9 @@ package io.github.railroad;
 import com.kodedu.terminalfx.Terminal;
 import com.kodedu.terminalfx.TerminalBuilder;
 import com.kodedu.terminalfx.config.TerminalConfig;
+import com.panemu.tiwulfx.control.dock.DetachableTab;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
-import io.github.railroad.ide.ConsolePane;
-import io.github.railroad.ide.IDEWelcomePane;
-import io.github.railroad.ide.ImageViewerPane;
-import io.github.railroad.ide.StatusBarPane;
+import io.github.railroad.ide.*;
 import io.github.railroad.ide.projectexplorer.ProjectExplorerPane;
 import io.github.railroad.project.Project;
 import io.github.railroad.ui.defaults.RRBorderPane;
@@ -20,6 +18,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -40,6 +39,20 @@ public class IDESetup {
      * @param project The project to create the IDE window for
      * @return The created IDE window
      */
+    private static DetachableTabPane editorPane;
+
+    public static void addEditorWindow(String path) {
+        int lastDot = path.lastIndexOf(".");
+        int lastDir = path.lastIndexOf("\\");
+        String name = path.substring(lastDir + 1,lastDot);
+        DetachableTab t = editorPane.addTab(name,new JavaCodeEditorPane(Path.of(path)));
+        ImageView img = new ImageView(
+                new Image(Railroad.getResourceAsStream("images/fabric.png"),16,16,true,true)
+        );
+        t.setGraphic(img);
+
+    }
+
     public static Stage createIDEWindow(Project project) {
         var stage = new Stage();
         stage.setTitle("Railroad IDE – " + project.getAlias());
@@ -54,9 +67,10 @@ public class IDESetup {
         var rightPane = new DetachableTabPane();
         rightPane.addTab("Properties", new Label("Properties Pane (not implemented yet)"));
 
-        var editorPane = new DetachableTabPane();
+        editorPane = new DetachableTabPane();
         editorPane.addTab("Welcome", new IDEWelcomePane());
-
+        editorPane.addTab("Test", new CodeEditorPaneUsingCanvas(Path.of("D:\\.Projects\\java\\railroad fork\\Railroad\\src\\main\\java\\io\\github\\railroad\\welcome\\project\\ui\\ProjectTypePane.java")));
+        IDESetup.addEditorWindow("D:\\.Projects\\java\\railroad fork\\Railroad\\src\\main\\java\\io\\github\\railroad\\welcome\\project\\ui\\ProjectTypePane.java");
         var consolePane = new DetachableTabPane();
         consolePane.addTab("Console", new ConsolePane());
         consolePane.addTab("Terminal", createTerminal(Path.of(project.getPathString())));

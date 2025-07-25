@@ -18,6 +18,9 @@ public class LocalizedText extends Text {
         setKey(key);
         setText(L18n.localize(key));
     }
+    public static String get(String key) {
+        return new LocalizedText(key).getText();
+    }
 
     public String getKey() {
         return currentKey;
