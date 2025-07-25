@@ -3,9 +3,9 @@ package dev.railroadide.railroad.settings.keybinds;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import dev.railroadide.core.settings.keybinds.KeybindCategory;
 import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
-import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
 import javafx.scene.control.Button;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
@@ -27,21 +27,50 @@ public class KeybindsList extends TreeView {
     public KeybindsList(Map<String, List<KeybindData>> map) {
         super(new TreeItem<>(new HBox()));
         loadKeybinds(map);
+        this.setShowRoot(false);
 
         TreeItem<VBox> root = this.getRoot();
         root.setExpanded(true); // Expand
 
-        for (Map.Entry<String, List<KeybindData>> entry : keybinds.entrySet()) {
-            root.getChildren().add(createKeybindTreeItem(entry.getKey(), entry.getValue()));
-        }
+        refreshTree();
     }
 
     private void refreshTree() {
         TreeItem<VBox> root = this.getRoot();
+
+        List<String> expandedCategoryIds = new ArrayList<>();
+        for (TreeItem<VBox> item : root.getChildren()) {
+            if (item.isExpanded() &&
+                    item.getValue().getChildren().get(0) instanceof LocalizedLabel label) {
+                expandedCategoryIds.add(label.getId());
+            }
+        }
+
         root.getChildren().clear();
 
         for (Map.Entry<String, List<KeybindData>> entry : keybinds.entrySet()) {
-            root.getChildren().add(createKeybindTreeItem(entry.getKey(), entry.getValue()));
+            KeybindCategory category = KeybindHandler.getKeybind(entry.getKey()).getCategory();
+
+            TreeItem<VBox> categoryItem = root.getChildren().stream()
+                    .filter(item -> item.getValue().getChildren().get(0) instanceof LocalizedLabel label &&
+                            label.getId().equals(category.id()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        var categoryHeader = new LocalizedLabel(category.titleKey());
+                        categoryHeader.setId(category.id());
+                        var newCategoryItem = new TreeItem<>(new VBox(categoryHeader));
+                        root.getChildren().add(newCategoryItem);
+                        return newCategoryItem;
+                    });
+
+            categoryItem.getChildren().add(createKeybindTreeItem(entry.getKey(), entry.getValue()));
+        }
+
+        for (TreeItem<VBox> item : root.getChildren()) {
+            if (item.getValue().getChildren().get(0) instanceof LocalizedLabel label &&
+                    expandedCategoryIds.contains(label.getId())) {
+                item.setExpanded(true);
+            }
         }
     }
 
