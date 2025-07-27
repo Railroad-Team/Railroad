@@ -7,7 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.config.ConfigHandler;
-import dev.railroadide.railroad.utility.FileHandler;
+import dev.railroadide.railroad.utility.FileUtils;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
@@ -38,7 +38,7 @@ public class ThemeDownloadManager {
     }
 
     /**
-     * Downloads the provided theme using the FileHandler utility
+     * Downloads the provided theme using the FileUtils utility
      * @param theme {@link Theme} The theme to download
      * @return Whether the theme was downloaded successfully
      */
@@ -50,11 +50,11 @@ public class ThemeDownloadManager {
         String url = theme.getDownloadUrl();
         String[] split = url.split("[/\\s]");
         String fileName = split[split.length - 1];
-        Path downloadPath = Paths.get(getThemesDirectory().toString(), fileName);
+        Path downloadPath = Path.of(getThemesDirectory().toString(), fileName);
 
         LOGGER.info("Downloading theme: {}", fileName);
         try {
-            FileHandler.copyUrlToFile(url, downloadPath);
+            FileUtils.copyUrlToFile(url, downloadPath);
             LOGGER.info("Completed theme download");
         } catch (RuntimeException exception) {
             LOGGER.error("Exception downloading theme", exception);

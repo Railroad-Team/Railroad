@@ -1,14 +1,23 @@
 package dev.railroadide.railroad.project.minecraft;
 
-// TODO: This is actually wrong. [ means it should be included, ( means it should be excluded. But it works for current use cases.
-public record VersionRange(String string, double min, double max) {
+public record VersionRange(
+        String string,
+        double min, double max,
+        boolean includeMin, boolean includeMax) {
     public static VersionRange parse(String string) {
-        double minVersion = string.startsWith("(") ? 0 : Double.parseDouble(string.substring(1, string.indexOf(',')));
-        double maxVersion = string.endsWith(")") ? Double.MAX_VALUE : Double.parseDouble(string.substring(string.indexOf(',') + 1, string.length() - 1));
-        return new VersionRange(string, minVersion, maxVersion);
+        boolean includeMin = string.startsWith("[");
+        boolean includeMax = string.endsWith("]");
+
+        int commaIndex = string.indexOf(',');
+        double minVersion = Double.parseDouble(string.substring(1, commaIndex));
+        double maxVersion = Double.parseDouble(string.substring(commaIndex + 1, string.length() - 1));
+
+        return new VersionRange(string, minVersion, maxVersion, includeMin, includeMax);
     }
 
     public boolean contains(double version) {
-        return version >= min && version < max;
+        boolean lowerBound = includeMin ? version >= min : version > min;
+        boolean upperBound = includeMax ? version <= max : version < max;
+        return lowerBound && upperBound;
     }
 }

@@ -1,7 +1,8 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.railroad.utility.FileHandler;
+import dev.railroadide.railroad.utility.FileUtils;
+import dev.railroadide.railroad.utility.ImageUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
@@ -296,11 +297,11 @@ public class ImageViewerPane extends BorderPane {
         if (this.currentImage != null && this.imagePath != null) {
             dimensionsText.setText(("Dimensions: " + currentImage.getWidth() + " x " + currentImage.getHeight()).replace(".0", ""));
             fileNameText.setText("File Name: " + imagePath.getFileName());
-            fileSizeText.setText("File Size: " + FileHandler.humanReadableByteCount(imagePath));
-            typeText.setText("Type: " + FileHandler.getExtension(imagePath).toUpperCase(Locale.ROOT));
-            colorDepthText.setText("Color Depth: " + FileHandler.getColorDepth(currentImage));
-            colorSpaceText.setText("Color Space: " + FileHandler.getColorSpace(currentImage));
-            numberOfColorsText.setText("Number of Colors: " + FileHandler.getNumberOfColors(currentImage));
+            fileSizeText.setText("File Size: " + FileUtils.humanReadableByteCount(imagePath));
+            typeText.setText("Type: " + FileUtils.getExtension(imagePath).toUpperCase(Locale.ROOT));
+            colorDepthText.setText("Color Depth: " + ImageUtils.getColorDepth(currentImage));
+            colorSpaceText.setText("Color Space: " + ImageUtils.getColorSpace(currentImage));
+            numberOfColorsText.setText("Number of Colors: " + ImageUtils.getNumberOfColors(currentImage));
         } else {
             dimensionsText.setText("Dimensions: ? x ?");
             fileNameText.setText("File Name: Unknown");

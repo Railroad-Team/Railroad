@@ -6,8 +6,8 @@ import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
+import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroadpluginapi.events.FileRenamedEvent;
-import dev.railroadide.railroad.utility.FileHandler;
 import javafx.application.Platform;
 import javafx.beans.property.StringProperty;
 import javafx.scene.Node;
@@ -48,7 +48,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
             setOnMouseClicked(null);
         } else {
             String text = getString();
-            Node image = FileHandler.getIcon(item.getPath());
+            Node image = FileUtils.getIcon(item.getPath());
             if (isEditing()) {
                 if (textField != null) {
                     textField.setText(text);
@@ -179,7 +179,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
             setText(null);
 
             var hbox = new RRHBox();
-            hbox.getChildren().addAll(FileHandler.getIcon(getItem().getPath()), textField);
+            hbox.getChildren().addAll(FileUtils.getIcon(getItem().getPath()), textField);
             setGraphic(hbox);
             textField.selectAll();
 
@@ -219,7 +219,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
 
         super.commitEdit(newValue);
         setText(getString());
-        setGraphic(FileHandler.getIcon(newValue.getPath()));
+        setGraphic(FileUtils.getIcon(newValue.getPath()));
     }
 
     /**

@@ -73,8 +73,8 @@ public class WelcomePane extends HBox {
                 }
                 case NEW_PROJECT -> {
                     newProjectPane.set(new NewProjectPane());
-                    rightPane.getChildren().clear();
-                    rightPane.getChildren().addAll(headerPane, newProjectPane.get());
+                    rightPane.getChildren().setAll(newProjectPane.get());
+                    VBox.setVgrow(newProjectPane.get(), Priority.ALWAYS);
                 }
                 case IMPORT_PROJECT -> {
                     var importProjectsPane = new WelcomeImportProjectsPane();

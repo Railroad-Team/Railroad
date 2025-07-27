@@ -92,7 +92,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             return classVersion;
 
         String systemVersionStr = System.getProperty("java.version");
-        JavaVersion systemVersion = JavaVersion.fromReleaseString(systemVersionStr); // TODO: Parsing doesn't work here
+        JavaVersion systemVersion = JavaVersion.fromReleaseString(systemVersionStr);
         if (systemVersion.major() != -1)
             return systemVersion;
 

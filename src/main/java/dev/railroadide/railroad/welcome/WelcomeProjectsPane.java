@@ -66,7 +66,7 @@ public class WelcomeProjectsPane extends ScrollPane {
                 new Thread(() -> {
                     try {
                         Thread.sleep(300);
-                    } catch (InterruptedException e) {
+                    } catch (InterruptedException ignored) {
                         Thread.currentThread().interrupt();
                     } finally {
                         isProcessingClick = false;

@@ -29,14 +29,14 @@ public final class ConfigHandler {
             case LINUX -> {
                 String xdgConfigHome = System.getenv("XDG_CONFIG_HOME");
                 if (xdgConfigHome != null && !xdgConfigHome.isBlank()) {
-                    yield Paths.get(xdgConfigHome, "Railroad");
+                    yield Path.of(xdgConfigHome, "Railroad");
                 }
 
                 yield Path.of(userHome, ".config", "Railroad");
             }
             case UNKNOWN -> {
                 Railroad.LOGGER.warn("Unknown operating system, using default config directory");
-                yield Paths.get(userHome, "Railroad");
+                yield Path.of(userHome, "Railroad");
             }
         };
     }

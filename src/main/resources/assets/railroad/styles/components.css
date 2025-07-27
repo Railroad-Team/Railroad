@@ -1,4 +1,6 @@
-/* Modern Components CSS - A comprehensive design system for JavaFX */
+* {
+    -color-card-bg: -color-bg-default;
+}
 
 /* Main content area background */
 .main-content {
@@ -293,7 +295,6 @@
     -fx-background-insets: 0;
     -fx-border-radius: 8px;
     -fx-border-insets: 0;
-    outline: 8px solid transparent;
 }
 
 .rr-list-view:hover {
@@ -2205,8 +2206,4 @@
     display: block;
     margin-left: auto;
     margin-right: auto;
-}
-
-:root {
-    --color-card-bg: var(--color-bg-default);
 }

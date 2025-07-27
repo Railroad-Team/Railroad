@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
-import dev.railroadide.railroad.utility.FileHandler;
+import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.XMLParser;
 
 import java.nio.file.Files;
@@ -25,7 +25,7 @@ public class ParchmentVersion extends MappingVersion {
         List<ParchmentVersion> results = new ArrayList<>();
         var file = Path.of(minecraftVersion.id() + "-parchment.xml");
         if (Files.notExists(file)) {
-            FileHandler.copyUrlToFile(PARCHMENT_MAVEN.formatted(minecraftVersion.id()), file);
+            FileUtils.copyUrlToFile(PARCHMENT_MAVEN.formatted(minecraftVersion.id()), file);
         }
 
         final JsonObject xmlJson = XMLParser.xmlToJson(file, JsonObject.class);

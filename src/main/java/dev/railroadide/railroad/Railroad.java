@@ -2,7 +2,6 @@ package dev.railroadide.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.sun.javafx.application.HostServicesDelegate;
 import dev.railroadide.core.gson.GsonLocator;
 import dev.railroadide.core.localization.Language;
 import dev.railroadide.core.localization.LocalizationService;
@@ -34,6 +33,7 @@ import dev.railroadide.railroad.welcome.WelcomePane;
 import dev.railroadide.railroadpluginapi.event.EventBus;
 import dev.railroadide.railroadpluginapi.events.ProjectEvent;
 import javafx.application.Application;
+import javafx.application.HostServices;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.scene.Scene;
@@ -77,11 +77,11 @@ public class Railroad extends Application {
     public static final EventBus EVENT_BUS = new DefaultEventBus();
 
     private static boolean DEBUG = false;
+    private static Scene scene; // TODO: Reconsider whether we need this as a static field
     @Getter
-    private static Scene scene; // TODO: Reconsider whether we need this
-    @Getter
-    private static Stage window; // TODO: Reconsider whether we need this
+    private static Stage window; // TODO: Have a proper window manager instead of a static field
     private static boolean isSwitchingToIDE = false;
+    private static HostServices hostServices;
 
     /**
      * Update the theme of the application
@@ -100,7 +100,7 @@ public class Railroad extends Application {
         }
 
         // TODO fix this - it needs to remove the currently applied theme (should store this somewhere)
-        getScene().getStylesheets().remove(theme + ".css");
+        scene.getStylesheets().remove(theme + ".css");
 
         if (theme.startsWith("default")) {
             Application.setUserAgentStylesheet(getResource("styles/" + theme + ".css").toExternalForm());
@@ -217,26 +217,18 @@ public class Railroad extends Application {
         isSwitchingToIDE = true;
 
         try {
-            // Close the current window first
-            if (Railroad.window != null) {
+            Platform.runLater(() -> {
                 Railroad.window.close();
-                // Use Platform.runLater to ensure the new window is created after the old one is closed
-                Platform.runLater(() -> {
-                    try {
-                        Railroad.window = IDESetup.createIDEWindow(project);
-                        PROJECT_MANAGER.setCurrentProject(project);
-                        Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.OPENED));
-                    } finally {
-                        isSwitchingToIDE = false;
-                    }
-                });
-            } else {
-                // Create the new IDE window immediately if there's no existing window
-                Railroad.window = IDESetup.createIDEWindow(project);
-                PROJECT_MANAGER.setCurrentProject(project);
-                Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.OPENED));
-                isSwitchingToIDE = false;
-            }
+                Railroad.window = null;
+
+                try {
+                    Railroad.window = IDESetup.createIDEWindow(project);
+                    PROJECT_MANAGER.setCurrentProject(project);
+                    Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.OPENED));
+                } finally {
+                    isSwitchingToIDE = false;
+                }
+            });
         } catch (Exception exception) {
             isSwitchingToIDE = false;
             throw exception;
@@ -263,10 +255,25 @@ public class Railroad extends Application {
         }
     }
 
+    /**
+     * Get the host services of the application
+     *
+     * @return The host services of the application
+     */
+    public static HostServices getHostServicess() {
+        if (hostServices == null)
+            throw new IllegalStateException("Host services not initialized. Call start() first.");
+
+        return hostServices;
+    }
+
     @Override
     public void start(Stage primaryStage) {
+        hostServices = getHostServices();
+
         try {
             LoggerManager.init();
+
             LocalizationServiceLocator.setInstance(new LocalizationService() {
                 @Override
                 public String get(String key, Object... objects) {
@@ -322,7 +329,7 @@ public class Railroad extends Application {
             PluginManager.enableEnabledPlugins();
             PluginManager.loadReadyPlugins();
             SettingsHandler.loadSettings();
-            // TODO: Notify plugins of the application start
+            EVENT_BUS.publish(new ApplicationStartEvent());
             ShutdownHooks.addHook(() -> {
                 try (ExecutorService executorService = HTTP_CLIENT.dispatcher().executorService()) {
                     executorService.shutdown();
@@ -330,9 +337,7 @@ public class Railroad extends Application {
 
                 HTTP_CLIENT.connectionPool().evictAll();
             });
-
-            HostServicesDelegate.getInstance(this);
-        } catch (Exception exception) {
+        } catch (Throwable exception) {
             LOGGER.error("Error starting Railroad", exception);
             showErrorAlert("Error", "Error starting Railroad", "An error occurred while starting Railroad.");
         }

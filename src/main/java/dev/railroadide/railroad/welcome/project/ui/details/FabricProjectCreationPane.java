@@ -2,6 +2,8 @@ package dev.railroadide.railroad.welcome.project.ui.details;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import dev.railroadide.railroad.utility.FileUtils;
+import dev.railroadide.railroad.utility.UrlUtils;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.text.StreamingTemplateEngine;
@@ -17,7 +19,6 @@ import dev.railroadide.railroad.project.data.FabricProjectData;
 import dev.railroadide.railroad.project.minecraft.FabricAPIVersion;
 import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import dev.railroadide.railroad.project.minecraft.mapping.MappingChannel;
-import dev.railroadide.railroad.utility.FileHandler;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.function.ExceptionlessRunnable;
 import dev.railroadide.railroad.utility.javafx.TextAreaOutputStream;
@@ -354,12 +355,12 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
             updateLabel("railroad.project.creation.task.downloading_example_mod");
             String modUrl = String.format(EXAMPLE_MOD_URL, minecraftId);
-            FileHandler.copyUrlToFile(modUrl, Path.of(projectPath.resolve("example-mod.zip").toString()));
+            FileUtils.copyUrlToFile(modUrl, Path.of(projectPath.resolve("example-mod.zip").toString()));
             updateProgress(2, 16);
             Railroad.LOGGER.info("Example mod downloaded successfully.");
 
             updateLabel("railroad.project.creation.task.extracting_example_mod");
-            FileHandler.unzipFile(projectPath.resolve("example-mod.zip"), projectPath);
+            FileUtils.unzipFile(projectPath.resolve("example-mod.zip"), projectPath);
             updateProgress(3, 16);
             Railroad.LOGGER.info("Example mod extracted successfully.");
 
@@ -370,8 +371,8 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
             updateLabel("railroad.project.creation.task.copying_project");
             Path folder = projectPath.resolve("fabric-example-mod-" + minecraftId);
-            FileHandler.copyFolder(folder, projectPath);
-            FileHandler.deleteFolder(folder);
+            FileUtils.copyFolder(folder, projectPath);
+            FileUtils.deleteFolder(folder);
             updateProgress(5, 16);
             Railroad.LOGGER.info("Project copied successfully.");
         }
@@ -379,19 +380,19 @@ public class FabricProjectCreationPane extends RRBorderPane {
         private void updateGradleProperties(Path projectPath, MinecraftVersion version) throws IOException {
             updateLabel("railroad.project.creation.task.updating_gradle");
             Path gradlePropertiesFile = projectPath.resolve("gradle.properties");
-            FileHandler.updateKeyValuePairByLine("org.gradle.jvmargs", "-Xmx4G", gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("minecraft_version", version.id(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("loader_version", data.fabricLoaderVersion().loaderVersion().version(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("fabric_version", data.fapiVersion().map(FabricAPIVersion::fullVersion).orElse(""), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("org.gradle.jvmargs", "-Xmx4G", gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("minecraft_version", version.id(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("loader_version", data.fabricLoaderVersion().loaderVersion().version(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("fabric_version", data.fapiVersion().map(FabricAPIVersion::fullVersion).orElse(""), gradlePropertiesFile);
             if (data.mappingChannel() == MappingChannel.YARN) {
-                FileHandler.updateKeyValuePairByLine("yarn_mappings", version.id() + "+" + data.mappingVersion().getId(), gradlePropertiesFile);
+                FileUtils.updateKeyValuePair("yarn_mappings", version.id() + "+" + data.mappingVersion().getId(), gradlePropertiesFile);
             } else if (data.mappingChannel() == MappingChannel.PARCHMENT) {
                 Files.writeString(gradlePropertiesFile, "parchment_version=" + data.mappingVersion().getId() + "\n", StandardOpenOption.APPEND);
             }
 
-            FileHandler.updateKeyValuePairByLine("mod_version", data.version(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("maven_group", data.groupId(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("archives_base_name", data.modId(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_version", data.version(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("maven_group", data.groupId(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("archives_base_name", data.modId(), gradlePropertiesFile);
 
             updateProgress(6, 16);
             Railroad.LOGGER.info("gradle.properties updated successfully.");
@@ -400,7 +401,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         private void renamePackages(Path projectPath, Path mainJava, Path clientJava, String newFolderPath) throws IOException {
             updateLabel("railroad.project.creation.task.renaming_packages");
             if (!data.splitSources()) {
-                FileHandler.deleteFolder(projectPath.resolve("src/client/"));
+                FileUtils.deleteFolder(projectPath.resolve("src/client/"));
             }
 
             // rename "com/example" to data.groupId() + "/" + data.modId()
@@ -412,7 +413,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
             // Delete 'com' directory if it's empty
             final Path comDir = mainJava.resolve("com");
-            FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileHandler.deleteFolder(comDir));
+            FileUtils.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileUtils.deleteFolder(comDir));
 
             if (data.splitSources()) {
                 oldPath = clientJava.resolve("com/example/");
@@ -422,7 +423,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
                 // Delete 'com' directory if it's empty
                 final Path comDir2 = clientJava.resolve("com");
-                FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileHandler.deleteFolder(comDir2));
+                FileUtils.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileUtils.deleteFolder(comDir2));
             }
 
             updateProgress(7, 16);
@@ -431,7 +432,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
         private void updateFabricModJson(Path resources, MinecraftVersion version) throws IOException {
             updateLabel("railroad.project.creation.task.updating_fabric_mod_json");
-            FileHandler.deleteFolder(resources.resolve("assets"));
+            FileUtils.deleteFolder(resources.resolve("assets"));
 
             // TODO: Change based on schema version
             Path fabricModJson = resources.resolve("fabric.mod.json");
@@ -566,15 +567,15 @@ public class FabricProjectCreationPane extends RRBorderPane {
             // Download template build.gradle
             Path buildGradle = projectPath.resolve("build.gradle");
             String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(mdkVersion.id().split("\\.")[1]);
-            if(FileHandler.is404(templateBuildGradleUrl)) {
+            if(UrlUtils.is404(templateBuildGradleUrl)) {
                 templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(data.minecraftVersion().id().split("\\.")[1]);
             }
 
-            if (FileHandler.is404(templateBuildGradleUrl)) {
+            if (UrlUtils.is404(templateBuildGradleUrl)) {
                 throw new RuntimeException("build.gradle template not found.");
             }
 
-            FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
+            FileUtils.copyUrlToFile(templateBuildGradleUrl, buildGradle);
             String buildGradleContent = Files.readString(buildGradle);
             if (!buildGradleContent.startsWith("// fileName:")) {
                 throw new RuntimeException("build.gradle template is invalid.");

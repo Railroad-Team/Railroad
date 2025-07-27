@@ -2,8 +2,20 @@ package dev.railroadide.railroad.utility;
 
 import java.time.*;
 
-public class StringUtils {
-    // TODO: Probably just delete this, because it doesn't (and can't) support localization
+public final class StringUtils {
+    private StringUtils() {
+        // Utility class, no instantiation
+    }
+
+    /**
+     * Formats a given epoch time in milliseconds into a human-readable string that indicates
+     * how long ago that time was from the current time.
+     * <p>
+     * TODO: Probably just delete this, because it doesn't (and can't) support localization
+     *
+     * @param epochMillis The epoch time in milliseconds to format.
+     * @return A human-readable string indicating the elapsed time, or "never" if the input is -1.
+     */
     public static String formatElapsed(long epochMillis) {
         if(epochMillis == -1) {
             return "never";
@@ -67,7 +79,12 @@ public class StringUtils {
         return count + " " + unit + (count == 1 ? "" : "s") + " ago";
     }
 
-    // Take the first character of each word in the alias
+    /**
+     * Generates an abbreviation from a given alias by taking the first character of each word.
+     *
+     * @param alias The alias to generate an abbreviation from.
+     * @return The generated abbreviation.
+     */
     public static String getAbbreviation(String alias) {
         var abbreviation = new StringBuilder();
         for (String word : alias.split(" ")) {

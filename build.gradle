@@ -28,7 +28,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 application {
-    mainClass = 'dev.railroadide.railroad.Startup'
+    mainClass = 'dev.railroadide.railroad.Railroad'
 }
 
 javafx {
@@ -76,10 +76,15 @@ dependencies {
 
     implementation 'dev.railroadide:RailroadLogger:1.0.0'
     implementation 'dev.railroadide:RailroadPluginAPI:1.0.0'
-    implementation 'dev.railroadide:RailroadCore:1.0.0'
+    implementation project(':railroad-core')
 
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
     compileOnly 'org.projectlombok:lombok:1.18.32'
+}
+
+run {
+    def loggingConfig = file("src/jpackage/logging.properties").absolutePath
+    jvmArgs += "-Djava.util.logging.config.file=$loggingConfig"
 }
 
 jar {
@@ -87,7 +92,7 @@ jar {
         attributes(
                 "Implementation-Title": "Railroad",
                 "Implementation-Version": "1.0-alpha",
-                "Main-Class": "dev.railroadide.railroad.Startup"
+                "Main-Class": "dev.railroadide.railroad.Railroad"
         )
     }
 }
@@ -104,8 +109,17 @@ tasks.register('jpackageImage', Exec) {
 
     def inputDir = file("${layout.buildDirectory.get()}/libs")
     def outputDir = file("${layout.buildDirectory.get()}/jpackage")
-    if(outputDir.exists()) {
-        inputDir.deleteDir()
+
+    if (outputDir.exists()) {
+        outputDir.deleteDir()
+    }
+
+    // Copy logging.properties to inputDir so jpackage sees it
+    doFirst {
+        copy {
+            from "src/jpackage/logging.properties"
+            into inputDir
+        }
     }
 
     commandLine 'jpackage',
@@ -113,9 +127,10 @@ tasks.register('jpackageImage', Exec) {
             '--dest', outputDir,
             '--name', 'Railroad',
             '--main-jar', shadowJar.archiveFileName.get(),
-            '--main-class', 'dev.railroadide.railroad.Startup',
+            '--main-class', 'dev.railroadide.railroad.Railroad',
             '--type', 'app-image',
-            '--java-options', '-Xmx2048m'
+            '--java-options', '-Xmx2048m',
+            '--java-options', '-Djava.util.logging.config.file=$APPDIR/logging.properties'
 }
 
 tasks.register('jpackageInstaller', Exec) {
