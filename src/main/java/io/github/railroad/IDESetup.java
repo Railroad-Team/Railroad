@@ -33,12 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class IDESetup {
-    /**
-     * Create a new IDE window for the given project.
-     *
-     * @param project The project to create the IDE window for
-     * @return The created IDE window
-     */
+    
     private static DetachableTabPane editorPane;
 
     public static void addEditorWindow(String path) {
@@ -60,7 +55,12 @@ public class IDESetup {
         ));
     }
 
-
+/**
+     * Create a new IDE window for the given project.
+     *
+     * @param project The project to create the IDE window for
+     * @return The created IDE window
+     */
     public static Stage createIDEWindow(Project project) {
         var stage = new Stage();
         stage.setTitle("Railroad IDE – " + project.getAlias());
