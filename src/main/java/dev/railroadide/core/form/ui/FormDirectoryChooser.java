@@ -79,7 +79,6 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
             browseButton.textFieldProperty().set(textField);
             browseButton.browseTypeProperty().set(BrowseButton.BrowseType.DIRECTORY);
             browseButton.setGraphic(browseButtonIcon);
-            browseButton.setTooltip(new LocalizedTooltip("railroad.tooltip.browse"));
             browseButton.getStyleClass().add("rr-button");
         }
 

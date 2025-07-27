@@ -24,7 +24,7 @@ public class BrowseButton extends LocalizedButton {
     private final ObjectProperty<Path> defaultLocation = new SimpleObjectProperty<>(Path.of(System.getProperty("user.home")));
 
     public BrowseButton() {
-        super("railroad.home.project.browse");
+        super("railroad.generic.browse");
         setOnAction(event -> {
             TextField textField = this.textField.getValue();
             if (textField == null)

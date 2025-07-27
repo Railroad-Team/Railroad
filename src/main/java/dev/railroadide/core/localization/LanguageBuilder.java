@@ -50,6 +50,7 @@ public class LanguageBuilder {
         if (languageCode == null || countryCode == null)
             throw new IllegalStateException("Language code and country code must be set");
 
-        return new LanguageImpl(name, languageCode, countryCode);
+        var language = new LanguageImpl(name, languageCode, countryCode);
+        return Language.REGISTRY.register(language.getFullCode(), language);
     }
 }
