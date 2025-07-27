@@ -66,7 +66,13 @@ public record JavaVersion(int major, int minor) implements Comparable<JavaVersio
                 int legacy = Integer.parseInt(trimmed.substring(2));
                 classMajor = legacy + 44;
             } else { // Modern Java versions (9 and above)
-                classMajor = Integer.parseInt(trimmed) + 44;
+                String[] dotSplot = trimmed.split("\\.");
+                if(dotSplot.length > 1) {
+                    classMajor = Integer.parseInt(dotSplot[0]);
+                    classMinor = Integer.parseInt(dotSplot[1]);
+                } else {
+                    classMajor = Integer.parseInt(trimmed) + 44;
+                }
             }
         } catch (NumberFormatException exception) {
             Railroad.LOGGER.warn("Invalid Java release format: {}", release, exception);

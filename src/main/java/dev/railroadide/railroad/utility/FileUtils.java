@@ -1,49 +1,56 @@
 package dev.railroadide.railroad.utility;
 
 import javafx.scene.Node;
-import javafx.scene.image.*;
-import javafx.scene.image.Image;
-import javafx.scene.paint.Color;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
 import java.awt.*;
-import java.awt.color.ColorSpace;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class FileHandler {
+public final class FileUtils {
+    private FileUtils() {
+        // Utility class, no instantiation
+    }
+
+    /**
+     * Gets the file extension from a given path.
+     *
+     * @param path the path to the file
+     * @return the file extension, or null if there is no extension
+     */
     public static String getExtension(Path path) {
         return getExtension(path.toString());
     }
 
+    /**
+     * Gets the file extension from a given path as a string.
+     *
+     * @param path the path to the file as a string
+     * @return the file extension, or null if there is no extension
+     */
     public static String getExtension(String path) {
-        int i = path.lastIndexOf('.');
-        if (i > 0) {
-            return path.substring(i + 1);
-        }
-
-        return null;
+        int lastDotIndex = path.lastIndexOf('.');
+        return lastDotIndex > 0 ? path.substring(lastDotIndex + 1) : null;
     }
 
+    /**
+     * Copies the content of a URL to a file.
+     *
+     * @param url  the URL to copy from
+     * @param path the path to the file to copy to
+     * @throws RuntimeException if an error occurs during copying
+     */
     public static void copyUrlToFile(String url, Path path) throws RuntimeException {
         try (InputStream in = new URI(url).toURL().openStream()) {
             Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
@@ -52,13 +59,20 @@ public class FileHandler {
         }
     }
 
-    public static void updateKeyValuePairByLine(String key, String value, Path file) throws IOException {
+    /**
+     * Updates a key-value pair in a properties file.
+     *
+     * @param key   the key to update
+     * @param value the new value for the key
+     * @param file  the properties file to update
+     * @throws IOException if an error occurs during file operations
+     */
+    public static void updateKeyValuePair(String key, String value, Path file) throws IOException {
         var stringBuilder = new StringBuilder();
 
         List<String> lines = Files.readAllLines(file);
         for (String line : lines) {
             if (line.startsWith(key + "=")) {
-                // Replace the existing value
                 line = key + "=" + value;
             }
 
@@ -68,23 +82,28 @@ public class FileHandler {
         Files.writeString(file, stringBuilder.toString());
     }
 
+    /**
+     * Unzips a ZIP file to a specified directory.
+     *
+     * @param fileZip the path to the ZIP file
+     * @param dstDir  the destination directory where the contents will be extracted
+     * @throws IOException if an error occurs during unzipping
+     */
     public static void unzipFile(Path fileZip, Path dstDir) throws IOException {
         try (var zipInputStream = new ZipInputStream(Files.newInputStream(fileZip))) {
             ZipEntry zipEntry = zipInputStream.getNextEntry();
             while (zipEntry != null) {
-                Path newFile = newFile(dstDir, zipEntry);
+                Path newFile = resolveZipEntryPath(dstDir, zipEntry);
                 if (zipEntry.isDirectory()) {
                     Files.createDirectories(newFile);
                     if (!Files.isDirectory(newFile))
                         throw new IOException("Failed to create directory " + newFile);
                 } else {
-                    // fix for Windows-created archives
                     Path parent = newFile.getParent();
                     Files.createDirectories(parent);
                     if (!Files.isDirectory(parent))
                         throw new IOException("Failed to create directory " + parent);
 
-                    // write file content
                     Files.copy(zipInputStream, newFile, StandardCopyOption.REPLACE_EXISTING);
                 }
 
@@ -95,8 +114,16 @@ public class FileHandler {
         }
     }
 
-    public static Path newFile(Path destinationDir, ZipEntry zipEntry) throws IOException {
-        var destFile = Paths.get(destinationDir.toString(), zipEntry.getName());
+    /**
+     * Resolves the path for a ZIP entry to ensure it does not escape the destination directory.
+     *
+     * @param destinationDir the destination directory
+     * @param zipEntry       the ZIP entry to resolve
+     * @return the resolved path for the ZIP entry
+     * @throws IOException if the resolved path is outside the destination directory
+     */
+    public static Path resolveZipEntryPath(Path destinationDir, ZipEntry zipEntry) throws IOException {
+        var destFile = Path.of(destinationDir.toString(), zipEntry.getName());
 
         if (!destFile.normalize().startsWith(destinationDir))
             throw new IOException("Bad zip entry: " + zipEntry.getName());
@@ -104,6 +131,13 @@ public class FileHandler {
         return destFile;
     }
 
+    /**
+     * Copies a folder from source to destination.
+     *
+     * @param src the source folder path
+     * @param dst the destination folder path
+     * @throws RuntimeException if an error occurs during copying
+     */
     public static void copyFolder(Path src, Path dst) throws RuntimeException {
         try (Stream<Path> files = Files.walk(src)) {
             files.forEach(source -> {
@@ -123,6 +157,12 @@ public class FileHandler {
         }
     }
 
+    /**
+     * Deletes a folder and all its contents.
+     *
+     * @param folder the folder to delete
+     * @throws RuntimeException if an error occurs during deletion
+     */
     public static void deleteFolder(Path folder) throws RuntimeException {
         try (Stream<Path> paths = Files.walk(folder)) {
             paths.sorted(Comparator.reverseOrder()).forEach(path -> {
@@ -137,6 +177,14 @@ public class FileHandler {
         }
     }
 
+    /**
+     * Checks if a directory is empty, including its subdirectories.
+     *
+     * @param directory the directory to check
+     * @param onEmpty   action to perform if the directory is empty
+     * @param onNotEmpty action to perform if the directory is not empty
+     * @return true if the directory is empty, false otherwise
+     */
     public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty, Runnable onNotEmpty) {
         try {
             if (Files.notExists(directory)) {
@@ -175,32 +223,33 @@ public class FileHandler {
         }
     }
 
+    /**
+     * Checks if a directory is empty, including its subdirectories.
+     *
+     * @param directory the directory to check
+     * @param onEmpty   action to perform if the directory is empty
+     * @return true if the directory is empty, false otherwise
+     */
     public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty) {
-        return isDirectoryEmpty(directory, onEmpty, () -> {
-        });
+        return isDirectoryEmpty(directory, onEmpty, () -> {});
     }
 
+    /**
+     * Checks if a directory is empty, including its subdirectories.
+     *
+     * @param directory the directory to check
+     * @return true if the directory is empty, false otherwise
+     */
     public static boolean isDirectoryEmpty(Path directory) {
-        return isDirectoryEmpty(directory, () -> {
-        });
+        return isDirectoryEmpty(directory, () -> {});
     }
 
-    public static boolean urlExists(String url) {
-        try {
-            return new URI(url).toURL().openConnection().getContentType() != null;
-        } catch (IOException | URISyntaxException exception) {
-            return false;
-        }
-    }
-
-    public static boolean is404(String url) {
-        try {
-            return ((HttpURLConnection) new URI(url).toURL().openConnection()).getResponseCode() == 404;
-        } catch (IOException | URISyntaxException exception) {
-            return false;
-        }
-    }
-
+    /**
+     * Gets an icon representing the file type based on its path.
+     *
+     * @param path the path to the file or directory
+     * @return a Node representing the icon for the file type
+     */
     public static Node getIcon(Path path) {
         if (Files.isDirectory(path))
             return new FontIcon(FontAwesomeRegular.FOLDER);
@@ -226,10 +275,13 @@ public class FileHandler {
         };
     }
 
-    public static void openInExplorer(Path path) throws RuntimeException {
-        openInDefaultApplication(Files.isDirectory(path) ? path : path.getParent());
-    }
-
+    /**
+     * Checks if a file is a binary file.
+     *
+     * @param path the path to the file
+     * @return true if the file is binary, false otherwise
+     * @throws RuntimeException if an error occurs during file operations
+     */
     public static boolean isBinaryFile(Path path) throws RuntimeException {
         try (var stream = Files.newInputStream(path)) {
             byte[] buffer = new byte[1024];
@@ -246,6 +298,12 @@ public class FileHandler {
         }
     }
 
+    /**
+     * Checks if a file is an image file based on its extension.
+     *
+     * @param path the path to the file
+     * @return true if the file is an image, false otherwise
+     */
     public static boolean isImageFile(Path path) {
         String extension = getExtension(path.toString());
         return extension != null && switch (extension) {
@@ -254,6 +312,22 @@ public class FileHandler {
         };
     }
 
+    /**
+     * Opens a file or directory in the system's file explorer.
+     *
+     * @param path the path to the file or directory
+     * @throws RuntimeException if an error occurs while opening the file or directory
+     */
+    public static void openInExplorer(Path path) throws RuntimeException {
+        openInDefaultApplication(Files.isDirectory(path) ? path : path.getParent());
+    }
+
+    /**
+     * Opens a file or directory in the default application associated with its type.
+     *
+     * @param path the path to the file or directory
+     * @throws RuntimeException if an error occurs while opening the file or directory
+     */
     public static void openInDefaultApplication(Path path) throws RuntimeException {
         if (Desktop.isDesktopSupported()) {
             try {
@@ -264,10 +338,23 @@ public class FileHandler {
         }
     }
 
+    /**
+     * Gets the size of a file or directory.
+     *
+     * @param path the path to the file or directory
+     * @return the size in bytes
+     * @throws IOException if an error occurs while reading the file or directory
+     */
     public static long getSize(Path path) throws IOException {
         return Files.size(path);
     }
 
+    /**
+     * Gets a human-readable representation of the size of a file or directory.
+     *
+     * @param path the path to the file or directory
+     * @return a string representing the size in a human-readable format
+     */
     public static String humanReadableByteCount(Path path) {
         try {
             return humanReadableByteCount(getSize(path));
@@ -276,132 +363,20 @@ public class FileHandler {
         }
     }
 
+    /**
+     * Converts a size in bytes to a human-readable format.
+     *
+     * @param size the size in bytes
+     * @return a string representing the size in a human-readable format
+     */
     private static String humanReadableByteCount(long size) {
         if (size <= 0)
             return "0 B";
+
 
         int unit = 1024;
         int exp = (int) (Math.log(size) / Math.log(unit));
         char pre = "KMGTPE".charAt(exp - 1);
         return String.format("%.1f %sB", size / Math.pow(unit, exp), pre);
-    }
-
-    public static int getColorDepth(Image image) {
-        PixelFormat<?> pixelFormat = image.getPixelReader().getPixelFormat();
-
-        // Estimate color depth based on the PixelFormat
-        if (pixelFormat.getType() == PixelFormat.Type.INT_ARGB) {
-            return 32; // 8 bits per channel + alpha channel
-        } else if (pixelFormat.getType() == PixelFormat.Type.BYTE_BGRA ||
-                pixelFormat.getType() == PixelFormat.Type.BYTE_BGRA_PRE) {
-            return 32; // 8 bits per channel + alpha channel
-        } else if (pixelFormat.getType() == PixelFormat.Type.BYTE_RGB) {
-            return 24; // 8 bits per channel, no alpha channel
-        } else if (pixelFormat.getType() == PixelFormat.Type.BYTE_INDEXED) {
-            return 8;  // Typically 8 bits for indexed color (palette-based)
-        }
-
-        // If the format is unknown or not covered above, return -1 (or any indication of unknown depth)
-        return -1;
-    }
-
-    public static String getColorSpace(Image image) {
-        try {
-            ImageReader reader = ImageIO.getImageReadersByFormatName(image.getUrl().substring(image.getUrl().lastIndexOf('.') + 1)).next();
-            reader.setInput(ImageIO.createImageInputStream(Files.newInputStream(Path.of(URLDecoder.decode(image.getUrl().substring("file:/".length()), StandardCharsets.ISO_8859_1)))));
-            return switch (reader.getImageTypes(0).next().getColorModel().getColorSpace().getType()) {
-                case ColorSpace.TYPE_XYZ -> "XYZ";
-                case ColorSpace.TYPE_Lab -> "Lab";
-                case ColorSpace.TYPE_Luv -> "Luv";
-                case ColorSpace.TYPE_YCbCr -> "YCbCr";
-                case ColorSpace.TYPE_Yxy -> "Yxy";
-                case ColorSpace.TYPE_RGB -> "RGB";
-                case ColorSpace.TYPE_GRAY, ColorSpace.CS_GRAY -> "GRAY";
-                case ColorSpace.TYPE_HSV -> "HSV";
-                case ColorSpace.TYPE_HLS -> "HLS";
-                case ColorSpace.TYPE_CMYK -> "CMYK";
-                case ColorSpace.TYPE_CMY -> "CMY";
-                case ColorSpace.TYPE_2CLR -> "2CLR";
-                case ColorSpace.TYPE_3CLR -> "3CLR";
-                case ColorSpace.TYPE_4CLR -> "4CLR";
-                case ColorSpace.TYPE_5CLR -> "5CLR";
-                case ColorSpace.TYPE_6CLR -> "6CLR";
-                case ColorSpace.TYPE_7CLR -> "7CLR";
-                case ColorSpace.TYPE_8CLR -> "8CLR";
-                case ColorSpace.TYPE_9CLR -> "9CLR";
-                case ColorSpace.TYPE_ACLR -> "ACLR";
-                case ColorSpace.TYPE_BCLR -> "BCLR";
-                case ColorSpace.TYPE_CCLR -> "CCLR";
-                case ColorSpace.TYPE_DCLR -> "DCLR";
-                case ColorSpace.TYPE_ECLR -> "ECLR";
-                case ColorSpace.TYPE_FCLR -> "FCLR";
-                case ColorSpace.CS_sRGB -> "sRGB";
-                case ColorSpace.CS_LINEAR_RGB -> "LINEAR_RGB";
-                case ColorSpace.CS_CIEXYZ -> "CIEXYZ";
-                case ColorSpace.CS_PYCC -> "PYCC";
-                default -> "Unknown";
-            };
-        } catch (IOException exception) {
-            exception.printStackTrace();
-            return "Unknown";
-        }
-    }
-
-    public static String getNumberOfColors(Image image) {
-        Set<Integer> colors = new HashSet<>();
-        for (int y = 0; y < image.getHeight(); y++) {
-            for (int x = 0; x < image.getWidth(); x++) {
-                colors.add(image.getPixelReader().getArgb(x, y));
-            }
-        }
-
-        return String.valueOf(colors.size());
-    }
-
-    public static String getNumberOfFrames(Path imagePath) {
-        try {
-            // get gif metadata
-            ImageReader reader = ImageIO.getImageReadersByFormatName("gif").next();
-            reader.setInput(ImageIO.createImageInputStream(imagePath.toFile()));
-
-            return String.valueOf(reader.getNumImages(true));
-        } catch (IOException exception) {
-            return "Unknown";
-        }
-    }
-
-    public static Image createCheckerboard(int width, int height, int squareSize, Color color1, Color color2) {
-        // create a writable image
-        var image = new WritableImage(width, height);
-        for (int x = 0; x < width; x += squareSize) {
-            for (int y = 0; y < height; y += squareSize) {
-                int squareSizeX = Math.min(squareSize, width - x);
-                int squareSizeY = Math.min(squareSize, height - y);
-                fillArea(image.getPixelWriter(), x, y, x + squareSizeX, y + squareSizeY, (x / squareSize + y / squareSize) % 2 == 0 ? color1 : color2);
-            }
-        }
-
-        return image;
-    }
-
-    private static void fillArea(PixelWriter pixelWriter, int startX, int startY, int endX, int endY, Color color) {
-        for (int x = startX; x < endX; x++) {
-            for (int y = startY; y < endY; y++) {
-                pixelWriter.setColor(x, y, color);
-            }
-        }
-    }
-
-    public static boolean isImageTransparent(Image image) {
-        PixelReader pixelReader = image.getPixelReader();
-        for (int y = 0; y < image.getHeight(); y++) {
-            for (int x = 0; x < image.getWidth(); x++) {
-                if (pixelReader.getColor(x, y).getOpacity() < 1) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 }

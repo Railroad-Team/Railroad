@@ -140,22 +140,23 @@ public class IDEWelcomePane extends ScrollPane {
 
         var wikiButton = new RRButton("railroad.ide.welcome.getting_started.wiki", FontAwesomeSolid.BOOK);
         wikiButton.setVariant(RRButton.ButtonVariant.PRIMARY);
-        wikiButton.setOnAction(e -> {
-            e.consume();
-            Railroad.openUrl("https://railroad.turtywurty.dev/wiki");
+        wikiButton.setOnAction(event -> {
+            event.consume();
+            Railroad.openUrl("https://railroadide.dev");
         });
 
         var tutorialsButton = new RRButton("railroad.ide.welcome.getting_started.tutorials", FontAwesomeSolid.GRADUATION_CAP);
         tutorialsButton.setVariant(RRButton.ButtonVariant.SECONDARY);
-        tutorialsButton.setOnAction(e -> {
-            e.consume();
-            Railroad.openUrl("https://tutorials.turtywurty.dev/");
+        tutorialsButton.setOnAction(event -> {
+            event.consume();
+            Railroad.openUrl("https://railroadide.dev/tutorials");
         });
 
-        var discordButton = new RRButton("Discord", FontAwesomeBrands.DISCORD);
+        var discordButton = new RRButton("", FontAwesomeBrands.DISCORD);
+        discordButton.setText("Discord");
         discordButton.setVariant(RRButton.ButtonVariant.GHOST);
-        discordButton.setOnAction(e -> {
-            e.consume();
+        discordButton.setOnAction(event -> {
+            event.consume();
             Railroad.openUrl("https://discord.turtywurty.dev/");
         });
 

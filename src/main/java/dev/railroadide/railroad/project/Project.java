@@ -4,14 +4,15 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.utility.JsonSerializable;
 import dev.railroadide.core.vcs.Repository;
+import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
-import dev.railroadide.railroadpluginapi.events.ProjectAliasChangedEvent;
 import dev.railroadide.railroad.utility.StringUtils;
+import dev.railroadide.railroadpluginapi.events.ProjectAliasChangedEvent;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableSet;
@@ -19,13 +20,14 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 import org.jetbrains.annotations.NotNull;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.UUID;
 
 public class Project implements JsonSerializable<JsonObject>, dev.railroadide.railroadpluginapi.dto.Project {
     private final ObjectProperty<Path> path = new ReadOnlyObjectWrapper<>();
@@ -66,7 +68,7 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
         });
     }
 
-    private static Image createIcon(Project project) {
+    private static BufferedImage createIconImage(Project project) {
         var color = new Color(Math.abs(project.path.get().toAbsolutePath().toString().hashCode() % 0xFFFFFF));
         String abbreviation = StringUtils.getAbbreviation(project.alias.get()).toUpperCase(Locale.ROOT);
         abbreviation = abbreviation.isBlank() ? "?" : abbreviation;
@@ -86,7 +88,21 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
 
         graphics.dispose();
 
-        return SwingFXUtils.toFXImage(image, null);
+        return image;
+    }
+
+    private static Image createIcon(Project project) {
+        BufferedImage iconImage = createIconImage(project);
+        Path iconPath = ConfigHandler.getConfigDirectory().resolve("project-icons").resolve(getPathBase64(project) + ".png");
+        try {
+            Files.createDirectories(iconPath.getParent());
+            ImageIO.write(iconImage, "png", iconPath.toFile());
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to create project icon for: {}", project.getPathString(), exception);
+            return SwingFXUtils.toFXImage(iconImage, null);
+        }
+
+        return new Image(iconPath.toUri().toString());
     }
 
     public static Optional<Project> createFromJson(JsonObject json) {
@@ -114,6 +130,14 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
 
     public String getPathString() {
         return getPath().toAbsolutePath().toString();
+    }
+
+    public static String getPathBase64(Project project) {
+        return Base64.getEncoder().encodeToString(project.getPathString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static Path getPathFromBase64(String base64Path) {
+        return Path.of(new String(Base64.getDecoder().decode(base64Path), StandardCharsets.UTF_8));
     }
 
     public void open() {
@@ -250,14 +274,7 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
                 if (iconPrimitive.isString() && !iconElement.getAsString().isBlank()) {
                     this.icon.set(new Image(iconElement.getAsString()));
                     hasIcon = true;
-                } else if (iconPrimitive.isNumber()) {
-                    try {
-                        this.icon.set(new Image(String.valueOf(iconPrimitive.getAsNumber())));
-                        hasIcon = true;
-                    } catch (Exception exception) {
-                        Railroad.LOGGER.warn("Project JSON 'Icon' is not a valid URL or number: {}", iconElement, exception);
-                    }
-                } else Railroad.LOGGER.warn("Project JSON 'Icon' is not a string or number: {}", iconElement);
+                } else if(!iconPrimitive.isString()) Railroad.LOGGER.warn("Project JSON 'Icon' is not a string: {}", iconElement);
             } else if (iconElement.isJsonNull()) {
                 Railroad.LOGGER.warn("Project JSON 'Icon' is null, using default icon.");
             } else Railroad.LOGGER.warn("Project JSON 'Icon' is not a primitive: {}", iconElement);

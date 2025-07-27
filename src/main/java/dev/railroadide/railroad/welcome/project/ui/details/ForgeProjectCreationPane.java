@@ -2,6 +2,8 @@ package dev.railroadide.railroad.welcome.project.ui.details;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import dev.railroadide.railroad.utility.FileUtils;
+import dev.railroadide.railroad.utility.UrlUtils;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.text.StreamingTemplateEngine;
@@ -15,7 +17,6 @@ import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.project.data.ForgeProjectData;
 import dev.railroadide.railroad.project.minecraft.mapping.MappingChannel;
-import dev.railroadide.railroad.utility.FileHandler;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.function.ExceptionlessRunnable;
 import dev.railroadide.railroad.utility.javafx.TextAreaOutputStream;
@@ -309,13 +310,13 @@ public class ForgeProjectCreationPane extends RRBorderPane {
         private void downloadExampleMod(Path projectPath) throws IOException {
             updateLabel("railroad.project.creation.task.downloading_mdk", "Forge");
             String fileName = data.minecraftVersion().id() + "-" + data.forgeVersion().id();
-            FileHandler.copyUrlToFile("https://maven.minecraftforge.net/net/minecraftforge/forge/" + fileName + "/forge-" + fileName + "-mdk.zip",
+            FileUtils.copyUrlToFile("https://maven.minecraftforge.net/net/minecraftforge/forge/" + fileName + "/forge-" + fileName + "-mdk.zip",
                     Path.of(projectPath.resolve(fileName) + ".zip"));
             updateProgress(2, 17);
             Railroad.LOGGER.info("Forge MDK downloaded successfully.");
 
             updateLabel("railroad.project.creation.task.unzipping_mdk", "Forge");
-            FileHandler.unzipFile(projectPath.resolve(fileName + ".zip"), projectPath);
+            FileUtils.unzipFile(projectPath.resolve(fileName + ".zip"), projectPath);
             updateProgress(3, 17);
             Railroad.LOGGER.info("Forge MDK unzipped successfully.");
 
@@ -341,7 +342,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 mappingChannel = "official";
             }
 
-            FileHandler.updateKeyValuePairByLine("mapping_channel", mappingChannel, gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mapping_channel", mappingChannel, gradlePropertiesFile);
             String mappingVersion = data.mappingVersion().getId();
             if (data.mappingChannel() == MappingChannel.YARN) {
                 mappingVersion = data.minecraftVersion().id() + "+" + mappingVersion;
@@ -349,14 +350,14 @@ public class ForgeProjectCreationPane extends RRBorderPane {
                 mappingVersion = mappingVersion + "-" + data.minecraftVersion().id();
             }
 
-            FileHandler.updateKeyValuePairByLine("mapping_version", mappingVersion, gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_id", data.modId(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_name", data.modName(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_license", data.license().getName(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_version", data.version(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_group_id", data.groupId() + "." + data.modId(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_authors", data.author().orElse(""), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_description", data.description().map(s -> "'''" + s + "'''").orElse(""), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mapping_version", mappingVersion, gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_id", data.modId(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_name", data.modName(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_license", data.license().getName(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_version", data.version(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_group_id", data.groupId() + "." + data.modId(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_authors", data.author().orElse(""), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_description", data.description().map(s -> "'''" + s + "'''").orElse(""), gradlePropertiesFile);
             updateProgress(6, 17);
             Railroad.LOGGER.info("gradle.properties updated successfully.");
         }
@@ -368,7 +369,7 @@ public class ForgeProjectCreationPane extends RRBorderPane {
 
             // Delete 'com' directory if it's empty
             final Path comDir = mainJava.resolve("com");
-            FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileHandler.deleteFolder(comDir));
+            FileUtils.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileUtils.deleteFolder(comDir));
 
             updateProgress(7, 17);
             Railroad.LOGGER.info("Package name updated successfully.");
@@ -427,15 +428,15 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             updateLabel("railroad.project.creation.task.updating_build_gradle");
             Path buildGradle = projectPath.resolve("build.gradle");
             String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(data.minecraftVersion().id().substring(2));
-            if(FileHandler.is404(templateBuildGradleUrl)) {
+            if(UrlUtils.is404(templateBuildGradleUrl)) {
                 templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(data.minecraftVersion().id().split("\\.")[1]);
             }
 
-            if(FileHandler.is404(templateBuildGradleUrl)) {
+            if(UrlUtils.is404(templateBuildGradleUrl)) {
                 throw new RuntimeException("No build.gradle template found for the specified Minecraft version.");
             }
 
-            FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
+            FileUtils.copyUrlToFile(templateBuildGradleUrl, buildGradle);
             String buildGradleContent = Files.readString(buildGradle);
             if (!buildGradleContent.startsWith("// fileName:")) {
                 throw new RuntimeException("build.gradle template is invalid.");
@@ -465,15 +466,15 @@ public class ForgeProjectCreationPane extends RRBorderPane {
             updateLabel("railroad.project.creation.task.updating_settings_gradle");
             Path settingsGradle = projectPath.resolve("settings.gradle");
             String templateSettingsGradleUrl = TEMPLATE_SETTINGS_GRADLE_URL.formatted(data.minecraftVersion().id().substring(2));
-            if(FileHandler.is404(templateSettingsGradleUrl)) {
+            if(UrlUtils.is404(templateSettingsGradleUrl)) {
                 templateSettingsGradleUrl = TEMPLATE_SETTINGS_GRADLE_URL.formatted(data.minecraftVersion().id().split("\\.")[1]);
             }
 
-            if(FileHandler.is404(templateSettingsGradleUrl)) {
+            if(UrlUtils.is404(templateSettingsGradleUrl)) {
                 throw new RuntimeException("No settings.gradle template found for the specified Minecraft version.");
             }
 
-            FileHandler.copyUrlToFile(templateSettingsGradleUrl, settingsGradle);
+            FileUtils.copyUrlToFile(templateSettingsGradleUrl, settingsGradle);
             String settingsGradleContent = Files.readString(settingsGradle);
             if (!settingsGradleContent.startsWith("// fileName:")) {
                 throw new RuntimeException("settings.gradle template is invalid.");

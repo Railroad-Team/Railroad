@@ -19,7 +19,7 @@ import dev.railroadide.railroad.ide.ui.*;
 import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroadpluginapi.events.FileEvent;
-import dev.railroadide.railroad.utility.FileHandler;
+import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -301,7 +301,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
                 Path path = file.toPath();
                 if (Files.isDirectory(path)) {
-                    FileHandler.deleteFolder(path);
+                    FileUtils.deleteFolder(path);
                 } else {
                     try {
                         Files.deleteIfExists(path);
@@ -314,7 +314,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     public static void openInExplorer(Path path) {
-        FileHandler.openInExplorer(path);
+        FileUtils.openInExplorer(path);
     }
 
     public static void openInTerminal(PathItem item, RRBorderPane mainPane) {
@@ -344,7 +344,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             return;
 
         // if it's not a binary file, open it in the text editor
-        if (!FileHandler.isBinaryFile(path)) {
+        if (!FileUtils.isBinaryFile(path)) {
             Optional<DetachableTabPane> pane = IDESetup.findBestPaneForFiles(mainPane);
             pane.ifPresent(detachableTabPane -> { // TODO: Some kind of text editor registry
                 String fileName = path.getFileName().toString();
@@ -395,7 +395,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 });
             });
         } else {
-            if (FileHandler.isImageFile(path)) {
+            if (FileUtils.isImageFile(path)) {
                 Optional<DetachableTabPane> pane = IDESetup.findBestPaneForImages(mainPane);
                 pane.ifPresent(detachableTabPane -> {
                     String fileName = path.getFileName().toString();
@@ -417,7 +417,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                     Railroad.EVENT_BUS.publish(new FileEvent(new DefaultDocument(fileName, path), FileEvent.EventType.OPENED));
                 });
             } else {
-                FileHandler.openInDefaultApplication(path);
+                FileUtils.openInDefaultApplication(path);
 
                 Railroad.EVENT_BUS.publish(new FileEvent(new DefaultDocument(path.getFileName().toString(), path), FileEvent.EventType.OPENED));
             }

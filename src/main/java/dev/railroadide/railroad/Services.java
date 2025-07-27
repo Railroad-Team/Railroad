@@ -5,6 +5,7 @@ import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroadpluginapi.services.ApplicationInfoService;
 import dev.railroadide.railroadpluginapi.services.IDEStateService;
 import dev.railroadide.railroadpluginapi.services.VCSService;
+import javafx.application.HostServices;
 
 /**
  * Provides access to various services used in the Railroad application.
@@ -48,6 +49,8 @@ public class Services {
             return (T) IDE_STATE;
         } else if (serviceClass == VCSService.class) {
             return (T) Railroad.REPOSITORY_MANAGER;
+        } else if (serviceClass == HostServices.class) {
+            return (T) Railroad.getHostServicess();
         }
 
         throw new IllegalArgumentException("Service " + serviceClass.getName() + " is not available.");

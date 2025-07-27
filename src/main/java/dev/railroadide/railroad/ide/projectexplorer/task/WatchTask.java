@@ -35,14 +35,12 @@ public class WatchTask extends Task<Void> {
                 }
 
                 Path dir = keys.get(key);
-                if (dir == null) {
+                if (dir == null)
                     continue;
-                }
 
                 for (WatchEvent<?> event : key.pollEvents()) {
-                    if (event.kind() == OVERFLOW) {
+                    if (event.kind() == OVERFLOW)
                         continue;
-                    }
 
                     WatchEvent<Path> ev = cast(event);
                     Path name = ev.context();
@@ -60,8 +58,8 @@ public class WatchTask extends Task<Void> {
                             if (Files.isDirectory(child)) {
                                 registerAll(child, watcher);
                             }
-                        } catch (IOException e) {
-                            // TODO: Handle error
+                        } catch (IOException exception) {
+                            updateMessage("Failed to register new directory: " + child + " due to " + exception.getMessage());
                         }
                     }
                 }
@@ -69,9 +67,8 @@ public class WatchTask extends Task<Void> {
                 boolean valid = key.reset();
                 if (!valid) {
                     keys.remove(key);
-                    if (keys.isEmpty()) {
+                    if (keys.isEmpty())
                         break;
-                    }
                 }
             }
         }

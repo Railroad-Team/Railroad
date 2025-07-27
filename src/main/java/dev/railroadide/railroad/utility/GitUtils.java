@@ -29,4 +29,18 @@ public class GitUtils {
             }
         });
     }
+
+    /**
+     * Checks if the given path is a valid Git repository.
+     *
+     * @param path The path to check.
+     * @return True if the path is a valid Git repository, false otherwise.
+     */
+    public static boolean isGitRepository(Path path) {
+        try(Git git = Git.open(path.toFile())) {
+            return git.getRepository().getDirectory() != null;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
 }

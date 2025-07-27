@@ -2,6 +2,8 @@ package dev.railroadide.railroad.welcome.project.ui.details;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import dev.railroadide.railroad.utility.FileUtils;
+import dev.railroadide.railroad.utility.UrlUtils;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.text.StreamingTemplateEngine;
@@ -13,7 +15,6 @@ import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.project.data.NeoForgeProjectData;
 import dev.railroadide.railroad.project.minecraft.mapping.MappingChannel;
-import dev.railroadide.railroad.utility.FileHandler;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.function.ExceptionlessRunnable;
 import dev.railroadide.railroad.utility.javafx.TextAreaOutputStream;
@@ -217,19 +218,19 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
 
         private void downloadExampleMod(Path projectPath) throws IOException {
             String branch = data.minecraftVersion().id();
-            if (!FileHandler.urlExists(MDK_URL.formatted(branch))) {
+            if (!UrlUtils.urlExists(MDK_URL.formatted(branch))) {
                 branch = "main";
             }
 
             Path zipPath = projectPath.resolve(branch + ".zip");
 
             updateLabel("railroad.project.creation.task.downloading_mdk", "NeoForge");
-            FileHandler.copyUrlToFile(MDK_URL.formatted(branch), zipPath);
+            FileUtils.copyUrlToFile(MDK_URL.formatted(branch), zipPath);
             updateProgress(2, 17);
             Railroad.LOGGER.info("NeoForge MDK downloaded successfully.");
 
             updateLabel("railroad.project.creation.task.unzipping_mdk", "NeoForge");
-            FileHandler.unzipFile(zipPath, projectPath);
+            FileUtils.unzipFile(zipPath, projectPath);
             updateProgress(3, 17);
             Railroad.LOGGER.info("NeoForge MDK unzipped successfully.");
 
@@ -239,7 +240,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
             Railroad.LOGGER.info("NeoForge MDK zip deleted successfully.");
 
             updateLabel("railroad.project.creation.task.deleting_files");
-            FileHandler.deleteFolder(projectPath.resolve(".github"));
+            FileUtils.deleteFolder(projectPath.resolve(".github"));
             Files.deleteIfExists(projectPath.resolve("TEMPLATE_LICENSE.txt"));
             Files.deleteIfExists(projectPath.resolve("README.md"));
             updateProgress(5, 17);
@@ -254,7 +255,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
                 mappingChannel = "official";
             }
 
-            FileHandler.updateKeyValuePairByLine("mapping_channel", mappingChannel, gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mapping_channel", mappingChannel, gradlePropertiesFile);
             String mappingVersion = data.mappingVersion().getId();
             if (data.mappingChannel() == MappingChannel.YARN) {
                 mappingVersion = data.minecraftVersion().id() + "+" + mappingVersion;
@@ -262,14 +263,14 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
                 mappingVersion = mappingVersion + "-" + data.minecraftVersion().id();
             }
 
-            FileHandler.updateKeyValuePairByLine("mapping_version", mappingVersion, gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_id", data.modId(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_name", data.modName(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_license", data.license().getName(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_version", data.version(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_group_id", data.groupId() + "." + data.modId(), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_authors", data.author().orElse(""), gradlePropertiesFile);
-            FileHandler.updateKeyValuePairByLine("mod_description", data.description().map(s -> "'''" + s + "'''").orElse(""), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mapping_version", mappingVersion, gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_id", data.modId(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_name", data.modName(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_license", data.license().getName(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_version", data.version(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_group_id", data.groupId() + "." + data.modId(), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_authors", data.author().orElse(""), gradlePropertiesFile);
+            FileUtils.updateKeyValuePair("mod_description", data.description().map(s -> "'''" + s + "'''").orElse(""), gradlePropertiesFile);
             updateProgress(6, 17);
             Railroad.LOGGER.info("gradle.properties updated successfully.");
         }
@@ -281,7 +282,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
 
             // Delete 'com' directory if it's empty
             final Path comDir = mainJava.resolve("com");
-            FileHandler.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileHandler.deleteFolder(comDir));
+            FileUtils.isDirectoryEmpty(comDir, (ExceptionlessRunnable) () -> FileUtils.deleteFolder(comDir));
 
             updateProgress(7, 17);
             Railroad.LOGGER.info("Package name updated successfully.");
@@ -340,7 +341,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
             updateLabel("railroad.project.creation.task.updating_build_gradle");
             Path buildGradle = projectPath.resolve("build.gradle");
             String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(data.minecraftVersion().id().substring(2));
-            FileHandler.copyUrlToFile(templateBuildGradleUrl, buildGradle);
+            FileUtils.copyUrlToFile(templateBuildGradleUrl, buildGradle);
             String buildGradleContent = Files.readString(buildGradle);
             if (!buildGradleContent.startsWith("// fileName:")) {
                 showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");
@@ -372,7 +373,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
             updateLabel("railroad.project.creation.task.updating_settings_gradle");
             Path settingsGradle = projectPath.resolve("settings.gradle");
             String templateSettingsGradleUrl = TEMPLATE_SETTINGS_GRADLE_URL.formatted(data.minecraftVersion().id().substring(2));
-            FileHandler.copyUrlToFile(templateSettingsGradleUrl, settingsGradle);
+            FileUtils.copyUrlToFile(templateSettingsGradleUrl, settingsGradle);
             String settingsGradleContent = Files.readString(settingsGradle);
             if (!settingsGradleContent.startsWith("// fileName:")) {
                 showErrorAlert("Error", "An error occurred while creating the project.", "An error occurred while creating the project. Please try again.");

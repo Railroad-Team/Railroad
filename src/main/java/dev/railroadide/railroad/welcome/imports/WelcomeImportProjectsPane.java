@@ -10,7 +10,7 @@ import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
-import dev.railroadide.railroad.utility.FileHandler;
+import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.GitUtils;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -250,7 +250,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
                 }
 
                 Path projectDir = Path.of(dir);
-                if (Files.exists(projectDir) && Files.isDirectory(projectDir) && !FileHandler.isDirectoryEmpty(projectDir)) {
+                if (Files.exists(projectDir) && Files.isDirectory(projectDir) && !FileUtils.isDirectoryEmpty(projectDir)) {
                     showError("railroad.importprojects.clone.directory_not_empty");
                     return;
                 }
@@ -306,7 +306,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
                 }
 
                 Path projectDir = Path.of(dir).resolve(folderName);
-                if(Files.exists(projectDir) && Files.isDirectory(projectDir) && !FileHandler.isDirectoryEmpty(projectDir)) {
+                if(Files.exists(projectDir) && Files.isDirectory(projectDir) && !FileUtils.isDirectoryEmpty(projectDir)) {
                     showError("railroad.importprojects.clone.directory_not_empty");
                     return;
                 }

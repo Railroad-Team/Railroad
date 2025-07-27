@@ -2,10 +2,10 @@ package dev.railroadide.railroad.plugin.defaults;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-import dev.railroadide.core.logger.LoggerServiceLocator;
 import dev.railroadide.core.registry.Registry;
 import dev.railroadide.core.registry.RegistryManager;
 import dev.railroadide.logger.Logger;
+import dev.railroadide.logger.LoggerManager;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroadpluginapi.PluginContext;
@@ -33,8 +33,8 @@ public class DefaultPluginContext implements PluginContext {
         this.descriptor = descriptor;
         this.eventBus = bus;
 
-        // TODO: Remove this logger when the logging module is fully integrated
-        this.logger = LoggerServiceLocator.getInstance().getLogger();
+        String[] mainClassParts = descriptor.getMainClass().split("\\.");
+        this.logger = LoggerManager.create(mainClassParts[mainClassParts.length - 1]).build();
     }
 
     @Override

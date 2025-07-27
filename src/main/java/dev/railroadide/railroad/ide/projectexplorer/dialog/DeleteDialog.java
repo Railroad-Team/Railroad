@@ -6,7 +6,7 @@ import dev.railroadide.core.ui.localized.LocalizedButton;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
 import dev.railroadide.railroadpluginapi.events.FileEvent;
-import dev.railroadide.railroad.utility.FileHandler;
+import dev.railroadide.railroad.utility.FileUtils;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.stage.Modality;
@@ -35,7 +35,7 @@ public class DeleteDialog {
         okButton.setOnAction(event -> {
             try {
                 if(Files.isDirectory(path)) {
-                    FileHandler.deleteFolder(path);
+                    FileUtils.deleteFolder(path);
                 } else {
                     Files.deleteIfExists(path);
                 }
@@ -44,7 +44,7 @@ public class DeleteDialog {
 
                 Railroad.EVENT_BUS.publish(new FileEvent(new DefaultDocument(path.getFileName().toString(), path), FileEvent.EventType.DELETED));
             } catch (IOException exception) {
-                exception.printStackTrace(); // TODO: Handle exception
+                Railroad.LOGGER.error("Failed to delete file or directory: {}", path, exception);
             }
         });
 

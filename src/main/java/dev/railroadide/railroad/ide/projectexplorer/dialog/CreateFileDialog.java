@@ -4,6 +4,7 @@ import dev.railroadide.core.ui.RRGridPane;
 import dev.railroadide.core.ui.RRListView;
 import dev.railroadide.core.ui.localized.LocalizedButton;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -92,19 +93,19 @@ public class CreateFileDialog {
                     Files.createDirectories(file.getParent());
                     Files.writeString(file, content);
                 } catch (IOException exception) {
-                    exception.printStackTrace(); // TODO: Handle exception
+                    Railroad.LOGGER.error("Failed to create file", exception);
                 }
             } else if (type == FileCreateType.FOLDER) {
                 try {
                     Files.createDirectories(path.resolve(textField.getText()));
                 } catch (IOException exception) {
-                    exception.printStackTrace(); // TODO: Handle exception
+                    Railroad.LOGGER.error("Failed to create folder", exception);
                 }
             } else {
                 try {
                     Files.createFile(path.resolve(textField.getText()));
                 } catch (IOException exception) {
-                    exception.printStackTrace(); // TODO: Handle exception
+                    Railroad.LOGGER.error("Failed to create file", exception);
                 }
             }
         });

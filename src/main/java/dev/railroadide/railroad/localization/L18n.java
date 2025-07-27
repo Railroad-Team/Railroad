@@ -151,8 +151,10 @@ public class L18n {
             return "null";
         }
 
+        if(key.isBlank())
+            return "";
+
         if (LANG_CACHE.get(key) == null) {
-            //TODO create a popup/toast to ask if user wants to swap to english as key is missing
             LOGGER.error("Error finding translations for key '{}' in language {}", key, CURRENT_LANG.getValue());
             return key;
         }

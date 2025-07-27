@@ -187,7 +187,7 @@ public class PluginManager {
             loadResult.setPlugin(plugin, classLoader);
             ShutdownHooks.addHook(() -> {
                 try {
-                    plugin.onDisable(context); // TODO: Have a terminate method in Plugin interface
+                    Railroad.EVENT_BUS.publish(new ApplicationStopEvent());
                     classLoader.close();
                     loadResult.setPlugin(null, null);
                 } catch (Exception exception) {

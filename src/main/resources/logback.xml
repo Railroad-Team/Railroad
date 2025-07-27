@@ -18,4 +18,6 @@
     </root>
 
     <logger name="org.eclipse.jgit" level="WARN"/>
+    <logger name="com.pty4j" level="WARN"/>
+    <logger name="org.gradle.tooling" level="INFO"/>
 </configuration>
