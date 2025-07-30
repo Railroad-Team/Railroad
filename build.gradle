@@ -74,8 +74,8 @@ dependencies {
     implementation 'io.get-coursier:interface:1.0.29-M1'
     implementation 'org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r'
 
-    implementation 'dev.railroadide:RailroadLogger:1.0.0'
-    implementation 'dev.railroadide:RailroadPluginAPI:1.0.0'
+    implementation 'dev.railroadide:RailroadLogger:1.0.2'
+    implementation 'dev.railroadide:RailroadPluginAPI:1.0.2'
     implementation project(':railroad-core')
 
     annotationProcessor 'org.projectlombok:lombok:1.18.32'

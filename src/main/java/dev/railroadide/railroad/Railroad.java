@@ -30,6 +30,8 @@ import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.vcs.RepositoryManager;
 import dev.railroadide.railroad.welcome.WelcomePane;
 import dev.railroadide.railroadpluginapi.event.EventBus;
+import dev.railroadide.railroadpluginapi.events.ApplicationStartEvent;
+import dev.railroadide.railroadpluginapi.events.ApplicationStopEvent;
 import dev.railroadide.railroadpluginapi.events.ProjectEvent;
 import javafx.application.Application;
 import javafx.application.HostServices;
@@ -344,6 +346,7 @@ public class Railroad extends Application {
     @Override
     public void stop() {
         LOGGER.info("Stopping Railroad");
+        Railroad.EVENT_BUS.publish(new ApplicationStopEvent());
         ConfigHandler.saveConfig();
         ShutdownHooks.runHooks();
         LoggerManager.shutdown();

@@ -10,6 +10,7 @@ import dev.railroadide.railroadpluginapi.PluginDescriptor;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.utility.ShutdownHooks;
+import dev.railroadide.railroadpluginapi.events.ApplicationStopEvent;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.jetbrains.annotations.NotNull;
@@ -187,7 +188,6 @@ public class PluginManager {
             loadResult.setPlugin(plugin, classLoader);
             ShutdownHooks.addHook(() -> {
                 try {
-                    Railroad.EVENT_BUS.publish(new ApplicationStopEvent());
                     classLoader.close();
                     loadResult.setPlugin(null, null);
                 } catch (Exception exception) {
