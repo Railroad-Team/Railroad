@@ -2,11 +2,14 @@ package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
-import dev.railroadide.railroadpluginapi.events.FileEvent;
 import dev.railroadide.railroad.utility.ShutdownHooks;
+import dev.railroadide.railroadpluginapi.events.FileEvent;
+import dev.railroadide.railroadpluginapi.events.FileModifiedEvent;
 import javafx.scene.input.KeyCode;
+import javafx.util.Pair;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
+import org.fxmisc.richtext.model.PlainTextChange;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TextEditorPane extends CodeArea {
+    private final ExecutorService changeExecutor = Executors.newSingleThreadExecutor();
     protected final Path filePath;
 
     private static final int[] FONT_SIZES = {6, 8, 10, 12, 14, 16, 18, 20, 24, 26, 28, 30, 36, 40, 48, 56, 60};
@@ -63,7 +67,6 @@ public class TextEditorPane extends CodeArea {
         try {
             replaceText(0, 0, Files.readString(this.filePath));
 
-            // listen for changes to the file
             try (var watcher = this.filePath.getFileSystem().newWatchService()) {
                 this.filePath.getParent().register(watcher, StandardWatchEventKinds.ENTRY_MODIFY);
 
@@ -75,7 +78,8 @@ public class TextEditorPane extends CodeArea {
                             for (var event : key.pollEvents()) {
                                 if (event.context().equals(this.filePath.getFileName())) {
                                     String content = Files.readString(this.filePath);
-                                    if (!getText().equals(content)) {
+                                    String text = getText();
+                                    if (!text.equals(content)) {
                                         replaceText(0, 0, content);
                                     }
                                 }
@@ -94,21 +98,77 @@ public class TextEditorPane extends CodeArea {
                 Railroad.LOGGER.error("Failed to watch file", exception);
             }
 
-            // TODO: Change this to a more efficient way of writing changes
-            textProperty().addListener((observable, oldText, newText) -> {
-                try {
-                    if (!Files.readString(this.filePath).equals(newText)) {
-                        Files.writeString(this.filePath, newText);
-                        Railroad.EVENT_BUS.publish(new FileEvent(
-                                new DefaultDocument(this.filePath.getFileName().toString(), this.filePath),
-                                FileEvent.EventType.SAVED));
-                    }
-                } catch (IOException exception) {
-                    Railroad.LOGGER.error("Failed to write file", exception);
-                }
-            });
+            multiPlainChanges()
+                    .successionEnds(Duration.ofMillis(500))
+                    .retainLatestUntilLater(changeExecutor)
+                    .map(changes -> changes.stream()
+                            .map(change -> TextEditorPane.getChange(getText(), change))
+                            .toList())
+                    .subscribe(changes -> {
+                        var document = new DefaultDocument(this.filePath.getFileName().toString(), this.filePath);
+                        Railroad.EVENT_BUS.publish(new FileModifiedEvent(document, changes));
+
+                        String text = getText();
+                        try {
+                            if (!Files.readString(this.filePath).equals(text)) {
+                                Files.writeString(this.filePath, text);
+                                Railroad.EVENT_BUS.publish(new FileEvent(
+                                        document,
+                                        FileEvent.EventType.SAVED));
+                            }
+                        } catch (IOException exception) {
+                            Railroad.LOGGER.error("Failed to write file", exception);
+                        }
+                    });
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to read file", exception);
         }
+    }
+
+    private static FileModifiedEvent.Change getChange(String text, PlainTextChange change) {
+        String inserted = change.getInserted();
+        String removed = change.getRemoved();
+        int position = change.getPosition();
+        int netLength = change.getNetLength();
+
+        Pair<Integer, Integer> startPos = getLineAndColumn(text, position);
+        Pair<Integer, Integer> endPos = getLineAndColumn(text, position + netLength);
+
+        return new FileModifiedEvent.Change(
+                getChangeType(change),
+                removed,
+                inserted,
+                new FileModifiedEvent.Range(
+                        startPos.getKey(), startPos.getValue(),
+                        endPos.getKey(), endPos.getValue()));
+    }
+
+    private static FileModifiedEvent.Change.Type getChangeType(PlainTextChange change) {
+        String inserted = change.getInserted();
+        String removed = change.getRemoved();
+
+        if (!inserted.isEmpty() && removed.isEmpty()) {
+            return FileModifiedEvent.Change.Type.ADDED;
+        } else if (inserted.isEmpty() && !removed.isEmpty()) {
+            return FileModifiedEvent.Change.Type.REMOVED;
+        } else {
+            return FileModifiedEvent.Change.Type.MODIFIED;
+        }
+    }
+
+    private static Pair<Integer, Integer> getLineAndColumn(String text, int position) {
+        int line = 0;
+        int column = 0;
+
+        for (int i = 0; i < position && i < text.length(); i++) {
+            if (text.charAt(i) == '\n') {
+                line++;
+                column = 0;
+            } else {
+                column++;
+            }
+        }
+
+        return new Pair<>(line, column);
     }
 }
