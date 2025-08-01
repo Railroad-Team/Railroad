@@ -18,6 +18,8 @@ public class Keybind {
     @Getter
     private final String id;
     @Getter
+    private final KeybindCategory category;
+    @Getter
     private final List<KeybindData> defaultKeys;
     @Getter
     private final List<KeybindData> keys = new ArrayList<>();
@@ -26,8 +28,9 @@ public class Keybind {
     @Getter
     private final Map<KeybindContexts.KeybindContext, Consumer<Node>> actions;
 
-    private Keybind(String id, List<KeybindData> defaultKeys, List<KeybindContexts.KeybindContext> contexts, Map<KeybindContexts.KeybindContext, Consumer<Node>> actions) {
+    private Keybind(String id, KeybindCategory category, List<KeybindData> defaultKeys, List<KeybindContexts.KeybindContext> contexts, Map<KeybindContexts.KeybindContext, Consumer<Node>> actions) {
         this.id = id;
+        this.category = category;
         this.defaultKeys = defaultKeys;
         this.validContexts = contexts;
         this.actions = actions;
@@ -76,7 +79,7 @@ public class Keybind {
             KeyCode keyCode = KeyCode.valueOf(parts[0]);
 
             if (parts.length < 2 || parts[1].isBlank()) {
-                addKey(keyCode, null);
+                addKey(keyCode, (KeyCombination.Modifier) null);
                 continue;
             }
 
@@ -112,13 +115,19 @@ public class Keybind {
 
     public static class Builder {
         private String id;
-        private List<KeybindData> defaultKeys = new ArrayList<>();
-        private List<KeybindContexts.KeybindContext> validContexts = new ArrayList<>();
+        private KeybindCategory category;
+        private final List<KeybindData> defaultKeys = new ArrayList<>();
+        private final List<KeybindContexts.KeybindContext> validContexts = new ArrayList<>();
         private boolean ignoreAll = false;
-        private Map<KeybindContexts.KeybindContext, Consumer<Node>> actions = new HashMap<>();
+        private final Map<KeybindContexts.KeybindContext, Consumer<Node>> actions = new HashMap<>();
 
         public Builder id(String id) {
             this.id = id;
+            return this;
+        }
+
+        public Builder category(KeybindCategory category) {
+            this.category = category;
             return this;
         }
 
@@ -143,13 +152,13 @@ public class Keybind {
         }
 
         public Keybind build() {
-            if (id == null || actions.isEmpty())
-                throw new IllegalStateException("Keybind must have an ID and at least one action defined.");
+            if (id == null || category == null || actions.isEmpty())
+                throw new IllegalStateException("Keybind must have an ID, category and at least one action defined.");
 
             if(!ignoreAll)
                 validContexts.add(KeybindContexts.ALL);
 
-            return new Keybind(id, defaultKeys, validContexts, actions);
+            return new Keybind(id, category, defaultKeys, validContexts, actions);
         }
     }
 }
