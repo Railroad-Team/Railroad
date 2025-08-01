@@ -3,7 +3,6 @@ package dev.railroadide.railroad.settings.keybinds;
 import dev.railroadide.core.settings.keybinds.Keybind;
 import dev.railroadide.core.settings.keybinds.KeybindCategory;
 import dev.railroadide.core.settings.keybinds.KeybindContexts;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.projectexplorer.PathItem;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import javafx.scene.control.TreeView;
@@ -15,11 +14,10 @@ public class Keybinds {
             .id("copy")
             .category(new KeybindCategory("railroad:general", "keybind.category.general"))
             .addDefaultKey(KeyCode.C, KeyCombination.SHORTCUT_DOWN)
-            .addAction(KeybindContexts.of("railroad:project_tree"), node -> {
+            .addAction(KeybindContexts.of("railroad:project_explorer"), node -> {
                 @SuppressWarnings("unchecked")
                 TreeView<PathItem> tree = (TreeView<PathItem>) node;
                 ProjectExplorerPane.copy(tree.getSelectionModel().getSelectedItem().getValue());
-                Railroad.LOGGER.info("BUTTON PRESSED");
             })
             .build());
 
