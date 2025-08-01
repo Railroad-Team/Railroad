@@ -65,7 +65,10 @@ import java.util.function.Consumer;
  * starting the application and handling the main window of the application
  */
 public class Railroad extends Application {
-    public static final Logger LOGGER = LoggerManager.create(Railroad.class).build();
+    public static final Logger LOGGER = LoggerManager.create(Railroad.class)
+            .logDirectory(ConfigHandler.getConfigDirectory().resolve("logs"))
+            .configFile(ConfigHandler.getConfigDirectory().resolve("logger_config.json"))
+            .build();
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build();
     public static final Gson GSON = new GsonBuilder()

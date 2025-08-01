@@ -34,7 +34,10 @@ public class DefaultPluginContext implements PluginContext {
         this.eventBus = bus;
 
         String[] mainClassParts = descriptor.getMainClass().split("\\.");
-        this.logger = LoggerManager.create(mainClassParts[mainClassParts.length - 1]).build();
+        this.logger = LoggerManager.create(mainClassParts[mainClassParts.length - 1])
+                .logDirectory(ConfigHandler.getConfigDirectory().resolve("logs"))
+                .configFile(ConfigHandler.getConfigDirectory().resolve("logger_config.json"))
+                .build();
     }
 
     @Override
