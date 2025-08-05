@@ -50,9 +50,8 @@ public class KeyComboNode extends RRButton {
         setText("[Recording...]");
 
         Scene scene = getScene();
-        if (scene == null) {
+        if (scene == null)
             throw new IllegalStateException("KeyComboNode must be attached to a scene.");
-        }
 
         scene.addEventFilter(KeyEvent.KEY_PRESSED, this::onKeyPressed);
         scene.addEventFilter(KeyEvent.KEY_RELEASED, this::onKeyReleased);
@@ -119,9 +118,11 @@ public class KeyComboNode extends RRButton {
             setText(label.toString());
             return;
         }
+
         for (KeyCombination.Modifier mod : this.keybindData.modifiers()) {
             label.append(localizeModifier(mod)).append(" + ");
         }
+
         label.append(this.keybindData.keyCode());
         setText(label.toString());
     }
@@ -160,7 +161,7 @@ public class KeyComboNode extends RRButton {
      * @param b Array of modifiers to compare against.
      * @return True if both arrays contain the same modifiers, false otherwise.
      */
-    private boolean areModifiersEqual(KeyCombination.Modifier[] a, KeyCombination.Modifier[] b) {
+    private static boolean areModifiersEqual(KeyCombination.Modifier[] a, KeyCombination.Modifier[] b) {
         if (a.length != b.length) return false;
         for (KeyCombination.Modifier modA : a) {
             boolean found = false;

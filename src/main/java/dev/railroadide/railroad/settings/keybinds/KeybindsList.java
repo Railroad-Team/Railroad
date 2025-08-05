@@ -106,7 +106,7 @@ public class KeybindsList extends TreeView {
         addButton.getStyleClass().add("square-button");
         addButton.setVariant(RRButton.ButtonVariant.PRIMARY);
         addButton.setOnAction(e -> {
-            KeybindData newKeybind = new KeybindData(KeyCode.UNDEFINED, new KeyCombination.Modifier[0]);
+            var newKeybind = new KeybindData(KeyCode.UNDEFINED, new KeyCombination.Modifier[0]);
             keybinds.add(newKeybind);
             refreshTree();
         });
@@ -114,7 +114,7 @@ public class KeybindsList extends TreeView {
         titleBox.getChildren().add(addButton);
 
         for (KeybindData keybind : keybinds) {
-            RRHBox keybindBox = new RRHBox(5);
+            var keybindBox = new RRHBox(5);
             var keyComboNode = new KeyComboNode(keybind);
             keyComboNode.setOnComboModified((keybindData) -> {
                 int index = keybinds.indexOf(keybind);
@@ -123,7 +123,7 @@ public class KeybindsList extends TreeView {
                 }
             });
 
-            RRHBox buttonBox = new RRHBox(5);
+            var buttonBox = new RRHBox(5);
 
             var removeButton = new RRButton("", FontAwesomeSolid.MINUS);
             removeButton.setVariant(RRButton.ButtonVariant.DANGER);
@@ -146,7 +146,7 @@ public class KeybindsList extends TreeView {
             configBox.getChildren().addAll(keybindBox);
         }
 
-        RRHBox treeNodeContent = new RRHBox();
+        var treeNodeContent = new RRHBox();
         treeNodeContent.getChildren().addAll(titleBox, configBox);
         return new TreeItem<>(treeNodeContent);
     }
@@ -191,8 +191,8 @@ public class KeybindsList extends TreeView {
 
     /**
      * Converts a JSON representation of keybinds into a map of keybind IDs to their corresponding KeybindData lists.
-     * @param json
-     * @return
+     * @param json the JSON element representing the keybinds.
+     * @return a map of keybind IDs to lists of KeybindData.
      */
     public static Map<String, List<KeybindData>> fromJson(JsonElement json) {
         var map = new HashMap<String, List<KeybindData>>();
