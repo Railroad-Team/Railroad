@@ -23,7 +23,7 @@ public class Keybinds {
 
     public static final Keybind PASTE = KeybindHandler.registerKeybind(Keybind.builder()
             .id("railroad:paste")
-            .category(new KeybindCategory("railroad:general", "railroad.settings.keybinds.category.general")) //TODO change system? KeybindCategory.of?
+            .category(new KeybindCategory("railroad:general", "railroad.settings.keybinds.category.general"))
             .addDefaultKey(KeyCode.V, KeyCombination.SHORTCUT_DOWN)
             .addAction(KeybindContexts.of("railroad:project_explorer"), node -> {
                 @SuppressWarnings("unchecked")

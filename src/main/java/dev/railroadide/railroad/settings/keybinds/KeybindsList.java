@@ -11,7 +11,6 @@ import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.Railroad;
 import io.github.palexdev.mfxcore.builders.InsetsBuilder;
-import javafx.geometry.Insets;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.input.KeyCode;
@@ -28,24 +27,32 @@ public class KeybindsList extends TreeView {
     @Getter
     private final Map<String, List<KeybindData>> keybinds = new HashMap<>();
 
+    /**
+     * Creates a new KeybindsList with the given keybinds map.
+     * @param map a map of keybind IDs to their corresponding list of KeybindData.
+     */
     public KeybindsList(Map<String, List<KeybindData>> map) {
         super(new TreeItem<>(new RRHBox()));
         loadKeybinds(map);
         this.setShowRoot(false);
 
         TreeItem<RRHBox> root = this.getRoot();
-        root.setExpanded(true); // Expand
+        root.setExpanded(true);
 
         refreshTree();
     }
 
+    /**
+     * Refreshes the tree view to display the current keybinds.
+     * It caches the currently expanded categories, to then restore them after clearing the tree.
+     */
     private void refreshTree() {
         TreeItem<RRHBox> root = this.getRoot();
 
         List<String> expandedCategoryIds = new ArrayList<>();
         for (TreeItem<RRHBox> item : root.getChildren()) {
             if (item.isExpanded() &&
-                    item.getValue().getChildren().get(0) instanceof LocalizedLabel label) {
+                    item.getValue().getChildren().getFirst() instanceof LocalizedLabel label) {
                 expandedCategoryIds.add(label.getId());
             }
         }
@@ -56,7 +63,7 @@ public class KeybindsList extends TreeView {
             KeybindCategory category = KeybindHandler.getKeybind(entry.getKey()).getCategory();
 
             TreeItem<RRHBox> categoryItem = root.getChildren().stream()
-                    .filter(item -> item.getValue().getChildren().get(0) instanceof LocalizedLabel label &&
+                    .filter(item -> item.getValue().getChildren().getFirst() instanceof LocalizedLabel label &&
                             label.getId().equals(category.id()))
                     .findFirst()
                     .orElseGet(() -> {
@@ -73,13 +80,19 @@ public class KeybindsList extends TreeView {
         }
 
         for (TreeItem<RRHBox> item : root.getChildren()) {
-            if (item.getValue().getChildren().get(0) instanceof LocalizedLabel label &&
+            if (item.getValue().getChildren().getFirst() instanceof LocalizedLabel label &&
                     expandedCategoryIds.contains(label.getId())) {
                 item.setExpanded(true);
             }
         }
     }
 
+    /**
+     * Creates a TreeItem for a keybind. Which contains an add button, remove button and edit button for each keybind/key combination.
+     * @param id the keybind ID
+     * @param keybinds a KeybindData list containing the keybinds/key combinations for the given ID.
+     * @return a TreeItem containing the keybind configuration UI.
+     */
     private TreeItem<RRHBox> createKeybindTreeItem(String id, List<KeybindData> keybinds) {
         var titleBox = new RRHBox();
         var configBox = new RRVBox();
@@ -138,11 +151,20 @@ public class KeybindsList extends TreeView {
         return new TreeItem<>(treeNodeContent);
     }
 
+    /**
+     * Loads the provided keybinds into the current instance.
+     * @param keybinds a map of keybind IDs to their corresponding KeybindData list.
+     */
     public void loadKeybinds(Map<String, List<KeybindData>> keybinds) {
         this.keybinds.clear();
         this.keybinds.putAll(keybinds);
     }
 
+    /**
+     * Converts the keybinds map to a JSON representation.
+     * @param keybinds
+     * @return a JsonElement representing the keybinds.
+     */
     public static JsonElement toJson(Map<String, List<KeybindData>> keybinds) {
         var jsonObject = new JsonObject();
         for (Map.Entry<String, List<KeybindData>> entry : keybinds.entrySet()) {
@@ -167,6 +189,11 @@ public class KeybindsList extends TreeView {
         return jsonObject;
     }
 
+    /**
+     * Converts a JSON representation of keybinds into a map of keybind IDs to their corresponding KeybindData lists.
+     * @param json
+     * @return
+     */
     public static Map<String, List<KeybindData>> fromJson(JsonElement json) {
         var map = new HashMap<String, List<KeybindData>>();
 
@@ -177,7 +204,40 @@ public class KeybindsList extends TreeView {
                 Railroad.LOGGER.warn("Keybind " + id + " does not exist");
                 continue;
             }
-            KeybindHandler.getKeybind(id).fromJson(keyList);
+
+            for (JsonElement keyCombo : keyList) {
+                String[] parts = keyCombo.getAsString().split(";");
+                KeyCode keyCode = KeyCode.valueOf(parts[0]);
+
+                if (parts.length < 2 || parts[1].isBlank()) {
+                    KeybindHandler.getKeybind(id).addKey(keyCode, (KeyCombination.Modifier) null);
+                    continue;
+                }
+
+                String[] modParts = parts[1].split(",");
+                List<KeyCombination.Modifier> modifiers = new ArrayList<>();
+
+                for (String mod : modParts) {
+                    switch (mod.trim()) {
+                        case "Shortcut":
+                            modifiers.add(KeyCombination.SHORTCUT_DOWN);
+                            break;
+                        case "Ctrl":
+                            modifiers.add(KeyCombination.CONTROL_DOWN);
+                            break;
+                        case "Shift":
+                            modifiers.add(KeyCombination.SHIFT_DOWN);
+                            break;
+                        case "Alt":
+                            modifiers.add(KeyCombination.ALT_DOWN);
+                            break;
+                        default:
+                            throw new IllegalArgumentException("Unknown modifier: " + mod);
+                    }
+                }
+
+                KeybindHandler.getKeybind(id).addKey(keyCode, modifiers.toArray(new KeyCombination.Modifier[0]));
+            }
 
             var keys = new ArrayList<KeybindData>();
             for (JsonElement keyCombo : keyList) {

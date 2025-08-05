@@ -2,7 +2,7 @@ package dev.railroadide.railroad.settings.keybinds;
 
 import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.core.ui.RRButton;
-import io.github.palexdev.mfxcore.builders.InsetsBuilder;
+import dev.railroadide.railroad.utility.OperatingSystem;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
@@ -24,6 +24,10 @@ public class KeyComboNode extends RRButton {
     private KeyCode tempKeyCode = null;
     private KeyCombination.Modifier[] tempModifiers = new KeyCombination.Modifier[0];
 
+    /**
+     * Creates a new KeyComboNode with the specified keybind data.
+     * @param keybindData The keybind data to initialize the node with.
+     */
     public KeyComboNode(KeybindData keybindData) {
         this.keybindData = keybindData;
         setVariant(ButtonVariant.PRIMARY);
@@ -35,6 +39,10 @@ public class KeyComboNode extends RRButton {
         }
     }
 
+    /**
+     * Toggles the editing mode for this KeyComboNode.
+     * When enabled, the node will listen for key events to capture a new key combination.
+     */
     public void toggleEditing() {
         if (editing) return;
 
@@ -50,6 +58,10 @@ public class KeyComboNode extends RRButton {
         scene.addEventFilter(KeyEvent.KEY_RELEASED, this::onKeyReleased);
     }
 
+    /**
+     * Called when a key is pressed in editing mode, and then appends the key code and modifiers to the temporary variables,
+     * which are then used to update the keybind data when the keys are released.
+     */
     private void onKeyPressed(KeyEvent event) {
         event.consume();
 
@@ -67,6 +79,12 @@ public class KeyComboNode extends RRButton {
         }
     }
 
+    /**
+     * Called when a key is released in editing mode. It checks if the key combination has changed,
+     * and if so, it updates the keybind data and calls the onComboModified consumer if set.
+     * It then resets the editing state and updates the node.
+     * @param event
+     */
     private void onKeyReleased(KeyEvent event) {
         if (!editing || tempKeyCode == null) return;
         event.consume();
@@ -91,6 +109,9 @@ public class KeyComboNode extends RRButton {
         }
     }
 
+    /**
+     * Updates the text of the button to reflect the current keybind data.
+     */
     private void updateText() {
         StringBuilder label = new StringBuilder();
         if (this.keybindData.modifiers() == null || this.keybindData.modifiers().length == 0) {
@@ -99,12 +120,46 @@ public class KeyComboNode extends RRButton {
             return;
         }
         for (KeyCombination.Modifier mod : this.keybindData.modifiers()) {
-            label.append(mod.toString()).append(" + ");
+            label.append(localizedModifier(mod)).append(" + ");
         }
         label.append(this.keybindData.keyCode());
         setText(label.toString());
     }
 
+    /**
+     * Converts Modifier names to the correct name depending on the operating system.
+     * @param modifier The modifier to convert.
+     * @return The localized name of the modifier.
+     */
+    private String localizedModifier(KeyCombination.Modifier modifier) {
+        return switch (modifier.getKey()) {
+            case SHORTCUT:
+                if (OperatingSystem.CURRENT == OperatingSystem.MAC) {
+                    yield "Command";
+                } else {
+                    yield "Control";
+                }
+            case ALT:
+                if (OperatingSystem.CURRENT == OperatingSystem.MAC) {
+                    yield "Option";
+                } else {
+                    yield "Alt";
+                }
+            case CONTROL:
+                yield "Control";
+            case SHIFT:
+                yield "Shift";
+            default:
+                yield modifier.getKey().toString();
+        };
+    }
+
+    /**
+     * Checks if two arrays of KeyCombination.Modifier are equal.
+     * @param a Array of modifiers to compare.
+     * @param b Array of modifiers to compare against.
+     * @return True if both arrays contain the same modifiers, false otherwise.
+     */
     private boolean areModifiersEqual(KeyCombination.Modifier[] a, KeyCombination.Modifier[] b) {
         if (a.length != b.length) return false;
         for (KeyCombination.Modifier modA : a) {
