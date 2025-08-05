@@ -6,7 +6,4 @@ package dev.railroadide.core.settings.keybinds;
  * @param titleKey
  */
 public record KeybindCategory(String id, String titleKey) {
-    public static KeybindCategory of(String id, String titleKey) {
-        return new KeybindCategory(id, titleKey);
-    }
 }

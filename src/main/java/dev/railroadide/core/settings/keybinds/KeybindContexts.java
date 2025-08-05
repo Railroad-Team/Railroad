@@ -9,11 +9,7 @@ import java.util.Map;
 public class KeybindContexts {
     private static final Map<String, KeybindContext> contexts = new HashMap<>();
 
-    public static KeybindContext ALL = new KeybindContext("all");
-
-    static {
-        registerContext(ALL);
-    }
+    public static final KeybindContext ALL = registerContext(new KeybindContext("all"));
 
     /**
      * Registers a new keybind context.
@@ -21,11 +17,11 @@ public class KeybindContexts {
      * @return The registered context, or the existing context if a duplicate was attempted to be registered.
      */
     public static KeybindContext registerContext(KeybindContext context) {
-        if (contexts.containsKey(context.getId())) {
+        if (contexts.containsKey(context.id())) {
             LoggerServiceLocator.getInstance().getLogger().warn("Attempted to register a duplicate keybind context: {}", context);
-            return getContext(context.getId());
+            return getContext(context.id());
         }
-        contexts.put(context.getId(), context);
+        contexts.put(context.id(), context);
 
         return context;
     }
@@ -45,12 +41,5 @@ public class KeybindContexts {
         return contexts.get(id);
     }
 
-    public static class KeybindContext {
-        @Getter
-        private final String id;
-
-        public KeybindContext(String id) {
-            this.id = id;
-        }
-    }
+    public record KeybindContext(String id) {}
 }

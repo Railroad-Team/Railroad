@@ -44,14 +44,28 @@ public class Keybind {
         this.actions = actions;
     }
 
+    /**
+     * Adds a key combination to the keybind with the given KeyCode and optional modifiers.
+     * @param keyCode The primary key code for the keybind, e.g., KeyCode.A, KeyCode.ENTER, etc.
+     * @param modifiers Optional modifiers for the keybind, such as Control, Shift, Alt, or Shortcut.
+     */
     public void addKey(KeyCode keyCode, KeyCombination.Modifier... modifiers) {
         keys.add(new KeybindData(keyCode, modifiers));
     }
 
+    /**
+     * Removes a key combination from the keybind.
+     * @param keyCode The primary key code for the keybind, e.g., KeyCode.A, KeyCode.ENTER, etc.
+     * @param modifiers Optional modifiers for the keybind, such as Control, Shift, Alt, or Shortcut.
+     */
     public void removeKey(KeyCode keyCode, KeyCombination.Modifier... modifiers) {
         keys.remove(new KeybindData(keyCode, modifiers));
     }
 
+    /**
+     * Resets the keybind's keys to the default keys.
+     * This will clear any custom keys set and restore the keybind to its initial state.
+     */
     public void resetKeys() {
         keys.clear();
         keys.addAll(defaultKeys);
@@ -64,14 +78,12 @@ public class Keybind {
      */
     public boolean matches(KeyEvent keyEvent) {
         for (KeybindData key : keys) {
-            var keyCode = key.keyCode();
-            var modifiers = key.modifiers();
+            KeyCode keyCode = key.keyCode();
+            KeyCombination.Modifier[] modifiers = key.modifiers();
 
             if (keyCode != keyEvent.getCode()) continue;
 
-            if (modifiers == null) {
-                return true;
-            }
+            if (modifiers == null) return true;
 
             for (KeyCombination.Modifier modifier : modifiers) {
                 if (!keyEvent.isShortcutDown() && modifier == KeyCombination.SHORTCUT_DOWN) continue;
@@ -84,42 +96,6 @@ public class Keybind {
         }
 
         return false;
-    }
-
-    public void fromJson(JsonArray json) {
-        for (JsonElement keyCombo : json) {
-            String[] parts = keyCombo.getAsString().split(";");
-            KeyCode keyCode = KeyCode.valueOf(parts[0]);
-
-            if (parts.length < 2 || parts[1].isBlank()) {
-                addKey(keyCode, (KeyCombination.Modifier) null);
-                continue;
-            }
-
-            String[] modParts = parts[1].split(",");
-            List<KeyCombination.Modifier> modifiers = new ArrayList<>();
-
-            for (String mod : modParts) {
-                switch (mod.trim()) {
-                    case "Shortcut":
-                        modifiers.add(KeyCombination.SHORTCUT_DOWN);
-                        break;
-                    case "Ctrl":
-                        modifiers.add(KeyCombination.CONTROL_DOWN);
-                        break;
-                    case "Shift":
-                        modifiers.add(KeyCombination.SHIFT_DOWN);
-                        break;
-                    case "Alt":
-                        modifiers.add(KeyCombination.ALT_DOWN);
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unknown modifier: " + mod);
-                }
-            }
-
-            addKey(keyCode, modifiers.toArray(new KeyCombination.Modifier[0]));
-        }
     }
 
     public static Builder builder() {
