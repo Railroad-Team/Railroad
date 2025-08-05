@@ -44,6 +44,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.14'
     implementation 'org.json:json:20240303'
     implementation 'io.github.palexdev:materialfx:11.17.0'
+    implementation 'io.github.palexdev:virtualizedfx:21.9.3'
     implementation 'ch.qos.logback:logback-classic:1.5.6'
     implementation 'org.apache.groovy:groovy-all:5.0.0-alpha-9'
     implementation 'org.gradle:gradle-tooling-api:8.9'
@@ -159,3 +160,19 @@ tasks.register('jpackageInstaller', Exec) {
 
 // Make build depend on shadowJar instead of jar
 build.dependsOn shadowJar
+
+tasks.named('distZip') {
+    dependsOn shadowJar
+}
+
+tasks.named('distTar') {
+    dependsOn shadowJar
+}
+
+tasks.named('startScripts') {
+    dependsOn shadowJar
+}
+
+tasks.named('startShadowScripts') {
+    dependsOn jar
+}

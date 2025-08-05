@@ -16,6 +16,7 @@ import dev.railroadide.railroad.ide.projectexplorer.task.FileCopyTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.SearchTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
 import dev.railroadide.railroad.ide.ui.*;
+import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditor;
 import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroadpluginapi.events.FileEvent;
@@ -354,15 +355,22 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                     .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
                     .findFirst()
                     .orElse(null);
-                
-                Node editorContent;
-                if (fileName.endsWith(".java")) {
-                    editorContent = new JavaCodeEditorPane(path);
-                } else if (fileName.endsWith(".json")) {
-                    editorContent = new JsonCodeEditorPane(path);
-                } else {
-                    editorContent = new TextEditorPane(path);
+
+                var editorContent = new CodeEditor();
+                try {
+                    editorContent.setText(Files.readString(path));
+                } catch (IOException exception) {
+                    Railroad.LOGGER.error("Error reading file: " + path, exception);
+                    editorContent.setText("// Error reading file: " + exception.getMessage());
                 }
+
+//                if (fileName.endsWith(".java")) {
+//                    editorContent = new JavaCodeEditorPane(path);
+//                } else if (fileName.endsWith(".json")) {
+//                    editorContent = new JsonCodeEditorPane(path);
+//                } else {
+//                    editorContent = new TextEditorPane(path);
+//                }
 
                 Tab tab;
                 if (welcomeTab != null) {
