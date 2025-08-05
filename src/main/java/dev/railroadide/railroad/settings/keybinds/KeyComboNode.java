@@ -120,7 +120,7 @@ public class KeyComboNode extends RRButton {
             return;
         }
         for (KeyCombination.Modifier mod : this.keybindData.modifiers()) {
-            label.append(localizedModifier(mod)).append(" + ");
+            label.append(localizeModifier(mod)).append(" + ");
         }
         label.append(this.keybindData.keyCode());
         setText(label.toString());
@@ -131,7 +131,7 @@ public class KeyComboNode extends RRButton {
      * @param modifier The modifier to convert.
      * @return The localized name of the modifier.
      */
-    private String localizedModifier(KeyCombination.Modifier modifier) {
+    private String localizeModifier(KeyCombination.Modifier modifier) {
         return switch (modifier.getKey()) {
             case SHORTCUT:
                 if (OperatingSystem.CURRENT == OperatingSystem.MAC) {
