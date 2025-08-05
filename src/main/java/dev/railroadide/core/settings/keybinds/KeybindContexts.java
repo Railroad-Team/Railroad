@@ -15,6 +15,11 @@ public class KeybindContexts {
         registerContext(ALL);
     }
 
+    /**
+     * Registers a new keybind context.
+     * @param context The context to register.
+     * @return The registered context, or the existing context if a duplicate was attempted to be registered.
+     */
     public static KeybindContext registerContext(KeybindContext context) {
         if (contexts.containsKey(context.getId())) {
             LoggerServiceLocator.getInstance().getLogger().warn("Attempted to register a duplicate keybind context: {}", context);
@@ -25,6 +30,11 @@ public class KeybindContexts {
         return context;
     }
 
+    /**
+     * Creates a keybind context with the given id.
+     * @param id The id of the context, which is used to distinguish between contexts.
+     * @return The keybind context with the given id, or the existing context if a context with that id already exists.
+     */
     public static KeybindContext of(String id) {
         if (getContext(id) != null) return getContext(id);
 
