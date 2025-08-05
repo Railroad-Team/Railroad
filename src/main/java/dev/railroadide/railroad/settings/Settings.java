@@ -87,13 +87,15 @@ public class Settings {
 
     public static final Setting<Map<String, List<KeybindData>>> KEYBINDS = registerSetting(Setting.builder((Class<Map<String, List<KeybindData>>>) (Class<?>) Map.class)
             .id("railroad:keybinds")
-            .title("Keybinds")
-            .description("Keybinds for various actions in Railroad IDE")
-            .category(SettingCategory.builder("railroad:keybinds").build())
+            .hasTitle(false)
+            .hasDescription(false)
+            .category(SettingCategory.builder("railroad:keybinds")
+                    .noDescription()
+                    .build())
             .defaultValue(KeybindHandler.getDefaults())
             .canBeNull(false)
             .codec(SettingCodecs.KEYBINDS)
-            .treePath("railroad:keybinds")
+            .treePath("keybinds")
             .build());
 
     public static void initialize() {}

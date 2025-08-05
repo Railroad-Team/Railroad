@@ -127,13 +127,6 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 return;
             }
 
-            if (event.getCode() == KeyCode.V && event.isControlDown()) {
-                event.consume();
-
-                ProjectExplorerPane.paste(getScene().getWindow(), item);
-                return;
-            }
-
             if (event.getCode() == KeyCode.X && event.isControlDown()) {
                 event.consume();
 

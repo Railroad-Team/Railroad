@@ -69,10 +69,21 @@ settings.tree.appearance=Appearance
 settings.tree.ide=IDE
 settings.tree.plugins=Plugins
 settings.tree.projects=Projects
+settings.tree.keybinds=Keybinds
 
 # General settings
 railroad.settings.general.language.title=Language
 railroad.settings.general.language.description=Select the language for the Railroad interface.
+
+# Keybind settings
+railroad.settings.keybinds.title=Keybinds
+
+# Keybinds categories
+railroad.settings.keybinds.category.general=General
+
+# Keybinds
+railroad.settings.keybinds.copy=Copy
+railroad.settings.keybinds.paste=Paste
 
 # Plugin settings
 railroad.settings.plugins.title=Plugins

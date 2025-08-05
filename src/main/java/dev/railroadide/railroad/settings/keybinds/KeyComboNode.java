@@ -1,8 +1,9 @@
 package dev.railroadide.railroad.settings.keybinds;
 
 import dev.railroadide.core.settings.keybinds.KeybindData;
+import dev.railroadide.core.ui.RRButton;
+import io.github.palexdev.mfxcore.builders.InsetsBuilder;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
@@ -12,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class KeyComboNode extends Button {
+public class KeyComboNode extends RRButton {
     @Setter
     private Consumer<KeybindData> onComboModified;
 
@@ -25,6 +26,7 @@ public class KeyComboNode extends Button {
 
     public KeyComboNode(KeybindData keybindData) {
         this.keybindData = keybindData;
+        setVariant(ButtonVariant.PRIMARY);
 
         if (keybindData.keyCode() == KeyCode.UNDEFINED) {
             setText("");

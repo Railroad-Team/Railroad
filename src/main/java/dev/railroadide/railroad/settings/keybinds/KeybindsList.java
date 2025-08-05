@@ -5,15 +5,19 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.railroadide.core.settings.keybinds.KeybindCategory;
 import dev.railroadide.core.settings.keybinds.KeybindData;
+import dev.railroadide.core.ui.RRButton;
+import dev.railroadide.core.ui.RRHBox;
+import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
-import javafx.scene.control.Button;
+import dev.railroadide.railroad.Railroad;
+import io.github.palexdev.mfxcore.builders.InsetsBuilder;
+import javafx.geometry.Insets;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 import lombok.Getter;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,21 +29,21 @@ public class KeybindsList extends TreeView {
     private final Map<String, List<KeybindData>> keybinds = new HashMap<>();
 
     public KeybindsList(Map<String, List<KeybindData>> map) {
-        super(new TreeItem<>(new HBox()));
+        super(new TreeItem<>(new RRHBox()));
         loadKeybinds(map);
         this.setShowRoot(false);
 
-        TreeItem<VBox> root = this.getRoot();
+        TreeItem<RRHBox> root = this.getRoot();
         root.setExpanded(true); // Expand
 
         refreshTree();
     }
 
     private void refreshTree() {
-        TreeItem<VBox> root = this.getRoot();
+        TreeItem<RRHBox> root = this.getRoot();
 
         List<String> expandedCategoryIds = new ArrayList<>();
-        for (TreeItem<VBox> item : root.getChildren()) {
+        for (TreeItem<RRHBox> item : root.getChildren()) {
             if (item.isExpanded() &&
                     item.getValue().getChildren().get(0) instanceof LocalizedLabel label) {
                 expandedCategoryIds.add(label.getId());
@@ -51,14 +55,16 @@ public class KeybindsList extends TreeView {
         for (Map.Entry<String, List<KeybindData>> entry : keybinds.entrySet()) {
             KeybindCategory category = KeybindHandler.getKeybind(entry.getKey()).getCategory();
 
-            TreeItem<VBox> categoryItem = root.getChildren().stream()
+            TreeItem<RRHBox> categoryItem = root.getChildren().stream()
                     .filter(item -> item.getValue().getChildren().get(0) instanceof LocalizedLabel label &&
                             label.getId().equals(category.id()))
                     .findFirst()
                     .orElseGet(() -> {
                         var categoryHeader = new LocalizedLabel(category.titleKey());
                         categoryHeader.setId(category.id());
-                        var newCategoryItem = new TreeItem<>(new VBox(categoryHeader));
+                        var content = new RRHBox();
+                        content.getChildren().add(categoryHeader);
+                        var newCategoryItem = new TreeItem<>(content);
                         root.getChildren().add(newCategoryItem);
                         return newCategoryItem;
                     });
@@ -66,7 +72,7 @@ public class KeybindsList extends TreeView {
             categoryItem.getChildren().add(createKeybindTreeItem(entry.getKey(), entry.getValue()));
         }
 
-        for (TreeItem<VBox> item : root.getChildren()) {
+        for (TreeItem<RRHBox> item : root.getChildren()) {
             if (item.getValue().getChildren().get(0) instanceof LocalizedLabel label &&
                     expandedCategoryIds.contains(label.getId())) {
                 item.setExpanded(true);
@@ -74,15 +80,18 @@ public class KeybindsList extends TreeView {
         }
     }
 
-    private TreeItem<VBox> createKeybindTreeItem(String id, List<KeybindData> keybinds) {
-        //TODO make it look good
-        var titleBox = new HBox();
-        var configBox = new VBox();
+    private TreeItem<RRHBox> createKeybindTreeItem(String id, List<KeybindData> keybinds) {
+        var titleBox = new RRHBox();
+        var configBox = new RRVBox();
 
-        titleBox.getChildren().addAll(new LocalizedLabel(id));
+        var localeKey = "railroad.settings.keybinds." + id.split(":")[1];
 
-        var addButton = new Button();
-        addButton.setText("+"); // TODO use FontAwesome icon
+        titleBox.getChildren().addAll(new LocalizedLabel(localeKey));
+
+        var addButton = new RRButton("", FontAwesomeSolid.PLUS);
+        addButton.setPadding(InsetsBuilder.all(5));
+        addButton.getStyleClass().add("square-button");
+        addButton.setVariant(RRButton.ButtonVariant.PRIMARY);
         addButton.setOnAction(e -> {
             KeybindData newKeybind = new KeybindData(KeyCode.UNDEFINED, new KeyCombination.Modifier[0]);
             keybinds.add(newKeybind);
@@ -92,7 +101,7 @@ public class KeybindsList extends TreeView {
         titleBox.getChildren().add(addButton);
 
         for (KeybindData keybind : keybinds) {
-            HBox keybindBox = new HBox(5);
+            RRHBox keybindBox = new RRHBox(5);
             var keyComboNode = new KeyComboNode(keybind);
             keyComboNode.setOnComboModified((keybindData) -> {
                 int index = keybinds.indexOf(keybind);
@@ -101,17 +110,19 @@ public class KeybindsList extends TreeView {
                 }
             });
 
-            HBox buttonBox = new HBox(5);
+            RRHBox buttonBox = new RRHBox(5);
 
-            var removeButton = new Button();
-            removeButton.setText("-");
+            var removeButton = new RRButton("", FontAwesomeSolid.MINUS);
+            removeButton.setVariant(RRButton.ButtonVariant.DANGER);
+            removeButton.getStyleClass().add("square-button");
             removeButton.setOnAction(e -> {
                 keybinds.remove(keybinds.get(this.keybinds.get(id).indexOf(keybind)));
                 refreshTree();
             });
 
-            var editButton = new Button();
-            editButton.setText("✏️"); // TODO FontAwesome
+            var editButton = new RRButton("", FontAwesomeSolid.PENCIL_ALT);
+            editButton.setVariant(RRButton.ButtonVariant.SECONDARY);
+            editButton.getStyleClass().add("square-button");
             editButton.setOnAction(e -> {;
                 keyComboNode.toggleEditing();
             });
@@ -122,7 +133,8 @@ public class KeybindsList extends TreeView {
             configBox.getChildren().addAll(keybindBox);
         }
 
-        VBox treeNodeContent = new VBox(titleBox, configBox);
+        RRHBox treeNodeContent = new RRHBox();
+        treeNodeContent.getChildren().addAll(titleBox, configBox);
         return new TreeItem<>(treeNodeContent);
     }
 
@@ -161,6 +173,10 @@ public class KeybindsList extends TreeView {
         for (Map.Entry<String, JsonElement> keybindJson : json.getAsJsonObject().entrySet()) {
             var id = keybindJson.getKey();
             var keyList = keybindJson.getValue().getAsJsonArray();
+            if (KeybindHandler.getKeybind(id) == null) {
+                Railroad.LOGGER.warn("Keybind " + id + " does not exist");
+                continue;
+            }
             KeybindHandler.getKeybind(id).fromJson(keyList);
 
             var keys = new ArrayList<KeybindData>();
