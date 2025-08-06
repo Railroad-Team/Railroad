@@ -86,7 +86,6 @@ public class Settings {
             .build());
 
     public static final Setting<Map<String, List<KeybindData>>> KEYBINDS = registerSetting(Setting.builder(new TypeToken<Map<String, List<KeybindData>>>(){}, "railroad:keybinds")
-            .id("railroad:keybinds")
             .hasTitle(false)
             .hasDescription(false)
             .category(SettingCategory.builder("railroad:keybinds")
