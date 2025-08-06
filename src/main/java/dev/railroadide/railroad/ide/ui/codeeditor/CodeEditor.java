@@ -1,16 +1,14 @@
 package dev.railroadide.railroad.ide.ui.codeeditor;
 
-import io.github.palexdev.virtualizedfx.cells.base.VFXCell;
-import io.github.palexdev.virtualizedfx.controls.VFXScrollPane;
-import io.github.palexdev.virtualizedfx.list.VFXList;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.property.*;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
-import javafx.scene.Group;
-import javafx.scene.Node;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
@@ -22,6 +20,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextBoundsType;
 import javafx.scene.text.TextFlow;
 import javafx.util.Duration;
 
@@ -29,8 +28,8 @@ public class CodeEditor extends Region {
     private static final Text LINE_HEIGHT_TEST_TEXT = new Text("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
 
     private final DocumentModel document;
-    private final VFXList<String, TextLineCell> virtualFlow;
-    private final VFXScrollPane scrollPane;
+    private final ListView<String> virtualFlow;
+    private final ScrollPane scrollPane;
     private final CaretManager caretManager;
 
     private final Rectangle caretShape;
@@ -56,8 +55,11 @@ public class CodeEditor extends Region {
         );
         this.caretBlinkTimeline.setCycleCount(Animation.INDEFINITE);
 
-        this.virtualFlow = new VFXList<>(document.getLines(), TextLineCell::new);
-        this.scrollPane = virtualFlow.makeScrollable();
+        this.virtualFlow = new ListView<>(document.getLines());
+        this.scrollPane = new ScrollPane();
+        this.scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        this.scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        this.scrollPane.setContent(virtualFlow);
 
         setupVirtualFlow();
         setupEventHandlers();
@@ -79,11 +81,14 @@ public class CodeEditor extends Region {
      * Sets up the virtual flow for displaying text lines.
      */
     private void setupVirtualFlow() {
-        this.virtualFlow.setOnMouseClicked($ -> requestFocus());
-        this.virtualFlow.prefWidthProperty().bind(widthProperty());
-        this.virtualFlow.prefHeightProperty().bind(heightProperty());
+        this.scrollPane.prefWidthProperty().bind(widthProperty());
+        this.scrollPane.prefHeightProperty().bind(heightProperty());
+        this.scrollPane.setFitToWidth(true);
+        this.scrollPane.setFitToHeight(true);
         this.virtualFlow.setPadding(new Insets(10));
-        this.virtualFlow.cellSizeProperty().bind(lineHeight.add(lineSpacing));
+        this.virtualFlow.setOnMouseClicked($ -> requestFocus());
+        this.virtualFlow.fixedCellSizeProperty().bind(lineHeight.add(lineSpacing));
+        this.virtualFlow.setCellFactory(ignored -> new TextLineCell());
     }
 
     /**
@@ -100,7 +105,7 @@ public class CodeEditor extends Region {
         this.caretManager.addLineListener(this::handleCaretLineChange);
         this.caretManager.addColumnListener(this::handleCaretColumnChange);
 
-        this.scrollPane.vValueProperty().addListener(
+        this.scrollPane.vvalueProperty().addListener(
                 ($, $1, $2) -> updateCaretPosition());
         this.scrollPane.setOnScroll(this::handleScroll);
     }
@@ -192,7 +197,7 @@ public class CodeEditor extends Region {
                 virtualFlow.getPadding().getTop() + virtualFlow.getPadding().getBottom();
         double viewportHeight = scrollPane.getHeight();
         double scrollOffset = totalContentHeight > viewportHeight ?
-                scrollPane.getVValue() * (totalContentHeight - viewportHeight) :
+                scrollPane.getVvalue() * (totalContentHeight - viewportHeight) :
                 0;
         yPos += scrollOffset;
 
@@ -299,7 +304,7 @@ public class CodeEditor extends Region {
      * Requests a layout update and repositions the caret.
      */
     private void redraw() {
-        virtualFlow.requestLayout();
+        virtualFlow.refresh();
         updateCaretPosition();
     }
 
@@ -341,7 +346,7 @@ public class CodeEditor extends Region {
         MEASURING_TEXT.setText(displayedTextBeforeCaret);
         double caretX = MEASURING_TEXT.getLayoutBounds().getWidth() + virtualFlow.getPadding().getLeft();
 
-        double hScrollValue = scrollPane.getHValue();
+        double hScrollValue = scrollPane.getHvalue();
         double contentWidth = virtualFlow.getBoundsInLocal().getWidth();
         double viewportWidth = scrollPane.getWidth();
         double hScrollOffset = Math.max(0, contentWidth - viewportWidth) * hScrollValue;
@@ -366,7 +371,7 @@ public class CodeEditor extends Region {
         double viewportHeight = scrollPane.getHeight();
         double scrollOffset = 0;
         if (totalContentHeight > viewportHeight) {
-            scrollOffset = scrollPane.getVValue() * (totalContentHeight - viewportHeight);
+            scrollOffset = scrollPane.getVvalue() * (totalContentHeight - viewportHeight);
         }
 
         caretY -= scrollOffset;
@@ -462,7 +467,7 @@ public class CodeEditor extends Region {
         double totalHeight = fullLineHeight * document.getLineCount();
         double visibleHeight = scrollPane.getHeight();
 
-        double scrollY = scrollPane.getVValue();
+        double scrollY = scrollPane.getVvalue();
         double scrollOffset = scrollY * (totalHeight - visibleHeight);
 
         int firstVisibleLine = (int) (scrollOffset / fullLineHeight);
@@ -476,7 +481,7 @@ public class CodeEditor extends Region {
             newScrollY = (newValue * fullLineHeight) / (totalHeight - visibleHeight);
         }
 
-        scrollPane.setVValue(newScrollY);
+        scrollPane.setVvalue(newScrollY);
         updateCaretPosition();
     }
 
@@ -496,15 +501,15 @@ public class CodeEditor extends Region {
         }
 
         double caretX = getCaretX(caretManager.getLine(), newValue);
-        double hScrollValue = scrollPane.getHValue();
+        double hScrollValue = scrollPane.getHvalue();
         double hScrollOffset = Math.max(0, contentWidth - viewportWidth) * hScrollValue;
 
         double visibleCaretX = caretX - hScrollOffset;
 
         if (visibleCaretX < 0) {
-            scrollPane.setHValue(caretX / (contentWidth - viewportWidth));
+            scrollPane.setHvalue(caretX / (contentWidth - viewportWidth));
         } else if (visibleCaretX > viewportWidth) {
-            scrollPane.setHValue((caretX - viewportWidth) / (contentWidth - viewportWidth));
+            scrollPane.setHvalue((caretX - viewportWidth) / (contentWidth - viewportWidth));
         }
 
         updateCaretPosition();
@@ -529,7 +534,7 @@ public class CodeEditor extends Region {
         }
 
         double scrollableHeight = totalContentHeight - viewportHeight;
-        double currentScrollOffsetPixels = scrollPane.getVValue() * scrollableHeight;
+        double currentScrollOffsetPixels = scrollPane.getVvalue() * scrollableHeight;
         double pixelScrollAmount = lineScrollSpeed.get() * fullLineHeight;
         double newScrollOffsetPixels = Math.clamp(
                 (scrollDelta < 0 ?
@@ -537,7 +542,7 @@ public class CodeEditor extends Region {
                         currentScrollOffsetPixels - pixelScrollAmount),
                 0, scrollableHeight);
 
-        scrollPane.setVValue(newScrollOffsetPixels / scrollableHeight);
+        scrollPane.setVvalue(newScrollOffsetPixels / scrollableHeight);
         event.consume();
     }
 
@@ -562,47 +567,45 @@ public class CodeEditor extends Region {
         updateCaretPosition();
     }
 
-    private class TextLineCell implements VFXCell<String> {
-        private final Group container;
+    private class TextLineCell extends ListCell<String> {
+        private final TextFlow textFlow;
         private final Text textNode;
         private final IntegerProperty index = new SimpleIntegerProperty(this, "index", -1);
 
-        public TextLineCell(String line) {
-            this.container = new Group();
+        public TextLineCell() {
             this.textNode = new Text();
 
-            var textFlow = new TextFlow(this.textNode);
-            textFlow.setLineSpacing(0);
-            textFlow.setPadding(Insets.EMPTY);
-            textFlow.setPrefWidth(Region.USE_COMPUTED_SIZE);
-            textFlow.setMinWidth(Region.USE_PREF_SIZE);
-            textFlow.setMaxWidth(Double.MAX_VALUE);
+            this.textFlow = new TextFlow(this.textNode);
+            this.textFlow.setLineSpacing(0);
+            this.textFlow.setPadding(Insets.EMPTY);
+            this.textFlow.setMaxWidth(Double.MAX_VALUE);
+            this.textFlow.minHeightProperty().set(0);
+            this.textFlow.prefHeightProperty().bind(lineHeight.add(lineSpacing));
+
             this.textNode.fontProperty().bind(editorFont);
             this.textNode.setFill(Color.WHITE);
+            this.textNode.setBoundsType(TextBoundsType.VISUAL);
 
-            this.container.getChildren().add(textFlow);
-            this.container.setFocusTraversable(true);
-
-            updateItem(line);
+            setFocusTraversable(true);
         }
 
         @Override
-        public Node toNode() {
-            return container;
+        public void updateIndex(int newIndex) {
+            super.updateIndex(newIndex);
+            this.index.set(newIndex);
         }
 
         @Override
-        public void updateIndex(int index) {
-            this.index.set(index);
-        }
+        public void updateItem(String line, boolean empty) {
+            super.updateItem(line, empty);
 
-        @Override
-        public void updateItem(String line) {
-            if (line != null) {
-                String displayedLine = line.replace("\t", " ".repeat(tabSize.get()));
+            if (line != null && !empty) {
+                String displayedLine = line.replace("\t", " ".repeat(tabSize.get())).replace("\r", "");
                 textNode.setText(displayedLine);
+                setGraphic(this.textFlow);
             } else {
                 textNode.setText("");
+                setGraphic(null);
             }
         }
     }
