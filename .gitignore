@@ -6,6 +6,7 @@ build/
 
 ### Logs ###
 logs/
+log/
 
 ### IntelliJ IDEA ###
 .idea/

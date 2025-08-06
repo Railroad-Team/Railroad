@@ -1,3 +1,3 @@
 [submodule "railroad-core"]
 	path = railroad-core
-	url = https://github.com/Railroad-Team/RailroadCore
+	url = https://github.com/Railroad-Team/RailroadCore.git

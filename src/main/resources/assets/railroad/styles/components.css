@@ -2207,3 +2207,10 @@
     margin-left: auto;
     margin-right: auto;
 }
+
+.square-button {
+    -fx-min-width: 32px;
+    /*-fx-max-width: 40px;*/
+    -fx-min-height: 32px;
+    /*-fx-max-height: 40px;*/
+}

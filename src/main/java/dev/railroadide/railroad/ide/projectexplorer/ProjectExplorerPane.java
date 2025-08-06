@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.projectexplorer;
 
 import com.kodedu.terminalfx.Terminal;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
+import dev.railroadide.core.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRBorderPane;
 import dev.railroadide.core.ui.RRButton;
@@ -18,6 +19,7 @@ import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
 import dev.railroadide.railroad.ide.ui.*;
 import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
 import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroadpluginapi.events.FileEvent;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.ShutdownHooks;
@@ -125,13 +127,6 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 return;
             }
 
-            if (event.getCode() == KeyCode.V && event.isControlDown()) {
-                event.consume();
-
-                ProjectExplorerPane.paste(getScene().getWindow(), item);
-                return;
-            }
-
             if (event.getCode() == KeyCode.X && event.isControlDown()) {
                 event.consume();
 
@@ -175,6 +170,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         this.executorService.submit(watchTask);
 
         getChildren().addAll(header, this.treeView);
+
+        KeybindHandler.registerCapture(KeybindContexts.of("railroad:project_explorer"), this.treeView);
 
         ShutdownHooks.addHook(this.executorService::shutdownNow);
     }

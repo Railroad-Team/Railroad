@@ -25,6 +25,7 @@ import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import dev.railroadide.railroad.project.minecraft.NeoForgeVersion;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
+import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import dev.railroadide.railroad.settings.ui.themes.ThemeDownloadManager;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.vcs.RepositoryManager;
@@ -298,6 +299,7 @@ public class Railroad extends Application {
             GsonLocator.setInstance(GSON);
             ConfigHandler.initConfig();
             PluginManager.loadPlugins(ConfigHandler.getConfigDirectory().resolve("plugins"));
+            Keybinds.initialize();
             Settings.initialize();
             SettingsHandler.init();
             MinecraftVersion.load();
