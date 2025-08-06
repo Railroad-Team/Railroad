@@ -127,7 +127,7 @@ tasks.register('jpackageImage', Exec) {
             '--dest', outputDir,
             '--name', 'Railroad',
             '--main-jar', shadowJar.archiveFileName.get(),
-            '--main-class', 'dev.railroadide.railroad.Railroad',
+            '--main-class', 'dev.railroadide.railroad.RailroadLauncher',
             '--type', 'app-image',
             '--java-options', '-Xmx2048m',
             '--java-options', '-Djava.util.logging.config.file=$APPDIR/logging.properties'
