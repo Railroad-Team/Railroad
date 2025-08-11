@@ -1,29 +1,30 @@
 package dev.railroadide.railroad.ide.ui.codeeditor;
 
 import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.SimpleIntegerProperty;
+import lombok.Getter;
 
 import java.util.function.BiConsumer;
 
 public class CaretManager {
     private final DocumentModel document;
-    private final IntegerProperty line = new SimpleIntegerProperty(0);
-    private final IntegerProperty column = new SimpleIntegerProperty(0);
+    @Getter
+    private final Caret caret;
 
-    public CaretManager(DocumentModel document) {
+    public CaretManager(DocumentModel document, Caret caret) {
         this.document = document;
+        this.caret = caret;
     }
 
     public void setPosition(int line, int column) {
         int clampedLine = Math.max(0, Math.min(line, document.getLineCount() - 1));
         int clampedColumn = Math.max(0, Math.min(column, document.getLine(clampedLine).length()));
-        this.line.set(clampedLine);
-        this.column.set(clampedColumn);
+        this.caret.setLine(clampedLine);
+        this.caret.setColumn(clampedColumn);
     }
 
     public void moveUp() {
-        if (line.get() > 0) {
-            decrement(line);
+        if (getLine() > 0) {
+            decrement(caret.lineProperty());
         }
     }
 
@@ -34,7 +35,7 @@ public class CaretManager {
     }
 
     public void moveDown() {
-        increment(line);
+        increment(caret.lineProperty());
     }
 
     public void moveDownBy(int amount) {
@@ -44,11 +45,11 @@ public class CaretManager {
     }
 
     public void moveLeft() {
-        if (column.get() > 0) {
-            decrement(column);
-        } else if (line.get() > 0) {
-            line.set(line.get() - 1);
-            column.set(document.getLine(line.get()).length());
+        if (getColumn() > 0) {
+            decrement(caret.columnProperty());
+        } else if (caret.getLine() > 0) {
+            decrement(caret.lineProperty());
+            caret.setColumn(document.getLine(getLine()).length());
         }
     }
 
@@ -59,11 +60,11 @@ public class CaretManager {
     }
 
     public void moveRight() {
-        if (column.get() < document.getLine(line.get()).length()) {
-            increment(column);
-        } else if (line.get() < document.getLineCount() - 1) {
-            line.set(line.get() + 1);
-            column.set(0);
+        if (getColumn() < document.getLine(getLine()).length()) {
+            increment(caret.columnProperty());
+        } else if (getLine() < document.getLineCount() - 1) {
+            increment(caret.lineProperty());
+            caret.setColumn(0);
         }
     }
 
@@ -74,27 +75,27 @@ public class CaretManager {
     }
 
     public int getLine() {
-        return line.get();
+        return caret.getLine();
     }
 
     public int getColumn() {
-        return column.get();
+        return caret.getColumn();
     }
 
     public void addLineListener(BiConsumer<Integer, Integer> listener) {
-        line.addListener((observable, oldValue, newValue) ->
+        this.caret.lineProperty().addListener((observable, oldValue, newValue) ->
                 listener.accept(oldValue.intValue(), newValue.intValue()));
     }
 
     public void addColumnListener(BiConsumer<Integer, Integer> listener) {
-        column.addListener((observable, oldValue, newValue) ->
+        this.caret.columnProperty().addListener((observable, oldValue, newValue) ->
                 listener.accept(oldValue.intValue(), newValue.intValue()));
     }
 
     public void addCaretListener(BiConsumer<Integer, Integer> listener) {
-        line.addListener((observable, oldValue, newValue) ->
+        this.caret.lineProperty().addListener((observable, oldValue, newValue) ->
                 listener.accept(oldValue.intValue(), newValue.intValue()));
-        column.addListener((observable, oldValue, newValue) ->
+        this.caret.columnProperty().addListener((observable, oldValue, newValue) ->
                 listener.accept(oldValue.intValue(), newValue.intValue()));
     }
 
