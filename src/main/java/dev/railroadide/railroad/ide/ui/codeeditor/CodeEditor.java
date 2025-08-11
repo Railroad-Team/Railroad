@@ -5,7 +5,6 @@ import javafx.beans.property.*;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
-import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -18,7 +17,10 @@ import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
-import javafx.scene.text.*;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextBoundsType;
+import javafx.scene.text.TextFlow;
 
 import java.util.Objects;
 
@@ -505,16 +507,11 @@ public class CodeEditor extends Region {
             setOnMousePressed(e -> {
                 if (isEmpty()) return;
 
-                Point2D localPos = textFlow.sceneToLocal(e.getSceneX(), e.getSceneY());
-                System.out.println("Mouse Pressed at: " + localPos);
-                MEASURING_TEXT.setFont(editorFont.get());
-                MEASURING_TEXT.setText(textNode.getText());
-                HitInfo hitInfo = MEASURING_TEXT.hitTest(localPos);
-                System.out.println("Hit Info: " + hitInfo);
+                double clickX = e.getX() - virtualFlow.getPadding().getLeft();
+                clickX += getHOffset();
 
-                int column = hitInfo.getCharIndex();
                 int lineIndex = getIndex();
-                System.out.println("Clicked Line: " + lineIndex + ", Column: " + column);
+                int column = getColumn(lineIndex, clickX);
 
                 caretManager.setPosition(lineIndex, column);
                 updateCaretPosition();
@@ -536,50 +533,6 @@ public class CodeEditor extends Region {
                 textNode.setText("");
                 setGraphic(null);
             }
-        }
-
-        private static int mapDisplayToLogicalColumn(String original, int displayIndex, int tabSize) {
-            if (tabSize < 0) tabSize = 0;
-
-            // Pre-allocate a little generously; grow if needed
-            int est = original.length() + (int) original.chars().filter(ch -> ch == '\t').count() * Math.max(0, tabSize - 1);
-            int[] map = new int[Math.max(8, est + 1)];
-
-            int di = 0;        // displayed insertion index we're filling
-            map[di] = 0;       // insertion index 0 -> logical 0
-
-            for (int i = 0; i < original.length(); i++) {
-                char ch = original.charAt(i);
-
-                if (ch == '\t') {
-                    int N = Math.max(0, tabSize);     // number of visual spaces for one tab
-                    int leftHalf = N / 2;             // nearest-to-left boundary
-
-                    // Positions within the tab’s visual span:
-                    // first 'leftHalf' slots map to caret BEFORE the tab (i),
-                    // remaining slots map to caret AFTER the tab (i+1).
-                    for (int k = 1; k <= N; k++) {
-                        di++;
-                        if (di >= map.length) {
-                            int[] grown = new int[map.length * 2];
-                            System.arraycopy(map, 0, grown, 0, map.length);
-                            map = grown;
-                        }
-                        map[di] = (k <= leftHalf) ? i : (i + 1);
-                    }
-                } else {
-                    di++;
-                    if (di >= map.length) {
-                        int[] grown = new int[map.length * 2];
-                        System.arraycopy(map, 0, grown, 0, map.length);
-                        map = grown;
-                    }
-                    map[di] = i + 1; // normal chars: insertion after this glyph
-                }
-            }
-
-            int clamped = Math.max(0, Math.min(displayIndex, di));
-            return map[clamped];
         }
     }
 }
