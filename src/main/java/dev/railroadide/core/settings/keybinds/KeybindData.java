@@ -12,9 +12,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public record KeybindData(KeyCode keyCode, KeyCombination.Modifier[] modifiers) {
     public KeyCodeCombination getKeyCodeCombination() {
-        if (modifiers == null || modifiers.length == 0) {
-            return new KeyCodeCombination(keyCode);
-        }
-        return new KeyCodeCombination(keyCode, modifiers);
+        return modifiers == null || modifiers.length == 0 ?
+            new KeyCodeCombination(keyCode) :
+            new KeyCodeCombination(keyCode, modifiers);
     }
 }

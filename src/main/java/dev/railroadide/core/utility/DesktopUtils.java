@@ -12,9 +12,8 @@ public class DesktopUtils {
      * @param url The URL to open
      */
     public static void openUrl(String url) {
-        if (!url.matches(StringUtils.URL_REGEX)) {
+        if (!url.matches(StringUtils.URL_REGEX))
             throw new IllegalArgumentException(url + " is not a valid URL");
-        }
 
         try {
             if (Desktop.isDesktopSupported()) {

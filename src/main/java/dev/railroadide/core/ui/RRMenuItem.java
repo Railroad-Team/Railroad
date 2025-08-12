@@ -20,9 +20,7 @@ public class RRMenuItem extends MenuItem {
      */
     public RRMenuItem(String text, String url) {
         this(text);
-        this.setOnAction(event -> {
-            DesktopUtils.openUrl(url);
-        });
+        this.setOnAction($ -> DesktopUtils.openUrl(url));
     }
 
     /**
