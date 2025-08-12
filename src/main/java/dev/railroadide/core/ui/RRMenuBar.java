@@ -1,5 +1,7 @@
 package dev.railroadide.core.ui;
 
+import dev.railroadide.core.ui.localized.LocalizedMenu;
+import dev.railroadide.core.ui.localized.LocalizedMenuItem;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.SeparatorMenuItem;
@@ -22,11 +24,11 @@ public class RRMenuBar extends MenuBar {
         this(children);
 
         if (addDefaults) {
-            var help = new Menu("Help");
-            help.getItems().add(new RRMenuItem("Documentation", "https://railroadide.dev/"));
+            var help = new LocalizedMenu("railroad.menu.help");
+            help.getItems().add(new LocalizedMenuItem("railroad.menu.help.documentation", "https://railroadide.dev/"));
             help.getItems().add(new SeparatorMenuItem());
-            help.getItems().add(new RRMenuItem("Issues", "https://github.com/Railroad-Team/Railroad/issues"));
-            help.getItems().add(new RRMenuItem("Discord", "https://railroadide.dev/discord"));
+            help.getItems().add(new LocalizedMenuItem("railroad.menu.help.issues", "https://github.com/Railroad-Team/Railroad/issues"));
+            help.getItems().add(new LocalizedMenuItem("railroad.menu.help.discord", "https://railroadide.dev/discord"));
 
             this.getMenus().addLast(help);
         }
