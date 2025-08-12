@@ -36,11 +36,7 @@ public class Keybinds {
     public static final Keybind NEW_FILE = KeybindHandler.registerKeybind(Keybind.builder()
             .id("railroad:new_file")
             .category(new KeybindCategory("railroad:general", "railroad.settings.keybinds.category.general"))
-            .addDefaultKey(KeyCode.N, KeyCombination.SHORTCUT_DOWN)
-            .addAction(KeybindContexts.of("railroad:ide"), node -> {
-                // TODO
-                throw new NotImplementedException("This keybind is not implemented yet.");
-            }).build());
+            .addDefaultKey(KeyCode.N, KeyCombination.SHORTCUT_DOWN).build());
 
     public static void initialize() {}
 }
