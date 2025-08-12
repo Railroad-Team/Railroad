@@ -1,6 +1,7 @@
 package dev.railroadide.core.settings.keybinds;
 
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,4 +11,9 @@ import org.jetbrains.annotations.Nullable;
  * @param modifiers An array of KeyCombination.Modifier, which can include SHIFT, CTRL, ALT, etc. Can be empty
  */
 public record KeybindData(KeyCode keyCode, KeyCombination.Modifier[] modifiers) {
+    public KeyCodeCombination getKeyCodeCombination() {
+        return modifiers == null || modifiers.length == 0 ?
+            new KeyCodeCombination(keyCode) :
+            new KeyCodeCombination(keyCode, modifiers);
+    }
 }
