@@ -8,6 +8,7 @@ import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import javafx.scene.control.TreeView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
+import org.apache.commons.lang3.NotImplementedException;
 
 public class Keybinds {
     public static final Keybind COPY = KeybindHandler.registerKeybind(Keybind.builder()
@@ -31,6 +32,15 @@ public class Keybinds {
                 ProjectExplorerPane.paste(node.getScene().getWindow(), tree.getSelectionModel().getSelectedItem().getValue());
             })
             .build());
+
+    public static final Keybind NEW_FILE = KeybindHandler.registerKeybind(Keybind.builder()
+            .id("railroad:new_file")
+            .category(new KeybindCategory("railroad:general", "railroad.settings.keybinds.category.general"))
+            .addDefaultKey(KeyCode.N, KeyCombination.SHORTCUT_DOWN)
+            .addAction(KeybindContexts.of("railroad:ide"), node -> {
+                // TODO
+                throw new NotImplementedException("This keybind is not implemented yet.");
+            }).build());
 
     public static void initialize() {}
 }

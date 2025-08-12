@@ -4,6 +4,7 @@ import com.kodedu.terminalfx.Terminal;
 import com.kodedu.terminalfx.TerminalBuilder;
 import com.kodedu.terminalfx.config.TerminalConfig;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
+import dev.railroadide.core.settings.keybinds.KeybindContexts;
 import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.utility.DesktopUtils;
@@ -17,6 +18,7 @@ import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.PluginManager;
 import dev.railroadide.railroad.plugin.ui.PluginsPane;
 import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
@@ -35,6 +37,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import org.apache.commons.lang3.NotImplementedException;
 import org.fxmisc.richtext.CodeArea;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -118,6 +121,8 @@ public class IDESetup {
                 Screen.getPrimary().getVisualBounds().getHeight() * 0.8);
         Railroad.handleStyles(scene);
 
+        KeybindHandler.registerCapture(KeybindContexts.of("railroad:ide"), root);
+
         var stage = new Stage();
         stage.setTitle("Railroad IDE – " + project.getAlias());
         stage.setMaximized(true);
@@ -130,7 +135,10 @@ public class IDESetup {
     private static MenuBar createMenuBar() {
         var newFileItem = new RRMenuItem(L18n.localize("railroad.menu.file.new_file"));
         newFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE));
-        newFileItem.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.SHORTCUT_DOWN));
+        newFileItem.setKeybindData(KeybindHandler.getKeybind("railroad:new_file").getKeys().getFirst());
+        newFileItem.setOnAction(e -> {
+            throw new NotImplementedException("New file creation is not implemented yet.");
+        });
 
         var openFileItem = new RRMenuItem(L18n.localize("railroad.menu.file.open_file"));
         openFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
