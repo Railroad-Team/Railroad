@@ -2,12 +2,11 @@ package dev.railroadide.railroad.config;
 
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.utility.OperatingSystem;
+import dev.railroadide.core.utility.OperatingSystem;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public final class ConfigHandler {
     private static final ConfigHandler INSTANCE = new ConfigHandler();

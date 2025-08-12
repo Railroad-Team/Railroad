@@ -4,11 +4,9 @@ import com.kodedu.terminalfx.Terminal;
 import com.kodedu.terminalfx.TerminalBuilder;
 import com.kodedu.terminalfx.config.TerminalConfig;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
-import dev.railroadide.core.ui.RRBorderPane;
-import dev.railroadide.core.ui.RRCard;
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.RRVBox;
+import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.core.utility.DesktopUtils;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.ui.ConsolePane;
@@ -247,11 +245,11 @@ public class IDESetup {
         var documentationItem = new MenuItem(L18n.localize("railroad.menu.help.documentation"));
         documentationItem.setGraphic(new FontIcon(FontAwesomeSolid.BOOK));
         documentationItem.setAccelerator(new KeyCodeCombination(KeyCode.F1));
-        documentationItem.setOnAction($ -> Railroad.openUrl("https://railroadide.dev"));
+        documentationItem.setOnAction($ -> DesktopUtils.openUrl("https://railroadide.dev"));
 
         var tutorialsItem = new MenuItem(L18n.localize("railroad.menu.help.tutorials"));
         tutorialsItem.setGraphic(new FontIcon(FontAwesomeSolid.GRADUATION_CAP));
-        tutorialsItem.setOnAction($ -> Railroad.openUrl("https://railroadide.dev/tutorials"));
+        tutorialsItem.setOnAction($ -> DesktopUtils.openUrl("https://railroadide.dev/tutorials"));
 
         var separator5 = new SeparatorMenuItem();
 
@@ -299,14 +297,8 @@ public class IDESetup {
         toolsMenu.getItems().add(terminalItem);
         toolsMenu.getStyleClass().add("rr-menu");
 
-        var helpMenu = new Menu(L18n.localize("railroad.menu.help"));
-        helpMenu.getItems().add(documentationItem);
-        helpMenu.getItems().add(tutorialsItem);
-        helpMenu.getItems().add(separator5);
-        helpMenu.getItems().add(aboutItem);
-        helpMenu.getStyleClass().add("rr-menu");
-
-        var menuBar = new MenuBar(fileMenu, editMenu, viewMenu, runMenu, toolsMenu, helpMenu);
+        var menuBar = new RRMenuBar(true, fileMenu, editMenu, viewMenu, runMenu, toolsMenu);
+        menuBar.setUseSystemMenuBar(true);
         menuBar.getStyleClass().add("rr-menu-bar");
         return menuBar;
     }

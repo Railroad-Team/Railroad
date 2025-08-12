@@ -12,6 +12,7 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven { url 'https://repo.gradle.org/gradle/libs-releases' }
+    maven { url 'https://maven.pkg.github.com/YodaForce157/NSMenuFX'}
     maven { url 'https://github.com/javaterminal/terminalfx/raw/master/releases' }
     maven { url 'https://packages.jetbrains.team/maven/p/ij/intellij-dependencies' }
     maven { url "https://maven.railroadide.dev/releases" }
@@ -80,6 +81,11 @@ dependencies {
 
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
     compileOnly 'org.projectlombok:lombok:1.18.32'
+
+    implementation("dev.yodaforce:nsmenufx:3.2.0") {
+        exclude group: 'net.java.dev.jna', module: 'jna'
+    }
+    implementation("net.java.dev.jna:jna:5.16.0")
 }
 
 run {
