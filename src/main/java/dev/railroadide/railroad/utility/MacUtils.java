@@ -14,6 +14,10 @@ import javafx.stage.Stage;
 
 public class MacUtils {
     private static MenuBar bar;
+
+    /**
+     * Initializes the Mac's menu bar, which provides the Application Menu and its MenuItems
+     */
     public static void initialize() {
         if (!System.getProperty("os.name").toLowerCase().contains("mac")) {
             return;
@@ -42,6 +46,10 @@ public class MacUtils {
         bar = new RRMenuBar(true, appMenu);
     }
 
+    /**
+     * Shows the Mac's menu bar on the given stage. Must be called after the stage is created and shown.
+     * @param stage The stage to which the menu bar should be added
+     */
     public static void show(Stage stage) {
         if (!System.getProperty("os.name").toLowerCase().contains("mac")) return;
 
