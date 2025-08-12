@@ -18,6 +18,5 @@ public class RRMenuItem extends MenuItem {
 
     public void setKeybindData(KeybindData keybindData) {
         this.setAccelerator(keybindData.getKeyCodeCombination());
-        this.setOnAction();
     }
 }
