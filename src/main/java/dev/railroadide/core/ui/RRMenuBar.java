@@ -11,6 +11,7 @@ public class RRMenuBar extends MenuBar {
 
     public RRMenuBar(boolean addDefaults, Menu... children) {
         this(children);
+
         if (addDefaults) {
             var help = new Menu("Help");
             help.getItems().add(new RRMenuItem("Documentation", "https://railroadide.dev/"));
