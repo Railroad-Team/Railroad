@@ -33,16 +33,5 @@ public class Keybinds {
             })
             .build());
 
-    public static final Keybind NEW_FILE = KeybindHandler.registerKeybind(Keybind.builder()
-            .id("railroad:new_file")
-            .category(new KeybindCategory("railroad:general", "railroad.settings.keybinds.category.general"))
-            .addDefaultKey(KeyCode.N, KeyCombination.SHORTCUT_DOWN)
-            .addAction(KeybindContexts.of("railroad:ide"), n -> {
-                //TODO Should we even use this? or purely use the menu bar and its actions for this? I guess this does support multiple keys,
-                // But then clicking the menu item will work, but pressing the keybind will trigger it twice,
-                // one time for the keybind handler, and another from the menu item action.
-            })
-            .build());
-
     public static void initialize() {}
 }

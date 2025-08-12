@@ -5,6 +5,7 @@ import com.kodedu.terminalfx.TerminalBuilder;
 import com.kodedu.terminalfx.config.TerminalConfig;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.core.settings.keybinds.KeybindContexts;
+import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.utility.DesktopUtils;
@@ -135,10 +136,7 @@ public class IDESetup {
     private static MenuBar createMenuBar() {
         var newFileItem = new RRMenuItem(L18n.localize("railroad.menu.file.new_file"));
         newFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE));
-        newFileItem.setKeybindData(KeybindHandler.getKeybind("railroad:new_file").getKeys().getFirst());
-        newFileItem.setOnAction(e -> {
-            throw new NotImplementedException("New file creation is not implemented yet.");
-        });
+        newFileItem.setKeybindData(new KeybindData(KeyCode.N, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
 
         var openFileItem = new RRMenuItem(L18n.localize("railroad.menu.file.open_file"));
         openFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
