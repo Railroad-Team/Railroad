@@ -298,6 +298,7 @@ public class Railroad extends Application {
             scene = new Scene(new WelcomePane(), windowW, windowH);
             handleStyles(scene);
 
+            // Create a MacOS specific Menu Bar and Application Menu
             MacUtils.initialize();
             // Open setup and show the window
             primaryStage.setMinWidth(scene.getWidth() + 10);
@@ -306,6 +307,7 @@ public class Railroad extends Application {
             primaryStage.setTitle("Railroad - 1.0.0(dev)");
             primaryStage.getIcons().add(new Image(getResourceAsStream("images/logo.png")));
             primaryStage.show();
+            // Show the MacOS specific menu bar
             MacUtils.show(primaryStage);
 
             LOGGER.info("Railroad started");
