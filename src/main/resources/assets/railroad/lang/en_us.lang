@@ -377,5 +377,5 @@ railroad.menu.tools.terminal=Terminal
 
 railroad.menu.help=Help
 railroad.menu.help.documentation=Documentation
-railroad.menu.help.tutorials=Tutorials
-railroad.menu.help.about=About Railroad
+railroad.menu.help.issues=Report Issues
+railroad.menu.help.discord=Join the Discord
