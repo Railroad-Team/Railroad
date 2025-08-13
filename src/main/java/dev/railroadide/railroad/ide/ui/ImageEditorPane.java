@@ -33,7 +33,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.paint.Color;
 
-public class ImageEditorPane extends RRVBox implements PaneInterface {
+public class ImageEditorPane extends RRVBox {
     public static final InputStream LOGO = Railroad.getResourceAsStream("images/IDEIcons/IMGViewer.png");
     private final Canvas canvas;
     private final GraphicsContext ctx;
@@ -316,13 +316,5 @@ public class ImageEditorPane extends RRVBox implements PaneInterface {
         this.yOffset = y;
     }
 
-    @Override
-    public InputStream getLogo() {
-        return LOGO;
-    }
 
-    @Override
-    public String getPaneName() {
-        return "Image Editor";
-    }
 }

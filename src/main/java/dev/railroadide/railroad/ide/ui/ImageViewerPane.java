@@ -25,7 +25,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 
-public class ImageViewerPane extends RRVBox implements PaneInterface{
+public class ImageViewerPane extends RRVBox {
     public static final InputStream LOGO = Railroad.getResourceAsStream("images/IDEIcons/IMGViewer.png");
     private final Canvas canvas;
     private final GraphicsContext ctx;
@@ -182,13 +182,4 @@ public class ImageViewerPane extends RRVBox implements PaneInterface{
         this.yOffset = y;
     }
 
-    @Override
-    public InputStream getLogo() {
-        return LOGO;
-    }
-
-    @Override
-    public String getPaneName() {
-        return "Image Viewer";
-    }
 }
