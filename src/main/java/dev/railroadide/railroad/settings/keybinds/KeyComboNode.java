@@ -2,7 +2,7 @@ package dev.railroadide.railroad.settings.keybinds;
 
 import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.railroad.utility.OperatingSystem;
+import dev.railroadide.core.utility.OperatingSystem;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;

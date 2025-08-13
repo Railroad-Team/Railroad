@@ -85,7 +85,7 @@
 
    This will generate all the `gradlew` scripts you'll need.
 
-## Building
+## Building a jar
 
 Run the `shadowJar` task.
 

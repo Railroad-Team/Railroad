@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.ui;
 
+import dev.railroadide.core.utility.DesktopUtils;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRCard;
@@ -142,14 +143,14 @@ public class IDEWelcomePane extends ScrollPane {
         wikiButton.setVariant(RRButton.ButtonVariant.PRIMARY);
         wikiButton.setOnAction(event -> {
             event.consume();
-            Railroad.openUrl("https://railroadide.dev");
+            DesktopUtils.openUrl("https://railroadide.dev");
         });
 
         var tutorialsButton = new RRButton("railroad.ide.welcome.getting_started.tutorials", FontAwesomeSolid.GRADUATION_CAP);
         tutorialsButton.setVariant(RRButton.ButtonVariant.SECONDARY);
         tutorialsButton.setOnAction(event -> {
             event.consume();
-            Railroad.openUrl("https://railroadide.dev/tutorials");
+            DesktopUtils.openUrl("https://railroadide.dev/tutorials");
         });
 
         var discordButton = new RRButton("", FontAwesomeBrands.DISCORD);
@@ -157,7 +158,7 @@ public class IDEWelcomePane extends ScrollPane {
         discordButton.setVariant(RRButton.ButtonVariant.GHOST);
         discordButton.setOnAction(event -> {
             event.consume();
-            Railroad.openUrl("https://discord.turtywurty.dev/");
+            DesktopUtils.openUrl("https://discord.turtywurty.dev/");
         });
 
         buttonsContainer.getChildren().addAll(wikiButton, tutorialsButton, discordButton);
