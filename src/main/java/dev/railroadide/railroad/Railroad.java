@@ -7,7 +7,6 @@ import dev.railroadide.core.localization.Language;
 import dev.railroadide.core.localization.LocalizationService;
 import dev.railroadide.core.localization.LocalizationServiceLocator;
 import dev.railroadide.core.logger.LoggerServiceLocator;
-import dev.railroadide.core.utility.StringUtils;
 import dev.railroadide.logger.Logger;
 import dev.railroadide.logger.LoggerManager;
 import dev.railroadide.railroad.config.ConfigHandler;
@@ -27,6 +26,7 @@ import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import dev.railroadide.railroad.settings.ui.themes.ThemeDownloadManager;
+import dev.railroadide.railroad.utility.MacUtils;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.vcs.RepositoryManager;
 import dev.railroadide.railroad.welcome.WelcomePane;
@@ -48,12 +48,8 @@ import javafx.stage.Stage;
 import lombok.Getter;
 import okhttp3.OkHttpClient;
 
-import java.awt.*;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -241,26 +237,6 @@ public class Railroad extends Application {
     }
 
     /**
-     * Open a URL in the default browser
-     *
-     * @param url The URL to open
-     */
-    public static void openUrl(String url) {
-        if (!url.matches(StringUtils.URL_REGEX)) {
-            showErrorAlert("Invalid URL", "Invalid URL", "The URL provided is invalid.");
-            return;
-        }
-
-        try {
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().browse(new URI(url));
-            }
-        } catch (IOException | URISyntaxException exception) {
-            showErrorAlert("Error", "Error opening URL", "An error occurred while trying to open the URL.");
-        }
-    }
-
-    /**
      * Get the host services of the application
      *
      * @return The host services of the application
@@ -322,6 +298,8 @@ public class Railroad extends Application {
             scene = new Scene(new WelcomePane(), windowW, windowH);
             handleStyles(scene);
 
+            // Create a MacOS specific Menu Bar and Application Menu
+            MacUtils.initialize();
             // Open setup and show the window
             primaryStage.setMinWidth(scene.getWidth() + 10);
             primaryStage.setMinHeight(scene.getHeight() + 10);
@@ -329,6 +307,8 @@ public class Railroad extends Application {
             primaryStage.setTitle("Railroad - 1.0.0(dev)");
             primaryStage.getIcons().add(new Image(getResourceAsStream("images/logo.png")));
             primaryStage.show();
+            // Show the MacOS specific menu bar
+            MacUtils.show(primaryStage);
 
             LOGGER.info("Railroad started");
             PluginManager.enableEnabledPlugins();
