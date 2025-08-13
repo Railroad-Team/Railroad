@@ -19,10 +19,10 @@ jobs:
           distribution: 'temurin'
 
       - name: Check editorconfig
-        run: ./gradlew editorconfigCheck
+        run: gradle editorconfigCheck
 
       - name: Check code style
-        run: ./gradlew checkstyleMain
+        run: gradle checkstyleMain
 
       - name: Build
-        run: ./gradlew build
+        run: gradle build
