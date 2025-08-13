@@ -29,11 +29,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      # Github uses gradle 9.0, which doesn't work, so I have to force it to use ./gradlew
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
       - name: Check editorconfig
-        run: gradle editorconfigCheck
+        run: ./gradlew editorconfigCheck
 
       - name: Check code style
-        run: gradle checkstyleMain
+        run: ./gradlew checkstyleMain
 
       - name: Build
-        run: gradle jar
+        run: ./gradlew jar
