@@ -18,6 +18,17 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      # Cache Gradle dependencies (speeds up builds)
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
       - name: Check editorconfig
         run: gradle editorconfigCheck
 
@@ -25,4 +36,4 @@ jobs:
         run: gradle checkstyleMain
 
       - name: Build
-        run: gradle build
+        run: gradle jar
