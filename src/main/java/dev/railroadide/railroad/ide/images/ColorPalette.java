@@ -31,7 +31,7 @@ public class ColorPalette extends RRVBox {
     private Palette palette;
     private final CheckBox edit;
     private final RRButton openFile = new RRButton("railroad.ide.image_editor.open_file");
-    private final Text rightClickToRemove = new Text("Right Click To Remove A Color");
+    private final Text rightClickToRemove = new Text("Right click to remove a color");
     public ColorPalette(Palette palette) {
         this.palette = palette;
 
