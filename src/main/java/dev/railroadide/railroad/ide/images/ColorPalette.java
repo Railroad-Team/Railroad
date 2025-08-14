@@ -28,7 +28,7 @@ public class ColorPalette extends RRVBox {
     private final FlowPane swatchPane;
     public static final int SWATCH_SIZE = 20;
     private Color selectedColor;
-    private  Palette palette;
+    private Palette palette;
     private final CheckBox edit;
     private final RRButton openFile = new RRButton("railroad.ide.image_editor.open_file");
     private final Text rightClickToRemove = new Text("Right Click To Remove A Color");
