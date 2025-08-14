@@ -1,0 +1,74 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+}
+
+group = 'dev.railroadide'
+version = '1.0.1'
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release.set(21)
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url "https://maven.railroadide.dev/releases" }
+}
+
+javafx {
+    version = '21.0.2'
+    modules = [ 'javafx.controls', 'javafx.graphics' ]
+}
+
+dependencies {
+    api 'org.openjfx:javafx-controls:21.0.2'
+    api 'org.openjfx:javafx-graphics:21.0.2'
+
+    api 'org.kordamp.ikonli:ikonli-javafx:12.4.0'
+    api 'org.kordamp.ikonli:ikonli-fontawesome6-pack:12.4.0'
+    api 'io.github.palexdev:materialfx:11.17.0'
+
+    api 'com.google.code.gson:gson:2.13.1'
+    api 'com.github.javakeyring:java-keyring:1.0.4'
+
+    implementation "dev.railroadide:RailroadLogger:1.0.1"
+    implementation 'org.apache.commons:commons-lang3:3.17.0'
+
+    compileOnly 'org.jetbrains:annotations:24.0.0'
+
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
+    compileOnly 'org.projectlombok:lombok:1.18.32'
+}
+
+tasks.register('sourcesJar', Jar) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+publishing {
+    repositories {
+        mavenLocal()
+        maven {
+            url "https://maven.railroadide.dev/releases"
+            credentials {
+                username = System.getenv("RAILROAD_MAVEN_USERNAME")
+                password = System.getenv("RAILROAD_MAVEN_PASSWORD")
+            }
+        }
+    }
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            artifact tasks.sourcesJar
+        }
+    }
+}
