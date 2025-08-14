@@ -52,22 +52,6 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
         this.icon.set(icon == null ? createIcon(this) : icon);
     }
 
-    private void discoverFacets() {
-        this.facets.clear();
-        FacetManager.scan(this).thenAcceptAsync(facets -> {
-            for (Facet<?> facet : facets) {
-                if (facet != null) {
-                    this.facets.add(facet);
-                } else {
-                    Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
-                }
-            }
-        }).exceptionally(ex -> {
-            Railroad.LOGGER.error("Failed to discover facets for project: {}", getPathString(), ex);
-            return null;
-        });
-    }
-
     private static BufferedImage createIconImage(Project project) {
         var color = new Color(Math.abs(project.path.get().toAbsolutePath().toString().hashCode() % 0xFFFFFF));
         String abbreviation = StringUtils.getAbbreviation(project.alias.get()).toUpperCase(Locale.ROOT);
@@ -123,6 +107,30 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
         return Optional.of(project);
     }
 
+    public static String getPathBase64(Project project) {
+        return Base64.getEncoder().encodeToString(project.getPathString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static Path getPathFromBase64(String base64Path) {
+        return Path.of(new String(Base64.getDecoder().decode(base64Path), StandardCharsets.UTF_8));
+    }
+
+    private void discoverFacets() {
+        this.facets.clear();
+        FacetManager.scan(this).thenAcceptAsync(facets -> {
+            for (Facet<?> facet : facets) {
+                if (facet != null) {
+                    this.facets.add(facet);
+                } else {
+                    Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
+                }
+            }
+        }).exceptionally(ex -> {
+            Railroad.LOGGER.error("Failed to discover facets for project: {}", getPathString(), ex);
+            return null;
+        });
+    }
+
     @Override
     public Path getPath() {
         return this.path.get();
@@ -130,14 +138,6 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
 
     public String getPathString() {
         return getPath().toAbsolutePath().toString();
-    }
-
-    public static String getPathBase64(Project project) {
-        return Base64.getEncoder().encodeToString(project.getPathString().getBytes(StandardCharsets.UTF_8));
-    }
-
-    public static Path getPathFromBase64(String base64Path) {
-        return Path.of(new String(Base64.getDecoder().decode(base64Path), StandardCharsets.UTF_8));
     }
 
     public void open() {
@@ -274,7 +274,8 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
                 if (iconPrimitive.isString() && !iconElement.getAsString().isBlank()) {
                     this.icon.set(new Image(iconElement.getAsString()));
                     hasIcon = true;
-                } else if(!iconPrimitive.isString()) Railroad.LOGGER.warn("Project JSON 'Icon' is not a string: {}", iconElement);
+                } else if (!iconPrimitive.isString())
+                    Railroad.LOGGER.warn("Project JSON 'Icon' is not a string: {}", iconElement);
             } else if (iconElement.isJsonNull()) {
                 Railroad.LOGGER.warn("Project JSON 'Icon' is null, using default icon.");
             } else Railroad.LOGGER.warn("Project JSON 'Icon' is not a primitive: {}", iconElement);

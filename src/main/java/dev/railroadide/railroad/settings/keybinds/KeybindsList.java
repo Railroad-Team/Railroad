@@ -29,6 +29,7 @@ public class KeybindsList extends TreeView {
 
     /**
      * Creates a new KeybindsList with the given keybinds map.
+     *
      * @param map a map of keybind IDs to their corresponding list of KeybindData.
      */
     public KeybindsList(Map<String, List<KeybindData>> map) {
@@ -43,125 +44,8 @@ public class KeybindsList extends TreeView {
     }
 
     /**
-     * Refreshes the tree view to display the current keybinds.
-     * It caches the currently expanded categories, to then restore them after clearing the tree.
-     */
-    private void refreshTree() {
-        TreeItem<RRHBox> root = this.getRoot();
-
-        List<String> expandedCategoryIds = new ArrayList<>();
-        for (TreeItem<RRHBox> item : root.getChildren()) {
-            if (item.isExpanded() &&
-                    item.getValue().getChildren().getFirst() instanceof LocalizedLabel label) {
-                expandedCategoryIds.add(label.getId());
-            }
-        }
-
-        root.getChildren().clear();
-
-        for (Map.Entry<String, List<KeybindData>> entry : keybinds.entrySet()) {
-            KeybindCategory category = KeybindHandler.getKeybind(entry.getKey()).getCategory();
-
-            TreeItem<RRHBox> categoryItem = root.getChildren().stream()
-                    .filter(item -> item.getValue().getChildren().getFirst() instanceof LocalizedLabel label &&
-                            label.getId().equals(category.id()))
-                    .findFirst()
-                    .orElseGet(() -> {
-                        var categoryHeader = new LocalizedLabel(category.titleKey());
-                        categoryHeader.setId(category.id());
-                        var content = new RRHBox();
-                        content.getChildren().add(categoryHeader);
-                        var newCategoryItem = new TreeItem<>(content);
-                        root.getChildren().add(newCategoryItem);
-                        return newCategoryItem;
-                    });
-
-            categoryItem.getChildren().add(createKeybindTreeItem(entry.getKey(), entry.getValue()));
-        }
-
-        for (TreeItem<RRHBox> item : root.getChildren()) {
-            if (item.getValue().getChildren().getFirst() instanceof LocalizedLabel label &&
-                    expandedCategoryIds.contains(label.getId())) {
-                item.setExpanded(true);
-            }
-        }
-    }
-
-    /**
-     * Creates a TreeItem for a keybind. Which contains an add button, remove button and edit button for each keybind/key combination.
-     * @param id the keybind ID
-     * @param keybinds a KeybindData list containing the keybinds/key combinations for the given ID.
-     * @return a TreeItem containing the keybind configuration UI.
-     */
-    private TreeItem<RRHBox> createKeybindTreeItem(String id, List<KeybindData> keybinds) {
-        var titleBox = new RRHBox();
-        var configBox = new RRVBox();
-
-        var localeKey = "railroad.settings.keybinds." + id.split(":")[1];
-
-        titleBox.getChildren().addAll(new LocalizedLabel(localeKey));
-
-        var addButton = new RRButton("", FontAwesomeSolid.PLUS);
-        addButton.setPadding(InsetsBuilder.all(5));
-        addButton.getStyleClass().add("square-button");
-        addButton.setVariant(RRButton.ButtonVariant.PRIMARY);
-        addButton.setOnAction(e -> {
-            var newKeybind = new KeybindData(KeyCode.UNDEFINED, new KeyCombination.Modifier[0]);
-            keybinds.add(newKeybind);
-            refreshTree();
-        });
-
-        titleBox.getChildren().add(addButton);
-
-        for (KeybindData keybind : keybinds) {
-            var keybindBox = new RRHBox(5);
-            var keyComboNode = new KeyComboNode(keybind);
-            keyComboNode.setOnComboModified((keybindData) -> {
-                int index = keybinds.indexOf(keybind);
-                if (index != -1 && !keybindData.equals(keybind)) {
-                    keybinds.set(index, keybindData);
-                }
-            });
-
-            var buttonBox = new RRHBox(5);
-
-            var removeButton = new RRButton("", FontAwesomeSolid.MINUS);
-            removeButton.setVariant(RRButton.ButtonVariant.DANGER);
-            removeButton.getStyleClass().add("square-button");
-            removeButton.setOnAction(e -> {
-                keybinds.remove(keybinds.get(this.keybinds.get(id).indexOf(keybind)));
-                refreshTree();
-            });
-
-            var editButton = new RRButton("", FontAwesomeSolid.PENCIL_ALT);
-            editButton.setVariant(RRButton.ButtonVariant.SECONDARY);
-            editButton.getStyleClass().add("square-button");
-            editButton.setOnAction(e -> {;
-                keyComboNode.toggleEditing();
-            });
-
-            buttonBox.getChildren().addAll(removeButton, editButton);
-            keybindBox.getChildren().addAll(keyComboNode, buttonBox);
-
-            configBox.getChildren().addAll(keybindBox);
-        }
-
-        var treeNodeContent = new RRHBox();
-        treeNodeContent.getChildren().addAll(titleBox, configBox);
-        return new TreeItem<>(treeNodeContent);
-    }
-
-    /**
-     * Loads the provided keybinds into the current instance.
-     * @param keybinds a map of keybind IDs to their corresponding KeybindData list.
-     */
-    public void loadKeybinds(Map<String, List<KeybindData>> keybinds) {
-        this.keybinds.clear();
-        this.keybinds.putAll(keybinds);
-    }
-
-    /**
      * Converts the keybinds map to a JSON representation.
+     *
      * @param keybinds
      * @return a JsonElement representing the keybinds.
      */
@@ -191,6 +75,7 @@ public class KeybindsList extends TreeView {
 
     /**
      * Converts a JSON representation of keybinds into a map of keybind IDs to their corresponding KeybindData lists.
+     *
      * @param json the JSON element representing the keybinds.
      * @return a map of keybind IDs to lists of KeybindData.
      */
@@ -278,5 +163,126 @@ public class KeybindsList extends TreeView {
         }
 
         return map;
+    }
+
+    /**
+     * Refreshes the tree view to display the current keybinds.
+     * It caches the currently expanded categories, to then restore them after clearing the tree.
+     */
+    private void refreshTree() {
+        TreeItem<RRHBox> root = this.getRoot();
+
+        List<String> expandedCategoryIds = new ArrayList<>();
+        for (TreeItem<RRHBox> item : root.getChildren()) {
+            if (item.isExpanded() &&
+                    item.getValue().getChildren().getFirst() instanceof LocalizedLabel label) {
+                expandedCategoryIds.add(label.getId());
+            }
+        }
+
+        root.getChildren().clear();
+
+        for (Map.Entry<String, List<KeybindData>> entry : keybinds.entrySet()) {
+            KeybindCategory category = KeybindHandler.getKeybind(entry.getKey()).getCategory();
+
+            TreeItem<RRHBox> categoryItem = root.getChildren().stream()
+                    .filter(item -> item.getValue().getChildren().getFirst() instanceof LocalizedLabel label &&
+                            label.getId().equals(category.id()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        var categoryHeader = new LocalizedLabel(category.titleKey());
+                        categoryHeader.setId(category.id());
+                        var content = new RRHBox();
+                        content.getChildren().add(categoryHeader);
+                        var newCategoryItem = new TreeItem<>(content);
+                        root.getChildren().add(newCategoryItem);
+                        return newCategoryItem;
+                    });
+
+            categoryItem.getChildren().add(createKeybindTreeItem(entry.getKey(), entry.getValue()));
+        }
+
+        for (TreeItem<RRHBox> item : root.getChildren()) {
+            if (item.getValue().getChildren().getFirst() instanceof LocalizedLabel label &&
+                    expandedCategoryIds.contains(label.getId())) {
+                item.setExpanded(true);
+            }
+        }
+    }
+
+    /**
+     * Creates a TreeItem for a keybind. Which contains an add button, remove button and edit button for each keybind/key combination.
+     *
+     * @param id       the keybind ID
+     * @param keybinds a KeybindData list containing the keybinds/key combinations for the given ID.
+     * @return a TreeItem containing the keybind configuration UI.
+     */
+    private TreeItem<RRHBox> createKeybindTreeItem(String id, List<KeybindData> keybinds) {
+        var titleBox = new RRHBox();
+        var configBox = new RRVBox();
+
+        var localeKey = "railroad.settings.keybinds." + id.split(":")[1];
+
+        titleBox.getChildren().addAll(new LocalizedLabel(localeKey));
+
+        var addButton = new RRButton("", FontAwesomeSolid.PLUS);
+        addButton.setPadding(InsetsBuilder.all(5));
+        addButton.getStyleClass().add("square-button");
+        addButton.setVariant(RRButton.ButtonVariant.PRIMARY);
+        addButton.setOnAction(e -> {
+            var newKeybind = new KeybindData(KeyCode.UNDEFINED, new KeyCombination.Modifier[0]);
+            keybinds.add(newKeybind);
+            refreshTree();
+        });
+
+        titleBox.getChildren().add(addButton);
+
+        for (KeybindData keybind : keybinds) {
+            var keybindBox = new RRHBox(5);
+            var keyComboNode = new KeyComboNode(keybind);
+            keyComboNode.setOnComboModified((keybindData) -> {
+                int index = keybinds.indexOf(keybind);
+                if (index != -1 && !keybindData.equals(keybind)) {
+                    keybinds.set(index, keybindData);
+                }
+            });
+
+            var buttonBox = new RRHBox(5);
+
+            var removeButton = new RRButton("", FontAwesomeSolid.MINUS);
+            removeButton.setVariant(RRButton.ButtonVariant.DANGER);
+            removeButton.getStyleClass().add("square-button");
+            removeButton.setOnAction(e -> {
+                keybinds.remove(keybinds.get(this.keybinds.get(id).indexOf(keybind)));
+                refreshTree();
+            });
+
+            var editButton = new RRButton("", FontAwesomeSolid.PENCIL_ALT);
+            editButton.setVariant(RRButton.ButtonVariant.SECONDARY);
+            editButton.getStyleClass().add("square-button");
+            editButton.setOnAction(e -> {
+                ;
+                keyComboNode.toggleEditing();
+            });
+
+            buttonBox.getChildren().addAll(removeButton, editButton);
+            keybindBox.getChildren().addAll(keyComboNode, buttonBox);
+
+            configBox.getChildren().addAll(keybindBox);
+        }
+
+        var treeNodeContent = new RRHBox();
+        treeNodeContent.getChildren().addAll(titleBox, configBox);
+        return new TreeItem<>(treeNodeContent);
+    }
+
+    /**
+     * Loads the provided keybinds into the current instance.
+     *
+     * @param keybinds a map of keybind IDs to their corresponding KeybindData list.
+     */
+    public void loadKeybinds(Map<String, List<KeybindData>> keybinds) {
+        this.keybinds.clear();
+        this.keybinds.putAll(keybinds);
     }
 }

@@ -4,4 +4,5 @@ import dev.railroadide.railroad.ide.classparser.Type;
 
 import java.util.List;
 
-public record TypeParameter(String name, List<Type> bounds) {}
+public record TypeParameter(String name, List<Type> bounds) {
+}

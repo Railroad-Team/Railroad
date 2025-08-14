@@ -3,11 +3,11 @@ package dev.railroadide.railroad.settings.handler;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.core.registry.Registry;
 import dev.railroadide.core.registry.RegistryManager;
 import dev.railroadide.core.settings.Setting;
+import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.config.ConfigHandler;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -16,9 +16,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 public class SettingsHandler {
+    public static final Registry<Setting<?>> SETTINGS_REGISTRY = RegistryManager.createRegistry("settings", new TypeToken<>() {
+    });
     private static final SettingsHolder SETTINGS_HOLDER = new SettingsHolder();
     private static final Path SETTINGS_PATH = ConfigHandler.getConfigDirectory().resolve("settings.json");
-    public static final Registry<Setting<?>> SETTINGS_REGISTRY = RegistryManager.createRegistry("settings", new TypeToken<>() {});
 
     public static void init() {
         try {
@@ -157,10 +158,6 @@ public class SettingsHandler {
         setting.setValue(value);
     }
 
-    public void setDoubleValue(String id, double value) {
-        setValue(id, Double.class, value);
-    }
-
     public static float getFloatValue(String id) {
         Setting<Float> setting = getSetting(id, Float.class);
         if (setting == null)
@@ -203,5 +200,9 @@ public class SettingsHandler {
 
     public static SettingsHolder getSettingsHolder() {
         return SETTINGS_HOLDER;
+    }
+
+    public void setDoubleValue(String id, double value) {
+        setValue(id, Double.class, value);
     }
 }

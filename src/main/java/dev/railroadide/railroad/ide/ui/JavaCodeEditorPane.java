@@ -1,15 +1,15 @@
 package dev.railroadide.railroad.ide.ui;
 
-import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
-import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRListView;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.indexing.Autocomplete;
 import dev.railroadide.railroad.ide.indexing.Indexes;
 import dev.railroadide.railroad.ide.syntaxhighlighting.TreeSitterJavaSyntaxHighlighting;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.compiler.JavaSourceFromString;
+import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
+import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
@@ -53,8 +53,8 @@ public class JavaCodeEditorPane extends TextEditorPane {
     private final List<ClassStub> stubs = Indexes.scanStandardLibrary();
     private final Autocomplete autocomplete = new Autocomplete(stubs);
     private final AtomicReference<Popup> autoCompletePopup = new AtomicReference<>(null);
-    private int dotPosition = -1;
     private final List<String> fullSuggestions = new ArrayList<>();
+    private int dotPosition = -1;
     private ChangeListener<String> textListener;
 
     public JavaCodeEditorPane(Path item) {
@@ -73,7 +73,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
     private void highlightBracketPairs() {
         caretPositionProperty().addListener((observable, oldValue, newValue) -> {
             String text = getText();
-            if(text.isBlank() || newValue < 0 || newValue > text.length())
+            if (text.isBlank() || newValue < 0 || newValue > text.length())
                 return;
 
             Map<Character, Character> bracketPairs = Map.of(
@@ -86,12 +86,12 @@ public class JavaCodeEditorPane extends TextEditorPane {
             );
 
             char currentChar = newValue < text.length() ? text.charAt(newValue) : '\0';
-            if(!bracketPairs.containsKey(currentChar) && newValue > 0) {
+            if (!bracketPairs.containsKey(currentChar) && newValue > 0) {
                 currentChar = text.charAt(newValue - 1);
                 newValue--;
             }
 
-            if(!bracketPairs.containsKey(currentChar)) {
+            if (!bracketPairs.containsKey(currentChar)) {
                 clearBracketHighlights();
                 return;
             }
@@ -106,7 +106,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
         int matchPos = findMatchingBracketPosition(text, position, currentChar, matchingBracket, lookForward);
         clearBracketHighlights();
 
-        if(matchPos != -1) {
+        if (matchPos != -1) {
             setStyleClass(position, position + 1, "bracket-highlight");
             setStyleClass(matchPos, matchPos + 1, "bracket-highlight");
         }

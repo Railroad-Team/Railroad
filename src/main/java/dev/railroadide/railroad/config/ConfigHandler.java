@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.config;
 
 import com.google.gson.JsonObject;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.utility.OperatingSystem;
+import dev.railroadide.railroad.Railroad;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,7 +18,7 @@ public final class ConfigHandler {
         return switch (os) {
             case WINDOWS -> {
                 String roaming = System.getenv("APPDATA");
-                if(roaming != null && !roaming.isBlank()) {
+                if (roaming != null && !roaming.isBlank()) {
                     yield Path.of(roaming, "Railroad");
                 }
 

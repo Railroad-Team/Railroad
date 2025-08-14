@@ -26,6 +26,7 @@ public class KeyComboNode extends RRButton {
 
     /**
      * Creates a new KeyComboNode with the specified keybind data.
+     *
      * @param keybindData The keybind data to initialize the node with.
      */
     public KeyComboNode(KeybindData keybindData) {
@@ -37,6 +38,28 @@ public class KeyComboNode extends RRButton {
         } else {
             updateText();
         }
+    }
+
+    /**
+     * Checks if two arrays of KeyCombination.Modifier are equal.
+     *
+     * @param a Array of modifiers to compare.
+     * @param b Array of modifiers to compare against.
+     * @return True if both arrays contain the same modifiers, false otherwise.
+     */
+    private static boolean areModifiersEqual(KeyCombination.Modifier[] a, KeyCombination.Modifier[] b) {
+        if (a.length != b.length) return false;
+        for (KeyCombination.Modifier modA : a) {
+            boolean found = false;
+            for (KeyCombination.Modifier modB : b) {
+                if (modA.equals(modB)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
     }
 
     /**
@@ -82,6 +105,7 @@ public class KeyComboNode extends RRButton {
      * Called when a key is released in editing mode. It checks if the key combination has changed,
      * and if so, it updates the keybind data and calls the onComboModified consumer if set.
      * It then resets the editing state and updates the node.
+     *
      * @param event
      */
     private void onKeyReleased(KeyEvent event) {
@@ -129,6 +153,7 @@ public class KeyComboNode extends RRButton {
 
     /**
      * Converts Modifier names to the correct name depending on the operating system.
+     *
      * @param modifier The modifier to convert.
      * @return The localized name of the modifier.
      */
@@ -153,26 +178,5 @@ public class KeyComboNode extends RRButton {
             default:
                 yield modifier.getKey().toString();
         };
-    }
-
-    /**
-     * Checks if two arrays of KeyCombination.Modifier are equal.
-     * @param a Array of modifiers to compare.
-     * @param b Array of modifiers to compare against.
-     * @return True if both arrays contain the same modifiers, false otherwise.
-     */
-    private static boolean areModifiersEqual(KeyCombination.Modifier[] a, KeyCombination.Modifier[] b) {
-        if (a.length != b.length) return false;
-        for (KeyCombination.Modifier modA : a) {
-            boolean found = false;
-            for (KeyCombination.Modifier modB : b) {
-                if (modA.equals(modB)) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) return false;
-        }
-        return true;
     }
 }

@@ -24,31 +24,25 @@ import java.nio.file.Path;
 import java.util.Locale;
 
 public class ImageViewerPane extends BorderPane {
-    private Canvas canvas;
-    private GraphicsContext gc;
-
-    private Image currentImage;
-    private Path imagePath;
-    private boolean isPngSource = false;
-    private boolean includesCheckerboard = true;
-
-    private double zoomLevel = 1.0;
-    private double offsetX = 0.0;
-    private double offsetY = 0.0;
-
-    private double lastMouseX;
-    private double lastMouseY;
-
     private static final double ZOOM_BUTTON_FACTOR = 1.2;
     private static final double ZOOM_SCROLL_FACTOR = 1.1;
     private static final double MIN_ZOOM = 0.05;
     private static final double MAX_ZOOM = 20.0;
-
     private static final int CHECKER_SIZE = 16;
     private static final Color CHECKER_COLOR_1 = Color.rgb(210, 210, 210);
     private static final Color CHECKER_COLOR_2 = Color.rgb(240, 240, 240);
     private static final Color DEFAULT_BACKGROUND_COLOR = Color.web("#333");
-
+    private Canvas canvas;
+    private GraphicsContext gc;
+    private Image currentImage;
+    private Path imagePath;
+    private boolean isPngSource = false;
+    private boolean includesCheckerboard = true;
+    private double zoomLevel = 1.0;
+    private double offsetX = 0.0;
+    private double offsetY = 0.0;
+    private double lastMouseX;
+    private double lastMouseY;
     private VBox infoPane;
     private Text dimensionsText;
     private Text fileNameText;

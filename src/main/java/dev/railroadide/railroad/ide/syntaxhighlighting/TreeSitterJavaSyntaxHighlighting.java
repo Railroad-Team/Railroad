@@ -55,15 +55,15 @@ public class TreeSitterJavaSyntaxHighlighting {
                     spansBuilder.add(Collections.emptyList(), start - this.currentPosition);
                 }
 
-                if(!cursor.gotoFirstChild()) {
+                if (!cursor.gotoFirstChild()) {
                     nodes.add(currentNode);
 
                     //String atNode = text.substring(start, end);
                     //System.out.println(type + ": " + atNode);
 
-                    typeSwitch: switch (type) {
-                        case "line_comment" ->
-                                spansBuilder.add(Collections.singleton("comment"), end - start);
+                    typeSwitch:
+                    switch (type) {
+                        case "line_comment" -> spansBuilder.add(Collections.singleton("comment"), end - start);
                         case "decimal_integer_literal", "decimal_floating_point_literal" ->
                                 spansBuilder.add(Collections.singleton("number"), end - start);
                         case "identifier" -> {
@@ -72,7 +72,7 @@ public class TreeSitterJavaSyntaxHighlighting {
                             int i = nodes.size() - 1;
                             while (i >= 0) {
                                 TSTreeCursor copy = cursor.copy();
-                                if(i == nodes.size() - 1) {
+                                if (i == nodes.size() - 1) {
                                     copy.gotoParent();
                                     copy.gotoNextSibling();
                                     copy.gotoFirstChild();
@@ -95,16 +95,14 @@ public class TreeSitterJavaSyntaxHighlighting {
 
                             spansBuilder.add(Collections.singleton("name"), end - start);
                         }
-                        case "type_identifier" ->
-                                spansBuilder.add(Collections.singleton("type"), end - start);
-                        case "package" ->
-                                spansBuilder.add(Collections.singleton("package"), end - start);
-                        case "public", "class", "implements", "static", "final", "private", "protected", "return", "void_type", "int_type", "double_type", "float_type", "short_type", "byte_type", "long_type", "boolean_type", "char_type", "instanceof", "if", "for", "do", "while", "new" ->
-                                spansBuilder.add(Collections.singleton("modifier"), end - start);
-                        case "import" ->
-                                spansBuilder.add(Collections.singleton("import"), end - start);
-                        case "string_fragment", "\"" ->
-                                spansBuilder.add(Collections.singleton("string"), end - start);
+                        case "type_identifier" -> spansBuilder.add(Collections.singleton("type"), end - start);
+                        case "package" -> spansBuilder.add(Collections.singleton("package"), end - start);
+                        case "public", "class", "implements", "static", "final", "private", "protected", "return",
+                             "void_type", "int_type", "double_type", "float_type", "short_type", "byte_type",
+                             "long_type", "boolean_type", "char_type", "instanceof", "if", "for", "do", "while",
+                             "new" -> spansBuilder.add(Collections.singleton("modifier"), end - start);
+                        case "import" -> spansBuilder.add(Collections.singleton("import"), end - start);
+                        case "string_fragment", "\"" -> spansBuilder.add(Collections.singleton("string"), end - start);
                         default -> spansBuilder.add(Collections.emptyList(), end - start);
                     }
                 } else {

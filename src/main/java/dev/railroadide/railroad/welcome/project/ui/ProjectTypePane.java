@@ -63,7 +63,7 @@ public class ProjectTypePane extends RRVBox {
         projectTypeSearchField.textProperty().addListener((obs, oldText, newText) -> {
             String filter = newText == null ? "" : newText.trim().toLowerCase();
             projectTypeListView.getItems().setAll(
-                allProjectTypes.filtered(pt -> pt.getName().toLowerCase().contains(filter))
+                    allProjectTypes.filtered(pt -> pt.getName().toLowerCase().contains(filter))
             );
             if (!projectTypeListView.getItems().isEmpty()) {
                 projectTypeListView.getSelectionModel().selectFirst();

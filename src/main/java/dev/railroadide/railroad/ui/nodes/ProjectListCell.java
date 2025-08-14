@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.ui.nodes;
 
-import io.github.palexdev.mfxcore.builders.InsetsBuilder;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRCard;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.utility.StringUtils;
+import io.github.palexdev.mfxcore.builders.InsetsBuilder;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;

@@ -180,8 +180,8 @@ public final class FileUtils {
     /**
      * Checks if a directory is empty, including its subdirectories.
      *
-     * @param directory the directory to check
-     * @param onEmpty   action to perform if the directory is empty
+     * @param directory  the directory to check
+     * @param onEmpty    action to perform if the directory is empty
      * @param onNotEmpty action to perform if the directory is not empty
      * @return true if the directory is empty, false otherwise
      */
@@ -231,7 +231,8 @@ public final class FileUtils {
      * @return true if the directory is empty, false otherwise
      */
     public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty) {
-        return isDirectoryEmpty(directory, onEmpty, () -> {});
+        return isDirectoryEmpty(directory, onEmpty, () -> {
+        });
     }
 
     /**
@@ -241,7 +242,8 @@ public final class FileUtils {
      * @return true if the directory is empty, false otherwise
      */
     public static boolean isDirectoryEmpty(Path directory) {
-        return isDirectoryEmpty(directory, () -> {});
+        return isDirectoryEmpty(directory, () -> {
+        });
     }
 
     /**

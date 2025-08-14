@@ -4,21 +4,6 @@ import java.util.List;
 
 public sealed interface Type
         permits Type.ClassType, Type.PrimitiveType, Type.ArrayType, Type.TypeVariable, Type.WildcardType {
-    // Class or interface type, with optional type arguments for generics
-    record ClassType(String name, List<Type> typeArguments) implements Type {}
-
-    // Primitive type (e.g., int, boolean)
-    record PrimitiveType(String name) implements Type {}
-
-    // Array type
-    record ArrayType(Type componentType) implements Type {}
-
-    // Type variable for generics (e.g., T in List<T>)
-    record TypeVariable(String name) implements Type {}
-
-    // Wildcard type for generics (e.g., ? extends Number)
-    record WildcardType(Type bound, boolean isUpperBound) implements Type {}
-
     static Type fromAsmType(org.objectweb.asm.Type asmType) {
         return switch (asmType.getSort()) {
             case org.objectweb.asm.Type.VOID -> new PrimitiveType("void");
@@ -40,5 +25,25 @@ public sealed interface Type
             }
             default -> throw new IllegalArgumentException("Unsupported type: " + asmType);
         };
+    }
+
+    // Class or interface type, with optional type arguments for generics
+    record ClassType(String name, List<Type> typeArguments) implements Type {
+    }
+
+    // Primitive type (e.g., int, boolean)
+    record PrimitiveType(String name) implements Type {
+    }
+
+    // Array type
+    record ArrayType(Type componentType) implements Type {
+    }
+
+    // Type variable for generics (e.g., T in List<T>)
+    record TypeVariable(String name) implements Type {
+    }
+
+    // Wildcard type for generics (e.g., ? extends Number)
+    record WildcardType(Type bound, boolean isUpperBound) implements Type {
     }
 }

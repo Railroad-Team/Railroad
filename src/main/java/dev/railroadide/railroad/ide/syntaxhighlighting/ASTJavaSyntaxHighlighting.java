@@ -42,39 +42,6 @@ public class ASTJavaSyntaxHighlighting {
             this.text = text;
         }
 
-        public StyleSpans<Collection<String>> computeStyleSpans() {
-            styleRanges.sort(Comparator.comparingInt(styleRange -> styleRange.beginOffset)); // Ensure ranges are in order
-            StyleSpansBuilder<Collection<String>> spansBuilder = new StyleSpansBuilder<>();
-            int lastEnd = 0;
-
-            for (int index = 0; index < styleRanges.size(); index++) {
-                StyleRange styleRange = styleRanges.get(index);
-                StyleRange nextStyleRange = index + 1 < styleRanges.size() ? styleRanges.get(index + 1) : null;
-                if (styleRange.beginOffset > lastEnd) {
-                    spansBuilder.add(Collections.emptyList(), styleRange.beginOffset - lastEnd);
-                }
-
-                int endOffset = nextStyleRange != null ? nextStyleRange.beginOffset - 1 : styleRange.endOffset;
-                spansBuilder.add(Collections.singleton(styleRange.styleClass), (endOffset - styleRange.beginOffset) + 1);
-                lastEnd = endOffset + 1;
-            }
-
-            if (lastEnd < text.length()) {
-                spansBuilder.add(Collections.emptyList(), text.length() - lastEnd);
-            }
-
-            return spansBuilder.create();
-        }
-
-        private void addStyleRange(Node node) {
-            Range range = node.getRange().orElseThrow();
-            int beginOffset = getIndex(range.begin, text);
-            int endOffset = getIndex(range.end, text);
-            String styleClass = getStyleClassByNode(node);
-
-            styleRanges.add(new StyleRange(beginOffset, endOffset, styleClass));
-        }
-
         private static int getIndex(com.github.javaparser.Position position, String text) {
             int line = position.line;
             int column = position.column;
@@ -186,6 +153,39 @@ public class ASTJavaSyntaxHighlighting {
                 case RecordPatternExpr recordPatternExpr -> "record";
                 case null, default -> "";
             };
+        }
+
+        public StyleSpans<Collection<String>> computeStyleSpans() {
+            styleRanges.sort(Comparator.comparingInt(styleRange -> styleRange.beginOffset)); // Ensure ranges are in order
+            StyleSpansBuilder<Collection<String>> spansBuilder = new StyleSpansBuilder<>();
+            int lastEnd = 0;
+
+            for (int index = 0; index < styleRanges.size(); index++) {
+                StyleRange styleRange = styleRanges.get(index);
+                StyleRange nextStyleRange = index + 1 < styleRanges.size() ? styleRanges.get(index + 1) : null;
+                if (styleRange.beginOffset > lastEnd) {
+                    spansBuilder.add(Collections.emptyList(), styleRange.beginOffset - lastEnd);
+                }
+
+                int endOffset = nextStyleRange != null ? nextStyleRange.beginOffset - 1 : styleRange.endOffset;
+                spansBuilder.add(Collections.singleton(styleRange.styleClass), (endOffset - styleRange.beginOffset) + 1);
+                lastEnd = endOffset + 1;
+            }
+
+            if (lastEnd < text.length()) {
+                spansBuilder.add(Collections.emptyList(), text.length() - lastEnd);
+            }
+
+            return spansBuilder.create();
+        }
+
+        private void addStyleRange(Node node) {
+            Range range = node.getRange().orElseThrow();
+            int beginOffset = getIndex(range.begin, text);
+            int endOffset = getIndex(range.end, text);
+            String styleClass = getStyleClassByNode(node);
+
+            styleRanges.add(new StyleRange(beginOffset, endOffset, styleClass));
         }
 
         @Override

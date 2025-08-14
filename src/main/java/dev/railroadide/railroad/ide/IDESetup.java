@@ -11,7 +11,6 @@ import dev.railroadide.core.ui.localized.LocalizedCheckMenuItem;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.localized.LocalizedMenu;
 import dev.railroadide.core.ui.localized.LocalizedMenuItem;
-import dev.railroadide.core.utility.DesktopUtils;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.ui.ConsolePane;
@@ -174,7 +173,7 @@ public class IDESetup {
 
         var copyItem = new LocalizedMenuItem("railroad.menu.edit.copy");
         copyItem.setGraphic(new FontIcon(FontAwesomeSolid.COPY));
-       copyItem.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.SHORTCUT_DOWN));
+        copyItem.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.SHORTCUT_DOWN));
 
         var pasteItem = new LocalizedMenuItem("railroad.menu.edit.paste");
         pasteItem.setGraphic(new FontIcon(FontAwesomeSolid.PASTE));

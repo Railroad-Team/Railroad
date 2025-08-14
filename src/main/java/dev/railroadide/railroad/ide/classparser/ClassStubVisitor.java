@@ -9,16 +9,16 @@ import java.util.*;
 import java.util.function.Consumer;
 
 public class ClassStubVisitor extends ClassVisitor {
+    private final List<FieldStub> fields = new ArrayList<>();
+    private final List<MethodStub> methods = new ArrayList<>();
+    private final List<ConstructorStub> constructors = new ArrayList<>();
+    private final List<AnnotationStub> annotations = new ArrayList<>();
     private String className;
     private String packageName;
     private int modifiers;
     private List<TypeParameter> typeParameters = new ArrayList<>();
     private Type superClass;
     private List<Type> interfaces;
-    private final List<FieldStub> fields = new ArrayList<>();
-    private final List<MethodStub> methods = new ArrayList<>();
-    private final List<ConstructorStub> constructors = new ArrayList<>();
-    private final List<AnnotationStub> annotations = new ArrayList<>();
 
     public ClassStubVisitor() {
         super(Opcodes.ASM9);
@@ -159,9 +159,8 @@ public class ClassStubVisitor extends ClassVisitor {
 
     private static class ClassSignatureVisitor extends SignatureVisitor {
         private final List<TypeParameter> typeParameters = new ArrayList<>();
-        private Type superClass;
         private final List<Type> interfaces = new ArrayList<>();
-
+        private Type superClass;
         private TypeParameter currentTypeParameter;
 
         public ClassSignatureVisitor() {
@@ -197,8 +196,8 @@ public class ClassStubVisitor extends ClassVisitor {
 
     private static class TypeSignatureVisitor extends SignatureVisitor {
         private final Consumer<Type> onFinish;
-        private Type result;
         private final Deque<Type.ClassType> typeStack = new ArrayDeque<>();
+        private Type result;
 
         public TypeSignatureVisitor(Consumer<Type> onFinish) {
             super(Opcodes.ASM9);

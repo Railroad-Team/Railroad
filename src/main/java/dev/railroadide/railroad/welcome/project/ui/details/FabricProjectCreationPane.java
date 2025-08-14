@@ -2,27 +2,27 @@ package dev.railroadide.railroad.welcome.project.ui.details;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import dev.railroadide.railroad.utility.FileUtils;
-import dev.railroadide.railroad.utility.UrlUtils;
-import groovy.lang.Binding;
-import groovy.lang.GroovyShell;
-import groovy.text.StreamingTemplateEngine;
-import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRBorderPane;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.project.data.FabricProjectData;
 import dev.railroadide.railroad.project.minecraft.FabricAPIVersion;
 import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import dev.railroadide.railroad.project.minecraft.mapping.MappingChannel;
+import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.ShutdownHooks;
+import dev.railroadide.railroad.utility.UrlUtils;
 import dev.railroadide.railroad.utility.function.ExceptionlessRunnable;
 import dev.railroadide.railroad.utility.javafx.TextAreaOutputStream;
 import dev.railroadide.railroad.welcome.WelcomePane;
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
+import groovy.text.StreamingTemplateEngine;
+import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
@@ -71,9 +71,26 @@ public class FabricProjectCreationPane extends RRBorderPane {
         startProjectCreation();
     }
 
+    private static Map<String, Object> createArgs(FabricProjectData data) {
+        final Map<String, Object> args = new HashMap<>();
+        args.put("mappings", Map.of(
+                "channel", data.mappingChannel().getName().toLowerCase(Locale.ROOT),
+                "version", data.mappingVersion().getId()
+        ));
+
+        args.put("props", Map.of(
+                "splitSourceSets", data.splitSources(),
+                "includeFabricApi", data.fapiVersion().isPresent(),
+                "useAccessWidener", data.useAccessWidener(),
+                "modId", data.modId()
+        ));
+
+        return args;
+    }
+
     private void setupUI() {
         setPadding(new Insets(24));
-        
+
         var headerBox = new RRVBox(8);
         headerBox.setAlignment(Pos.CENTER);
         var titleLabel = new LocalizedLabel("railroad.project.creation.status.creating_fabric");
@@ -92,7 +109,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         var progressInfoBox = new RRVBox(12);
         progressInfoBox.setAlignment(Pos.CENTER);
         progressInfoBox.getChildren().addAll(taskLabel, timeElapsedLabel);
-        
+
         centerBox.getChildren().addAll(progressSpinner, progressInfoBox);
         setCenter(centerBox);
 
@@ -103,7 +120,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
         outputArea.textProperty().addListener((observable, oldValue, newValue) -> {
             outputArea.setScrollTop(Double.MAX_VALUE);
         });
-        
+
         var outputScrollPane = new ScrollPane(outputArea);
         outputScrollPane.setFitToWidth(true);
         outputScrollPane.setFitToHeight(true);
@@ -112,13 +129,13 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
         var bottomBox = new RRVBox(16);
         bottomBox.setAlignment(Pos.CENTER);
-        
+
         var buttonBox = new HBox(12);
         buttonBox.setAlignment(Pos.CENTER);
-        
+
         cancelButton.setVariant(RRButton.ButtonVariant.SECONDARY);
         cancelButton.setOnAction(e -> handleCancel());
-        
+
         buttonBox.getChildren().add(cancelButton);
         bottomBox.getChildren().addAll(outputScrollPane, buttonBox);
         setBottom(bottomBox);
@@ -132,7 +149,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
     private void startProjectCreation() {
         var task = new ProjectCreationTask(data);
         progressSpinner.progressProperty().bind(task.progressProperty());
-        
+
         task.setOnSucceeded(event -> {
             try {
                 if (!executor.awaitTermination(1, TimeUnit.SECONDS))
@@ -140,7 +157,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             } catch (InterruptedException exception) {
                 Railroad.LOGGER.error("An error occurred while waiting for the executor to terminate.", exception);
             }
-            
+
             // Project created successfully - open in IDE
             Platform.runLater(() -> {
                 try {
@@ -149,21 +166,21 @@ public class FabricProjectCreationPane extends RRBorderPane {
                     Railroad.switchToIDE(project);
                 } catch (Exception exception) {
                     Railroad.LOGGER.error("Failed to open project in IDE", exception);
-                    showErrorAndReturnToWelcome("railroad.project.creation.error.open_ide.title", 
-                                              "railroad.project.creation.error.open_ide.header", 
-                                              "railroad.project.creation.error.open_ide.content");
+                    showErrorAndReturnToWelcome("railroad.project.creation.error.open_ide.title",
+                            "railroad.project.creation.error.open_ide.header",
+                            "railroad.project.creation.error.open_ide.content");
                 }
             });
         });
-        
+
         task.setOnFailed(event -> {
             Throwable exception = task.getException();
             Railroad.LOGGER.error("Project creation failed", exception);
-            
+
             String errorMessage = exception != null ? exception.getMessage() : "Unknown error";
-            showErrorAndReturnToWelcome("railroad.project.creation.error.title", 
-                                      "railroad.project.creation.error.fabric.header", 
-                                      "railroad.project.creation.error.content", errorMessage);
+            showErrorAndReturnToWelcome("railroad.project.creation.error.title",
+                    "railroad.project.creation.error.fabric.header",
+                    "railroad.project.creation.error.content", errorMessage);
         });
 
         new Thread(task).start();
@@ -190,15 +207,15 @@ public class FabricProjectCreationPane extends RRBorderPane {
     }
 
     private void handleCancel() {
-        Railroad.showErrorAlert("railroad.project.creation.cancel.title", 
-                               "railroad.project.creation.cancel.header", 
-                               "railroad.project.creation.cancel.content", 
-                               buttonType -> {
-            if (buttonType == ButtonType.OK) {
-                executor.shutdownNow();
-                returnToWelcome();
-            }
-        });
+        Railroad.showErrorAlert("railroad.project.creation.cancel.title",
+                "railroad.project.creation.cancel.header",
+                "railroad.project.creation.cancel.content",
+                buttonType -> {
+                    if (buttonType == ButtonType.OK) {
+                        executor.shutdownNow();
+                        returnToWelcome();
+                    }
+                });
     }
 
     private void showErrorAndReturnToWelcome(String titleKey, String headerKey, String contentKey) {
@@ -210,11 +227,11 @@ public class FabricProjectCreationPane extends RRBorderPane {
             String title = L18n.localize(titleKey);
             String header = L18n.localize(headerKey);
             String content = L18n.localize(contentKey);
-            
+
             if (additionalInfo != null) {
                 content += "\n\n" + additionalInfo;
             }
-            
+
             Railroad.showErrorAlert(title, header, content, buttonType -> {
                 if (buttonType == ButtonType.OK) {
                     returnToWelcome();
@@ -225,23 +242,6 @@ public class FabricProjectCreationPane extends RRBorderPane {
 
     private void returnToWelcome() {
         Platform.runLater(() -> getScene().setRoot(new WelcomePane()));
-    }
-
-    private static Map<String, Object> createArgs(FabricProjectData data) {
-        final Map<String, Object> args = new HashMap<>();
-        args.put("mappings", Map.of(
-                "channel", data.mappingChannel().getName().toLowerCase(Locale.ROOT),
-                "version", data.mappingVersion().getId()
-        ));
-
-        args.put("props", Map.of(
-                "splitSourceSets", data.splitSources(),
-                "includeFabricApi", data.fapiVersion().isPresent(),
-                "useAccessWidener", data.useAccessWidener(),
-                "modId", data.modId()
-        ));
-
-        return args;
     }
 
     private class ProjectCreationTask extends Task<Void> {
@@ -567,7 +567,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             // Download template build.gradle
             Path buildGradle = projectPath.resolve("build.gradle");
             String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(mdkVersion.id().split("\\.")[1]);
-            if(UrlUtils.is404(templateBuildGradleUrl)) {
+            if (UrlUtils.is404(templateBuildGradleUrl)) {
                 templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(data.minecraftVersion().id().split("\\.")[1]);
             }
 

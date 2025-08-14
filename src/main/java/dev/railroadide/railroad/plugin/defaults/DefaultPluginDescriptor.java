@@ -24,15 +24,15 @@ public class DefaultPluginDescriptor implements PluginDescriptor {
     /**
      * Constructs a DefaultPluginDescriptor with the provided parameters.
      *
-     * @param id          The unique identifier of the plugin.
-     * @param name        The name of the plugin.
-     * @param version     The version of the plugin.
-     * @param author      The author of the plugin.
-     * @param description A brief description of the plugin.
-     * @param website     The website URL for the plugin.
-     * @param license     The license under which the plugin is distributed.
-     * @param iconPath    The path to the plugin's icon.
-     * @param mainClass   The main class of the plugin.
+     * @param id           The unique identifier of the plugin.
+     * @param name         The name of the plugin.
+     * @param version      The version of the plugin.
+     * @param author       The author of the plugin.
+     * @param description  A brief description of the plugin.
+     * @param website      The website URL for the plugin.
+     * @param license      The license under which the plugin is distributed.
+     * @param iconPath     The path to the plugin's icon.
+     * @param mainClass    The main class of the plugin.
      * @param dependencies The dependencies of the plugin, represented as MavenDeps.
      */
     public DefaultPluginDescriptor(String id, String name, String version, String author, String description,

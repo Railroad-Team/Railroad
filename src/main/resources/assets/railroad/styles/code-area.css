@@ -43,7 +43,7 @@
     -fx-stroke: -color-fg-default;
 }
 
-.paragraph-box:has-caret, .has-caret  {
+.paragraph-box:has-caret, .has-caret {
     -fx-background-color: -color-base-8;
 }
 

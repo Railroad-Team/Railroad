@@ -120,10 +120,10 @@ public class ThemeDownloadPane {
         // Load themes in background to avoid blocking UI
         new Thread(() -> {
             List<Theme> themes = ThemeDownloadManager.fetchThemes("https://api.github.com/repos/Railroad-Team/Themes/contents");
-            
+
             Platform.runLater(() -> {
                 themeListView.getItems().clear();
-                
+
                 if (themes.isEmpty()) {
                     statusLabel.setKey("railroad.home.settings.appearance.notfound");
                     themeListView.setVisible(false);
@@ -132,7 +132,7 @@ public class ThemeDownloadPane {
                     themeListView.getItems().addAll(themes);
                     themeListView.setVisible(true);
                 }
-                
+
                 refreshButton.setLoading(false);
             });
         }).start();

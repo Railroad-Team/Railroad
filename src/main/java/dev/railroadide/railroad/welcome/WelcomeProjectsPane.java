@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.welcome;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRListView;
 import dev.railroadide.core.ui.RRTextField;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.ui.nodes.ProjectListCell;
 import dev.railroadide.railroad.welcome.project.ProjectSort;
@@ -24,11 +24,9 @@ import java.util.Locale;
  * The pane that displays the list of projects in the welcome screen.
  */
 public class WelcomeProjectsPane extends ScrollPane {
-    private final RRListView<Project> projectsList = new RRListView<>();
-
-    private ObservableValue<ProjectSort> sortProperty;
-
     private static volatile boolean isProcessingClick = false;
+    private final RRListView<Project> projectsList = new RRListView<>();
+    private ObservableValue<ProjectSort> sortProperty;
 
     public WelcomeProjectsPane(RRTextField searchField) {
         setFitToWidth(true);
@@ -55,7 +53,7 @@ public class WelcomeProjectsPane extends ScrollPane {
             }
 
             isProcessingClick = true;
-            
+
             try {
                 Project project = projectsList.getSelectionModel().getSelectedItem();
                 if (project != null) {
@@ -81,7 +79,7 @@ public class WelcomeProjectsPane extends ScrollPane {
                     return;
 
                 isProcessingClick = true;
-                
+
                 try {
                     Project project = projectsList.getSelectionModel().getSelectedItem();
                     if (project != null) {
@@ -146,7 +144,7 @@ public class WelcomeProjectsPane extends ScrollPane {
 
     /**
      * Removes a project from the projects list.
-     * 
+     *
      * @param project the project to remove
      */
     public void removeProject(Project project) {
@@ -156,7 +154,7 @@ public class WelcomeProjectsPane extends ScrollPane {
     /**
      * Filters the projects list based on the provided search value.
      * Projects whose alias contains the search value (case-insensitive) will be displayed.
-     * 
+     *
      * @param value the search term to filter projects by
      */
     public void filterProjects(String value) {
@@ -182,7 +180,7 @@ public class WelcomeProjectsPane extends ScrollPane {
     /**
      * Sets the sort property for the projects list.
      * The projects will be automatically sorted when the sort property changes or when new projects are added.
-     * 
+     *
      * @param observable the observable value containing the sort criteria
      */
     public void setSortProperty(ObservableValue<ProjectSort> observable) {

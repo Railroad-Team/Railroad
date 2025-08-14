@@ -19,7 +19,7 @@ public class GitUtils {
      */
     public static CompletableFuture<Boolean> clone(String uri, Path dest) {
         return CompletableFuture.supplyAsync(() -> {
-            try(Git git = Git.cloneRepository()
+            try (Git git = Git.cloneRepository()
                     .setURI(uri)
                     .setDirectory(dest.toFile())
                     .call()) {
@@ -37,7 +37,7 @@ public class GitUtils {
      * @return True if the path is a valid Git repository, false otherwise.
      */
     public static boolean isGitRepository(Path path) {
-        try(Git git = Git.open(path.toFile())) {
+        try (Git git = Git.open(path.toFile())) {
             return git.getRepository().getDirectory() != null;
         } catch (Exception ignored) {
             return false;

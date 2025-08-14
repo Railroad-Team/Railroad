@@ -4,4 +4,5 @@ import dev.railroadide.railroad.ide.classparser.Type;
 
 import java.util.List;
 
-public record Parameter(String name, Type type, List<AnnotationStub> annotations) {}
+public record Parameter(String name, Type type, List<AnnotationStub> annotations) {
+}

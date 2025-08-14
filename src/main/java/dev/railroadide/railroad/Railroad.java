@@ -62,11 +62,10 @@ import java.util.function.Consumer;
  * starting the application and handling the main window of the application
  */
 public class Railroad extends Application {
-    public static final Logger LOGGER = LoggerManager.create(Railroad.class)
+    public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();    public static final Logger LOGGER = LoggerManager.create(Railroad.class)
             .logDirectory(ConfigHandler.getConfigDirectory().resolve("logs"))
             .configFile(ConfigHandler.getConfigDirectory().resolve("logger_config.json"))
             .build();
-    public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build();
     public static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
@@ -76,7 +75,6 @@ public class Railroad extends Application {
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
     public static final EventBus EVENT_BUS = new DefaultEventBus();
-
     private static boolean DEBUG = false;
     private static Scene scene; // TODO: Reconsider whether we need this as a static field
     @Getter
@@ -336,4 +334,6 @@ public class Railroad extends Application {
         ShutdownHooks.runHooks();
         LoggerManager.shutdown();
     }
+
+
 }

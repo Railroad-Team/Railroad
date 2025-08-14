@@ -28,6 +28,24 @@ import java.util.Optional;
  */
 public class FabricFacetDetector implements FacetDetector<FabricFacetData> {
     /**
+     * Extracts the Gradle init script for Fabric metadata extraction to a temporary file.
+     *
+     * @return the path to the extracted init script
+     * @throws IOException if the script cannot be extracted
+     */
+    private static Path extractInitScript() throws IOException {
+        try (InputStream inputStream = Railroad.getResourceAsStream("scripts/init-fabric-extractor.gradle")) {
+            if (inputStream == null)
+                throw new IllegalStateException("init script resource missing");
+
+            Path tempFile = Files.createTempFile("init-fabric-extractor", ".gradle");
+            Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
+            tempFile.toFile().deleteOnExit();
+            return tempFile;
+        }
+    }
+
+    /**
      * Detects a Fabric facet in the given path by searching for fabric.mod.json and extracting mod metadata and build info.
      *
      * @param path the project directory to analyze
@@ -98,26 +116,9 @@ public class FabricFacetDetector implements FacetDetector<FabricFacetData> {
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to read fabric.mod.json at {}", fabricModJson, exception);
             return Optional.empty();
-        } catch (GradleException | BuildException ignored) {}
+        } catch (GradleException | BuildException ignored) {
+        }
 
         return Optional.empty();
-    }
-
-    /**
-     * Extracts the Gradle init script for Fabric metadata extraction to a temporary file.
-     *
-     * @return the path to the extracted init script
-     * @throws IOException if the script cannot be extracted
-     */
-    private static Path extractInitScript() throws IOException {
-        try (InputStream inputStream = Railroad.getResourceAsStream("scripts/init-fabric-extractor.gradle")) {
-            if (inputStream == null)
-                throw new IllegalStateException("init script resource missing");
-
-            Path tempFile = Files.createTempFile("init-fabric-extractor", ".gradle");
-            Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
-            tempFile.toFile().deleteOnExit();
-            return tempFile;
-        }
     }
 }

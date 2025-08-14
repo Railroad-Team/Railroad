@@ -115,7 +115,7 @@ public class CreateFileDialog {
 
         root.add(title, 0, 0, 2, 1);
         root.add(textField, 0, 1, 2, 1);
-        if(!listView.getItems().isEmpty()) {
+        if (!listView.getItems().isEmpty()) {
             root.add(listView, 0, 2, 2, 1);
             root.addRow(3, okButton, cancelButton);
         } else {
@@ -126,55 +126,41 @@ public class CreateFileDialog {
         dialog.show();
     }
 
-    public static class TypeSelectorCell extends ListCell<TypeSelection> {
-        @Override
-        protected void updateItem(TypeSelection item, boolean empty) {
-            super.updateItem(item, empty);
-            if (empty) {
-                setText(null);
-                setGraphic(null);
-            } else {
-                setText(item.getName());
-                setGraphic(item.getIcon());
-            }
-        }
-    }
-
     @Getter
     public enum TypeSelection {
         JAVA_CLASS("Java Class", "java", null, """
                 package <package_loc>.<class_name>;
-                                
+                
                 public class <class_name> {
                     public <class_name>() {
-                                
+                
                     }
                 }
                 """),
         JAVA_INTERFACE("Java Interface", "java", null, """
                 package <package_loc>.<class_name>;
-                                
+                
                 public interface <class_name> {
-                                
+                
                 }
                 """),
         JAVA_ENUM("Java Enum", "java", null, """
                 package <package_loc>.<class_name>;
-                                
+                
                 public enum <class_name> {
-                                
+                
                 }
                 """),
         JAVA_ANNOTATION("Java Annotation", "java", null, """
                 package <package_loc>.<class_name>;
-                                
+                
                 public @interface <class_name> {
-                                
+                
                 }
                 """),
         JSON("JSON File", "json", null, """
                 {
-                                
+                
                 }
                 """),
         TXT("Text File", "txt", null, "");
@@ -190,6 +176,20 @@ public class CreateFileDialog {
             this.extension = extension;
             this.icon = new ImageView(icon);
             this.template = template;
+        }
+    }
+
+    public static class TypeSelectorCell extends ListCell<TypeSelection> {
+        @Override
+        protected void updateItem(TypeSelection item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty) {
+                setText(null);
+                setGraphic(null);
+            } else {
+                setText(item.getName());
+                setGraphic(item.getIcon());
+            }
         }
     }
 }

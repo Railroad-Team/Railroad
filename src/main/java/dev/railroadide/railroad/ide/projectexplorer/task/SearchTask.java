@@ -33,7 +33,7 @@ public class SearchTask extends Task<Void> {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                if(matcher.matches(file.getFileName())) {
+                if (matcher.matches(file.getFileName())) {
                     this.count++;
                     matchedPaths.add(file);
                     SearchTask.this.resultProperty.setValue(file.toAbsolutePath().toString());

@@ -70,7 +70,7 @@
     -fx-border-color: -color-border-default;
     -fx-border-width: 1px;
     -fx-border-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 4);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 8, 0, 0, 4);
 }
 
 .theme-selector .combo-box .list-view .list-cell {
@@ -135,7 +135,7 @@
 /* Theme card hover effects */
 .theme-card:hover {
     -fx-background-color: derive(-color-bg-subtle, 5%);
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0.15, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 8, 0.15, 0, 2);
     -fx-border-color: -color-accent-emphasis;
     -fx-border-width: 1px;
 }
@@ -147,8 +147,12 @@
 }
 
 @keyframes spin {
-    from { -fx-rotate: 0; }
-    to { -fx-rotate: 360; }
+    from {
+        -fx-rotate: 0;
+    }
+    to {
+        -fx-rotate: 360;
+    }
 }
 
 /* Responsive design */
@@ -157,7 +161,7 @@
         -fx-min-height: 32px;
         -fx-font-size: 13px;
     }
-    
+
     .theme-download-pane .list-cell {
         -fx-padding: 2px 0px 2px 0px;
     }

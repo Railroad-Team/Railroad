@@ -130,13 +130,13 @@ public class SettingsPane extends RRVBox {
             TreeItem<LocalizedLabel> toSelect = null;
             for (TreeItem<LocalizedLabel> item : tree.getRoot().getChildren()) {
                 LocalizedLabel label = item.getValue();
-                if(Objects.equals(label.getUserData(), matched)) {
+                if (Objects.equals(label.getUserData(), matched)) {
                     toSelect = item;
                     break;
                 }
             }
 
-            if(toSelect != null) {
+            if (toSelect != null) {
                 tree.getSelectionModel().clearSelection();
                 tree.getSelectionModel().select(toSelect);
             }

@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.welcome.project.ui.details;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.form.ValidationResult;
 import dev.railroadide.core.utility.StringUtils;
+import dev.railroadide.railroad.Railroad;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;

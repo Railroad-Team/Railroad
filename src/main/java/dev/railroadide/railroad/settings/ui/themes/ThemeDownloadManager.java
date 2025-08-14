@@ -16,7 +16,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -39,6 +38,7 @@ public class ThemeDownloadManager {
 
     /**
      * Downloads the provided theme using the FileUtils utility
+     *
      * @param theme {@link Theme} The theme to download
      * @return Whether the theme was downloaded successfully
      */
@@ -71,6 +71,7 @@ public class ThemeDownloadManager {
 
     /**
      * Checks if the provided theme is downloaded
+     *
      * @param theme {@link Theme} The theme to check
      * @return bool - Whether the theme is downloaded
      */
@@ -84,6 +85,7 @@ public class ThemeDownloadManager {
     /**
      * Fetches all downloaded themes
      * If the themes directory does not exist, it will be created
+     *
      * @return {@link List<Path>} - A list of all downloaded themes
      */
     public static List<Path> getDownloaded() {
@@ -108,6 +110,7 @@ public class ThemeDownloadManager {
     /**
      * Fetches all themes from the provided URL
      * Themes are then parsed into a list of {@link Theme} objects
+     *
      * @param url {@link String} The URL to fetch themes from
      * @return {@link List<Theme>} - A list of all themes fetched
      */

@@ -55,7 +55,7 @@ public final class PluginLoadResult {
     /**
      * Sets the plugin instance and its class loader.
      *
-     * @param plugin The plugin instance to set.
+     * @param plugin      The plugin instance to set.
      * @param classLoader The class loader used to load the plugin.
      */
     public void setPlugin(Plugin plugin, PluginClassLoader classLoader) {

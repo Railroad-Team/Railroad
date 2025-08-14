@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.settings.ui.themes;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRFormSection;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import javafx.beans.property.ObjectProperty;
@@ -22,10 +22,10 @@ import java.util.List;
  * Features a clean layout with theme preview and easy switching.
  */
 public class ThemeSelector extends VBox {
+    private final ObjectProperty<String> selectedThemeProperty;
     private ComboBox<String> themeComboBox;
     private RRButton previewButton;
     private RRButton downloadButton;
-    private final ObjectProperty<String> selectedThemeProperty;
 
     public ThemeSelector() {
         this(SettingsHandler.getValue(Settings.THEME));
@@ -33,7 +33,7 @@ public class ThemeSelector extends VBox {
 
     public ThemeSelector(String currentTheme) {
         selectedThemeProperty = new SimpleObjectProperty<>(currentTheme);
-        
+
         setSpacing(16);
         setAlignment(Pos.TOP_LEFT);
 

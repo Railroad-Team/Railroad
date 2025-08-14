@@ -30,11 +30,6 @@ import java.util.stream.Collectors;
 public class FacetManager {
     private static final Map<String, FacetType<?>> TYPES = new ConcurrentHashMap<>();
     private static final List<FacetDetector<?>> DETECTORS = new CopyOnWriteArrayList<>();
-
-    private FacetManager() {
-        throw new UnsupportedOperationException("FacetManager is a utility class and cannot be instantiated");
-    }
-
     /**
      * The facet type for Java language support.
      */
@@ -45,7 +40,6 @@ public class FacetManager {
                     .build(),
             new JavaFacetDetector()
     );
-
     /**
      * The facet type for Gradle build system support.
      */
@@ -56,7 +50,6 @@ public class FacetManager {
                     .build(),
             new GradleFacetDetector()
     );
-
     /**
      * The facet type for Maven build system support.
      */
@@ -67,7 +60,6 @@ public class FacetManager {
                     .build(),
             new MavenFacetDetector()
     );
-
     /**
      * The facet type for Fabric modding platform support.
      */
@@ -78,6 +70,10 @@ public class FacetManager {
                     .build(),
             new FabricFacetDetector()
     );
+
+    private FacetManager() {
+        throw new UnsupportedOperationException("FacetManager is a utility class and cannot be instantiated");
+    }
 
     /**
      * Registers a new facet type.
@@ -139,7 +135,7 @@ public class FacetManager {
         return List.copyOf(TYPES.values());
     }
 
-    public static <D>FacetType<D> registerFacet(@NotNull FacetType<D> facetType, @NotNull FacetDetector<D> detector) {
+    public static <D> FacetType<D> registerFacet(@NotNull FacetType<D> facetType, @NotNull FacetDetector<D> detector) {
         if (facetType == null)
             throw new IllegalArgumentException("Facet type must not be null");
         if (detector == null)
@@ -162,10 +158,10 @@ public class FacetManager {
         if (projectPath == null)
             throw new IllegalArgumentException("Project path must not be null");
 
-        if(Files.notExists(projectPath))
+        if (Files.notExists(projectPath))
             throw new IllegalArgumentException("Project path does not exist: " + projectPath);
 
-        if(!Files.isDirectory(projectPath))
+        if (!Files.isDirectory(projectPath))
             throw new IllegalArgumentException("Project path must be a directory: " + projectPath);
 
         return CompletableFuture.supplyAsync(() -> {

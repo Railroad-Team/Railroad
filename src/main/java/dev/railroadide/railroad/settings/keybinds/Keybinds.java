@@ -8,7 +8,6 @@ import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import javafx.scene.control.TreeView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
-import org.apache.commons.lang3.NotImplementedException;
 
 public class Keybinds {
     public static final Keybind COPY = KeybindHandler.registerKeybind(Keybind.builder()
@@ -33,5 +32,6 @@ public class Keybinds {
             })
             .build());
 
-    public static void initialize() {}
+    public static void initialize() {
+    }
 }

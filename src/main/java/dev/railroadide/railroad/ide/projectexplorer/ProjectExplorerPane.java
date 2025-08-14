@@ -3,12 +3,12 @@ package dev.railroadide.railroad.ide.projectexplorer;
 import com.kodedu.terminalfx.Terminal;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.core.settings.keybinds.KeybindContexts;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRBorderPane;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedTextField;
 import dev.railroadide.core.ui.localized.LocalizedTooltip;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CopyModalDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
@@ -20,9 +20,9 @@ import dev.railroadide.railroad.ide.ui.*;
 import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
-import dev.railroadide.railroadpluginapi.events.FileEvent;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.ShutdownHooks;
+import dev.railroadide.railroadpluginapi.events.FileEvent;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -54,24 +54,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeListener {
+    private static boolean fileChangeListenerEnabled = true;
     private final ExecutorService executorService = Executors.newFixedThreadPool(3);
     private final StringProperty messageProperty = new SimpleStringProperty();
     private final TreeView<PathItem> treeView = new TreeView<>();
-
     private final TextField searchField;
     private final ObservableList<String> searchListItems = FXCollections.observableArrayList();
     private final StringProperty searchProperty = new SimpleStringProperty();
     private final List<String> searchList = new ArrayList<>();
-
-    private static boolean fileChangeListenerEnabled = true;
-
-    public static void disableFileChangeListener() {
-        fileChangeListenerEnabled = false;
-    }
-
-    public static void enableFileChangeListener() {
-        fileChangeListenerEnabled = true;
-    }
 
     public ProjectExplorerPane(Project project, RRBorderPane mainPane) {
         Path rootPath = Path.of(project.getPathString());
@@ -83,7 +73,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         this.searchField.getStyleClass().add("rr-search-field");
 
         var header = createModernHeader(project);
-        
+
         this.treeView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         this.treeView.setRoot(new PathTreeItem(new PathItem(rootPath)));
         this.treeView.setEditable(true);
@@ -176,70 +166,12 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         ShutdownHooks.addHook(this.executorService::shutdownNow);
     }
 
-    private Node createModernHeader(Project project) {
-        var header = new HBox(8);
-        header.getStyleClass().add("project-explorer-header");
-        header.setPadding(new Insets(12, 16, 8, 16));
-        header.setAlignment(Pos.CENTER_LEFT);
-
-        // Project icon and name
-        var projectInfo = new HBox(8);
-        projectInfo.setAlignment(Pos.CENTER_LEFT);
-        var projectIcon = new FontIcon(FontAwesomeSolid.FOLDER_OPEN);
-        projectIcon.getStyleClass().add("project-icon");
-        projectIcon.setIconSize(16);
-        var projectName = new Label(project.getAlias());
-        projectName.getStyleClass().add("project-name");
-        projectName.setMinWidth(Label.USE_PREF_SIZE); // Prevent truncation
-        projectInfo.getChildren().addAll(projectIcon, projectName);
-
-        // Search field
-        this.searchField.setPromptText("Search files...");
-        this.searchField.setPrefWidth(200);
-        this.searchField.setMaxWidth(260);
-        HBox.setHgrow(this.searchField, Priority.ALWAYS);
-
-        // Action buttons
-        var actionButtons = new HBox(4);
-        actionButtons.setAlignment(Pos.CENTER_RIGHT);
-        
-        var refreshButton = new RRButton("", FontAwesomeSolid.SYNC_ALT);
-        refreshButton.setVariant(RRButton.ButtonVariant.GHOST);
-        refreshButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        refreshButton.getStyleClass().add("project-explorer-button");
-        refreshButton.setTooltip(new LocalizedTooltip("railroad.generic.refresh"));
-        refreshButton.setOnAction(e -> refreshProjectExplorer());
-        
-        var collapseAllButton = new RRButton("", FontAwesomeSolid.COMPRESS_ALT);
-        collapseAllButton.setVariant(RRButton.ButtonVariant.GHOST);
-        collapseAllButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        collapseAllButton.getStyleClass().add("project-explorer-button");
-        collapseAllButton.setTooltip(new LocalizedTooltip("railroad.generic.collapse_all"));
-        collapseAllButton.setOnAction(e -> ProjectExplorerPane.collapseAll(this.treeView.getRoot()));
-        
-        var expandAllButton = new RRButton("", FontAwesomeSolid.EXPAND_ALT);
-        expandAllButton.setVariant(RRButton.ButtonVariant.GHOST);
-        expandAllButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        expandAllButton.getStyleClass().add("project-explorer-button");
-        expandAllButton.setTooltip(new LocalizedTooltip("railroad.generic.expand_all"));
-        expandAllButton.setOnAction(e -> ProjectExplorerPane.expandAll(this.treeView.getRoot()));
-        
-        actionButtons.getChildren().addAll(refreshButton, collapseAllButton, expandAllButton);
-
-        // Layout: projectInfo | searchField | actionButtons
-        header.getChildren().addAll(projectInfo, this.searchField, actionButtons);
-        HBox.setHgrow(actionButtons, Priority.NEVER);
-        HBox.setHgrow(projectInfo, Priority.NEVER);
-        // The search field will take up the remaining space, but not shrink projectInfo
-        
-        return header;
+    public static void disableFileChangeListener() {
+        fileChangeListenerEnabled = false;
     }
 
-    private void refreshProjectExplorer() {
-        Path rootPath = Path.of(this.treeView.getRoot().getValue().getPath().toString());
-        this.treeView.setRoot(new PathTreeItem(new PathItem(rootPath)));
-        this.treeView.getRoot().setExpanded(true);
-        sortTreeItems(this.treeView.getRoot());
+    public static void enableFileChangeListener() {
+        fileChangeListenerEnabled = true;
     }
 
     public static void cut(PathTreeItem pathItem, TreeView<PathItem> treeView) {
@@ -345,13 +277,13 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             Optional<DetachableTabPane> pane = IDESetup.findBestPaneForFiles(mainPane);
             pane.ifPresent(detachableTabPane -> { // TODO: Some kind of text editor registry
                 String fileName = path.getFileName().toString();
-                
+
                 // Check if there's a welcome tab to replace
                 Tab welcomeTab = detachableTabPane.getTabs().stream()
-                    .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
-                    .findFirst()
-                    .orElse(null);
-                
+                        .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
+                        .findFirst()
+                        .orElse(null);
+
                 Node editorContent;
                 if (fileName.endsWith(".java")) {
                     editorContent = new JavaCodeEditorPane(path);
@@ -378,7 +310,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
                 tab.setOnClosed(event -> {
                     Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.CLOSED));
-                    if(tab.isSelected()) {
+                    if (tab.isSelected()) {
                         Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.DEACTIVATED));
                     }
                 });
@@ -396,12 +328,12 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 Optional<DetachableTabPane> pane = IDESetup.findBestPaneForImages(mainPane);
                 pane.ifPresent(detachableTabPane -> {
                     String fileName = path.getFileName().toString();
-                    
+
                     // Check if there's a welcome tab to replace
                     Tab welcomeTab = detachableTabPane.getTabs().stream()
-                        .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
-                        .findFirst()
-                        .orElse(null);
+                            .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
+                            .findFirst()
+                            .orElse(null);
 
                     if (welcomeTab != null) {
                         welcomeTab.setContent(new ImageViewerPane(path));
@@ -433,6 +365,72 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         for (TreeItem<PathItem> child : treeItem.getChildren()) {
             collapseAll(child);
         }
+    }
+
+    private Node createModernHeader(Project project) {
+        var header = new HBox(8);
+        header.getStyleClass().add("project-explorer-header");
+        header.setPadding(new Insets(12, 16, 8, 16));
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        // Project icon and name
+        var projectInfo = new HBox(8);
+        projectInfo.setAlignment(Pos.CENTER_LEFT);
+        var projectIcon = new FontIcon(FontAwesomeSolid.FOLDER_OPEN);
+        projectIcon.getStyleClass().add("project-icon");
+        projectIcon.setIconSize(16);
+        var projectName = new Label(project.getAlias());
+        projectName.getStyleClass().add("project-name");
+        projectName.setMinWidth(Label.USE_PREF_SIZE); // Prevent truncation
+        projectInfo.getChildren().addAll(projectIcon, projectName);
+
+        // Search field
+        this.searchField.setPromptText("Search files...");
+        this.searchField.setPrefWidth(200);
+        this.searchField.setMaxWidth(260);
+        HBox.setHgrow(this.searchField, Priority.ALWAYS);
+
+        // Action buttons
+        var actionButtons = new HBox(4);
+        actionButtons.setAlignment(Pos.CENTER_RIGHT);
+
+        var refreshButton = new RRButton("", FontAwesomeSolid.SYNC_ALT);
+        refreshButton.setVariant(RRButton.ButtonVariant.GHOST);
+        refreshButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        refreshButton.getStyleClass().add("project-explorer-button");
+        refreshButton.setTooltip(new LocalizedTooltip("railroad.generic.refresh"));
+        refreshButton.setOnAction(e -> refreshProjectExplorer());
+
+        var collapseAllButton = new RRButton("", FontAwesomeSolid.COMPRESS_ALT);
+        collapseAllButton.setVariant(RRButton.ButtonVariant.GHOST);
+        collapseAllButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        collapseAllButton.getStyleClass().add("project-explorer-button");
+        collapseAllButton.setTooltip(new LocalizedTooltip("railroad.generic.collapse_all"));
+        collapseAllButton.setOnAction(e -> ProjectExplorerPane.collapseAll(this.treeView.getRoot()));
+
+        var expandAllButton = new RRButton("", FontAwesomeSolid.EXPAND_ALT);
+        expandAllButton.setVariant(RRButton.ButtonVariant.GHOST);
+        expandAllButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        expandAllButton.getStyleClass().add("project-explorer-button");
+        expandAllButton.setTooltip(new LocalizedTooltip("railroad.generic.expand_all"));
+        expandAllButton.setOnAction(e -> ProjectExplorerPane.expandAll(this.treeView.getRoot()));
+
+        actionButtons.getChildren().addAll(refreshButton, collapseAllButton, expandAllButton);
+
+        // Layout: projectInfo | searchField | actionButtons
+        header.getChildren().addAll(projectInfo, this.searchField, actionButtons);
+        HBox.setHgrow(actionButtons, Priority.NEVER);
+        HBox.setHgrow(projectInfo, Priority.NEVER);
+        // The search field will take up the remaining space, but not shrink projectInfo
+
+        return header;
+    }
+
+    private void refreshProjectExplorer() {
+        Path rootPath = Path.of(this.treeView.getRoot().getValue().getPath().toString());
+        this.treeView.setRoot(new PathTreeItem(new PathItem(rootPath)));
+        this.treeView.getRoot().setExpanded(true);
+        sortTreeItems(this.treeView.getRoot());
     }
 
     @Override

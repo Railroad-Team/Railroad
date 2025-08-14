@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.ide.projectexplorer;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRBorderPane;
 import dev.railroadide.core.ui.RRHBox;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
@@ -25,10 +25,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class PathTreeCell extends TreeCell<PathItem> {
-    private TextField textField;
-    private Path editingPath;
     private final StringProperty messageProperty;
     private final RRBorderPane mainPane;
+    private TextField textField;
+    private Path editingPath;
     private boolean allowEdit = false;
 
     public PathTreeCell(StringProperty messageProperty, RRBorderPane mainPane) {
@@ -36,51 +36,6 @@ public class PathTreeCell extends TreeCell<PathItem> {
 
         this.messageProperty = messageProperty;
         this.mainPane = mainPane;
-    }
-
-    @Override
-    protected void updateItem(PathItem item, boolean empty) {
-        super.updateItem(item, empty);
-
-        if (empty) {
-            setText(null);
-            setGraphic(null);
-            setOnMouseClicked(null);
-        } else {
-            String text = getString();
-            Node image = FileUtils.getIcon(item.getPath());
-            if (isEditing()) {
-                if (textField != null) {
-                    textField.setText(text);
-                }
-
-                setText(null);
-
-                var hbox = new RRHBox();
-                hbox.getChildren().addAll(image, textField);
-                setGraphic(hbox);
-                setOnMouseClicked(null);
-            } else {
-                setText(text);
-                setGraphic(image);
-
-                setContextMenu(createContextMenu(this, mainPane));
-
-                // Double-click to open, not rename
-                setOnMouseClicked(event -> {
-                    if (event.getClickCount() == 2 && !event.isConsumed() && getItem() != null) {
-                        Path path = getItem().getPath();
-                        if (Files.isDirectory(path)) {
-                            TreeItem<PathItem> treeItem = getTreeItem();
-                            treeItem.setExpanded(!treeItem.isExpanded());
-                        } else {
-                            ProjectExplorerPane.openFile(getItem(), mainPane);
-                        }
-                        event.consume();
-                    }
-                });
-            }
-        }
     }
 
     private static ContextMenu createContextMenu(PathTreeCell cell, RRBorderPane mainPane) {
@@ -163,6 +118,51 @@ public class PathTreeCell extends TreeCell<PathItem> {
         return menu;
     }
 
+    @Override
+    protected void updateItem(PathItem item, boolean empty) {
+        super.updateItem(item, empty);
+
+        if (empty) {
+            setText(null);
+            setGraphic(null);
+            setOnMouseClicked(null);
+        } else {
+            String text = getString();
+            Node image = FileUtils.getIcon(item.getPath());
+            if (isEditing()) {
+                if (textField != null) {
+                    textField.setText(text);
+                }
+
+                setText(null);
+
+                var hbox = new RRHBox();
+                hbox.getChildren().addAll(image, textField);
+                setGraphic(hbox);
+                setOnMouseClicked(null);
+            } else {
+                setText(text);
+                setGraphic(image);
+
+                setContextMenu(createContextMenu(this, mainPane));
+
+                // Double-click to open, not rename
+                setOnMouseClicked(event -> {
+                    if (event.getClickCount() == 2 && !event.isConsumed() && getItem() != null) {
+                        Path path = getItem().getPath();
+                        if (Files.isDirectory(path)) {
+                            TreeItem<PathItem> treeItem = getTreeItem();
+                            treeItem.setExpanded(!treeItem.isExpanded());
+                        } else {
+                            ProjectExplorerPane.openFile(getItem(), mainPane);
+                        }
+                        event.consume();
+                    }
+                });
+            }
+        }
+    }
+
     /**
      * Starts the editing mode for the tree cell.
      * Creates a text field for renaming the file or directory.
@@ -194,7 +194,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
     /**
      * Commits the edit by renaming the file or directory.
      * Moves the file to the new path and updates the item.
-     * 
+     *
      * @param newValue the new PathItem with the updated path
      */
     @Override

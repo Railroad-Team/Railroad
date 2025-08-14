@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.welcome;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRListView;
 import dev.railroadide.core.ui.RRNavigationItem;
 import dev.railroadide.core.ui.RRSidebar;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.Railroad;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;
@@ -103,7 +103,7 @@ public class WelcomeLeftPane extends RRSidebar {
 
         /**
          * Updates the selected state of the navigation item when the cell selection changes.
-         * 
+         *
          * @param selected true if the cell is selected, false otherwise
          */
         @Override

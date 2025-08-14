@@ -19,9 +19,8 @@ import java.util.List;
 public class DefaultPluginContext implements PluginContext {
     private final PluginDescriptor descriptor;
     private final EventBus eventBus;
-    private Logger logger;
-
     private final Multimap<Class<?>, Object> extensions = ArrayListMultimap.create();
+    private Logger logger;
 
     public DefaultPluginContext(@NotNull PluginDescriptor descriptor, @NotNull EventBus bus) {
         if (descriptor == null)

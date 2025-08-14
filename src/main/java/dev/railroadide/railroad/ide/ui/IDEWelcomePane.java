@@ -1,12 +1,11 @@
 package dev.railroadide.railroad.ide.ui;
 
-import dev.railroadide.core.utility.DesktopUtils;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRCard;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedText;
+import dev.railroadide.core.utility.DesktopUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -41,7 +40,7 @@ public class IDEWelcomePane extends ScrollPane {
         setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         setPannable(true);
-        
+
         getStyleClass().add("welcome-scroll-pane");
         setPadding(Insets.EMPTY);
     }
@@ -85,11 +84,11 @@ public class IDEWelcomePane extends ScrollPane {
         featuresGrid.getStyleClass().add("features-grid");
 
         var features = new FeatureItem[]{
-            new FeatureItem(FontAwesomeSolid.CUBE, "railroad.ide.welcome.feature.model_viewer_editor"),
-            new FeatureItem(FontAwesomeSolid.BUILDING, "railroad.ide.welcome.feature.structure_viewer_editor"),
-            new FeatureItem(FontAwesomeSolid.IMAGE, "railroad.ide.welcome.feature.texture_viewer_editor"),
-            new FeatureItem(FontAwesomeSolid.VOLUME_UP, "railroad.ide.welcome.feature.sound_visualizer"),
-            new FeatureItem(FontAwesomeSolid.CODE, "railroad.ide.welcome.feature.mixin_support")
+                new FeatureItem(FontAwesomeSolid.CUBE, "railroad.ide.welcome.feature.model_viewer_editor"),
+                new FeatureItem(FontAwesomeSolid.BUILDING, "railroad.ide.welcome.feature.structure_viewer_editor"),
+                new FeatureItem(FontAwesomeSolid.IMAGE, "railroad.ide.welcome.feature.texture_viewer_editor"),
+                new FeatureItem(FontAwesomeSolid.VOLUME_UP, "railroad.ide.welcome.feature.sound_visualizer"),
+                new FeatureItem(FontAwesomeSolid.CODE, "railroad.ide.welcome.feature.mixin_support")
         };
 
         for (var feature : features) {
@@ -167,5 +166,6 @@ public class IDEWelcomePane extends ScrollPane {
         return card;
     }
 
-    private record FeatureItem(FontAwesomeSolid icon, String localizationKey) {}
+    private record FeatureItem(FontAwesomeSolid icon, String localizationKey) {
+    }
 }

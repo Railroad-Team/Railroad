@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.localization;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.localization.Language;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.plugin.PluginManager;
-import dev.railroadide.railroadpluginapi.PluginDescriptor;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
+import dev.railroadide.railroadpluginapi.PluginDescriptor;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
@@ -25,7 +25,8 @@ public class L18n {
     private static final Properties LANG_CACHE = new Properties();
     private static final ObjectProperty<Language> CURRENT_LANG = new SimpleObjectProperty<>();
 
-    private L18n() {}
+    private L18n() {
+    }
 
     /**
      * @return the current Language object
@@ -151,7 +152,7 @@ public class L18n {
             return "null";
         }
 
-        if(key.isBlank())
+        if (key.isBlank())
             return "";
 
         if (LANG_CACHE.get(key) == null) {

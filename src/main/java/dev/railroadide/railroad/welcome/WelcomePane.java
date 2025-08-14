@@ -23,15 +23,14 @@ import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class WelcomePane extends HBox {
+    private static Stage settingsStage = null;
     @Getter
     private final WelcomeLeftPane leftPane;
     @Getter
     private final WelcomeHeaderPane headerPane;
     @Getter
     private final WelcomeProjectsPane projectsPane;
-
     private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
-    private static Stage settingsStage = null;
 
     public WelcomePane() {
         setSpacing(0);
@@ -97,11 +96,11 @@ public class WelcomePane extends HBox {
             DirectoryChooser directoryChooser = new DirectoryChooser();
             directoryChooser.setTitle(L18n.localize("railroad.dialog.open_project.title"));
             directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
-            
+
             File selectedDirectory = directoryChooser.showDialog(getScene().getWindow());
             if (selectedDirectory != null) {
                 Path projectPath = selectedDirectory.toPath();
-                
+
                 // Check if the selected directory contains a valid project
                 if (isValidProjectDirectory(projectPath)) {
                     Project project = new Project(projectPath);
@@ -109,9 +108,9 @@ public class WelcomePane extends HBox {
                 } else {
                     // Show error dialog for invalid project directory
                     Railroad.showErrorAlert(
-                        L18n.localize("railroad.dialog.open_project.error.invalid_directory"), 
-                        L18n.localize("railroad.dialog.open_project.error.invalid_directory"), 
-                        L18n.localize("railroad.dialog.open_project.error.invalid_directory.message")
+                            L18n.localize("railroad.dialog.open_project.error.invalid_directory"),
+                            L18n.localize("railroad.dialog.open_project.error.invalid_directory"),
+                            L18n.localize("railroad.dialog.open_project.error.invalid_directory.message")
                     );
                 }
             }
@@ -121,10 +120,10 @@ public class WelcomePane extends HBox {
     private boolean isValidProjectDirectory(Path path) {
         // Check for common project indicators
         return path.resolve("build.gradle").toFile().exists() ||
-               path.resolve("pom.xml").toFile().exists() ||
-               path.resolve("gradle.properties").toFile().exists() ||
-               path.resolve("src").toFile().exists() ||
-               path.resolve("build").toFile().exists();
+                path.resolve("pom.xml").toFile().exists() ||
+                path.resolve("gradle.properties").toFile().exists() ||
+                path.resolve("src").toFile().exists() ||
+                path.resolve("build").toFile().exists();
     }
 
     /**

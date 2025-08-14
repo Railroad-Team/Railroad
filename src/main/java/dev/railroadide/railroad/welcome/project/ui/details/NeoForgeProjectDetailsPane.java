@@ -6,7 +6,6 @@ import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.localized.LocalizedTooltip;
 import dev.railroadide.core.utility.StringUtils;
-import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.DisplayTest;
 import dev.railroadide.railroad.project.License;
 import dev.railroadide.railroad.project.data.NeoForgeProjectData;

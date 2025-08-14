@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.welcome.imports;
 
-import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
-import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.vcs.connections.VCSProfile;
+import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
+import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;

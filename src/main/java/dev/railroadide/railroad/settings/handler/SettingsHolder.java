@@ -2,9 +2,9 @@ package dev.railroadide.railroad.settings.handler;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.settings.Setting;
 import dev.railroadide.core.utility.JsonSerializable;
+import dev.railroadide.railroad.Railroad;
 import lombok.Getter;
 
 import java.util.List;

@@ -20,10 +20,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TextEditorPane extends CodeArea {
-    private final ExecutorService changeExecutor = Executors.newSingleThreadExecutor();
-    protected final Path filePath;
-
     private static final int[] FONT_SIZES = {6, 8, 10, 12, 14, 16, 18, 20, 24, 26, 28, 30, 36, 40, 48, 56, 60};
+    protected final Path filePath;
+    private final ExecutorService changeExecutor = Executors.newSingleThreadExecutor();
     private int fontSizeIndex = 5;
 
     public TextEditorPane(Path item) {
@@ -36,6 +35,53 @@ public class TextEditorPane extends CodeArea {
         resizableFont();
 
         moveTo(0);
+    }
+
+    private static FileModifiedEvent.Change getChange(String text, PlainTextChange change) {
+        String inserted = change.getInserted();
+        String removed = change.getRemoved();
+        int position = change.getPosition();
+        int netLength = change.getNetLength();
+
+        Pair<Integer, Integer> startPos = getLineAndColumn(text, position);
+        Pair<Integer, Integer> endPos = getLineAndColumn(text, position + netLength);
+
+        return new FileModifiedEvent.Change(
+                getChangeType(change),
+                removed,
+                inserted,
+                new FileModifiedEvent.Range(
+                        startPos.getKey(), startPos.getValue(),
+                        endPos.getKey(), endPos.getValue()));
+    }
+
+    private static FileModifiedEvent.Change.Type getChangeType(PlainTextChange change) {
+        String inserted = change.getInserted();
+        String removed = change.getRemoved();
+
+        if (!inserted.isEmpty() && removed.isEmpty()) {
+            return FileModifiedEvent.Change.Type.ADDED;
+        } else if (inserted.isEmpty() && !removed.isEmpty()) {
+            return FileModifiedEvent.Change.Type.REMOVED;
+        } else {
+            return FileModifiedEvent.Change.Type.MODIFIED;
+        }
+    }
+
+    private static Pair<Integer, Integer> getLineAndColumn(String text, int position) {
+        int line = 0;
+        int column = 0;
+
+        for (int i = 0; i < position && i < text.length(); i++) {
+            if (text.charAt(i) == '\n') {
+                line++;
+                column = 0;
+            } else {
+                column++;
+            }
+        }
+
+        return new Pair<>(line, column);
     }
 
     private void resizableFont() {
@@ -123,52 +169,5 @@ public class TextEditorPane extends CodeArea {
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to read file", exception);
         }
-    }
-
-    private static FileModifiedEvent.Change getChange(String text, PlainTextChange change) {
-        String inserted = change.getInserted();
-        String removed = change.getRemoved();
-        int position = change.getPosition();
-        int netLength = change.getNetLength();
-
-        Pair<Integer, Integer> startPos = getLineAndColumn(text, position);
-        Pair<Integer, Integer> endPos = getLineAndColumn(text, position + netLength);
-
-        return new FileModifiedEvent.Change(
-                getChangeType(change),
-                removed,
-                inserted,
-                new FileModifiedEvent.Range(
-                        startPos.getKey(), startPos.getValue(),
-                        endPos.getKey(), endPos.getValue()));
-    }
-
-    private static FileModifiedEvent.Change.Type getChangeType(PlainTextChange change) {
-        String inserted = change.getInserted();
-        String removed = change.getRemoved();
-
-        if (!inserted.isEmpty() && removed.isEmpty()) {
-            return FileModifiedEvent.Change.Type.ADDED;
-        } else if (inserted.isEmpty() && !removed.isEmpty()) {
-            return FileModifiedEvent.Change.Type.REMOVED;
-        } else {
-            return FileModifiedEvent.Change.Type.MODIFIED;
-        }
-    }
-
-    private static Pair<Integer, Integer> getLineAndColumn(String text, int position) {
-        int line = 0;
-        int column = 0;
-
-        for (int i = 0; i < position && i < text.length(); i++) {
-            if (text.charAt(i) == '\n') {
-                line++;
-                column = 0;
-            } else {
-                column++;
-            }
-        }
-
-        return new Pair<>(line, column);
     }
 }

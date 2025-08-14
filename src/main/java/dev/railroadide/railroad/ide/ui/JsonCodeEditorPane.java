@@ -33,11 +33,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class JsonCodeEditorPane extends TextEditorPane {
-    private final ExecutorService executor0 = Executors.newSingleThreadExecutor();
-
-    private record ValidationEntry(int start, int end, Popup popup) {}
-    private final ObservableMap<ValidationException, ValidationEntry> errors = FXCollections.observableHashMap();
-    private Schema schema;
     private static final String DEFAULT_SCHEMA = """
             {
               "$schema": "http://json-schema.org/draft-07/schema",
@@ -49,7 +44,9 @@ public class JsonCodeEditorPane extends TextEditorPane {
               "required": ["name", "version"]
             }
             """;
-
+    private final ExecutorService executor0 = Executors.newSingleThreadExecutor();
+    private final ObservableMap<ValidationException, ValidationEntry> errors = FXCollections.observableHashMap();
+    private Schema schema;
     public JsonCodeEditorPane(Path item) {
         super(item);
         syntaxHighlight();
@@ -128,7 +125,6 @@ public class JsonCodeEditorPane extends TextEditorPane {
 
         return inString;
     }
-
 
     private void autoIndentOnEnter() {
         addEventFilter(KeyEvent.KEY_PRESSED, event -> {
@@ -376,5 +372,8 @@ public class JsonCodeEditorPane extends TextEditorPane {
             Railroad.LOGGER.error("JSON parse error: {}", exception.getMessage());
             addStyleClass(0, getLength(), "error");
         }
+    }
+
+    private record ValidationEntry(int start, int end, Popup popup) {
     }
 }

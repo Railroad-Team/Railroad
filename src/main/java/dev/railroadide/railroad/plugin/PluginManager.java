@@ -5,12 +5,11 @@ import com.google.gson.JsonObject;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.defaults.DefaultPluginContext;
-import dev.railroadide.railroadpluginapi.Plugin;
-import dev.railroadide.railroadpluginapi.PluginDescriptor;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.utility.ShutdownHooks;
-import dev.railroadide.railroadpluginapi.events.ApplicationStopEvent;
+import dev.railroadide.railroadpluginapi.Plugin;
+import dev.railroadide.railroadpluginapi.PluginDescriptor;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.jetbrains.annotations.NotNull;
@@ -105,7 +104,7 @@ public class PluginManager {
                 .filter(Map.Entry::getValue)
                 .map(Map.Entry::getKey)
                 .toList()) {
-            if(PluginManager.isPluginEnabledForce(descriptor))
+            if (PluginManager.isPluginEnabledForce(descriptor))
                 continue; // Skip if already enabled
 
             try {
@@ -289,6 +288,21 @@ public class PluginManager {
     }
 
     /**
+     * Retrieves the currently enabled plugins from the settings.
+     * If no plugins are enabled, it returns an empty map.
+     *
+     * @return A map of PluginDescriptor to their enabled status (true for enabled, false for disabled).
+     */
+    public static Map<PluginDescriptor, Boolean> getEnabledPlugins() {
+        Map<PluginDescriptor, Boolean> enabledPlugins = SettingsHandler.getValue(Settings.ENABLED_PLUGINS);
+        if (enabledPlugins == null) {
+            enabledPlugins = new HashMap<>();
+        }
+
+        return enabledPlugins;
+    }
+
+    /**
      * Sets the enabled status of multiple plugins.
      * This method updates the settings with the provided map of PluginDescriptor to their enabled status.
      *
@@ -311,21 +325,6 @@ public class PluginManager {
 
             Railroad.LOGGER.info("Set plugin {} to {}", descriptor.getName(), enabled ? "enabled" : "disabled");
         }
-    }
-
-    /**
-     * Retrieves the currently enabled plugins from the settings.
-     * If no plugins are enabled, it returns an empty map.
-     *
-     * @return A map of PluginDescriptor to their enabled status (true for enabled, false for disabled).
-     */
-    public static Map<PluginDescriptor, Boolean> getEnabledPlugins() {
-        Map<PluginDescriptor, Boolean> enabledPlugins = SettingsHandler.getValue(Settings.ENABLED_PLUGINS);
-        if (enabledPlugins == null) {
-            enabledPlugins = new HashMap<>();
-        }
-
-        return enabledPlugins;
     }
 
     /**
@@ -387,7 +386,7 @@ public class PluginManager {
      * Loads a resource from the specified plugin's class loader.
      * The resource path should be relative to the plugin's root.
      *
-     * @param descriptor The PluginDescriptor of the plugin from which to load the resource.
+     * @param descriptor   The PluginDescriptor of the plugin from which to load the resource.
      * @param resourcePath The path to the resource within the plugin.
      * @return An InputStream for the resource, or null if the resource is not found.
      * @throws IllegalArgumentException if the plugin or resource path is null or empty.
@@ -396,7 +395,7 @@ public class PluginManager {
         if (descriptor == null || resourcePath == null || resourcePath.isEmpty())
             throw new IllegalArgumentException("Plugin and resource path cannot be null or empty");
 
-        if(!PluginManager.isPluginEnabled(descriptor)) {
+        if (!PluginManager.isPluginEnabled(descriptor)) {
             Railroad.LOGGER.warn("Plugin {} is not enabled, cannot load resource: {}", descriptor.getName(), resourcePath);
             return null;
         }
@@ -420,7 +419,7 @@ public class PluginManager {
         List<InputStream> resources = new ArrayList<>();
         for (PluginLoadResult loadResult : LOADED_PLUGINS) {
             PluginDescriptor descriptor = loadResult.descriptor();
-            if(!PluginManager.isPluginEnabled(descriptor))
+            if (!PluginManager.isPluginEnabled(descriptor))
                 continue;
 
             PluginClassLoader classLoader = loadResult.classLoader();

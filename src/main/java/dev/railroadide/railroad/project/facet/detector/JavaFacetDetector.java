@@ -38,40 +38,6 @@ import java.util.stream.Stream;
  */
 public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
     /**
-     * Detects a Java facet in the given path by searching for .java files and determining the Java version.
-     *
-     * @param path the project directory or file to analyze
-     * @return an Optional containing the Java facet if detected, or empty if not found
-     */
-    @Override
-    public Optional<Facet<JavaFacetData>> detect(@NotNull Path path) {
-        long javaFileCount = 0;
-        try {
-            if (Files.isDirectory(path)) {
-                try (Stream<Path> javaFiles = Files.find(path, 10,
-                        (p, attrs) -> p.toString().endsWith(".java"))) {
-                    javaFileCount = javaFiles.count();
-                }
-            } else if (path.toString().endsWith(".java")) {
-                javaFileCount = 1;
-            }
-        } catch (IOException exception) {
-            Railroad.LOGGER.error("Error while detecting Java files in path: {}", path, exception);
-        }
-
-        JavaFacetData data = null;
-        if (javaFileCount > 0) {
-            data = new JavaFacetData();
-            JavaVersion highestJavaVersion = findMostReliableJavaVersion(path);
-            data.setVersion(highestJavaVersion);
-        }
-
-        return javaFileCount > 0 ?
-                Optional.of(new Facet<>(FacetManager.JAVA, data)) :
-                Optional.empty();
-    }
-
-    /**
      * Attempts to determine the most reliable Java version for the given project path.
      * Checks Gradle, Maven, compiled class files, and system properties in order.
      *
@@ -203,8 +169,8 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
                     targetVersion;
         } catch (IOException exception) {
             Railroad.LOGGER.error("IO exception while detecting Java version in path: {}", path, exception);
-        } catch (GradleException | BuildException ignored) {}
-        catch (Exception exception) {
+        } catch (GradleException | BuildException ignored) {
+        } catch (Exception exception) {
             Railroad.LOGGER.error("Unexpected error while detecting Java version in path: {}", path, exception);
         }
 
@@ -288,5 +254,39 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             tempFile.toFile().deleteOnExit();
             return tempFile;
         }
+    }
+
+    /**
+     * Detects a Java facet in the given path by searching for .java files and determining the Java version.
+     *
+     * @param path the project directory or file to analyze
+     * @return an Optional containing the Java facet if detected, or empty if not found
+     */
+    @Override
+    public Optional<Facet<JavaFacetData>> detect(@NotNull Path path) {
+        long javaFileCount = 0;
+        try {
+            if (Files.isDirectory(path)) {
+                try (Stream<Path> javaFiles = Files.find(path, 10,
+                        (p, attrs) -> p.toString().endsWith(".java"))) {
+                    javaFileCount = javaFiles.count();
+                }
+            } else if (path.toString().endsWith(".java")) {
+                javaFileCount = 1;
+            }
+        } catch (IOException exception) {
+            Railroad.LOGGER.error("Error while detecting Java files in path: {}", path, exception);
+        }
+
+        JavaFacetData data = null;
+        if (javaFileCount > 0) {
+            data = new JavaFacetData();
+            JavaVersion highestJavaVersion = findMostReliableJavaVersion(path);
+            data.setVersion(highestJavaVersion);
+        }
+
+        return javaFileCount > 0 ?
+                Optional.of(new Facet<>(FacetManager.JAVA, data)) :
+                Optional.empty();
     }
 }

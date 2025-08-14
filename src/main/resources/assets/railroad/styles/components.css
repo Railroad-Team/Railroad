@@ -550,8 +550,12 @@
 }
 
 @keyframes fadeIn {
-    from { -fx-opacity: 0; }
-    to { -fx-opacity: 1; }
+    from {
+        -fx-opacity: 0;
+    }
+    to {
+        -fx-opacity: 1;
+    }
 }
 
 .slide-in-left {
@@ -560,8 +564,12 @@
 }
 
 @keyframes slideInLeft {
-    from { -fx-translate-x: -100%; }
-    to { -fx-translate-x: 0; }
+    from {
+        -fx-translate-x: -100%;
+    }
+    to {
+        -fx-translate-x: 0;
+    }
 }
 
 .slide-in-right {
@@ -570,8 +578,12 @@
 }
 
 @keyframes slideInRight {
-    from { -fx-translate-x: 100%; }
-    to { -fx-translate-x: 0; }
+    from {
+        -fx-translate-x: 100%;
+    }
+    to {
+        -fx-translate-x: 0;
+    }
 }
 
 /* Responsive design */
@@ -580,13 +592,13 @@
         -fx-min-width: 200px;
         -fx-max-width: 200px;
     }
-    
+
     .rr-button {
         -fx-min-height: 32px;
         -fx-padding: 6px 12px;
         -fx-font-size: 13px;
     }
-    
+
     .rr-text-field {
         -fx-min-height: 32px;
         -fx-font-size: 13px;
@@ -621,7 +633,7 @@
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 1;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 10, 0, 0, 2);
-    -fx-transition: all 0.18s cubic-bezier(0.4,0.2,0.2,1);
+    -fx-transition: all 0.18s cubic-bezier(0.4, 0.2, 0.2, 1);
 }
 
 .rr-card:hover {
@@ -640,19 +652,19 @@
     .welcome-title {
         -fx-font-size: 24px;
     }
-    
+
     .welcome-description {
         -fx-font-size: 16px;
     }
-    
+
     .section-title {
         -fx-font-size: 20px;
     }
-    
+
     .feature-text {
         -fx-font-size: 14px;
     }
-    
+
     .rr-button {
         -fx-min-width: 100px;
         -fx-min-height: 36px;
@@ -725,7 +737,7 @@
     -fx-border-radius: 12px;
     -fx-background-radius: 12px;
     -fx-padding: 16px 0 16px 16px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0.1, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.04), 8, 0.1, 0, 2);
 }
 
 .rr-list-view.hide-empty-cells .list-cell:empty {
@@ -797,7 +809,7 @@
     -fx-border-color: -color-border-default;
     -fx-border-width: 1px;
     -fx-border-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 4);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 8, 0, 0, 4);
 }
 
 .rr-combo-box .list-view .list-cell {
@@ -929,7 +941,7 @@
     -fx-border-radius: 12px;
     -fx-padding: 20px;
     -fx-spacing: 16px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 8, 0.1, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.04), 8, 0.1, 0, 2);
 }
 
 .rr-form-section .section-header {
@@ -1001,7 +1013,7 @@
     -fx-border-radius: 16px;
     -fx-padding: 24px;
     -fx-spacing: 20px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 12, 0.15, 0, 4);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.06), 12, 0.15, 0, 4);
 }
 
 .rr-form-container .form-title {
@@ -1061,7 +1073,7 @@
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 0 0 1 0;
     -fx-padding: 0;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 2, 0, 0, 1);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 2, 0, 0, 1);
 }
 
 .rr-menu-bar > .container {
@@ -1112,7 +1124,7 @@
     -fx-background-radius: 6;
     -fx-border-radius: 6;
     -fx-padding: 4;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 4);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 8, 0, 0, 4);
 }
 
 .rr-menu .menu-item {
@@ -1180,23 +1192,73 @@
 }
 
 /* Text editor font size classes */
-.text-editor-font-size-6 { -fx-font-size: 6px; }
-.text-editor-font-size-8 { -fx-font-size: 8px; }
-.text-editor-font-size-10 { -fx-font-size: 10px; }
-.text-editor-font-size-12 { -fx-font-size: 12px; }
-.text-editor-font-size-14 { -fx-font-size: 14px; }
-.text-editor-font-size-16 { -fx-font-size: 16px; }
-.text-editor-font-size-18 { -fx-font-size: 18px; }
-.text-editor-font-size-20 { -fx-font-size: 20px; }
-.text-editor-font-size-24 { -fx-font-size: 24px; }
-.text-editor-font-size-26 { -fx-font-size: 26px; }
-.text-editor-font-size-28 { -fx-font-size: 28px; }
-.text-editor-font-size-30 { -fx-font-size: 30px; }
-.text-editor-font-size-36 { -fx-font-size: 36px; }
-.text-editor-font-size-40 { -fx-font-size: 40px; }
-.text-editor-font-size-48 { -fx-font-size: 48px; }
-.text-editor-font-size-56 { -fx-font-size: 56px; }
-.text-editor-font-size-60 { -fx-font-size: 60px; }
+.text-editor-font-size-6 {
+    -fx-font-size: 6px;
+}
+
+.text-editor-font-size-8 {
+    -fx-font-size: 8px;
+}
+
+.text-editor-font-size-10 {
+    -fx-font-size: 10px;
+}
+
+.text-editor-font-size-12 {
+    -fx-font-size: 12px;
+}
+
+.text-editor-font-size-14 {
+    -fx-font-size: 14px;
+}
+
+.text-editor-font-size-16 {
+    -fx-font-size: 16px;
+}
+
+.text-editor-font-size-18 {
+    -fx-font-size: 18px;
+}
+
+.text-editor-font-size-20 {
+    -fx-font-size: 20px;
+}
+
+.text-editor-font-size-24 {
+    -fx-font-size: 24px;
+}
+
+.text-editor-font-size-26 {
+    -fx-font-size: 26px;
+}
+
+.text-editor-font-size-28 {
+    -fx-font-size: 28px;
+}
+
+.text-editor-font-size-30 {
+    -fx-font-size: 30px;
+}
+
+.text-editor-font-size-36 {
+    -fx-font-size: 36px;
+}
+
+.text-editor-font-size-40 {
+    -fx-font-size: 40px;
+}
+
+.text-editor-font-size-48 {
+    -fx-font-size: 48px;
+}
+
+.text-editor-font-size-56 {
+    -fx-font-size: 56px;
+}
+
+.text-editor-font-size-60 {
+    -fx-font-size: 60px;
+}
 
 .rr-search-field {
     -fx-background-color: -color-bg-default;
@@ -1213,7 +1275,7 @@
 
 .rr-search-field:focused {
     -fx-border-color: -color-accent-emphasis;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 4, 0, 0, 2);
 }
 
 .rr-search-field:hover {
@@ -1462,19 +1524,19 @@
     -fx-padding: 0;
     -fx-alignment: center;
     -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 2, 0.1, 0, 1);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.04), 2, 0.1, 0, 1);
     -fx-min-width: 32px;
     -fx-min-height: 32px;
     -fx-max-width: 32px;
     -fx-max-height: 32px;
     -fx-font-size: 16px;
-    -fx-transition: all 0.18s cubic-bezier(0.4,0.2,0.2,1);
+    -fx-transition: all 0.18s cubic-bezier(0.4, 0.2, 0.2, 1);
 }
 
 .project-list-ellipsis-button:hover {
     -fx-background-color: -color-accent-subtle;
     -fx-border-color: -color-accent-emphasis;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 4, 0.15, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.10), 4, 0.15, 0, 2);
 }
 
 .project-list-ellipsis-button .ikonli-font-icon {
@@ -1492,13 +1554,13 @@
     -fx-background-color: -color-accent-subtle;
     -fx-border-color: -color-accent-emphasis;
     -fx-border-width: 2px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 12, 0.2, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 12, 0.2, 0, 2);
 }
 
 .import-project-card-selected:hover {
     -fx-background-color: -color-accent-muted;
     -fx-border-color: -color-accent-emphasis;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 16, 0.25, 0, 4);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 16, 0.25, 0, 4);
 }
 
 .import-project-content {
@@ -1595,13 +1657,13 @@
 }
 
 .theme-example-nav-button:hover {
-    -fx-background-color: rgba(255,255,255,0.1);
+    -fx-background-color: rgba(255, 255, 255, 0.1);
     -fx-border-color: transparent;
     -fx-padding: 8 16;
 }
 
 .theme-example-nav-button-hover {
-    -fx-background-color: rgba(255,255,255,0.1);
+    -fx-background-color: rgba(255, 255, 255, 0.1);
     -fx-border-color: transparent;
     -fx-padding: 8 16;
 }
@@ -2104,7 +2166,7 @@
     -fx-background-color: -color-bg-subtle;
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 0 0 1 0;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 2, 0, 0, 1);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 2, 0, 0, 1);
 }
 
 .project-icon {
@@ -2153,7 +2215,7 @@
 /* Welcome pane card styling */
 .welcome-card {
     -fx-background-color: -color-card-bg;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 12, 0.2, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 12, 0.2, 0, 2);
 }
 
 /* New project pane styling */
@@ -2162,7 +2224,7 @@
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 1.5px;
     -fx-border-radius: 16px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 12, 0.2, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 12, 0.2, 0, 2);
     -fx-padding: 8px;
 }
 

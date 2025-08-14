@@ -31,13 +31,13 @@ public class PluginLoader {
      * @param pluginPath the path to the plugin JAR file
      * @return a PluginLoadResult containing the loaded plugin descriptor and path
      * @throws IllegalArgumentException if the plugin path is invalid
-     * @throws RuntimeException if there is an error reading the plugin JAR or descriptor
+     * @throws RuntimeException         if there is an error reading the plugin JAR or descriptor
      */
     public static PluginLoadResult loadPlugin(Path pluginPath) {
         if (pluginPath == null || !pluginPath.toString().endsWith(".jar"))
             throw new IllegalArgumentException("Invalid plugin path: " + pluginPath);
 
-        try(var jarFile = new JarFile(pluginPath.toFile())) {
+        try (var jarFile = new JarFile(pluginPath.toFile())) {
             PluginDescriptor descriptor = readDescriptor(jarFile);
             if (descriptor == null)
                 throw new IOException("Failed to read plugin descriptor from: " + pluginPath);
@@ -55,7 +55,7 @@ public class PluginLoader {
         if (jarEntry == null)
             throw new IOException("plugin.json not found in JAR");
 
-        try(InputStream inputStream = jarFile.getInputStream(jarEntry)) {
+        try (InputStream inputStream = jarFile.getInputStream(jarEntry)) {
             if (inputStream == null)
                 throw new IOException("plugin.json not found in JAR");
 
@@ -63,32 +63,32 @@ public class PluginLoader {
             if (json == null)
                 throw new IOException("Failed to parse plugin.json");
 
-            if(!json.has("id"))
+            if (!json.has("id"))
                 throw new IOException("plugin.json does not contain 'id' field");
 
-            if(!json.has("name"))
+            if (!json.has("name"))
                 throw new IOException("plugin.json does not contain 'name' field");
 
-            if(!json.has("version"))
+            if (!json.has("version"))
                 throw new IOException("plugin.json does not contain 'version' field");
 
-            if(!json.has("mainClass"))
+            if (!json.has("mainClass"))
                 throw new IOException("plugin.json does not contain 'mainClass' field");
 
             JsonElement idElement = json.get("id");
-            if(!idElement.isJsonPrimitive() || !idElement.getAsJsonPrimitive().isString())
+            if (!idElement.isJsonPrimitive() || !idElement.getAsJsonPrimitive().isString())
                 throw new IOException("plugin.json 'id' field must be a string");
 
             JsonElement nameElement = json.get("name");
-            if(!nameElement.isJsonPrimitive() || !nameElement.getAsJsonPrimitive().isString())
+            if (!nameElement.isJsonPrimitive() || !nameElement.getAsJsonPrimitive().isString())
                 throw new IOException("plugin.json 'name' field must be a string");
 
             JsonElement versionElement = json.get("version");
-            if(!versionElement.isJsonPrimitive() || !versionElement.getAsJsonPrimitive().isString())
+            if (!versionElement.isJsonPrimitive() || !versionElement.getAsJsonPrimitive().isString())
                 throw new IOException("plugin.json 'version' field must be a string");
 
             JsonElement mainClassElement = json.get("mainClass");
-            if(!mainClassElement.isJsonPrimitive() || !mainClassElement.getAsJsonPrimitive().isString())
+            if (!mainClassElement.isJsonPrimitive() || !mainClassElement.getAsJsonPrimitive().isString())
                 throw new IOException("plugin.json 'mainClass' field must be a string");
 
             String id = idElement.getAsString();
@@ -162,7 +162,7 @@ public class PluginLoader {
             if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
                 return element.getAsString();
             } else throw new IOException("plugin.json '" + key + "' field must be a string");
-        } else if(required) throw new IOException("plugin.json does not contain '" + key + "' field");
+        } else if (required) throw new IOException("plugin.json does not contain '" + key + "' field");
 
         return null;
     }

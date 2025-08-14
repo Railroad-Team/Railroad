@@ -21,6 +21,11 @@ public class WatchTask extends Task<Void> {
         this.fileChangeListener = fileChangeListener;
     }
 
+    @SuppressWarnings("unchecked")
+    private static <T> WatchEvent<T> cast(WatchEvent<?> event) {
+        return (WatchEvent<T>) event;
+    }
+
     @Override
     protected Void call() throws IOException {
         try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
@@ -103,11 +108,6 @@ public class WatchTask extends Task<Void> {
     private void register(Path dir, WatchService watcher) throws IOException {
         WatchKey key = dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
         keys.put(key, dir);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> WatchEvent<T> cast(WatchEvent<?> event) {
-        return (WatchEvent<T>) event;
     }
 
     @FunctionalInterface

@@ -15,7 +15,6 @@ public class JsonSyntaxHighlighting {
     private static final String KEY = STRING + "(?=\\s*:)";
     private static final String BOOLEAN = "\\b(?:true|false)\\b";
     private static final String NULL = "\\bnull\\b";
-
     private static final Pattern PATTERN = Pattern.compile(
             "(?<KEY>" + KEY + ")"
                     + "|(?<STRING>" + STRING + ")"

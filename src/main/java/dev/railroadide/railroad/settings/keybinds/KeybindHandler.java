@@ -17,9 +17,10 @@ public class KeybindHandler {
 
     /**
      * Registers the provided node to capture key events.
-     * @param context The context of the node.
+     *
+     * @param context     The context of the node.
      * @param captureNode The node that will capture key events.
-     * @param <T> The type of the node, which must extend Node.
+     * @param <T>         The type of the node, which must extend Node.
      */
     public static <T extends Node> void registerCapture(KeybindContexts.KeybindContext context, T captureNode) {
         KEYBIND_REGISTRY.values().forEach(keybind -> {
@@ -39,6 +40,7 @@ public class KeybindHandler {
 
     /**
      * Returns a map of all keybinds with their default key combinations.
+     *
      * @return A map where the key is the keybind ID and the value is a list of KeybindData representing the default key combinations.
      */
     public static Map<String, List<KeybindData>> getDefaults() {
@@ -53,6 +55,7 @@ public class KeybindHandler {
 
     /**
      * Registers a keybind in the keybind registry.
+     *
      * @param keybind The keybind to register.
      * @return The registered keybind.
      */
@@ -63,6 +66,7 @@ public class KeybindHandler {
 
     /**
      * Unregisters a keybind from the keybind registry.
+     *
      * @param keybind The keybind to unregister.
      */
     public static void unregisterKeybind(Keybind keybind) {
@@ -71,6 +75,7 @@ public class KeybindHandler {
 
     /**
      * Retrieves a keybind by its ID.
+     *
      * @param id The ID of the keybind to retrieve.
      * @return The keybind associated with the given ID, or null if no such keybind exists.
      */

@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.settings.ui.themes;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRFormSection;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -33,7 +33,7 @@ public class ThemeExamplePane {
 
     public ThemeExamplePane(final String themeName) {
         this.themeName = themeName;
-        
+
         stage = new Stage();
         stage.setTitle(L18n.localize("railroad.home.settings.appearance.preview") + " - " + formatThemeName(themeName));
         stage.initModality(Modality.APPLICATION_MODAL);
@@ -51,7 +51,7 @@ public class ThemeExamplePane {
         previewScene = new Scene(scrollPane, 900, 700);
 
         applyThemeToPreview();
-        
+
         stage.setScene(previewScene);
         stage.show();
     }
@@ -120,39 +120,39 @@ public class ThemeExamplePane {
 
         var textFieldRow = new HBox(12);
         textFieldRow.setAlignment(Pos.CENTER_LEFT);
-        
+
         var textField = new TextField();
         textField.setPromptText("Enter text here...");
         textField.setPrefWidth(200);
-        
+
         var passwordField = new PasswordField();
         passwordField.setPromptText("Password");
         passwordField.setPrefWidth(200);
-        
+
         textFieldRow.getChildren().addAll(
-            new LocalizedLabel("railroad.theme.preview.text_field"), textField,
-            new LocalizedLabel("railroad.theme.preview.password"), passwordField
+                new LocalizedLabel("railroad.theme.preview.text_field"), textField,
+                new LocalizedLabel("railroad.theme.preview.password"), passwordField
         );
 
         var controlsRow = new HBox(12);
         controlsRow.setAlignment(Pos.CENTER_LEFT);
-        
+
         var comboBox = new ComboBox<>();
         comboBox.getItems().addAll("Option 1", "Option 2", "Option 3");
         comboBox.setValue("Option 1");
         comboBox.setPrefWidth(150);
-        
+
         var checkBox = new CheckBox("Enable feature");
         checkBox.setSelected(true);
-        
+
         var radioButton = new RadioButton("Radio option");
         radioButton.setSelected(true);
-        
+
         controlsRow.getChildren().addAll(
-            new LocalizedLabel("railroad.theme.preview.dropdown"), comboBox,
-            checkBox, radioButton
+                new LocalizedLabel("railroad.theme.preview.dropdown"), comboBox,
+                checkBox, radioButton
         );
-        
+
         formSection.addContent(textFieldRow, controlsRow);
         return formSection;
     }
@@ -163,14 +163,14 @@ public class ThemeExamplePane {
 
         var listView = new ListView<>();
         listView.getItems().addAll(
-            "Project 1 - Minecraft Mod",
-            "Project 2 - Fabric Plugin",
-            "Project 3 - Forge Extension",
-            "Project 4 - NeoForge Addon",
-            "Project 5 - Quilt Mod",
-            "Project 6 - Bukkit Plugin",
-            "Project 7 - Spigot Extension",
-            "Project 8 - Paper Addon"
+                "Project 1 - Minecraft Mod",
+                "Project 2 - Fabric Plugin",
+                "Project 3 - Forge Extension",
+                "Project 4 - NeoForge Addon",
+                "Project 5 - Quilt Mod",
+                "Project 6 - Bukkit Plugin",
+                "Project 7 - Spigot Extension",
+                "Project 8 - Paper Addon"
         );
         listView.setPrefHeight(250);
         listView.setMinHeight(200);
@@ -192,11 +192,11 @@ public class ThemeExamplePane {
         table.getColumns().addAll(nameColumn, typeColumn, statusColumn);
 
         ObservableList<ProjectData> data = FXCollections.observableArrayList(
-            new ProjectData("MyMod", "Fabric", "Active"),
-            new ProjectData("CoolPlugin", "Forge", "Inactive"),
-            new ProjectData("AwesomeAddon", "NeoForge", "Active"),
-            new ProjectData("TestProject", "Quilt", "Active"),
-            new ProjectData("DemoMod", "Bukkit", "Inactive")
+                new ProjectData("MyMod", "Fabric", "Active"),
+                new ProjectData("CoolPlugin", "Forge", "Inactive"),
+                new ProjectData("AwesomeAddon", "NeoForge", "Active"),
+                new ProjectData("TestProject", "Quilt", "Active"),
+                new ProjectData("DemoMod", "Bukkit", "Inactive")
         );
         table.setItems(data);
         table.setPrefHeight(250);
@@ -206,61 +206,45 @@ public class ThemeExamplePane {
         return listSection;
     }
 
-    public static class ProjectData {
-        private final SimpleStringProperty name;
-        private final SimpleStringProperty type;
-        private final SimpleStringProperty status;
-
-        public ProjectData(String name, String type, String status) {
-            this.name = new SimpleStringProperty(name);
-            this.type = new SimpleStringProperty(type);
-            this.status = new SimpleStringProperty(status);
-        }
-
-        public String getName() { return name.get(); }
-        public String getType() { return type.get(); }
-        public String getStatus() { return status.get(); }
-    }
-
     private VBox createButtonSection() {
         var buttonSection = new RRFormSection();
         buttonSection.setLocalizedHeaderText("railroad.home.settings.appearance.preview.button.components");
-        
+
         var buttonRow1 = new HBox(12);
         buttonRow1.setAlignment(Pos.CENTER_LEFT);
-        
+
         var primaryButton = new RRButton("Primary Button");
         primaryButton.setVariant(RRButton.ButtonVariant.PRIMARY);
-        
+
         var secondaryButton = new RRButton("Secondary Button");
         secondaryButton.setVariant(RRButton.ButtonVariant.SECONDARY);
-        
+
         var dangerButton = new RRButton("Danger Button");
         dangerButton.setVariant(RRButton.ButtonVariant.DANGER);
-        
+
         var successButton = new RRButton("Success Button");
         successButton.setVariant(RRButton.ButtonVariant.SUCCESS);
-        
+
         buttonRow1.getChildren().addAll(primaryButton, secondaryButton, dangerButton, successButton);
-        
+
         var buttonRow2 = new HBox(12);
         buttonRow2.setAlignment(Pos.CENTER_LEFT);
-        
+
         var ghostButton = new RRButton("Ghost Button");
         ghostButton.setVariant(RRButton.ButtonVariant.GHOST);
-        
+
         var smallButton = new RRButton("Small Button");
         smallButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        
+
         var largeButton = new RRButton("Large Button");
         largeButton.setButtonSize(RRButton.ButtonSize.LARGE);
-        
+
         var iconButton = new RRButton();
         iconButton.setIcon(FontAwesomeSolid.STAR);
         iconButton.setVariant(RRButton.ButtonVariant.GHOST);
-        
+
         buttonRow2.getChildren().addAll(ghostButton, smallButton, largeButton, iconButton);
-        
+
         buttonSection.addContent(buttonRow1, buttonRow2);
         return buttonSection;
     }
@@ -269,11 +253,11 @@ public class ThemeExamplePane {
         var footer = new HBox(12);
         footer.setAlignment(Pos.CENTER_RIGHT);
         footer.setPadding(new Insets(16, 0, 0, 0));
-        
+
         var closeButton = new RRButton("railroad.home.settings.appearance.preview.close");
         closeButton.setVariant(RRButton.ButtonVariant.SECONDARY);
         closeButton.setOnAction(e -> stage.close());
-        
+
         var applyButton = new RRButton("railroad.home.settings.appearance.preview.apply");
         applyButton.setVariant(RRButton.ButtonVariant.PRIMARY);
         applyButton.setOnAction($ -> {
@@ -281,7 +265,7 @@ public class ThemeExamplePane {
             Railroad.updateTheme(themeName.replace(".css", ""));
             stage.close();
         });
-        
+
         footer.getChildren().addAll(closeButton, applyButton);
         return footer;
     }
@@ -313,5 +297,29 @@ public class ThemeExamplePane {
                 .replace(".css", "")
                 .replace("-", " ")
                 .replace("_", " ");
+    }
+
+    public static class ProjectData {
+        private final SimpleStringProperty name;
+        private final SimpleStringProperty type;
+        private final SimpleStringProperty status;
+
+        public ProjectData(String name, String type, String status) {
+            this.name = new SimpleStringProperty(name);
+            this.type = new SimpleStringProperty(type);
+            this.status = new SimpleStringProperty(status);
+        }
+
+        public String getName() {
+            return name.get();
+        }
+
+        public String getType() {
+            return type.get();
+        }
+
+        public String getStatus() {
+            return status.get();
+        }
     }
 } 

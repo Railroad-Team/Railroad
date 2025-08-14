@@ -3,8 +3,8 @@ package dev.railroadide.railroad.config;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.utility.JsonSerializable;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.Project;
 
 import java.util.Optional;

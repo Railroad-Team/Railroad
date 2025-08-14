@@ -15,7 +15,7 @@ public class DefaultEventBus implements EventBus {
     public void publish(Event event) {
         Class<?> eventType = event.getClass();
         for (Map.Entry<Class<? extends Event>, CopyOnWriteArrayList<EventListener<? extends Event>>> entry : subscribers.entrySet()) {
-            if(entry.getKey().isAssignableFrom(eventType)) {
+            if (entry.getKey().isAssignableFrom(eventType)) {
                 CopyOnWriteArrayList<EventListener<? extends Event>> listeners = entry.getValue();
                 for (EventListener<? extends Event> listener : listeners) {
                     // Suppress unchecked cast warning, as we know the type is correct

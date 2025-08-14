@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.welcome.imports;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.vcs.Repository;
 import dev.railroadide.core.vcs.connections.AbstractConnection;
 import dev.railroadide.core.vcs.connections.VCSProfile;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.Settings;
@@ -50,8 +50,8 @@ public class WelcomeImportProjectsPane extends RRHBox {
     private final LocalizedLabel loadingLabel = new LocalizedLabel("railroad.importprojects.loading");
     private final LocalizedLabel errorLabel = new LocalizedLabel("railroad.importprojects.error");
     private final LocalizedLabel emptyLabel = new LocalizedLabel("railroad.importprojects.empty");
-    private boolean isLoading = false;
     private final Map<VCSProfile, AbstractConnection> connectionCache = new HashMap<>();
+    private boolean isLoading = false;
     private VCSProfile lastLoadedProfile = null;
     private String currentFilter = "";
     private String lastBaseDirectory = System.getProperty("user.home");
@@ -79,6 +79,60 @@ public class WelcomeImportProjectsPane extends RRHBox {
             if (sidebar.getSelectionModel().getSelectedItem() instanceof VCSProfile profile && connectionCache.containsKey(profile)) {
                 filterRepositories(currentFilter);
             }
+        });
+    }
+
+    private static void showCloneLoading(CompletableFuture<Boolean> future, Path projectDir) {
+        var loadingBox = new RRVBox(18);
+        loadingBox.setAlignment(Pos.CENTER);
+        loadingBox.setPadding(new Insets(40, 0, 40, 0));
+        VBox.setVgrow(loadingBox, Priority.ALWAYS);
+
+        var progressIndicator = new ProgressIndicator();
+        progressIndicator.setVisible(true);
+        progressIndicator.setProgress(-1);
+        progressIndicator.setMaxSize(48, 48);
+        progressIndicator.setMinSize(48, 48);
+        loadingBox.getChildren().addAll(progressIndicator, new LocalizedLabel("railroad.importprojects.clone.loading"));
+
+        var stage = new Stage();
+        stage.setTitle(L18n.localize("railroad.importprojects.clone.title"));
+        stage.setScene(new Scene(loadingBox, 300, 200));
+        stage.setResizable(false);
+
+        stage.setOnCloseRequest(event -> {
+            if (!future.isDone()) {
+                future.cancel(true);
+            }
+        });
+
+        future.thenAcceptAsync(success -> {
+            Platform.runLater(stage::close);
+
+            var project = Railroad.PROJECT_MANAGER.newProject(new Project(projectDir));
+            if (SettingsHandler.getValue(Settings.SWITCH_TO_IDE_AFTER_IMPORT)) {
+                Platform.runLater(() -> Railroad.switchToIDE(project));
+            }
+        }).exceptionally(exception -> {
+            showError(exception.getLocalizedMessage(), false);
+            Platform.runLater(stage::close);
+            return null;
+        });
+
+        stage.showAndWait();
+    }
+
+    private static void showError(String content) {
+        showError(content, true);
+    }
+
+    private static void showError(String content, boolean translateContent) {
+        Platform.runLater(() -> {
+            var alert = new Alert(AlertType.ERROR);
+            alert.setTitle(L18n.localize("railroad.importprojects.clone"));
+            alert.setHeaderText(null);
+            alert.setContentText(translateContent ? L18n.localize(content) : content);
+            alert.showAndWait();
         });
     }
 
@@ -306,7 +360,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
                 }
 
                 Path projectDir = Path.of(dir).resolve(folderName);
-                if(Files.exists(projectDir) && Files.isDirectory(projectDir) && !FileUtils.isDirectoryEmpty(projectDir)) {
+                if (Files.exists(projectDir) && Files.isDirectory(projectDir) && !FileUtils.isDirectoryEmpty(projectDir)) {
                     showError("railroad.importprojects.clone.directory_not_empty");
                     return;
                 }
@@ -320,59 +374,5 @@ public class WelcomeImportProjectsPane extends RRHBox {
         }
 
         rightPane.requestFocus();
-    }
-
-    private static void showCloneLoading(CompletableFuture<Boolean> future, Path projectDir) {
-        var loadingBox = new RRVBox(18);
-        loadingBox.setAlignment(Pos.CENTER);
-        loadingBox.setPadding(new Insets(40, 0, 40, 0));
-        VBox.setVgrow(loadingBox, Priority.ALWAYS);
-
-        var progressIndicator = new ProgressIndicator();
-        progressIndicator.setVisible(true);
-        progressIndicator.setProgress(-1);
-        progressIndicator.setMaxSize(48, 48);
-        progressIndicator.setMinSize(48, 48);
-        loadingBox.getChildren().addAll(progressIndicator, new LocalizedLabel("railroad.importprojects.clone.loading"));
-
-        var stage = new Stage();
-        stage.setTitle(L18n.localize("railroad.importprojects.clone.title"));
-        stage.setScene(new Scene(loadingBox, 300, 200));
-        stage.setResizable(false);
-
-        stage.setOnCloseRequest(event -> {
-            if (!future.isDone()) {
-                future.cancel(true);
-            }
-        });
-
-        future.thenAcceptAsync(success -> {
-            Platform.runLater(stage::close);
-
-            var project = Railroad.PROJECT_MANAGER.newProject(new Project(projectDir));
-            if(SettingsHandler.getValue(Settings.SWITCH_TO_IDE_AFTER_IMPORT)) {
-                Platform.runLater(() -> Railroad.switchToIDE(project));
-            }
-        }).exceptionally(exception -> {
-            showError(exception.getLocalizedMessage(), false);
-            Platform.runLater(stage::close);
-            return null;
-        });
-
-        stage.showAndWait();
-    }
-
-    private static void showError(String content) {
-        showError(content, true);
-    }
-
-    private static void showError(String content, boolean translateContent) {
-        Platform.runLater(() -> {
-            var alert = new Alert(AlertType.ERROR);
-            alert.setTitle(L18n.localize("railroad.importprojects.clone"));
-            alert.setHeaderText(null);
-            alert.setContentText(translateContent ? L18n.localize(content) : content);
-            alert.showAndWait();
-        });
     }
 }

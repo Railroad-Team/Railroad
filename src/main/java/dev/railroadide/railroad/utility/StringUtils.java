@@ -17,12 +17,12 @@ public final class StringUtils {
      * @return A human-readable string indicating the elapsed time, or "never" if the input is -1.
      */
     public static String formatElapsed(long epochMillis) {
-        if(epochMillis == -1) {
+        if (epochMillis == -1) {
             return "never";
         }
 
         Instant then = Instant.ofEpochMilli(epochMillis);
-        Instant now  = Instant.now();
+        Instant now = Instant.now();
         if (then.isAfter(now)) {
             return "in the future";
         }
@@ -30,7 +30,7 @@ public final class StringUtils {
         // for calendar-accurate months/years
         ZoneId zone = ZoneId.systemDefault();
         LocalDate thenDate = then.atZone(zone).toLocalDate();
-        LocalDate nowDate  = LocalDate.now(zone);
+        LocalDate nowDate = LocalDate.now(zone);
         Period period = Period.between(thenDate, nowDate);
 
         if (period.getYears() > 10) {
@@ -62,7 +62,7 @@ public final class StringUtils {
             return formatTime(period.getDays(), "day");
         }
 
-        long hours   = dur.toHours();
+        long hours = dur.toHours();
         if (hours > 0) {
             return formatTime(hours, "hour");
         }

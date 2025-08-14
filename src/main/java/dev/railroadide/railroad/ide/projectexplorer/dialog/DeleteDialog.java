@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.ide.projectexplorer.dialog;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRGridPane;
 import dev.railroadide.core.ui.localized.LocalizedButton;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
-import dev.railroadide.railroadpluginapi.events.FileEvent;
 import dev.railroadide.railroad.utility.FileUtils;
+import dev.railroadide.railroadpluginapi.events.FileEvent;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.stage.Modality;
@@ -34,7 +34,7 @@ public class DeleteDialog {
         var okButton = new LocalizedButton("railroad.generic.ok");
         okButton.setOnAction(event -> {
             try {
-                if(Files.isDirectory(path)) {
+                if (Files.isDirectory(path)) {
                     FileUtils.deleteFolder(path);
                 } else {
                     Files.deleteIfExists(path);

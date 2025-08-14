@@ -4,10 +4,10 @@ import com.kodedu.terminalfx.TerminalBuilder;
 import com.panemu.tiwulfx.control.dock.DetachableTab;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import com.spencerwi.either.Either;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.ui.RRBorderPane;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRVBox;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.utility.Tree;
 import javafx.scene.layout.Pane;
 import javafx.scene.text.Text;
@@ -16,6 +16,51 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public record Layout(Tree<LayoutItem> tree) {
+    private static Either<Pane, DetachableTabPane> createPaneForItem(LayoutItem node) {
+        switch (node.getName()) {
+            case "HSplit":
+                return Either.left(new RRHBox());
+            case "VSplit":
+                return Either.left(new RRVBox());
+            case "FileExplorer":
+                var fileExplorer = new RRVBox();
+                fileExplorer.getChildren().add(new Text("File Explorer"));
+                return Either.left(fileExplorer);
+            case "TextEditor":
+                return null;
+            case "Terminal":
+                return Either.left(new TerminalBuilder().newTerminal().getTerminal());
+            case "GradleTasks":
+                var gradleTasks = new RRVBox();
+                gradleTasks.getChildren().add(new Text("Gradle Tasks"));
+                return Either.left(gradleTasks);
+            default:
+                throw new IllegalArgumentException("Unknown layout item: " + node.getName());
+        }
+    }
+
+    private static void bindChildSize(Either<Pane, DetachableTabPane> child, LayoutItem node, Either<Pane, DetachableTabPane> parent) {
+        // TODO: Can't get size of a node, so I'm not sure how we can do this
+//        if (node.hasProperty("size")) {
+//            String size = node.getProperty("size").toString().replace("%", "");
+//            double sizePercentage = Double.parseDouble(size) / 100;
+//
+//            if (child instanceof RRHBox hbox) {
+//                hbox.minHeightProperty().bind(Bindings.multiply(parent.heightProperty(), sizePercentage));
+//                hbox.minWidthProperty().bind(parent.widthProperty());
+//            } else if (child instanceof RRVBox/* || child instanceof TabPane*/) {
+//                child.minWidthProperty().bind(Bindings.multiply(parent.widthProperty(), sizePercentage));
+//                child.minHeightProperty().bind(parent.heightProperty());
+//            } else {
+//                child.minWidthProperty().bind(parent.widthProperty());
+//                child.minHeightProperty().bind(parent.heightProperty());
+//            }
+//        } else {
+//            child.minWidthProperty().bind(parent.widthProperty());
+//            child.minHeightProperty().bind(parent.heightProperty());
+//        }
+    }
+
     public void print() {
         tree.print();
     }
@@ -23,12 +68,12 @@ public record Layout(Tree<LayoutItem> tree) {
     public void apply(RRBorderPane pane) {
         Tree.Node<LayoutItem> root = tree.getRoot();
         Either<Pane, DetachableTabPane> parent = parseItem(root.getValue(), Either.left(pane));
-        if(parent == null) {
+        if (parent == null) {
             Railroad.LOGGER.error("Failed to parse root item");
             return;
         }
 
-        if(parent.isLeft()) {
+        if (parent.isLeft()) {
             bindParentSize(parent.getLeft());
             pane.getChildren().add(parent.getLeft());
             parseAndAddChildren(root.getChildren(), parent);
@@ -68,53 +113,8 @@ public record Layout(Tree<LayoutItem> tree) {
         }
     }
 
-    private static Either<Pane, DetachableTabPane> createPaneForItem(LayoutItem node) {
-        switch (node.getName()) {
-            case "HSplit":
-                return Either.left(new RRHBox());
-            case "VSplit":
-                return Either.left(new RRVBox());
-            case "FileExplorer":
-                var fileExplorer = new RRVBox();
-                fileExplorer.getChildren().add(new Text("File Explorer"));
-                return Either.left(fileExplorer);
-            case "TextEditor":
-                return null;
-            case "Terminal":
-                return Either.left(new TerminalBuilder().newTerminal().getTerminal());
-            case "GradleTasks":
-                var gradleTasks = new RRVBox();
-                gradleTasks.getChildren().add(new Text("Gradle Tasks"));
-                return Either.left(gradleTasks);
-            default:
-                throw new IllegalArgumentException("Unknown layout item: " + node.getName());
-        }
-    }
-
     private void bindParentSize(Pane parent) {
         parent.minHeightProperty().bind(Railroad.getWindow().heightProperty());
         parent.minWidthProperty().bind(Railroad.getWindow().widthProperty());
-    }
-
-    private static void bindChildSize(Either<Pane, DetachableTabPane> child, LayoutItem node, Either<Pane, DetachableTabPane> parent) {
-        // TODO: Can't get size of a node, so I'm not sure how we can do this
-//        if (node.hasProperty("size")) {
-//            String size = node.getProperty("size").toString().replace("%", "");
-//            double sizePercentage = Double.parseDouble(size) / 100;
-//
-//            if (child instanceof RRHBox hbox) {
-//                hbox.minHeightProperty().bind(Bindings.multiply(parent.heightProperty(), sizePercentage));
-//                hbox.minWidthProperty().bind(parent.widthProperty());
-//            } else if (child instanceof RRVBox/* || child instanceof TabPane*/) {
-//                child.minWidthProperty().bind(Bindings.multiply(parent.widthProperty(), sizePercentage));
-//                child.minHeightProperty().bind(parent.heightProperty());
-//            } else {
-//                child.minWidthProperty().bind(parent.widthProperty());
-//                child.minHeightProperty().bind(parent.heightProperty());
-//            }
-//        } else {
-//            child.minWidthProperty().bind(parent.widthProperty());
-//            child.minHeightProperty().bind(parent.heightProperty());
-//        }
     }
 }

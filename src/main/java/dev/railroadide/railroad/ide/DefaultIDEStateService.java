@@ -16,7 +16,11 @@ import java.util.Map;
 @Getter
 public class DefaultIDEStateService implements IDEStateService {
     private static DefaultIDEStateService instance;
-
+    private final Map<Document, Long> openDocuments = new HashMap<>();
+    private final Map<Path, Long> recentFiles = new HashMap<>();
+    private Project currentProject;
+    private long openedProjectAtMillis = -1L;
+    private Document activeDocument;
     private DefaultIDEStateService() {
         Railroad.EVENT_BUS.subscribe(ProjectEvent.class, event -> {
             if (event.isOpened()) {
@@ -45,12 +49,6 @@ public class DefaultIDEStateService implements IDEStateService {
 
         return instance;
     }
-
-    private final Map<Document, Long> openDocuments = new HashMap<>();
-    private final Map<Path, Long> recentFiles = new HashMap<>();
-    private Project currentProject;
-    private long openedProjectAtMillis = -1L;
-    private Document activeDocument;
 
     private void setCurrentProject_internal(Project project) {
         this.currentProject = project;
@@ -81,18 +79,6 @@ public class DefaultIDEStateService implements IDEStateService {
     }
 
     @Override
-    public void setActiveDocument(Document document) {
-        // NO-OP
-        // TODO
-    }
-
-    @Override
-    public void setOpenDocuments(List<Document> list) {
-        // NO-OP
-        // TODO
-    }
-
-    @Override
     public void clearOpenDocuments() {
         // NO-OP
         // TODO
@@ -113,8 +99,20 @@ public class DefaultIDEStateService implements IDEStateService {
     }
 
     @Override
+    public void setOpenDocuments(List<Document> list) {
+        // NO-OP
+        // TODO
+    }
+
+    @Override
     public Document getActiveDocument() {
         return activeDocument;
+    }
+
+    @Override
+    public void setActiveDocument(Document document) {
+        // NO-OP
+        // TODO
     }
 
     @Override

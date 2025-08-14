@@ -2,10 +2,10 @@ package dev.railroadide.railroad.utility;
 
 import dev.railroadide.core.ui.RRMenuBar;
 import dev.railroadide.core.utility.OperatingSystem;
-import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.settings.ui.SettingsPane;
 import dev.railroadide.nsmenufx.MenuToolkit;
 import dev.railroadide.nsmenufx.dialogs.about.AboutStageBuilder;
+import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.settings.ui.SettingsPane;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Menu;
@@ -47,6 +47,7 @@ public class MacUtils {
 
     /**
      * Shows the Mac's menu bar on the given stage. Must be called after the stage is created and shown.
+     *
      * @param stage The stage to which the menu bar should be added
      */
     public static void show(Stage stage) {

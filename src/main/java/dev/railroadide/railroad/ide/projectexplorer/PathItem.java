@@ -22,7 +22,7 @@ public class PathItem {
 
     @Override
     public String toString() {
-        if(this.path.getFileName() == null) {
+        if (this.path.getFileName() == null) {
             return this.path.toString();
         } else {
             return this.path.getFileName().toString();

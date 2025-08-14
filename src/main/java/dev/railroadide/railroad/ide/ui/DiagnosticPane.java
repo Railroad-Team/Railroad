@@ -16,7 +16,7 @@ import java.util.List;
 public class DiagnosticPane extends BorderPane {
     /**
      * Constructs a new DiagnosticPane for a single diagnostic.
-     * 
+     *
      * @param diagnostic the diagnostic to display
      */
     public DiagnosticPane(Diagnostic<? extends JavaFileObject> diagnostic) {
@@ -39,7 +39,7 @@ public class DiagnosticPane extends BorderPane {
 
     /**
      * Constructs a new DiagnosticPane for multiple diagnostics.
-     * 
+     *
      * @param diagnostics the collection of diagnostics to display
      */
     public DiagnosticPane(Collection<Diagnostic<? extends JavaFileObject>> diagnostics) {
@@ -63,7 +63,7 @@ public class DiagnosticPane extends BorderPane {
 
     /**
      * Constructs a new DiagnosticPane for multiple diagnostics using varargs.
-     * 
+     *
      * @param diagnostics the diagnostics to display
      */
     @SafeVarargs
