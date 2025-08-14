@@ -1,0 +1,12 @@
+name: test.yml
+on:
+  workflow_dispatch:
+
+jobs:
+  curl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Curl package pom
+        run: |
+          curl https://maven.railroadide.dev/releases/dev/railroadide/RailroadLogger/1.0.1/RailroadLogger-1.0.1.pom
