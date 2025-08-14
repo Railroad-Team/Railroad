@@ -44,7 +44,7 @@ public class ImageViewerPane extends RRVBox {
         ImageView img = new ImageView();
         javafx.scene.control.Button openInEditor = new javafx.scene.control.Button("Open In Editor");
         openInEditor.setOnAction(actionEvent -> {
-            IDESetup.addPane(new ImageEditorPane(imagePath),IDESetup.getEditorPane());
+            IDESetup.addPane(new ImageEditorPane(imagePath), IDESetup.getEditorPane());
         });
         javafx.scene.control.Button refresh = new Button("Refresh");
         refresh.setOnAction(actionEvent -> {
