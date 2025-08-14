@@ -1,298 +1,158 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.core.ui.RRVBox;
+<<<<<<< HEAD
+import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.IDESetup;
+
+=======
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.ImageUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
+>>>>>>> 21649082af8d112ef8a40c33a03304cf312efc5b
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Button;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Text;
-import org.jetbrains.annotations.Nullable;
 
+import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Locale;
 
-public class ImageViewerPane extends BorderPane {
-    private Canvas canvas;
-    private GraphicsContext gc;
+public class ImageViewerPane extends RRVBox {
+    public static final InputStream LOGO = Railroad.getResourceAsStream("images/IDEIcons/IMGViewer.png");
+    private final Canvas canvas;
+    private final GraphicsContext ctx;
+    private float scaleFactor = 1.0f;
+    private float xOffset;
+    private float yOffset;
+    private Image current;
 
-    private Image currentImage;
-    private Path imagePath;
-    private boolean isPngSource = false;
-    private boolean includesCheckerboard = true;
 
-    private double zoomLevel = 1.0;
-    private double offsetX = 0.0;
-    private double offsetY = 0.0;
-
-    private double lastMouseX;
-    private double lastMouseY;
-
-    private static final double ZOOM_BUTTON_FACTOR = 1.2;
-    private static final double ZOOM_SCROLL_FACTOR = 1.1;
-    private static final double MIN_ZOOM = 0.05;
-    private static final double MAX_ZOOM = 20.0;
-
-    private static final int CHECKER_SIZE = 16;
-    private static final Color CHECKER_COLOR_1 = Color.rgb(210, 210, 210);
-    private static final Color CHECKER_COLOR_2 = Color.rgb(240, 240, 240);
-    private static final Color DEFAULT_BACKGROUND_COLOR = Color.web("#333");
-
-    private VBox infoPane;
-    private Text dimensionsText;
-    private Text fileNameText;
-    private Text fileSizeText;
-    private Text typeText;
-    private Text colorDepthText;
-    private Text colorSpaceText;
-    private Text numberOfColorsText;
-
-    private StackPane canvasContainer;
+    double previousX = 0.0D;
+    double previousY = 0.0D;
+    double currentX = 0.0D;
+    double currentY = 0.0D;
 
     public ImageViewerPane(Path imagePath) {
-        super();
-        initComponents();
-
-        if (imagePath != null && Files.exists(imagePath)) {
-            boolean isPng = imagePath.toString().toLowerCase().endsWith(".png");
-            try {
-                this.imagePath = imagePath;
-                loadImage(new Image(imagePath.toUri().toURL().toString()), isPng);
-            } catch (MalformedURLException e) {
-                System.err.println("Error loading image: " + e.getMessage());
-                loadImage(null);
-                this.imagePath = null;
-            }
-        }
-    }
-
-    private void initComponents() {
+        ImageView img = new ImageView();
+        javafx.scene.control.Button openInEditor = new javafx.scene.control.Button("Open In Editor");
+        openInEditor.setOnAction(actionEvent -> {
+            IDESetup.addPane(new ImageEditorPane(imagePath), IDESetup.getEditorPane());
+        });
+        javafx.scene.control.Button refresh = new Button("Refresh");
+        refresh.setOnAction(actionEvent -> {
+            drawImage(current);
+        });
         canvas = new Canvas();
-        gc = canvas.getGraphicsContext2D();
-
-        infoPane = new RRVBox(5);
-        infoPane.setPadding(new Insets(10));
-        infoPane.setVisible(false);
-        infoPane.setMouseTransparent(true);
-        infoPane.setMaxWidth(VBox.USE_PREF_SIZE);
-        infoPane.setMaxHeight(VBox.USE_PREF_SIZE);
-        infoPane.getStyleClass().add("ide-image-viewer-info-pane");
-
-        dimensionsText = new Text("Dimensions: ");
-        fileNameText = new Text("File Name: ");
-        fileSizeText = new Text("File Size: ");
-        typeText = new Text("Type: ");
-        colorDepthText = new Text("Color Depth: ");
-        colorSpaceText = new Text("Color Space: ");
-        numberOfColorsText = new Text("Number of Colors: ");
-        infoPane.getChildren().addAll(dimensionsText, fileNameText, fileSizeText, typeText, colorDepthText, colorSpaceText, numberOfColorsText);
-
-        canvasContainer = new StackPane(canvas, infoPane);
-        canvasContainer.getStyleClass().add("ide-image-viewer-canvas-container");
-
-        StackPane.setAlignment(infoPane, Pos.TOP_LEFT);
-        StackPane.setMargin(infoPane, new Insets(10));
-
-        canvas.widthProperty().bind(canvasContainer.widthProperty());
-        canvas.heightProperty().bind(canvasContainer.heightProperty());
-
-        canvas.widthProperty().addListener((obs, oldVal, newVal) -> {
-            if (currentImage != null && zoomLevel > 0) {
-                double oldCanvasW = oldVal.doubleValue();
-                double newCanvasW = newVal.doubleValue();
-                if (oldCanvasW > 0) { // Skip initial sizing from 0
-                    double centerX = offsetX + (oldCanvasW / 2) / zoomLevel;
-                    offsetX = centerX - (newCanvasW / 2) / zoomLevel;
-                    clampOffsets();
-                }
-                redrawCanvas();
-            }
+        ctx = canvas.getGraphicsContext2D();
+        canvas.setManaged(false);
+        xOffset = (float) (getWidth()/2F - canvas.getWidth()/2F);
+        yOffset = (float) (getHeight()/2F - canvas.getHeight()/2F);
+        try {
+            current = new Image(imagePath.toUri().toURL().toString());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Invalid image path: " + imagePath, e);
+        }
+        centerCanvas();
+        drawImage(current);
+        getChildren().addAll(canvas,openInEditor,refresh);
+        setOnScroll(this::onScroll);
+        widthProperty().addListener((obs, oldVal, newVal) -> {
+            xOffset = (float) (getWidth()/2F - canvas.getWidth()/2F);
+            centerCanvas();
+            drawImage(current);
         });
 
-        canvas.heightProperty().addListener((obs, oldVal, newVal) -> {
-            if (currentImage != null && zoomLevel > 0) {
-                double oldCanvasH = oldVal.doubleValue();
-                double newCanvasH = newVal.doubleValue();
-                if (oldCanvasH > 0) { // Skip initial sizing from 0
-                    double centerY = offsetY + (oldCanvasH / 2) / zoomLevel;
-                    offsetY = centerY - (newCanvasH / 2) / zoomLevel;
-                    clampOffsets();
-                }
-                redrawCanvas();
-            }
+        heightProperty().addListener((obs, oldVal, newVal) -> {
+            yOffset = (float) (getHeight()/2F - canvas.getHeight()/2F);
+
+            centerCanvas();
+            drawImage(current);
+        });
+        setOnMouseDragged(this::onDrag);
+        setOnMousePressed(mouseEvent ->{
+            this.previousX = mouseEvent.getX();
+            this.previousY = mouseEvent.getY();
+            this.currentX = mouseEvent.getX();
+            this.currentY = mouseEvent.getY();
         });
 
-        setCenter(canvasContainer);
-
-        canvas.setOnMousePressed(this::handleMousePressed);
-        canvas.setOnMouseDragged(this::handleMouseDragged);
-        canvas.setOnMouseReleased(this::handleMouseReleased);
-        canvas.setOnScroll(this::handleMouseScroll);
     }
 
-    /**
-     * Handles mouse press events on the canvas to initiate panning.
-     *
-     * @param event The mouse event.
-     */
-    private void handleMousePressed(MouseEvent event) {
-        if (currentImage == null)
-            return;
 
-        lastMouseX = event.getX();
-        lastMouseY = event.getY();
+    public void onDrag(MouseEvent mouseEvent) {
+        if(mouseEvent.isPrimaryButtonDown() || mouseEvent.isMiddleButtonDown()) {
+            previousX = currentX;
+            previousY = currentY;
+            currentX = mouseEvent.getX();
+            currentY = mouseEvent.getY();
 
-        if (event.isPrimaryButtonDown()) {
-            canvas.setCursor(Cursor.CLOSED_HAND);
-            applyZoom(ZOOM_BUTTON_FACTOR, event.getX(), event.getY());
-        } else if (event.isSecondaryButtonDown()) {
-            canvas.setCursor(Cursor.CROSSHAIR);
-        } else {
-            canvas.setCursor(Cursor.DEFAULT);
+            double dx = currentX - previousX;
+            double dy = currentY - previousY;
+            xOffset += (float) dx;
+            yOffset += (float) dy;
+            drawImage(current);
         }
-
-        event.consume();
     }
+    public void onScroll(ScrollEvent scrollEvent) {
+        if(scrollEvent.getDeltaY() > 0) {
+                scaleFactor *= 1.1f;
 
-    /**
-     * Handles mouse drag events on the canvas for panning.
-     *
-     * @param event The mouse event.
-     */
-    private void handleMouseDragged(MouseEvent event) {
-        if (currentImage == null || !event.isPrimaryButtonDown()) {
-            canvas.setCursor(Cursor.DEFAULT);
-            return;
+
+        }else {
+                scaleFactor /= 1.1f;
         }
+        drawImage(current);
 
-        if (canvas.getCursor() != Cursor.CLOSED_HAND) {
-            canvas.setCursor(Cursor.CLOSED_HAND);
-        }
-
-        double deltaX = event.getX() - lastMouseX;
-        double deltaY = event.getY() - lastMouseY;
-
-        offsetX -= deltaX / zoomLevel;
-        offsetY -= deltaY / zoomLevel;
-
-        clampOffsets();
-        redrawCanvas();
-
-        lastMouseX = event.getX();
-        lastMouseY = event.getY();
+    }
+    private void centerCanvas() {
+        canvas.setTranslateX(xOffset);
+        canvas.setTranslateY(yOffset);
     }
 
-    /**
-     * Handles mouse release events on the canvas.
-     *
-     * @param event The mouse event.
-     */
-    private void handleMouseReleased(MouseEvent event) {
-        canvas.setCursor(currentImage == null ? Cursor.DEFAULT : Cursor.OPEN_HAND);
-    }
+    public void drawImage(Image image) {
 
-    /**
-     * Handles mouse scroll events on the canvas for zooming.
-     *
-     * @param event The scroll event.
-     */
-    private void handleMouseScroll(ScrollEvent event) {
-        if (currentImage == null)
-            return;
+        this.current = image;
+        double imgWidth =  image.getWidth();
+        double imgHeight = image.getHeight();
 
-        double zoomFactorChange;
-        if (event.getDeltaY() > 0) { // Scroll up -> zoom in
-            zoomFactorChange = ZOOM_SCROLL_FACTOR;
-        } else { // Scroll down -> zoom out
-            zoomFactorChange = 1.0 / ZOOM_SCROLL_FACTOR;
-        }
+        // Set canvas size to match scaled image
+        double canvasWidth = imgWidth * scaleFactor;
+        double canvasHeight = imgHeight * scaleFactor;
+        canvas.setWidth(canvasWidth);
+        canvas.setHeight(canvasHeight);
 
-        applyZoom(zoomFactorChange, event.getX(), event.getY());
-        event.consume();
-    }
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-    /**
-     * Applies zoom transformation centered around a pivot point.
-     *
-     * @param factorChange The factor by which to change the zoom (e.g., 1.1 for 10% zoom in).
-     * @param pivotXCanvas The X-coordinate of the zoom pivot on the canvas.
-     * @param pivotYCanvas The Y-coordinate of the zoom pivot on the canvas.
-     */
-    private void applyZoom(double factorChange, double pivotXCanvas, double pivotYCanvas) {
-        if (currentImage == null)
-            return;
+        for (int x = 0; x < imgWidth; x++) {
+            for (int y = 0; y < imgHeight; y++) {
+                Color color = image.getPixelReader().getColor(x, y);
+                ctx.setFill(color);
 
-        double oldZoomLevel = zoomLevel;
-        double newZoomLevel = oldZoomLevel * factorChange;
-        newZoomLevel = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoomLevel));
+                // Draw a scaled rectangle for each pixel
+                double drawX = Math.floor(x * scaleFactor);
+                double drawY = Math.floor(y * scaleFactor);
+                double drawW = Math.ceil(scaleFactor);
+                double drawH = Math.ceil(scaleFactor);
+                ctx.fillRect(drawX, drawY, drawW, drawH);
+                ctx.fillRect(drawX, drawY, drawW + 0.5, drawH + 0.5);
 
-        if (Math.abs(newZoomLevel - oldZoomLevel) < 1e-6)
-            return; // No significant change
-
-        // Determine the point in the image that is currently under the mouse cursor (pivot)
-        double imagePivotX = offsetX + pivotXCanvas / oldZoomLevel;
-        double imagePivotY = offsetY + pivotYCanvas / oldZoomLevel;
-
-        zoomLevel = newZoomLevel;
-
-        // Adjust offsetX and offsetY so that the imagePivot point remains under the canvasPivot point
-        offsetX = imagePivotX - pivotXCanvas / zoomLevel;
-        offsetY = imagePivotY - pivotYCanvas / zoomLevel;
-
-        clampOffsets();
-        redrawCanvas();
-    }
-
-    /**
-     * Sets the image to be displayed and resets the view.
-     *
-     * @param image The image to display. Can be null to clear.
-     * @param isPng Indicates if the image is a PNG source.
-     */
-    public void loadImage(@Nullable Image image, boolean isPng) {
-        this.currentImage = image;
-        this.isPngSource = isPng;
-
-        boolean isImageValid = false;
-        if (this.currentImage != null) {
-            if (this.currentImage.isError()) {
-                System.err.println("Error loading image: " + this.currentImage.getException().getMessage());
-                this.currentImage = null;
-                this.isPngSource = false;
-            } else {
-                isImageValid = true;
             }
         }
-
-        if (isImageValid) {
-            infoPane.setVisible(true);
-            updateInfoPane();
-            resetViewToFitImage();
-        } else {
-            zoomLevel = 1.0;
-            offsetX = 0;
-            offsetY = 0;
-            redrawCanvas();
-            updateInfoPane();
-            infoPane.setVisible(false);
-        }
-
-        canvas.setCursor(currentImage == null ? Cursor.DEFAULT : Cursor.OPEN_HAND);
-
-        if (canvasContainer != null) canvasContainer.requestLayout();
+        centerCanvas();
     }
 
+<<<<<<< HEAD
+    public void setScaleFactor(float scale) {
+        this.scaleFactor = scale;
+=======
     private void updateInfoPane() {
         if (this.currentImage != null && this.imagePath != null) {
             dimensionsText.setText(("Dimensions: " + currentImage.getWidth() + " x " + currentImage.getHeight()).replace(".0", ""));
@@ -313,172 +173,13 @@ public class ImageViewerPane extends BorderPane {
         }
 
         infoPane.requestLayout();
+>>>>>>> 21649082af8d112ef8a40c33a03304cf312efc5b
     }
 
-    /**
-     * Sets the image to be displayed and resets the view.
-     *
-     * @param image The image to display. Can be null to clear.
-     */
-    public void loadImage(@Nullable Image image) {
-        loadImage(image, false);
+
+    public void setOffsets(float x, float y) {
+        this.xOffset = x;
+        this.yOffset = y;
     }
 
-    /**
-     * Draws a checkerboard pattern onto the canvas background.
-     *
-     * @param canvasW The width of the canvas.
-     * @param canvasH The height of the canvas.
-     */
-    private void drawCheckerboardBackground(double canvasW, double canvasH) {
-        for (int y = 0; y < canvasH; y += CHECKER_SIZE) {
-            for (int x = 0; x < canvasW; x += CHECKER_SIZE) {
-                // Determine color based on checker position (row + col)
-                boolean isRowEven = (y / CHECKER_SIZE) % 2 == 0;
-                boolean isColEven = (x / CHECKER_SIZE) % 2 == 0;
-                gc.setFill((isRowEven == isColEven) ? CHECKER_COLOR_1 : CHECKER_COLOR_2);
-                gc.fillRect(x, y, CHECKER_SIZE, CHECKER_SIZE);
-            }
-        }
-    }
-
-    /**
-     * Resets the zoom and pan to fit the entire image within the canvas.
-     * The image will be centered.
-     */
-    private void resetViewToFitImage() {
-        if (currentImage == null || canvas.getWidth() == 0 || canvas.getHeight() == 0) {
-            redrawCanvas();
-            return;
-        }
-
-        double canvasW = canvas.getWidth();
-        double canvasH = canvas.getHeight();
-
-        if (currentImage == null || currentImage.isError()) {
-            zoomLevel = 1.0;
-            offsetX = 0;
-            offsetY = 0;
-            redrawCanvas();
-            updateInfoPane();
-            return;
-        }
-
-        double imgW = currentImage.getWidth();
-        double imgH = currentImage.getHeight();
-        if (imgW <= 0 || imgH <= 0) {
-            zoomLevel = 1.0;
-            offsetX = 0;
-            offsetY = 0;
-            redrawCanvas();
-            return;
-        }
-
-        double zoomX = canvasW / imgW;
-        double zoomY = canvasH / imgH;
-        zoomLevel = Math.min(zoomX, zoomY);
-        zoomLevel = Math.clamp(zoomLevel, MIN_ZOOM, MAX_ZOOM);
-
-        offsetX = (imgW - canvasW / zoomLevel) / 2;
-        offsetY = (imgH - canvasH / zoomLevel) / 2;
-
-        clampOffsets();
-        redrawCanvas();
-        updateInfoPane();
-    }
-
-    /**
-     * Clamps the offsetX and offsetY values to ensure the view stays within
-     * the image boundaries.
-     */
-    private void clampOffsets() {
-        if (currentImage == null || zoomLevel == 0)
-            return;
-
-        double imgW = currentImage.getWidth();
-        double imgH = currentImage.getHeight();
-        double canvasW = canvas.getWidth();
-        double canvasH = canvas.getHeight();
-
-        // Width/height of the portion of the image that would be visible on canvas
-        double visibleImagePortionW = canvasW / zoomLevel;
-        double visibleImagePortionH = canvasH / zoomLevel;
-
-        // Max possible X offset: image width - visible portion width
-        // If visible portion is wider than image, max offset is 0 (image is smaller than view)
-        double maxOffsetX = Math.max(0, imgW - visibleImagePortionW);
-        double maxOffsetY = Math.max(0, imgH - visibleImagePortionH);
-
-        offsetX = Math.max(0, Math.min(offsetX, maxOffsetX));
-        offsetY = Math.max(0, Math.min(offsetY, maxOffsetY));
-    }
-
-    /**
-     * Redraws the image on the canvas based on the current zoom level and offsets.
-     * This method handles drawing the correct portion of the image and centering
-     * it if the scaled image is smaller than the canvas.
-     */
-    private void redrawCanvas() {
-        if (gc == null || canvas == null)
-            return;
-
-        double canvasW = canvas.getWidth();
-        double canvasH = canvas.getHeight();
-        if (canvasW <= 0 || canvasH <= 0)
-            return;
-
-        if (isPngSource) {
-            drawCheckerboardBackground(canvasW, canvasH);
-        } else {
-            gc.setFill(DEFAULT_BACKGROUND_COLOR);
-            gc.fillRect(0, 0, canvasW, canvasH);
-        }
-
-        if (currentImage == null || currentImage.isError() || zoomLevel <= 0)
-            return;
-
-        double imgW = currentImage.getWidth();
-        double imgH = currentImage.getHeight();
-
-        // Calculate source rectangle
-        double srcX = offsetX;
-        double srcY = offsetY;
-        double srcW = canvasW / zoomLevel;
-        double srcH = canvasH / zoomLevel;
-
-        // Calculate destination rectangle
-        double destX = 0;
-        double destY = 0;
-        double destW = canvasW;
-        double destH = canvasH;
-
-        // Adjust for centering when image is smaller than canvas view
-        double scaledImgW = imgW * zoomLevel;
-        double scaledImgH = imgH * zoomLevel;
-        if (scaledImgW < canvasW) {
-            srcX = 0;
-            srcW = imgW;
-            destW = scaledImgW;
-            destX = (canvasW - destW) / 2;
-        }
-        if (scaledImgH < canvasH) {
-            srcY = 0;
-            srcH = imgH;
-            destH = scaledImgH;
-            destY = (canvasH - destH) / 2;
-        }
-
-        // Final clamping/validation of source rectangle
-        srcX = Math.max(0, srcX);
-        srcY = Math.max(0, srcY);
-        srcW = Math.min(srcW, imgW - srcX);
-        srcH = Math.min(srcH, imgH - srcY);
-
-        if (srcW <= 0 || srcH <= 0 || destW <= 0 || destH <= 0)
-            return;
-
-        gc.setImageSmoothing(zoomLevel < 3.0);
-
-        gc.drawImage(currentImage, srcX, srcY, srcW, srcH, destX, destY, destW, destH);
-    }
 }
