@@ -33,11 +33,11 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
+      - name: Build
+        run: ./gradlew shadowJar
+
       - name: Check editorconfig
         run: ./gradlew editorconfigCheck
 
       - name: Check code style
         run: ./gradlew checkstyleMain --info --stacktrace
-
-      - name: Build
-        run: ./gradlew jar
