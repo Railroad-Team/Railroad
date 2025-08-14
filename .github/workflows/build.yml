@@ -37,7 +37,7 @@ jobs:
         run: ./gradlew editorconfigCheck
 
       - name: Check code style
-        run: ./gradlew checkstyleMain
+        run: ./gradlew checkstyleMain --info --stacktrace
 
       - name: Build
         run: ./gradlew jar
