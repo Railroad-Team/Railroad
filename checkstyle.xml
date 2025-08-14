@@ -1,57 +1,171 @@
 <?xml version="1.0"?>
 <!DOCTYPE module PUBLIC
-          "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
-          "https://checkstyle.org/dtds/configuration_1_3.dtd">
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
 <module name="Checker">
-    <!-- Set the charset -->
-    <property name="charset" value="UTF-8"/>
+    <!--
+        This Checker module contains the configuration for the Checkstyle tool.
+        It defines the checks that will be performed on the Java source code.
+        The configuration is based on the Google Java Style Guide, with modifications
+        to match the existing code style of the Railroad project.
+    -->
 
-    <!-- Fail on first error -->
-    <property name="severity" value="error"/>
 
-    <!-- Ensure files end with newline -->
-    <module name="NewlineAtEndOfFile"/>
-
-    <!-- No tabs allowed -->
-    <module name="FileTabCharacter">
-        <property name="eachLine" value="true"/>
+    <!-- Checks for Size Violations. -->
+    <!-- See https://checkstyle.sourceforge.io/config_sizes.html -->
+    <module name="FileLength"/>
+    <module name="LineLength">
+        <property name="max" value="120"/>
+        <property name="ignorePattern" value="^package .*|^import .*|a href|href"/>
     </module>
 
-    <!-- TreeWalker is where most Java checks live -->
+    <!-- Checks for whitespace. -->
+    <!-- See https://checkstyle.sourceforge.io/config_whitespace.html -->
+    <module name="FileTabCharacter"/>
+
+    <!-- Miscellaneous checks. -->
+    <!-- See https://checkstyle.sourceforge.io/config_misc.html -->
+
+    <module name="Translation"/>
+
     <module name="TreeWalker">
+        <!--
+            The TreeWalker module processes the Java source code as an abstract syntax tree (AST).
+            It contains checks that are applied to individual Java files.
+        -->
 
-        <!-- Naming conventions -->
-        <module name="TypeName"/>
-        <module name="MethodName"/>
-        <module name="ParameterName"/>
-        <module name="LocalVariableName"/>
-        <module name="MemberName"/>
+        <!-- Checks for Naming Conventions. -->
+        <!-- See https://checkstyle.sourceforge.io/config_naming.html -->
+        <module name="PackageName">
+            <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
+        </module>
+        <module name="TypeName">
+            <property name="format" value="^[A-Z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="MethodName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="ParameterName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="LocalVariableName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="ConstantName">
+            <property name="format" value="^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$"/>
+        </module>
 
-        <!-- Braces -->
-        <module name="NeedBraces"/>
+        <!-- Checks for Javadoc comments. -->
+        <!-- See https://checkstyle.sourceforge.io/config_javadoc.html -->
+        <module name="JavadocMethod"/>
+        <module name="JavadocType"/>
+
+        <!-- Checks for Imports. -->
+        <!-- See https://checkstyle.sourceforge.io/config_imports.html -->
+
+        <module name="UnusedImports"/>
+        <module name="RedundantImport"/>
+        <module name="IllegalImport"/> <!-- disallow sun.* packages -->
+
+
+        <!-- Checks for Whitespace. -->
+        <!-- See https://checkstyle.sourceforge.io/config_whitespace.html -->
+        <module name="WhitespaceAround">
+            <property name="tokens"
+                      value="ASSIGN,BAND,BAND_ASSIGN,BOR,BOR_ASSIGN,BSR,BSR_ASSIGN,BXOR,BXOR_ASSIGN,COLON,DIV,DIV_ASSIGN,EQUAL,GE,GT,LAND,LCURLY,LE,LITERAL_ASSERT,LITERAL_CATCH,LITERAL_DO,LITERAL_ELSE,LITERAL_FINALLY,LITERAL_FOR,LITERAL_IF,LITERAL_RETURN,LITERAL_SYNCHRONIZED,LITERAL_TRY,LITERAL_WHILE,LT,MINUS,MINUS_ASSIGN,MOD,MOD_ASSIGN,NOT_EQUAL,PLUS,PLUS_ASSIGN,QUESTION,RCURLY,SL,SL_ASSIGN,SR,SR_ASSIGN,STAR,STAR_ASSIGN,TYPE_EXTENSION_AND,WILDCARD_TYPE"/>
+        </module>
+        <module name="NoWhitespaceBefore"/>
+        <module name="NoWhitespaceAfter"/>
+        <module name="ParenPad"/>
+        <module name="MethodParamPad"/>
+        <module name="NoLineWrap"/>
+        <module name="EmptyForInitializerPad"/>
+        <module name="EmptyForIteratorPad"/>
+        <module name="GenericWhitespace"/>
+        <module name="WhitespaceAfter"/>
+        <module name="NoWhitespaceBeforeCaseDefaultColon"/>
+
+        <!-- Checks for Modifiers. -->
+        <!-- See https://checkstyle.sourceforge.io/config_modifiers.html -->
+        <module name="ModifierOrder"/>
+        <module name="RedundantModifier"/>
+
+        <!-- Checks for Blocks. -->
+        <!-- See https://checkstyle.sourceforge.io/config_blocks.html -->
+        <module name="EmptyBlock">
+            <property name="option" value="TEXT"/>
+            <property name="tokens"
+                      value="LITERAL_CATCH,LITERAL_FINALLY,LITERAL_IF,LITERAL_FOR,LITERAL_WHILE,STATIC_INIT"/>
+        </module>
+
         <module name="LeftCurly">
-            <property name="option" value="eol"/>
+            <property name="option" value="EOL"/> <!-- K&R style -->
         </module>
         <module name="RightCurly">
-            <property name="option" value="alone"/>
+            <property name="option" value="SAME"/>
         </module>
 
-        <!-- Whitespace -->
-        <module name="WhitespaceAround"/>
-        <module name="WhitespaceAfter"/>
+        <!-- Checks for Coding Problems. -->
+        <!-- See https://checkstyle.sourceforge.io/config_coding.html -->
+        <module name="EqualsHashCode"/>
+        <module name="InnerAssignment"/>
+        <module name="MissingSwitchDefault"/>
+        <module name="FallThrough"/>
+        <module name="MultipleVariableDeclarations"/>
+        <module name="SimplifyBooleanExpression"/>
+        <module name="SimplifyBooleanReturn"/>
+        <module name="StringLiteralEquality"/>
+        <module name="SuperFinalize"/>
+        <module name="UnnecessaryParentheses"/>
+        <module name="OneStatementPerLine"/>
+        <module name="OverloadMethodsDeclarationOrder"/>
+        <module name="ReturnCount">
+            <property name="max" value="2"/>
+        </module>
+        <module name="DefaultComesLast"/>
+        <module name="EmptyStatement"/>
+        <module name="IllegalInstantiation"/>
+        <module name="IllegalTokenText"/>
+        <module name="IllegalType"/>
+        <module name="MissingOverride"/>
+        <module name="NoArrayTrailingComma"/>
+        <module name="NoEnumTrailingComma"/>
+        <module name="NoFinalizer"/>
+
+        <module name="NoWhitespaceAfter"/>
         <module name="NoWhitespaceBefore"/>
+        <module name="OperatorWrap"/>
+        <module name="OuterTypeFilename"/>
+        <module name="PackageAnnotation"/>
+        <module name="ParameterAssignment"/>
 
-        <!-- Imports -->
-        <module name="UnusedImports"/>
-        <module name="AvoidStarImport"/>
+        <module name="RequireThis"/>
+        <module name="ThrowsCount"/>
+        <module name="UnnecessarySemicolonInTryWithResources"/>
+        <module name="VariableDeclarationUsageDistance"/>
+        <module name="ArrayTypeStyle"/>
+        <module name="MissingDeprecated"/>
+        <module name="MissingOverride"/>
+        <module name="PackageDeclaration"/>
+        <module name="UnnecessaryParentheses"/>
+        <module name="VisibilityModifier"/>
 
-        <!-- Complexity -->
+        <!-- Checks for Class Design. -->
+        <!-- See https://checkstyle.sourceforge.io/config_design.html -->
+        <module name="FinalClass"/>
+        <module name="HideUtilityClassConstructor"/>
+        <module name="InterfaceIsType"/>
+        <module name="MutableException"/>
+        <module name="ThrowsCount"/>
+        <module name="VisibilityModifier"/>
+
+        <!-- Metrics. -->
+        <!-- See https://checkstyle.sourceforge.io/config_metrics.html -->
         <module name="CyclomaticComplexity">
-            <property name="max" value="10"/>
+            <property name="max" value="20"/>
         </module>
-        <module name="MethodLength">
-            <property name="max" value="100"/>
-        </module>
+        <module name="JavaNCSS"/>
+        <module name="NPathComplexity"/>
     </module>
 </module>
