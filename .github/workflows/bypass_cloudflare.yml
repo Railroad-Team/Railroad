@@ -1,0 +1,15 @@
+name: Bypass Cloudflare for API Access
+on: [push]
+jobs:
+  manage-ip-whitelist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Bypass Cloudflare for GitHub Action
+        uses: xiaotianxt/bypass-cloudflare-for-github-action@v1.1.1
+        with:
+          cf_zone_id: ${{ secrets.CF_ZONE_ID }}
+          cf_api_token: ${{ secrets.CF_API_TOKEN }}
+      - name: Send request to Cloudflare-protected server
+        run: curl https://maven.railroadide.dev
