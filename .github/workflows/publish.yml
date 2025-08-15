@@ -56,17 +56,66 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: build/**/*
+          path: build/jpackage/**
+
+  build-windows:
+    runs-on: windows-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - run: gradlew.bat jpackageInstaller jpackageImage
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: build/jpackage/**
+
+  build-mac:
+    runs-on: macos-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - run: chmod +x gradlew
+      - run: ./gradlew jpackageInstaller jpackageImage
+      - name: Upload Mac artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-build
+          path: build/jpackage/**
 
   release:
     runs-on: self-hosted
-    needs: build-linux
+    needs: [build-linux, build-windows, build-mac]
     steps:
       - name: Download Linux Build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: linux-build
           path: ./dist/linux
+
+      - name: Download Windows Build
+        uses: actions/download-artifact@v5
+        with:
+          name: windows-build
+          path: ./dist/windows
+
+      - name: Download Mac Build
+        uses: actions/download-artifact@v5
+        with:
+          name: mac-build
+          path: ./dist/mac
 
       - name: Generate Changelog
         id: changelog
@@ -82,5 +131,7 @@ jobs:
           body: ${{ steps.changelog.outputs.changelog }}
           files: |
             dist/linux/**
+            dist/windows/**
+            dist/mac/**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
