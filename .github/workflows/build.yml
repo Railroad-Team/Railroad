@@ -39,5 +39,8 @@ jobs:
       - name: Check code style
         run: ./gradlew checkstyleMain
 
+      - name: Check core code style
+        run: ./gradlew :railroad-core:checkstyleMain
+
       - name: Build
-        run: ./gradlew shadowJar --debug
+        run: ./gradlew shadowJar
