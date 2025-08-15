@@ -110,7 +110,7 @@ jar {
     manifest {
         attributes(
                 "Implementation-Title": "Railroad",
-                "Implementation-Version": "1.0-alpha",
+                "Implementation-Version": "1.0-alpha", //TODO use a variable?
                 "Main-Class": "dev.railroadide.railroad.Railroad"
         )
     }
@@ -160,11 +160,26 @@ tasks.register('jpackageInstaller', Exec) {
         outputDir.deleteDir()
     }
 
+    def imageDir, imageType;
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        imageDir = 'Railroad'
+        imageType = 'msi'
+    } else if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+        imageDir = 'Railroad.app'
+        imageType = 'dmg'
+    } else if (System.getProperty('os.name').toLowerCase().contains('linux')) {
+        imageDir = 'Railroad'
+        imageType = 'deb'
+    } else {
+        throw new GradleException("Unsupported OS for jpackage: ${System.getProperty('os.name')}")
+    }
+
     commandLine 'jpackage',
-            '--app-image', "${outputDir}/Railroad",
+            '--app-image', "${outputDir}/${imageDir}",
+            '--type', "${imageType}",
             '--dest', outputDir,
             '--name', 'Railroad',
-            '--app-version', '1.0.0',
+            '--app-version', version,
             '--vendor', 'Railroad Team',
             '--description', 'Railroad Application'
 

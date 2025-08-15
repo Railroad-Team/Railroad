@@ -50,13 +50,17 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+      - name: Install fakeroot for jpackage
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot dpkg
       - run: chmod +x gradlew
       - run: ./gradlew jpackageInstaller jpackageImage
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: build/jpackage/**
+          path: build/jpackage/*.deb
 
   build-windows:
     runs-on: windows-latest
@@ -69,12 +73,17 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+      - name: Add IP to cloudflare whitelist
+        uses: xiaotianxt/bypass-cloudflare-for-github-action@v1.1.1
+        with:
+          cf_zone_id: ${{ secrets.CF_ZONE_ID }}
+          cf_api_token: ${{ secrets.CF_API_TOKEN }}
       - run: gradlew.bat jpackageInstaller jpackageImage
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: build/jpackage/**
+          path: build/jpackage/*.msi
 
   build-mac:
     runs-on: macos-latest
@@ -87,17 +96,22 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+      - name: Add IP to cloudflare whitelist
+        uses: xiaotianxt/bypass-cloudflare-for-github-actions@v1.1.1
+        with:
+          cf_zone_id: ${{ secrets.CF_ZONE_ID }}
+          cf_api_token: ${{ secrets.CF_API_TOKEN }}
       - run: chmod +x gradlew
       - run: ./gradlew jpackageInstaller jpackageImage
       - name: Upload Mac artifacts
         uses: actions/upload-artifact@v4
         with:
           name: mac-build
-          path: build/jpackage/**
+          path: build/jpackage/*.dmg
 
   release:
     runs-on: self-hosted
-    needs: [build-linux, build-windows, build-mac]
+    needs: build-linux
     steps:
       - name: Download Linux Build
         uses: actions/download-artifact@v5
@@ -119,9 +133,17 @@ jobs:
 
       - name: Generate Changelog
         id: changelog
-        uses: mikepenz/release-changelog-builder-action@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Grab everything up to the first '---' line
+          CHANGELOG=$(awk 'BEGIN{p=1} /^---/{p=0} p' CHANGELOG.md)
+
+          # Generate a unique delimiter to avoid any output issues
+          delimiter="$(openssl rand -hex 8)"
+          {
+            echo "changelog<<${delimiter}"
+            echo "$CHANGELOG"
+            echo "${delimiter}"
+          } >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -129,9 +151,9 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           body: ${{ steps.changelog.outputs.changelog }}
-          files: |
-            dist/linux/**
-            dist/windows/**
-            dist/mac/**
+          files: | # TODO - Add executable files as well as installers.
+            dist/linux/*.deb
+            dist/windows/*.msi
+            dist/mac/*.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
