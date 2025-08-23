@@ -1,0 +1,155 @@
+package dev.railroadide.railroad.ide.sst.ast;
+
+
+import dev.railroadide.railroad.ide.sst.ast.annotation.MarkerAnnotation;
+import dev.railroadide.railroad.ide.sst.ast.annotation.NormalAnnotation;
+import dev.railroadide.railroad.ide.sst.ast.annotation.SingleMemberAnnotation;
+import dev.railroadide.railroad.ide.sst.ast.clazz.*;
+import dev.railroadide.railroad.ide.sst.ast.clazz.AnnotationTypeDeclaration;
+import dev.railroadide.railroad.ide.sst.ast.clazz.AnnotationTypeMemberDeclaration;
+import dev.railroadide.railroad.ide.sst.ast.clazz.EnumConstantDeclaration;
+import dev.railroadide.railroad.ide.sst.ast.clazz.EnumDeclaration;
+import dev.railroadide.railroad.ide.sst.ast.clazz.FieldDeclaration;
+import dev.railroadide.railroad.ide.sst.ast.clazz.MethodDeclaration;
+import dev.railroadide.railroad.ide.sst.ast.clazz.RecordDeclaration;
+import dev.railroadide.railroad.ide.sst.ast.declarator.VariableDeclarator;
+import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
+import dev.railroadide.railroad.ide.sst.ast.generic.Name;
+import dev.railroadide.railroad.ide.sst.ast.generic.Pattern;
+import dev.railroadide.railroad.ide.sst.ast.parameter.Parameter;
+import dev.railroadide.railroad.ide.sst.ast.parameter.ReceiverParameter;
+import dev.railroadide.railroad.ide.sst.ast.parameter.TypeParameter;
+import dev.railroadide.railroad.ide.sst.ast.program.CompilationUnit;
+import dev.railroadide.railroad.ide.sst.ast.program.ImportDeclaration;
+import dev.railroadide.railroad.ide.sst.ast.program.PackageDeclaration;
+import dev.railroadide.railroad.ide.sst.ast.program.j9.ExportsDirective;
+import dev.railroadide.railroad.ide.sst.ast.program.j9.ModuleDeclaration;
+import dev.railroadide.railroad.ide.sst.ast.program.j9.OpensDirective;
+import dev.railroadide.railroad.ide.sst.ast.program.j9.ProvidesDirective;
+import dev.railroadide.railroad.ide.sst.ast.program.j9.RequiresDirective;
+import dev.railroadide.railroad.ide.sst.ast.program.j9.UsesDirective;
+import dev.railroadide.railroad.ide.sst.ast.statements.*;
+import dev.railroadide.railroad.ide.sst.ast.statements.EmptyStatement;
+import dev.railroadide.railroad.ide.sst.ast.statements.EnhancedForStatement;
+import dev.railroadide.railroad.ide.sst.ast.statements.ExpressionStatement;
+import dev.railroadide.railroad.ide.sst.ast.statements.IfStatement;
+import dev.railroadide.railroad.ide.sst.ast.statements.LabeledStatement;
+import dev.railroadide.railroad.ide.sst.ast.statements.WhileStatement;
+import dev.railroadide.railroad.ide.sst.ast.statements.block.BlockStatement;
+import dev.railroadide.railroad.ide.sst.ast.statements.block.InstanceInitializerBlock;
+import dev.railroadide.railroad.ide.sst.ast.statements.block.StaticInitializerBlock;
+import dev.railroadide.railroad.ide.sst.ast.statements.switches.CaseItem;
+import dev.railroadide.railroad.ide.sst.ast.statements.switches.SwitchLabel;
+import dev.railroadide.railroad.ide.sst.ast.statements.switches.SwitchRule;
+import dev.railroadide.railroad.ide.sst.ast.statements.switches.SwitchStatement;
+import dev.railroadide.railroad.ide.sst.ast.typeref.*;
+import org.codehaus.groovy.ast.expr.MethodReferenceExpression;
+import org.eclipse.jdt.core.dom.*;
+
+public interface AstVisitor<R> {
+    R visitCompilationUnit(CompilationUnit node);
+    R visitPackageDeclaration(PackageDeclaration node);
+    R visitImportDeclaration(ImportDeclaration node);
+
+    R visitModuleDeclaration(ModuleDeclaration node);
+    R visitRequiresDirective(RequiresDirective node);
+    R visitExportsDirective(ExportsDirective node);
+    R visitOpensDirective(OpensDirective node);
+    R visitUsesDirective(UsesDirective node);
+    R visitProvidesDirective(ProvidesDirective node);
+
+    R visitClassDeclaration(ClassDeclaration node);
+    R visitEnumDeclaration(EnumDeclaration node);
+    R visitRecordDeclaration(RecordDeclaration node);
+    R visitInterfaceDeclaration(InterfaceDeclaration node);
+    R visitAnnotationTypeDeclaration(AnnotationTypeDeclaration node);
+
+    R visitFieldDeclaration(FieldDeclaration node);
+    R visitMethodDeclaration(MethodDeclaration node);
+    R visitConstructorDeclaration(ConstructorDeclaration node);
+    R visitCompactConstructorDeclaration(CompactConstructorDeclaration node);
+    R visitEnumConstantDeclaration(EnumConstantDeclaration node);
+    R visitAnnotationTypeMemberDeclaration(AnnotationTypeMemberDeclaration node);
+
+    R visitStaticInitializerBlock(StaticInitializerBlock node);
+    R visitInstanceInitializerBlock(InstanceInitializerBlock node);
+
+    R visitBlockStatement(BlockStatement node);
+    R visitEmptyStatement(EmptyStatement node);
+    R visitLabeledStatement(LabeledStatement node);
+    R visitExpressionStatement(ExpressionStatement node);
+    R visitLocalVariableDeclarationStatement(LocalVariableDeclarationStatement node);
+    R visitIfStatement(IfStatement node);
+    R visitSwitchStatement(SwitchStatement node);
+    R visitSwitchRule(SwitchRule node);
+    R visitCaseLabel(SwitchLabel.CaseLabel node);
+    R visitDefaultLabel(SwitchLabel.DefaultLabel node);
+    R visitCaseConstant(CaseItem.CaseConstant node);
+    R visitCasePattern(CaseItem.CasePattern node);
+    R visitCasePatternGuard(CaseItem.CasePattern.Guard node);
+    R visitCaseNull(CaseItem.CaseNull node);
+    R visitWhileStatement(WhileStatement node);
+    R visitDoWhileStatement(DoWhileStatement node);
+    R visitBasicForStatement(BasicForStatement node);
+    R visitEnhancedForStatement(EnhancedForStatement node);
+    R visitBreakStatement(BreakStatement node);
+    R visitContinueStatement(ContinueStatement node);
+    R visitReturnStatement(ReturnStatement node);
+    R visitThrowStatement(ThrowStatement node);
+    R visitTryStatement(TryStatement node);
+    R visitCatchClause(CatchClause node);
+    R visitFinallyClause(FinallyClause node);
+    R visitThrowsClause(ThrowsClause node);
+    R visitSynchronizedStatement(SynchronizedStatement node);
+    R visitAssertStatement(AssertStatement node);
+    R visitYieldStatement(YieldStatement node);
+
+    R visitAssignmentExpression(AssignmentExpression node);
+    R visitConditionalExpression(ConditionalExpression node);
+    R visitLambdaExpression(LambdaExpression node);
+    R visitMethodInvocationExpression(MethodInvocationExpression node);
+    R visitMethodReferenceExpression(MethodReferenceExpression node);
+    R visitObjectCreationExpression(ObjectCreationExpression node);
+    R visitArrayCreationExpression(ArrayCreationExpression node);
+    R visitArrayAccessExpression(ArrayAccessExpression node);
+    R visitFieldAccessExpression(FieldAccessExpression node);
+    R visitThisExpression(ThisExpression node);
+    R visitSuperExpression(SuperExpression node);
+    R visitTypeCastExpression(TypeCastExpression node);
+    R visitInstanceofExpression(InstanceofExpression node);
+    R visitBinaryExpression(BinaryExpression node);
+    R visitUnaryExpression(UnaryExpression node);
+    R visitSwitchExpression(SwitchExpression node);
+    R visitYieldExpression(YieldExpression node);
+
+    R visitTypeTestPattern(Pattern.TypeTestPattern node);
+    R visitRecordPattern(Pattern.RecordPattern node);
+    R visitMatchAllPattern(Pattern.MatchAllPattern node);
+
+    R visitPrimitiveType(PrimitiveTypeRef node);
+    R visitArrayType(ArrayTypeRef node);
+    R visitClassOrInterfaceType(ClassOrInterfaceTypeRef node);
+    R visitTypeVariable(TypeVariableRef node);
+    R visitIntersectionType(IntersectionTypeRef node);
+    R visitUnionType(UnionTypeRef node);
+    R visitWildcardType(WildcardTypeRef node);
+
+    R visitModifier(Modifier node);
+    R visitMarkerAnnotation(MarkerAnnotation node);
+    R visitSingleMemberAnnotation(SingleMemberAnnotation node);
+    R visitNormalAnnotation(NormalAnnotation node);
+
+    R visitName(Name node);
+    R visitParameter(Parameter node);
+    R visitReceiverParameter(ReceiverParameter node);
+    R visitTypeParameter(TypeParameter node);
+    R visitVariableDeclarator(VariableDeclarator node);
+
+    R visitIntegerLiteral(IntegerLiteral node);
+    R visitFloatingPointLiteral(FloatingPointLiteral node);
+    R visitBooleanLiteral(BooleanLiteral node);
+    R visitCharacterLiteral(CharacterLiteral node);
+    R visitStringLiteral(StringLiteral node);
+    R visitNullLiteral(NullLiteral node);
+    R visitTextBlockLiteral(TextBlockLiteral node);
+}
