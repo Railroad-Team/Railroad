@@ -6,6 +6,7 @@ import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.indexing.Autocomplete;
 import dev.railroadide.railroad.ide.indexing.Indexes;
 import dev.railroadide.railroad.ide.syntaxhighlighting.TreeSitterJavaSyntaxHighlighting;
+import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.compiler.JavaSourceFromString;
 import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
@@ -57,8 +58,12 @@ public class JavaCodeEditorPane extends TextEditorPane {
     private int dotPosition = -1;
     private ChangeListener<String> textListener;
 
-    public JavaCodeEditorPane(Path item) {
+    private final Project project;
+
+    public JavaCodeEditorPane(Project project, Path item) {
         super(item);
+
+        this.project = project;
 
         marginErrors();
 
@@ -387,10 +392,21 @@ public class JavaCodeEditorPane extends TextEditorPane {
         Task<DiagnosticCollector<JavaFileObject>> task = new Task<>() {
             @Override
             protected DiagnosticCollector<JavaFileObject> call() {
+                long startTime = System.currentTimeMillis();
+
                 var source = new JavaSourceFromString(JavaCodeEditorPane.this.filePath.getFileName().toString().replace(".java", ""), getText());
                 DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-                JavaCompiler.CompilationTask task = JAVA_COMPILER.getTask(null, null, diagnostics, List.of("-Xlint:all"), null, List.of(source));
+
+                JavaCompiler.CompilationTask task = JAVA_COMPILER.getTask(
+                        null,
+                        null,
+                        diagnostics,
+                        List.of("-proc:none", "-Xlint:all"),
+                        null,
+                        List.of(source));
                 task.call();
+
+                Railroad.LOGGER.debug("Error diagnostics took {}ms", System.currentTimeMillis() - startTime);
                 return diagnostics;
             }
         };

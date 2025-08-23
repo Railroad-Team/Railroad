@@ -6,6 +6,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
+import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroadpluginapi.events.FileRenamedEvent;
 import javafx.application.Platform;
@@ -30,10 +31,12 @@ public class PathTreeCell extends TreeCell<PathItem> {
     private TextField textField;
     private Path editingPath;
     private boolean allowEdit = false;
+    private final Project project;
 
-    public PathTreeCell(StringProperty messageProperty, RRBorderPane mainPane) {
+    public PathTreeCell(Project project, StringProperty messageProperty, RRBorderPane mainPane) {
         super();
 
+        this.project = project;
         this.messageProperty = messageProperty;
         this.mainPane = mainPane;
     }
@@ -154,7 +157,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
                             TreeItem<PathItem> treeItem = getTreeItem();
                             treeItem.setExpanded(!treeItem.isExpanded());
                         } else {
-                            ProjectExplorerPane.openFile(getItem(), mainPane);
+                            ProjectExplorerPane.openFile(project, getItem(), mainPane);
                         }
                         event.consume();
                     }
