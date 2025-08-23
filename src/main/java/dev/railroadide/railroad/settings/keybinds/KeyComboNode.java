@@ -48,6 +48,8 @@ public class KeyComboNode extends RRButton {
      * @return True if both arrays contain the same modifiers, false otherwise.
      */
     private static boolean areModifiersEqual(KeyCombination.Modifier[] a, KeyCombination.Modifier[] b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
         if (a.length != b.length) return false;
         for (KeyCombination.Modifier modA : a) {
             boolean found = false;
@@ -110,6 +112,7 @@ public class KeyComboNode extends RRButton {
      */
     private void onKeyReleased(KeyEvent event) {
         if (!editing || tempKeyCode == null) return;
+        if (tempKeyCode.isModifierKey()) return;
         event.consume();
 
         boolean changed = !tempKeyCode.equals(this.keybindData.keyCode()) || !areModifiersEqual(this.keybindData.modifiers(), tempModifiers);
