@@ -5,49 +5,18 @@ import dev.railroadide.railroad.ide.sst.ast.annotation.MarkerAnnotation;
 import dev.railroadide.railroad.ide.sst.ast.annotation.NormalAnnotation;
 import dev.railroadide.railroad.ide.sst.ast.annotation.SingleMemberAnnotation;
 import dev.railroadide.railroad.ide.sst.ast.clazz.*;
-import dev.railroadide.railroad.ide.sst.ast.clazz.AnnotationTypeDeclaration;
-import dev.railroadide.railroad.ide.sst.ast.clazz.AnnotationTypeMemberDeclaration;
-import dev.railroadide.railroad.ide.sst.ast.clazz.EnumConstantDeclaration;
-import dev.railroadide.railroad.ide.sst.ast.clazz.EnumDeclaration;
-import dev.railroadide.railroad.ide.sst.ast.clazz.FieldDeclaration;
-import dev.railroadide.railroad.ide.sst.ast.clazz.MethodDeclaration;
-import dev.railroadide.railroad.ide.sst.ast.clazz.RecordDeclaration;
-import dev.railroadide.railroad.ide.sst.ast.declarator.VariableDeclarator;
-import dev.railroadide.railroad.ide.sst.ast.expression.AssignmentExpression;
-import dev.railroadide.railroad.ide.sst.ast.expression.ConditionalExpression;
-import dev.railroadide.railroad.ide.sst.ast.expression.LambdaExpression;
-import dev.railroadide.railroad.ide.sst.ast.expression.MethodInvocationExpression;
-import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
-import dev.railroadide.railroad.ide.sst.ast.generic.Name;
-import dev.railroadide.railroad.ide.sst.ast.generic.Pattern;
+import dev.railroadide.railroad.ide.sst.ast.generic.VariableDeclarator;
+import dev.railroadide.railroad.ide.sst.ast.expression.*;
+import dev.railroadide.railroad.ide.sst.ast.generic.*;
+import dev.railroadide.railroad.ide.sst.ast.literal.*;
 import dev.railroadide.railroad.ide.sst.ast.parameter.Parameter;
 import dev.railroadide.railroad.ide.sst.ast.parameter.ReceiverParameter;
 import dev.railroadide.railroad.ide.sst.ast.parameter.TypeParameter;
 import dev.railroadide.railroad.ide.sst.ast.program.CompilationUnit;
 import dev.railroadide.railroad.ide.sst.ast.program.ImportDeclaration;
 import dev.railroadide.railroad.ide.sst.ast.program.PackageDeclaration;
-import dev.railroadide.railroad.ide.sst.ast.program.j9.ExportsDirective;
-import dev.railroadide.railroad.ide.sst.ast.program.j9.ModuleDeclaration;
-import dev.railroadide.railroad.ide.sst.ast.program.j9.OpensDirective;
-import dev.railroadide.railroad.ide.sst.ast.program.j9.ProvidesDirective;
-import dev.railroadide.railroad.ide.sst.ast.program.j9.RequiresDirective;
-import dev.railroadide.railroad.ide.sst.ast.program.j9.UsesDirective;
+import dev.railroadide.railroad.ide.sst.ast.program.j9.*;
 import dev.railroadide.railroad.ide.sst.ast.statements.*;
-import dev.railroadide.railroad.ide.sst.ast.statements.AssertStatement;
-import dev.railroadide.railroad.ide.sst.ast.statements.BreakStatement;
-import dev.railroadide.railroad.ide.sst.ast.statements.CatchClause;
-import dev.railroadide.railroad.ide.sst.ast.statements.ContinueStatement;
-import dev.railroadide.railroad.ide.sst.ast.statements.EmptyStatement;
-import dev.railroadide.railroad.ide.sst.ast.statements.EnhancedForStatement;
-import dev.railroadide.railroad.ide.sst.ast.statements.ExpressionStatement;
-import dev.railroadide.railroad.ide.sst.ast.statements.IfStatement;
-import dev.railroadide.railroad.ide.sst.ast.statements.LabeledStatement;
-import dev.railroadide.railroad.ide.sst.ast.statements.ReturnStatement;
-import dev.railroadide.railroad.ide.sst.ast.statements.SynchronizedStatement;
-import dev.railroadide.railroad.ide.sst.ast.statements.ThrowStatement;
-import dev.railroadide.railroad.ide.sst.ast.statements.TryStatement;
-import dev.railroadide.railroad.ide.sst.ast.statements.WhileStatement;
-import dev.railroadide.railroad.ide.sst.ast.statements.YieldStatement;
 import dev.railroadide.railroad.ide.sst.ast.statements.block.BlockStatement;
 import dev.railroadide.railroad.ide.sst.ast.statements.block.InstanceInitializerBlock;
 import dev.railroadide.railroad.ide.sst.ast.statements.block.StaticInitializerBlock;
@@ -56,8 +25,6 @@ import dev.railroadide.railroad.ide.sst.ast.statements.switches.SwitchLabel;
 import dev.railroadide.railroad.ide.sst.ast.statements.switches.SwitchRule;
 import dev.railroadide.railroad.ide.sst.ast.statements.switches.SwitchStatement;
 import dev.railroadide.railroad.ide.sst.ast.typeref.*;
-import org.codehaus.groovy.ast.expr.MethodReferenceExpression;
-import org.eclipse.jdt.core.dom.*;
 
 public interface AstVisitor<R> {
     R visitCompilationUnit(CompilationUnit node);
@@ -74,8 +41,10 @@ public interface AstVisitor<R> {
     R visitClassDeclaration(ClassDeclaration node);
     R visitEnumDeclaration(EnumDeclaration node);
     R visitRecordDeclaration(RecordDeclaration node);
+    R visitRecordComponent(RecordComponent node);
     R visitInterfaceDeclaration(InterfaceDeclaration node);
     R visitAnnotationTypeDeclaration(AnnotationTypeDeclaration node);
+    R visitAnnotationElement(AnnotationElement node);
 
     R visitFieldDeclaration(FieldDeclaration node);
     R visitMethodDeclaration(MethodDeclaration node);
@@ -124,6 +93,7 @@ public interface AstVisitor<R> {
     R visitMethodInvocationExpression(MethodInvocationExpression node);
     R visitMethodReferenceExpression(MethodReferenceExpression node);
     R visitObjectCreationExpression(ObjectCreationExpression node);
+    R visitArrayInitializer(ArrayInitializer node);
     R visitArrayCreationExpression(ArrayCreationExpression node);
     R visitArrayAccessExpression(ArrayAccessExpression node);
     R visitFieldAccessExpression(FieldAccessExpression node);
@@ -134,7 +104,6 @@ public interface AstVisitor<R> {
     R visitBinaryExpression(BinaryExpression node);
     R visitUnaryExpression(UnaryExpression node);
     R visitSwitchExpression(SwitchExpression node);
-    R visitYieldExpression(YieldExpression node);
 
     R visitTypeTestPattern(Pattern.TypeTestPattern node);
     R visitRecordPattern(Pattern.RecordPattern node);
@@ -166,5 +135,4 @@ public interface AstVisitor<R> {
     R visitCharacterLiteral(CharacterLiteral node);
     R visitStringLiteral(StringLiteral node);
     R visitNullLiteral(NullLiteral node);
-    R visitTextBlockLiteral(TextBlockLiteral node);
 }

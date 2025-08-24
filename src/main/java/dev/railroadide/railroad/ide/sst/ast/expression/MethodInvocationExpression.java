@@ -6,6 +6,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.generic.Name;
 import dev.railroadide.railroad.ide.sst.ast.parameter.TypeParameter;
+import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ import java.util.Optional;
 public record MethodInvocationExpression(
         Span span,
         Optional<Expression> scope,
-        List<TypeParameter> typeArguments,
+        List<TypeRef> typeArguments,
         Name methodName,
         List<Expression> arguments
 ) implements Expression {
@@ -31,7 +32,7 @@ public record MethodInvocationExpression(
         children.addAll(typeArguments);
         children.add(methodName);
         children.addAll(arguments);
-        return children;
+        return List.copyOf(children);
     }
 
     @Override

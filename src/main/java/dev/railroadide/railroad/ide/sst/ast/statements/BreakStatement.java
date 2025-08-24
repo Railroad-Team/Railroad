@@ -27,7 +27,7 @@ public record BreakStatement(
         List<AstNode> children = new ArrayList<>();
         label.ifPresent(children::add);
         expression.ifPresent(children::add);
-        return children;
+        return List.copyOf(children);
     }
 
     @Override

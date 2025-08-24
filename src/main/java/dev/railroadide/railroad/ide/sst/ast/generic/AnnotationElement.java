@@ -1,34 +1,31 @@
-package dev.railroadide.railroad.ide.sst.ast.statements;
+package dev.railroadide.railroad.ide.sst.ast.generic;
 
 import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
-import dev.railroadide.railroad.ide.sst.ast.generic.Name;
+import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-public record ContinueStatement(
+public record AnnotationElement(
         Span span,
-        Optional<Name> label
-) implements Statement {
+        Name name,
+        Expression value
+) implements AstNode {
     @Override
     public AstKind kind() {
-        return AstKind.CONTINUE_STATEMENT;
+        return AstKind.ANNOTATION_ELEMENT;
     }
 
     @Override
     public List<AstNode> children() {
-        List<AstNode> children = new ArrayList<>();
-        label.ifPresent(children::add);
-        return List.copyOf(children);
+        return List.of(name, value);
     }
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitContinueStatement(this);
+        return visitor.visitAnnotationElement(this);
     }
 }

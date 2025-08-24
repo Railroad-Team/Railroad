@@ -21,7 +21,7 @@ public record ClassOrInterfaceTypeRef(Span span, Name name, List<TypeRef> typeAr
         List<AstNode> children = new ArrayList<>();
         children.add(name);
         children.addAll(typeArguments);
-        return children;
+        return List.copyOf(children);
     }
 
     @Override

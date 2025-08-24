@@ -4,6 +4,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
 import dev.railroadide.railroad.ide.sst.ast.statements.Statement;
 import org.jetbrains.annotations.NotNull;
 
@@ -25,7 +26,7 @@ public record SwitchStatement(
         List<AstNode> children = new ArrayList<>();
         children.add(selectionExpression);
         children.addAll(rule);
-        return children;
+        return List.copyOf(children);
     }
 
     @Override

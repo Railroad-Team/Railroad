@@ -4,6 +4,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
 import dev.railroadide.railroad.ide.sst.ast.generic.Pattern;
 
 import java.util.List;

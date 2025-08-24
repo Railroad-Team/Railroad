@@ -7,9 +7,10 @@ import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
 import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
 import dev.railroadide.railroad.ide.sst.ast.generic.Name;
-import org.freedesktop.dbus.TypeRef;
+import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public record Parameter(
@@ -27,10 +28,12 @@ public record Parameter(
 
     @Override
     public List<AstNode> children() {
-        return List.of(
-                type,
-                name
-        );
+        List<AstNode> children = new ArrayList<>();
+        children.addAll(modifiers);
+        children.addAll(annotations);
+        children.add(type);
+        children.add(name);
+        return List.copyOf(children);
     }
 
     @Override
