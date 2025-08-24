@@ -4,15 +4,15 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.generic.Name;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 public record UsesDirective(
         Span span,
-        String moduleName,
-        boolean isStatic
-) implements AstNode {
+        Name serviceName
+) implements ModuleDirective {
     @Override
     public AstKind kind() {
         return AstKind.USES_DIRECTIVE;
@@ -20,7 +20,7 @@ public record UsesDirective(
 
     @Override
     public List<AstNode> children() {
-        return List.of(); // Uses directives do not have children nodes.
+        return List.of(serviceName);
     }
 
     @Override

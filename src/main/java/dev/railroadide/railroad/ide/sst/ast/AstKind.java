@@ -7,7 +7,7 @@ public enum AstKind {
     IMPORT_DECLARATION,
 
     // Java 9+ Program structure
-    MODULE_DECLARATION,
+    MODULAR_COMPILATION_UNIT,
     REQUIRES_DIRECTIVE,
     EXPORTS_DIRECTIVE,
     OPENS_DIRECTIVE,

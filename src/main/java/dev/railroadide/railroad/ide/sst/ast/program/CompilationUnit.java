@@ -5,7 +5,6 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.clazz.TypeDeclaration;
-import dev.railroadide.railroad.ide.sst.ast.program.j9.ModuleDeclaration;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -16,8 +15,7 @@ public record CompilationUnit(
         Span span,
         Optional<PackageDeclaration> packageDeclaration,
         List<ImportDeclaration> importDeclarations,
-        List<TypeDeclaration> typeDeclarations,
-        Optional<ModuleDeclaration> moduleDeclaration
+        List<TypeDeclaration> typeDeclarations
 ) implements AstNode {
     @Override
     public AstKind kind() {
@@ -30,7 +28,6 @@ public record CompilationUnit(
         packageDeclaration.ifPresent(children::add);
         children.addAll(importDeclarations);
         children.addAll(typeDeclarations);
-        moduleDeclaration.ifPresent(children::add);
         return List.copyOf(children);
     }
 
