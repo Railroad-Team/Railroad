@@ -1,10 +1,11 @@
-package dev.railroadide.railroad.project.minecraft;
+package dev.railroadide.railroad.project.minecraft.fabric;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;

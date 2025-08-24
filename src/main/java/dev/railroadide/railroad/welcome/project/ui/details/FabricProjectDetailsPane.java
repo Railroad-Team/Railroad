@@ -9,7 +9,7 @@ import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.railroad.project.License;
 import dev.railroadide.railroad.project.data.FabricProjectData;
 import dev.railroadide.railroad.project.minecraft.FabricAPIVersion;
-import dev.railroadide.railroad.project.minecraft.FabricLoaderVersion;
+import dev.railroadide.railroad.project.minecraft.fabric.FabricLoaderVersion;
 import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import dev.railroadide.railroad.project.minecraft.RecommendableVersion;
 import dev.railroadide.railroad.project.minecraft.mapping.MappingChannel;

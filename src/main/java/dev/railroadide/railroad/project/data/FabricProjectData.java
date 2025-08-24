@@ -3,7 +3,7 @@ package dev.railroadide.railroad.project.data;
 
 import dev.railroadide.railroad.project.License;
 import dev.railroadide.railroad.project.minecraft.FabricAPIVersion;
-import dev.railroadide.railroad.project.minecraft.FabricLoaderVersion;
+import dev.railroadide.railroad.project.minecraft.fabric.FabricLoaderVersion;
 import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import dev.railroadide.railroad.project.minecraft.mapping.MappingChannel;
 import dev.railroadide.railroad.project.minecraft.mapping.MappingVersion;
