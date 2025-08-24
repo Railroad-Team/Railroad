@@ -5,23 +5,28 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
+import dev.railroadide.railroad.ide.sst.ast.statements.block.BlockStatement;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record DoWhileStatement(Span span, Statement body, Expression condition) implements Statement {
+public record SynchronizedStatement(
+        Span span,
+        Expression expression,
+        BlockStatement body
+) implements Statement {
     @Override
     public AstKind kind() {
-        return AstKind.DO_WHILE_STATEMENT;
+        return AstKind.SYNCHRONIZED_STATEMENT;
     }
 
     @Override
     public List<AstNode> children() {
-        return List.of(body, condition);
+        return List.of(expression, body);
     }
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitDoWhileStatement(this);
+        return visitor.visitSynchronizedStatement(this);
     }
 }
