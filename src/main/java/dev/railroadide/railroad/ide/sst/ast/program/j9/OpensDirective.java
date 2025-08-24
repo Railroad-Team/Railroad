@@ -4,16 +4,17 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.generic.Name;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public record OpensDirective(
         Span span,
-        String moduleName,
-        String packageName,
-        boolean isToAll
-) implements AstNode {
+        Name packageName,
+        List<Name> targetModules
+) implements ModuleDirective {
     @Override
     public AstKind kind() {
         return AstKind.OPENS_DIRECTIVE;
@@ -21,7 +22,10 @@ public record OpensDirective(
 
     @Override
     public List<AstNode> children() {
-        return List.of(); // Opens directives do not have children nodes.
+        List<AstNode> children = new ArrayList<>();
+        children.add(packageName);
+        children.addAll(targetModules);
+        return List.copyOf(children);
     }
 
     @Override

@@ -4,16 +4,17 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.generic.Name;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public record ProvidesDirective(
         Span span,
-        String moduleName,
-        String serviceName,
-        boolean isStatic
-) implements AstNode {
+        Name service,
+        List<Name> implementations
+) implements ModuleDirective {
     @Override
     public AstKind kind() {
         return AstKind.PROVIDES_DIRECTIVE;
@@ -21,7 +22,10 @@ public record ProvidesDirective(
 
     @Override
     public List<AstNode> children() {
-        return List.of(); // Provides directives do not have children nodes.
+        List<AstNode> children = new ArrayList<>();
+        children.add(service);
+        children.addAll(implementations);
+        return List.copyOf(children);
     }
 
     @Override

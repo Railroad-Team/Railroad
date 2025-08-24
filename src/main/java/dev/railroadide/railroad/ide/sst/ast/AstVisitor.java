@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.ide.sst.ast;
 
-
 import dev.railroadide.railroad.ide.sst.ast.annotation.MarkerAnnotation;
 import dev.railroadide.railroad.ide.sst.ast.annotation.NormalAnnotation;
 import dev.railroadide.railroad.ide.sst.ast.annotation.SingleMemberAnnotation;
@@ -31,7 +30,7 @@ public interface AstVisitor<R> {
     R visitPackageDeclaration(PackageDeclaration node);
     R visitImportDeclaration(ImportDeclaration node);
 
-    R visitModuleDeclaration(ModuleDeclaration node);
+    R visitModularCompilationUnit(ModularCompilationUnit node);
     R visitRequiresDirective(RequiresDirective node);
     R visitExportsDirective(ExportsDirective node);
     R visitOpensDirective(OpensDirective node);

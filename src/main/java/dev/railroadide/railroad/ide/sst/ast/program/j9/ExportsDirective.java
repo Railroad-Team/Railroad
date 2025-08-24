@@ -4,18 +4,17 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.generic.Name;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public record ExportsDirective(
         Span span,
-        String moduleName,
-        String packageName,
-        boolean isToAll,
-        boolean isToPublic
-) implements AstNode {
-
+        Name packageName,
+        List<Name> moduleNames
+) implements ModuleDirective {
     @Override
     public AstKind kind() {
         return AstKind.EXPORTS_DIRECTIVE;
@@ -23,7 +22,10 @@ public record ExportsDirective(
 
     @Override
     public List<AstNode> children() {
-        return List.of(); // Exports directives do not have children nodes.
+        List<AstNode> children = new ArrayList<>();
+        children.add(packageName);
+        children.addAll(moduleNames);
+        return List.copyOf(children);
     }
 
     @Override
