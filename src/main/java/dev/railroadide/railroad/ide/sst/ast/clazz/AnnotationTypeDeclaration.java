@@ -4,6 +4,10 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
+import dev.railroadide.railroad.ide.sst.ast.generic.ClassMember;
+import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
+import dev.railroadide.railroad.ide.sst.ast.generic.Name;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -14,7 +18,7 @@ public record AnnotationTypeDeclaration(
         List<Modifier> modifiers,
         List<Annotation> annotations,
         Name name,
-        List<AnnotationMember> members
+        List<ClassMember> members
 ) implements TypeDeclaration {
     @Override
     public AstKind kind() {

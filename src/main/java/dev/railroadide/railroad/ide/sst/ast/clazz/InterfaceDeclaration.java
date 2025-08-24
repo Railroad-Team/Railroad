@@ -4,7 +4,12 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
-import org.freedesktop.dbus.TypeRef;
+import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
+import dev.railroadide.railroad.ide.sst.ast.generic.ClassMember;
+import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
+import dev.railroadide.railroad.ide.sst.ast.generic.Name;
+import dev.railroadide.railroad.ide.sst.ast.parameter.TypeParameter;
+import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -17,7 +22,7 @@ public record InterfaceDeclaration(
         Name name,
         List<TypeParameter> typeParameters,
         List<TypeRef> extendsTypes,
-        List<InterfaceMember> members) implements TypeDeclaration {
+        List<ClassMember> members) implements TypeDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.INTERFACE_DECLARATION;
@@ -30,7 +35,7 @@ public record InterfaceDeclaration(
         children.addAll(typeParameters);
         children.addAll(extendsTypes);
         children.addAll(members);
-        return children;
+        return List.copyOf(children);
     }
 
     @Override

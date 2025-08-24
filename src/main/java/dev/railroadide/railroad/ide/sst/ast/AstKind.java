@@ -18,8 +18,10 @@ public enum AstKind {
     CLASS_DECLARATION,
     ENUM_DECLARATION,
     RECORD_DECLARATION, // Java 14+ (preview), Java 16+ (standard)
+    RECORD_COMPONENT, // Java 14+ (preview), Java 16+ (standard)
     INTERFACE_DECLARATION,
     ANNOTATION_TYPE_DECLARATION,
+    ANNOTATION_ELEMENT, // e.g., value = "example" in @MyAnnotation(value = "example")
 
     // Member Declarations
     FIELD_DECLARATION,
@@ -73,6 +75,7 @@ public enum AstKind {
     METHOD_REFERENCE_EXPRESSION, // Java 8+
     OBJECT_CREATION_EXPRESSION,
     ARRAY_CREATION_EXPRESSION,
+    ARRAY_INITIALIZER,
     ARRAY_ACCESS_EXPRESSION,
     FIELD_ACCESS_EXPRESSION,
     THIS_EXPRESSION,
@@ -83,7 +86,6 @@ public enum AstKind {
     BINARY_EXPRESSION,
     UNARY_EXPRESSION,
     SWITCH_EXPRESSION, // Java 12+ (preview), Java 14+ (standard)
-    YIELD_EXPRESSION, // Java 13+ (preview), Java 14+ (standard)
 
     // Patterns
     TYPE_TEST_PATTERN, // instanceof with pattern matching (Java 14+ preview, Java 16+ standard)
@@ -121,6 +123,5 @@ public enum AstKind {
     BOOLEAN_LITERAL,
     CHARACTER_LITERAL,
     STRING_LITERAL,
-    NULL_LITERAL,
-    TEXT_BLOCK_LITERAL, // Java 13+ (preview), Java 15+ (standard)
+    NULL_LITERAL
 }

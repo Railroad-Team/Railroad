@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 public sealed interface Pattern extends AstNode permits Pattern.MatchAllPattern, Pattern.RecordPattern, Pattern.TypeTestPattern {
-    record TypeTestPattern(Span span, TypeRef type, Name variable) implements Pattern {
+    record TypeTestPattern(Span span, TypeRef type, Optional<Name> variable) implements Pattern {
         @Override
         public AstKind kind() {
             return AstKind.TYPE_TEST_PATTERN;
@@ -20,7 +20,10 @@ public sealed interface Pattern extends AstNode permits Pattern.MatchAllPattern,
 
         @Override
         public List<AstNode> children() {
-            return List.of(type, variable);
+            List<AstNode> children = new ArrayList<>();
+            children.add(type);
+            variable.ifPresent(children::add);
+            return List.copyOf(children);
         }
 
         @Override

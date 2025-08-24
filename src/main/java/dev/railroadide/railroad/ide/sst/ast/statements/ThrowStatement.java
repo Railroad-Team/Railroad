@@ -24,7 +24,7 @@ public record ThrowStatement(
     public List<AstNode> children() {
         List<AstNode> children = new ArrayList<>();
         expression.ifPresent(children::add);
-        return children;
+        return List.copyOf(children);
     }
 
     @Override

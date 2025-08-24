@@ -10,7 +10,6 @@ import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
 import dev.railroadide.railroad.ide.sst.ast.generic.Name;
 import dev.railroadide.railroad.ide.sst.ast.statements.block.BlockStatement;
 import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
-import org.eclipse.jdt.core.dom.CatchClause;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -35,7 +34,7 @@ public record TryStatement(
         children.add(tryBlock);
         children.addAll(catchClauses);
         finallyBlock.ifPresent(children::add);
-        return children;
+        return List.copyOf(children);
     }
 
     @Override
@@ -63,7 +62,7 @@ public record TryStatement(
             children.add(type);
             children.add(name);
             children.add(expression);
-            return children;
+            return List.copyOf(children);
         }
 
         @Override

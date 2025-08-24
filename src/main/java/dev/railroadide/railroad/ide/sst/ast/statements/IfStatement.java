@@ -28,7 +28,7 @@ public record IfStatement(
         children.add(condition);
         children.add(thenStatement);
         elseStatement.ifPresent(children::add);
-        return children;
+        return List.copyOf(children);
     }
 
     @Override

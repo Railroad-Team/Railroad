@@ -24,7 +24,7 @@ public record EnumConstantDeclaration(Span span, List<Annotation> annotations, N
         children.addAll(annotations);
         children.add(name);
         children.addAll(body);
-        return children;
+        return List.copyOf(children);
     }
 
     @Override

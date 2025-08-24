@@ -33,7 +33,7 @@ public record CompactConstructorDeclaration(
         children.addAll(annotations);
         children.add(name);
         body.ifPresent(children::add);
-        return children;
+        return List.copyOf(children);
     }
 
     @Override

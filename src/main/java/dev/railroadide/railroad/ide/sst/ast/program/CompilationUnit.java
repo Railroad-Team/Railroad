@@ -31,7 +31,7 @@ public record CompilationUnit(
         children.addAll(importDeclarations);
         children.addAll(typeDeclarations);
         moduleDeclaration.ifPresent(children::add);
-        return children;
+        return List.copyOf(children);
     }
 
     @Override

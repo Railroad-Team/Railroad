@@ -5,7 +5,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
-import dev.railroadide.railroad.ide.sst.ast.declarator.VariableDeclarator;
+import dev.railroadide.railroad.ide.sst.ast.generic.VariableDeclarator;
 import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
 import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
@@ -33,7 +33,7 @@ public record LocalVariableDeclarationStatement(
         children.addAll(modifiers);
         children.add(type);
         children.addAll(declarations);
-        return children;
+        return List.copyOf(children);
     }
 
     @Override

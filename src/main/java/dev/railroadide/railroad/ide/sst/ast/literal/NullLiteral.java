@@ -1,32 +1,26 @@
-package dev.railroadide.railroad.ide.sst.ast.statements;
+package dev.railroadide.railroad.ide.sst.ast.literal;
 
 import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
-import dev.railroadide.railroad.ide.sst.ast.generic.VariableDeclarator;
-import dev.railroadide.railroad.ide.sst.ast.statements.block.BlockStatement;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record CatchClause(
-        Span span,
-        VariableDeclarator exception,
-        BlockStatement body
-) implements AstNode {
+public record NullLiteral(Span span) implements Literal {
     @Override
     public AstKind kind() {
-        return AstKind.CATCH_CLAUSE;
+        return AstKind.NULL_LITERAL;
     }
 
     @Override
     public List<AstNode> children() {
-        return List.of(exception, body);
+        return List.of();
     }
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitCatchClause(this);
+        return visitor.visitNullLiteral(this);
     }
 }

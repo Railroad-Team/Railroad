@@ -1,34 +1,35 @@
-package dev.railroadide.railroad.ide.sst.ast.statements;
+package dev.railroadide.railroad.ide.sst.ast.generic;
 
 import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
+import dev.railroadide.railroad.utility.Either;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-public record ReturnStatement(
+public record ArrayInitializer(
         Span span,
-        Optional<Expression> expression
-) implements Statement {
+        List<Either<Expression, ArrayInitializer>> values
+) implements AstNode {
     @Override
     public AstKind kind() {
-        return AstKind.RETURN_STATEMENT;
+        return AstKind.ARRAY_INITIALIZER;
     }
 
     @Override
     public List<AstNode> children() {
-        List<AstNode> children = new ArrayList<>();
-        expression.ifPresent(children::add);
+        List<? extends AstNode> children = values.stream()
+                .map(either -> either.map(List::of, List::of))
+                .flatMap(List::stream)
+                .toList();
         return List.copyOf(children);
     }
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitReturnStatement(this);
+        return visitor.visitArrayInitializer(this);
     }
 }

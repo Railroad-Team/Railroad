@@ -30,7 +30,7 @@ public record BasicForStatement(
         condition.ifPresent(children::add);
         children.addAll(updates);
         children.add(body);
-        return children;
+        return List.copyOf(children);
     }
 
     @Override
