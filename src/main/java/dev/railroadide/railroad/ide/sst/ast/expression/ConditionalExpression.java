@@ -1,27 +1,31 @@
-package dev.railroadide.railroad.ide.sst.ast.statements;
+package dev.railroadide.railroad.ide.sst.ast.expression;
 
 import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
-import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record DoWhileStatement(Span span, Statement body, Expression condition) implements Statement {
+public record ConditionalExpression(
+        Span span,
+        Expression condition,
+        Expression trueExpression,
+        Expression falseExpression
+) implements Expression {
     @Override
     public AstKind kind() {
-        return AstKind.DO_WHILE_STATEMENT;
+        return AstKind.CONDITIONAL_EXPRESSION;
     }
 
     @Override
     public List<AstNode> children() {
-        return List.of(body, condition);
+        return List.of(condition, trueExpression, falseExpression);
     }
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitDoWhileStatement(this);
+        return visitor.visitConditionalExpression(this);
     }
 }

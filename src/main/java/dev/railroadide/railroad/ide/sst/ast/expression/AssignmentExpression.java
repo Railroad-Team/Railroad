@@ -1,27 +1,31 @@
-package dev.railroadide.railroad.ide.sst.ast.statements;
+package dev.railroadide.railroad.ide.sst.ast.expression;
 
 import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
-import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record DoWhileStatement(Span span, Statement body, Expression condition) implements Statement {
+public record AssignmentExpression(
+        Span span,
+        Expression left,
+        JavaTokenType operator,
+        Expression right) implements Expression {
     @Override
     public AstKind kind() {
-        return AstKind.DO_WHILE_STATEMENT;
+        return AstKind.ASSIGNMENT_EXPRESSION;
     }
 
     @Override
     public List<AstNode> children() {
-        return List.of(body, condition);
+        return List.of(left, right);
     }
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitDoWhileStatement(this);
+        return visitor.visitAssignmentExpression(this);
     }
 }

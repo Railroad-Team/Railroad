@@ -7,21 +7,28 @@ import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-public record DoWhileStatement(Span span, Statement body, Expression condition) implements Statement {
+public record ReturnStatement(
+        Span span,
+        Optional<Expression> expression
+) implements Statement {
     @Override
     public AstKind kind() {
-        return AstKind.DO_WHILE_STATEMENT;
+        return AstKind.RETURN_STATEMENT;
     }
 
     @Override
     public List<AstNode> children() {
-        return List.of(body, condition);
+        List<AstNode> children = new ArrayList<>();
+        expression.ifPresent(children::add);
+        return children;
     }
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitDoWhileStatement(this);
+        return visitor.visitReturnStatement(this);
     }
 }

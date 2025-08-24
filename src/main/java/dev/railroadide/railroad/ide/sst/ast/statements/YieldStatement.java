@@ -9,19 +9,19 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record DoWhileStatement(Span span, Statement body, Expression condition) implements Statement {
+public record YieldStatement(Span span, Expression value) implements Statement {
     @Override
     public AstKind kind() {
-        return AstKind.DO_WHILE_STATEMENT;
+        return AstKind.YIELD_STATEMENT;
     }
 
     @Override
     public List<AstNode> children() {
-        return List.of(body, condition);
+        return List.of(value);
     }
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitDoWhileStatement(this);
+        return visitor.visitYieldStatement(this);
     }
 }

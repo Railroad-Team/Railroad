@@ -15,8 +15,8 @@ import java.util.List;
 
 public record LocalVariableDeclarationStatement(
         Span span,
-        List<Modifier> modifiers,
         List<Annotation> annotations,
+        List<Modifier> modifiers,
         TypeRef type,
         boolean isVar,
         List<VariableDeclarator> declarations
@@ -29,8 +29,8 @@ public record LocalVariableDeclarationStatement(
     @Override
     public List<AstNode> children() {
         List<AstNode> children = new ArrayList<>();
-        children.addAll(modifiers);
         children.addAll(annotations);
+        children.addAll(modifiers);
         children.add(type);
         children.addAll(declarations);
         return children;
