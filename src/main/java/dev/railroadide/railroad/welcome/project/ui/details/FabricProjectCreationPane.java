@@ -457,9 +457,15 @@ public class FabricProjectCreationPane extends RRBorderPane {
             fabricModJsonObj.addProperty("license", data.license().getName());
 
             JsonObject entrypoints = fabricModJsonObj.getAsJsonObject("entrypoints");
-            entrypoints.addProperty("main", data.groupId() + "." + data.modId() + "." + data.mainClass());
+            var mainEntrypoints = new JsonArray();
+            mainEntrypoints.add(data.groupId() + "." + data.modId() + "." + data.mainClass());
+            entrypoints.add("main", mainEntrypoints);
             if (data.splitSources()) {
-                entrypoints.addProperty("client", data.groupId() + "." + data.modId() + "." + data.mainClass() + "Client");
+                var clientEntrypoints = new JsonArray();
+                clientEntrypoints.add(data.groupId() + "." + data.modId() + "." + data.mainClass() + "Client");
+                entrypoints.add("client", clientEntrypoints);
+            } else {
+                entrypoints.remove("client");
             }
 
             var mixins = new JsonArray();
@@ -475,7 +481,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             var depends = new JsonObject();
             depends.addProperty("fabricloader", ">=" + data.fabricLoaderVersion().loaderVersion().version());
             depends.addProperty("minecraft", "~" + version.id());
-            depends.addProperty("java", ">=" + fabricModJsonObj.get("depends").getAsJsonObject().get("java").getAsString());
+            depends.addProperty("java", fabricModJsonObj.get("depends").getAsJsonObject().get("java").getAsString());
             data.fapiVersion().ifPresentOrElse(
                     fabricAPIVersion -> depends.addProperty("fabric-api", ">=" + fabricAPIVersion.fullVersion()),
                     () -> depends.addProperty("fabric-api", "*")
