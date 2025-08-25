@@ -2,6 +2,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'checkstyle'
 }
 
 group = 'dev.railroadide'
@@ -15,6 +16,18 @@ java {
 
 tasks.withType(JavaCompile).configureEach {
     options.release.set(21)
+}
+
+checkstyle {
+    toolVersion = '10.20.2'
+    configFile = file('../checkstyle.xml')
+}
+
+tasks.withType(Checkstyle).configureEach {
+    reports {
+        xml.required = false
+        html.required = true
+    }
 }
 
 repositories {

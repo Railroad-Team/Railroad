@@ -1,0 +1,159 @@
+name: Publish Railroad
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*' # Only publish tagged pushes. Tag must match v*.*.* regex
+
+jobs:
+  lint:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Check editorconfig
+        run: ./gradlew editorconfigCheck
+
+      - name: CheckStyle checks
+        run: ./gradlew checkstyleMain
+
+  build-linux:
+    runs-on: self-hosted
+    needs: lint
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Install fakeroot for jpackage
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot dpkg
+      - run: chmod +x gradlew
+      - run: ./gradlew jpackageInstaller jpackageImage
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: build/jpackage/*.deb
+
+  build-windows:
+    runs-on: windows-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Add IP to cloudflare whitelist
+        uses: xiaotianxt/bypass-cloudflare-for-github-action@v1.1.1
+        with:
+          cf_zone_id: ${{ secrets.CF_ZONE_ID }}
+          cf_api_token: ${{ secrets.CF_API_TOKEN }}
+      - run: gradlew.bat jpackageInstaller jpackageImage
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: build/jpackage/*.msi
+
+  build-mac:
+    runs-on: macos-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Add IP to cloudflare whitelist
+        uses: xiaotianxt/bypass-cloudflare-for-github-actions@v1.1.1
+        with:
+          cf_zone_id: ${{ secrets.CF_ZONE_ID }}
+          cf_api_token: ${{ secrets.CF_API_TOKEN }}
+      - run: chmod +x gradlew
+      - run: ./gradlew jpackageInstaller jpackageImage
+      - name: Upload Mac artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-build
+          path: build/jpackage/*.dmg
+
+  release:
+    runs-on: self-hosted
+    needs: build-linux
+    steps:
+      - name: Download Linux Build
+        uses: actions/download-artifact@v5
+        with:
+          name: linux-build
+          path: ./dist/linux
+
+      - name: Download Windows Build
+        uses: actions/download-artifact@v5
+        with:
+          name: windows-build
+          path: ./dist/windows
+
+      - name: Download Mac Build
+        uses: actions/download-artifact@v5
+        with:
+          name: mac-build
+          path: ./dist/mac
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          # Grab everything up to the first '---' line
+          CHANGELOG=$(awk 'BEGIN{p=1} /^---/{p=0} p' CHANGELOG.md)
+
+          # Generate a unique delimiter to avoid any output issues
+          delimiter="$(openssl rand -hex 8)"
+          {
+            echo "changelog<<${delimiter}"
+            echo "$CHANGELOG"
+            echo "${delimiter}"
+          } >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          files: | # TODO - Add executable files as well as installers.
+            dist/linux/*.deb
+            dist/windows/*.msi
+            dist/mac/*.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
