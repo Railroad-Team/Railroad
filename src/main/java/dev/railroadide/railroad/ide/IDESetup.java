@@ -7,6 +7,7 @@ import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.core.settings.keybinds.KeybindContexts;
 import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.core.ui.*;
+import dev.railroadide.core.ui.collage.GuiCollage;
 import dev.railroadide.core.ui.localized.LocalizedCheckMenuItem;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.localized.LocalizedMenu;
@@ -138,6 +139,16 @@ public class IDESetup {
         newFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE));
         newFileItem.setKeybindData(new KeybindData(KeyCode.N, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
 
+        var guiTestItem = new MenuItem("Open GUI Test Window");
+        guiTestItem.setOnAction($ -> {
+            var testStage = new Stage();
+            testStage.setTitle("GUI Test Window");
+            var testPane = new GuiCollage();
+            var scene = new Scene(testPane, 800, 600);
+            testStage.setScene(scene);
+            testStage.show();
+        });
+
         var openFileItem = new LocalizedMenuItem("railroad.menu.file.open_file");
         openFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
         openFileItem.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.SHORTCUT_DOWN));
@@ -255,6 +266,7 @@ public class IDESetup {
         fileMenu.getItems().add(saveAsItem);
         fileMenu.getItems().add(separator1);
         fileMenu.getItems().add(exitItem);
+        fileMenu.getItems().add(guiTestItem);
         fileMenu.getStyleClass().add("rr-menu");
 
         var editMenu = new LocalizedMenu("railroad.menu.edit");
