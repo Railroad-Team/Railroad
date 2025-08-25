@@ -10,6 +10,8 @@ public record VersionRange(
 
         int commaIndex = string.indexOf(',');
         double minVersion = Double.parseDouble(string.substring(1, commaIndex));
+        if (string.charAt(commaIndex + 1) == ')')
+            return new VersionRange(string, minVersion, Double.MAX_VALUE, includeMin, false); // Temporary fix
         double maxVersion = Double.parseDouble(string.substring(commaIndex + 1, string.length() - 1));
 
         return new VersionRange(string, minVersion, maxVersion, includeMin, includeMax);

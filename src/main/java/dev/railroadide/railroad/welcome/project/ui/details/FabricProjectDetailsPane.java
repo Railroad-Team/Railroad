@@ -150,6 +150,7 @@ public class FabricProjectDetailsPane extends RRVBox {
 
                     MappingHelper.loadMappings(mappingChannelComboBox.get().getItems(), newValue);
                     mappingChannelComboBox.get().setValue(mappingChannelComboBox.get().getItems().getFirst());
+                    MappingHelper.loadMappingsVersions(mappingVersionComboBox.get().getItems(), newValue, mappingChannelComboBox.get().getValue());
                 })
                 .translate(false)
                 .build();
