@@ -1,0 +1,46 @@
+name: Lint and Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-and-build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # Cache Gradle dependencies (speeds up builds)
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # GitHub uses gradle 9.0, which doesn't work, so I have to force it to use ./gradlew
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Check editorconfig
+        run: ./gradlew editorconfigCheck
+
+      - name: Check code style
+        run: ./gradlew checkstyleMain
+
+      - name: Check core code style
+        run: ./gradlew :railroad-core:checkstyleMain
+
+      - name: Build
+        run: ./gradlew shadowJar

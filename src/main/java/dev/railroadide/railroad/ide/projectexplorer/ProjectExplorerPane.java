@@ -79,7 +79,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         this.treeView.setEditable(true);
         this.treeView.getStyleClass().add("rr-tree-view");
         this.treeView.setCellFactory(param -> {
-            var cell = new PathTreeCell(messageProperty, mainPane);
+            var cell = new PathTreeCell(project, messageProperty, mainPane);
             handleDragDrop(cell);
             return cell;
         });
@@ -97,7 +97,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 if (Files.isDirectory(item.getPath())) {
                     this.treeView.getSelectionModel().selectNext();
                 } else {
-                    ProjectExplorerPane.openFile(item, mainPane);
+                    ProjectExplorerPane.openFile(project, item, mainPane);
                 }
 
                 return;
@@ -267,7 +267,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         });
     }
 
-    public static void openFile(PathItem item, RRBorderPane mainPane) {
+    public static void openFile(Project project, PathItem item, RRBorderPane mainPane) {
         Path path = item.getPath();
         if (Files.isDirectory(path))
             return;
@@ -286,7 +286,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
                 Node editorContent;
                 if (fileName.endsWith(".java")) {
-                    editorContent = new JavaCodeEditorPane(path);
+                    editorContent = new JavaCodeEditorPane(project, path);
                 } else if (fileName.endsWith(".json")) {
                     editorContent = new JsonCodeEditorPane(path);
                 } else {
