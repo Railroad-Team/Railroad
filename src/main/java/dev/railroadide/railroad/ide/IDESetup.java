@@ -7,12 +7,13 @@ import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.core.settings.keybinds.KeybindContexts;
 import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.core.ui.*;
-import dev.railroadide.core.ui.collage.GuiCollage;
+import dev.railroadide.railroad.ide.features.gui_generation.GuiCollage;
 import dev.railroadide.core.ui.localized.LocalizedCheckMenuItem;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.localized.LocalizedMenu;
 import dev.railroadide.core.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.features.gui_generation.GuiBackgroundGenerator;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.ui.ConsolePane;
 import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
@@ -44,6 +45,9 @@ import org.fxmisc.richtext.CodeArea;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -141,9 +145,16 @@ public class IDESetup {
 
         var guiTestItem = new MenuItem("Open GUI Test Window");
         guiTestItem.setOnAction($ -> {
+            // TODO move to File -> New -> GUI & take in input for type, size etc
             var testStage = new Stage();
             testStage.setTitle("GUI Test Window");
-            var testPane = new GuiCollage();
+            BufferedImage refImage = null;
+            try {
+                refImage = ImageIO.read(Path.of("D:\\template.png").toFile());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            var testPane = new GuiCollage(GuiBackgroundGenerator.builder().setHeight(158).setWidth(176).setReferenceImage(refImage).build());
             var scene = new Scene(testPane, 800, 600);
             testStage.setScene(scene);
             testStage.show();
