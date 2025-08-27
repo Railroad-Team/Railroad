@@ -1,7 +1,6 @@
 package dev.railroadide.core.form.impl;
 
 import dev.railroadide.core.form.*;
-import dev.railroadide.core.form.*;
 import dev.railroadide.core.form.ui.FormCheckBox;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
@@ -39,8 +38,18 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
      * @param transformers   the transformers for the checkbox
      * @param visible        the visibility of the checkbox
      */
-    public CheckBoxComponent(String dataKey, Data data, FormComponentValidator<CheckBox> validator, FormComponentChangeListener<CheckBox, Boolean> listener, Property<CheckBox> bindCheckboxTo, List<FormTransformer<CheckBox, Boolean, ?>> transformers, @Nullable BooleanBinding visible) {
-        super(dataKey, data, dataCurrent -> new FormCheckBox(dataCurrent.label, dataCurrent.required, dataCurrent.selected), validator, listener, transformers, visible);
+    public CheckBoxComponent(
+        String dataKey,
+        Data data,
+        FormComponentValidator<CheckBox> validator,
+        FormComponentChangeListener<CheckBox, Boolean> listener,
+        Property<CheckBox> bindCheckboxTo,
+        List<FormTransformer<CheckBox, Boolean, ?>> transformers,
+        @Nullable BooleanBinding visible
+    ) {
+        super(dataKey, data, dataCurrent ->
+                new FormCheckBox(dataCurrent.label, dataCurrent.required, dataCurrent.selected),
+            validator, listener, transformers, visible);
 
         if (bindCheckboxTo != null) {
             bindCheckboxTo.bind(componentProperty().map(FormCheckBox::getPrimaryComponent));
@@ -174,10 +183,16 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @param toComponentFunction the function to set the value to the component
          * @param valueMapper         the function to map the value
          * @return this builder
-         * @type W - the type of the value
+         * @param <W> - the type of the value
          */
-        public <W> Builder addTransformer(ObservableValue<CheckBox> fromComponent, Consumer<W> toComponentFunction, Function<Boolean, W> valueMapper) {
-            transformers.add(new FormTransformer<>(fromComponent, CheckBox::isSelected, toComponentFunction, valueMapper));
+        public <W> Builder addTransformer(
+            ObservableValue<CheckBox> fromComponent,
+            Consumer<W> toComponentFunction,
+            Function<Boolean, W> valueMapper
+        ) {
+            transformers.add(
+                new FormTransformer<>(
+                    fromComponent, CheckBox::isSelected, toComponentFunction, valueMapper));
             return this;
         }
 
@@ -188,20 +203,30 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @param toComponent   the observable value to set the value to
          * @param valueMapper   the function to map the value
          * @return this builder
-         * @type U - the type of the component
-         * @type W - the type of the value
+         * @param <U> - the type of the component
+         * @param <W> - the type of the value
          */
-        public <U extends Node, W> Builder addTransformer(ObservableValue<CheckBox> fromComponent, ObservableValue<U> toComponent, Function<Boolean, W> valueMapper) {
-            this.transformers.add(new FormTransformer<>(fromComponent, CheckBox::isSelected, value -> {
+        public <U extends Node, W> Builder addTransformer(
+            ObservableValue<CheckBox> fromComponent,
+            ObservableValue<U> toComponent,
+            Function<Boolean, W> valueMapper
+        ) {
+            this.transformers.add(
+                new FormTransformer<>(
+                    fromComponent,
+                    CheckBox::isSelected,
+                    value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());
                 } else if (toComponent.getValue() instanceof CheckBox checkBox) {
                     try {
                         checkBox.setSelected((Boolean) value);
-                    } catch (Exception ignored) {
+                    } catch (Exception exception) {
+                        /* Ignored */
                     }
                 } else {
-                    throw new IllegalArgumentException("Unsupported component type: " + toComponent.getValue().getClass().getName());
+                    throw new IllegalArgumentException("Unsupported component type: "
+                        + toComponent.getValue().getClass().getName());
                 }
             }, valueMapper));
             return this;
@@ -224,7 +249,8 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @return the checkbox component
          */
         public CheckBoxComponent build() {
-            return new CheckBoxComponent(dataKey, data, validator, listener, bindCheckBoxTo, transformers, visible);
+            return new CheckBoxComponent(
+                dataKey, data, validator, listener, bindCheckBoxTo, transformers, visible);
         }
     }
 
@@ -248,6 +274,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
         /**
          * Gets the label for the checkbox.
          *
+         * @param selected true if selected, false otherwise
          * @return the label
          */
         public Data selected(boolean selected) {
@@ -258,6 +285,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
         /**
          * Gets whether the checkbox is required.
          *
+         * @param required true if required, false otherwise
          * @return whether the checkbox is required
          */
         public Data required(boolean required) {
