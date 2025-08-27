@@ -48,13 +48,13 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
 
         this.verticalLayout = new RRVBox(8);
         this.verticalLayout.setAlignment(Pos.CENTER_LEFT);
-        
+
         if (primaryComponent instanceof Region) {
             HBox.setHgrow(primaryComponent, Priority.ALWAYS);
         }
 
         this.required = required;
-        
+
         setupHorizontalLayout();
         setupResponsiveLayout();
     }
@@ -86,7 +86,7 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
                 });
             }
         });
-        
+
         layoutBoundsProperty().addListener((obs, oldBounds, newBounds) -> {
             if (newBounds.getWidth() > 0) {
                 checkAndSwitchLayout();
@@ -96,16 +96,16 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
 
     private void checkAndSwitchLayout() {
         if (label.getText().isEmpty()) return;
-        
+
         // Get the actual width needed for the label text
         double textWidth = label.getFont().getSize() * label.getText().length() * 0.6; // Rough estimate
         double availableWidth = getWidth() - 30; // Account for padding and spacing
-        double componentMinWidth = primaryComponent instanceof Region ? 
+        double componentMinWidth = primaryComponent instanceof Region ?
             ((Region) primaryComponent).getMinWidth() : 100;
-        
+
         // Check if we need vertical layout (not enough space for horizontal)
         boolean needsVertical = availableWidth < (textWidth + componentMinWidth + 20); // 20px buffer
-        
+
         if (needsVertical && !isVerticalLayout) {
             isVerticalLayout = true;
             setupVerticalLayout();

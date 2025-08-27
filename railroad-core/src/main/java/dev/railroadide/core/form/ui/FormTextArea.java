@@ -14,7 +14,7 @@ import java.util.Map;
 public class FormTextArea extends InformativeLabeledHBox<TextArea> {
     /**
      * Constructs a new FormTextArea with the specified configuration.
-     * 
+     *
      * @param labelKey the localization key for the label text
      * @param required whether the text area is required
      * @param text the initial text content
@@ -30,7 +30,7 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> {
 
     /**
      * Creates the parameters map for the text area component.
-     * 
+     *
      * @param text the initial text content
      * @param promptText the placeholder text
      * @param editable whether the text area is editable
@@ -54,7 +54,7 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> {
 
     /**
      * Creates the primary text area component with the specified parameters.
-     * 
+     *
      * @param params a map containing the parameters for the text area
      * @return a new TextArea instance with the specified configuration
      */
@@ -83,7 +83,7 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> {
 
     /**
      * Gets the underlying text area component.
-     * 
+     *
      * @return the text area component
      */
     public TextArea getTextArea() {

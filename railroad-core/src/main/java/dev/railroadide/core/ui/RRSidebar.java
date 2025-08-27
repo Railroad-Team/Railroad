@@ -35,7 +35,7 @@ public class RRSidebar extends VBox {
 
     /**
      * Constructs a new sidebar with the specified position.
-     * 
+     *
      * @param position the position of the sidebar (LEFT or RIGHT)
      */
     public RRSidebar(SidebarPosition position) {

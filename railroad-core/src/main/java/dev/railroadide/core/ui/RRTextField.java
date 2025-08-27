@@ -33,7 +33,7 @@ public class RRTextField extends TextField {
 
     /**
      * Constructs a new text field with localized placeholder text and a prefix icon.
-     * 
+     *
      * @param localizationKey the localization key for the placeholder text
      * @param prefixIcon the icon to display before the text field
      */
@@ -44,7 +44,7 @@ public class RRTextField extends TextField {
 
     /**
      * Constructs a new text field with localized placeholder text.
-     * 
+     *
      * @param localizationKey the localization key for the placeholder text
      * @param args optional formatting arguments for the localized text
      */
@@ -223,4 +223,4 @@ public class RRTextField extends TextField {
     public enum ValidationState {
         NONE, SUCCESS, ERROR, WARNING
     }
-} 
+}

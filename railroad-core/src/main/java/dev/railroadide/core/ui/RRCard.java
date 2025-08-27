@@ -98,4 +98,4 @@ public class RRCard extends VBox {
             getStyleClass().remove("selected");
         }
     }
-} 
+}

@@ -130,37 +130,37 @@ public class CreateFileDialog {
     public enum TypeSelection {
         JAVA_CLASS("Java Class", "java", null, """
                 package <package_loc>.<class_name>;
-                
+
                 public class <class_name> {
                     public <class_name>() {
-                
+
                     }
                 }
                 """),
         JAVA_INTERFACE("Java Interface", "java", null, """
                 package <package_loc>.<class_name>;
-                
+
                 public interface <class_name> {
-                
+
                 }
                 """),
         JAVA_ENUM("Java Enum", "java", null, """
                 package <package_loc>.<class_name>;
-                
+
                 public enum <class_name> {
-                
+
                 }
                 """),
         JAVA_ANNOTATION("Java Annotation", "java", null, """
                 package <package_loc>.<class_name>;
-                
+
                 public @interface <class_name> {
-                
+
                 }
                 """),
         JSON("JSON File", "json", null, """
                 {
-                
+
                 }
                 """),
         TXT("Text File", "txt", null, "");

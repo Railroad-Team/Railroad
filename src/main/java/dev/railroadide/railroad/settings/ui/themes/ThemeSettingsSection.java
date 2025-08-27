@@ -31,4 +31,4 @@ public class ThemeSettingsSection extends VBox {
     public void setSelectedTheme(String theme) {
         themeSelector.setSelectedTheme(theme);
     }
-} 
+}

@@ -188,4 +188,4 @@ public class SettingsPane extends RRVBox {
             tree.scrollTo(tree.getRow(firstCategory));
         }
     }
-} 
+}

@@ -27,7 +27,7 @@ public class RRListView<T> extends ListView<T> {
 
     /**
      * Constructs a modern list view with the specified items and default styling.
-     * 
+     *
      * @param items the observable list of items to display
      */
     public RRListView(ObservableList<T> items) {
@@ -37,7 +37,7 @@ public class RRListView<T> extends ListView<T> {
 
     /**
      * Create a modern list view with items
-     * 
+     *
      * @param items the observable list of items to display
      * @param <T> the type of items in the list
      * @return a new RRListView instance
@@ -48,7 +48,7 @@ public class RRListView<T> extends ListView<T> {
 
     /**
      * Create an empty modern list view
-     * 
+     *
      * @param <T> the type of items in the list
      * @return a new empty RRListView instance
      */
@@ -225,4 +225,4 @@ public class RRListView<T> extends ListView<T> {
     public enum ListViewSize {
         SMALL, MEDIUM, LARGE
     }
-} 
+}

@@ -11,7 +11,7 @@ import java.util.Map;
 public class FormCheckBox extends InformativeLabeledHBox<CheckBox> {
     /**
      * Constructs a new FormCheckBox with the specified label, required state, and initial selection.
-     * 
+     *
      * @param label the label text for the checkbox
      * @param required whether the checkbox is required
      * @param selected the initial selected state of the checkbox
@@ -22,7 +22,7 @@ public class FormCheckBox extends InformativeLabeledHBox<CheckBox> {
 
     /**
      * Creates the primary checkbox component with the specified parameters.
-     * 
+     *
      * @param params a map containing the parameters for the checkbox, including "selected" state
      * @return a new CheckBox instance with the specified configuration
      */
