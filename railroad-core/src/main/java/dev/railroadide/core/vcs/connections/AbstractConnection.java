@@ -19,7 +19,7 @@ public abstract class AbstractConnection {
      * This list is observable, allowing UI components or other listeners
      * to react to changes in the repository collection.
      */
-    protected final ObservableList<Repository> repositories = FXCollections.observableArrayList();
+    private final ObservableList<Repository> repositories = FXCollections.observableArrayList();
 
     /**
      * Fetches the repositories associated with this connection.

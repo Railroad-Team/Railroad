@@ -20,8 +20,10 @@ public class BrowseButton extends LocalizedButton {
     private final ObjectProperty<Window> parentWindow = new SimpleObjectProperty<>();
     private final ObjectProperty<TextField> textField = new SimpleObjectProperty<>();
     private final ObjectProperty<BrowseType> browseType = new SimpleObjectProperty<>(BrowseType.FILE);
-    private final ObjectProperty<BrowseSelectionMode> selectionMode = new SimpleObjectProperty<>(BrowseSelectionMode.SINGLE);
-    private final ObjectProperty<Path> defaultLocation = new SimpleObjectProperty<>(Path.of(System.getProperty("user.home")));
+    private final ObjectProperty<BrowseSelectionMode> selectionMode =
+        new SimpleObjectProperty<>(BrowseSelectionMode.SINGLE);
+    private final ObjectProperty<Path> defaultLocation =
+        new SimpleObjectProperty<>(Path.of(System.getProperty("user.home")));
 
     public BrowseButton() {
         super("railroad.generic.browse");
@@ -65,6 +67,7 @@ public class BrowseButton extends LocalizedButton {
                                 .orElse(""));
                     }
                 }
+                default -> throw new IllegalStateException("Unexpected value: " + browseType.getValue());
             }
         });
     }
@@ -92,7 +95,11 @@ public class BrowseButton extends LocalizedButton {
      * @param filter      An optional file extension filter.
      * @return A {@link FileChooser} instance.
      */
-    public static FileChooser fileBrowser(File defaultPath, String title, @Nullable FileChooser.ExtensionFilter filter) {
+    public static FileChooser fileBrowser(
+        File defaultPath,
+        String title,
+        @Nullable FileChooser.ExtensionFilter filter
+    ) {
         var fileChooser = new FileChooser();
         fileChooser.setTitle(title);
         fileChooser.setInitialDirectory(defaultPath);

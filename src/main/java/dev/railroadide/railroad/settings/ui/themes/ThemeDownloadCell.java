@@ -154,4 +154,4 @@ public class ThemeDownloadCell extends ListCell<Theme> {
             setGraphic(card);
         }
     }
-} 
+}

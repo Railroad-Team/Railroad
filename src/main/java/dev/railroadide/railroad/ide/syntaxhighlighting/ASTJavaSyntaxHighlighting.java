@@ -22,6 +22,9 @@ import java.util.*;
 public class ASTJavaSyntaxHighlighting {
     private static final JavaParser PARSER = new JavaParser();
 
+    private ASTJavaSyntaxHighlighting() {
+    }
+
     public static StyleSpans<Collection<String>> computeHighlighting(String text) {
         long start = System.currentTimeMillis();
         CompilationUnit compilationUnit = PARSER.parse(text).getResult().orElseThrow();
@@ -156,7 +159,8 @@ public class ASTJavaSyntaxHighlighting {
         }
 
         public StyleSpans<Collection<String>> computeStyleSpans() {
-            styleRanges.sort(Comparator.comparingInt(styleRange -> styleRange.beginOffset)); // Ensure ranges are in order
+            // Ensure ranges are in order
+            styleRanges.sort(Comparator.comparingInt(styleRange -> styleRange.beginOffset));
             StyleSpansBuilder<Collection<String>> spansBuilder = new StyleSpansBuilder<>();
             int lastEnd = 0;
 
@@ -168,7 +172,9 @@ public class ASTJavaSyntaxHighlighting {
                 }
 
                 int endOffset = nextStyleRange != null ? nextStyleRange.beginOffset - 1 : styleRange.endOffset;
-                spansBuilder.add(Collections.singleton(styleRange.styleClass), (endOffset - styleRange.beginOffset) + 1);
+                spansBuilder.add(
+                    Collections.singleton(styleRange.styleClass),
+                    (endOffset - styleRange.beginOffset) + 1);
                 lastEnd = endOffset + 1;
             }
 

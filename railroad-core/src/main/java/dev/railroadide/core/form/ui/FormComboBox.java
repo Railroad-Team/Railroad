@@ -13,14 +13,14 @@ import java.util.Map;
 /**
  * A form combo box component that extends InformativeLabeledHBox to provide
  * a labeled combo box with validation, localization, and styling support.
- * 
+ *
  * @param <T> the type of items in the combo box
  */
 @Getter
 public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> {
     /**
      * Constructs a new FormComboBox with the specified configuration.
-     * 
+     *
      * @param labelKey the localization key for the label text
      * @param required whether the combo box is required
      * @param items the list of items to display in the combo box
@@ -35,7 +35,7 @@ public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> {
 
     /**
      * Creates the primary combo box component with the specified parameters.
-     * 
+     *
      * @param params a map containing the parameters for the combo box
      * @return a new ComboBox instance with the specified configuration
      */

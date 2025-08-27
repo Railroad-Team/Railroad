@@ -117,4 +117,4 @@ public class ProjectListCell extends ListCell<Project> {
             setGraphic(card);
         }
     }
-} 
+}

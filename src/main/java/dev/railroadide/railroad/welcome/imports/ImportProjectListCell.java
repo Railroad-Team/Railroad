@@ -80,4 +80,4 @@ public class ImportProjectListCell extends ListCell<Repository> {
             }
         }
     }
-} 
+}

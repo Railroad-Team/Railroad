@@ -13,7 +13,7 @@ import java.util.Map;
 public class FormTextField extends InformativeLabeledHBox<TextField> {
     /**
      * Constructs a new FormTextField with the specified configuration.
-     * 
+     *
      * @param labelKey the localization key for the label text
      * @param required whether the text field is required
      * @param text the initial text content
@@ -27,7 +27,7 @@ public class FormTextField extends InformativeLabeledHBox<TextField> {
 
     /**
      * Creates the parameters map for the text field component.
-     * 
+     *
      * @param text the initial text content
      * @param promptText the placeholder text
      * @param editable whether the text field is editable
@@ -47,7 +47,7 @@ public class FormTextField extends InformativeLabeledHBox<TextField> {
 
     /**
      * Creates the primary text field component with the specified parameters.
-     * 
+     *
      * @param params a map containing the parameters for the text field
      * @return a new TextField instance with the specified configuration
      */
@@ -70,7 +70,7 @@ public class FormTextField extends InformativeLabeledHBox<TextField> {
 
     /**
      * Gets the underlying text field component.
-     * 
+     *
      * @return the text field component
      */
     public TextField getTextField() {
