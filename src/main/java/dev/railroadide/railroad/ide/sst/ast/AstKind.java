@@ -108,6 +108,7 @@ public enum AstKind {
     MARKER_ANNOTATION, // e.g., @Override, @Deprecated
     SINGLE_MEMBER_ANNOTATION, // e.g., @SuppressWarnings("unchecked")
     NORMAL_ANNOTATION, // e.g., @MyAnnotation(value = "example")
+    ELEMENT_VALUE_ARRAY, // e.g., { "value1", "value2" } in annotations
 
     // Names and Miscellaneous
     NAME,
@@ -116,6 +117,11 @@ public enum AstKind {
     TYPE_PARAMETER,
     THROWS_CLAUSE,
     VARIABLE_DECLARATOR,
+    TOKEN, // Generic token node to wrap tokens like operators, punctuation, keywords
+    WHITESPACE, // Whitespace node to preserve formatting
+    LINE_COMMENT,
+    BLOCK_COMMENT,
+    JAVADOC_COMMENT,
 
     // Literals
     INTEGER_LITERAL,

@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.ide.sst.ast;
 
+import dev.railroadide.railroad.ide.sst.ast.annotation.ElementValueArray;
 import dev.railroadide.railroad.ide.sst.ast.annotation.MarkerAnnotation;
 import dev.railroadide.railroad.ide.sst.ast.annotation.NormalAnnotation;
 import dev.railroadide.railroad.ide.sst.ast.annotation.SingleMemberAnnotation;
 import dev.railroadide.railroad.ide.sst.ast.clazz.*;
-import dev.railroadide.railroad.ide.sst.ast.generic.VariableDeclarator;
 import dev.railroadide.railroad.ide.sst.ast.expression.*;
 import dev.railroadide.railroad.ide.sst.ast.generic.*;
 import dev.railroadide.railroad.ide.sst.ast.literal.*;
@@ -121,12 +121,19 @@ public interface AstVisitor<R> {
     R visitMarkerAnnotation(MarkerAnnotation node);
     R visitSingleMemberAnnotation(SingleMemberAnnotation node);
     R visitNormalAnnotation(NormalAnnotation node);
+    R visitElementValueArray(ElementValueArray node);
 
     R visitName(Name node);
     R visitParameter(Parameter node);
     R visitReceiverParameter(ReceiverParameter node);
     R visitTypeParameter(TypeParameter node);
     R visitVariableDeclarator(VariableDeclarator node);
+
+    R visitToken(LexerToken<?> node);
+    R visitWhitespace(Whitespace node);
+    R visitLineComment(LineComment node);
+    R visitBlockComment(BlockComment node);
+    R visitJavadocComment(JavadocComment node);
 
     R visitIntegerLiteral(IntegerLiteral node);
     R visitFloatingPointLiteral(FloatingPointLiteral node);

@@ -169,19 +169,24 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             char current = charAt(pos);
             if (current == '"' && !escapeNext) {
                 consume();
+                popMode();
                 return token(JavaTokenType.STRING_LITERAL, startOffset, startLine, startCol);
             }
 
             if (current == '\\' && !escapeNext) {
                 escapeNext = true;
                 consume();
-                if (!consumeEscapeCode())
+                if (!consumeEscapeCode()) {
+                    popMode();
                     return unterminated(startOffset, startLine, startCol, "Invalid escape sequence in string literal");
+                }
             } else {
                 escapeNext = false;
+                consume();
             }
         }
 
+        popMode();
         return unterminated(startOffset, startLine, startCol, "Unterminated string literal");
     }
 
@@ -194,14 +199,17 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             char current = charAt(pos);
             if (current == '"' && peek(1) == '"' && peek(2) == '"' && !escapeNext) {
                 consume(3);
+                popMode();
                 return token(JavaTokenType.TEXT_BLOCK_LITERAL, startOffset, startLine, startCol);
             }
 
             if (current == '\\' && !escapeNext) {
                 escapeNext = true;
                 consume();
-                if (!consumeEscapeCode())
+                if (!consumeEscapeCode()) {
+                    popMode();
                     return unterminated(startOffset, startLine, startCol, "Invalid escape sequence in text block");
+                }
             } else {
                 escapeNext = false;
             }
@@ -234,8 +242,15 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
                 newline();
                 foundWhitespace = true;
+            } else if (current == '\n') {
+                consume();
+                newline();
+                foundWhitespace = true;
             } else
                 break;
+
+            if (pos < length)
+                current = charAt(pos);
         }
 
         return !foundWhitespace ?
@@ -260,7 +275,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         }
 
         if (current == '"') {
-            if(peek(1) == '"' && peek(2) == '"') {
+            if (peek(1) == '"' && peek(2) == '"') {
                 pushMode(MODE_TEXTBLOCK);
             } else {
                 pushMode(MODE_STRING);
@@ -289,7 +304,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             } while (hasNext() && Character.isJavaIdentifierPart(charAt(pos)));
 
             String lexeme = slice(startOffset, pos);
-            JavaTokenType type = JavaTokenType.KEYWORDS.getOrDefault(lexeme, JavaTokenType.IDENTIFIER);
+            JavaTokenType type = JavaTokenType.listKeywords().getOrDefault(lexeme, JavaTokenType.IDENTIFIER);
             return token(type, startOffset, startLine, startCol);
         }
 
@@ -344,13 +359,13 @@ public class JavaLexer implements Lexer<JavaTokenType> {
     private Token<JavaTokenType> readCharLiteral() {
         int startOffset = pos, startLine = line, startColumn = column;
         consume();
-        if(!hasNext())
+        if (!hasNext())
             return unterminated(startOffset, startLine, startColumn, "Unterminated char literal");
 
         char current = peek(0);
-        if(current == '\\') {
+        if (current == '\\') {
             consume();
-            if(!consumeEscapeCode())
+            if (!consumeEscapeCode())
                 return unterminated(startOffset, startLine, startColumn, "Invalid escape in char literal");
         } else if (current == '\n' || current == '\r' || current == '\'')
             return unterminated(startOffset, startLine, startColumn, "Empty/invalid char literal");
@@ -358,7 +373,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             consume();
         }
 
-        if(match('\'')) {
+        if (match('\'')) {
             consume();
             return token(JavaTokenType.CHARACTER_LITERAL, startOffset, startLine, startColumn);
         }
@@ -492,18 +507,18 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     private Token<JavaTokenType> readIntegerLiteral(StringBuilder text, JavaTokenType type, Predicate<Character> isCharValid, int startOffset, int startLine, int startColumn) {
         boolean seenDigit = false, lastUnderscore = false;
-        while(hasNext()) {
+        while (hasNext()) {
             char current = peek(0);
-            if(isCharValid.test(current)) {
+            if (isCharValid.test(current)) {
                 consume();
                 text.append(current);
                 seenDigit = true;
                 lastUnderscore = false;
             } else if (current == '_') {
-                if(!seenDigit || lastUnderscore)
+                if (!seenDigit || lastUnderscore)
                     return errorToken("Invalid underscore in numeric literal: " + text);
 
-                if(pos + 1 >= length || !isCharValid.test(peek(1)))
+                if (pos + 1 >= length || !isCharValid.test(peek(1)))
                     return errorToken("Underscore must separate digits: " + text);
 
                 consume();
@@ -512,19 +527,19 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             } else break;
         }
 
-        if(!seenDigit)
+        if (!seenDigit)
             return errorToken("Malformed literal (missing digits): " + text);
-        if(lastUnderscore)
+        if (lastUnderscore)
             return errorToken("Malformed literal (trailing underscore): " + text);
 
         char current = peek(0);
-        if(hasNext() && Character.toLowerCase(current) == 'l') {
+        if (hasNext() && Character.toLowerCase(current) == 'l') {
             text.append(consume());
         } else if (hasNext() && (current == 'f' || current == 'd')) {
             return errorToken("Floating suffix not allowed on non-decimal integer literal: " + text + current);
         }
 
-        if(!doesCharacterTerminateNumber(current))
+        if (!doesCharacterTerminateNumber(current))
             return errorToken("Invalid trailing characters after literal: " + text + current);
 
         return token(type, startOffset, startLine, startColumn);
@@ -532,18 +547,18 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     private Token<JavaTokenType> readDecimalLiteral(StringBuilder text, int startOffset, int startLine, int startColumn) {
         boolean sawFracDigits = false, lastUnderscore = false;
-        while(hasNext()) {
+        while (hasNext()) {
             char current = peek(0);
-            if(Character.isDigit(current)) {
+            if (Character.isDigit(current)) {
                 consume();
                 text.append(current);
                 sawFracDigits = true;
                 lastUnderscore = false;
             } else if (current == '_') {
-                if(lastUnderscore)
+                if (lastUnderscore)
                     return errorToken("Consecutive underscores in number literal: " + text);
 
-                if(pos + 1 >= length || !Character.isDigit(peek(1)))
+                if (pos + 1 >= length || !Character.isDigit(peek(1)))
                     return errorToken("Underscore must separate digits: " + text);
 
                 consume();
@@ -552,20 +567,20 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             } else break;
         }
 
-        if(lastUnderscore)
+        if (lastUnderscore)
             return errorToken("Trailing underscore in number literal: " + text);
-        if(!sawFracDigits)
+        if (!sawFracDigits)
             return errorToken("Malformed floating point literal (missing digits): " + text);
 
-        if(hasNext() && Character.toLowerCase(peek(0)) == 'e')
+        if (hasNext() && Character.toLowerCase(peek(0)) == 'e')
             return readDecimalExponent(text, startOffset, startLine, startColumn);
 
         char current = peek(0);
-        if(hasNext() && (Character.toLowerCase(current) == 'f' || Character.toLowerCase(current) == 'd')) {
+        if (hasNext() && (Character.toLowerCase(current) == 'f' || Character.toLowerCase(current) == 'd')) {
             text.append(consume());
         }
 
-        if(!doesCharacterTerminateNumber(current))
+        if (!doesCharacterTerminateNumber(current))
             return errorToken("Invalid trailing characters after floating literal: " + text + current);
 
         return token(JavaTokenType.NUMBER_FLOATING_POINT_LITERAL, startOffset, startLine, startColumn);
@@ -627,11 +642,11 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return switch (current) {
             case 'b', 't', 'n', 'f', 'r', 's', '"', '\'', '\\' -> true;
             case 'u' -> {
-                while(hasNext() && peek(0) == 'u') {
+                while (hasNext() && peek(0) == 'u') {
                     consume();
                 }
 
-                if(pos + 4 > length)
+                if (pos + 4 > length)
                     yield false; // not enough characters for a Unicode escape
 
                 int val = 0;

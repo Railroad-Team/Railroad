@@ -4,13 +4,14 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.generic.Name;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 public record PackageDeclaration(
         Span span,
-        String name
+        Name name
 ) implements AstNode {
     @Override
     public AstKind kind() {
@@ -19,7 +20,7 @@ public record PackageDeclaration(
 
     @Override
     public List<AstNode> children() {
-        return List.of(); // Package declarations do not have children nodes.
+        return List.of(name);
     }
 
     @Override

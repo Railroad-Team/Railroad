@@ -4,13 +4,14 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.generic.Name;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 public record ImportDeclaration(
         Span span,
-        String name,
+        Name name,
         boolean isStatic,
         boolean isWildcard
 ) implements AstNode {
@@ -22,7 +23,7 @@ public record ImportDeclaration(
 
     @Override
     public List<AstNode> children() {
-        return List.of(); // Import declarations do not have children nodes.
+        return List.of(name);
     }
 
     @Override
