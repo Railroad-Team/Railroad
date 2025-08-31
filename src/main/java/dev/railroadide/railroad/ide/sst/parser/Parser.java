@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.parser;
 
+import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
 import dev.railroadide.railroad.ide.sst.lexer.Lexer;
 import dev.railroadide.railroad.ide.sst.lexer.Token;
@@ -405,6 +406,7 @@ public abstract class Parser<T extends Enum<T>, N> {
         while (lookaheadBuffer.size() < n) {
             Token<T> token = lexer.nextToken();
             // Skip trivia
+            // TODO: Keep trivia tokens
             if (token.channel() == TokenChannel.TRIVIA)
                 continue;
 
@@ -449,7 +451,7 @@ public abstract class Parser<T extends Enum<T>, N> {
      * @return true if the next token matches the type, false otherwise
      */
     @SafeVarargs
-    protected final boolean nextIs(T... types) {
+    protected final boolean nextIsAny(T... types) {
         T la1 = lookaheadType(1);
         for (T t : types) {
             if (la1 == t) return true;
@@ -486,13 +488,42 @@ public abstract class Parser<T extends Enum<T>, N> {
     }
 
     /**
+     * Returns the current span position of the parser as a {@link Span} object.
+     *
+     * @return the current span
+     */
+    protected Span currentSpan() {
+        return new Span(lexer.offset(), lexer.offset(), lexer.line(), lexer.column());
+    }
+
+    /**
+     * Creates a span from the given start position to the current position.
+     *
+     * @param start the start span
+     * @return a new span from start to current
+     */
+    protected Span spanFrom(Span start) {
+        return spanBetween(start, currentSpan());
+    }
+
+    /**
+     * Creates a span from the given start position to the given end position.
+     *
+     * @param start the start span
+     * @param end   the end span
+     * @return a new span from start to end
+     */
+    protected Span spanBetween(Span start, Span end) {
+        return new Span(start.pos(), end.endPos(), start.line(), start.column());
+    }
+
+    /**
      * A marker class that allows for rollback or commit of the parser state.
      * This is useful for implementing backtracking or alternative parsing strategies.
      * <p>
      * It captures the current lexer snapshot, lookahead buffer, and previous token,
      * allowing the parser to restore its state later.
      **/
-
     protected final class Marker {
         private final Lexer.Snapshot lexSnapshot;
         private final ArrayDeque<Token<T>> laCopy;

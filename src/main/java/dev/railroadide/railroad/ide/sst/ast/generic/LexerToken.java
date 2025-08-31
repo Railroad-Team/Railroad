@@ -4,29 +4,23 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
-import dev.railroadide.railroad.ide.sst.ast.annotation.ElementValue;
-import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record AnnotationElement(
-        Span span,
-        Name name,
-        ElementValue value
-) implements AstNode {
+public record LexerToken<T extends Enum<T>>(Span span, T tokenType, String text) implements AstNode {
     @Override
     public AstKind kind() {
-        return AstKind.ANNOTATION_ELEMENT;
+        return AstKind.TOKEN;
     }
 
     @Override
     public List<AstNode> children() {
-        return List.of(name, value);
+        return List.of();
     }
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitAnnotationElement(this);
+        return visitor.visitToken(this);
     }
 }

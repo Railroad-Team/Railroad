@@ -6,6 +6,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
 import dev.railroadide.railroad.ide.sst.ast.generic.Pattern;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -22,7 +23,7 @@ public sealed interface CaseItem extends AstNode permits CaseItem.CaseConstant, 
         }
 
         @Override
-        public <R> R accept(AstVisitor<R> visitor) {
+        public <R> R accept(@NotNull AstVisitor<R> visitor) {
             return visitor.visitCaseConstant(this);
         }
     }
@@ -39,7 +40,7 @@ public sealed interface CaseItem extends AstNode permits CaseItem.CaseConstant, 
         }
 
         @Override
-        public <R> R accept(AstVisitor<R> visitor) {
+        public <R> R accept(@NotNull AstVisitor<R> visitor) {
             return visitor.visitCasePattern(this);
         }
 
@@ -55,7 +56,7 @@ public sealed interface CaseItem extends AstNode permits CaseItem.CaseConstant, 
             }
 
             @Override
-            public <R> R accept(AstVisitor<R> visitor) {
+            public <R> R accept(@NotNull AstVisitor<R> visitor) {
                 return visitor.visitCasePatternGuard(this);
             }
         }
@@ -73,7 +74,7 @@ public sealed interface CaseItem extends AstNode permits CaseItem.CaseConstant, 
         }
 
         @Override
-        public <R> R accept(AstVisitor<R> visitor) {
+        public <R> R accept(@NotNull AstVisitor<R> visitor) {
             return visitor.visitCaseNull(this);
         }
     }

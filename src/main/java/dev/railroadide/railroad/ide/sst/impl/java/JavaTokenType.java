@@ -1,9 +1,6 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 public enum JavaTokenType {
     // Trivia tokens
@@ -130,7 +127,7 @@ public enum JavaTokenType {
     MINUS, // -
     PLUS_PLUS, // ++
     MINUS_MINUS, // --
-    MULTIPLY, // *
+    STAR, // *
     DIVIDE, // /
     MODULUS, // %
     BITWISE_COMPLEMENT, // ~
@@ -216,7 +213,7 @@ public enum JavaTokenType {
         put(':', COLON);
         put('+', PLUS);
         put('-', MINUS);
-        put('*', MULTIPLY);
+        put('*', STAR);
         put('/', DIVIDE);
         put('%', MODULUS);
         put('~', BITWISE_COMPLEMENT);
@@ -235,17 +232,21 @@ public enum JavaTokenType {
         put('@', AT);
     }};
 
-    public static final Map<String, JavaTokenType> KEYWORDS = new HashMap<>() {{
-        for (JavaTokenType value : values()) {
-            if(value == NON_SEALED_KEYWORD) {
-                put("non-sealed", value);
-                continue;
-            }
+    private static final Map<String, JavaTokenType> KEYWORDS = new HashMap<>();
 
-            if (value.name().endsWith("_KEYWORD")) {
-                String keyword = value.name().replace("_KEYWORD", "").toLowerCase(Locale.ROOT);
-                put(keyword, value);
+    public static Map<String, JavaTokenType> listKeywords() {
+        if (!KEYWORDS.isEmpty())
+            return KEYWORDS;
+
+        Map<String, JavaTokenType> keywords = new HashMap<>();
+        for (JavaTokenType tokenType : JavaTokenType.values()) {
+            if (tokenType.name().endsWith("_KEYWORD")) {
+                String keyword = tokenType.name().replace("_KEYWORD", "").toLowerCase(Locale.ROOT);
+                keywords.put(keyword, tokenType);
             }
         }
-    }};
+
+        KEYWORDS.putAll(keywords);
+        return keywords;
+    }
 }

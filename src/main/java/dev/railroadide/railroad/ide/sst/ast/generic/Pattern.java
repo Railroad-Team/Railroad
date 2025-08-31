@@ -6,6 +6,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.typeref.ClassOrInterfaceTypeRef;
 import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +28,7 @@ public sealed interface Pattern extends AstNode permits Pattern.MatchAllPattern,
         }
 
         @Override
-        public <R> R accept(AstVisitor<R> visitor) {
+        public <R> R accept(@NotNull AstVisitor<R> visitor) {
             return visitor.visitTypeTestPattern(this);
         }
     }
@@ -49,7 +50,7 @@ public sealed interface Pattern extends AstNode permits Pattern.MatchAllPattern,
         }
 
         @Override
-        public <R> R accept(AstVisitor<R> visitor) {
+        public <R> R accept(@NotNull AstVisitor<R> visitor) {
             return visitor.visitRecordPattern(this);
         }
     }
@@ -66,7 +67,7 @@ public sealed interface Pattern extends AstNode permits Pattern.MatchAllPattern,
         }
 
         @Override
-        public <R> R accept(AstVisitor<R> visitor) {
+        public <R> R accept(@NotNull AstVisitor<R> visitor) {
             return visitor.visitMatchAllPattern(this);
         }
     }
