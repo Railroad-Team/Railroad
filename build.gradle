@@ -94,7 +94,7 @@ dependencies {
     }
 
     implementation 'dev.railroadide:RailroadLogger:1.0.2'
-    implementation 'dev.railroadide:RailroadPluginAPI:1.0.2'
+    implementation 'dev.railroadide:RailroadPluginAPI:1.0.3'
     implementation project(':railroad-core')
 
     annotationProcessor 'org.projectlombok:lombok:1.18.32'

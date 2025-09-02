@@ -18,9 +18,11 @@ public class DefaultIDEStateService implements IDEStateService {
     private static DefaultIDEStateService instance;
     private final Map<Document, Long> openDocuments = new HashMap<>();
     private final Map<Path, Long> recentFiles = new HashMap<>();
+
     private Project currentProject;
     private long openedProjectAtMillis = -1L;
     private Document activeDocument;
+
     private DefaultIDEStateService() {
         Railroad.EVENT_BUS.subscribe(ProjectEvent.class, event -> {
             if (event.isOpened()) {
@@ -32,11 +34,11 @@ public class DefaultIDEStateService implements IDEStateService {
 
         Railroad.EVENT_BUS.subscribe(FileEvent.class, event -> {
             Document document = event.file();
-            if (event.isOpened()) {
+            if (event.isOpenedEvent()) {
                 openDocument_internal(document);
-            } else if (event.isClosed()) {
+            } else if (event.isClosedEvent()) {
                 closeDocument_internal(document);
-            } else if (event.isActivated()) {
+            } else if (event.isActivatedEvent()) {
                 setActiveDocument_internal(document);
             }
         });
