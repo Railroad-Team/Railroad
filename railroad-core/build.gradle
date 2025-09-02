@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'dev.railroadide'
-version = '1.0.1'
+version = '1.0.2'
 
 java {
     toolchain {
@@ -53,7 +53,7 @@ dependencies {
     api 'com.github.javakeyring:java-keyring:1.0.4'
 
     implementation "dev.railroadide:RailroadLogger:1.0.1"
-    implementation 'org.apache.commons:commons-lang3:3.17.0'
+    implementation 'org.apache.commons:commons-lang3:3.18.0'
 
     compileOnly 'org.jetbrains:annotations:24.0.0'
 

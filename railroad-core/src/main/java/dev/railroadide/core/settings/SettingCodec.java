@@ -1,6 +1,7 @@
 package dev.railroadide.core.settings;
 
 import com.google.gson.JsonElement;
+import com.google.gson.reflect.TypeToken;
 import javafx.scene.Node;
 
 import java.util.function.BiConsumer;
@@ -49,16 +50,14 @@ public record SettingCodec<T, N extends Node>(String id, Function<N, T> nodeToVa
     }
 
     /**
-     * Creates a new builder for a SettingCodec with an ID and types.
+     * Creates a new builder for a SettingCodec with an ID.
      *
      * @param id       The unique identifier for the setting codec.
-     * @param type     The type of the setting value.
-     * @param nodeType The type of the node to display.
      * @param <T>      The type of the setting value.
      * @param <N>      The type of the node to display.
-     * @return A new Builder instance with the specified ID and types.
+     * @return A new Builder instance with the specified ID.
      */
-    public static <T, N extends Node> Builder<T, N> builder(String id, Class<T> type, Class<N> nodeType) {
+    public static <T, N extends Node> Builder<T, N> builder(String id) {
         return new Builder<T, N>().id(id);
     }
 
@@ -82,8 +81,7 @@ public record SettingCodec<T, N extends Node>(String id, Function<N, T> nodeToVa
         public Builder() {
             this.id = null;
             this.nodeToValue = node -> null; // Default to returning null
-            this.valueToNode = (value, node) -> {
-            }; // Default to doing nothing
+            this.valueToNode = (value, node) -> {}; // Default to doing nothing
             this.jsonDecoder = json -> null; // Default to returning null
             this.jsonEncoder = value -> null; // Default to returning null
             this.createNode = value -> null; // Default to returning null
