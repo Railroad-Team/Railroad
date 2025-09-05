@@ -507,6 +507,16 @@ public abstract class Parser<T extends Enum<T>, N> {
     }
 
     /**
+     * Creates a span from the given start token to the current position.
+     *
+     * @param start the start token
+     * @return a new span from start to current
+     */
+    protected Span spanFrom(Token<T> start) {
+        return spanBetween(new Span(start.pos(), start.endOffset(), start.line(), start.column()), currentSpan());
+    }
+
+    /**
      * Creates a span from the given start position to the given end position.
      *
      * @param start the start span

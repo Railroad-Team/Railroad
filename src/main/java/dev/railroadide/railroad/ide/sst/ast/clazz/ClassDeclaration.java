@@ -24,7 +24,7 @@ public record ClassDeclaration(
         List<TypeParameter> typeParameters,
         Optional<TypeRef> extendsType,
         List<TypeRef> implementsTypes,
-        List<ClassMember> members
+        List<ClassBodyDeclaration> members
 ) implements TypeDeclaration {
     @Override
     public AstKind kind() {

@@ -22,6 +22,7 @@ public enum AstKind {
     INTERFACE_DECLARATION,
     ANNOTATION_TYPE_DECLARATION,
     ANNOTATION_ELEMENT, // e.g., value = "example" in @MyAnnotation(value = "example")
+    EMPTY_TYPE_DECLARATION, // e.g. ';'
 
     // Member Declarations
     FIELD_DECLARATION,
@@ -97,6 +98,7 @@ public enum AstKind {
     PRIMITIVE_TYPE, // e.g., int, boolean
     ARRAY_TYPE, // e.g., int[], String[]
     CLASS_OR_INTERFACE_TYPE, // e.g., List<String>
+    CLASS_OR_INTERFACE_TYPE_PART,
     TYPE_VARIABLE, // <T>
     INTERSECTION_TYPE, // A & B
     UNION_TYPE, // A | B
