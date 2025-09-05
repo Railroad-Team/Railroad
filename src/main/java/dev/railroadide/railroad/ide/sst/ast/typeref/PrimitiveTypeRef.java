@@ -4,11 +4,13 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.generic.LexerToken;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record PrimitiveTypeRef(Span span, String keyword) implements TypeRef {
+public record PrimitiveTypeRef(Span span, LexerToken<JavaTokenType> keyword) implements TypeRef {
     @Override
     public AstKind kind() {
         return AstKind.PRIMITIVE_TYPE;
@@ -16,7 +18,7 @@ public record PrimitiveTypeRef(Span span, String keyword) implements TypeRef {
 
     @Override
     public List<AstNode> children() {
-        return List.of();
+        return List.of(keyword);
     }
 
     @Override

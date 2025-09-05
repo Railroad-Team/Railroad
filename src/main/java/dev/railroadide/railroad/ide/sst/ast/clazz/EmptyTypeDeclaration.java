@@ -1,28 +1,26 @@
-package dev.railroadide.railroad.ide.sst.ast.statements.block;
+package dev.railroadide.railroad.ide.sst.ast.clazz;
 
 import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
-import dev.railroadide.railroad.ide.sst.ast.clazz.ClassBodyDeclaration;
-import dev.railroadide.railroad.ide.sst.ast.generic.ClassMember;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record StaticInitializerBlock(Span span, BlockStatement body) implements ClassBodyDeclaration {
+public record EmptyTypeDeclaration(Span span) implements TypeDeclaration {
     @Override
     public AstKind kind() {
-        return AstKind.STATIC_INITIALIZER_BLOCK;
+        return AstKind.EMPTY_TYPE_DECLARATION;
     }
 
     @Override
     public List<AstNode> children() {
-        return List.of(body);
+        return List.of();
     }
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitStaticInitializerBlock(this);
+        return visitor.visitEmptyTypeDeclaration(this);
     }
 }

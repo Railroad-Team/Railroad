@@ -17,8 +17,8 @@ import java.util.List;
 
 public record FieldDeclaration(
         Span span,
-        List<Modifier> modifiers,
         List<Annotation> annotations,
+        List<Modifier> modifiers,
         TypeRef type,
         Name name,
         List<VariableDeclarator> variableDeclarators
@@ -32,7 +32,9 @@ public record FieldDeclaration(
     public List<AstNode> children() {
         List<AstNode> children = new ArrayList<>();
         children.addAll(annotations);
+        children.addAll(modifiers);
         children.add(type);
+        children.add(name);
         children.addAll(variableDeclarators);
         return List.copyOf(children);
     }

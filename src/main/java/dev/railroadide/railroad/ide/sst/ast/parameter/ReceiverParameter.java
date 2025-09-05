@@ -14,7 +14,8 @@ import java.util.List;
 public record ReceiverParameter(
         Span span,
         List<Annotation> annotations,
-        TypeRef type
+        TypeRef type,
+        ReceiverType receiverType
 ) implements AstNode {
     @Override
     public AstKind kind() {
@@ -32,5 +33,10 @@ public record ReceiverParameter(
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
         return visitor.visitReceiverParameter(this);
+    }
+
+    public enum ReceiverType {
+        THIS,
+        SUPER
     }
 }

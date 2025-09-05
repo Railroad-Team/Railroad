@@ -20,7 +20,7 @@ public record CompactConstructorDeclaration(
         List<Modifier> modifiers,
         List<Annotation> annotations,
         Name name,
-        Optional<BlockStatement> body) implements ClassMember {
+        Optional<BlockStatement> body) implements ClassBodyDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.COMPACT_CONSTRUCTOR_DECLARATION;

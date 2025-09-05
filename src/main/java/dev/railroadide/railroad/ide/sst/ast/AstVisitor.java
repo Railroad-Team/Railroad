@@ -44,6 +44,7 @@ public interface AstVisitor<R> {
     R visitInterfaceDeclaration(InterfaceDeclaration node);
     R visitAnnotationTypeDeclaration(AnnotationTypeDeclaration node);
     R visitAnnotationElement(AnnotationElement node);
+    R visitEmptyTypeDeclaration(EmptyTypeDeclaration node);
 
     R visitFieldDeclaration(FieldDeclaration node);
     R visitMethodDeclaration(MethodDeclaration node);
@@ -111,6 +112,7 @@ public interface AstVisitor<R> {
     R visitPrimitiveType(PrimitiveTypeRef node);
     R visitArrayType(ArrayTypeRef node);
     R visitClassOrInterfaceType(ClassOrInterfaceTypeRef node);
+    R visitClassOrInterfaceTypePart(ClassOrInterfaceTypeRef.Part node);
     R visitTypeVariable(TypeVariableRef node);
     R visitIntersectionType(IntersectionTypeRef node);
     R visitUnionType(UnionTypeRef node);

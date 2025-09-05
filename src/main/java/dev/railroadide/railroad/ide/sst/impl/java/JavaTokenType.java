@@ -39,6 +39,7 @@ public enum JavaTokenType {
     INSTANCEOF_KEYWORD,
     INT_KEYWORD,
     INTERFACE_KEYWORD,
+    AT_INTERFACE_KEYWORD,
     LONG_KEYWORD,
     NATIVE_KEYWORD,
     NEW_KEYWORD,
@@ -136,8 +137,6 @@ public enum JavaTokenType {
     BITWISE_XOR, // ^
     AT, // @
     LEFT_SHIFT, // <<
-    RIGHT_SHIFT, // >>
-    UNSIGNED_RIGHT_SHIFT, // >>>
     PLUS_EQUALS, // +=
     MINUS_EQUALS, // -=
     MULTIPLY_EQUALS, // *=
@@ -182,8 +181,6 @@ public enum JavaTokenType {
                 Map.entry("^=", XOR_EQUALS))
         );
         put('>', List.of(
-                Map.entry(">>", RIGHT_SHIFT),
-                Map.entry(">>>", UNSIGNED_RIGHT_SHIFT),
                 Map.entry(">=", GREATER_THAN_OR_EQUALS),
                 Map.entry(">>=", RIGHT_SHIFT_EQUALS))
         );
@@ -240,6 +237,14 @@ public enum JavaTokenType {
 
         Map<String, JavaTokenType> keywords = new HashMap<>();
         for (JavaTokenType tokenType : JavaTokenType.values()) {
+            if(tokenType == NON_SEALED_KEYWORD) {
+                keywords.put("non-sealed", tokenType);
+                continue;
+            } else if(tokenType == AT_INTERFACE_KEYWORD) {
+                keywords.put("@interface", tokenType);
+                continue;
+            }
+
             if (tokenType.name().endsWith("_KEYWORD")) {
                 String keyword = tokenType.name().replace("_KEYWORD", "").toLowerCase(Locale.ROOT);
                 keywords.put(keyword, tokenType);
@@ -248,5 +253,14 @@ public enum JavaTokenType {
 
         KEYWORDS.putAll(keywords);
         return keywords;
+    }
+
+    public boolean isModifier() {
+        return switch (this) {
+            case ABSTRACT_KEYWORD, FINAL_KEYWORD, NATIVE_KEYWORD, PRIVATE_KEYWORD, PROTECTED_KEYWORD,
+                    PUBLIC_KEYWORD, STATIC_KEYWORD, STRICTFP_KEYWORD, SYNCHRONIZED_KEYWORD, TRANSIENT_KEYWORD,
+                    VOLATILE_KEYWORD -> true;
+            default -> false;
+        };
     }
 }

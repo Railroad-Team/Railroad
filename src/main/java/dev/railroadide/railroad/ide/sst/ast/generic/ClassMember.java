@@ -1,5 +1,5 @@
 package dev.railroadide.railroad.ide.sst.ast.generic;
 
-import dev.railroadide.railroad.ide.sst.ast.AstNode;
+import dev.railroadide.railroad.ide.sst.ast.clazz.ClassBodyDeclaration;
 
-public interface ClassMember extends AstNode {}
+public interface ClassMember extends ClassBodyDeclaration {}
