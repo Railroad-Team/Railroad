@@ -14,8 +14,7 @@ public record EnhancedForStatement(
         Span span,
         LocalVariableDeclarationStatement localVariableDeclaration, // Cannot have an initializer
         Expression iterationExpression,
-        Statement body) implements Statement {
-
+        Statement body) implements ForStatement {
     @Override
     public AstKind kind() {
         return AstKind.ENHANCED_FOR_STATEMENT;
