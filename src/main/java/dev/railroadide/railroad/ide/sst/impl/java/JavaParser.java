@@ -13,19 +13,25 @@ import dev.railroadide.railroad.ide.sst.ast.program.CompilationUnit;
 import dev.railroadide.railroad.ide.sst.ast.program.ImportDeclaration;
 import dev.railroadide.railroad.ide.sst.ast.program.PackageDeclaration;
 import dev.railroadide.railroad.ide.sst.ast.program.j9.*;
-import dev.railroadide.railroad.ide.sst.ast.statements.Statement;
+import dev.railroadide.railroad.ide.sst.ast.statements.*;
 import dev.railroadide.railroad.ide.sst.ast.statements.block.BlockStatement;
 import dev.railroadide.railroad.ide.sst.ast.statements.block.InstanceInitializerBlock;
 import dev.railroadide.railroad.ide.sst.ast.statements.block.StaticInitializerBlock;
+import dev.railroadide.railroad.ide.sst.ast.statements.switches.CaseItem;
+import dev.railroadide.railroad.ide.sst.ast.statements.switches.SwitchLabel;
+import dev.railroadide.railroad.ide.sst.ast.statements.switches.SwitchRule;
+import dev.railroadide.railroad.ide.sst.ast.statements.switches.SwitchStatement;
 import dev.railroadide.railroad.ide.sst.ast.typeref.*;
 import dev.railroadide.railroad.ide.sst.lexer.Lexer;
 import dev.railroadide.railroad.ide.sst.lexer.Token;
 import dev.railroadide.railroad.ide.sst.parser.Parser;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class JavaParser extends Parser<JavaTokenType, AstNode> {
     /**
@@ -239,7 +245,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
     }
 
     private ClassMember parseFieldOrMethodDeclaration(Span start, List<Modifier> modifiers, List<Annotation> annotations) {
-        if(nextIsAny(JavaTokenType.VOID_KEYWORD))
+        if (nextIsAny(JavaTokenType.VOID_KEYWORD))
             return parseFullMethodDeclaration(start, modifiers, annotations, List.of());
 
         TypeRef type = parseTypeReference();
@@ -254,12 +260,12 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
     private FieldDeclaration parseFieldDeclaration(Span start, List<Modifier> modifiers, List<Annotation> annotations, TypeRef type, Name name) {
         List<VariableDeclarator> variables = new ArrayList<>();
-        variables.add(parseVariableDeclarator(type, name));
+        variables.add(parseVariableDeclarator(name));
 
         while (match(JavaTokenType.COMMA)) {
             Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected field name");
             var varName = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
-            variables.add(parseVariableDeclarator(type, varName));
+            variables.add(parseVariableDeclarator(varName));
         }
 
         expect(JavaTokenType.SEMICOLON, "Expected ';' after field declaration");
@@ -273,19 +279,15 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         );
     }
 
-    private VariableDeclarator parseVariableDeclarator(Span start, TypeRef type, Name name) {
-        TypeRef varType = type;
-        int dimensions = parseDimensions();
-        if (dimensions > 0) {
-            varType = new ArrayTypeRef(spanFrom(start), type, dimensions);
-        }
+    private VariableDeclarator parseVariableDeclarator(Name name) {
+        Span start = name.span();
 
         Optional<Expression> initializer = Optional.empty();
         if (match(JavaTokenType.EQUALS)) {
             initializer = Optional.of((Expression) parseExpression(0));
         }
 
-        return new VariableDeclarator(spanFrom(start), varType, name, initializer);
+        return new VariableDeclarator(spanFrom(start), name, initializer);
     }
 
     private MethodDeclaration parseGenericMethodDeclaration(Span start, List<Modifier> modifiers, List<Annotation> annotations) {
@@ -368,14 +370,6 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         return new ReceiverParameter(spanFrom(start), annotations, type, receiverType);
     }
 
-    private @NotNull List<Annotation> parseAnnotations() {
-        List<Annotation> annotations = new ArrayList<>();
-        while (nextIsAny(JavaTokenType.AT)) {
-            annotations.add(parseAnnotation());
-        }
-        return annotations;
-    }
-
     private ConstructorDeclaration parseConstructorDeclaration(Name className, Span span, List<Modifier> modifiers, List<Annotation> annotations, List<TypeParameter> typeParameters) {
         expect(JavaTokenType.OPEN_PAREN, "Expected '(' after constructor name");
         List<Parameter> parameters = new ArrayList<>();
@@ -432,6 +426,336 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
         expect(JavaTokenType.CLOSE_BRACE, "Expected '}' to close block");
         return new BlockStatement(spanFrom(start), statements);
+    }
+
+    private Statement parseStatement() {
+        Span start = currentSpan();
+        if (match(JavaTokenType.SEMICOLON))
+            return new EmptyStatement(spanFrom(start));
+
+        if (nextIsAny(JavaTokenType.OPEN_BRACE))
+            return parseBlock();
+
+        if (nextIsAny(JavaTokenType.IF_KEYWORD))
+            return parseIfStatement();
+
+        if (nextIsAny(JavaTokenType.SWITCH_KEYWORD))
+            return parseSwitchStatement();
+
+        if (nextIsAny(JavaTokenType.WHILE_KEYWORD))
+            return parseWhileStatement();
+
+        if (nextIsAny(JavaTokenType.DO_KEYWORD))
+            return parseDoWhileStatement();
+
+        if (nextIsAny(JavaTokenType.FOR_KEYWORD))
+            return parseForStatement();
+
+        if (nextIsAny(JavaTokenType.TRY_KEYWORD))
+            return parseTryStatement();
+
+        if (nextIsAny(JavaTokenType.SYNCHRONIZED_KEYWORD))
+            return parseSynchronizedStatement();
+
+        if (nextIsAny(JavaTokenType.RETURN_KEYWORD))
+            return parseReturnStatement();
+
+        if (nextIsAny(JavaTokenType.THROW_KEYWORD))
+            return parseThrowStatement();
+
+        if (nextIsAny(JavaTokenType.BREAK_KEYWORD))
+            return parseBreakStatement();
+
+        if (nextIsAny(JavaTokenType.CONTINUE_KEYWORD))
+            return parseContinueStatement();
+
+        if (nextIsAny(JavaTokenType.ASSERT_KEYWORD))
+            return parseAssertStatement();
+
+        if (nextIsAny(JavaTokenType.YIELD_KEYWORD))
+            return parseYieldStatement();
+
+        if (nextIsAny(JavaTokenType.IDENTIFIER) && lookaheadType(2) == JavaTokenType.COLON)
+            return parseLabeledStatement();
+
+        if (nextIsAny(JavaTokenType.VAR_KEYWORD) || nextIsAny(JavaTokenType.FINAL_KEYWORD) || lookaheadType(2) == JavaTokenType.IDENTIFIER)
+            return parseLocalVariableDeclarationStatement();
+
+
+    }
+
+    private ForStatement parseForStatement() {
+        Span start = currentSpan();
+
+        expect(JavaTokenType.FOR_KEYWORD, "Expected 'for' keyword");
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' after 'for'");
+
+        boolean isEnhanced = isEnhancedForLoop();
+        return isEnhanced ? parseEnhancedForStatement(start)
+                : parseBasicForStatement(start);
+    }
+
+    private boolean isEnhancedForLoop() {
+        Marker beforeSearchMarker = mark();
+
+        int parenDepth = 0, bracketDepth = 0, braceDepth = 0, angleDepth = 0;
+        while (!isAtEnd()) {
+            JavaTokenType type = advance().type();
+            if (type == JavaTokenType.CLOSE_PAREN && parenDepth == 0 && bracketDepth == 0 && braceDepth == 0 && angleDepth == 0) {
+                beforeSearchMarker.rollback();
+                return false;
+            }
+
+            if (type == JavaTokenType.OPEN_PAREN) {
+                parenDepth++;
+                continue;
+            } else if (type == JavaTokenType.CLOSE_PAREN) {
+                parenDepth--;
+                continue;
+            }
+
+            if (type == JavaTokenType.OPEN_BRACKET) {
+                bracketDepth++;
+                continue;
+            } else if (type == JavaTokenType.CLOSE_BRACKET) {
+                bracketDepth--;
+                continue;
+            }
+
+            if (type == JavaTokenType.OPEN_BRACE) {
+                braceDepth++;
+                continue;
+            } else if (type == JavaTokenType.CLOSE_BRACE) {
+                braceDepth--;
+                continue;
+            }
+
+            if (type == JavaTokenType.LESS_THAN) {
+                angleDepth++;
+                continue;
+            } else if (type == JavaTokenType.GREATER_THAN) {
+                angleDepth--;
+                continue;
+            }
+
+            if (parenDepth == 0 && bracketDepth == 0 && braceDepth == 0 && angleDepth == 0) {
+                if (type == JavaTokenType.SEMICOLON) {
+                    beforeSearchMarker.rollback();
+                    return false;
+                } else if (type == JavaTokenType.COLON) {
+                    beforeSearchMarker.rollback();
+                    return true;
+                }
+            }
+        }
+
+        beforeSearchMarker.rollback();
+        return false;
+    }
+
+    private DoWhileStatement parseDoWhileStatement() {
+        Span start = currentSpan();
+        expect(JavaTokenType.DO_KEYWORD, "Expected 'do' keyword");
+
+        Statement body = parseStatement();
+
+        expect(JavaTokenType.WHILE_KEYWORD, "Expected 'while' after 'do' statement body");
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' after 'while'");
+
+        Expression condition = (Expression) parseExpression(0);
+
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after do-while condition");
+        expect(JavaTokenType.SEMICOLON, "Expected ';' after do-while statement");
+
+        return new DoWhileStatement(spanFrom(start), body, condition);
+    }
+
+    private WhileStatement parseWhileStatement() {
+        Span start = currentSpan();
+        expect(JavaTokenType.WHILE_KEYWORD, "Expected 'while' keyword");
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' after 'while'");
+
+        Expression condition = (Expression) parseExpression(0);
+
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after while condition");
+
+        Statement body = parseStatement();
+        return new WhileStatement(spanFrom(start), condition, body);
+    }
+
+    private SwitchStatement parseSwitchStatement() {
+        Span start = currentSpan();
+        expect(JavaTokenType.SWITCH_KEYWORD, "Expected 'switch' keyword");
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' after 'switch'");
+
+        Expression expression = (Expression) parseExpression(0);
+
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after switch statement");
+        expect(JavaTokenType.OPEN_BRACE, "Expected '{' for switch statement");
+
+        List<SwitchRule> switchRules = new ArrayList<>();
+        while (nextIsAny(JavaTokenType.DEFAULT_KEYWORD, JavaTokenType.CASE_KEYWORD)) {
+            switchRules.add(parseSwitchRule());
+        }
+
+        return new SwitchStatement(
+                spanFrom(start),
+                expression,
+                switchRules
+        );
+    }
+
+    private SwitchRule parseSwitchRule() {
+        Span start = currentSpan();
+
+        List<SwitchLabel> labels = new ArrayList<>();
+
+        Span ruleStart = currentSpan();
+        boolean isDefaultCase = expectAny(
+                "'case' or 'default' keyword expected for switch rule",
+                JavaTokenType.CASE_KEYWORD, JavaTokenType.DEFAULT_KEYWORD
+        ).type() == JavaTokenType.DEFAULT_KEYWORD;
+        if (isDefaultCase) {
+            labels.add(new SwitchLabel.DefaultLabel(spanFrom(ruleStart)));
+            if (nextIsAny(JavaTokenType.COMMA)) {
+                do {
+                    advance();
+                    reportError("'default' cannot be combined with other labels in a switch rule");
+                    synchronize(Set.of(JavaTokenType.COMMA, JavaTokenType.COLON, JavaTokenType.ARROW));
+                } while (match(JavaTokenType.COMMA));
+            }
+        } else {
+            do {
+                Span labelStart = currentSpan();
+                if (nextIsAny(JavaTokenType.DEFAULT_KEYWORD)) {
+                    reportError("`default` cannot appear in a `case` label list for a switch rule");
+                    advance();
+                    labels.add(new SwitchLabel.DefaultLabel(spanFrom(labelStart)));
+                    continue;
+                }
+
+                labels.add(parseCaseLabel(labelStart));
+            } while (match(JavaTokenType.COMMA));
+        }
+
+        expectAny("Expected ':' or '->' after switch labels", JavaTokenType.COLON, JavaTokenType.ARROW);
+
+        Statement body = parseStatement();
+        return new SwitchRule(spanFrom(start), labels, body);
+    }
+
+    private SwitchLabel.CaseLabel parseCaseLabel(Span labelStart) {
+        Span start = currentSpan();
+
+        List<CaseItem> items = new ArrayList<>();
+        do {
+            items.add(parseCaseItem());
+        } while (match(JavaTokenType.COMMA));
+
+        return new SwitchLabel.CaseLabel(spanFrom(labelStart), items);
+    }
+
+    private CaseItem parseCaseItem() {
+        Span start = currentSpan();
+
+        if (match(JavaTokenType.NULL_LITERAL))
+            return new CaseItem.CaseNull(spanFrom(start));
+
+        return parsePatternCaseItem(start);
+    }
+
+    private CaseItem.CasePattern parsePatternCaseItem(Span start) {
+        Pattern pattern = parsePattern();
+
+        CaseItem.CasePattern.Guard guard = parseGuard();
+        return new CaseItem.CasePattern(
+                spanFrom(start),
+                pattern,
+                guard);
+    }
+
+    private Pattern parsePattern() {
+        Span start = currentSpan();
+
+        if (match(JavaTokenType.UNDERSCORE_KEYWORD))
+            return new Pattern.MatchAllPattern(spanFrom(start));
+
+        List<Modifier> modifiers = new ArrayList<>();
+        List<Annotation> annotations = new ArrayList<>();
+        parseModifiersAndAnnotations(modifiers, annotations);
+        if (!modifiers.isEmpty() || !annotations.isEmpty()) {
+            TypeRef type = parseTypeReference();
+            Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected pattern variable name");
+            var name = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+
+            return new Pattern.TypeTestPattern(spanFrom(start),
+                    annotations, modifiers,
+                    type, Optional.of(name));
+        }
+
+        Marker recordPatternMarker = mark();
+        TypeRef type = parseTypeReference();
+        if (nextIsAny(JavaTokenType.OPEN_PAREN)) {
+            recordPatternMarker.commit();
+            expect(JavaTokenType.OPEN_PAREN, "Expected '(' after type in record pattern");
+
+            List<Pattern> components = new ArrayList<>();
+            if (!nextIsAny(JavaTokenType.CLOSE_PAREN)) {
+                do {
+                    components.add(parsePattern());
+                } while (match(JavaTokenType.COMMA));
+            }
+
+            expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after record pattern components");
+
+            return new Pattern.RecordPattern(
+                    spanFrom(start),
+                    type,
+                    components
+            );
+        }
+
+        recordPatternMarker.rollback();
+
+        Optional<Name> variable = Optional.empty();
+        if (nextIsAny(JavaTokenType.IDENTIFIER)) {
+            Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected pattern variable name");
+            variable = Optional.of(new Name(spanFrom(identifier), List.of(identifier.lexeme())));
+        }
+
+        return new Pattern.TypeTestPattern(spanFrom(start),
+                List.of(), List.of(),
+                type, variable);
+    }
+
+    private CaseItem.CasePattern.@Nullable Guard parseGuard() {
+        Span start = currentSpan();
+
+        CaseItem.CasePattern.Guard guard = null;
+        if (match(JavaTokenType.WHEN_KEYWORD)) {
+            Expression expression = (Expression) parseExpression(0);
+            guard = new CaseItem.CasePattern.Guard(spanFrom(start), expression);
+        }
+
+        return guard;
+    }
+
+    private IfStatement parseIfStatement() {
+        Span start = currentSpan();
+        expect(JavaTokenType.IF_KEYWORD, "Expected 'if' keyword");
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' after 'if'");
+
+        Expression condition = (Expression) parseExpression(0);
+
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after if condition");
+
+        Statement thenBranch = parseStatement();
+        Optional<Statement> elseBranch = Optional.empty();
+        if (match(JavaTokenType.ELSE_KEYWORD)) {
+            elseBranch = Optional.of(parseStatement());
+        }
+
+        return new IfStatement(spanFrom(start), condition, thenBranch, elseBranch);
     }
 
     private Parameter parseParameter() {
@@ -703,6 +1027,15 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
             advance();
 
         return Optional.empty();
+    }
+
+    private @NotNull List<Annotation> parseAnnotations() {
+        List<Annotation> annotations = new ArrayList<>();
+        while (nextIsAny(JavaTokenType.AT)) {
+            annotations.add(parseAnnotation());
+        }
+
+        return annotations;
     }
 
     private Annotation parseAnnotation() {

@@ -17,7 +17,7 @@ public record BasicForStatement(
         Optional<Expression> condition,
         List<Expression> updates,
         Statement body
-) implements Statement {
+) implements ForStatement {
     @Override
     public AstKind kind() {
         return AstKind.BASIC_FOR_STATEMENT;

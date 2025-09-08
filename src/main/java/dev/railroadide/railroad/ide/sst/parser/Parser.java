@@ -190,7 +190,7 @@ public abstract class Parser<T extends Enum<T>, N> {
      * @return a marker object representing the current state
      */
     protected Marker mark() {
-        return new Marker(snapshot(), lookaheadBuffer.clone(), previousToken);
+        return new Marker(snapshot(), lookaheadBuffer.clone(), previousToken, new ArrayList<>(diagnostics));
     }
 
     /**
@@ -538,12 +538,14 @@ public abstract class Parser<T extends Enum<T>, N> {
         private final Lexer.Snapshot lexSnapshot;
         private final ArrayDeque<Token<T>> laCopy;
         private final Token<T> prevCopy;
+        private final List<ParseDiagnostic> diagnosticsCopy;
         private boolean active = true;
 
-        private Marker(Lexer.Snapshot lexSnapshot, ArrayDeque<Token<T>> laCopy, Token<T> prevCopy) {
+        private Marker(Lexer.Snapshot lexSnapshot, ArrayDeque<Token<T>> laCopy, Token<T> prevCopy, List<ParseDiagnostic> diagnosticsCopy) {
             this.lexSnapshot = lexSnapshot;
             this.laCopy = laCopy;
             this.prevCopy = prevCopy;
+            this.diagnosticsCopy = diagnosticsCopy;
         }
 
         /**
@@ -564,7 +566,10 @@ public abstract class Parser<T extends Enum<T>, N> {
             lexer.restore(lexSnapshot);
             lookaheadBuffer.clear();
             lookaheadBuffer.addAll(laCopy);
+            diagnostics.clear();
+            diagnostics.addAll(diagnosticsCopy);
             previousToken = prevCopy;
+
             active = false;
         }
     }

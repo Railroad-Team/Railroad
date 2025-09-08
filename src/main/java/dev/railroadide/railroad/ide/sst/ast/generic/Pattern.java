@@ -4,6 +4,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
 import dev.railroadide.railroad.ide.sst.ast.typeref.ClassOrInterfaceTypeRef;
 import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
@@ -13,7 +14,9 @@ import java.util.List;
 import java.util.Optional;
 
 public sealed interface Pattern extends AstNode permits Pattern.MatchAllPattern, Pattern.RecordPattern, Pattern.TypeTestPattern {
-    record TypeTestPattern(Span span, TypeRef type, Optional<Name> variable) implements Pattern {
+    record TypeTestPattern(Span span,
+                           List<Annotation> annotations, List<Modifier> modifiers,
+                           TypeRef type, Optional<Name> variable) implements Pattern {
         @Override
         public AstKind kind() {
             return AstKind.TYPE_TEST_PATTERN;
@@ -22,6 +25,8 @@ public sealed interface Pattern extends AstNode permits Pattern.MatchAllPattern,
         @Override
         public List<AstNode> children() {
             List<AstNode> children = new ArrayList<>();
+            children.addAll(annotations);
+            children.addAll(modifiers);
             children.add(type);
             variable.ifPresent(children::add);
             return List.copyOf(children);
@@ -33,8 +38,7 @@ public sealed interface Pattern extends AstNode permits Pattern.MatchAllPattern,
         }
     }
 
-    record RecordPattern(Span span, ClassOrInterfaceTypeRef type, List<Pattern> components,
-                         Optional<Name> name) implements Pattern {
+    record RecordPattern(Span span, TypeRef type, List<Pattern> components) implements Pattern {
         @Override
         public AstKind kind() {
             return AstKind.RECORD_PATTERN;
@@ -45,7 +49,6 @@ public sealed interface Pattern extends AstNode permits Pattern.MatchAllPattern,
             List<AstNode> children = new ArrayList<>();
             children.add(type);
             children.addAll(components);
-            name.ifPresent(children::add);
             return List.copyOf(children);
         }
 
