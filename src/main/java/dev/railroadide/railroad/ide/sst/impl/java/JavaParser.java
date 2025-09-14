@@ -139,6 +139,225 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         return null;
     }
 
+    private RecordDeclaration parseRecordDeclaration(Span startSpan, List<Modifier> modifiers, List<Annotation> annotations) {
+        expect(JavaTokenType.RECORD_KEYWORD, "Expected 'record' keyword");
+
+        Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected record name");
+        var recordName = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+
+        List<TypeParameter> typeParameters = new ArrayList<>();
+        while (nextIsAny(JavaTokenType.LEFT_ANGLED_BRACKET)) {
+            typeParameters.add(parseTypeParameter());
+            expect(JavaTokenType.RIGHT_ANGLED_BRACKET, "Expected '>' after type parameters");
+        }
+
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' to start record components");
+        List<RecordComponent> components = new ArrayList<>();
+        if (!nextIsAny(JavaTokenType.CLOSE_PAREN)) {
+            do {
+                components.add(parseRecordComponent());
+            } while (match(JavaTokenType.COMMA));
+        }
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' to end record components");
+
+        List<TypeRef> implementsTypes = new ArrayList<>();
+        if (match(JavaTokenType.IMPLEMENTS_KEYWORD)) {
+            do {
+                implementsTypes.add(parseTypeReference());
+            } while (match(JavaTokenType.COMMA));
+        }
+
+        expect(JavaTokenType.OPEN_BRACE, "Expected '{' to start record body");
+        List<ClassBodyDeclaration> declarations = new ArrayList<>();
+        while (!nextIsAny(JavaTokenType.CLOSE_BRACE) && !isAtEnd()) {
+            ClassBodyDeclaration declaration = tryParse($ -> parseClassBodyDeclaration(recordName, true));
+            if (declaration != null) {
+                declarations.add(declaration);
+            } else {
+                reportError("Unexpected token in record body");
+                synchronize(defaultSyncSet());
+                if (!isAtEnd())
+                    advance();
+            }
+        }
+
+        expect(JavaTokenType.CLOSE_BRACE, "Expected '}' to close record body");
+        return new RecordDeclaration(
+                spanFrom(startSpan),
+                modifiers,
+                annotations,
+                recordName,
+                typeParameters,
+                components,
+                implementsTypes,
+                declarations
+        );
+    }
+
+    private RecordComponent parseRecordComponent() {
+        Span start = currentSpan();
+
+        List<Modifier> modifiers = new ArrayList<>();
+        List<Annotation> annotations = new ArrayList<>();
+        parseModifiersAndAnnotations(modifiers, annotations);
+
+        TypeRef type = parseTypeReference();
+
+        Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected record component name");
+        var name = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+
+        return new RecordComponent(
+                spanFrom(start),
+                modifiers,
+                annotations,
+                type,
+                name
+        );
+    }
+
+    private AnnotationTypeDeclaration parseAnnotationTypeDeclaration(Span startSpan, List<Modifier> modifiers, List<Annotation> annotations) {
+        // https://docs.oracle.com/javase/specs/jls/se24/html/jls-9.html#jls-9.6.1
+    }
+
+    private EnumDeclaration parseEnumDeclaration(Span startSpan, List<Modifier> modifiers, List<Annotation> annotations) {
+        expect(JavaTokenType.ENUM_KEYWORD, "Expected 'enum' keyword");
+
+        Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected enum name");
+        var enumName = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+
+        List<TypeRef> implementsTypes = new ArrayList<>();
+        if (match(JavaTokenType.IMPLEMENTS_KEYWORD)) {
+            do {
+                implementsTypes.add(parseTypeReference());
+            } while (match(JavaTokenType.COMMA));
+        }
+
+        expect(JavaTokenType.OPEN_BRACE, "Expected '{' to start enum body");
+        List<EnumConstantDeclaration> enumConstants = new ArrayList<>();
+        if (!nextIsAny(JavaTokenType.SEMICOLON, JavaTokenType.CLOSE_BRACE)) {
+            do {
+                enumConstants.add(parseEnumConstant());
+            } while (match(JavaTokenType.COMMA));
+        }
+
+        if (match(JavaTokenType.SEMICOLON)) {
+            List<ClassBodyDeclaration> declarations = new ArrayList<>();
+            while (!nextIsAny(JavaTokenType.CLOSE_BRACE) && !isAtEnd()) {
+                ClassBodyDeclaration declaration = tryParse($ -> parseClassBodyDeclaration(enumName, false));
+                if (declaration != null) {
+                    declarations.add(declaration);
+                } else {
+                    reportError("Unexpected token in enum body");
+                    synchronize(defaultSyncSet());
+                    if (!isAtEnd())
+                        advance();
+                }
+            }
+
+            expect(JavaTokenType.CLOSE_BRACE, "Expected '}' to close enum body");
+            return new EnumDeclaration(
+                    spanFrom(startSpan),
+                    modifiers,
+                    annotations,
+                    enumName,
+                    implementsTypes,
+                    enumConstants,
+                    declarations
+            );
+        }
+
+        expect(JavaTokenType.CLOSE_BRACE, "Expected '}' to close enum body");
+        return new EnumDeclaration(
+                spanFrom(startSpan),
+                modifiers,
+                annotations,
+                enumName,
+                implementsTypes,
+                enumConstants,
+                List.of()
+        );
+    }
+
+    private EnumConstantDeclaration parseEnumConstant() {
+        Span start = currentSpan();
+
+        List<Annotation> annotations = parseAnnotations();
+
+        Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected enum constant name");
+        var name = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+
+        List<Expression> arguments = new ArrayList<>();
+        if (match(JavaTokenType.OPEN_PAREN)) {
+            while (!nextIsAny(JavaTokenType.CLOSE_PAREN)) {
+                arguments.add((Expression) parseExpression(0));
+            }
+
+            expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after enum constant arguments");
+        }
+
+        List<ClassBodyDeclaration> classBodyDeclarations = new ArrayList<>();
+        if (match(JavaTokenType.OPEN_BRACE)) {
+            while (!nextIsAny(JavaTokenType.CLOSE_BRACE)) {
+                classBodyDeclarations.add(parseClassBodyDeclaration(name, false));
+            }
+
+            expect(JavaTokenType.CLOSE_BRACE, "Expected '}' to close enum constant body");
+        }
+
+        return new EnumConstantDeclaration(
+                spanFrom(start),
+                annotations,
+                name,
+                arguments,
+                classBodyDeclarations
+        );
+    }
+
+    private InterfaceDeclaration parseInterfaceDeclaration(Span startSpan, List<Modifier> modifiers, List<Annotation> annotations) {
+        expect(JavaTokenType.INTERFACE_KEYWORD, "Expected 'interface' keyword");
+
+        Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected interface name");
+        var interfaceName = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+
+        List<TypeParameter> typeParameters = new ArrayList<>();
+        while (nextIsAny(JavaTokenType.LEFT_ANGLED_BRACKET)) {
+            typeParameters.add(parseTypeParameter());
+            expect(JavaTokenType.RIGHT_ANGLED_BRACKET, "Expected '>' after type parameters");
+        }
+
+        List<TypeRef> extendsTypes = new ArrayList<>();
+        if (match(JavaTokenType.EXTENDS_KEYWORD)) {
+            do {
+                extendsTypes.add(parseTypeReference());
+            } while (match(JavaTokenType.COMMA));
+        }
+
+        expect(JavaTokenType.OPEN_BRACE, "Expected '{' to start interface body");
+        List<ClassBodyDeclaration> declarations = new ArrayList<>();
+        while (!nextIsAny(JavaTokenType.CLOSE_BRACE) && !isAtEnd()) {
+            ClassBodyDeclaration declaration = tryParse($ -> parseClassBodyDeclaration(interfaceName, false));
+            if (declaration != null) {
+                declarations.add(declaration);
+            } else {
+                reportError("Unexpected token in interface body");
+                synchronize(defaultSyncSet());
+                if (!isAtEnd())
+                    advance();
+            }
+        }
+
+        expect(JavaTokenType.CLOSE_BRACE, "Expected '}' to close interface body");
+        return new InterfaceDeclaration(
+                spanFrom(startSpan),
+                modifiers,
+                annotations,
+                interfaceName,
+                typeParameters,
+                extendsTypes,
+                declarations
+        );
+    }
+
     private ClassDeclaration parseClassDeclaration(Span startSpan, List<Modifier> modifiers, List<Annotation> annotations) {
         expect(JavaTokenType.CLASS_KEYWORD, "Expected 'class' keyword");
 
@@ -146,9 +365,9 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         var className = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
 
         List<TypeParameter> typeParameters = new ArrayList<>();
-        while (nextIsAny(JavaTokenType.LESS_THAN)) {
+        while (nextIsAny(JavaTokenType.LEFT_ANGLED_BRACKET)) {
             typeParameters.add(parseTypeParameter());
-            expect(JavaTokenType.GREATER_THAN, "Expected '>' after type parameters");
+            expect(JavaTokenType.RIGHT_ANGLED_BRACKET, "Expected '>' after type parameters");
         }
 
         Optional<TypeRef> extendsType = Optional.empty();
@@ -212,9 +431,9 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
         Marker isConstructor = mark();
         List<TypeParameter> typeParameters = new ArrayList<>();
-        while (nextIsAny(JavaTokenType.LESS_THAN)) {
+        while (nextIsAny(JavaTokenType.LEFT_ANGLED_BRACKET)) {
             typeParameters.add(parseTypeParameter());
-            expect(JavaTokenType.GREATER_THAN, "Expected '>' after type parameters");
+            expect(JavaTokenType.RIGHT_ANGLED_BRACKET, "Expected '>' after type parameters");
         }
 
         if (nextIsAny(JavaTokenType.IDENTIFIER) && lookaheadType(2) == JavaTokenType.OPEN_PAREN) {
@@ -231,7 +450,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
     }
 
     private ClassMember parseClassMemberDeclaration(Span start, List<Modifier> modifiers, List<Annotation> annotations) {
-        if (nextIsAny(JavaTokenType.LESS_THAN))
+        if (nextIsAny(JavaTokenType.LEFT_ANGLED_BRACKET))
             return parseGenericMethodDeclaration(start, modifiers, annotations);
 
         if (nextIsAny(JavaTokenType.IDENTIFIER, JavaTokenType.INT_KEYWORD, JavaTokenType.BOOLEAN_KEYWORD,
@@ -295,7 +514,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         do {
             typeParameters.add(parseTypeParameter());
         } while (nextIsAny(JavaTokenType.COMMA) && match(JavaTokenType.COMMA));
-        expect(JavaTokenType.GREATER_THAN, "Expected '>' after type parameters");
+        expect(JavaTokenType.RIGHT_ANGLED_BRACKET, "Expected '>' after type parameters");
 
         return parseFullMethodDeclaration(start, modifiers, annotations, typeParameters);
     }
@@ -478,10 +697,230 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         if (nextIsAny(JavaTokenType.IDENTIFIER) && lookaheadType(2) == JavaTokenType.COLON)
             return parseLabeledStatement();
 
-        if (nextIsAny(JavaTokenType.VAR_KEYWORD) || nextIsAny(JavaTokenType.FINAL_KEYWORD) || lookaheadType(2) == JavaTokenType.IDENTIFIER)
+        if (nextIsAny(JavaTokenType.VAR_KEYWORD, JavaTokenType.FINAL_KEYWORD, JavaTokenType.AT) || lookaheadType(2) == JavaTokenType.IDENTIFIER)
             return parseLocalVariableDeclarationStatement();
 
+        return parseExpressionStatement();
+    }
 
+    private ExpressionStatement parseExpressionStatement() {
+        Span start = currentSpan();
+        Expression expression = (Expression) parseExpression(0);
+        expect(JavaTokenType.SEMICOLON, "Expected ';' after expression statement");
+        return new ExpressionStatement(spanFrom(start), expression);
+    }
+
+    private LocalVariableDeclarationStatement parseLocalVariableDeclarationStatement() {
+        List<Modifier> modifiers = new ArrayList<>();
+        List<Annotation> annotations = new ArrayList<>();
+        parseModifiersAndAnnotations(modifiers, annotations);
+
+        LexerToken<JavaTokenType> varToken = null;
+        if (nextIsAny(JavaTokenType.VAR_KEYWORD)) {
+            Span varSpan = currentSpan();
+            Token<JavaTokenType> token = advance();
+            varToken = LexerToken.of(spanFrom(varSpan), token);
+        }
+
+        TypeRef type = varToken != null ?
+                new PrimitiveTypeRef(spanFrom(currentSpan()), varToken) :
+                parseTypeReference();
+
+        Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected variable name");
+        var name = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+
+        List<VariableDeclarator> variables = new ArrayList<>();
+        variables.add(parseVariableDeclarator(name));
+
+        while (match(JavaTokenType.COMMA)) {
+            Token<JavaTokenType> id = expect(JavaTokenType.IDENTIFIER, "Expected variable name");
+            var varName = new Name(spanFrom(id), List.of(id.lexeme()));
+            variables.add(parseVariableDeclarator(varName));
+        }
+
+        expect(JavaTokenType.SEMICOLON, "Expected ';' after variable declaration");
+        return new LocalVariableDeclarationStatement(
+                spanFrom(currentSpan()),
+                annotations,
+                modifiers,
+                type,
+                varToken != null,
+                variables
+        );
+    }
+
+    private LabeledStatement parseLabeledStatement() {
+        Span start = currentSpan();
+        Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected label name");
+        var labelName = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        expect(JavaTokenType.COLON, "Expected ':' after label name");
+
+        Statement statement = parseStatement();
+        return new LabeledStatement(spanFrom(start), labelName, statement);
+    }
+
+    private YieldStatement parseYieldStatement() {
+        Span start = currentSpan();
+        expect(JavaTokenType.YIELD_KEYWORD, "Expected 'yield' keyword");
+
+        Expression expression = (Expression) parseExpression(0);
+
+        expect(JavaTokenType.SEMICOLON, "Expected ';' after yield statement");
+        return new YieldStatement(spanFrom(start), expression);
+    }
+
+    private AssertStatement parseAssertStatement() {
+        Span start = currentSpan();
+        expect(JavaTokenType.ASSERT_KEYWORD, "Expected 'assert' keyword");
+
+        Expression condition = (Expression) parseExpression(0);
+
+        Optional<Expression> message = Optional.empty();
+        if (match(JavaTokenType.COLON)) {
+            message = Optional.of((Expression) parseExpression(0));
+        }
+
+        expect(JavaTokenType.SEMICOLON, "Expected ';' after assert statement");
+        return new AssertStatement(spanFrom(start), condition, message);
+    }
+
+    private ContinueStatement parseContinueStatement() {
+        Span start = currentSpan();
+        expect(JavaTokenType.CONTINUE_KEYWORD, "Expected 'continue' keyword");
+
+        Optional<Name> label = Optional.empty();
+        if (nextIsAny(JavaTokenType.IDENTIFIER)) {
+            Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected label name after 'continue'");
+            label = Optional.of(new Name(spanFrom(identifier), List.of(identifier.lexeme())));
+        }
+
+        expect(JavaTokenType.SEMICOLON, "Expected ';' after continue statement");
+        return new ContinueStatement(spanFrom(start), label);
+    }
+
+    private BreakStatement parseBreakStatement() {
+        Span start = currentSpan();
+        expect(JavaTokenType.BREAK_KEYWORD, "Expected 'break' keyword");
+
+        Optional<Name> label = Optional.empty();
+        if (nextIsAny(JavaTokenType.IDENTIFIER)) {
+            Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected label name after 'break'");
+            label = Optional.of(new Name(spanFrom(identifier), List.of(identifier.lexeme())));
+        }
+
+        expect(JavaTokenType.SEMICOLON, "Expected ';' after break statement");
+        return new BreakStatement(spanFrom(start), label);
+    }
+
+    private ThrowStatement parseThrowStatement() {
+        Span start = currentSpan();
+        expect(JavaTokenType.THROW_KEYWORD, "Expected 'throw' keyword");
+
+        Expression expression = (Expression) parseExpression(0);
+
+        expect(JavaTokenType.SEMICOLON, "Expected ';' after throw statement");
+        return new ThrowStatement(spanFrom(start), expression);
+    }
+
+    private ReturnStatement parseReturnStatement() {
+        Span start = currentSpan();
+        expect(JavaTokenType.RETURN_KEYWORD, "Expected 'return' keyword");
+
+        Optional<Expression> expression = Optional.empty();
+        if (!nextIsAny(JavaTokenType.SEMICOLON)) {
+            expression = Optional.of((Expression) parseExpression(0));
+        }
+
+        expect(JavaTokenType.SEMICOLON, "Expected ';' after return statement");
+        return new ReturnStatement(spanFrom(start), expression);
+    }
+
+    private SynchronizedStatement parseSynchronizedStatement() {
+        Span start = currentSpan();
+        expect(JavaTokenType.SYNCHRONIZED_KEYWORD, "Expected 'synchronized' keyword");
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' after 'synchronized'");
+
+        Expression expression = (Expression) parseExpression(0);
+
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after synchronized expression");
+
+        BlockStatement body = parseBlock();
+        return new SynchronizedStatement(spanFrom(start), expression, body);
+    }
+
+    private TryStatement parseTryStatement() {
+        Span start = currentSpan();
+
+        expect(JavaTokenType.TRY_KEYWORD, "Expected 'try' keyword");
+
+        List<LocalVariableDeclarationStatement> resourceStatements = new ArrayList<>();
+        if (match(JavaTokenType.OPEN_PAREN)) {
+            do {
+                resourceStatements.add(parseLocalVariableDeclarationStatement());
+            } while (!isAtEnd() && !nextIsAny(JavaTokenType.CLOSE_PAREN));
+
+            expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after try-with-resources resources");
+        }
+
+        BlockStatement tryBlock = parseBlock();
+
+        List<CatchClause> catchClauses = new ArrayList<>();
+        while (nextIsAny(JavaTokenType.CATCH_KEYWORD)) {
+            catchClauses.add(parseCatchClause());
+        }
+
+        Optional<FinallyClause> finallyClause = Optional.empty();
+        if (nextIsAny(JavaTokenType.FINALLY_KEYWORD))
+            finallyClause = Optional.of(parseFinallyClause());
+
+        return new TryStatement(
+                spanFrom(start),
+                resourceStatements,
+                tryBlock,
+                catchClauses,
+                finallyClause);
+    }
+
+    private FinallyClause parseFinallyClause() {
+        Span start = currentSpan();
+        expect(JavaTokenType.FINALLY_KEYWORD, "Expected 'finally' keyword");
+        BlockStatement body = parseBlock();
+        return new FinallyClause(spanFrom(start), body);
+    }
+
+    private CatchClause parseCatchClause() {
+        Span start = currentSpan();
+        expect(JavaTokenType.CATCH_KEYWORD, "Expected 'catch' keyword");
+
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' to start 'catch' clause");
+
+        List<SugarTypeRef> exceptionTypes = new ArrayList<>();
+        do {
+            exceptionTypes.add(parseSugarTypeReference());
+        } while (match(JavaTokenType.PIPE));
+
+        Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected exception variable name");
+        var name = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' to end 'catch' clause");
+
+        BlockStatement body = parseBlock();
+
+        return new CatchClause(
+                spanFrom(start),
+                exceptionTypes,
+                name,
+                body);
+    }
+
+    private SugarTypeRef parseSugarTypeReference() {
+        Span start = currentSpan();
+        List<Modifier> modifiers = new ArrayList<>();
+        List<Annotation> annotations = new ArrayList<>();
+        parseModifiersAndAnnotations(modifiers, annotations);
+
+        TypeRef typeRef = parseTypeReference();
+        return new SugarTypeRef(spanFrom(start), modifiers, annotations, typeRef);
     }
 
     private ForStatement parseForStatement() {
@@ -491,8 +930,53 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         expect(JavaTokenType.OPEN_PAREN, "Expected '(' after 'for'");
 
         boolean isEnhanced = isEnhancedForLoop();
-        return isEnhanced ? parseEnhancedForStatement(start)
-                : parseBasicForStatement(start);
+        return isEnhanced ?
+                parseEnhancedForStatement(start) :
+                parseBasicForStatement(start);
+    }
+
+    private EnhancedForStatement parseEnhancedForStatement(Span start) {
+        Parameter variableDeclaration = parseParameter();
+        expect(JavaTokenType.COLON, "Expected ':' in enhanced for loop");
+        Expression iterable = (Expression) parseExpression(0);
+
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after enhanced for loop control");
+
+        Statement body = parseStatement();
+        return new EnhancedForStatement(
+                spanFrom(start),
+                variableDeclaration,
+                iterable,
+                body
+        );
+    }
+
+    private BasicForStatement parseBasicForStatement(Span start) {
+        Optional<Statement> initializer = Optional.ofNullable(tryParse($ -> parseLocalVariableDeclarationStatement()));
+
+        Optional<Expression> condition = Optional.empty();
+        if (!nextIsAny(JavaTokenType.SEMICOLON)) {
+            condition = Optional.of((Expression) parseExpression(0));
+        }
+
+        expect(JavaTokenType.SEMICOLON, "Expected ';' after for loop condition");
+
+        List<Expression> updaters = new ArrayList<>();
+        if (!nextIsAny(JavaTokenType.CLOSE_PAREN)) {
+            do {
+                updaters.add((Expression) parseExpression(0));
+            } while (match(JavaTokenType.COMMA));
+        }
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after for loop updaters");
+
+        Statement body = parseStatement();
+        return new BasicForStatement(
+                spanFrom(start),
+                initializer,
+                condition,
+                updaters,
+                body
+        );
     }
 
     private boolean isEnhancedForLoop() {
@@ -530,10 +1014,10 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
                 continue;
             }
 
-            if (type == JavaTokenType.LESS_THAN) {
+            if (type == JavaTokenType.LEFT_ANGLED_BRACKET) {
                 angleDepth++;
                 continue;
-            } else if (type == JavaTokenType.GREATER_THAN) {
+            } else if (type == JavaTokenType.RIGHT_ANGLED_BRACKET) {
                 angleDepth--;
                 continue;
             }
@@ -817,7 +1301,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         if (match(JavaTokenType.EXTENDS_KEYWORD)) {
             do {
                 bounds.add(parseTypeReference());
-            } while (match(JavaTokenType.BITWISE_AND));
+            } while (match(JavaTokenType.AMPERSAND));
         }
 
         return new TypeParameter(spanFrom(start), annotations, name, bounds);
@@ -827,10 +1311,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
     // x   ARRAY_TYPE, // e.g., int[], String[]
     // x   CLASS_OR_INTERFACE_TYPE, // e.g., List<String>
     // x   TYPE_VARIABLE, // <T>
-    //    INTERSECTION_TYPE, // A & B
-    //    UNION_TYPE, // A | B
     // x   WILDCARD_TYPE, // ? extends A, ? super B, or just ?
-    //    EXCEPTION_TYPE, // CLASS_OR_INTERFACE_TYPE or TYPE_VARIABLE
     private TypeRef parseTypeReference() {
         Span start = currentSpan();
 
@@ -855,7 +1336,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
         JavaTokenType nextToken = lookaheadType(1);
         JavaTokenType lookahead2 = lookaheadType(2);
-        if (nextToken == JavaTokenType.IDENTIFIER && lookahead2 != JavaTokenType.DOT && lookahead2 != JavaTokenType.LESS_THAN) {
+        if (nextToken == JavaTokenType.IDENTIFIER && lookahead2 != JavaTokenType.DOT && lookahead2 != JavaTokenType.LEFT_ANGLED_BRACKET) {
             Token<JavaTokenType> identifier = advance();
             return new TypeVariableRef(spanFrom(start), identifier.lexeme());
         }
@@ -877,12 +1358,12 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
     private List<TypeRef> parseTypeArgumentsOptionally() {
         List<TypeRef> typeArguments = new ArrayList<>();
-        if (match(JavaTokenType.LESS_THAN)) {
+        if (match(JavaTokenType.LEFT_ANGLED_BRACKET)) {
             do {
                 typeArguments.add(parseTypeArgument());
             } while (match(JavaTokenType.COMMA));
 
-            expect(JavaTokenType.GREATER_THAN, "Expected '>' after type arguments");
+            expect(JavaTokenType.RIGHT_ANGLED_BRACKET, "Expected '>' after type arguments");
         }
 
         return typeArguments;

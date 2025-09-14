@@ -5,7 +5,6 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
-import dev.railroadide.railroad.ide.sst.ast.generic.ClassMember;
 import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
 import dev.railroadide.railroad.ide.sst.ast.generic.Name;
 import dev.railroadide.railroad.ide.sst.ast.parameter.TypeParameter;
@@ -22,7 +21,7 @@ public record InterfaceDeclaration(
         Name name,
         List<TypeParameter> typeParameters,
         List<TypeRef> extendsTypes,
-        List<ClassMember> members) implements TypeDeclaration {
+        List<ClassBodyDeclaration> declarations) implements TypeDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.INTERFACE_DECLARATION;
@@ -34,7 +33,7 @@ public record InterfaceDeclaration(
         children.addAll(annotations);
         children.addAll(typeParameters);
         children.addAll(extendsTypes);
-        children.addAll(members);
+        children.addAll(declarations);
         return List.copyOf(children);
     }
 

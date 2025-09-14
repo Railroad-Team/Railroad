@@ -5,6 +5,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
+import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
 import dev.railroadide.railroad.ide.sst.ast.generic.ClassMember;
 import dev.railroadide.railroad.ide.sst.ast.generic.Name;
 import org.jetbrains.annotations.NotNull;
@@ -12,7 +13,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-public record EnumConstantDeclaration(Span span, List<Annotation> annotations, Name name, List<ClassMember> body) implements ClassMember {
+public record EnumConstantDeclaration(Span span, List<Annotation> annotations, Name name, List<Expression> arguments,
+                                      List<ClassBodyDeclaration> body) implements ClassMember {
     @Override
     public AstKind kind() {
         return AstKind.ENUM_CONSTANT_DECLARATION;
@@ -23,6 +25,7 @@ public record EnumConstantDeclaration(Span span, List<Annotation> annotations, N
         List<AstNode> children = new ArrayList<>();
         children.addAll(annotations);
         children.add(name);
+        children.addAll(arguments);
         children.addAll(body);
         return List.copyOf(children);
     }

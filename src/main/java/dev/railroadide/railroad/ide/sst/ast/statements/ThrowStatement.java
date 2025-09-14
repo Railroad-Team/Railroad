@@ -13,7 +13,7 @@ import java.util.Optional;
 
 public record ThrowStatement(
         Span span,
-        Optional<Expression> expression
+        Expression expression
 ) implements Statement {
     @Override
     public AstKind kind() {
@@ -22,9 +22,7 @@ public record ThrowStatement(
 
     @Override
     public List<AstNode> children() {
-        List<AstNode> children = new ArrayList<>();
-        expression.ifPresent(children::add);
-        return List.copyOf(children);
+        return List.of(expression);
     }
 
     @Override

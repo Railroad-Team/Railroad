@@ -1,6 +1,9 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public enum JavaTokenType {
     // Trivia tokens
@@ -110,15 +113,15 @@ public enum JavaTokenType {
     ELLIPSIS,
 
     // Operator tokens
-    ASSIGN, // =
-    GREATER_THAN, // >
-    LESS_THAN, // <
-    NOT, // !
+    EQUALS, // =
+    RIGHT_ANGLED_BRACKET, // >
+    LEFT_ANGLED_BRACKET, // <
+    EXCLAMATION_MARK, // !
     QUESTION_MARK, // ?
     COLON, // :
     ARROW, // ->
     DOUBLE_COLON, // ::
-    EQUALS, // ==
+    DOUBLE_EQUALS, // ==
     GREATER_THAN_OR_EQUALS, // >=
     LESS_THAN_OR_EQUALS, // <=
     NOT_EQUALS, // !=
@@ -131,10 +134,10 @@ public enum JavaTokenType {
     STAR, // *
     DIVIDE, // /
     MODULUS, // %
-    BITWISE_COMPLEMENT, // ~
-    BITWISE_AND, // &
-    BITWISE_OR, // |
-    BITWISE_XOR, // ^
+    TILDA, // ~
+    AMPERSAND, // &
+    PIPE, // |
+    CARET, // ^
     AT, // @
     LEFT_SHIFT, // <<
     PLUS_EQUALS, // +=
@@ -190,7 +193,7 @@ public enum JavaTokenType {
                 Map.entry("<=", LESS_THAN_OR_EQUALS))
         );
         put('=', List.of(
-                Map.entry("==", EQUALS),
+                Map.entry("==", DOUBLE_EQUALS),
                 Map.entry("=>", ARROW))
         );
         put('!', List.of(
@@ -202,10 +205,10 @@ public enum JavaTokenType {
     }};
 
     public static final Map<Character, JavaTokenType> SINGLE_CHAR_TOKENS = new HashMap<>() {{
-        put('=', ASSIGN);
-        put('>', GREATER_THAN);
-        put('<', LESS_THAN);
-        put('!', NOT);
+        put('=', EQUALS);
+        put('>', RIGHT_ANGLED_BRACKET);
+        put('<', LEFT_ANGLED_BRACKET);
+        put('!', EXCLAMATION_MARK);
         put('?', QUESTION_MARK);
         put(':', COLON);
         put('+', PLUS);
@@ -213,10 +216,10 @@ public enum JavaTokenType {
         put('*', STAR);
         put('/', DIVIDE);
         put('%', MODULUS);
-        put('~', BITWISE_COMPLEMENT);
-        put('&', BITWISE_AND);
-        put('|', BITWISE_OR);
-        put('^', BITWISE_XOR);
+        put('~', TILDA);
+        put('&', AMPERSAND);
+        put('|', PIPE);
+        put('^', CARET);
         put('(', OPEN_PAREN);
         put(')', CLOSE_PAREN);
         put('{', OPEN_BRACE);
@@ -237,10 +240,10 @@ public enum JavaTokenType {
 
         Map<String, JavaTokenType> keywords = new HashMap<>();
         for (JavaTokenType tokenType : JavaTokenType.values()) {
-            if(tokenType == NON_SEALED_KEYWORD) {
+            if (tokenType == NON_SEALED_KEYWORD) {
                 keywords.put("non-sealed", tokenType);
                 continue;
-            } else if(tokenType == AT_INTERFACE_KEYWORD) {
+            } else if (tokenType == AT_INTERFACE_KEYWORD) {
                 keywords.put("@interface", tokenType);
                 continue;
             }
@@ -258,8 +261,8 @@ public enum JavaTokenType {
     public boolean isModifier() {
         return switch (this) {
             case ABSTRACT_KEYWORD, FINAL_KEYWORD, NATIVE_KEYWORD, PRIVATE_KEYWORD, PROTECTED_KEYWORD,
-                    PUBLIC_KEYWORD, STATIC_KEYWORD, STRICTFP_KEYWORD, SYNCHRONIZED_KEYWORD, TRANSIENT_KEYWORD,
-                    VOLATILE_KEYWORD -> true;
+                 PUBLIC_KEYWORD, STATIC_KEYWORD, STRICTFP_KEYWORD, SYNCHRONIZED_KEYWORD, TRANSIENT_KEYWORD,
+                 VOLATILE_KEYWORD, DEFAULT_KEYWORD -> true;
             default -> false;
         };
     }
