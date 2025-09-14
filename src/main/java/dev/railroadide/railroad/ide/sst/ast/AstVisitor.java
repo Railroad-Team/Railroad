@@ -79,7 +79,6 @@ public interface AstVisitor<R> {
     R visitReturnStatement(ReturnStatement node);
     R visitThrowStatement(ThrowStatement node);
     R visitTryStatement(TryStatement node);
-    R visitTryResource(TryStatement.Resource node);
     R visitCatchClause(CatchClause node);
     R visitFinallyClause(FinallyClause node);
     R visitThrowsClause(ThrowsClause node);
@@ -118,6 +117,7 @@ public interface AstVisitor<R> {
     R visitUnionType(UnionTypeRef node);
     R visitWildcardType(WildcardTypeRef node);
     R visitExceptionType(ThrowsClause.ExceptionType node);
+    R visitSugarType(SugarTypeRef node);
 
     R visitModifier(Modifier node);
     R visitMarkerAnnotation(MarkerAnnotation node);

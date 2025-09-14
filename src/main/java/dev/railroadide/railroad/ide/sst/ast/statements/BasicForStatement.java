@@ -15,7 +15,7 @@ public record BasicForStatement(
         Span span,
         Optional<Statement> initStatement,
         Optional<Expression> condition,
-        List<Expression> updates,
+        List<Expression> updaters,
         Statement body
 ) implements ForStatement {
     @Override
@@ -28,7 +28,7 @@ public record BasicForStatement(
         List<AstNode> children = new ArrayList<>();
         initStatement.ifPresent(children::add);
         condition.ifPresent(children::add);
-        children.addAll(updates);
+        children.addAll(updaters);
         children.add(body);
         return List.copyOf(children);
     }

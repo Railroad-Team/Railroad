@@ -61,7 +61,6 @@ public enum AstKind {
     RETURN_STATEMENT,
     THROW_STATEMENT,
     TRY_STATEMENT,
-    TRY_RESOURCE,
     CATCH_CLAUSE,
     FINALLY_CLAUSE,
     SYNCHRONIZED_STATEMENT,
@@ -104,6 +103,7 @@ public enum AstKind {
     UNION_TYPE, // A | B
     WILDCARD_TYPE, // ? extends A, ? super B, or just ?
     EXCEPTION_TYPE, // CLASS_OR_INTERFACE_TYPE or TYPE_VARIABLE
+    SUGAR_TYPE, // e.g., final @Deprecated Integer
 
     // Modifiers
     MODIFIER, // e.g., public, private, protected, static, final, abstract

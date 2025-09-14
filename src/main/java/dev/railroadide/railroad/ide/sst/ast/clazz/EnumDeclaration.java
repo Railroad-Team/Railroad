@@ -8,6 +8,7 @@ import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
 import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
 import dev.railroadide.railroad.ide.sst.ast.generic.Name;
 import dev.railroadide.railroad.ide.sst.ast.parameter.TypeParameter;
+import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -18,8 +19,9 @@ public record EnumDeclaration(
         List<Modifier> modifiers,
         List<Annotation> annotations,
         Name name,
-        List<TypeParameter> typeParameters,
-        List<EnumConstantDeclaration> constants
+        List<TypeRef> implementedInterfaces,
+        List<EnumConstantDeclaration> constants,
+        List<ClassBodyDeclaration> bodyDeclarations
 ) implements TypeDeclaration {
     @Override
     public AstKind kind() {
@@ -29,9 +31,12 @@ public record EnumDeclaration(
     @Override
     public List<AstNode> children() {
         List<AstNode> children = new ArrayList<>();
+        children.addAll(modifiers);
         children.addAll(annotations);
-        children.addAll(typeParameters);
+        children.add(name);
+        children.addAll(implementedInterfaces);
         children.addAll(constants);
+        children.addAll(bodyDeclarations);
         return List.copyOf(children);
     }
 

@@ -22,7 +22,9 @@ public record RecordDeclaration(
         Name name,
         List<TypeParameter> typeParameters,
         List<RecordComponent> components,
-        List<TypeRef> implementsTypes) implements TypeDeclaration {
+        List<TypeRef> implementsTypes,
+        List<ClassBodyDeclaration> bodyDeclarations
+) implements TypeDeclaration {
 
     @Override
     public AstKind kind() {
@@ -32,10 +34,13 @@ public record RecordDeclaration(
     @Override
     public List<AstNode> children() {
         List<AstNode> children = new ArrayList<>();
+        children.addAll(modifiers);
         children.addAll(annotations);
+        children.add(name);
         children.addAll(typeParameters);
         children.addAll(components);
         children.addAll(implementsTypes);
+        children.addAll(bodyDeclarations);
         return List.copyOf(children);
     }
 
