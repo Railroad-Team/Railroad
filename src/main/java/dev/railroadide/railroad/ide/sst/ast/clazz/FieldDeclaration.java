@@ -8,7 +8,7 @@ import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
 import dev.railroadide.railroad.ide.sst.ast.generic.VariableDeclarator;
 import dev.railroadide.railroad.ide.sst.ast.generic.ClassMember;
 import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
-import dev.railroadide.railroad.ide.sst.ast.generic.Name;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
 
@@ -20,9 +20,9 @@ public record FieldDeclaration(
         List<Annotation> annotations,
         List<Modifier> modifiers,
         TypeRef type,
-        Name name,
+        NameExpression name,
         List<VariableDeclarator> variableDeclarators
-) implements ClassMember {
+) implements ClassMember, AnnotationMember {
     @Override
     public AstKind kind() {
         return AstKind.FIELD_DECLARATION;

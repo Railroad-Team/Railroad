@@ -4,7 +4,10 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.*;
 import dev.railroadide.railroad.ide.sst.ast.clazz.*;
+import dev.railroadide.railroad.ide.sst.ast.expression.AssignmentExpression;
 import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
+import dev.railroadide.railroad.ide.sst.ast.expression.LambdaExpression;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import dev.railroadide.railroad.ide.sst.ast.generic.*;
 import dev.railroadide.railroad.ide.sst.ast.parameter.Parameter;
 import dev.railroadide.railroad.ide.sst.ast.parameter.ReceiverParameter;
@@ -33,7 +36,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-public class JavaParser extends Parser<JavaTokenType, AstNode> {
+public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
     /**
      * Constructs a parser with the given lexer.
      *
@@ -46,6 +49,158 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
     @Override
     public AstNode parse() {
         return parseCompilationUnit();
+    }
+
+    @Override
+    protected Expression parseExpression() {
+        if (isLambdaHeader()) {
+            LambdaExpression lambdaExpression = tryParse($ -> parseLambdaExpression());
+            if (lambdaExpression != null)
+                return lambdaExpression;
+
+            reportError("Invalid lambda expression");
+            synchronize(Set.of(JavaTokenType.SEMICOLON, JavaTokenType.COMMA, JavaTokenType.CLOSE_PAREN));
+            return null;
+        }
+
+        return parseAssignmentExpression();
+    }
+
+    private Expression parseAssignmentExpression() {
+        Span start = currentSpan();
+        Expression left = parseConditionalExpression();
+
+        boolean isValidLeftHandSide = AssignmentExpression.isValidLeftHandSide(left);
+        if(!isValidLeftHandSide && lookaheadType(1).isAssignmentOperator()) {
+            reportError("Left-hand side of assignment must be a variable, field, or array element");
+        }
+
+        if (isValidLeftHandSide && lookaheadType(1).isAssignmentOperator()) {
+            Token<JavaTokenType> operator = advance();
+            LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
+
+            Expression right = parseExpression();
+            return new AssignmentExpression(spanFrom(start), left, operatorToken, right);
+        }
+
+        return left;
+    }
+
+    private LambdaExpression parseLambdaExpression() {
+        Span start = currentSpan();
+
+        if (nextIsAny(JavaTokenType.IDENTIFIER)) {
+            Token<JavaTokenType> identifier = advance();
+            NameExpression paramName = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
+            var parameter = new Parameter(spanFrom(start), List.of(), List.of(), Optional.empty(), false, paramName);
+            List<Parameter> parameters = List.of(parameter);
+
+            expect(JavaTokenType.ARROW, "Expected '->' after lambda parameter");
+
+            Statement body = parseStatement();
+            if (!(body instanceof LambdaBody lambdaBody)) {
+                reportError("Expected lambda body to be a single expression or block");
+                return null;
+            }
+
+            return new LambdaExpression(spanFrom(start), parameters, true, lambdaBody);
+        }
+
+        if (nextIsAny(JavaTokenType.OPEN_PAREN) && lookaheadType(2) == JavaTokenType.CLOSE_PAREN) {
+            advance(); // (
+            advance(); // )
+            expect(JavaTokenType.ARROW, "Expected '->' after lambda parameters");
+
+            Statement body = parseStatement();
+            if (!(body instanceof LambdaBody lambdaBody)) {
+                reportError("Expected lambda body to be a single expression or block");
+                return null;
+            }
+
+            return new LambdaExpression(spanFrom(start), List.of(), true, lambdaBody);
+        }
+
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' to start lambda parameters");
+        List<Parameter> parameters = new ArrayList<>();
+        boolean isInferred = true;
+        if (!nextIsAny(JavaTokenType.CLOSE_PAREN)) {
+            do {
+                Parameter parameter = parseLambdaParameter();
+                if (isInferred && parameter.type().isPresent())
+                    isInferred = false;
+//                TODO: Come back and check if the semantic analyzer can handle this
+//                else if(!isInferred && parameter.type().isEmpty()) {
+//                    reportError("Cannot mix inferred and explicit lambda parameter types");
+//                    return null;
+//                }
+
+                parameters.add(parameter);
+            } while (match(JavaTokenType.COMMA));
+        }
+
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' to end lambda parameters");
+        expect(JavaTokenType.ARROW, "Expected '->' after lambda parameters");
+
+        Statement body = parseStatement();
+        if (!(body instanceof LambdaBody lambdaBody)) {
+            reportError("Expected lambda body to be a single expression or block");
+            return null;
+        }
+
+        return new LambdaExpression(spanFrom(start), parameters, isInferred, lambdaBody);
+    }
+
+    private Parameter parseLambdaParameter() {
+        Span start = currentSpan();
+
+        List<Modifier> modifiers = new ArrayList<>();
+        List<Annotation> annotations = new ArrayList<>();
+        parseModifiersAndAnnotations(modifiers, annotations);
+
+        TypeRef type = null;
+        if (!nextIsAny(JavaTokenType.IDENTIFIER)) {
+            type = parseTypeReference();
+        }
+
+        Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected lambda parameter name");
+        var name = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
+
+        return new Parameter(spanFrom(start), modifiers, annotations, Optional.ofNullable(type), false, name);
+    }
+
+    private boolean isLambdaHeader() {
+        if (nextIsAny(JavaTokenType.IDENTIFIER) && lookaheadType(2) == JavaTokenType.ARROW)
+            return true;
+
+        if (nextIsAny(JavaTokenType.OPEN_PAREN)) {
+            int offsetForClosingParen = findMatchingClosingParen(1);
+            if (offsetForClosingParen == -1) {
+                return false;
+            }
+
+            return lookaheadType(offsetForClosingParen + 1) == JavaTokenType.ARROW;
+        }
+
+        return false;
+    }
+
+    private int findMatchingClosingParen(int offsetOfOpeningParen) {
+        int currentDepth = 1;
+        int currentOffset = offsetOfOpeningParen + 1;
+        while (currentDepth > 0 && lookaheadType(currentOffset) != JavaTokenType.EOF) {
+            JavaTokenType type = lookaheadType(currentOffset);
+            if (type == JavaTokenType.OPEN_PAREN)
+                currentDepth++;
+            else if (type == JavaTokenType.CLOSE_PAREN) {
+                currentDepth--;
+                if (currentDepth == 0)
+                    return currentOffset;
+            }
+
+            currentOffset++;
+        }
+
+        return -1;
     }
 
     private AstNode parseCompilationUnit() {
@@ -72,7 +227,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         Optional<PackageDeclaration> packageDecl = Optional.empty();
         if (nextIsAny(JavaTokenType.PACKAGE_KEYWORD)) {
             match(JavaTokenType.PACKAGE_KEYWORD);
-            Name packageName = parseQualifiedName();
+            NameExpression packageName = parseQualifiedName();
             expect(JavaTokenType.SEMICOLON, "Expected ';' after package declaration");
             packageDecl = Optional.of(new PackageDeclaration(spanFrom(startSpan), packageName));
         } else if (!leadingAnnotations.isEmpty()) {
@@ -110,11 +265,14 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
     }
 
     private TypeDeclaration parseTopLevelTypeDeclaration() {
+        Span startSpan = currentSpan();
         List<Modifier> modifiers = new ArrayList<>();
         List<Annotation> annotations = new ArrayList<>();
         parseModifiersAndAnnotations(modifiers, annotations);
+        return parseTopLevelTypeDeclaration(startSpan, modifiers, annotations);
+    }
 
-        Span startSpan = currentSpan();
+    private TypeDeclaration parseTopLevelTypeDeclaration(Span startSpan, List<Modifier> modifiers, List<Annotation> annotations) {
         if (nextIsAny(JavaTokenType.CLASS_KEYWORD))
             return parseClassDeclaration(startSpan, modifiers, annotations);
 
@@ -143,7 +301,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         expect(JavaTokenType.RECORD_KEYWORD, "Expected 'record' keyword");
 
         Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected record name");
-        var recordName = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        var recordName = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
 
         List<TypeParameter> typeParameters = new ArrayList<>();
         while (nextIsAny(JavaTokenType.LEFT_ANGLED_BRACKET)) {
@@ -204,7 +362,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         TypeRef type = parseTypeReference();
 
         Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected record component name");
-        var name = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        var name = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
 
         return new RecordComponent(
                 spanFrom(start),
@@ -216,14 +374,94 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
     }
 
     private AnnotationTypeDeclaration parseAnnotationTypeDeclaration(Span startSpan, List<Modifier> modifiers, List<Annotation> annotations) {
-        // https://docs.oracle.com/javase/specs/jls/se24/html/jls-9.html#jls-9.6.1
+        expect(JavaTokenType.AT_INTERFACE_KEYWORD, "Expected '@interface' keyword");
+
+        Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected annotation type name");
+        var annotationName = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
+
+        expect(JavaTokenType.OPEN_BRACE, "Expected '{' to start annotation type body");
+        List<AnnotationBodyDeclaration> declarations = new ArrayList<>();
+        while (!nextIsAny(JavaTokenType.CLOSE_BRACE) && !isAtEnd()) {
+            AnnotationBodyDeclaration declaration = tryParse($ -> parseAnnotationBodyDeclaration());
+            if (declaration != null) {
+                declarations.add(declaration);
+            } else {
+                reportError("Unexpected token in annotation type body");
+                synchronize(defaultSyncSet());
+                if (!isAtEnd())
+                    advance();
+            }
+        }
+
+        expect(JavaTokenType.CLOSE_BRACE, "Expected '}' to close annotation type body");
+
+        return new AnnotationTypeDeclaration(
+                spanFrom(startSpan),
+                modifiers,
+                annotations,
+                annotationName,
+                declarations
+        );
+    }
+
+    private AnnotationBodyDeclaration parseAnnotationBodyDeclaration() {
+        Span start = currentSpan();
+        List<Modifier> modifiers = new ArrayList<>();
+        List<Annotation> annotations = new ArrayList<>();
+        parseModifiersAndAnnotations(modifiers, annotations);
+
+        if (nextIsAny(JavaTokenType.CLASS_KEYWORD, JavaTokenType.INTERFACE_KEYWORD, JavaTokenType.ENUM_KEYWORD,
+                JavaTokenType.AT, JavaTokenType.RECORD_KEYWORD))
+            return parseTopLevelTypeDeclaration(start, modifiers, annotations);
+
+        return parseAnnotationTypeMemberDeclaration(start, modifiers, annotations);
+    }
+
+    private AnnotationMember parseAnnotationTypeMemberDeclaration(Span start, List<Modifier> modifiers, List<Annotation> annotations) {
+        TypeRef type = parseTypeReference();
+
+        Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected annotation member name");
+        var name = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
+
+        if (nextIsAny(JavaTokenType.OPEN_PAREN)) {
+            expect(JavaTokenType.OPEN_PAREN, "Expected '(' after method name");
+            expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after method parameters");
+
+            Optional<Expression> defaultValue = Optional.empty();
+            if (match(JavaTokenType.DEFAULT_KEYWORD)) {
+                defaultValue = Optional.of(parseExpression());
+            }
+
+            expect(JavaTokenType.SEMICOLON, "Expected ';' after annotation member declaration");
+            return new AnnotationTypeMemberDeclaration(
+                    spanFrom(start),
+                    modifiers,
+                    annotations,
+                    type,
+                    name,
+                    defaultValue
+            );
+        } else {
+            if (match(JavaTokenType.EQUALS))
+                return parseFieldDeclaration(start, modifiers, annotations, type, name);
+
+            expect(JavaTokenType.SEMICOLON, "Expected ';' after annotation member declaration");
+            return new AnnotationTypeMemberDeclaration(
+                    spanFrom(start),
+                    modifiers,
+                    annotations,
+                    type,
+                    name,
+                    Optional.empty()
+            );
+        }
     }
 
     private EnumDeclaration parseEnumDeclaration(Span startSpan, List<Modifier> modifiers, List<Annotation> annotations) {
         expect(JavaTokenType.ENUM_KEYWORD, "Expected 'enum' keyword");
 
         Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected enum name");
-        var enumName = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        var enumName = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
 
         List<TypeRef> implementsTypes = new ArrayList<>();
         if (match(JavaTokenType.IMPLEMENTS_KEYWORD)) {
@@ -284,12 +522,12 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         List<Annotation> annotations = parseAnnotations();
 
         Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected enum constant name");
-        var name = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        var name = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
 
         List<Expression> arguments = new ArrayList<>();
         if (match(JavaTokenType.OPEN_PAREN)) {
             while (!nextIsAny(JavaTokenType.CLOSE_PAREN)) {
-                arguments.add((Expression) parseExpression(0));
+                arguments.add(parseExpression());
             }
 
             expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after enum constant arguments");
@@ -317,7 +555,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         expect(JavaTokenType.INTERFACE_KEYWORD, "Expected 'interface' keyword");
 
         Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected interface name");
-        var interfaceName = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        var interfaceName = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
 
         List<TypeParameter> typeParameters = new ArrayList<>();
         while (nextIsAny(JavaTokenType.LEFT_ANGLED_BRACKET)) {
@@ -362,7 +600,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         expect(JavaTokenType.CLASS_KEYWORD, "Expected 'class' keyword");
 
         Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected class name");
-        var className = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        var className = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
 
         List<TypeParameter> typeParameters = new ArrayList<>();
         while (nextIsAny(JavaTokenType.LEFT_ANGLED_BRACKET)) {
@@ -410,7 +648,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
     }
 
     // member, instance initializer, static initializer, constructor
-    private ClassBodyDeclaration parseClassBodyDeclaration(Name className, boolean isRecord) {
+    private ClassBodyDeclaration parseClassBodyDeclaration(NameExpression className, boolean isRecord) {
         if (nextIsAny(JavaTokenType.OPEN_BRACE))
             return parseInstanceInitializer();
 
@@ -424,7 +662,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
         if (nextIsAny(JavaTokenType.CLASS_KEYWORD, JavaTokenType.INTERFACE_KEYWORD, JavaTokenType.ENUM_KEYWORD,
                 JavaTokenType.AT, JavaTokenType.RECORD_KEYWORD))
-            return parseTopLevelTypeDeclaration();
+            return parseTopLevelTypeDeclaration(start, modifiers, annotations);
 
         if (isRecord && nextIsAny(JavaTokenType.OPEN_BRACE))
             return parseCompactConstructor(start, className, modifiers, annotations);
@@ -469,7 +707,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
         TypeRef type = parseTypeReference();
         Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected field or method name");
-        var name = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        var name = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
 
         if (nextIsAny(JavaTokenType.OPEN_PAREN))
             return parseMethodDeclaration(start, modifiers, annotations, List.of(), type, name);
@@ -477,13 +715,13 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         return parseFieldDeclaration(start, modifiers, annotations, type, name);
     }
 
-    private FieldDeclaration parseFieldDeclaration(Span start, List<Modifier> modifiers, List<Annotation> annotations, TypeRef type, Name name) {
+    private FieldDeclaration parseFieldDeclaration(Span start, List<Modifier> modifiers, List<Annotation> annotations, TypeRef type, NameExpression name) {
         List<VariableDeclarator> variables = new ArrayList<>();
         variables.add(parseVariableDeclarator(name));
 
         while (match(JavaTokenType.COMMA)) {
             Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected field name");
-            var varName = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+            var varName = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
             variables.add(parseVariableDeclarator(varName));
         }
 
@@ -498,12 +736,12 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         );
     }
 
-    private VariableDeclarator parseVariableDeclarator(Name name) {
+    private VariableDeclarator parseVariableDeclarator(NameExpression name) {
         Span start = name.span();
 
         Optional<Expression> initializer = Optional.empty();
         if (match(JavaTokenType.EQUALS)) {
-            initializer = Optional.of((Expression) parseExpression(0));
+            initializer = Optional.of(parseExpression());
         }
 
         return new VariableDeclarator(spanFrom(start), name, initializer);
@@ -522,12 +760,12 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
     private MethodDeclaration parseFullMethodDeclaration(Span start, List<Modifier> modifiers, List<Annotation> annotations, List<TypeParameter> typeParameters) {
         TypeRef returnType = parseTypeReference();
         Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected method name");
-        var methodName = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        var methodName = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
 
         return parseMethodDeclaration(start, modifiers, annotations, typeParameters, returnType, methodName);
     }
 
-    private MethodDeclaration parseMethodDeclaration(Span start, List<Modifier> modifiers, List<Annotation> annotations, List<TypeParameter> typeParameters, TypeRef returnType, Name name) {
+    private MethodDeclaration parseMethodDeclaration(Span start, List<Modifier> modifiers, List<Annotation> annotations, List<TypeParameter> typeParameters, TypeRef returnType, NameExpression name) {
         expect(JavaTokenType.OPEN_PAREN, "Expected '(' after method name");
 
         Optional<ReceiverParameter> receiverParameter = Optional.ofNullable(
@@ -589,7 +827,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         return new ReceiverParameter(spanFrom(start), annotations, type, receiverType);
     }
 
-    private ConstructorDeclaration parseConstructorDeclaration(Name className, Span span, List<Modifier> modifiers, List<Annotation> annotations, List<TypeParameter> typeParameters) {
+    private ConstructorDeclaration parseConstructorDeclaration(NameExpression className, Span span, List<Modifier> modifiers, List<Annotation> annotations, List<TypeParameter> typeParameters) {
         expect(JavaTokenType.OPEN_PAREN, "Expected '(' after constructor name");
         List<Parameter> parameters = new ArrayList<>();
         if (!nextIsAny(JavaTokenType.CLOSE_PAREN)) {
@@ -705,7 +943,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
     private ExpressionStatement parseExpressionStatement() {
         Span start = currentSpan();
-        Expression expression = (Expression) parseExpression(0);
+        Expression expression = parseExpression();
         expect(JavaTokenType.SEMICOLON, "Expected ';' after expression statement");
         return new ExpressionStatement(spanFrom(start), expression);
     }
@@ -727,14 +965,14 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
                 parseTypeReference();
 
         Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected variable name");
-        var name = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        var name = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
 
         List<VariableDeclarator> variables = new ArrayList<>();
         variables.add(parseVariableDeclarator(name));
 
         while (match(JavaTokenType.COMMA)) {
             Token<JavaTokenType> id = expect(JavaTokenType.IDENTIFIER, "Expected variable name");
-            var varName = new Name(spanFrom(id), List.of(id.lexeme()));
+            var varName = new NameExpression(spanFrom(id), List.of(id.lexeme()));
             variables.add(parseVariableDeclarator(varName));
         }
 
@@ -752,7 +990,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
     private LabeledStatement parseLabeledStatement() {
         Span start = currentSpan();
         Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected label name");
-        var labelName = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        var labelName = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
         expect(JavaTokenType.COLON, "Expected ':' after label name");
 
         Statement statement = parseStatement();
@@ -763,7 +1001,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         Span start = currentSpan();
         expect(JavaTokenType.YIELD_KEYWORD, "Expected 'yield' keyword");
 
-        Expression expression = (Expression) parseExpression(0);
+        Expression expression = parseExpression();
 
         expect(JavaTokenType.SEMICOLON, "Expected ';' after yield statement");
         return new YieldStatement(spanFrom(start), expression);
@@ -773,11 +1011,11 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         Span start = currentSpan();
         expect(JavaTokenType.ASSERT_KEYWORD, "Expected 'assert' keyword");
 
-        Expression condition = (Expression) parseExpression(0);
+        Expression condition = parseExpression();
 
         Optional<Expression> message = Optional.empty();
         if (match(JavaTokenType.COLON)) {
-            message = Optional.of((Expression) parseExpression(0));
+            message = Optional.of(parseExpression());
         }
 
         expect(JavaTokenType.SEMICOLON, "Expected ';' after assert statement");
@@ -788,10 +1026,10 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         Span start = currentSpan();
         expect(JavaTokenType.CONTINUE_KEYWORD, "Expected 'continue' keyword");
 
-        Optional<Name> label = Optional.empty();
+        Optional<NameExpression> label = Optional.empty();
         if (nextIsAny(JavaTokenType.IDENTIFIER)) {
             Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected label name after 'continue'");
-            label = Optional.of(new Name(spanFrom(identifier), List.of(identifier.lexeme())));
+            label = Optional.of(new NameExpression(spanFrom(identifier), List.of(identifier.lexeme())));
         }
 
         expect(JavaTokenType.SEMICOLON, "Expected ';' after continue statement");
@@ -802,10 +1040,10 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         Span start = currentSpan();
         expect(JavaTokenType.BREAK_KEYWORD, "Expected 'break' keyword");
 
-        Optional<Name> label = Optional.empty();
+        Optional<NameExpression> label = Optional.empty();
         if (nextIsAny(JavaTokenType.IDENTIFIER)) {
             Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected label name after 'break'");
-            label = Optional.of(new Name(spanFrom(identifier), List.of(identifier.lexeme())));
+            label = Optional.of(new NameExpression(spanFrom(identifier), List.of(identifier.lexeme())));
         }
 
         expect(JavaTokenType.SEMICOLON, "Expected ';' after break statement");
@@ -816,7 +1054,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         Span start = currentSpan();
         expect(JavaTokenType.THROW_KEYWORD, "Expected 'throw' keyword");
 
-        Expression expression = (Expression) parseExpression(0);
+        Expression expression = parseExpression();
 
         expect(JavaTokenType.SEMICOLON, "Expected ';' after throw statement");
         return new ThrowStatement(spanFrom(start), expression);
@@ -828,7 +1066,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
         Optional<Expression> expression = Optional.empty();
         if (!nextIsAny(JavaTokenType.SEMICOLON)) {
-            expression = Optional.of((Expression) parseExpression(0));
+            expression = Optional.of(parseExpression());
         }
 
         expect(JavaTokenType.SEMICOLON, "Expected ';' after return statement");
@@ -840,7 +1078,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         expect(JavaTokenType.SYNCHRONIZED_KEYWORD, "Expected 'synchronized' keyword");
         expect(JavaTokenType.OPEN_PAREN, "Expected '(' after 'synchronized'");
 
-        Expression expression = (Expression) parseExpression(0);
+        Expression expression = parseExpression();
 
         expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after synchronized expression");
 
@@ -900,7 +1138,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         } while (match(JavaTokenType.PIPE));
 
         Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected exception variable name");
-        var name = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        var name = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
 
         expect(JavaTokenType.CLOSE_PAREN, "Expected ')' to end 'catch' clause");
 
@@ -938,7 +1176,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
     private EnhancedForStatement parseEnhancedForStatement(Span start) {
         Parameter variableDeclaration = parseParameter();
         expect(JavaTokenType.COLON, "Expected ':' in enhanced for loop");
-        Expression iterable = (Expression) parseExpression(0);
+        Expression iterable = parseExpression();
 
         expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after enhanced for loop control");
 
@@ -956,7 +1194,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
         Optional<Expression> condition = Optional.empty();
         if (!nextIsAny(JavaTokenType.SEMICOLON)) {
-            condition = Optional.of((Expression) parseExpression(0));
+            condition = Optional.of(parseExpression());
         }
 
         expect(JavaTokenType.SEMICOLON, "Expected ';' after for loop condition");
@@ -964,7 +1202,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         List<Expression> updaters = new ArrayList<>();
         if (!nextIsAny(JavaTokenType.CLOSE_PAREN)) {
             do {
-                updaters.add((Expression) parseExpression(0));
+                updaters.add(parseExpression());
             } while (match(JavaTokenType.COMMA));
         }
         expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after for loop updaters");
@@ -1046,7 +1284,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         expect(JavaTokenType.WHILE_KEYWORD, "Expected 'while' after 'do' statement body");
         expect(JavaTokenType.OPEN_PAREN, "Expected '(' after 'while'");
 
-        Expression condition = (Expression) parseExpression(0);
+        Expression condition = parseExpression();
 
         expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after do-while condition");
         expect(JavaTokenType.SEMICOLON, "Expected ';' after do-while statement");
@@ -1059,7 +1297,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         expect(JavaTokenType.WHILE_KEYWORD, "Expected 'while' keyword");
         expect(JavaTokenType.OPEN_PAREN, "Expected '(' after 'while'");
 
-        Expression condition = (Expression) parseExpression(0);
+        Expression condition = parseExpression();
 
         expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after while condition");
 
@@ -1072,7 +1310,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         expect(JavaTokenType.SWITCH_KEYWORD, "Expected 'switch' keyword");
         expect(JavaTokenType.OPEN_PAREN, "Expected '(' after 'switch'");
 
-        Expression expression = (Expression) parseExpression(0);
+        Expression expression = parseExpression();
 
         expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after switch statement");
         expect(JavaTokenType.OPEN_BRACE, "Expected '{' for switch statement");
@@ -1170,7 +1408,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         if (!modifiers.isEmpty() || !annotations.isEmpty()) {
             TypeRef type = parseTypeReference();
             Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected pattern variable name");
-            var name = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+            var name = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
 
             return new Pattern.TypeTestPattern(spanFrom(start),
                     annotations, modifiers,
@@ -1201,10 +1439,10 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
         recordPatternMarker.rollback();
 
-        Optional<Name> variable = Optional.empty();
+        Optional<NameExpression> variable = Optional.empty();
         if (nextIsAny(JavaTokenType.IDENTIFIER)) {
             Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected pattern variable name");
-            variable = Optional.of(new Name(spanFrom(identifier), List.of(identifier.lexeme())));
+            variable = Optional.of(new NameExpression(spanFrom(identifier), List.of(identifier.lexeme())));
         }
 
         return new Pattern.TypeTestPattern(spanFrom(start),
@@ -1217,7 +1455,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
         CaseItem.CasePattern.Guard guard = null;
         if (match(JavaTokenType.WHEN_KEYWORD)) {
-            Expression expression = (Expression) parseExpression(0);
+            Expression expression = parseExpression();
             guard = new CaseItem.CasePattern.Guard(spanFrom(start), expression);
         }
 
@@ -1229,7 +1467,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         expect(JavaTokenType.IF_KEYWORD, "Expected 'if' keyword");
         expect(JavaTokenType.OPEN_PAREN, "Expected '(' after 'if'");
 
-        Expression condition = (Expression) parseExpression(0);
+        Expression condition = parseExpression();
 
         expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after if condition");
 
@@ -1253,12 +1491,12 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         boolean isVarArgs = match(JavaTokenType.ELLIPSIS);
 
         Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected parameter name");
-        var name = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        var name = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
 
-        return new Parameter(spanFrom(start), modifiers, annotations, type, isVarArgs, name);
+        return new Parameter(spanFrom(start), modifiers, annotations, Optional.of(type), isVarArgs, name);
     }
 
-    private CompactConstructorDeclaration parseCompactConstructor(Span start, Name className, List<Modifier> modifiers, List<Annotation> annotations) {
+    private CompactConstructorDeclaration parseCompactConstructor(Span start, NameExpression className, List<Modifier> modifiers, List<Annotation> annotations) {
         BlockStatement body = tryParse($ -> parseBlock());
         if (body == null) {
             reportError("Expected constructor body");
@@ -1295,7 +1533,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         List<Annotation> annotations = parseAnnotations();
 
         Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected type parameter name");
-        var name = new Name(spanFrom(identifier), List.of(identifier.lexeme()));
+        var name = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
 
         List<TypeRef> bounds = new ArrayList<>();
         if (match(JavaTokenType.EXTENDS_KEYWORD)) {
@@ -1350,7 +1588,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
             Span partStart = currentSpan();
             Token<JavaTokenType> identifierToken = expect(JavaTokenType.IDENTIFIER, "Expected identifier in type reference");
             List<TypeRef> typeArguments = parseTypeArgumentsOptionally();
-            parts.add(new ClassOrInterfaceTypeRef.Part(spanFrom(partStart), new Name(spanFrom(identifierToken), List.of(identifierToken.lexeme())), typeArguments));
+            parts.add(new ClassOrInterfaceTypeRef.Part(spanFrom(partStart), new NameExpression(spanFrom(identifierToken), List.of(identifierToken.lexeme())), typeArguments));
         } while (match(JavaTokenType.DOT));
 
         return new ClassOrInterfaceTypeRef(spanFrom(parts.getFirst().span()), parts);
@@ -1399,7 +1637,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
     private void parseModifiersAndAnnotations(List<Modifier> modifiers, List<Annotation> annotations) {
         while (!isAtEnd() && (lookaheadType(1).isModifier() || nextIsAny(JavaTokenType.AT))) {
-            if (lookaheadType(1) == JavaTokenType.AT && lookaheadType(2) == JavaTokenType.INTERFACE_KEYWORD)
+            if (nextIsAny(JavaTokenType.AT) && lookaheadType(2) == JavaTokenType.INTERFACE_KEYWORD)
                 break;
 
             if (nextIsAny(JavaTokenType.AT)) {
@@ -1418,7 +1656,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         expect(JavaTokenType.IMPORT_KEYWORD, "Expected 'import' keyword");
 
         boolean isStatic = match(JavaTokenType.STATIC_KEYWORD);
-        Name name = parseQualifiedName();
+        NameExpression name = parseQualifiedName();
         boolean isWildcard = false;
         if (match(JavaTokenType.DOT)) {
             expect(JavaTokenType.STAR, "Expected '*' in import declaration");
@@ -1431,7 +1669,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
     private ModularCompilationUnit parseModularCompilationUnit(Span startSpan, List<Annotation> leadingAnnotations, boolean isOpen) {
         expect(JavaTokenType.MODULE_KEYWORD, "Expected 'module'");
-        Name moduleName = parseQualifiedName();
+        NameExpression moduleName = parseQualifiedName();
         expect(JavaTokenType.OPEN_BRACE, "Expected '{' to start module body");
 
         List<ModuleDirective> directives = new ArrayList<>();
@@ -1458,14 +1696,14 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         if (match(JavaTokenType.REQUIRES_KEYWORD)) {
             boolean isStatic = match(JavaTokenType.STATIC_KEYWORD);
             boolean isTransitive = match(JavaTokenType.TRANSITIVE_KEYWORD);
-            Name moduleName = parseQualifiedName();
+            NameExpression moduleName = parseQualifiedName();
 
             return Optional.of(new RequiresDirective(spanFrom(start), isStatic, isTransitive, moduleName));
         }
 
         if (match(JavaTokenType.EXPORTS_KEYWORD)) {
-            Name packageName = parseQualifiedName();
-            List<Name> toModules = new ArrayList<>();
+            NameExpression packageName = parseQualifiedName();
+            List<NameExpression> toModules = new ArrayList<>();
             if (match(JavaTokenType.TO_KEYWORD)) {
                 do {
                     toModules.add(parseQualifiedName());
@@ -1476,8 +1714,8 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         }
 
         if (match(JavaTokenType.OPENS_KEYWORD)) {
-            Name packageName = parseQualifiedName();
-            List<Name> toModules = new ArrayList<>();
+            NameExpression packageName = parseQualifiedName();
+            List<NameExpression> toModules = new ArrayList<>();
             if (match(JavaTokenType.TO_KEYWORD)) {
                 do {
                     toModules.add(parseQualifiedName());
@@ -1488,14 +1726,14 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
         }
 
         if (match(JavaTokenType.USES_KEYWORD)) {
-            Name serviceName = parseQualifiedName();
+            NameExpression serviceName = parseQualifiedName();
             return Optional.of(new UsesDirective(spanFrom(start), serviceName));
         }
 
         if (match(JavaTokenType.PROVIDES_KEYWORD)) {
-            Name serviceName = parseQualifiedName();
+            NameExpression serviceName = parseQualifiedName();
             expect(JavaTokenType.WITH_KEYWORD, "Expected 'with' in provides directive");
-            List<Name> implementationNames = new ArrayList<>();
+            List<NameExpression> implementationNames = new ArrayList<>();
             do {
                 implementationNames.add(parseQualifiedName());
             } while (match(JavaTokenType.COMMA));
@@ -1524,7 +1762,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
         expect(JavaTokenType.AT, "Expected '@' to start annotation");
 
-        Name name = parseQualifiedName();
+        NameExpression name = parseQualifiedName();
         if (!nextIsAny(JavaTokenType.OPEN_PAREN))
             return new MarkerAnnotation(spanFrom(start), name);
 
@@ -1546,7 +1784,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
 
             String identifier = expect(JavaTokenType.IDENTIFIER, "Expected identifier in annotation element").lexeme();
             Span nameSpan = spanFrom(span);
-            var elemName = new Name(nameSpan, List.of(identifier));
+            var elemName = new NameExpression(nameSpan, List.of(identifier));
 
             expect(JavaTokenType.EQUALS, "Expected '=' after annotation element name");
 
@@ -1576,10 +1814,10 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
             return new ElementValueArray(spanFrom(start), values);
         }
 
-        return (ElementValue) parseExpression(0);
+        return (ElementValue) parseExpression();
     }
 
-    private Name parseQualifiedName() {
+    private NameExpression parseQualifiedName() {
         Span start = currentSpan();
 
         List<String> parts = new ArrayList<>();
@@ -1590,11 +1828,11 @@ public class JavaParser extends Parser<JavaTokenType, AstNode> {
             identifier = expect(JavaTokenType.IDENTIFIER, "Identifier expected after '.'");
             parts.add(identifier.lexeme());
 
-            if (nextIsAny(JavaTokenType.DOT) && lookaheadType(1) == JavaTokenType.STAR)
+            if (nextIsAny(JavaTokenType.DOT) && lookaheadType(2) == JavaTokenType.STAR)
                 break;
         }
 
-        return new Name(spanFrom(start), parts);
+        return new NameExpression(spanFrom(start), parts);
     }
 
     private boolean hasEqualsBeforeCommaOrCloseParen() {

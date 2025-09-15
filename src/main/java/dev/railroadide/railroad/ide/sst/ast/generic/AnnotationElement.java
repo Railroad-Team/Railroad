@@ -5,14 +5,14 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.ElementValue;
-import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 public record AnnotationElement(
         Span span,
-        Name name,
+        NameExpression name,
         ElementValue value
 ) implements AstNode {
     @Override

@@ -4,7 +4,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
-import dev.railroadide.railroad.ide.sst.ast.generic.Name;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import dev.railroadide.railroad.ide.sst.ast.statements.block.BlockStatement;
 import dev.railroadide.railroad.ide.sst.ast.typeref.SugarTypeRef;
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +15,7 @@ import java.util.List;
 public record CatchClause(
         Span span,
         List<SugarTypeRef> exceptionTypes,
-        Name variableName,
+        NameExpression variableName,
         BlockStatement body
 ) implements AstNode {
     @Override

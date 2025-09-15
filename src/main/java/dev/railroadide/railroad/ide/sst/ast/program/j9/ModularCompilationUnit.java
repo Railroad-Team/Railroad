@@ -5,7 +5,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
-import dev.railroadide.railroad.ide.sst.ast.generic.Name;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -14,7 +14,7 @@ import java.util.List;
 public record ModularCompilationUnit(
         Span span,
         boolean isOpen,
-        Name name,
+        NameExpression name,
         List<Annotation> annotations,
         List<ModuleDirective> directives
 ) implements AstNode {

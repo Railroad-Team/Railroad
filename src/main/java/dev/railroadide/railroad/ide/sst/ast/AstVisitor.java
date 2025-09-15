@@ -125,7 +125,7 @@ public interface AstVisitor<R> {
     R visitNormalAnnotation(NormalAnnotation node);
     R visitElementValueArray(ElementValueArray node);
 
-    R visitName(Name node);
+    R visitName(NameExpression node);
     R visitParameter(Parameter node);
     R visitReceiverParameter(ReceiverParameter node);
     R visitTypeParameter(TypeParameter node);

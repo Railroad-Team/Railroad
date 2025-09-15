@@ -4,14 +4,14 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
-import dev.railroadide.railroad.ide.sst.ast.generic.Name;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 public record ImportDeclaration(
         Span span,
-        Name name,
+        NameExpression name,
         boolean isStatic,
         boolean isWildcard
 ) implements AstNode {

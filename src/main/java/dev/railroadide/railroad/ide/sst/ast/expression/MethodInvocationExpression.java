@@ -4,8 +4,6 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
-import dev.railroadide.railroad.ide.sst.ast.generic.Name;
-import dev.railroadide.railroad.ide.sst.ast.parameter.TypeParameter;
 import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,7 +15,7 @@ public record MethodInvocationExpression(
         Span span,
         Optional<Expression> scope,
         List<TypeRef> typeArguments,
-        Name methodName,
+        NameExpression methodName,
         List<Expression> arguments
 ) implements Expression {
     @Override

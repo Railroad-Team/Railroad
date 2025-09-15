@@ -133,7 +133,7 @@ public enum JavaTokenType {
     MINUS_MINUS, // --
     STAR, // *
     DIVIDE, // /
-    MODULUS, // %
+    PERCENT, // %
     TILDA, // ~
     AMPERSAND, // &
     PIPE, // |
@@ -142,14 +142,15 @@ public enum JavaTokenType {
     LEFT_SHIFT, // <<
     PLUS_EQUALS, // +=
     MINUS_EQUALS, // -=
-    MULTIPLY_EQUALS, // *=
-    DIVIDE_EQUALS, // /=
-    MODULUS_EQUALS, // %=
-    AND_EQUALS, // &=
-    OR_EQUALS, // |=
-    XOR_EQUALS, // ^=
+    STAR_EQUALS, // *=
+    SLASH_EQUALS, // /=
+    PERCENT_EQUALS, // %=
+    AMPERSAND_EQUALS, // &=
+    PIPE_EQUALS, // |=
+    CARET_EQUALS, // ^=
     LEFT_SHIFT_EQUALS, // <<=
     RIGHT_SHIFT_EQUALS, // >>=
+    UNSIGNED_RIGHT_SHIFT_EQUALS, // >>>=
 
     EOF, // End of file token
     UNKNOWN; // Represents any token that does not match the above types
@@ -164,28 +165,29 @@ public enum JavaTokenType {
                 Map.entry("-=", MINUS_EQUALS))
         );
         put('*', List.of(
-                Map.entry("*=", MULTIPLY_EQUALS))
+                Map.entry("*=", STAR_EQUALS))
         );
         put('/', List.of(
-                Map.entry("/=", DIVIDE_EQUALS))
+                Map.entry("/=", SLASH_EQUALS))
         );
         put('%', List.of(
-                Map.entry("%=", MODULUS_EQUALS))
+                Map.entry("%=", PERCENT_EQUALS))
         );
         put('&', List.of(
                 Map.entry("&&", AND),
-                Map.entry("&=", AND_EQUALS))
+                Map.entry("&=", AMPERSAND_EQUALS))
         );
         put('|', List.of(
                 Map.entry("||", OR),
-                Map.entry("|=", OR_EQUALS))
+                Map.entry("|=", PIPE_EQUALS))
         );
         put('^', List.of(
-                Map.entry("^=", XOR_EQUALS))
+                Map.entry("^=", CARET_EQUALS))
         );
         put('>', List.of(
                 Map.entry(">=", GREATER_THAN_OR_EQUALS),
-                Map.entry(">>=", RIGHT_SHIFT_EQUALS))
+                Map.entry(">>=", RIGHT_SHIFT_EQUALS),
+                Map.entry(">>>=", UNSIGNED_RIGHT_SHIFT_EQUALS))
         );
         put('<', List.of(
                 Map.entry("<<", LEFT_SHIFT),
@@ -215,7 +217,7 @@ public enum JavaTokenType {
         put('-', MINUS);
         put('*', STAR);
         put('/', DIVIDE);
-        put('%', MODULUS);
+        put('%', PERCENT);
         put('~', TILDA);
         put('&', AMPERSAND);
         put('|', PIPE);
@@ -263,6 +265,15 @@ public enum JavaTokenType {
             case ABSTRACT_KEYWORD, FINAL_KEYWORD, NATIVE_KEYWORD, PRIVATE_KEYWORD, PROTECTED_KEYWORD,
                  PUBLIC_KEYWORD, STATIC_KEYWORD, STRICTFP_KEYWORD, SYNCHRONIZED_KEYWORD, TRANSIENT_KEYWORD,
                  VOLATILE_KEYWORD, DEFAULT_KEYWORD -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isAssignmentOperator() {
+        return switch (this) {
+            case EQUALS, PLUS_EQUALS, MINUS_EQUALS, STAR_EQUALS, SLASH_EQUALS, PERCENT_EQUALS,
+                 AMPERSAND_EQUALS, PIPE_EQUALS, CARET_EQUALS, LEFT_SHIFT_EQUALS, RIGHT_SHIFT_EQUALS,
+                 UNSIGNED_RIGHT_SHIFT_EQUALS -> true;
             default -> false;
         };
     }

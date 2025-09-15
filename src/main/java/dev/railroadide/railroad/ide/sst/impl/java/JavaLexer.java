@@ -267,7 +267,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                 return readComment();
             } else if (peek(1) == '=') {
                 consume(2);
-                return token(JavaTokenType.DIVIDE_EQUALS, startOffset, startLine, startCol);
+                return token(JavaTokenType.SLASH_EQUALS, startOffset, startLine, startCol);
             } else {
                 consume();
                 return token(JavaTokenType.DIVIDE, startOffset, startLine, startCol);

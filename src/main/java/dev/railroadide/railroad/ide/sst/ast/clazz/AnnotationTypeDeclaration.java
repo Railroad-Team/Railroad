@@ -5,9 +5,8 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
-import dev.railroadide.railroad.ide.sst.ast.generic.ClassMember;
 import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
-import dev.railroadide.railroad.ide.sst.ast.generic.Name;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -17,8 +16,8 @@ public record AnnotationTypeDeclaration(
         Span span,
         List<Modifier> modifiers,
         List<Annotation> annotations,
-        Name name,
-        List<ClassMember> members
+        NameExpression name,
+        List<AnnotationBodyDeclaration> declarations
 ) implements TypeDeclaration {
     @Override
     public AstKind kind() {
@@ -28,8 +27,10 @@ public record AnnotationTypeDeclaration(
     @Override
     public List<AstNode> children() {
         List<AstNode> children = new ArrayList<>();
+        children.addAll(modifiers);
         children.addAll(annotations);
-        children.addAll(members);
+        children.add(name);
+        children.addAll(declarations);
         return List.copyOf(children);
     }
 

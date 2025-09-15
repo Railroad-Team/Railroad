@@ -7,13 +7,13 @@ import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
 import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
 import dev.railroadide.railroad.ide.sst.ast.generic.ClassMember;
-import dev.railroadide.railroad.ide.sst.ast.generic.Name;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public record EnumConstantDeclaration(Span span, List<Annotation> annotations, Name name, List<Expression> arguments,
+public record EnumConstantDeclaration(Span span, List<Annotation> annotations, NameExpression name, List<Expression> arguments,
                                       List<ClassBodyDeclaration> body) implements ClassMember {
     @Override
     public AstKind kind() {

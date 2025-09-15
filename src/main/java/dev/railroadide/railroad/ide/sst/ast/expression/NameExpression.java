@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.ide.sst.ast.generic;
+package dev.railroadide.railroad.ide.sst.ast.expression;
 
 import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record Name(Span span, List<String> parts) implements AstNode {
+public record NameExpression(Span span, List<String> parts) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.NAME;

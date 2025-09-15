@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public abstract class Parser<T extends Enum<T>, N> {
+public abstract class Parser<T extends Enum<T>, N, E extends N> {
     protected final Lexer<T> lexer;
     protected final List<ParseDiagnostic> diagnostics = new ArrayList<>();
 
@@ -202,7 +202,7 @@ public abstract class Parser<T extends Enum<T>, N> {
      * @param <R>     the type of the result
      * @return the result of the parse attempt, or null if it failed
      */
-    protected <R> R tryParse(Function<Parser<T, N>, R> attempt) {
+    protected <R> R tryParse(Function<Parser<T, N, E>, R> attempt) {
         Marker marker = mark();
         int before = diagnostics.size();
         R result = attempt.apply(this);
@@ -286,7 +286,7 @@ public abstract class Parser<T extends Enum<T>, N> {
      * @param <R>     the type of the elements in the list
      * @return a list of parsed elements
      */
-    protected <R> List<R> many(Predicate<Token<T>> cont, Function<Parser<T, N>, R> element) {
+    protected <R> List<R> many(Predicate<Token<T>> cont, Function<Parser<T, N, E>, R> element) {
         List<R> out = new ArrayList<>();
         while (!isAtEnd() && cont.test(current())) {
             R r = element.apply(this);
@@ -307,7 +307,7 @@ public abstract class Parser<T extends Enum<T>, N> {
      * @param <R>           the type of the elements in the list
      * @return a list of parsed elements, possibly empty if no elements were found
      */
-    protected <R> List<R> separatedList(T separator, boolean allowTrailing, Function<Parser<T, N>, R> element) {
+    protected <R> List<R> separatedList(T separator, boolean allowTrailing, Function<Parser<T, N, E>, R> element) {
         List<R> out = new ArrayList<>();
         R first = element.apply(this);
         if (first == null) return out;
@@ -335,66 +335,11 @@ public abstract class Parser<T extends Enum<T>, N> {
     }
 
     /**
-     * Parses a primary expression, which is the basic building block of expressions.
-     * This method should be overridden in concrete parsers to handle specific primary expressions.
+     * Parses an expression and returns the corresponding syntax tree node.
      *
-     * @return the parsed primary expression node, or null if not applicable
+     * @return the parsed expression node
      */
-    protected N parsePrimary() {
-        return null;
-    }
-
-    /**
-     * Determines the precedence of the given operator.
-     * This is used to handle operator precedence in expressions.
-     * Override this method in concrete parsers to define operator precedences.
-     *
-     * @param op the operator token type
-     * @return the precedence level of the operator, higher values indicate higher precedence
-     */
-    protected int precedence(T op) {
-        return -1;
-    }
-
-    /**
-     * Creates a binary expression node from the left-hand side, operator, and right-hand side.
-     *
-     * @param lhs the left-hand side expression node
-     * @param op  the operator token
-     * @param rhs the right-hand side expression node
-     * @return a new binary expression node, or null if not applicable
-     */
-    protected N makeBinary(N lhs, Token<T> op, N rhs) {
-        return null;
-    }
-
-    /**
-     * Parses an expression with the given minimum precedence.
-     *
-     * @param minPrec the minimum precedence level for the expression
-     * @return the parsed expression node, or null if not applicable
-     */
-    protected N parseExpression(int minPrec) {
-        N lhs = parsePrimary();
-        if (lhs == null) return null;
-
-        while (true) {
-            int prec = precedence(lookaheadType(1));
-            if (prec < minPrec) break;
-            Token<T> op = advance();
-            // Right-associativity example: adjust nextMinPrec = prec + (isRightAssoc(op) ? 0 : 1)
-            int nextMinPrec = prec + 1;
-            N rhs = parseExpression(nextMinPrec);
-            if (rhs == null) {
-                reportError("Expression expected after operator");
-                return lhs; // best-effort recovery
-            }
-
-            lhs = makeBinary(lhs, op, rhs);
-        }
-
-        return lhs; // For right-associative ops, override and tweak nextMinPrec accordingly.
-    }
+    protected abstract E parseExpression();
 
     /**
      * Fills the lookahead buffer with at least n tokens, skipping trivia.

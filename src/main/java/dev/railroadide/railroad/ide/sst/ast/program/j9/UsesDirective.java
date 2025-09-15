@@ -4,14 +4,14 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
-import dev.railroadide.railroad.ide.sst.ast.generic.Name;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 public record UsesDirective(
         Span span,
-        Name serviceName
+        NameExpression serviceName
 ) implements ModuleDirective {
     @Override
     public AstKind kind() {

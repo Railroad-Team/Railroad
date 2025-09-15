@@ -7,7 +7,7 @@ import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
 import dev.railroadide.railroad.ide.sst.ast.generic.ClassMember;
 import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
-import dev.railroadide.railroad.ide.sst.ast.generic.Name;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import dev.railroadide.railroad.ide.sst.ast.parameter.Parameter;
 import dev.railroadide.railroad.ide.sst.ast.parameter.ReceiverParameter;
 import dev.railroadide.railroad.ide.sst.ast.parameter.TypeParameter;
@@ -25,7 +25,7 @@ public record MethodDeclaration(
         List<Modifier> modifiers,
         List<TypeParameter> typeParameters,
         TypeRef returnType,
-        Name name,
+        NameExpression name,
         Optional<ReceiverParameter> receiverParameter,
         List<Parameter> parameters,
         List<TypeRef> thrownTypes,

@@ -5,6 +5,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,7 +17,7 @@ public record RecordComponent(
         List<Modifier> modifiers,
         List<Annotation> annotations,
         TypeRef type,
-        Name name
+        NameExpression name
 ) implements AstNode {
 
     @Override
