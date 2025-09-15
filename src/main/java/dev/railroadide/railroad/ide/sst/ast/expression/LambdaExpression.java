@@ -4,7 +4,9 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.generic.LambdaBody;
 import dev.railroadide.railroad.ide.sst.ast.parameter.Parameter;
+import dev.railroadide.railroad.ide.sst.ast.statements.Statement;
 import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,8 +18,7 @@ public record LambdaExpression(
         Span span,
         List<Parameter> parameters,
         boolean inferredParameters,
-        Optional<TypeRef> returnType,
-        Expression body
+        LambdaBody body
 ) implements Expression {
     @Override
     public AstKind kind() {
@@ -28,7 +29,6 @@ public record LambdaExpression(
     public List<AstNode> children() {
         List<AstNode> children = new ArrayList<>();
         children.addAll(parameters);
-        returnType.ifPresent(children::add);
         children.add(body);
         return List.copyOf(children);
     }

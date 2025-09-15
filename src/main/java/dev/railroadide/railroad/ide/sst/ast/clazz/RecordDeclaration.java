@@ -6,7 +6,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
 import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
-import dev.railroadide.railroad.ide.sst.ast.generic.Name;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import dev.railroadide.railroad.ide.sst.ast.generic.RecordComponent;
 import dev.railroadide.railroad.ide.sst.ast.parameter.TypeParameter;
 import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
@@ -19,7 +19,7 @@ public record RecordDeclaration(
         Span span,
         List<Modifier> modifiers,
         List<Annotation> annotations,
-        Name name,
+        NameExpression name,
         List<TypeParameter> typeParameters,
         List<RecordComponent> components,
         List<TypeRef> implementsTypes,

@@ -4,12 +4,13 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.generic.LambdaBody;
 import dev.railroadide.railroad.ide.sst.ast.statements.Statement;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record BlockStatement(Span span, List<Statement> statements) implements Statement {
+public record BlockStatement(Span span, List<Statement> statements) implements Statement, LambdaBody {
     @Override
     public AstKind kind() {
         return AstKind.BLOCK_STATEMENT;

@@ -5,9 +5,8 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
-import dev.railroadide.railroad.ide.sst.ast.generic.ClassMember;
 import dev.railroadide.railroad.ide.sst.ast.generic.Modifier;
-import dev.railroadide.railroad.ide.sst.ast.generic.Name;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import dev.railroadide.railroad.ide.sst.ast.parameter.Parameter;
 import dev.railroadide.railroad.ide.sst.ast.parameter.TypeParameter;
 import dev.railroadide.railroad.ide.sst.ast.statements.block.BlockStatement;
@@ -23,7 +22,7 @@ public record ConstructorDeclaration(
         List<Modifier> modifiers,
         List<Annotation> annotations,
         List<TypeParameter> typeParameters,
-        Name name,
+        NameExpression name,
         List<Parameter> parameters,
         List<TypeRef> thrownTypes,
         Optional<BlockStatement> body) implements ClassBodyDeclaration {

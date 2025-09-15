@@ -5,7 +5,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
-import dev.railroadide.railroad.ide.sst.ast.typeref.ClassOrInterfaceTypeRef;
+import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
 import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,7 +16,7 @@ import java.util.Optional;
 public sealed interface Pattern extends AstNode permits Pattern.MatchAllPattern, Pattern.RecordPattern, Pattern.TypeTestPattern {
     record TypeTestPattern(Span span,
                            List<Annotation> annotations, List<Modifier> modifiers,
-                           TypeRef type, Optional<Name> variable) implements Pattern {
+                           TypeRef type, Optional<NameExpression> variable) implements Pattern {
         @Override
         public AstKind kind() {
             return AstKind.TYPE_TEST_PATTERN;
