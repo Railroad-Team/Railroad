@@ -129,6 +129,9 @@ public class ProjectValidators {
 
     public static ValidationResult validateAuthor(TextField field) {
         String text = field.getText();
+        if (text.isBlank())
+            return ValidationResult.ok();
+
         if (text.length() > 256)
             return ValidationResult.error("railroad.project.creation.author.error.length_long");
 

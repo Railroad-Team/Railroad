@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.welcome.project.ui.details;
+package dev.railroadide.railroad.welcome.project.ui.creation;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -10,9 +10,8 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.project.data.FabricProjectData;
-import dev.railroadide.railroad.project.minecraft.FabricAPIVersion;
 import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
-import dev.railroadide.railroad.project.minecraft.mapping.MappingChannel;
+import dev.railroadide.railroad.project.minecraft.mappings.channels.MappingChannelRegistry;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.UrlUtils;
@@ -74,8 +73,8 @@ public class FabricProjectCreationPane extends RRBorderPane {
     private static Map<String, Object> createArgs(FabricProjectData data) {
         final Map<String, Object> args = new HashMap<>();
         args.put("mappings", Map.of(
-                "channel", data.mappingChannel().getName().toLowerCase(Locale.ROOT),
-                "version", data.mappingVersion().getId()
+                "channel", data.mappingChannel().id().toLowerCase(Locale.ROOT),
+                "version", data.mappingVersion()
         ));
 
         args.put("props", Map.of(
@@ -383,11 +382,11 @@ public class FabricProjectCreationPane extends RRBorderPane {
             FileUtils.updateKeyValuePair("org.gradle.jvmargs", "-Xmx4G", gradlePropertiesFile);
             FileUtils.updateKeyValuePair("minecraft_version", version.id(), gradlePropertiesFile);
             FileUtils.updateKeyValuePair("loader_version", data.fabricLoaderVersion().loaderVersion().version(), gradlePropertiesFile);
-            FileUtils.updateKeyValuePair("fabric_version", data.fapiVersion().map(FabricAPIVersion::fullVersion).orElse(""), gradlePropertiesFile);
-            if (data.mappingChannel() == MappingChannel.YARN) {
-                FileUtils.updateKeyValuePair("yarn_mappings", version.id() + "+" + data.mappingVersion().getId(), gradlePropertiesFile);
-            } else if (data.mappingChannel() == MappingChannel.PARCHMENT) {
-                Files.writeString(gradlePropertiesFile, "parchment_version=" + data.mappingVersion().getId() + "\n", StandardOpenOption.APPEND);
+            FileUtils.updateKeyValuePair("fabric_version", data.fapiVersion().orElse(""), gradlePropertiesFile);
+            if (data.mappingChannel() == MappingChannelRegistry.YARN) {
+                FileUtils.updateKeyValuePair("yarn_mappings", version.id() + "+" + data.mappingVersion(), gradlePropertiesFile);
+            } else if (data.mappingChannel() == MappingChannelRegistry.PARCHMENT) {
+                Files.writeString(gradlePropertiesFile, "parchment_version=" + data.mappingVersion() + "\n", StandardOpenOption.APPEND);
             }
 
             FileUtils.updateKeyValuePair("mod_version", data.version(), gradlePropertiesFile);
@@ -483,7 +482,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             depends.addProperty("minecraft", "~" + version.id());
             depends.addProperty("java", fabricModJsonObj.get("depends").getAsJsonObject().get("java").getAsString());
             data.fapiVersion().ifPresentOrElse(
-                    fabricAPIVersion -> depends.addProperty("fabric-api", ">=" + fabricAPIVersion.fullVersion()),
+                    fabricApiVersion -> depends.addProperty("fabric-api", ">=" + fabricApiVersion),
                     () -> depends.addProperty("fabric-api", "*")
             );
             fabricModJsonObj.add("depends", depends);

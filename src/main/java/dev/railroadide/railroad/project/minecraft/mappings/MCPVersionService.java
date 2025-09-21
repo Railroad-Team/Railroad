@@ -1,5 +1,7 @@
-package dev.railroadide.railroad.project.minecraft.forge;
+package dev.railroadide.railroad.project.minecraft.mappings;
 
+import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import dev.railroadide.railroad.project.minecraft.VersionService;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
@@ -42,12 +44,12 @@ public class MCPVersionService extends VersionService<String> {
     }
 
     @Override
-    public Optional<String> latestFor(String minecraftVersion) {
+    public Optional<String> latestFor(MinecraftVersion minecraftVersion) {
         return latestFor(minecraftVersion, false);
     }
 
     @Override
-    public Optional<String> latestFor(String minecraftVersion, boolean includePrereleases) {
+    public Optional<String> latestFor(MinecraftVersion minecraftVersion, boolean includePrereleases) {
         Objects.requireNonNull(minecraftVersion, "minecraftVersion");
 
         List<String> stable = listVersionsFor(minecraftVersion, false);
@@ -86,21 +88,21 @@ public class MCPVersionService extends VersionService<String> {
     }
 
     @Override
-    public List<String> listVersionsFor(String minecraftVersion) {
+    public List<String> listVersionsFor(MinecraftVersion minecraftVersion) {
         return listVersionsFor(minecraftVersion, false);
     }
 
     @Override
-    public List<String> listVersionsFor(String minecraftVersion, boolean includePrereleases) {
+    public List<String> listVersionsFor(MinecraftVersion minecraftVersion, boolean includePrereleases) {
         Objects.requireNonNull(minecraftVersion, "minecraftVersion");
 
         List<String> output = versionsStable().stream()
-                .filter(v -> mcTokenOf(v).equalsIgnoreCase(minecraftVersion))
+                .filter(v -> toMinecraftVersion(v).map(minecraftVersion::equals).orElse(false))
                 .collect(Collectors.toCollection(ArrayList::new)); // ascending order preserved
 
         if (includePrereleases) {
             versionsSnapshot().stream()
-                    .filter(v -> mcTokenOf(v).equalsIgnoreCase(minecraftVersion))
+                    .filter(v -> toMinecraftVersion(v).map(minecraftVersion::equals).orElse(false))
                     .forEach(output::add); // ascending order preserved
         }
 
@@ -109,18 +111,22 @@ public class MCPVersionService extends VersionService<String> {
 
     @Override
     public void forceRefresh(boolean includePrereleases) {
-        cache.remove("mcp:stable");
-        cache.remove("mcp:snapshot");
-        Instant expiresAt = Instant.now().plus(ttl);
-        cache.put("mcp:stable", new CacheEntry<>(fetchAllVersionsFrom(STABLE_METADATA_URL), expiresAt));
-        if (includePrereleases) {
-            cache.put("mcp:snapshot", new CacheEntry<>(fetchAllVersionsFrom(SNAPSHOT_METADATA_URL), expiresAt));
+        try {
+            cache.remove("mcp:stable");
+            cache.remove("mcp:snapshot");
+            Instant expiresAt = Instant.now().plus(ttl);
+            cache.put("mcp:stable", new CacheEntry<>(fetchAllVersionsFrom(STABLE_METADATA_URL), expiresAt));
+            if (includePrereleases) {
+                cache.put("mcp:snapshot", new CacheEntry<>(fetchAllVersionsFrom(SNAPSHOT_METADATA_URL), expiresAt));
+            }
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to refresh MCP versions", exception);
         }
     }
 
     private List<String> versionsStable() {
         CacheEntry<List<String>> cacheEntry = cache.get("mcp:stable");
-        if (cacheEntry != null && !cacheEntry.isExpired())
+        if (cacheEntry != null && cacheEntry.isActive())
             return cacheEntry.value();
 
         List<String> fresh = fetchAllVersionsFrom(STABLE_METADATA_URL);
@@ -130,7 +136,7 @@ public class MCPVersionService extends VersionService<String> {
 
     private List<String> versionsSnapshot() {
         CacheEntry<List<String>> cacheEntry = cache.get("mcp:snapshot");
-        if (cacheEntry != null && !cacheEntry.isExpired())
+        if (cacheEntry != null && cacheEntry.isActive())
             return cacheEntry.value();
 
         List<String> fresh = fetchAllVersionsFrom(SNAPSHOT_METADATA_URL);
@@ -175,11 +181,11 @@ public class MCPVersionService extends VersionService<String> {
         }
     }
 
-    private static String mcTokenOf(String mcpVersion) {
+    private static Optional<MinecraftVersion> toMinecraftVersion(String mcpVersion) {
         int index = mcpVersion.lastIndexOf('-');
-        return (index >= 0 && index + 1 < mcpVersion.length()) ?
+        return MinecraftVersion.fromId((index >= 0 && index + 1 < mcpVersion.length()) ?
                 mcpVersion.substring(index + 1) :
-                mcpVersion;
+                mcpVersion);
     }
 
     private static boolean isSnapshot(String version) {

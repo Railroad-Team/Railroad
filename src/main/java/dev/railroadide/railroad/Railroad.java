@@ -18,10 +18,15 @@ import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.project.ProjectManager;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetTypeAdapter;
-import dev.railroadide.railroad.project.minecraft.FabricAPIVersion;
-import dev.railroadide.railroad.project.minecraft.ForgeVersion;
 import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
-import dev.railroadide.railroad.project.minecraft.NeoForgeVersion;
+import dev.railroadide.railroad.project.minecraft.fabric.FabricApiVersionService;
+import dev.railroadide.railroad.project.minecraft.fabric.FabricLoaderVersionService;
+import dev.railroadide.railroad.project.minecraft.forge.ForgeVersionService;
+import dev.railroadide.railroad.project.minecraft.forge.NeoforgeVersionService;
+import dev.railroadide.railroad.project.minecraft.mappings.MCPVersionService;
+import dev.railroadide.railroad.project.minecraft.mappings.MojmapVersionService;
+import dev.railroadide.railroad.project.minecraft.mappings.ParchmentVersionService;
+import dev.railroadide.railroad.project.minecraft.mappings.YarnVersionService;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
@@ -276,10 +281,17 @@ public class Railroad extends Application {
             Keybinds.initialize();
             Settings.initialize();
             SettingsHandler.init();
-            MinecraftVersion.load();
-            ForgeVersion.load();
-            FabricAPIVersion.load();
-            NeoForgeVersion.load();
+
+            MinecraftVersion.requestMinecraftVersions();
+            FabricApiVersionService.INSTANCE.forceRefresh(true);
+            FabricLoaderVersionService.INSTANCE.forceRefresh(true);
+            ForgeVersionService.INSTANCE.forceRefresh(true);
+            NeoforgeVersionService.INSTANCE.forceRefresh(true);
+            YarnVersionService.INSTANCE.forceRefresh(true);
+            MojmapVersionService.INSTANCE.forceRefresh(true);
+            ParchmentVersionService.INSTANCE.forceRefresh(true);
+            MCPVersionService.INSTANCE.forceRefresh(true);
+
             L18n.loadLanguage(SettingsHandler.getValue(Settings.LANGUAGE));
             window = primaryStage;
 
@@ -334,6 +346,4 @@ public class Railroad extends Application {
         ShutdownHooks.runHooks();
         LoggerManager.shutdown();
     }
-
-
 }

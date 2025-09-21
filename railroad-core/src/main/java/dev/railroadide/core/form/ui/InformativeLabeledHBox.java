@@ -138,7 +138,14 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
         getChildren().add(informationLabel);
 
         if (bindTo != null) {
-            bindTo.bindBidirectional(informationLabel.textProperty());
+            bindTo.addListener((obs, oldVal, newVal) -> {
+                Object[] newArgs = new Object[args.length];
+                System.arraycopy(args, 0, newArgs, 0, args.length);
+                if (newArgs.length > 0) {
+                    newArgs[0] = newVal;
+                }
+                informationLabel.setKey(informativeText, newArgs);
+            });
         }
     }
 

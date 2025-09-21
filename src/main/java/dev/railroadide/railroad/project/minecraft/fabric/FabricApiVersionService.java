@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.project.minecraft.fabric;
 
+import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import dev.railroadide.railroad.project.minecraft.VersionService;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
@@ -18,35 +20,36 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class FabricApiMavenVersionService extends VersionService<String> {
+// TODO: Make this async
+public class FabricApiVersionService extends VersionService<String> {
     private static final String METADATA_URL =
             "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/maven-metadata.xml";
 
-    public static final FabricApiMavenVersionService INSTANCE = new FabricApiMavenVersionService();
+    public static final FabricApiVersionService INSTANCE = new FabricApiVersionService();
 
-    public FabricApiMavenVersionService() {
+    public FabricApiVersionService() {
         super("FabricApi");
     }
 
-    public FabricApiMavenVersionService(Duration ttl) {
+    public FabricApiVersionService(Duration ttl) {
         super("FabricApi", ttl);
     }
 
-    public FabricApiMavenVersionService(Duration ttl, String userAgent, HttpClient httpClient) {
+    public FabricApiVersionService(Duration ttl, String userAgent, HttpClient httpClient) {
         super("FabricApi", ttl, userAgent, httpClient);
     }
 
-    public FabricApiMavenVersionService(Duration ttl, String userAgent, Duration httpTimeout) {
+    public FabricApiVersionService(Duration ttl, String userAgent, Duration httpTimeout) {
         super("FabricApi", ttl, userAgent, httpTimeout);
     }
 
     @Override
-    public Optional<String> latestFor(String minecraftVersion) {
+    public Optional<String> latestFor(MinecraftVersion minecraftVersion) {
         return latestFor(minecraftVersion, false);
     }
 
     @Override
-    public Optional<String> latestFor(String minecraftVersion, boolean includePrereleases) {
+    public Optional<String> latestFor(MinecraftVersion minecraftVersion, boolean includePrereleases) {
         Objects.requireNonNull(minecraftVersion, "minecraftVersion");
         List<String> forMc = listVersionsFor(minecraftVersion, includePrereleases);
         return forMc.isEmpty() ? Optional.empty() : Optional.of(forMc.getLast()); // metadata is ascending
@@ -65,28 +68,32 @@ public class FabricApiMavenVersionService extends VersionService<String> {
     }
 
     @Override
-    public List<String> listVersionsFor(String minecraftVersion) {
+    public List<String> listVersionsFor(MinecraftVersion minecraftVersion) {
         return listVersionsFor(minecraftVersion, false);
     }
 
     @Override
-    public List<String> listVersionsFor(String minecraftVersion, boolean includePrereleases) {
+    public List<String> listVersionsFor(MinecraftVersion minecraftVersion, boolean includePrereleases) {
         Objects.requireNonNull(minecraftVersion, "minecraftVersion");
         return versions().stream()
                 .filter(version -> includePrereleases || isRelease(version))
-                .filter(version -> mcTokenOf(version).map(minecraftVersion::equalsIgnoreCase).orElse(false))
+                .filter(version -> toMinecraftVersion(version).map(minecraftVersion::equals).orElse(false))
                 .collect(Collectors.toList()); // ascending order preserved
     }
 
     @Override
     public void forceRefresh(boolean includePrereleases) {
-        List<String> fresh = fetchAllVersionsFromMaven();
-        cache.put("all", new CacheEntry<>(fresh, Instant.now().plus(ttl)));
+        try {
+            List<String> fresh = fetchAllVersionsFromMaven();
+            cache.put("all", new CacheEntry<>(fresh, Instant.now().plus(ttl)));
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to refresh Fabric API versions", exception);
+        }
     }
 
     private List<String> versions() {
         CacheEntry<List<String>> entry = cache.get("all");
-        if (entry != null && !entry.isExpired())
+        if (entry != null && entry.isActive())
             return entry.value();
 
         List<String> fresh = fetchAllVersionsFromMaven();
@@ -129,12 +136,12 @@ public class FabricApiMavenVersionService extends VersionService<String> {
         }
     }
 
-    private static Optional<String> mcTokenOf(String fabricApiVersion) {
+    public static Optional<MinecraftVersion> toMinecraftVersion(String fabricApiVersion) {
         int plus = fabricApiVersion.indexOf('+');
         if (plus < 0 || plus == fabricApiVersion.length() - 1)
             return Optional.empty();
 
-        return Optional.of(fabricApiVersion.substring(plus + 1));
+        return Optional.of(fabricApiVersion.substring(plus + 1)).flatMap(MinecraftVersion::fromId);
     }
 
     private static boolean isRelease(String version) {

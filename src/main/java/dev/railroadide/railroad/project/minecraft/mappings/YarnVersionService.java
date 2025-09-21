@@ -1,5 +1,7 @@
-package dev.railroadide.railroad.project.minecraft.fabric;
+package dev.railroadide.railroad.project.minecraft.mappings;
 
+import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import dev.railroadide.railroad.project.minecraft.VersionService;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
@@ -12,15 +14,14 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class YarnVersionService extends VersionService<String> {
-    private static final String METADATA_URL =
-            "https://maven.fabricmc.net/net/fabricmc/yarn/maven-metadata.xml";
-
-    private static final Pattern SNAPSHOT_PATTERN = Pattern.compile("^\\d{2}w\\d{2}[a-z]$", Pattern.CASE_INSENSITIVE);
+    private static final String METADATA_URL = "https://maven.fabricmc.net/net/fabricmc/yarn/maven-metadata.xml";
 
     public static final YarnVersionService INSTANCE = new YarnVersionService();
 
@@ -41,12 +42,12 @@ public class YarnVersionService extends VersionService<String> {
     }
 
     @Override
-    public Optional<String> latestFor(String minecraftVersion) {
+    public Optional<String> latestFor(MinecraftVersion minecraftVersion) {
         return latestFor(minecraftVersion, false);
     }
 
     @Override
-    public Optional<String> latestFor(String minecraftVersion, boolean includePrereleases) {
+    public Optional<String> latestFor(MinecraftVersion minecraftVersion, boolean includePrereleases) {
         Objects.requireNonNull(minecraftVersion, "minecraftVersion");
         List<String> forMc = listVersionsFor(minecraftVersion, includePrereleases);
         return forMc.isEmpty() ? Optional.empty() : Optional.of(forMc.getLast()); // metadata is ascending
@@ -60,33 +61,37 @@ public class YarnVersionService extends VersionService<String> {
     @Override
     public List<String> listAllVersions(boolean includePrereleases) {
         return versions().stream()
-                .filter(v -> includePrereleases || isRelease(v))
+                .filter(v -> includePrereleases || toMinecraftVersion(v).map(MinecraftVersion::isRelease).orElse(false))
                 .collect(Collectors.toList()); // keep original (ascending) order from metadata
     }
 
     @Override
-    public List<String> listVersionsFor(String minecraftVersion) {
+    public List<String> listVersionsFor(MinecraftVersion minecraftVersion) {
         return listVersionsFor(minecraftVersion, false);
     }
 
     @Override
-    public List<String> listVersionsFor(String minecraftVersion, boolean includePrereleases) {
+    public List<String> listVersionsFor(MinecraftVersion minecraftVersion, boolean includePrereleases) {
         Objects.requireNonNull(minecraftVersion, "minecraftVersion");
         return versions().stream()
-                .filter(v -> mcTokenOf(v).equalsIgnoreCase(minecraftVersion))
-                .filter(v -> includePrereleases || isRelease(minecraftVersion))
+                .filter(v -> toMinecraftVersion(v).map(minecraftVersion::equals).orElse(false))
+                .filter(v -> includePrereleases || minecraftVersion.isRelease())
                 .collect(Collectors.toList()); // ascending order preserved
     }
 
     @Override
     public void forceRefresh(boolean includePrereleases) {
-        List<String> fresh = fetchAllVersionsFromMaven();
-        cache.put("all", new CacheEntry<>(fresh, Instant.now().plus(ttl)));
+        try {
+            List<String> fresh = fetchAllVersionsFromMaven();
+            cache.put("all", new CacheEntry<>(fresh, Instant.now().plus(ttl)));
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to refresh Yarn versions", exception);
+        }
     }
 
     private List<String> versions() {
         CacheEntry<List<String>> entry = cache.get("all");
-        if (entry != null && !entry.isExpired())
+        if (entry != null && entry.isActive())
             return entry.value();
 
         List<String> fresh = fetchAllVersionsFromMaven();
@@ -129,14 +134,8 @@ public class YarnVersionService extends VersionService<String> {
         }
     }
 
-    private static String mcTokenOf(String yarnVersion) {
+    private static Optional<MinecraftVersion> toMinecraftVersion(String yarnVersion) {
         int plus = yarnVersion.indexOf('+');
-        return plus > 0 ? yarnVersion.substring(0, plus) : yarnVersion;
-    }
-
-    private static boolean isRelease(String mcToken) {
-        String token = mcToken.toLowerCase(Locale.ROOT);
-        if (SNAPSHOT_PATTERN.matcher(token).matches()) return false;   // e.g. 25w34a
-        return !token.contains("-pre") && !token.contains("-rc"); // e.g. 1.20-rc1
+        return MinecraftVersion.fromId(plus > 0 ? yarnVersion.substring(0, plus) : yarnVersion);
     }
 }

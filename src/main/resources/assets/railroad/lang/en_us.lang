@@ -136,6 +136,8 @@ railroad.settings.ide.code_style.auto_pair_inside_strings.description=Enable or 
 railroad.project.creation.name=Name
 railroad.project.creation.name.prompt=Enter project name
 railroad.project.creation.name.error.required=You must enter a project name
+railroad.project.creation.name.error.length_short=Project name is too short
+railroad.project.creation.name.error.length_long=Project name is too long
 
 railroad.project.creation.location=Location
 railroad.project.creation.location.warning.onedrive=It is not recommended to create projects in OneDrive as it has a tendency to cause problems.
@@ -158,23 +160,37 @@ railroad.project.creation.fabric_loader_version=Fabric Loader Version
 railroad.project.creation.mod_id=Mod ID
 railroad.project.creation.mod_id.prompt=Enter mod ID
 railroad.project.creation.mod_id.error.required=You must enter a mod ID
+railroad.project.creation.mod_id.error.length_short=Mod ID is too short
+railroad.project.creation.mod_id.error.length_long=Mod ID is too long
+railroad.project.creation.mod_id.error.invalid_characters=Mod ID contains invalid characters
 
 railroad.project.creation.mod_name=Mod Name
 railroad.project.creation.mod_name.prompt=Enter mod name
 railroad.project.creation.mod_name.error.required=You must enter a mod name
+railroad.project.creation.mod_name.error.length_short=Mod name is too short
+railroad.project.creation.mod_name.error.length_long=Mod name is too long
 
 railroad.project.creation.main_class=Main Class
 railroad.project.creation.main_class.prompt=Enter the name of the main class
 railroad.project.creation.main_class.error.required=You must enter the name of the main class
+railroad.project.creation.main_class.error.invalid_characters=Main class name contains invalid characters
 
 # Project features
 railroad.project.creation.use_mixins=Use Mixins
 railroad.project.creation.use_access_transformer=Use Access Transformer
 railroad.project.creation.gen_run_folders=Generate Run Folders
+railroad.project.creation.include_fapi=Include FAPI (Fabric API)
+railroad.project.creation.fabric_api_version=Fabric API Version
+railroad.project.creation.use_access_widener=Use Access Widener
+railroad.project.creation.split_sources=Split Sources
 
 # Mappings
 railroad.project.creation.mapping_channel=Mapping Channel
 railroad.project.creation.mapping_version=Mapping Version
+railroad.mapping_channel.yarn=Yarn
+railroad.mapping_channel.mojmap=Official (Mojmap)
+railroad.mapping_channel.parchment=Parchment
+railroad.mapping_channel.mcp=MCP
 
 # Project metadata
 railroad.project.creation.author=Author
@@ -195,6 +211,12 @@ railroad.project.creation.update_json_url.prompt=Enter update JSON URL
 
 railroad.project.creation.display_url=Display URL
 railroad.project.creation.display_url.prompt=Enter the URL to display in the project
+
+railroad.project.creation.homepage=Homepage URL
+railroad.project.creation.homepage.prompt=Enter homepage URL
+
+railroad.project.creation.sources=Source Code URL
+railroad.project.creation.sources.prompt=Enter source code URL
 
 # Maven settings
 railroad.project.creation.group_id=Group ID
