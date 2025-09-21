@@ -18,6 +18,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,19 +32,19 @@ public class NeoforgeVersionService extends VersionService<String> {
     private static final ObjectProperty<String> LATEST_RELEASE_VERSION = new SimpleObjectProperty<>();
 
     public NeoforgeVersionService() {
-        super("NeoForge");
+        super("Neoforge");
     }
 
     public NeoforgeVersionService(Duration ttl) {
-        super("NeoForge", ttl);
+        super("Neoforge", ttl);
     }
 
     public NeoforgeVersionService(Duration ttl, String userAgent, HttpClient httpClient) {
-        super("NeoForge", ttl, userAgent, httpClient);
+        super("Neoforge", ttl, userAgent, httpClient);
     }
 
     public NeoforgeVersionService(Duration ttl, String userAgent, Duration httpTimeout) {
-        super("NeoForge", ttl, userAgent, httpTimeout);
+        super("Neoforge", ttl, userAgent, httpTimeout);
     }
 
     @Override
@@ -96,9 +97,7 @@ public class NeoforgeVersionService extends VersionService<String> {
 
     @Override
     public List<String> listAllVersions(boolean includePrereleases) {
-        // noinspection ConstantValue - currently only using where includePrereleases is false, but future-proofing
-        return includePrereleases ? versions() : versions()
-            .stream()
+        return versions().stream()
             .filter(v -> includePrereleases || !isPrerelease(v))
             .toList();
     }
@@ -113,6 +112,7 @@ public class NeoforgeVersionService extends VersionService<String> {
         return versions().stream()
             .filter(v -> v.startsWith(minecraftVersion.id().substring(2))) // Remove "1."
             .filter(v -> includePrereleases || !isPrerelease(v))
+            .sorted(Comparator.reverseOrder())
             .toList();
     }
 
@@ -200,7 +200,7 @@ public class NeoforgeVersionService extends VersionService<String> {
 
             return new Metadata(out, latestVersion, latestReleaseVersion);
         } catch (Exception exception) {
-            throw new RuntimeException("Failed to fetch/parse NeoForge Maven metadata", exception);
+            throw new RuntimeException("Failed to fetch/parse Neoforge Maven metadata", exception);
         }
     }
 
@@ -212,10 +212,16 @@ public class NeoforgeVersionService extends VersionService<String> {
             return MinecraftVersion.fromId("25w14craftmine");
 
         int minus = neoforgeVersion.indexOf('-');
-        if(minus <= 0)
+        if(minus == 0)
             return Optional.empty();
 
-        return MinecraftVersion.fromId("1." + neoforgeVersion.substring(0, minus));
+        int lastDot = neoforgeVersion.lastIndexOf('.');
+        if(lastDot == -1)
+            return Optional.empty();
+
+        neoforgeVersion = neoforgeVersion.substring(0, lastDot); // Remove build number
+
+        return MinecraftVersion.fromId("1." + (minus < 0 ? neoforgeVersion : neoforgeVersion.substring(0, minus)));
     }
 
     public record Metadata(List<String> allVersions, String latestVersion, String latestReleaseVersion) {

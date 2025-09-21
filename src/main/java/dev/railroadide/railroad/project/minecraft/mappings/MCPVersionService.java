@@ -9,6 +9,7 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -35,7 +36,7 @@ public class MCPVersionService extends VersionService<String> {
         super("MCP", ttl);
     }
 
-    public MCPVersionService(Duration ttl, String userAgent, java.net.http.HttpClient httpClient) {
+    public MCPVersionService(Duration ttl, String userAgent, HttpClient httpClient) {
         super("MCP", ttl, userAgent, httpClient);
     }
 

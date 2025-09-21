@@ -214,7 +214,6 @@ public class FabricProjectDetailsPane extends RRVBox {
 
                 return MappingChannelRegistry.YARN;
             })
-            // TODO: Check if we need to also transform the mapping version, or whether the mapping channel transformer does it for us
             .build();
 
         ComboBoxComponent<FabricLoaderVersion> fabricLoaderVersionComponent = FormComponent.comboBox("FabricLoaderVersion", "railroad.project.creation.fabric_loader_version", FabricLoaderVersion.class)

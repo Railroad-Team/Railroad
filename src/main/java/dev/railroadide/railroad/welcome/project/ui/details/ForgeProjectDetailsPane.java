@@ -6,6 +6,7 @@ import dev.railroadide.core.form.FormData;
 import dev.railroadide.core.form.FormSection;
 import dev.railroadide.core.form.impl.*;
 import dev.railroadide.core.ui.RRVBox;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.DisplayTest;
 import dev.railroadide.railroad.project.License;
 import dev.railroadide.railroad.project.data.ForgeProjectData;
@@ -139,6 +140,54 @@ public class ForgeProjectDetailsPane extends RRVBox {
             .keyFunction(MinecraftVersion::id)
             .valueOfFunction(string -> MinecraftVersion.fromId(string).orElse(null))
             .translate(false)
+            .addTransformer(minecraftVersionComboBox, forgeVersionComboBox, version -> {
+                if(version == null) {
+                    Railroad.LOGGER.error("Minecraft version is null when transforming for Forge versions");
+                    return null;
+                }
+
+                ComboBox<String> comboBox = forgeVersionComboBox.get();
+                if (comboBox == null) {
+                    Railroad.LOGGER.error("Forge version ComboBox is null when transforming for Minecraft version {}", version);
+                    return null;
+                }
+
+                List<String> newVersions = ForgeVersionService.INSTANCE.listVersionsFor(version);
+                comboBox.getItems().setAll(newVersions);
+                if (newVersions.isEmpty()) {
+                    Railroad.LOGGER.error("No Forge versions found for Minecraft version {}", version);
+                    return null;
+                }
+
+                String latestFor = ForgeVersionService.INSTANCE.latestFor(version).orElse(null);
+                if (latestFor == null) {
+                    Railroad.LOGGER.error("No latest Forge version found for Minecraft version {}", version);
+                    latestFor = newVersions.getLast();
+                }
+
+                return latestFor;
+            })
+            .addTransformer(minecraftVersionComboBox, mappingChannelComboBox, version -> {
+                if(version == null) {
+                    Railroad.LOGGER.error("Minecraft version is null when transforming for mapping channels");
+                    return null;
+                }
+
+                ComboBox<MappingChannel> comboBox = mappingChannelComboBox.get();
+                if (comboBox == null) {
+                    Railroad.LOGGER.error("Mapping channel ComboBox is null when transforming for Minecraft version {}", version);
+                    return null;
+                }
+
+                List<MappingChannel> newChannels = MappingChannelRegistry.findValidMappingChannels(version);
+                comboBox.getItems().setAll(newChannels);
+                if (newChannels.isEmpty()) {
+                    Railroad.LOGGER.error("No mapping channels found for Minecraft version {}", version);
+                    return null;
+                }
+
+                return MappingChannelRegistry.MOJMAP;
+            })
             .build();
 
         ComboBoxComponent<String> forgeVersionComponent = FormComponent.comboBox("ForgeVersion", "railroad.project.creation.forge_version", String.class)
@@ -220,6 +269,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
             .bindCheckBoxTo(genRunFoldersCheckBox)
             .build();
 
+
         ComboBoxComponent<MappingChannel> mappingChannelComponent = FormComponent.comboBox("MappingChannel", "railroad.project.creation.mapping_channel", MappingChannel.class)
             .required()
             .items(MappingChannelRegistry.findValidMappingChannels(getSelectedMinecraftVersion()))
@@ -236,14 +286,75 @@ public class ForgeProjectDetailsPane extends RRVBox {
             .keyFunction(MappingChannel::translationKey)
             .valueOfFunction(MappingChannelRegistry.REGISTRY::get)
             .translate(true)
+            .addTransformer(mappingChannelComboBox, mappingVersionComboBox, channel -> {
+                if(channel == null) {
+                    Railroad.LOGGER.error("Mapping channel is null when transforming for mapping versions");
+                    return null;
+                }
+
+                ComboBox<String> comboBox = mappingVersionComboBox.get();
+                if (comboBox == null) {
+                    Railroad.LOGGER.error("Mapping version ComboBox is null when transforming for mapping channel {}", channel);
+                    return null;
+                }
+
+                List<String> newVersions = channel.listVersionsFor(getSelectedMinecraftVersion());
+                comboBox.getItems().setAll(newVersions);
+                if (newVersions.isEmpty()) {
+                    Railroad.LOGGER.error("No mapping versions found for channel {} and Minecraft version {}", channel, getSelectedMinecraftVersion());
+                    return null;
+                }
+
+                return newVersions.getLast();
+            })
             .build();
 
         ComboBoxComponent<String> mappingVersionComponent = FormComponent.comboBox("MappingVersion", "railroad.project.creation.mapping_version", String.class)
             .required()
             .bindComboBoxTo(mappingVersionComboBox)
-            .cellFactory(param -> new ListCell<>())
-            .buttonCell(new ListCell<>())
+            .cellFactory(param -> new ListCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                        setGraphic(null);
+                    } else {
+                        setText(item);
+                    }
+                }
+            })
+            .buttonCell(new ListCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                        setGraphic(null);
+                    } else {
+                        setText(item);
+                    }
+                }
+            })
             .translate(false)
+            .defaultValue(() -> {
+                ComboBox<MappingChannel> channelComboBox = mappingChannelComboBox.get();
+                if (channelComboBox == null)
+                    return null;
+
+                MappingChannel channel = channelComboBox.getValue();
+                if (channel == null)
+                    return null;
+
+                List<String> versions = channel.listVersionsFor(getSelectedMinecraftVersion());
+                if (versions.isEmpty()) {
+                    Railroad.LOGGER.error("No mapping versions found for default mapping version");
+                    return null;
+                }
+
+                return versions.getLast();
+            })
+            .items(MappingChannelRegistry.MOJMAP.listVersionsFor(getSelectedMinecraftVersion()))
             .build();
 
         TextFieldComponent authorComponent = FormComponent.textField("Author", "railroad.project.creation.author")

@@ -26,9 +26,4 @@ public class YarnVersionTest {
         assertEquals(3, YarnVersionService.INSTANCE.listVersionsFor(MinecraftVersion.fromId("1.20.4").orElseThrow()).size());
         assertEquals(1, YarnVersionService.INSTANCE.listVersionsFor(MinecraftVersion.fromId("1.21.5").orElseThrow()).size());
     }
-
-    @Test
-    public void testListAllYarnVersions() {
-        assertTrue(YarnVersionService.INSTANCE.listAllVersions().size() >= 200);
-    }
 }

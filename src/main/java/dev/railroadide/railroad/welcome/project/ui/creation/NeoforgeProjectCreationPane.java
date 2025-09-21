@@ -38,8 +38,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-// TODO: Someone who knows NeoForge will probably need to write the code for this. Right now it's just a near-copy of the ForgeProjectCreationPane
-public class NeoForgeProjectCreationPane extends RRBorderPane {
+// TODO: Someone who knows Neoforge will probably need to write the code for this. Right now it's just a near-copy of the ForgeProjectCreationPane
+public class NeoforgeProjectCreationPane extends RRBorderPane {
     private static final Pattern TOML_COMMENT_PATTERN = Pattern.compile("^#(\\w+=)|(\\[.+\\])");
     private static final String MDK_URL = "https://github.com/neoforged/MDK/archive/refs/heads/%s.zip";
     private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/neoforge/%s/template_build.gradle";
@@ -54,7 +54,7 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
     private final long startTime = System.currentTimeMillis();
     private final TextArea outputArea = new TextArea();
 
-    public NeoForgeProjectCreationPane(NeoforgeProjectData data) {
+    public NeoforgeProjectCreationPane(NeoforgeProjectData data) {
         this.data = data;
 
         centerBox.setAlignment(Pos.CENTER);
@@ -224,20 +224,20 @@ public class NeoForgeProjectCreationPane extends RRBorderPane {
 
             Path zipPath = projectPath.resolve(branch + ".zip");
 
-            updateLabel("railroad.project.creation.task.downloading_mdk", "NeoForge");
+            updateLabel("railroad.project.creation.task.downloading_mdk", "Neoforge");
             FileUtils.copyUrlToFile(MDK_URL.formatted(branch), zipPath);
             updateProgress(2, 17);
-            Railroad.LOGGER.info("NeoForge MDK downloaded successfully.");
+            Railroad.LOGGER.info("Neoforge MDK downloaded successfully.");
 
-            updateLabel("railroad.project.creation.task.unzipping_mdk", "NeoForge");
+            updateLabel("railroad.project.creation.task.unzipping_mdk", "Neoforge");
             FileUtils.unzipFile(zipPath, projectPath);
             updateProgress(3, 17);
-            Railroad.LOGGER.info("NeoForge MDK unzipped successfully.");
+            Railroad.LOGGER.info("Neoforge MDK unzipped successfully.");
 
-            updateLabel("railroad.project.creation.task.deleting_zip", "NeoForge");
+            updateLabel("railroad.project.creation.task.deleting_zip", "Neoforge");
             Files.deleteIfExists(zipPath);
             updateProgress(4, 17);
-            Railroad.LOGGER.info("NeoForge MDK zip deleted successfully.");
+            Railroad.LOGGER.info("Neoforge MDK zip deleted successfully.");
 
             updateLabel("railroad.project.creation.task.deleting_files");
             FileUtils.deleteFolder(projectPath.resolve(".github"));

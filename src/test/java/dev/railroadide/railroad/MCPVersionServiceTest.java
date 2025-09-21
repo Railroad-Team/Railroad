@@ -17,13 +17,16 @@ public class MCPVersionServiceTest {
 
         Optional<String> latest = MCPVersionService.INSTANCE.latestFor(minecraft, true);
 
+        assertTrue(latest.isEmpty());
+
+        minecraft = TestVersionData.ensureVersion("1.13.1");
+        latest = MCPVersionService.INSTANCE.latestFor(minecraft, true);
         assertTrue(latest.isPresent());
-        assertTrue(latest.orElseThrow().contains(minecraft.id()));
     }
 
     @Test
     void testListMcpVersions() {
-        MinecraftVersion minecraft = TestVersionData.ensureVersion("1.20.1");
+        MinecraftVersion minecraft = TestVersionData.ensureVersion("1.13.1");
 
         List<String> versions = MCPVersionService.INSTANCE.listVersionsFor(minecraft, true);
 

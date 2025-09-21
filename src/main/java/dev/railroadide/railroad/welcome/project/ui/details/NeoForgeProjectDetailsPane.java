@@ -6,6 +6,7 @@ import dev.railroadide.core.form.FormData;
 import dev.railroadide.core.form.FormSection;
 import dev.railroadide.core.form.impl.*;
 import dev.railroadide.core.ui.RRVBox;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.DisplayTest;
 import dev.railroadide.railroad.project.License;
 import dev.railroadide.railroad.project.data.NeoforgeProjectData;
@@ -13,6 +14,7 @@ import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import dev.railroadide.railroad.project.minecraft.forge.NeoforgeVersionService;
 import dev.railroadide.railroad.project.minecraft.mappings.channels.MappingChannel;
 import dev.railroadide.railroad.project.minecraft.mappings.channels.MappingChannelRegistry;
+import dev.railroadide.railroad.welcome.project.ui.creation.NeoforgeProjectCreationPane;
 import dev.railroadide.railroad.welcome.project.ui.widget.StarableListCell;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -158,9 +160,57 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
             .keyFunction(MinecraftVersion::id)
             .valueOfFunction(string -> MinecraftVersion.fromId(string).orElse(null))
             .translate(false)
+            .addTransformer(minecraftVersionComboBox, neoforgeVersionComboBox, version -> {
+                if(version == null) {
+                    Railroad.LOGGER.error("Minecraft version is null when transforming for Neoforge versions");
+                    return null;
+                }
+
+                ComboBox<String> comboBox = neoforgeVersionComboBox.get();
+                if (comboBox == null) {
+                    Railroad.LOGGER.error("Neoforge version ComboBox is null when transforming for Minecraft version {}", version);
+                    return null;
+                }
+
+                List<String> newVersions = NeoforgeVersionService.INSTANCE.listVersionsFor(version);
+                comboBox.getItems().setAll(newVersions);
+                if (newVersions.isEmpty()) {
+                    Railroad.LOGGER.error("No Neoforge versions found for Minecraft version {}", version);
+                    return null;
+                }
+
+                String latestFor = NeoforgeVersionService.INSTANCE.latestFor(version).orElse(null);
+                if (latestFor == null) {
+                    Railroad.LOGGER.error("No latest Neoforge version found for Minecraft version {}", version);
+                    latestFor = newVersions.getFirst();
+                }
+
+                return latestFor;
+            })
+            .addTransformer(minecraftVersionComboBox, mappingChannelComboBox, version -> {
+                if(version == null) {
+                    Railroad.LOGGER.error("Minecraft version is null when transforming for mapping channels");
+                    return null;
+                }
+
+                ComboBox<MappingChannel> comboBox = mappingChannelComboBox.get();
+                if (comboBox == null) {
+                    Railroad.LOGGER.error("Mapping channel ComboBox is null when transforming for Minecraft version {}", version);
+                    return null;
+                }
+
+                List<MappingChannel> newChannels = MappingChannelRegistry.findValidMappingChannels(version);
+                comboBox.getItems().setAll(newChannels);
+                if (newChannels.isEmpty()) {
+                    Railroad.LOGGER.error("No mapping channels found for Minecraft version {}", version);
+                    return null;
+                }
+
+                return MappingChannelRegistry.PARCHMENT;
+            })
             .build();
 
-        ComboBoxComponent<String> neoforgeVersionComponent = FormComponent.comboBox("NeoforgeVersion", "railroad.project.creation.neo_forge_version", String.class)
+        ComboBoxComponent<String> neoforgeVersionComponent = FormComponent.comboBox("NeoforgeVersion", "railroad.project.creation.neoforge_version", String.class)
             .required()
             .items(NeoforgeVersionService.INSTANCE.listVersionsFor(latestVersion))
             .defaultValue(() -> NeoforgeVersionService.INSTANCE.latestFor(latestVersion).orElse(null))
@@ -241,14 +291,75 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
             .keyFunction(MappingChannel::translationKey)
             .valueOfFunction(MappingChannelRegistry.REGISTRY::get)
             .translate(true)
+            .addTransformer(mappingChannelComboBox, mappingVersionComboBox, channel -> {
+                if(channel == null) {
+                    Railroad.LOGGER.error("Mapping channel is null when transforming for mapping versions");
+                    return null;
+                }
+
+                ComboBox<String> comboBox = mappingVersionComboBox.get();
+                if (comboBox == null) {
+                    Railroad.LOGGER.error("Mapping version ComboBox is null when transforming for mapping channel {}", channel);
+                    return null;
+                }
+
+                List<String> newVersions = channel.listVersionsFor(getSelectedMinecraftVersion());
+                comboBox.getItems().setAll(newVersions);
+                if (newVersions.isEmpty()) {
+                    Railroad.LOGGER.error("No mapping versions found for channel {} and Minecraft version {}", channel, getSelectedMinecraftVersion());
+                    return null;
+                }
+
+                return newVersions.getLast();
+            })
             .build();
 
         ComboBoxComponent<String> mappingVersionComponent = FormComponent.comboBox("MappingVersion", "railroad.project.creation.mapping_version", String.class)
             .required()
             .bindComboBoxTo(mappingVersionComboBox)
-            .cellFactory(param -> new ListCell<>())
-            .buttonCell(new ListCell<>())
+            .cellFactory(param -> new ListCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                        setGraphic(null);
+                    } else {
+                        setText(item);
+                    }
+                }
+            })
+            .buttonCell(new ListCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                        setGraphic(null);
+                    } else {
+                        setText(item);
+                    }
+                }
+            })
             .translate(false)
+            .defaultValue(() -> {
+                ComboBox<MappingChannel> channelComboBox = mappingChannelComboBox.get();
+                if (channelComboBox == null)
+                    return null;
+
+                MappingChannel channel = channelComboBox.getValue();
+                if (channel == null)
+                    return null;
+
+                List<String> versions = channel.listVersionsFor(getSelectedMinecraftVersion());
+                if (versions.isEmpty()) {
+                    Railroad.LOGGER.error("No mapping versions found for default mapping version");
+                    return null;
+                }
+
+                return versions.getLast();
+            })
+            .items(MappingChannelRegistry.PARCHMENT.listVersionsFor(getSelectedMinecraftVersion()))
             .build();
 
         TextFieldComponent authorComponent = FormComponent.textField("Author", "railroad.project.creation.author")
@@ -375,10 +486,9 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
             .onSubmit((theForm, formData) -> {
                 if (theForm.validate()) {
                     NeoforgeProjectData data = createData(formData);
-                    // Assuming NeoForgeProjectCreationPane exists and takes NeoforgeProjectData
-                    // getScene().setRoot(new NeoForgeProjectCreationPane(data));
+                    getScene().setRoot(new NeoforgeProjectCreationPane(data));
                 } else {
-                    theForm.runValidation(); // Show validation errors
+                    theForm.runValidation();
                 }
             })
             .build();
@@ -419,7 +529,7 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
         License license = formData.getEnum("License", License.class);
         String licenseCustom = license == License.CUSTOM ? formData.getString("CustomLicense") : null;
         MinecraftVersion minecraftVersion = formData.get("MinecraftVersion", MinecraftVersion.class);
-        String neoForgeVersion = formData.get("NeoforgeVersion", String.class);
+        String neoforgeVersion = formData.get("NeoforgeVersion", String.class);
         String modId = formData.getString("ModId");
         String modName = formData.getString("ModName");
         String mainClass = formData.getString("MainClass");
@@ -441,7 +551,7 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
         String version = formData.getString("Version");
 
         return new NeoforgeProjectData(projectName, projectPath, createGit, license, licenseCustom,
-            minecraftVersion, neoForgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer, genRunFolders,
+            minecraftVersion, neoforgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer, genRunFolders,
             mappingChannel, mappingVersion,
             author, credits, description, issues, updateJsonUrl, displayUrl, displayTest, clientSideOnly,
             groupId, artifactId, version);

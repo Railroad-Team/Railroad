@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 public enum ProjectType {
     FABRIC("Fabric", new Image(Railroad.getResourceAsStream("images/fabric.png")), FabricProjectDetailsPane::new),
     FORGE("Forge", new Image(Railroad.getResourceAsStream("images/forge.png")), ForgeProjectDetailsPane::new),
-    NEOFORGED("NeoForged", new Image(Railroad.getResourceAsStream("images/neoforged.png")), NeoforgeProjectDetailsPane::new);
+    NEOFORGE("Neoforge", new Image(Railroad.getResourceAsStream("images/neoforge.png")), NeoforgeProjectDetailsPane::new);
 
     private final String name;
     private final Image icon;

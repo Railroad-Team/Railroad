@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NeoforgeVersionServiceTest {
     @Test
-    void testLatestNeoForgeVersion() {
+    void testLatestNeoforgeVersion() {
         MinecraftVersion minecraft = TestVersionData.ensureVersion("1.21.1");
 
         Optional<String> latest = NeoforgeVersionService.INSTANCE.latestFor(minecraft);
@@ -22,7 +22,7 @@ public class NeoforgeVersionServiceTest {
     }
 
     @Test
-    void testListNeoForgeVersions() {
+    void testListNeoforgeVersions() {
         MinecraftVersion minecraft = TestVersionData.ensureVersion("1.20.4");
 
         List<String> versions = NeoforgeVersionService.INSTANCE.listVersionsFor(minecraft, true);

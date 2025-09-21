@@ -153,7 +153,7 @@ railroad.project.creation.license.custom.prompt=Enter custom license text
 # Minecraft settings
 railroad.project.creation.minecraft_version=Minecraft Version
 railroad.project.creation.forge_version=Forge Version
-railroad.project.creation.neo_forge_version=NeoForge Version
+railroad.project.creation.neoforge_version=Neoforge Version
 railroad.project.creation.fabric_loader_version=Fabric Loader Version
 
 # Mod settings

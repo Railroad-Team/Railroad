@@ -1,10 +1,12 @@
 package dev.railroadide.railroad.project.minecraft.mappings.channels;
 
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -25,7 +27,12 @@ public class MappingChannel {
     }
 
     public List<String> listVersionsFor(MinecraftVersion minecraftVersion) {
-        return versionLister.apply(minecraftVersion);
+        try {
+            return versionLister.apply(minecraftVersion);
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to list versions for mapping channel {} and Minecraft version {}", id, minecraftVersion.id(), exception);
+            return Collections.emptyList();
+        }
     }
 
     public boolean supports(MinecraftVersion minecraftVersion) {

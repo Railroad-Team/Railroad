@@ -166,7 +166,7 @@ public class ThemeExamplePane {
                 "Project 1 - Minecraft Mod",
                 "Project 2 - Fabric Plugin",
                 "Project 3 - Forge Extension",
-                "Project 4 - NeoForge Addon",
+                "Project 4 - Neoforge Addon",
                 "Project 5 - Quilt Mod",
                 "Project 6 - Bukkit Plugin",
                 "Project 7 - Spigot Extension",
@@ -194,8 +194,7 @@ public class ThemeExamplePane {
         ObservableList<ProjectData> data = FXCollections.observableArrayList(
                 new ProjectData("MyMod", "Fabric", "Active"),
                 new ProjectData("CoolPlugin", "Forge", "Inactive"),
-                new ProjectData("AwesomeAddon", "NeoForge", "Active"),
-                new ProjectData("TestProject", "Quilt", "Active"),
+                new ProjectData("AwesomeAddon", "Neoforge", "Active"),
                 new ProjectData("DemoMod", "Bukkit", "Inactive")
         );
         table.setItems(data);
@@ -322,4 +321,4 @@ public class ThemeExamplePane {
             return status.get();
         }
     }
-} 
+}
