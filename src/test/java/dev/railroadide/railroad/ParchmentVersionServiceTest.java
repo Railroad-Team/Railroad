@@ -15,7 +15,7 @@ public class ParchmentVersionServiceTest {
     void testLatestParchmentVersion() {
         MinecraftVersion minecraft = TestVersionData.ensureVersion("1.20.4");
 
-        Optional<String> latest = ParchmentVersionService.INSTANCE.latestFor(minecraft, true);
+        Optional<String> latest = ParchmentVersionService.INSTANCE.latestFor(minecraft);
 
         assertTrue(latest.isPresent());
         assertTrue(latest.orElseThrow().startsWith(minecraft.id()));
@@ -25,7 +25,7 @@ public class ParchmentVersionServiceTest {
     void testListParchmentVersions() {
         MinecraftVersion minecraft = TestVersionData.ensureVersion("1.20.4");
 
-        List<String> versions = ParchmentVersionService.INSTANCE.listVersionsFor(minecraft, true);
+        List<String> versions = ParchmentVersionService.INSTANCE.listVersionsFor(minecraft);
 
         assertFalse(versions.isEmpty());
         assertTrue(versions.stream().allMatch(version -> version.startsWith(minecraft.id())));

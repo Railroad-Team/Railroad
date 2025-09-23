@@ -24,7 +24,8 @@ public class MappingChannelRegistry {
             return Collections.singletonList(minecraftVersion.id());
         }));
     public static final MappingChannel YARN = register("yarn", YarnVersionService.INSTANCE);
-    public static final MappingChannel PARCHMENT = register("parchment", ParchmentVersionService.INSTANCE);
+    public static final MappingChannel PARCHMENT = register("parchment", new MappingChannel.Builder()
+        .versionLister(ParchmentVersionService.INSTANCE::listVersionsFor));
 
     public static MappingChannel register(String id, MappingChannel.Builder channel) {
         return REGISTRY.register(id, channel.build(id));

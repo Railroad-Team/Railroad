@@ -19,16 +19,16 @@ public abstract class VersionService<T> {
     protected final Map<String, CacheEntry<List<T>>> cache = new ConcurrentHashMap<>();
 
     public VersionService(String serviceName) {
-        this(serviceName, Duration.ofHours(6), serviceName + "VersionService/1.0 (+https://railroadide.dev)", DEFAULT_HTTP_TIMEOUT);
+        this(serviceName, Duration.ofHours(6), serviceName + " VersionService/1.0 (+https://railroadide.dev)", DEFAULT_HTTP_TIMEOUT);
     }
 
     public VersionService(String serviceName, Duration ttl) {
-        this(serviceName, ttl, serviceName + "VersionService/1.0 (+https://railroadide.dev)", DEFAULT_HTTP_TIMEOUT);
+        this(serviceName, ttl, serviceName + " VersionService/1.0 (+https://railroadide.dev)", DEFAULT_HTTP_TIMEOUT);
     }
 
     public VersionService(String serviceName, Duration ttl, String userAgent, HttpClient httpClient) {
         this.ttl = Objects.requireNonNullElse(ttl, Duration.ofHours(6));
-        this.userAgent = Objects.requireNonNullElse(userAgent, serviceName + "VersionService/1.0");
+        this.userAgent = Objects.requireNonNullElse(userAgent, serviceName + " VersionService/1.0");
         this.httpClient = Objects.requireNonNullElse(httpClient, HttpClient.newBuilder()
                 .connectTimeout(DEFAULT_HTTP_TIMEOUT)
                 .build());
@@ -36,7 +36,7 @@ public abstract class VersionService<T> {
 
     public VersionService(String serviceName, Duration ttl, String userAgent, Duration httpTimeout) {
         this.ttl = Objects.requireNonNullElse(ttl, Duration.ofHours(6));
-        this.userAgent = Objects.requireNonNullElse(userAgent, serviceName + "VersionService/1.0");
+        this.userAgent = Objects.requireNonNullElse(userAgent, serviceName + " VersionService/1.0");
 
         HttpClient.Builder builder = HttpClient.newBuilder();
         if (httpTimeout != null)

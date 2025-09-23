@@ -289,7 +289,7 @@ public class Railroad extends Application {
             NeoforgeVersionService.INSTANCE.forceRefresh(true);
             YarnVersionService.INSTANCE.forceRefresh(true);
             MojmapVersionService.INSTANCE.forceRefresh(true);
-            ParchmentVersionService.INSTANCE.forceRefresh(true);
+            ParchmentVersionService.INSTANCE.listAllVersions();
             MCPVersionService.INSTANCE.forceRefresh(true);
 
             L18n.loadLanguage(SettingsHandler.getValue(Settings.LANGUAGE));
