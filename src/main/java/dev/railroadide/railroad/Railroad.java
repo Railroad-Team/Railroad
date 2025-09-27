@@ -30,7 +30,7 @@ import dev.railroadide.railroad.project.minecraft.mappings.YarnVersionService;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
-import dev.railroadide.railroad.settings.ui.themes.ThemeDownloadManager;
+import dev.railroadide.railroad.theme.ThemeDownloadManager;
 import dev.railroadide.railroad.utility.MacUtils;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.vcs.RepositoryManager;
@@ -201,8 +201,7 @@ public class Railroad extends Application {
      * @param content The content of the alert
      */
     public static void showErrorAlert(String title, String header, String content) {
-        showErrorAlert(title, header, content, buttonType -> {
-        });
+        showErrorAlert(title, header, content, buttonType -> {});
     }
 
     /**
@@ -310,6 +309,7 @@ public class Railroad extends Application {
 
             // Create a MacOS specific Menu Bar and Application Menu
             MacUtils.initialize();
+
             // Open setup and show the window
             primaryStage.setMinWidth(scene.getWidth() + 10);
             primaryStage.setMinHeight(scene.getHeight() + 10);
@@ -317,6 +317,7 @@ public class Railroad extends Application {
             primaryStage.setTitle("Railroad - 1.0.0(dev)");
             primaryStage.getIcons().add(new Image(getResourceAsStream("images/logo.png")));
             primaryStage.show();
+
             // Show the MacOS specific menu bar
             MacUtils.show(primaryStage);
 

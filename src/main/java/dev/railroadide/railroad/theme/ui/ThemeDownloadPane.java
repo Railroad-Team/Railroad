@@ -1,10 +1,12 @@
-package dev.railroadide.railroad.settings.ui.themes;
+package dev.railroadide.railroad.theme.ui;
 
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRFormContainer;
 import dev.railroadide.core.ui.RRListView;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.theme.Theme;
+import dev.railroadide.railroad.theme.ThemeDownloadManager;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -137,4 +139,4 @@ public class ThemeDownloadPane {
             });
         }).start();
     }
-} 
+}

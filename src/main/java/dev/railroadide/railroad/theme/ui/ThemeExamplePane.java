@@ -1,10 +1,11 @@
-package dev.railroadide.railroad.settings.ui.themes;
+package dev.railroadide.railroad.theme.ui;
 
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRFormSection;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.theme.ThemeDownloadManager;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

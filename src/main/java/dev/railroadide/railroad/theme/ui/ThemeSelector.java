@@ -1,10 +1,11 @@
-package dev.railroadide.railroad.settings.ui.themes;
+package dev.railroadide.railroad.theme.ui;
 
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRFormSection;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
+import dev.railroadide.railroad.theme.ThemeDownloadManager;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
