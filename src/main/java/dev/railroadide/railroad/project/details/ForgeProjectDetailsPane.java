@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.welcome.project.ui.details;
+package dev.railroadide.railroad.project.details;
 
 import dev.railroadide.core.form.Form;
 import dev.railroadide.core.form.FormComponent;
@@ -9,12 +9,12 @@ import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.DisplayTest;
 import dev.railroadide.railroad.project.License;
-import dev.railroadide.railroad.project.data.NeoforgeProjectData;
+import dev.railroadide.railroad.project.data.ForgeProjectData;
 import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
-import dev.railroadide.railroad.project.minecraft.forge.NeoforgeVersionService;
+import dev.railroadide.railroad.project.minecraft.forge.ForgeVersionService;
 import dev.railroadide.railroad.project.minecraft.mappings.channels.MappingChannel;
 import dev.railroadide.railroad.project.minecraft.mappings.channels.MappingChannelRegistry;
-import dev.railroadide.railroad.welcome.project.ui.creation.NeoforgeProjectCreationPane;
+import dev.railroadide.railroad.project.creation.ForgeProjectCreationPane;
 import dev.railroadide.railroad.welcome.project.ui.widget.StarableListCell;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -28,7 +28,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-public class NeoforgeProjectDetailsPane extends RRVBox {
+public class ForgeProjectDetailsPane extends RRVBox {
     private final StringProperty createdAtPath = new SimpleStringProperty(ProjectValidators.getRepairedPath(System.getProperty("user.home") + "\\"));
 
     private final ObjectProperty<TextField> projectNameField = new SimpleObjectProperty<>();
@@ -38,7 +38,7 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
     private final ObjectProperty<TextField> licenseCustomField = new SimpleObjectProperty<>();
 
     private final ObjectProperty<ComboBox<MinecraftVersion>> minecraftVersionComboBox = new SimpleObjectProperty<>();
-    private final ObjectProperty<ComboBox<String>> neoforgeVersionComboBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<ComboBox<String>> forgeVersionComboBox = new SimpleObjectProperty<>();
     private final ObjectProperty<TextField> modIdField = new SimpleObjectProperty<>();
     private final ObjectProperty<TextField> modNameField = new SimpleObjectProperty<>();
     private final ObjectProperty<TextField> mainClassField = new SimpleObjectProperty<>();
@@ -68,7 +68,7 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
     private final AtomicBoolean hasTypedInMainClass = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInArtifactId = new AtomicBoolean(false);
 
-    public NeoforgeProjectDetailsPane() {
+    public ForgeProjectDetailsPane() {
         TextFieldComponent projectNameComponent = FormComponent.textField("ProjectName", "railroad.project.creation.name")
             .required()
             .bindTextFieldTo(projectNameField)
@@ -93,26 +93,6 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
             .addTransformer(projectNameField, modNameField, text -> {
                 if (!hasTypedInModName.get() || modNameField.get().getText().isBlank())
                     return text;
-
-                return text;
-            })
-            .addTransformer(projectNameField, mainClassField, text -> {
-                if (!hasTypedInMainClass.get() || mainClassField.get().getText().isBlank()) {
-                    String[] words = text.split("[ _-]+");
-                    var pascalCase = new StringBuilder();
-                    for (String word : words) {
-                        if (word.isBlank())
-                            continue;
-
-                        pascalCase.append(word.substring(0, 1).toUpperCase(Locale.ROOT)).append(word.substring(1));
-                    }
-                    return pascalCase.toString().replaceAll("[^a-zA-Z0-9]", "");
-                }
-                return text;
-            })
-            .addTransformer(projectNameField, artifactIdField, text -> {
-                if (!hasTypedInArtifactId.get() || artifactIdField.get().getText().isBlank())
-                    return text.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9-]", "");
 
                 return text;
             })
@@ -150,7 +130,7 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
             .validator(ProjectValidators::validateCustomLicense)
             .build();
 
-        List<MinecraftVersion> supportedVersions = resolveNeoforgeMinecraftVersions();
+        List<MinecraftVersion> supportedVersions = resolveForgeMinecraftVersions();
         MinecraftVersion latestVersion = MinecraftVersion.determineBestFit(supportedVersions);
         ComboBoxComponent<MinecraftVersion> minecraftVersionComponent = FormComponent.comboBox("MinecraftVersion", "railroad.project.creation.minecraft_version", MinecraftVersion.class)
             .required()
@@ -160,29 +140,29 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
             .keyFunction(MinecraftVersion::id)
             .valueOfFunction(string -> MinecraftVersion.fromId(string).orElse(null))
             .translate(false)
-            .addTransformer(minecraftVersionComboBox, neoforgeVersionComboBox, version -> {
+            .addTransformer(minecraftVersionComboBox, forgeVersionComboBox, version -> {
                 if(version == null) {
-                    Railroad.LOGGER.error("Minecraft version is null when transforming for Neoforge versions");
+                    Railroad.LOGGER.error("Minecraft version is null when transforming for Forge versions");
                     return null;
                 }
 
-                ComboBox<String> comboBox = neoforgeVersionComboBox.get();
+                ComboBox<String> comboBox = forgeVersionComboBox.get();
                 if (comboBox == null) {
-                    Railroad.LOGGER.error("Neoforge version ComboBox is null when transforming for Minecraft version {}", version);
+                    Railroad.LOGGER.error("Forge version ComboBox is null when transforming for Minecraft version {}", version);
                     return null;
                 }
 
-                List<String> newVersions = NeoforgeVersionService.INSTANCE.listVersionsFor(version);
+                List<String> newVersions = ForgeVersionService.INSTANCE.listVersionsFor(version);
                 comboBox.getItems().setAll(newVersions);
                 if (newVersions.isEmpty()) {
-                    Railroad.LOGGER.error("No Neoforge versions found for Minecraft version {}", version);
+                    Railroad.LOGGER.error("No Forge versions found for Minecraft version {}", version);
                     return null;
                 }
 
-                String latestFor = NeoforgeVersionService.INSTANCE.latestFor(version).orElse(null);
+                String latestFor = ForgeVersionService.INSTANCE.latestFor(version).orElse(null);
                 if (latestFor == null) {
-                    Railroad.LOGGER.error("No latest Neoforge version found for Minecraft version {}", version);
-                    latestFor = newVersions.getFirst();
+                    Railroad.LOGGER.error("No latest Forge version found for Minecraft version {}", version);
+                    latestFor = newVersions.getLast();
                 }
 
                 return latestFor;
@@ -206,22 +186,22 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
                     return null;
                 }
 
-                return MappingChannelRegistry.PARCHMENT;
+                return MappingChannelRegistry.MOJMAP;
             })
             .build();
 
-        ComboBoxComponent<String> neoforgeVersionComponent = FormComponent.comboBox("NeoforgeVersion", "railroad.project.creation.neoforge_version", String.class)
+        ComboBoxComponent<String> forgeVersionComponent = FormComponent.comboBox("ForgeVersion", "railroad.project.creation.forge_version", String.class)
             .required()
-            .items(NeoforgeVersionService.INSTANCE.listVersionsFor(latestVersion))
-            .defaultValue(() -> NeoforgeVersionService.INSTANCE.latestFor(latestVersion).orElse(null))
-            .bindComboBoxTo(neoforgeVersionComboBox)
+            .items(ForgeVersionService.INSTANCE.listVersionsFor(latestVersion))
+            .defaultValue(() -> ForgeVersionService.INSTANCE.latestFor(latestVersion).orElse(null))
+            .bindComboBoxTo(forgeVersionComboBox)
             .cellFactory(param -> new StarableListCell<>(
-                NeoforgeVersionService::isPrerelease,
-                version -> Objects.equals(version, NeoforgeVersionService.INSTANCE.latestFor(getSelectedMinecraftVersion()).orElse(null)),
+                ForgeVersionService.INSTANCE::isRecommended,
+                version -> Objects.equals(version, ForgeVersionService.INSTANCE.latestFor(getSelectedMinecraftVersion()).orElse(null)),
                 Function.identity()))
             .buttonCell(new StarableListCell<>(
-                NeoforgeVersionService::isPrerelease,
-                version -> Objects.equals(version, NeoforgeVersionService.INSTANCE.latestFor(getSelectedMinecraftVersion()).orElse(null)),
+                ForgeVersionService.INSTANCE::isRecommended,
+                version -> Objects.equals(version, ForgeVersionService.INSTANCE.latestFor(getSelectedMinecraftVersion()).orElse(null)),
                 Function.identity()))
             .translate(false)
             .build();
@@ -256,6 +236,12 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
                 else if (hasTypedInModName.get() && modNameField.get().getText().isBlank())
                     hasTypedInModName.set(false);
             })
+            .addTransformer(modNameField, mainClassField, text -> {
+                if (!hasTypedInMainClass.get() || mainClassField.get().getText().isBlank())
+                    return text;
+
+                return text;
+            })
             .build();
 
         TextFieldComponent mainClassComponent = FormComponent.textField("MainClass", "railroad.project.creation.main_class")
@@ -283,10 +269,19 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
             .bindCheckBoxTo(genRunFoldersCheckBox)
             .build();
 
+
         ComboBoxComponent<MappingChannel> mappingChannelComponent = FormComponent.comboBox("MappingChannel", "railroad.project.creation.mapping_channel", MappingChannel.class)
             .required()
             .items(MappingChannelRegistry.findValidMappingChannels(getSelectedMinecraftVersion()))
-            .defaultValue(() -> MappingChannelRegistry.PARCHMENT)
+            .defaultValue(() -> {
+                MinecraftVersion minecraftVersion = getSelectedMinecraftVersion();
+                if (minecraftVersion == null)
+                    return MappingChannelRegistry.MOJMAP;
+
+                return minecraftVersion.compareTo(MinecraftVersion.fromId("1.14.4").orElseThrow()) < 0 ?
+                    MappingChannelRegistry.MCP :
+                    MappingChannelRegistry.MOJMAP;
+            })
             .bindComboBoxTo(mappingChannelComboBox)
             .keyFunction(MappingChannel::translationKey)
             .valueOfFunction(MappingChannelRegistry.REGISTRY::get)
@@ -359,7 +354,7 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
 
                 return versions.getLast();
             })
-            .items(MappingChannelRegistry.PARCHMENT.listVersionsFor(getSelectedMinecraftVersion()))
+            .items(MappingChannelRegistry.MOJMAP.listVersionsFor(getSelectedMinecraftVersion()))
             .build();
 
         TextFieldComponent authorComponent = FormComponent.textField("Author", "railroad.project.creation.author")
@@ -411,9 +406,6 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
 
         CheckBoxComponent clientSideOnlyComponent = FormComponent.checkBox("ClientSideOnly", "railroad.project.creation.client_side_only")
             .bindCheckBoxTo(clientSideOnlyCheckBox)
-            .listener((node, observable, oldValue, newValue) -> {
-                displayTestComboBox.get().setValue(newValue ? DisplayTest.IGNORE_ALL_VERSION : DisplayTest.MATCH_VERSION);
-            })
             .build();
 
         TextFieldComponent groupIdComponent = FormComponent.textField("GroupId", "railroad.project.creation.group_id")
@@ -456,7 +448,7 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
             .appendSection(FormSection.create("railroad.project.creation.section.minecraft")
                 .borderColor(Color.DARKGRAY)
                 .appendComponent(minecraftVersionComponent)
-                .appendComponent(neoforgeVersionComponent)
+                .appendComponent(forgeVersionComponent)
                 .appendComponent(modIdComponent)
                 .appendComponent(modNameComponent)
                 .appendComponent(mainClassComponent)
@@ -485,10 +477,10 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
             .disableResetButton()
             .onSubmit((theForm, formData) -> {
                 if (theForm.validate()) {
-                    NeoforgeProjectData data = createData(formData);
-                    getScene().setRoot(new NeoforgeProjectCreationPane(data));
+                    ForgeProjectData data = createData(formData);
+                    getScene().setRoot(new ForgeProjectCreationPane(data));
                 } else {
-                    theForm.runValidation();
+                    theForm.runValidation(); // Show validation errors
                 }
             })
             .build();
@@ -497,18 +489,6 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
 
         projectPathComponent.getComponent().addInformationLabel("railroad.project.creation.location.info", createdAtPath, createdAtPath.get());
     }
-
-    private List<MinecraftVersion> resolveNeoforgeMinecraftVersions() {
-        return NeoforgeVersionService.INSTANCE.listAllVersions()
-            .stream()
-            .map(NeoforgeVersionService::toMinecraftVersion)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .distinct()
-            .sorted(Comparator.reverseOrder())
-            .toList();
-    }
-
 
     private MinecraftVersion getSelectedMinecraftVersion() {
         MinecraftVersion version = minecraftVersionComboBox.get().getValue();
@@ -522,14 +502,14 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
         return items.getFirst();
     }
 
-    protected static NeoforgeProjectData createData(FormData formData) {
+    protected static ForgeProjectData createData(FormData formData) {
         String projectName = formData.getString("ProjectName");
         var projectPath = Path.of(formData.getString("ProjectPath"));
         boolean createGit = formData.getBoolean("CreateGit");
         License license = formData.getEnum("License", License.class);
         String licenseCustom = license == License.CUSTOM ? formData.getString("CustomLicense") : null;
         MinecraftVersion minecraftVersion = formData.get("MinecraftVersion", MinecraftVersion.class);
-        String neoforgeVersion = formData.get("NeoforgeVersion", String.class);
+        String forgeVersion = formData.get("ForgeVersion", String.class);
         String modId = formData.getString("ModId");
         String modName = formData.getString("ModName");
         String mainClass = formData.getString("MainClass");
@@ -550,10 +530,21 @@ public class NeoforgeProjectDetailsPane extends RRVBox {
         String artifactId = formData.getString("ArtifactId");
         String version = formData.getString("Version");
 
-        return new NeoforgeProjectData(projectName, projectPath, createGit, license, licenseCustom,
-            minecraftVersion, neoforgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer, genRunFolders,
+        return new ForgeProjectData(projectName, projectPath, createGit, license, licenseCustom,
+            minecraftVersion, forgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer, genRunFolders,
             mappingChannel, mappingVersion,
             author, credits, description, issues, updateJsonUrl, displayUrl, displayTest, clientSideOnly,
             groupId, artifactId, version);
+    }
+
+    private List<MinecraftVersion> resolveForgeMinecraftVersions() {
+        return ForgeVersionService.INSTANCE.listAllVersions()
+            .stream()
+            .map(ForgeVersionService::toMinecraftVersion)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .distinct()
+            .sorted(Comparator.reverseOrder())
+            .toList();
     }
 }

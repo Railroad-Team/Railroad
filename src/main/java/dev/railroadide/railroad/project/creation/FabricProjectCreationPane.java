@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.welcome.project.ui.creation;
+package dev.railroadide.railroad.project.creation;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit;
 
 public class FabricProjectCreationPane extends RRBorderPane {
     private static final String EXAMPLE_MOD_URL = "https://github.com/FabricMC/fabric-example-mod/archive/refs/heads/%s.zip";
-    private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/main/templates/fabric/%s/template_build.gradle";
+    private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/dev/templates/fabric/%s/template_build.gradle";
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private final RRVBox centerBox = new RRVBox(20);
@@ -384,7 +384,7 @@ public class FabricProjectCreationPane extends RRBorderPane {
             FileUtils.updateKeyValuePair("loader_version", data.fabricLoaderVersion().loaderVersion().version(), gradlePropertiesFile);
             FileUtils.updateKeyValuePair("fabric_version", data.fapiVersion().orElse(""), gradlePropertiesFile);
             if (data.mappingChannel() == MappingChannelRegistry.YARN) {
-                FileUtils.updateKeyValuePair("yarn_mappings", version.id() + "+" + data.mappingVersion(), gradlePropertiesFile);
+                FileUtils.updateKeyValuePair("yarn_mappings", data.mappingVersion(), gradlePropertiesFile);
             } else if (data.mappingChannel() == MappingChannelRegistry.PARCHMENT) {
                 Files.writeString(gradlePropertiesFile, "parchment_version=" + data.mappingVersion() + "\n", StandardOpenOption.APPEND);
             }

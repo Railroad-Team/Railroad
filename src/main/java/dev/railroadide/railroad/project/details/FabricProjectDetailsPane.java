@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.welcome.project.ui.details;
+package dev.railroadide.railroad.project.details;
 
 import dev.railroadide.core.form.Form;
 import dev.railroadide.core.form.FormComponent;
@@ -15,7 +15,7 @@ import dev.railroadide.railroad.project.minecraft.fabric.FabricLoaderVersionServ
 import dev.railroadide.railroad.project.minecraft.fabric.FabricLoaderVersionService.FabricLoaderVersion;
 import dev.railroadide.railroad.project.minecraft.mappings.channels.MappingChannel;
 import dev.railroadide.railroad.project.minecraft.mappings.channels.MappingChannelRegistry;
-import dev.railroadide.railroad.welcome.project.ui.creation.FabricProjectCreationPane;
+import dev.railroadide.railroad.project.creation.FabricProjectCreationPane;
 import dev.railroadide.railroad.welcome.project.ui.widget.StarableListCell;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;

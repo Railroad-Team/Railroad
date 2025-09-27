@@ -43,7 +43,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
@@ -559,7 +560,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
         return TreeSitterJavaSyntaxHighlighting.computeHighlighting(text);
     }
 
-        private record ProblemDiagnostic(Kind kind, int start, int end, long line, long column,
+    private record ProblemDiagnostic(Kind kind, int start, int end, long line, long column,
                                      String message) implements Diagnostic<JavaFileObject> {
         @Override
         public Kind getKind() {

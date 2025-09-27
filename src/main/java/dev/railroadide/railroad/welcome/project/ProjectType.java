@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.welcome.project;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.welcome.project.ui.details.FabricProjectDetailsPane;
-import dev.railroadide.railroad.welcome.project.ui.details.ForgeProjectDetailsPane;
-import dev.railroadide.railroad.welcome.project.ui.details.NeoforgeProjectDetailsPane;
+import dev.railroadide.railroad.project.details.FabricProjectDetailsPane;
+import dev.railroadide.railroad.project.details.ForgeProjectDetailsPane;
+import dev.railroadide.railroad.project.details.NeoforgeProjectDetailsPane;
 import javafx.scene.Node;
 import javafx.scene.image.Image;
 import lombok.Getter;

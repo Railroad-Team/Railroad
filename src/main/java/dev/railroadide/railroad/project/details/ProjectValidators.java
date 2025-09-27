@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.welcome.project.ui.details;
+package dev.railroadide.railroad.project.details;
 
 import dev.railroadide.core.form.ValidationResult;
 import dev.railroadide.core.utility.StringUtils;
@@ -25,9 +25,6 @@ public class ProjectValidators {
         if (text == null || text.isBlank())
             return ValidationResult.error("railroad.project.creation.location.error.required");
 
-        if (!text.matches(".*[a-zA-Z0-9]"))
-            return ValidationResult.error("railroad.project.creation.location.error.invalid_characters");
-
         try {
             Path path = Path.of(text);
             if (Files.notExists(path)) {
@@ -44,6 +41,7 @@ public class ProjectValidators {
                 return ValidationResult.error("railroad.project.creation.location.error.not_directory");
 
             try (var stream = Files.newDirectoryStream(path)) {
+                // TODO: Do not validate if the directory is empty because we're going to create a new directory inside it
                 if (stream.iterator().hasNext())
                     return ValidationResult.warning("railroad.project.creation.location.warning.not_empty");
             } catch (IOException ignored) {
@@ -151,9 +149,6 @@ public class ProjectValidators {
 
     public static ValidationResult validateDescription(TextArea area) {
         String text = area.getText();
-        if (text == null || text.isBlank())
-            return ValidationResult.error("railroad.project.creation.description.error.required");
-
         if (text.length() > 2048)
             return ValidationResult.error("railroad.project.creation.description.error.length_long");
 

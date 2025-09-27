@@ -201,6 +201,8 @@ railroad.project.creation.credits.prompt=Enter credits
 
 railroad.project.creation.description=Description
 railroad.project.creation.description.prompt=Enter description
+railroad.project.creation.description.error.length_long=Description is too long (max 2048 characters)
+railroad.project.creation.description.error.length_short=Description is too short (min 10 characters)
 
 # URLs
 railroad.project.creation.issues=Issues URL
