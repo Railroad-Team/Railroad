@@ -34,7 +34,8 @@ public class ProjectValidators {
                 // Create the directory if it doesn't exist
                 try {
                     Files.createDirectories(path);
-                } catch (IOException e) {
+                    Files.deleteIfExists(path);
+                } catch (IOException ignored) {
                     return ValidationResult.error("railroad.project.creation.location.error.cannot_create");
                 }
             }
