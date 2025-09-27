@@ -1,15 +1,20 @@
 package dev.railroadide.railroad.window;
 
+import dev.railroadide.railroad.AppResources;
+import dev.railroadide.railroad.theme.ThemeManager;
+import dev.railroadide.railroad.utility.MacUtils;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -18,7 +23,7 @@ import java.util.function.Consumer;
  */
 public class WindowManager {
     @Getter
-    private final Stage primaryStage;
+    private Stage primaryStage;
     @Getter
     private Scene primaryScene;
 
@@ -33,16 +38,24 @@ public class WindowManager {
         this.primaryStage = primaryStage;
     }
 
+    public WindowManager() {
+    }
+
+    public void setPrimaryStage(@NotNull Stage primaryStage) {
+        Objects.requireNonNull(primaryStage, "Primary stage cannot be null");
+        this.primaryStage = primaryStage;
+    }
+
     /**
      * Show the primary application window with the given scene.
      * The window size is set to 75% of the screen size by default.
      *
-     * @param scene      Main content scene
-     * @param title      Window title
-     * @param iconStream Optional icon image stream
+     * @param scene Main content scene
+     * @param title Window title
      */
-    public void showPrimary(Scene scene, String title, InputStream iconStream) {
+    public void showPrimary(Scene scene, String title) {
         this.primaryScene = scene;
+        ThemeManager.apply(this.primaryScene);
 
         // Calculate window size based on screen
         Screen screen = Screen.getPrimary();
@@ -53,9 +66,7 @@ public class WindowManager {
         double windowH = screenH * 0.75;
 
         primaryStage.setTitle(title);
-        if (iconStream != null) {
-            primaryStage.getIcons().add(new Image(iconStream));
-        }
+        primaryStage.getIcons().add(AppResources.icon());
 
         primaryStage.setScene(scene);
         primaryStage.setMinWidth(windowW * 0.5);
@@ -63,7 +74,13 @@ public class WindowManager {
         primaryStage.setWidth(windowW);
         primaryStage.setHeight(windowH);
 
+        // Create a MacOS specific Menu Bar and Application Menu
+        MacUtils.initialize();
+
         primaryStage.show();
+
+        // Show the MacOS specific menu bar
+        MacUtils.show(primaryStage);
     }
 
     /**

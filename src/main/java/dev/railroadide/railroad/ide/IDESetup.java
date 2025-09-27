@@ -12,6 +12,7 @@ import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.localized.LocalizedMenu;
 import dev.railroadide.core.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.ui.ConsolePane;
 import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
@@ -22,6 +23,9 @@ import dev.railroadide.railroad.plugin.ui.PluginsPane;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
+import dev.railroadide.railroad.theme.ThemeManager;
+import dev.railroadide.railroad.window.WindowBuilder;
+import dev.railroadide.railroadpluginapi.events.ProjectEvent;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
@@ -31,13 +35,11 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
-import javafx.stage.Screen;
 import javafx.stage.Stage;
 import org.fxmisc.richtext.CodeArea;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
@@ -53,13 +55,15 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class IDESetup {
+    private static boolean isSwitchingToIDE = false;
+
     /**
      * Create a new IDE window for the given project.
      *
      * @param project The project to create the IDE window for
      * @return The created IDE window
      */
-    public static Stage createIDEWindow(Project project) {
+    public static Scene createIDEScene(Project project) {
         var root = new RRBorderPane();
         root.setTop(createMenuBar());
 
@@ -86,51 +90,83 @@ public class IDESetup {
         root.setCenter(mainSplit);
 
         root.setLeft(buildPaneIconBar(
-                leftPane,
-                mainSplit,
-                Orientation.VERTICAL,
-                0,
-                Map.of("Project", FontAwesomeSolid.FOLDER.getDescription())
+            leftPane,
+            mainSplit,
+            Orientation.VERTICAL,
+            0,
+            Map.of("Project", FontAwesomeSolid.FOLDER.getDescription())
         ));
 
         root.setRight(buildPaneIconBar(
-                rightPane,
-                mainSplit,
-                Orientation.VERTICAL,
-                2,
-                Map.of("Properties", FontAwesomeSolid.INFO_CIRCLE.getDescription())
+            rightPane,
+            mainSplit,
+            Orientation.VERTICAL,
+            2,
+            Map.of("Properties", FontAwesomeSolid.INFO_CIRCLE.getDescription())
         ));
 
         var bottomBar = new RRVBox();
         var bottomIcons = buildPaneIconBar(
-                consolePane,
-                centerBottomSplit,
-                Orientation.HORIZONTAL,
-                1,
-                Map.of(
-                        "Console", FontAwesomeSolid.PLAY_CIRCLE.getDescription(),
-                        "Terminal", FontAwesomeSolid.TERMINAL.getDescription()
-                )
+            consolePane,
+            centerBottomSplit,
+            Orientation.HORIZONTAL,
+            1,
+            Map.of(
+                "Console", FontAwesomeSolid.PLAY_CIRCLE.getDescription(),
+                "Terminal", FontAwesomeSolid.TERMINAL.getDescription()
+            )
         );
         bottomBar.getChildren().addAll(
-                bottomIcons,
-                new StatusBarPane()
+            bottomIcons,
+            new StatusBarPane()
         );
         root.setBottom(bottomBar);
 
-        var scene = new Scene(root, Screen.getPrimary().getVisualBounds().getWidth() * 0.8,
-                Screen.getPrimary().getVisualBounds().getHeight() * 0.8);
-        Railroad.handleStyles(scene);
-
         KeybindHandler.registerCapture(KeybindContexts.of("railroad:ide"), root);
+        return new Scene(root);
+    }
 
-        var stage = new Stage();
-        stage.setTitle("Railroad IDE – " + project.getAlias());
-        stage.setMaximized(true);
-        stage.getIcons().add(new Image(Railroad.getResourceAsStream("images/logo.png")));
-        stage.setScene(scene);
-        stage.show();
-        return stage;
+    /**
+     * Switch to the IDE window
+     * <p>
+     * This method switches the window to the IDE window
+     * and sets the current project to the provided project
+     * and notifies the plugins of the activity
+     *
+     * @param project The project to switch to
+     */
+    public static void switchToIDE(Project project) {
+        if (isSwitchingToIDE)
+            return; // Prevent multiple simultaneous IDE window creations
+
+        isSwitchingToIDE = true;
+
+        Platform.runLater(() -> {
+            try {
+                Railroad.WINDOW_MANAGER.getPrimaryStage().close();
+
+                Scene ideScene = IDESetup.createIDEScene(project);
+                Stage ideStage = WindowBuilder.create()
+                    .title(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion() + " - " + project.getAlias())
+                    .scene(ideScene)
+                    .owner(null)
+                    .resizable(true)
+                    .maximized(true)
+                    .build();
+
+                Railroad.WINDOW_MANAGER.setPrimaryStage(ideStage);
+
+                try {
+                    Railroad.PROJECT_MANAGER.setCurrentProject(project);
+                    Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.OPENED));
+                } finally {
+                    isSwitchingToIDE = false;
+                }
+            } catch (Exception exception) {
+                isSwitchingToIDE = false;
+                throw exception;
+            }
+        });
     }
 
     private static MenuBar createMenuBar() {
@@ -223,11 +259,11 @@ public class IDESetup {
         settingsItem.setGraphic(new FontIcon(FontAwesomeSolid.COG));
         settingsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.SHORTCUT_DOWN));
         settingsItem.setOnAction($ -> Platform.runLater(() -> {
-            var settingsStage = new Stage();
+            var settingsStage = new Stage(); // TODO: Replace with WindowBuilder
             settingsStage.setTitle("Settings");
             var settingsPane = new SettingsPane();
             var scene = new Scene(settingsPane, 1000, 600);
-            Railroad.handleStyles(scene);
+            ThemeManager.apply(scene);
             settingsStage.setScene(scene);
             settingsStage.show();
         }));
@@ -235,11 +271,11 @@ public class IDESetup {
         var pluginsItem = new LocalizedMenuItem("railroad.menu.tools.plugins");
         pluginsItem.setGraphic(new FontIcon(FontAwesomeSolid.PUZZLE_PIECE));
         pluginsItem.setOnAction($ -> Platform.runLater(() -> {
-            var pluginsStage = new Stage();
+            var pluginsStage = new Stage(); // TODO: Replace with WindowBuilder
             pluginsStage.setTitle("Plugins");
             var pluginsPane = new PluginsPane(PluginManager.getEnabledPlugins());
             var scene = new Scene(pluginsPane, 1000, 600);
-            Railroad.handleStyles(scene);
+            ThemeManager.apply(scene);
             pluginsStage.setScene(scene);
             pluginsStage.show();
         }));
@@ -300,11 +336,11 @@ public class IDESetup {
      * the given pane in the given SplitPane at the given position index.
      */
     private static Node buildPaneIconBar(
-            DetachableTabPane pane,
-            SplitPane split,
-            Orientation orientation,
-            int originalIndex,
-            Map<String, String> iconsByName
+        DetachableTabPane pane,
+        SplitPane split,
+        Orientation orientation,
+        int originalIndex,
+        Map<String, String> iconsByName
     ) {
         var bar = orientation == Orientation.HORIZONTAL ? new RRHBox(4) : new RRVBox(4);
         bar.getStyleClass().add("icon-bar-" + orientation.name().toLowerCase(Locale.ROOT));

@@ -174,7 +174,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @param toComponentFunction the function to set the value to the component
          * @param valueMapper         the function to map the value
          * @return this builder
-         * @type W - the type of the value
+         * @param <W> the type of the value
          */
         public <W> Builder addTransformer(ObservableValue<CheckBox> fromComponent, Consumer<W> toComponentFunction, Function<Boolean, W> valueMapper) {
             transformers.add(new FormTransformer<>(fromComponent, CheckBox::isSelected, toComponentFunction, valueMapper));
@@ -188,8 +188,8 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @param toComponent   the observable value to set the value to
          * @param valueMapper   the function to map the value
          * @return this builder
-         * @type U - the type of the component
-         * @type W - the type of the value
+         * @param <U> the type of the component
+         * @param <W> the type of the value
          */
         public <U extends Node, W> Builder addTransformer(ObservableValue<CheckBox> fromComponent, ObservableValue<U> toComponent, Function<Boolean, W> valueMapper) {
             this.transformers.add(new FormTransformer<>(fromComponent, CheckBox::isSelected, value -> {

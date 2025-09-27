@@ -8,6 +8,7 @@ import dev.railroadide.core.utility.JsonSerializable;
 import dev.railroadide.core.vcs.Repository;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.config.ConfigHandler;
+import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
@@ -144,7 +145,7 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
         Railroad.LOGGER.debug("Opening project: {}", getPathString());
         setLastOpened(System.currentTimeMillis());
         Railroad.PROJECT_MANAGER.updateProjectInfo(this);
-        Railroad.switchToIDE(this);
+        IDESetup.switchToIDE(this);
         discoverFacets();
     }
 

@@ -2,6 +2,7 @@ package dev.railroadide.railroad.window;
 
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.theme.ThemeManager;
+import dev.railroadide.railroad.utility.MacUtils;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Modality;
@@ -18,6 +19,7 @@ public class WindowBuilder {
     private Window owner;
     private Modality modality = Modality.NONE;
     private boolean resizable = true;
+    private boolean maximized = false;
     private boolean showImmediately = true;
     private Consumer<Stage> onInit;
 
@@ -56,6 +58,11 @@ public class WindowBuilder {
         return this;
     }
 
+    public WindowBuilder maximized(boolean maximized) {
+        this.maximized = maximized;
+        return this;
+    }
+
     public WindowBuilder showImmediately(boolean show) {
         this.showImmediately = show;
         return this;
@@ -73,6 +80,7 @@ public class WindowBuilder {
         Stage stage = new Stage();
         stage.setTitle(title);
         stage.setResizable(resizable);
+        stage.setMaximized(maximized);
 
         if (scene != null) {
             stage.setScene(scene);
@@ -92,12 +100,16 @@ public class WindowBuilder {
             onInit.accept(stage);
         }
 
-        if (showImmediately) {
-            if (modality == Modality.APPLICATION_MODAL || modality == Modality.WINDOW_MODAL) {
-                stage.showAndWait();
-            } else {
-                stage.show();
-            }
+        // Create a MacOS specific Menu Bar and Application Menu
+        MacUtils.initialize();
+
+        stage.show();
+
+        // Show the MacOS specific menu bar
+        MacUtils.show(stage);
+
+        if (showImmediately && (modality == Modality.APPLICATION_MODAL || modality == Modality.WINDOW_MODAL)) {
+            stage.showAndWait(); // TODO: Confirm that this is actually possible to do.
         }
 
         return stage;

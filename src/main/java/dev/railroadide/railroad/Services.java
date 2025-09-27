@@ -1,5 +1,10 @@
 package dev.railroadide.railroad;
 
+import com.google.gson.Gson;
+import dev.railroadide.core.localization.LocalizationService;
+import dev.railroadide.core.localization.LocalizationServiceLocator;
+import dev.railroadide.core.logger.LoggerService;
+import dev.railroadide.core.logger.LoggerServiceLocator;
 import dev.railroadide.railroad.ide.DefaultIDEStateService;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroadpluginapi.services.ApplicationInfoService;
@@ -35,6 +40,25 @@ public class Services {
 
     public static final DefaultDocumentEditorStateService DOCUMENT_EDITOR_STATE = new DefaultDocumentEditorStateService();
 
+    public static final LocalizationService LOCALIZATION_SERVICE = new LocalizationService() {
+        @Override
+        public String get(String key, Object... args) {
+            return L18n.localize(key, args);
+        }
+
+        @Override
+        public javafx.beans.property.ObjectProperty<? extends dev.railroadide.core.localization.Language> currentLanguageProperty() {
+            return L18n.currentLanguageProperty();
+        }
+
+        @Override
+        public boolean isKeyValid(String key) {
+            return L18n.isKeyValid(key);
+        }
+    };
+
+    public static final LoggerService LOGGER = () -> Railroad.LOGGER;
+
     /**
      * Retrieves a service instance by its class type.
      *
@@ -57,6 +81,12 @@ public class Services {
             return (T) Railroad.getHostServicess();
         } else if (serviceClass == DocumentEditorStateService.class) {
             return (T) DOCUMENT_EDITOR_STATE;
+        } else if(serviceClass == LocalizationService.class) {
+            return (T) LOCALIZATION_SERVICE;
+        } else if (serviceClass == LoggerService.class) {
+            return (T) LOGGER;
+        } else if(serviceClass == Gson.class) {
+            return (T) Railroad.GSON;
         }
 
         throw new IllegalArgumentException("Service " + serviceClass.getName() + " is not available.");
