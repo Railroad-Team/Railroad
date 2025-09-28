@@ -4,6 +4,7 @@ import dev.railroadide.core.ui.RRMenuBar;
 import dev.railroadide.core.utility.OperatingSystem;
 import dev.railroadide.nsmenufx.MenuToolkit;
 import dev.railroadide.nsmenufx.dialogs.about.AboutStageBuilder;
+import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
 import javafx.application.Platform;
@@ -28,7 +29,7 @@ public class MacUtils {
                 .withAppName("Railroad")
                 .withCopyright("GNU General Public License v3.0")
                 .withVersionString("1.0.0")
-                .withImage(new Image(Railroad.getResourceAsStream("images/logo.png")));
+                .withImage(new Image(AppResources.getResourceAsStream("images/logo.png")));
 
         Menu appMenu = toolkit.createDefaultApplicationMenu("Railroad", builder.build(), actionEvent -> {
             Platform.runLater(() -> {

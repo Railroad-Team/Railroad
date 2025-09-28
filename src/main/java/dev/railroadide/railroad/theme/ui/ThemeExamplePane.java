@@ -3,6 +3,7 @@ package dev.railroadide.railroad.theme.ui;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRFormSection;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.theme.ThemeDownloadManager;
@@ -273,15 +274,15 @@ public class ThemeExamplePane {
     private void applyThemeToPreview() {
         previewScene.getStylesheets().clear();
 
-        String baseTheme = Railroad.getResource("styles/base.css").toExternalForm();
-        String components = Railroad.getResource("styles/components.css").toExternalForm();
-        String themes = Railroad.getResource("styles/themes-setting.css").toExternalForm();
+        String baseTheme = AppResources.getResource("styles/base.css").toExternalForm();
+        String components = AppResources.getResource("styles/components.css").toExternalForm();
+        String themes = AppResources.getResource("styles/themes-setting.css").toExternalForm();
         previewScene.getStylesheets().add(baseTheme);
         previewScene.getStylesheets().add(components);
         previewScene.getStylesheets().add(themes);
 
         if (themeName.startsWith("default")) {
-            String themePath = Railroad.getResource("styles/" + themeName).toExternalForm();
+            String themePath = AppResources.getResource("styles/" + themeName).toExternalForm();
             previewScene.getStylesheets().add(themePath);
         } else {
             Path themeFile = ThemeDownloadManager.getThemesDirectory().resolve(themeName);

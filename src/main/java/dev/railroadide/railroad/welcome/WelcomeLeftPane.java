@@ -4,7 +4,7 @@ import dev.railroadide.core.ui.RRListView;
 import dev.railroadide.core.ui.RRNavigationItem;
 import dev.railroadide.core.ui.RRSidebar;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
-import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.AppResources;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;
@@ -36,7 +36,7 @@ public class WelcomeLeftPane extends RRSidebar {
         topBox.setPadding(new Insets(0, 0, 8, 0));
         topBox.setPrefHeight(110);
 
-        var logo = new ImageView(new Image(Railroad.getResourceAsStream("images/logo.png"), 80, 80, true, true));
+        var logo = new ImageView(new Image(AppResources.getResourceAsStream("images/logo.png"), 80, 80, true, true));
         var appName = new LocalizedLabel("railroad.app.name");
         appName.getStyleClass().add("welcome-app-name");
         var appVersion = new LocalizedLabel("railroad.app.version");

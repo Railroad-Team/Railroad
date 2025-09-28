@@ -1,7 +1,6 @@
 package dev.railroadide.core.form.impl;
 
 import dev.railroadide.core.form.*;
-import dev.railroadide.core.form.*;
 import dev.railroadide.core.form.ui.FormTextArea;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;

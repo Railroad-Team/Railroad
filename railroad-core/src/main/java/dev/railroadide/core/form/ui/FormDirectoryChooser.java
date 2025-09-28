@@ -3,7 +3,6 @@ package dev.railroadide.core.form.ui;
 import dev.railroadide.core.ui.BrowseButton;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRTextField;
-import dev.railroadide.core.ui.localized.LocalizedTooltip;
 import javafx.scene.Scene;
 import javafx.scene.paint.Color;
 import lombok.Getter;
@@ -23,7 +22,7 @@ import java.util.Map;
 public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryChooser.TextFieldWithButton> {
     /**
      * Constructs a new FormDirectoryChooser with the specified configuration.
-     * 
+     *
      * @param labelKey the localization key for the label text
      * @param required whether the directory chooser is required
      * @param defaultPath the default path to display in the text field, or null for empty
@@ -35,7 +34,7 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
 
     /**
      * Creates the parameters map for the directory chooser component.
-     * 
+     *
      * @param defaultPath the default path to display
      * @param includeButton whether to include a browse button
      * @return a map containing the component parameters
@@ -53,7 +52,7 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
 
     /**
      * Creates the primary directory chooser component with the specified parameters.
-     * 
+     *
      * @param params a map containing the parameters for the directory chooser
      * @return a new TextFieldWithButton instance with the specified configuration
      */
@@ -99,7 +98,7 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
 
         /**
          * Constructs a new TextFieldWithButton with the specified components.
-         * 
+         *
          * @param textField the text field for displaying the selected directory path
          * @param browseButton the browse button for opening the directory chooser, or null if not needed
          */

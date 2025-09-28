@@ -1,7 +1,8 @@
 package dev.railroadide.core.ui.localized;
 
-import dev.railroadide.core.localization.LocalizationServiceLocator;
+import dev.railroadide.core.localization.LocalizationService;
 import dev.railroadide.core.utility.FromStringFunction;
+import dev.railroadide.core.utility.ServiceLocator;
 import dev.railroadide.core.utility.ToStringFunction;
 import javafx.scene.control.ComboBox;
 import javafx.util.StringConverter;
@@ -28,7 +29,7 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
                 if (key == null)
                     return "NullKey";
 
-                return LocalizationServiceLocator.getInstance().get(key);
+                return ServiceLocator.getService(LocalizationService.class).get(key);
             }
 
             @Override

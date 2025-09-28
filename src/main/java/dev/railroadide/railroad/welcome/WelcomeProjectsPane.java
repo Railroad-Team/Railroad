@@ -3,6 +3,7 @@ package dev.railroadide.railroad.welcome;
 import dev.railroadide.core.ui.RRListView;
 import dev.railroadide.core.ui.RRTextField;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.ui.nodes.ProjectListCell;
@@ -132,7 +133,7 @@ public class WelcomeProjectsPane extends ScrollPane {
             var emptyBox = new VBox(12);
             emptyBox.setAlignment(javafx.geometry.Pos.CENTER);
             emptyBox.setPadding(new javafx.geometry.Insets(40, 0, 40, 0));
-            var illustration = new ImageView(new Image(Railroad.getResourceAsStream("images/logo.png"), 96, 96, true, true));
+            var illustration = new ImageView(new Image(AppResources.getResourceAsStream("images/logo.png"), 96, 96, true, true));
             var message = new LocalizedLabel("railroad.home.welcome.projects.empty");
             message.getStyleClass().add("welcome-projects-message");
             emptyBox.getChildren().addAll(illustration, message);

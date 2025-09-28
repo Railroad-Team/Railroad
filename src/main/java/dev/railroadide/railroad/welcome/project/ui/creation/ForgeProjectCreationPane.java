@@ -10,7 +10,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.project.data.ForgeProjectData;
-import dev.railroadide.railroad.project.minecraft.mappings.channels.MappingChannelRegistry;
+import dev.railroadide.railroad.project.minecraft.mappings.MappingChannelRegistry;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.UrlUtils;

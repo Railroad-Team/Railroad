@@ -1,8 +1,8 @@
 package dev.railroadide.core.settings;
 
 import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.localization.LocalizationServiceLocator;
 import dev.railroadide.core.utility.FuzzySearch;
+import dev.railroadide.core.utility.ServiceLocator;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.scene.Node;
@@ -29,7 +29,7 @@ public class SettingsSearchHandler {
     public SettingsSearchHandler(Collection<Setting<?>> settings) {
         Map<String, String> settingsMap = new HashMap<>();
 
-        LocalizationService localizationService = LocalizationServiceLocator.getInstance();
+        LocalizationService localizationService = ServiceLocator.getService(LocalizationService.class);
         for (Setting<?> setting : settings) {
             String baseKey = setting.getTreePath();
             String titleKey = baseKey + ".title";

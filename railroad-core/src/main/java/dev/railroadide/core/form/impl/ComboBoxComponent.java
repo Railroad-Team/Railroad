@@ -1,7 +1,6 @@
 package dev.railroadide.core.form.impl;
 
 import dev.railroadide.core.form.*;
-import dev.railroadide.core.form.*;
 import dev.railroadide.core.form.ui.FormComboBox;
 import dev.railroadide.core.utility.ComboBoxConverter;
 import dev.railroadide.core.utility.FromStringFunction;

@@ -4,7 +4,7 @@ package dev.railroadide.railroad.project.data;
 import dev.railroadide.railroad.project.License;
 import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import dev.railroadide.railroad.project.minecraft.fabric.FabricLoaderVersionService.FabricLoaderVersion;
-import dev.railroadide.railroad.project.minecraft.mappings.channels.MappingChannel;
+import dev.railroadide.railroad.project.minecraft.mappings.MappingChannel;
 
 import java.nio.file.Path;
 import java.util.Optional;

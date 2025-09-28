@@ -1,7 +1,5 @@
 package dev.railroadide.core.settings.keybinds;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;

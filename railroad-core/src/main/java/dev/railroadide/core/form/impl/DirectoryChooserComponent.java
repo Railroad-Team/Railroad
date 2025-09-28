@@ -1,7 +1,6 @@
 package dev.railroadide.core.form.impl;
 
 import dev.railroadide.core.form.*;
-import dev.railroadide.core.form.*;
 import dev.railroadide.core.form.ui.FormDirectoryChooser;
 import dev.railroadide.core.ui.BrowseButton;
 import javafx.beans.binding.BooleanBinding;

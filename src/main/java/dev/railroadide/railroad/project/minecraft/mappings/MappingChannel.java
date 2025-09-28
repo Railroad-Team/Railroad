@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.project.minecraft.mappings.channels;
+package dev.railroadide.railroad.project.minecraft.mappings;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.minecraft.MinecraftVersion;

@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.welcome.project;
 
-import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.welcome.project.ui.details.FabricProjectDetailsPane;
 import dev.railroadide.railroad.welcome.project.ui.details.ForgeProjectDetailsPane;
 import dev.railroadide.railroad.welcome.project.ui.details.NeoforgeProjectDetailsPane;
@@ -12,9 +12,9 @@ import java.util.function.Supplier;
 
 @Getter
 public enum ProjectType {
-    FABRIC("Fabric", new Image(Railroad.getResourceAsStream("images/fabric.png")), FabricProjectDetailsPane::new),
-    FORGE("Forge", new Image(Railroad.getResourceAsStream("images/forge.png")), ForgeProjectDetailsPane::new),
-    NEOFORGE("Neoforge", new Image(Railroad.getResourceAsStream("images/neoforge.png")), NeoforgeProjectDetailsPane::new);
+    FABRIC("Fabric", new Image(AppResources.getResourceAsStream("images/fabric.png")), FabricProjectDetailsPane::new),
+    FORGE("Forge", new Image(AppResources.getResourceAsStream("images/forge.png")), ForgeProjectDetailsPane::new),
+    NEOFORGE("Neoforge", new Image(AppResources.getResourceAsStream("images/neoforge.png")), NeoforgeProjectDetailsPane::new);
 
     private final String name;
     private final Image icon;

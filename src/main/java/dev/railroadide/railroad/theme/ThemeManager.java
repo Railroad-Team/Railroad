@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.theme;
 
-import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import javafx.application.Platform;
@@ -32,7 +32,7 @@ public class ThemeManager {
     }
 
     private static String get(String path) {
-        return Railroad.getResource(path).toExternalForm();
+        return AppResources.getResource(path).toExternalForm();
     }
 
     public static void apply(Scene scene) {

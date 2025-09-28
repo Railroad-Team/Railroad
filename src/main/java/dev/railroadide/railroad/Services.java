@@ -1,6 +1,7 @@
 package dev.railroadide.railroad;
 
 import com.google.gson.Gson;
+import dev.railroadide.core.localization.Language;
 import dev.railroadide.core.localization.LocalizationService;
 import dev.railroadide.core.localization.LocalizationServiceLocator;
 import dev.railroadide.core.logger.LoggerService;
@@ -13,6 +14,7 @@ import dev.railroadide.railroadpluginapi.services.IDEStateService;
 import dev.railroadide.railroadpluginapi.services.VCSService;
 import dev.railroadide.railroad.ide.DefaultDocumentEditorStateService;
 import javafx.application.HostServices;
+import javafx.beans.property.ObjectProperty;
 
 /**
  * Provides access to various services used in the Railroad application.
@@ -47,7 +49,7 @@ public class Services {
         }
 
         @Override
-        public javafx.beans.property.ObjectProperty<? extends dev.railroadide.core.localization.Language> currentLanguageProperty() {
+        public ObjectProperty<? extends Language> currentLanguageProperty() {
             return L18n.currentLanguageProperty();
         }
 

@@ -1,6 +1,7 @@
 package dev.railroadide.core.ui.localized;
 
-import dev.railroadide.core.localization.LocalizationServiceLocator;
+import dev.railroadide.core.localization.LocalizationService;
+import dev.railroadide.core.utility.ServiceLocator;
 import javafx.scene.control.TextArea;
 
 /**
@@ -18,7 +19,7 @@ public class LocalizedTextArea extends TextArea {
         super();
         if (key != null) {
             setKey(key);
-            setPromptText(LocalizationServiceLocator.getInstance().get(key));
+            setPromptText(ServiceLocator.getService(LocalizationService.class).get(key));
         }
     }
 
@@ -39,8 +40,8 @@ public class LocalizedTextArea extends TextArea {
      */
     public void setKey(final String key) {
         currentKey = key;
-        LocalizationServiceLocator.getInstance().currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                setPromptText(LocalizationServiceLocator.getInstance().get(key)));
-        setPromptText(LocalizationServiceLocator.getInstance().get(currentKey));
+        ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
+                setPromptText(ServiceLocator.getService(LocalizationService.class).get(key)));
+        setPromptText(ServiceLocator.getService(LocalizationService.class).get(currentKey));
     }
 }

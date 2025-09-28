@@ -1,9 +1,10 @@
 package dev.railroadide.core.settings;
 
-import dev.railroadide.core.logger.LoggerServiceLocator;
+import dev.railroadide.core.logger.LoggerService;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.core.utility.ServiceLocator;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Separator;
@@ -102,7 +103,7 @@ public class SettingsUIHandler {
 
             Node settingNode = setting.createNode();
             if (settingNode == null) {
-                LoggerServiceLocator.getInstance().getLogger().warn("Setting node for {} is null, skipping.", setting.getId());
+                ServiceLocator.getService(LoggerService.class).getLogger().warn("Setting node for {} is null, skipping.", setting.getId());
                 continue;
             }
 

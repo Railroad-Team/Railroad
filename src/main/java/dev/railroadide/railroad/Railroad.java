@@ -2,6 +2,7 @@ package dev.railroadide.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import dev.railroadide.core.utility.ServiceLocator;
 import dev.railroadide.logger.Logger;
 import dev.railroadide.logger.LoggerManager;
 import dev.railroadide.railroad.config.ConfigHandler;
@@ -11,15 +12,6 @@ import dev.railroadide.railroad.plugin.defaults.DefaultEventBus;
 import dev.railroadide.railroad.project.ProjectManager;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetTypeAdapter;
-import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
-import dev.railroadide.railroad.project.minecraft.fabric.FabricApiVersionService;
-import dev.railroadide.railroad.project.minecraft.fabric.FabricLoaderVersionService;
-import dev.railroadide.railroad.project.minecraft.forge.ForgeVersionService;
-import dev.railroadide.railroad.project.minecraft.forge.NeoforgeVersionService;
-import dev.railroadide.railroad.project.minecraft.mappings.MCPVersionService;
-import dev.railroadide.railroad.project.minecraft.mappings.MojmapVersionService;
-import dev.railroadide.railroad.project.minecraft.mappings.ParchmentVersionService;
-import dev.railroadide.railroad.project.minecraft.mappings.YarnVersionService;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
@@ -38,8 +30,6 @@ import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
 import okhttp3.OkHttpClient;
 
-import java.io.InputStream;
-import java.net.URL;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -67,26 +57,6 @@ public class Railroad extends Application {
     public static final EventBus EVENT_BUS = new DefaultEventBus();
     public static final WindowManager WINDOW_MANAGER = new WindowManager();
     private static HostServices hostServices;
-
-    /**
-     * Get a resource from the assets folder
-     *
-     * @param path The path to the resource
-     * @return The URL of the resource
-     */
-    public static URL getResource(String path) {
-        return Railroad.class.getClassLoader().getResource("assets/railroad/" + path);
-    }
-
-    /**
-     * Get a resource from the assets folder as an InputStream
-     *
-     * @param path The path to the resource
-     * @return The InputStream of the resource
-     */
-    public static InputStream getResourceAsStream(String path) {
-        return Railroad.class.getClassLoader().getResourceAsStream("assets/railroad/" + path);
-    }
 
     /**
      * Show an error alert
@@ -147,14 +117,7 @@ public class Railroad extends Application {
             Settings.initialize();
             SettingsHandler.init();
 
-            MinecraftVersion.requestMinecraftVersions();
-            FabricApiVersionService.INSTANCE.forceRefresh(true);
-            FabricLoaderVersionService.INSTANCE.forceRefresh(true);
-            ForgeVersionService.INSTANCE.forceRefresh(true);
-            NeoforgeVersionService.INSTANCE.forceRefresh(true);
-            YarnVersionService.INSTANCE.forceRefresh(true);
-            MojmapVersionService.INSTANCE.forceRefresh(true);
-            MCPVersionService.INSTANCE.forceRefresh(true);
+            ServiceLocator.setServiceProvider(Services::getService);
 
             L18n.loadLanguage(SettingsHandler.getValue(Settings.LANGUAGE));
             WINDOW_MANAGER.showPrimary(new Scene(new WelcomePane()), Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion());

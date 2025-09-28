@@ -1,8 +1,9 @@
 package dev.railroadide.core.ui.localized;
 
-import dev.railroadide.core.localization.LocalizationServiceLocator;
+import dev.railroadide.core.localization.LocalizationService;
 import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.core.utility.DesktopUtils;
+import dev.railroadide.core.utility.ServiceLocator;
 import javafx.scene.control.MenuItem;
 
 /**
@@ -19,7 +20,7 @@ public class LocalizedMenuItem extends MenuItem {
     public LocalizedMenuItem(final String key) {
         super();
         setKey(key);
-        setText(LocalizationServiceLocator.getInstance().get(key));
+        setText(ServiceLocator.getService(LocalizationService.class).get(key));
     }
 
     /**
@@ -46,9 +47,9 @@ public class LocalizedMenuItem extends MenuItem {
      */
     public void setKey(final String key) {
         currentKey = key;
-        LocalizationServiceLocator.getInstance().currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                setText(LocalizationServiceLocator.getInstance().get(key)));
-        setText(LocalizationServiceLocator.getInstance().get(currentKey));
+        ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
+                setText(ServiceLocator.getService(LocalizationService.class).get(key)));
+        setText(ServiceLocator.getService(LocalizationService.class).get(currentKey));
     }
 
     /**

@@ -1,6 +1,7 @@
 package dev.railroadide.core.ui;
 
-import dev.railroadide.core.localization.LocalizationServiceLocator;
+import dev.railroadide.core.localization.LocalizationService;
+import dev.railroadide.core.utility.ServiceLocator;
 import javafx.animation.ScaleTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -35,7 +36,7 @@ public class RRButton extends Button {
     }
 
     public RRButton(String localizationKey, Ikon icon, Object... args) {
-        super(LocalizationServiceLocator.getInstance().get(localizationKey));
+        super(ServiceLocator.getService(LocalizationService.class).get(localizationKey));
         setIcon(icon);
         initialize();
         this.localizationKey = localizationKey;
@@ -44,7 +45,7 @@ public class RRButton extends Button {
     }
 
     public RRButton(String localizationKey, Node graphic, Object... args) {
-        super(LocalizationServiceLocator.getInstance().get(localizationKey), graphic);
+        super(ServiceLocator.getService(LocalizationService.class).get(localizationKey), graphic);
         initialize();
         this.localizationKey = localizationKey;
         this.localizationArgs = args;
@@ -52,7 +53,7 @@ public class RRButton extends Button {
     }
 
     public RRButton(String localizationKey, Object... args) {
-        super(LocalizationServiceLocator.getInstance().get(localizationKey, args));
+        super(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args));
         initialize();
         this.localizationKey = localizationKey;
         this.localizationArgs = args;
@@ -146,9 +147,9 @@ public class RRButton extends Button {
 
     private void addLocalizationListener() {
         if (localizationKey != null) {
-            LocalizationServiceLocator.getInstance().currentLanguageProperty().addListener((observable, oldValue, newValue) -> {
+            ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) -> {
                 if (!isLoading) {
-                    setText(LocalizationServiceLocator.getInstance().get(localizationKey, localizationArgs));
+                    setText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, localizationArgs));
                 }
             });
         }
@@ -157,7 +158,7 @@ public class RRButton extends Button {
     /**
      * Set the button text using a localization key with optional formatting arguments.
      * The text will automatically update when the application language changes.
-     * 
+     *
      * @param localizationKey the localization key for the text
      * @param args optional formatting arguments for the localized text
      */
@@ -165,7 +166,7 @@ public class RRButton extends Button {
         this.localizationKey = localizationKey;
         this.localizationArgs = args;
         if (!isLoading) {
-            setText(LocalizationServiceLocator.getInstance().get(localizationKey, args));
+            setText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args));
         }
 
         addLocalizationListener();
@@ -233,15 +234,15 @@ public class RRButton extends Button {
      *     });
      * });
      * </pre>
-     * 
+     *
      * @param loading true to show loading state, false to restore normal state
      */
     public void setLoading(boolean loading) {
         if (this.isLoading == loading)
             return;
-        
+
         this.isLoading = loading;
-        
+
         if (loading) {
             originalText = getText();
             originalGraphic = getGraphic();
@@ -258,12 +259,12 @@ public class RRButton extends Button {
             } else {
                 setText("");
             }
-            
+
             setGraphic(loadingContent);
         } else {
             setDisable(false);
             getStyleClass().remove("loading");
-            
+
             if (originalText != null) {
                 setText(originalText);
             }
@@ -312,12 +313,12 @@ public class RRButton extends Button {
     private void updateContent() {
         if (isLoading)
             return; // Don't update content while loading
-        
+
         if (icon != null) {
             HBox content = new HBox(8);
             content.setAlignment(Pos.CENTER);
             content.getChildren().add(icon);
-            
+
             if (getText() != null && !getText().isEmpty()) {
                 setGraphic(content);
             } else {
@@ -355,4 +356,4 @@ public class RRButton extends Button {
     public enum ButtonSize {
         SMALL, MEDIUM, LARGE
     }
-} 
+}
