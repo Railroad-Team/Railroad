@@ -49,6 +49,8 @@
               libGL
               gtk3
               glib
+              gsettings-desktop-schemas
+
               xorg.libX11
               xorg.libXtst
               xorg.libXi
@@ -64,6 +66,7 @@
               export JAVAFX_MODULE_PATH=${pkgs.javafx}/lib
               export LD_LIBRARY_PATH="${pkgs.libGL}/lib:${pkgs.gtk3}/lib:${pkgs.glib.out}/lib:${pkgs.xorg.libX11}/lib:${pkgs.xorg.libXtst}/lib:${pkgs.xorg.libXi}/lib:${pkgs.xorg.libXxf86vm}/lib:$LD_LIBRARY_PATH"
               export JAVA_TOOL_OPTIONS="${loadLombok}${prev}"
+              export GSETTINGS_SCHEMA_DIR="${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}/glib-2.0/schemas"
 
               mkdir ~/.config/Railroad
               touch ~/.config/Railroad/logger_config.json
