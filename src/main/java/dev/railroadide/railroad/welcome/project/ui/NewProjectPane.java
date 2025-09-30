@@ -2,7 +2,6 @@ package dev.railroadide.railroad.welcome.project.ui;
 
 import dev.railroadide.core.ui.RRCard;
 import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.railroad.welcome.project.ProjectType;
 import javafx.geometry.Insets;
 import javafx.scene.layout.Priority;
 
@@ -24,23 +23,7 @@ public class NewProjectPane extends RRCard {
 
         getChildren().add(contentBox);
 
-        projectTypePane.getProjectTypeListView().setOnMouseClicked(event -> {
-            ProjectType selected = projectTypePane.getProjectTypeListView().getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                projectDetailsPane.projectTypeProperty().set(selected);
-            }
-        });
-
-        projectDetailsPane.projectTypeProperty().addListener((obs, oldType, newType) -> {
-            if (newType == null) return;
-            var listView = projectTypePane.getProjectTypeListView();
-            for (int i = 0; i < listView.getItems().size(); i++) {
-                if (listView.getItems().get(i) == newType) {
-                    listView.getSelectionModel().select(i);
-                    listView.scrollTo(i);
-                    break;
-                }
-            }
-        });
+        projectDetailsPane.projectTypeProperty().bind(
+            projectTypePane.getProjectTypeListView().getSelectionModel().selectedItemProperty());
     }
 }

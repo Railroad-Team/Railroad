@@ -19,8 +19,7 @@ import java.util.Map;
 
 public class SettingCodecs {
     public static final SettingCodec<Language, ComboBox<Language>> LANGUAGE =
-            SettingCodec.<Language, ComboBox<Language>>builder()
-                    .id("railroad.language")
+            SettingCodec.<Language, ComboBox<Language>>builder("railroad:language")
                     .nodeToValue(ComboBox::getValue)
                     .valueToNode((lang, comboBox) ->
                             comboBox.setValue(lang == null ? Languages.EN_US : lang))
@@ -41,21 +40,16 @@ public class SettingCodecs {
                     .build();
 
     public static final SettingCodec<String, ThemeSettingsSection> THEME =
-            SettingCodec.builder("railroad.theme", String.class, ThemeSettingsSection.class)
+            SettingCodec.<String, ThemeSettingsSection>builder("railroad:theme")
                     .nodeToValue(ThemeSettingsSection::getSelectedTheme)
                     .valueToNode((theme, section) -> section.setSelectedTheme(theme))
                     .jsonDecoder(JsonElement::getAsString)
                     .jsonEncoder(JsonPrimitive::new)
-                    .createNode(theme -> {
-                        var section = new ThemeSettingsSection();
-                        section.setSelectedTheme(theme);
-                        return section;
-                    })
+                    .createNode(ThemeSettingsSection::new)
                     .build();
 
     public static final SettingCodec<Map<PluginDescriptor, Boolean>, PluginsPane> ENABLED_PLUGINS =
-            SettingCodec.<Map<PluginDescriptor, Boolean>, PluginsPane>builder()
-                    .id("railroad.enabled_plugins")
+            SettingCodec.<Map<PluginDescriptor, Boolean>, PluginsPane>builder("railroad:enabled_plugins")
                     .nodeToValue(PluginsPane::getEnabledPlugins)
                     .valueToNode((plugins, pane) -> pane.setEnabledPlugins(plugins))
                     .jsonDecoder(PluginManager::decodeEnabledPlugins)
@@ -64,11 +58,10 @@ public class SettingCodecs {
                     .build();
 
     public static final SettingCodec<Map<String, List<KeybindData>>, KeybindsList> KEYBINDS =
-            SettingCodec.<Map<String, List<KeybindData>>, KeybindsList>builder()
-                    .id("railroad:keybinds")
+            SettingCodec.<Map<String, List<KeybindData>>, KeybindsList>builder("railroad:keybinds")
                     .createNode(KeybindsList::new)
                     .nodeToValue(KeybindsList::getKeybinds)
-                    .valueToNode((map, kl) -> kl.loadKeybinds(map))
+                    .valueToNode((keybindsMap, keybindsList) -> keybindsList.loadKeybinds(keybindsMap))
                     .jsonEncoder(KeybindsList::toJson)
                     .jsonDecoder(KeybindsList::fromJson)
                     .build();

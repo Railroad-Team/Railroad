@@ -8,7 +8,6 @@ import dev.railroadide.railroad.ide.indexing.Indexes;
 import dev.railroadide.railroad.ide.syntaxhighlighting.TreeSitterJavaSyntaxHighlighting;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.utility.ShutdownHooks;
-import dev.railroadide.railroad.utility.compiler.JavaSourceFromString;
 import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
 import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
 import javafx.application.Platform;
@@ -30,23 +29,27 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Popup;
 import javafx.util.Pair;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.*;
 import org.fxmisc.richtext.event.MouseOverTextEvent;
 import org.fxmisc.richtext.model.StyleSpans;
 import org.jetbrains.annotations.Nullable;
 
-import javax.tools.*;
+import javax.tools.Diagnostic;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaFileObject;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 public class JavaCodeEditorPane extends TextEditorPane {
-    private static final JavaCompiler JAVA_COMPILER = ToolProvider.getSystemJavaCompiler();
-
     private final ExecutorService executor0 = Executors.newFixedThreadPool(2);
     private final ObservableMap<Diagnostic<? extends JavaFileObject>, Popup> errors = FXCollections.observableHashMap();
     private final Map<Integer, Diagnostic.Kind> lineToSeverity = new HashMap<>();
@@ -82,12 +85,12 @@ public class JavaCodeEditorPane extends TextEditorPane {
                 return;
 
             Map<Character, Character> bracketPairs = Map.of(
-                    '(', ')',
-                    '{', '}',
-                    '[', ']',
-                    ')', '(',
-                    '}', '{',
-                    ']', '['
+                '(', ')',
+                '{', '}',
+                '[', ']',
+                ')', '(',
+                '}', '{',
+                ']', '['
             );
 
             char currentChar = newValue < text.length() ? text.charAt(newValue) : '\0';
@@ -178,19 +181,19 @@ public class JavaCodeEditorPane extends TextEditorPane {
             Diagnostic.Kind kind = lineToSeverity.get(line + 1); // 1-based line numbers
             if (kind != null) {
                 var icon = new MFXFontIcon(kind == Diagnostic.Kind.ERROR ?
-                        FontAwesomeSolid.CIRCLE_EXCLAMATION : FontAwesomeSolid.TRIANGLE_EXCLAMATION,
-                        12,
-                        kind == Diagnostic.Kind.ERROR ? Color.RED : Color.YELLOW);
+                    FontAwesomeSolid.CIRCLE_EXCLAMATION : FontAwesomeSolid.TRIANGLE_EXCLAMATION,
+                    12,
+                    kind == Diagnostic.Kind.ERROR ? Color.RED : Color.YELLOW);
                 grid.add(icon, 1, 0);
 
                 // Find the diagnostic message for this line
                 String message = errors.keySet().stream()
-                        .filter(d -> d.getLineNumber() == line + 1 &&
-                                (d.getKind() == kind || (kind == Diagnostic.Kind.WARNING &&
-                                        d.getKind() == Diagnostic.Kind.MANDATORY_WARNING)))
-                        .map(d -> d.getMessage(null))
-                        .findFirst()
-                        .orElse("Unknown issue");
+                    .filter(d -> d.getLineNumber() == line + 1 &&
+                        (d.getKind() == kind || (kind == Diagnostic.Kind.WARNING &&
+                            d.getKind() == Diagnostic.Kind.MANDATORY_WARNING)))
+                    .map(d -> d.getMessage(null))
+                    .findFirst()
+                    .orElse("Unknown issue");
 
                 var tooltip = new Tooltip(message);
                 tooltip.setShowDelay(javafx.util.Duration.millis(200)); // Slight delay for smoother UX
@@ -205,15 +208,15 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
     private void codeCompletion() {
         plainTextChanges()
-                .successionEnds(Duration.ofMillis(500))
-                .retainLatestUntilLater(executor0)
-                .filter(change -> !change.getInserted().equals(change.getRemoved()))
-                .subscribe(change -> {
-                    String inserted = change.getInserted();
-                    if (inserted.endsWith(".")) {
-                        showAutoComplete(change.getPosition());
-                    }
-                });
+            .successionEnds(Duration.ofMillis(500))
+            .retainLatestUntilLater(executor0)
+            .filter(change -> !change.getInserted().equals(change.getRemoved()))
+            .subscribe(change -> {
+                String inserted = change.getInserted();
+                if (inserted.endsWith(".")) {
+                    showAutoComplete(change.getPosition());
+                }
+            });
 
         // if the user clicks outside the popup, hide it
         setOnMouseClicked(event -> {
@@ -245,7 +248,20 @@ public class JavaCodeEditorPane extends TextEditorPane {
         parser.setBindingsRecovery(true);
         parser.setStatementsRecovery(true);
         parser.setUnitName(filePath.getFileName().toString());
-        String[] classpathEntries = {"D:/Program Files/Java/temurin-21.0.3/jmods/java.base.jmod"};
+        String[] classpathEntries = new String[0];
+        try {
+            var javaHome = Path.of(System.getProperty("java.home"));
+            var jmodsDir = javaHome.resolve("jmods");
+            if (Files.isDirectory(jmodsDir)) {
+                try (var stream = Files.list(jmodsDir)) {
+                    classpathEntries = stream
+                        .map(Path::toString)
+                        .toArray(String[]::new);
+                }
+            }
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to resolve JDK modules", exception);
+        }
 
         parser.setEnvironment(classpathEntries, null, null, false);
 
@@ -326,8 +342,8 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
                         final String finalPrefix = prefix;
                         List<String> filtered = fullSuggestions.stream()
-                                .filter(s -> s.startsWith(finalPrefix))
-                                .collect(Collectors.toList());
+                            .filter(s -> s.startsWith(finalPrefix))
+                            .collect(Collectors.toList());
                         listView.getItems().setAll(filtered);
                     } else {
                         hideAutoComplete();
@@ -356,30 +372,24 @@ public class JavaCodeEditorPane extends TextEditorPane {
     }
 
     private void errorHighlighting() {
-        try {
-            Task<DiagnosticCollector<JavaFileObject>> task = requestErrorDiagnostics();
-            task.run();
-            DiagnosticCollector<JavaFileObject> diagnostics = task.get(10, TimeUnit.SECONDS);
-
-            applyErrorHighlighting(diagnostics);
-        } catch (InterruptedException | ExecutionException | TimeoutException exception) {
-            Railroad.LOGGER.error("Failed to compile", exception);
-        }
+        Task<DiagnosticCollector<JavaFileObject>> task = requestErrorDiagnostics();
+        task.setOnSucceeded(event -> applyErrorHighlighting(task.getValue()));
+        task.setOnFailed(event -> Railroad.LOGGER.error("Failed to compile", task.getException()));
 
         plainTextChanges()
-                .successionEnds(Duration.ofMillis(500))
-                .retainLatestUntilLater(executor0)
-                .supplyTask(this::requestErrorDiagnostics)
-                .awaitLatest(plainTextChanges())
-                .filterMap(throwable -> {
-                    if (throwable.isSuccess()) {
-                        return throwable.toOptional();
-                    } else {
-                        Railroad.LOGGER.error("Failed to compile", throwable.getFailure());
-                        return Optional.empty();
-                    }
-                })
-                .subscribe(this::applyErrorHighlighting);
+            .successionEnds(Duration.ofMillis(500))
+            .retainLatestUntilLater(executor0)
+            .supplyTask(this::requestErrorDiagnostics)
+            .awaitLatest(plainTextChanges())
+            .filterMap(throwable -> {
+                if (throwable.isSuccess()) {
+                    return throwable.toOptional();
+                } else {
+                    Railroad.LOGGER.error("Failed to compile", throwable.getFailure());
+                    return Optional.empty();
+                }
+            })
+            .subscribe(this::applyErrorHighlighting);
 
         this.errors.addListener((MapChangeListener<Diagnostic<? extends JavaFileObject>, Popup>) change -> {
             if (change.wasRemoved()) {
@@ -394,17 +404,32 @@ public class JavaCodeEditorPane extends TextEditorPane {
             protected DiagnosticCollector<JavaFileObject> call() {
                 long startTime = System.currentTimeMillis();
 
-                var source = new JavaSourceFromString(JavaCodeEditorPane.this.filePath.getFileName().toString().replace(".java", ""), getText());
-                DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+                char[] source = getText().toCharArray();
 
-                JavaCompiler.CompilationTask task = JAVA_COMPILER.getTask(
-                        null,
-                        null,
-                        diagnostics,
-                        List.of("-proc:none", "-Xlint:all"),
-                        null,
-                        List.of(source));
-                task.call();
+                ASTParser parser = ASTParser.newParser(AST.JLS21);
+                parser.setKind(ASTParser.K_COMPILATION_UNIT);
+                Map<String, String> options = JavaCore.getOptions();
+                JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);
+                parser.setCompilerOptions(options);
+                parser.setSource(source);
+                CompilationUnit unit = (CompilationUnit) parser.createAST(null);
+
+                IProblem[] problems = unit.getProblems();
+
+                DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+                for (IProblem problem : problems) {
+                    Diagnostic.Kind kind = problem.isError() ? Diagnostic.Kind.ERROR :
+                        (problem.isWarning() ? Diagnostic.Kind.WARNING : Diagnostic.Kind.OTHER);
+                    if (kind == Diagnostic.Kind.OTHER) continue;
+
+                    int start = problem.getSourceStart();
+                    int end = problem.getSourceEnd() + 1;
+                    long line = problem.getSourceLineNumber();
+                    long column = computeColumn(source, start);
+                    String message = problem.getMessage();
+
+                    diagnostics.report(new ProblemDiagnostic(kind, start, end, line, column, message));
+                }
 
                 Railroad.LOGGER.debug("Error diagnostics took {}ms", System.currentTimeMillis() - startTime);
                 return diagnostics;
@@ -420,43 +445,43 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
         // Process diagnostics for both errors and warnings
         Map<Diagnostic<? extends JavaFileObject>, Popup> diagnosticsMap = diagnostics.getDiagnostics().stream()
-                .filter(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR ||
-                        diagnostic.getKind() == Diagnostic.Kind.WARNING ||
-                        diagnostic.getKind() == Diagnostic.Kind.MANDATORY_WARNING)
-                .sorted(Comparator.comparingLong(Diagnostic::getStartPosition))
-                .collect(HashMap::new, (map, diagnostic) -> {
-                    int start = (int) diagnostic.getStartPosition();
-                    int end = (int) diagnostic.getEndPosition();
-                    String message = diagnostic.getMessage(null);
-                    String styleClass = diagnostic.getKind() == Diagnostic.Kind.ERROR ? "error" : "warning";
-                    setStyleClass(start, end, styleClass);
+            .filter(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR ||
+                diagnostic.getKind() == Diagnostic.Kind.WARNING ||
+                diagnostic.getKind() == Diagnostic.Kind.MANDATORY_WARNING)
+            .sorted(Comparator.comparingLong(Diagnostic::getStartPosition))
+            .collect(HashMap::new, (map, diagnostic) -> {
+                int start = (int) diagnostic.getStartPosition();
+                int end = (int) diagnostic.getEndPosition();
+                String message = diagnostic.getMessage(null);
+                String styleClass = diagnostic.getKind() == Diagnostic.Kind.ERROR ? "error" : "warning";
+                setStyleClass(start, end, styleClass);
 
-                    var popup = new Popup();
-                    popup.getContent().add(new DiagnosticPane(diagnostic));
+                var popup = new Popup();
+                popup.getContent().add(new DiagnosticPane(diagnostic));
 
-                    // Show popup on hover
-                    addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_BEGIN, event -> {
-                        int position = event.getCharacterIndex();
-                        if (position >= start && position <= end) {
-                            Point2D screenPosition = event.getScreenPosition();
-                            popup.show(JavaCodeEditorPane.this, screenPosition.getX(), screenPosition.getY());
-                        }
-                    });
+                // Show popup on hover
+                addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_BEGIN, event -> {
+                    int position = event.getCharacterIndex();
+                    if (position >= start && position <= end) {
+                        Point2D screenPosition = event.getScreenPosition();
+                        popup.show(JavaCodeEditorPane.this, screenPosition.getX(), screenPosition.getY());
+                    }
+                });
 
-                    // Hide popup when mouse leaves
-                    addEventHandler(MouseEvent.MOUSE_MOVED, event -> {
-                        if (!popup.isShowing()) return;
-                        int charIndex = JavaCodeEditorPane.this.hit(event.getX(), event.getY())
-                                .getCharacterIndex().orElse(-1);
-                        if (charIndex < start || charIndex > end) {
-                            popup.hide();
-                        }
-                    });
+                // Hide popup when mouse leaves
+                addEventHandler(MouseEvent.MOUSE_MOVED, event -> {
+                    if (!popup.isShowing()) return;
+                    int charIndex = JavaCodeEditorPane.this.hit(event.getX(), event.getY())
+                        .getCharacterIndex().orElse(-1);
+                    if (charIndex < start || charIndex > end) {
+                        popup.hide();
+                    }
+                });
 
-                    map.put(diagnostic, popup);
-                    Railroad.LOGGER.error("Issue at L{}:{} - {}", diagnostic.getLineNumber(),
-                            diagnostic.getColumnNumber(), message);
-                }, HashMap::putAll);
+                map.put(diagnostic, popup);
+                Railroad.LOGGER.error("Issue at L{}:{} - {}", diagnostic.getLineNumber(),
+                    diagnostic.getColumnNumber(), message);
+            }, HashMap::putAll);
 
         // Update the errors map
         this.errors.clear();
@@ -467,12 +492,12 @@ public class JavaCodeEditorPane extends TextEditorPane {
         for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
             Diagnostic.Kind kind = diagnostic.getKind();
             if (kind == Diagnostic.Kind.ERROR || kind == Diagnostic.Kind.WARNING ||
-                    kind == Diagnostic.Kind.MANDATORY_WARNING) {
+                kind == Diagnostic.Kind.MANDATORY_WARNING) {
                 int line = (int) diagnostic.getLineNumber();
                 if (kind == Diagnostic.Kind.ERROR) {
                     lineToSeverity.put(line, Diagnostic.Kind.ERROR); // Errors take precedence
                 } else if (!lineToSeverity.containsKey(line) ||
-                        lineToSeverity.get(line) != Diagnostic.Kind.ERROR) {
+                    lineToSeverity.get(line) != Diagnostic.Kind.ERROR) {
                     lineToSeverity.put(line, Diagnostic.Kind.WARNING); // Warnings if no error
                 }
             }
@@ -484,22 +509,34 @@ public class JavaCodeEditorPane extends TextEditorPane {
         Railroad.LOGGER.debug("Error highlighting took {}ms", System.currentTimeMillis() - startTime);
     }
 
+    private static long computeColumn(char[] source, int position) {
+        int column = 1;
+        for (int i = position - 1; i >= 0; i--) {
+            char c = source[i];
+            if (c == '\n' || c == '\r') {
+                break;
+            }
+            column++;
+        }
+        return column;
+    }
+
     private void syntaxHighlight() {
         applyHighlighting(computeHighlighting(getText()));
         multiPlainChanges()
-                .successionEnds(Duration.ofMillis(500))
-                .retainLatestUntilLater(executor0)
-                .supplyTask(this::computeHighlightingAsync)
-                .awaitLatest(multiPlainChanges())
-                .filterMap(throwable -> {
-                    if (throwable.isSuccess()) {
-                        return throwable.toOptional();
-                    } else {
-                        Railroad.LOGGER.error("Failed to compute highlighting", throwable.getFailure());
-                        return Optional.empty();
-                    }
-                })
-                .subscribe(this::applyHighlighting);
+            .successionEnds(Duration.ofMillis(500))
+            .retainLatestUntilLater(executor0)
+            .supplyTask(this::computeHighlightingAsync)
+            .awaitLatest(multiPlainChanges())
+            .filterMap(throwable -> {
+                if (throwable.isSuccess()) {
+                    return throwable.toOptional();
+                } else {
+                    Railroad.LOGGER.error("Failed to compute highlighting", throwable.getFailure());
+                    return Optional.empty();
+                }
+            })
+            .subscribe(this::applyHighlighting);
     }
 
     private Task<StyleSpans<Collection<String>>> computeHighlightingAsync() {
@@ -521,5 +558,57 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
     private StyleSpans<Collection<String>> computeHighlighting(String text) {
         return TreeSitterJavaSyntaxHighlighting.computeHighlighting(text);
+    }
+
+    private record ProblemDiagnostic(Kind kind, int start, int end, long line, long column,
+                                     String message) implements Diagnostic<JavaFileObject> {
+        @Override
+        public Kind getKind() {
+            return kind;
+        }
+
+        @Override
+        public JavaFileObject getSource() {
+            return null;
+        }
+
+        @Override
+        public long getPosition() {
+            return start;
+        }
+
+        @Override
+        public long getStartPosition() {
+            return start;
+        }
+
+        @Override
+        public long getEndPosition() {
+            return end;
+        }
+
+        @Override
+        public long getLineNumber() {
+            return line;
+        }
+
+        @Override
+        public long getColumnNumber() {
+            return column;
+        }
+
+        @Override
+        public String getCode() {
+            return null;
+        }
+
+        @Override
+        public String getMessage(Locale locale) {
+            return message;
+        }
+    }
+
+    public String getLanguageId() {
+        return "java";
     }
 }

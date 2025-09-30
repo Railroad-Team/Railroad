@@ -2,20 +2,18 @@ package dev.railroadide.railroad.project.data;
 
 import dev.railroadide.railroad.project.DisplayTest;
 import dev.railroadide.railroad.project.License;
-import dev.railroadide.railroad.project.minecraft.ForgeVersion;
 import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
-import dev.railroadide.railroad.project.minecraft.mapping.MappingChannel;
-import dev.railroadide.railroad.project.minecraft.mapping.MappingVersion;
+import dev.railroadide.railroad.project.minecraft.mappings.channels.MappingChannel;
 
 import java.nio.file.Path;
 import java.util.Optional;
 
 public record ForgeProjectData(String projectName, Path projectPath, boolean createGit, License license,
                                String licenseCustom,
-                               MinecraftVersion minecraftVersion, ForgeVersion forgeVersion, String modId,
+                               MinecraftVersion minecraftVersion, String forgeVersion, String modId,
                                String modName, String mainClass, boolean useMixins, boolean useAccessTransformer,
                                boolean genRunFolders,
-                               MappingChannel mappingChannel, MappingVersion mappingVersion,
+                               MappingChannel mappingChannel, String mappingVersion,
                                Optional<String> author, Optional<String> credits, Optional<String> description,
                                Optional<String> issues, Optional<String> updateJsonUrl, Optional<String> displayUrl,
                                DisplayTest displayTest, boolean clientSideOnly,

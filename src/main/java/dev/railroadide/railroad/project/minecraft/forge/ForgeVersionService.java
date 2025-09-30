@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.project.minecraft.forge;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
 import dev.railroadide.railroad.project.minecraft.VersionService;
 import lombok.Data;
 import org.w3c.dom.Document;
@@ -44,30 +45,49 @@ public class ForgeVersionService extends VersionService<String> {
     }
 
     @Override
-    public Optional<String> latestFor(String minecraftVersion) {
+    public Optional<String> latestFor(MinecraftVersion minecraftVersion) {
         Objects.requireNonNull(minecraftVersion, "minecraftVersion");
         List<String> list = listVersionsFor(minecraftVersion);
         return list.isEmpty() ? Optional.empty() : Optional.of(list.getLast());
     }
 
     @Override
-    public Optional<String> latestFor(String minecraftVersion, boolean includePrereleases) {
+    public Optional<String> latestFor(MinecraftVersion minecraftVersion, boolean includePrereleases) {
         return latestFor(minecraftVersion);
     }
 
-    public Optional<String> recommendedFor(String minecraftVersion) {
+    public Optional<String> recommendedFor(MinecraftVersion minecraftVersion) {
         Objects.requireNonNull(minecraftVersion, "minecraftVersion");
         Promotions promos = promotions();
         if (promos == null || promos.promos == null)
             return Optional.empty();
 
-        String key = minecraftVersion + "-recommended";
+        String key = minecraftVersion.id() + "-recommended";
         String build = promos.promos.get(key);
         if (build == null || build.isBlank())
             return Optional.empty();
 
         // promotions map returns just the Forge build (e.g., "58.0.10"), compose full coordinate
-        return Optional.of(minecraftVersion + "-" + build);
+        return Optional.of(minecraftVersion.id() + "-" + build);
+    }
+
+    public boolean isRecommended(String forgeVersion) {
+        Objects.requireNonNull(forgeVersion, "forgeVersion");
+        Optional<MinecraftVersion> mcVersion = toMinecraftVersion(forgeVersion);
+        if (mcVersion.isEmpty())
+            return false;
+
+        Promotions promos = promotions();
+        if (promos == null || promos.promos == null)
+            return false;
+
+        String key = mcVersion.get().id() + "-recommended";
+        String build = promos.promos.get(key);
+        if (build == null || build.isBlank())
+            return false;
+
+        String expected = mcVersion.get().id() + "-" + build;
+        return forgeVersion.equals(expected);
     }
 
     @Override
@@ -81,29 +101,33 @@ public class ForgeVersionService extends VersionService<String> {
     }
 
     @Override
-    public List<String> listVersionsFor(String minecraftVersion) {
+    public List<String> listVersionsFor(MinecraftVersion minecraftVersion) {
         Objects.requireNonNull(minecraftVersion, "minecraftVersion");
         return versions().stream()
-                .filter(v -> mcOf(v).map(minecraftVersion::equalsIgnoreCase).orElse(false))
+                .filter(v -> toMinecraftVersion(v).map(minecraftVersion::equals).orElse(false))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<String> listVersionsFor(String minecraftVersion, boolean includePrereleases) {
+    public List<String> listVersionsFor(MinecraftVersion minecraftVersion, boolean includePrereleases) {
         return listVersionsFor(minecraftVersion);
     }
 
     @Override
     public void forceRefresh(boolean includePrereleases) {
-        List<String> fresh = fetchAllVersionsFromMaven();
-        cache.put("all", new CacheEntry<>(fresh, Instant.now().plus(ttl)));
-        Promotions promotions = fetchPromotions();
-        promotionsCache = new CacheEntry<>(promotions, Instant.now().plus(ttl));
+        try {
+            List<String> fresh = fetchAllVersionsFromMaven();
+            cache.put("all", new CacheEntry<>(fresh, Instant.now().plus(ttl)));
+            Promotions promotions = fetchPromotions();
+            promotionsCache = new CacheEntry<>(promotions, Instant.now().plus(ttl));
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to refresh Forge versions", exception);
+        }
     }
 
     private List<String> versions() {
         CacheEntry<List<String>> entry = cache.get("all");
-        if (entry != null && !entry.isExpired())
+        if (entry != null && entry.isActive())
             return entry.value();
 
         List<String> fresh = fetchAllVersionsFromMaven();
@@ -112,7 +136,7 @@ public class ForgeVersionService extends VersionService<String> {
     }
 
     private Promotions promotions() {
-        if (promotionsCache != null && !promotionsCache.isExpired())
+        if (promotionsCache != null && promotionsCache.isActive())
             return promotionsCache.value();
 
         Promotions promotions = fetchPromotions();
@@ -176,8 +200,8 @@ public class ForgeVersionService extends VersionService<String> {
         }
     }
 
-    // Extract MC token from a forge version like "1.21.8-58.0.10".
-    private static Optional<String> mcOf(String forgeVersion) {
+    // Extract minecraft version from a forge version like "1.21.8-58.0.10".
+    public static Optional<MinecraftVersion> toMinecraftVersion(String forgeVersion) {
         if (forgeVersion == null)
             return Optional.empty();
 
@@ -185,7 +209,7 @@ public class ForgeVersionService extends VersionService<String> {
         if (dash <= 0)
             return Optional.empty();
 
-        return Optional.of(forgeVersion.substring(0, dash));
+        return MinecraftVersion.fromId(forgeVersion.substring(0, dash));
     }
 
     @Data

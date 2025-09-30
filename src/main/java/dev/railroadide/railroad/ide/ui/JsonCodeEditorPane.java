@@ -376,4 +376,8 @@ public class JsonCodeEditorPane extends TextEditorPane {
 
     private record ValidationEntry(int start, int end, Popup popup) {
     }
+
+    public String getLanguageId() {
+        return "json";
+    }
 }

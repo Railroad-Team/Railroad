@@ -14,12 +14,12 @@ public class ThemeSettingsSection extends VBox {
     @Getter
     private final ThemeSelector themeSelector;
 
-    public ThemeSettingsSection() {
+    public ThemeSettingsSection(String initialTheme) {
         setSpacing(24);
         setAlignment(Pos.TOP_LEFT);
         setPadding(new Insets(0));
 
-        themeSelector = new ThemeSelector();
+        themeSelector = new ThemeSelector(initialTheme);
         VBox.setVgrow(themeSelector, Priority.ALWAYS);
         getChildren().add(themeSelector);
     }
@@ -31,4 +31,4 @@ public class ThemeSettingsSection extends VBox {
     public void setSelectedTheme(String theme) {
         themeSelector.setSelectedTheme(theme);
     }
-} 
+}

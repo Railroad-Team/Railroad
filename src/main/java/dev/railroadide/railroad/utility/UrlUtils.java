@@ -5,6 +5,9 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 public final class UrlUtils {
     private UrlUtils() {
@@ -74,6 +77,16 @@ public final class UrlUtils {
             return ((HttpURLConnection) url.openConnection()).getResponseCode();
         } catch (IOException exception) {
             return -1;
+        }
+    }
+
+    public static void writeBody(String url, Path path) {
+        try (var in = new URI(url).toURL().openStream()) {
+            Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException exception) {
+            throw new RuntimeException("Failed to write body from URL: " + url + " to path: " + path, exception);
+        } catch (URISyntaxException exception) {
+            throw new IllegalArgumentException("Invalid URL: " + url, exception);
         }
     }
 }

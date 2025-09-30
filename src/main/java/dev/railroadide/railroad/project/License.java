@@ -2,6 +2,9 @@ package dev.railroadide.railroad.project;
 
 import lombok.Getter;
 
+// TODO: Rewrite this to be a registry
+// TODO: Add link to the license breakdown
+// TODO: Add license header text
 @Getter
 public enum License {
     MIT("MIT License", "MIT"),

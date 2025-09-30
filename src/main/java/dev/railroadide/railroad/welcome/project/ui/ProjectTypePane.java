@@ -1,7 +1,6 @@
 package dev.railroadide.railroad.welcome.project.ui;
 
 import dev.railroadide.core.ui.RRListView;
-import dev.railroadide.core.ui.RRTextField;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.railroad.welcome.project.ProjectType;
 import dev.railroadide.railroad.welcome.project.ui.widget.ProjectTypeCell;
@@ -13,7 +12,6 @@ import javafx.scene.layout.Priority;
 import lombok.Getter;
 
 public class ProjectTypePane extends RRVBox {
-    private final RRTextField projectTypeSearchField;
     private final ScrollPane projectTypesScroller;
     @Getter
     private final RRListView<ProjectType> projectTypeListView;
@@ -27,11 +25,6 @@ public class ProjectTypePane extends RRVBox {
 
         setMinWidth(240);
         setMaxWidth(320);
-
-        projectTypeSearchField = new RRTextField("railroad.home.welcome.project.searchtype");
-        projectTypeSearchField.setPromptText("Search project types...");
-        projectTypeSearchField.setPrefHeight(36);
-        projectTypeSearchField.getStyleClass().add("project-type-search-field");
 
         projectTypesScroller = new ScrollPane();
         projectTypesScroller.setFitToWidth(true);
@@ -57,17 +50,7 @@ public class ProjectTypePane extends RRVBox {
         projectTypesScroller.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         projectTypesScroller.getStyleClass().add("project-types-scroller");
 
-        getChildren().addAll(projectTypeSearchField, projectTypesScroller);
+        getChildren().addAll(projectTypesScroller);
         RRVBox.setVgrow(projectTypesScroller, Priority.ALWAYS);
-
-        projectTypeSearchField.textProperty().addListener((obs, oldText, newText) -> {
-            String filter = newText == null ? "" : newText.trim().toLowerCase();
-            projectTypeListView.getItems().setAll(
-                    allProjectTypes.filtered(pt -> pt.getName().toLowerCase().contains(filter))
-            );
-            if (!projectTypeListView.getItems().isEmpty()) {
-                projectTypeListView.getSelectionModel().selectFirst();
-            }
-        });
     }
 }

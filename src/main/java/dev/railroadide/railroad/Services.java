@@ -3,8 +3,10 @@ package dev.railroadide.railroad;
 import dev.railroadide.railroad.ide.DefaultIDEStateService;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroadpluginapi.services.ApplicationInfoService;
+import dev.railroadide.railroadpluginapi.services.DocumentEditorStateService;
 import dev.railroadide.railroadpluginapi.services.IDEStateService;
 import dev.railroadide.railroadpluginapi.services.VCSService;
+import dev.railroadide.railroad.ide.DefaultDocumentEditorStateService;
 import javafx.application.HostServices;
 
 /**
@@ -29,7 +31,9 @@ public class Services {
         }
     };
 
-    public static final IDEStateService IDE_STATE = DefaultIDEStateService.getInstance();
+    public static final DefaultIDEStateService IDE_STATE = DefaultIDEStateService.getInstance();
+
+    public static final DefaultDocumentEditorStateService DOCUMENT_EDITOR_STATE = new DefaultDocumentEditorStateService();
 
     /**
      * Retrieves a service instance by its class type.
@@ -51,6 +55,8 @@ public class Services {
             return (T) Railroad.REPOSITORY_MANAGER;
         } else if (serviceClass == HostServices.class) {
             return (T) Railroad.getHostServicess();
+        } else if (serviceClass == DocumentEditorStateService.class) {
+            return (T) DOCUMENT_EDITOR_STATE;
         }
 
         throw new IllegalArgumentException("Service " + serviceClass.getName() + " is not available.");

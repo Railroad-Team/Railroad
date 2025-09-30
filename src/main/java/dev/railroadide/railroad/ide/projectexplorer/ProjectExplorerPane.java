@@ -9,6 +9,7 @@ import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedTextField;
 import dev.railroadide.core.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CopyModalDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
@@ -284,7 +285,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                         .findFirst()
                         .orElse(null);
 
-                Node editorContent;
+                TextEditorPane editorContent;
                 if (fileName.endsWith(".java")) {
                     editorContent = new JavaCodeEditorPane(project, path);
                 } else if (fileName.endsWith(".json")) {
@@ -292,6 +293,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 } else {
                     editorContent = new TextEditorPane(path);
                 }
+
+                Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(editorContent);
 
                 Tab tab;
                 if (welcomeTab != null) {
@@ -318,8 +321,14 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 tab.setOnSelectionChanged(event -> {
                     if (tab.isSelected()) {
                         Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.ACTIVATED));
+                        if (tab.getContent() instanceof TextEditorPane textEditorPane) {
+                            Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(textEditorPane);
+                        } else {
+                            Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(null);
+                        }
                     } else {
                         Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.DEACTIVATED));
+                        Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(null);
                     }
                 });
             });

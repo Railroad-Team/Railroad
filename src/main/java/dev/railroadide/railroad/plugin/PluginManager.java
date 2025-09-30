@@ -127,7 +127,11 @@ public class PluginManager {
         }
 
         for (PluginDescriptor descriptor : readyToLoad) {
-            addPluginToSettings(descriptor);
+            try {
+                addPluginToSettings(descriptor);
+            } catch (Exception exception) {
+                Railroad.LOGGER.error("Failed to add plugin to settings: {}", descriptor.getName(), exception);
+            }
         }
 
         readyToLoad.clear();
@@ -144,6 +148,7 @@ public class PluginManager {
         if (!enabledPlugins.containsKey(descriptor)) {
             enabledPlugins.put(descriptor, false);
             SettingsHandler.setValue(Settings.ENABLED_PLUGINS, enabledPlugins);
+            SettingsHandler.saveSettings();
         }
     }
 
@@ -197,6 +202,7 @@ public class PluginManager {
             Map<PluginDescriptor, Boolean> enabledPlugins = getEnabledPlugins();
             enabledPlugins.put(descriptor, true);
             SettingsHandler.setValue(Settings.ENABLED_PLUGINS, enabledPlugins);
+            SettingsHandler.saveSettings();
 
             L18n.onPluginEnabled(descriptor);
 
@@ -242,6 +248,7 @@ public class PluginManager {
             Map<PluginDescriptor, Boolean> enabledPlugins = getEnabledPlugins();
             enabledPlugins.put(descriptor, false);
             SettingsHandler.setValue(Settings.ENABLED_PLUGINS, enabledPlugins);
+            SettingsHandler.saveSettings();
 
             Railroad.LOGGER.info("Disabled plugin: {}", descriptor.getName());
         } catch (Exception exception) {
