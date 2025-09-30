@@ -34,6 +34,7 @@
         {
           inherit jdk javafx;
           gradle = prev.gradle.override { java = jdk; };
+          lombok = prev.lombok.override { inherit jdk; };
         };
 
       devShells = forEachSystem (
@@ -54,9 +55,15 @@
               xorg.libXxf86vm
             ];
 
-            shellHook = ''
+            shellHook =
+            let
+              loadLombok = "-javaagent:${pkgs.lombok}/share/java/lombok.jar";
+              prev = "\${JAVA_TOOL_OPTIONS:+ $JAVA_TOOL_OPTIONS}";
+            in
+            ''
               export JAVAFX_MODULE_PATH=${pkgs.javafx}/lib
               export LD_LIBRARY_PATH="${pkgs.libGL}/lib:${pkgs.gtk3}/lib:${pkgs.glib.out}/lib:${pkgs.xorg.libX11}/lib:${pkgs.xorg.libXtst}/lib:${pkgs.xorg.libXi}/lib:${pkgs.xorg.libXxf86vm}/lib:$LD_LIBRARY_PATH"
+              export JAVA_TOOL_OPTIONS="${loadLombok}${prev}"
 
               mkdir ~/.config/Railroad
               touch ~/.config/Railroad/logger_config.json
