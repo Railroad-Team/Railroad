@@ -3,7 +3,7 @@ package dev.railroadide.railroad.project.data;
 import dev.railroadide.railroad.project.DisplayTest;
 import dev.railroadide.railroad.project.License;
 import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
-import dev.railroadide.railroad.project.minecraft.mappings.channels.MappingChannel;
+import dev.railroadide.railroad.project.minecraft.MappingChannel;
 
 import java.nio.file.Path;
 import java.util.Optional;

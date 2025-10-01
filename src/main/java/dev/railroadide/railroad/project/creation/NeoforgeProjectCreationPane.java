@@ -8,7 +8,7 @@ import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.project.data.NeoforgeProjectData;
-import dev.railroadide.railroad.project.minecraft.mappings.channels.MappingChannelRegistry;
+import dev.railroadide.railroad.project.minecraft.MappingChannelRegistry;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.UrlUtils;

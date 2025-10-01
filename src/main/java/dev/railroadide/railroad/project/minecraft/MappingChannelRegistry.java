@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.project.minecraft.mappings.channels;
+package dev.railroadide.railroad.project.minecraft;
 
 import dev.railroadide.core.registry.Registry;
 import dev.railroadide.core.registry.RegistryManager;
