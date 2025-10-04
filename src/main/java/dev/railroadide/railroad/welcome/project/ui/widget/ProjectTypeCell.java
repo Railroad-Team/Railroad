@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.welcome.project.ui.widget;
 
-import dev.railroadide.railroad.welcome.project.ProjectType;
+import dev.railroadide.core.project.ProjectType;
 import javafx.scene.control.ListCell;
 import javafx.scene.image.ImageView;
 import javafx.scene.text.Font;

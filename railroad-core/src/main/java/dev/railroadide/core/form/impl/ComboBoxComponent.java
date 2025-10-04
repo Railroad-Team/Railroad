@@ -1,11 +1,11 @@
 package dev.railroadide.core.form.impl;
 
 import dev.railroadide.core.form.*;
-import dev.railroadide.core.form.*;
 import dev.railroadide.core.form.ui.FormComboBox;
 import dev.railroadide.core.utility.ComboBoxConverter;
 import dev.railroadide.core.utility.FromStringFunction;
 import dev.railroadide.core.utility.ToStringFunction;
+import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
 import javafx.beans.value.ChangeListener;
@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -71,7 +72,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
             }
 
             if (defaultValue != null) {
-                formComboBox.getPrimaryComponent().setValue(defaultValue.get());
+                new Thread(() -> Platform.runLater(() -> formComboBox.getPrimaryComponent().setValue(defaultValue.get()))).start();
             }
 
             return formComboBox;
@@ -184,9 +185,13 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          * @param items the items for the combobox
          * @return this builder
          */
-        public Builder<T> items(Collection<T> items) {
+        public Builder<T> items(Supplier<Collection<T>> items) {
             data.items(items);
             return this;
+        }
+
+        public Builder<T> items(Collection<T> items) {
+            return items(() -> items);
         }
 
         /**
@@ -300,6 +305,11 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
             return this;
         }
 
+        public <W> Builder<T> addAsyncTransformer(ObservableValue<ComboBox<T>> fromComponent, Consumer<W> toComponentFunction, Function<T, CompletableFuture<W>> valueMapper) {
+            this.transformers.add(FormTransformer.async(fromComponent, ComboBox::getValue, toComponentFunction, valueMapper));
+            return this;
+        }
+
         /**
          * Adds a transformer to the combobox.
          *
@@ -314,7 +324,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          */
         @SuppressWarnings({"unchecked", "rawtypes"})
         public <U extends Node, W> Builder<T> addTransformer(ObservableValue<ComboBox<T>> fromComponent, ObservableValue<U> toComponent, Function<T, W> valueMapper) {
-            this.transformers.add(new FormTransformer<>(fromComponent, ComboBox::getValue, value -> {
+            return addTransformer(fromComponent, value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());
                 } else if (toComponent.getValue() instanceof ComboBox comboBox) {
@@ -329,8 +339,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
                 } else {
                     throw new IllegalArgumentException("Unsupported component type: " + toComponent.getValue().getClass().getName());
                 }
-            }, valueMapper));
-            return this;
+            }, valueMapper);
         }
 
         /**
@@ -405,7 +414,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
      */
     public static class Data<T> {
         private final String label;
-        private List<T> items = new ArrayList<>();
+        private Supplier<Collection<T>> items = ArrayList::new;
         private boolean editable = false;
         private boolean required = false;
         private boolean translate = true;
@@ -427,8 +436,8 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          * @param items the items for the combobox
          * @return this data
          */
-        public Data<T> items(@NotNull Collection<T> items) {
-            this.items = new ArrayList<>(items);
+        public Data<T> items(@NotNull Supplier<Collection<T>> items) {
+            this.items = items;
             return this;
         }
 

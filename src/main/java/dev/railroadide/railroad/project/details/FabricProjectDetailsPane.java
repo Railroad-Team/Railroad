@@ -5,39 +5,44 @@ import dev.railroadide.core.form.FormComponent;
 import dev.railroadide.core.form.FormData;
 import dev.railroadide.core.form.FormSection;
 import dev.railroadide.core.form.impl.*;
+import dev.railroadide.core.project.License;
+import dev.railroadide.core.project.ProjectData;
+import dev.railroadide.core.project.creation.ProjectCreationService;
+import dev.railroadide.core.project.creation.ProjectServiceRegistry;
+import dev.railroadide.core.project.creation.service.GradleService;
+import dev.railroadide.core.project.minecraft.MappingChannel;
+import dev.railroadide.core.switchboard.pojo.FabricLoaderVersion;
+import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.License;
-import dev.railroadide.railroad.project.data.FabricProjectData;
-import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
-import dev.railroadide.railroad.project.minecraft.fabric.FabricApiVersionService;
-import dev.railroadide.railroad.project.minecraft.fabric.FabricLoaderVersionService;
-import dev.railroadide.railroad.project.minecraft.fabric.FabricLoaderVersionService.FabricLoaderVersion;
-import dev.railroadide.railroad.project.minecraft.MappingChannel;
-import dev.railroadide.railroad.project.minecraft.MappingChannelRegistry;
-import dev.railroadide.railroad.project.creation.FabricProjectCreationPane;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.project.LicenseRegistry;
+import dev.railroadide.railroad.project.MappingChannelRegistry;
+import dev.railroadide.railroad.project.ProjectTypeRegistry;
+import dev.railroadide.railroad.project.creation.ui.ProjectCreationPane;
+import dev.railroadide.railroad.project.data.FabricProjectKeys;
+import dev.railroadide.railroad.project.data.MavenProjectKeys;
+import dev.railroadide.railroad.project.data.MinecraftProjectKeys;
+import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
+import dev.railroadide.railroad.switchboard.repositories.FabricApiVersionRepository;
+import dev.railroadide.railroad.utility.ExpiringCache;
 import dev.railroadide.railroad.welcome.project.ui.widget.StarableListCell;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.scene.control.*;
 import javafx.scene.paint.Color;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 public class FabricProjectDetailsPane extends RRVBox {
-    private final StringProperty createdAtPath = new SimpleStringProperty(ProjectValidators.getRepairedPath(System.getProperty("user.home") + "\\"));
-
-    private final ObjectProperty<TextField> projectNameField = new SimpleObjectProperty<>();
-    private final ObjectProperty<TextField> projectPathField = new SimpleObjectProperty<>();
-    private final ObjectProperty<CheckBox> createGitCheckBox = new SimpleObjectProperty<>();
-    private final ObjectProperty<ComboBox<License>> licenseComboBox = new SimpleObjectProperty<>();
-    private final ObjectProperty<TextField> licenseCustomField = new SimpleObjectProperty<>();
-
     private final ObjectProperty<ComboBox<MinecraftVersion>> minecraftVersionComboBox = new SimpleObjectProperty<>();
     private final ObjectProperty<ComboBox<FabricLoaderVersion>> fabricLoaderVersionComboBox = new SimpleObjectProperty<>();
     private final ObjectProperty<CheckBox> includeFapiCheckBox = new SimpleObjectProperty<>();
@@ -51,15 +56,11 @@ public class FabricProjectDetailsPane extends RRVBox {
     private final ObjectProperty<ComboBox<MappingChannel>> mappingChannelComboBox = new SimpleObjectProperty<>();
     private final ObjectProperty<ComboBox<String>> mappingVersionComboBox = new SimpleObjectProperty<>();
 
-    private final ObjectProperty<TextField> authorField = new SimpleObjectProperty<>(new TextField(System.getProperty("user.name"))); // optional
+    private final ObjectProperty<TextField> authorField = new SimpleObjectProperty<>(); // optional
     private final ObjectProperty<TextArea> descriptionArea = new SimpleObjectProperty<>(); // optional
     private final ObjectProperty<TextField> issuesField = new SimpleObjectProperty<>(); // optional
     private final ObjectProperty<TextField> homepageField = new SimpleObjectProperty<>(); // optional
     private final ObjectProperty<TextField> sourcesField = new SimpleObjectProperty<>(); // optional
-
-    private final ObjectProperty<TextField> groupIdField = new SimpleObjectProperty<>();
-    private final ObjectProperty<TextField> artifactIdField = new SimpleObjectProperty<>();
-    private final ObjectProperty<TextField> versionField = new SimpleObjectProperty<>();
 
     private final AtomicBoolean hasTypedInProjectName = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInModid = new AtomicBoolean(false);
@@ -67,20 +68,26 @@ public class FabricProjectDetailsPane extends RRVBox {
     private final AtomicBoolean hasTypedInMainClass = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInArtifactId = new AtomicBoolean(false);
 
+    private final ObjectProperty<FabricLoaderVersion> latestFabricLoaderVersionProperty = new SimpleObjectProperty<>();
+    private final ObjectProperty<String> latestFabricApiVersionProperty = new SimpleObjectProperty<>();
+
+    private static final ExpiringCache<List<MinecraftVersion>> FABRIC_MINECRAFT_VERSIONS_CACHE = new ExpiringCache<>(Duration.ofHours(3));
+
     public FabricProjectDetailsPane() {
-        TextFieldComponent projectNameComponent = FormComponent.textField("ProjectName", "railroad.project.creation.name")
-            .required()
-            .bindTextFieldTo(projectNameField)
-            .promptText("railroad.project.creation.name.prompt")
-            .validator(ProjectValidators::validateProjectName)
-            .listener((node, observable, oldValue, newValue) -> {
-                String path = ProjectValidators.getRepairedPath(projectPathField.get().getText().trim() + "\\" + projectNameField.get().getText().trim());
-                createdAtPath.set(path);
-            })
+        var projectBasics = new ProjectBasicsComponents();
+        var projectCoordinates = new ProjectCoordinatesComponents();
+
+        StringProperty createdAtPath = projectBasics.createdPathProperty();
+        ObjectProperty<TextField> projectNameField = projectBasics.projectNameFieldProperty();
+        ObjectProperty<TextField> artifactIdField = projectCoordinates.artifactIdFieldProperty();
+
+        projectBasics.projectNameBuilder()
             .keyTypedHandler(event -> {
-                if (!hasTypedInProjectName.get() && !projectNameField.get().getText().isBlank())
+                TextField field = projectNameField.get();
+                String text = field == null ? "" : field.getText();
+                if (!hasTypedInProjectName.get() && !text.isBlank())
                     hasTypedInProjectName.set(true);
-                else if (hasTypedInProjectName.get() && projectNameField.get().getText().isBlank())
+                else if (hasTypedInProjectName.get() && text.isBlank())
                     hasTypedInProjectName.set(false);
             })
             .addTransformer(projectNameField, modIdField, text -> {
@@ -94,107 +101,56 @@ public class FabricProjectDetailsPane extends RRVBox {
                     return text;
 
                 return text;
-            })
-            .build();
+            });
 
-        DirectoryChooserComponent projectPathComponent = FormComponent.directoryChooser("ProjectPath", "railroad.project.creation.location")
-            .required()
-            .defaultPath(System.getProperty("user.home"))
-            .bindTextFieldTo(projectPathField)
-            .validator(ProjectValidators::validatePath)
-            .listener((node, observable, oldValue, newValue) -> {
-                String path = ProjectValidators.getRepairedPath(projectPathField.get().getText().trim() + "\\" + projectNameField.get().getText().trim());
-                createdAtPath.set(path);
-            })
-            .build();
+        ProjectBasicsComponents.Components basicsComponents = projectBasics.build();
 
-        CheckBoxComponent createGitComponent = FormComponent.checkBox("CreateGit", "railroad.project.creation.git")
-            .bindCheckBoxTo(createGitCheckBox)
-            .build();
+        projectCoordinates.artifactIdBuilder()
+            .keyTypedHandler(event -> {
+                TextField field = artifactIdField.get();
+                String text = field == null ? "" : field.getText();
+                if (!hasTypedInArtifactId.get() && !text.isBlank())
+                    hasTypedInArtifactId.set(true);
+                else if (hasTypedInArtifactId.get() && text.isBlank())
+                    hasTypedInArtifactId.set(false);
+            });
 
-        ComboBoxComponent<License> licenseComponent = FormComponent.comboBox("License", "railroad.project.creation.license", License.class)
-            .required()
-            .bindComboBoxTo(licenseComboBox)
-            .keyFunction(License::getName)
-            .valueOfFunction(License::fromName)
-            .translate(false)
-            .items(Arrays.asList(License.values()))
-            .defaultValue(() -> License.LGPL)
-            .build();
+        ProjectCoordinatesComponents.Components coordinateComponents = projectCoordinates.build();
 
-        TextFieldComponent licenseCustomComponent = FormComponent.textField("CustomLicense", "railroad.project.creation.license.custom")
-            .visible(licenseComboBox.get().valueProperty().isEqualTo(License.CUSTOM))
-            .bindTextFieldTo(licenseCustomField)
-            .promptText("railroad.project.creation.license.custom.prompt")
-            .validator(ProjectValidators::validateCustomLicense)
-            .build();
+        TextFieldComponent projectNameComponent = basicsComponents.projectNameComponent();
+        DirectoryChooserComponent projectPathComponent = basicsComponents.projectPathComponent();
+        CheckBoxComponent createGitComponent = basicsComponents.createGitComponent();
+        ComboBoxComponent<License> licenseComponent = basicsComponents.licenseComponent();
+        TextFieldComponent licenseCustomComponent = basicsComponents.licenseCustomComponent();
 
-        List<MinecraftVersion> supportedVersions = resolveFabricMinecraftVersions();
-        MinecraftVersion latestVersion = determineDefaultMinecraftVersion(supportedVersions);
+        TextFieldComponent groupIdComponent = coordinateComponents.groupIdComponent();
+        TextFieldComponent artifactIdComponent = coordinateComponents.artifactIdComponent();
+        TextFieldComponent versionComponent = coordinateComponents.versionComponent();
+
         ComboBoxComponent<MinecraftVersion> minecraftVersionComponent = FormComponent.comboBox("MinecraftVersion", "railroad.project.creation.minecraft_version", MinecraftVersion.class)
             .required()
-            .items(supportedVersions)
-            .defaultValue(() -> latestVersion)
+            .items(() -> FABRIC_MINECRAFT_VERSIONS_CACHE.getIfPresent()
+                .map(List::copyOf)
+                .orElseGet(Collections::emptyList))
+            .defaultValue(() -> {
+                List<MinecraftVersion> versions = FABRIC_MINECRAFT_VERSIONS_CACHE.getIfPresent()
+                    .orElseGet(Collections::emptyList);
+                return determineDefaultMinecraftVersion(versions);
+            })
             .bindComboBoxTo(minecraftVersionComboBox)
             .keyFunction(MinecraftVersion::id)
-            .valueOfFunction(string -> MinecraftVersion.fromId(string).orElse(null))
+            .valueOfFunction(string -> {
+                try {
+                    return SwitchboardRepositories.MINECRAFT.getVersionSync(string).orElse(null);
+                } catch (ExecutionException | InterruptedException exception) {
+                    throw new RuntimeException(exception);
+                }
+            })
             .translate(false)
-            .addTransformer(minecraftVersionComboBox, fabricLoaderVersionComboBox, version -> {
-                if(version == null) {
-                    Railroad.LOGGER.error("Minecraft version is null when transforming for Fabric Loader versions");
-                    return null;
-                }
-
-                ComboBox<FabricLoaderVersion> comboBox = fabricLoaderVersionComboBox.get();
-                if (comboBox == null) {
-                    Railroad.LOGGER.error("Fabric Loader ComboBox is null when transforming for Minecraft version {}", version);
-                    return null;
-                }
-
-                List<FabricLoaderVersion> newVersions = FabricLoaderVersionService.INSTANCE.listVersionsFor(version);
-                comboBox.getItems().setAll(newVersions);
-                if (newVersions.isEmpty()) {
-                    Railroad.LOGGER.error("No Fabric Loader versions found for Minecraft version {}", version);
-                    return null;
-                }
-
-                FabricLoaderVersion latestFor = FabricLoaderVersionService.INSTANCE.getLatestVersion(version);
-                if (latestFor == null) {
-                    Railroad.LOGGER.error("No latest Fabric Loader version found for Minecraft version {}", version);
-                    latestFor = newVersions.getFirst();
-                }
-
-                return latestFor;
-            })
-            .addTransformer(minecraftVersionComboBox, fapiVersionComboBox, version -> {
-                if(version == null) {
-                    Railroad.LOGGER.error("Minecraft version is null when transforming for Fabric API versions");
-                    return null;
-                }
-
-                ComboBox<String> comboBox = fapiVersionComboBox.get();
-                if (comboBox == null) {
-                    Railroad.LOGGER.error("Fabric API ComboBox is null when transforming for Minecraft version {}", version);
-                    return null;
-                }
-
-                List<String> newVersions = FabricApiVersionService.INSTANCE.listVersionsFor(version);
-                comboBox.getItems().setAll(newVersions);
-                if (newVersions.isEmpty()) {
-                    Railroad.LOGGER.error("No Fabric API versions found for Minecraft version {}", version);
-                    return null;
-                }
-
-                String latestFor = FabricApiVersionService.INSTANCE.latestFor(version).orElse(null);
-                if (latestFor == null) {
-                    Railroad.LOGGER.error("No latest Fabric API version found for Minecraft version {}", version);
-                    latestFor = newVersions.getLast();
-                }
-
-                return latestFor;
-            })
+            .addAsyncTransformer(minecraftVersionComboBox, this::applyFabricLoaderVersions, this::fetchFabricLoaderVersions)
+            .addAsyncTransformer(minecraftVersionComboBox, this::applyFabricApiVersions, this::fetchFabricApiVersions)
             .addTransformer(minecraftVersionComboBox, mappingChannelComboBox, version -> {
-                if(version == null) {
+                if (version == null) {
                     Railroad.LOGGER.error("Minecraft version is null when transforming for mapping channels");
                     return null;
                 }
@@ -219,7 +175,7 @@ public class FabricProjectDetailsPane extends RRVBox {
         ComboBoxComponent<FabricLoaderVersion> fabricLoaderVersionComponent = FormComponent.comboBox("FabricLoaderVersion", "railroad.project.creation.fabric_loader_version", FabricLoaderVersion.class)
             .required()
             .bindComboBoxTo(fabricLoaderVersionComboBox)
-            .keyFunction(version -> version.loaderVersion().version())
+            .keyFunction(FabricLoaderVersion::version)
             .valueOfFunction(string -> {
                 if (string == null)
                     return null;
@@ -229,7 +185,7 @@ public class FabricProjectDetailsPane extends RRVBox {
                     return null;
 
                 return comboBox.getItems().stream()
-                    .filter(version -> Objects.equals(version.loaderVersion().version(), string))
+                    .filter(version -> Objects.equals(version.version(), string))
                     .findFirst()
                     .orElse(null);
             })
@@ -237,13 +193,13 @@ public class FabricProjectDetailsPane extends RRVBox {
             .cellFactory(param -> new StarableListCell<>(
                 version -> Objects.equals(version, latestFabricLoaderVersion()),
                 version -> false,
-                fabricLoaderVersion -> fabricLoaderVersion.loaderVersion().version()))
+                FabricLoaderVersion::version))
             .buttonCell(new StarableListCell<>(
                 version -> Objects.equals(version, latestFabricLoaderVersion()),
                 version -> false,
-                fabricLoaderVersion -> fabricLoaderVersion.loaderVersion().version()))
-            .defaultValue(() -> latestVersion == null ? null : FabricLoaderVersionService.INSTANCE.getLatestVersion(latestVersion))
-            .items(latestVersion == null ? Collections.emptyList() : FabricLoaderVersionService.INSTANCE.listVersionsFor(latestVersion))
+                FabricLoaderVersion::version))
+            .defaultValue(this::latestFabricLoaderVersion)
+            .items(Collections::emptyList)
             .build();
 
         CheckBoxComponent includeFapiComponent = FormComponent.checkBox("IncludeFapi", "railroad.project.creation.include_fapi")
@@ -268,7 +224,7 @@ public class FabricProjectDetailsPane extends RRVBox {
                 version -> false,
                 Function.identity()))
             .defaultValue(this::latestFabricApiVersion)
-            .items(latestVersion == null ? Collections.emptyList() : FabricApiVersionService.INSTANCE.listVersionsFor(latestVersion))
+            .items(Collections::emptyList)
             .visible(ProjectValidators.createBinding(includeFapiCheckBox.get().selectedProperty()))
             .build();
 
@@ -329,18 +285,19 @@ public class FabricProjectDetailsPane extends RRVBox {
 
         CheckBoxComponent splitSourcesComponent = FormComponent.checkBox("SplitSources", "railroad.project.creation.split_sources")
             .bindCheckBoxTo(splitSourcesCheckBox)
+            .selected(true)
             .build();
 
         ComboBoxComponent<MappingChannel> mappingChannelComponent = FormComponent.comboBox("MappingChannel", "railroad.project.creation.mapping_channel", MappingChannel.class)
             .required()
-            .items(MappingChannelRegistry.findValidMappingChannels(getSelectedMinecraftVersion()))
+            .items(() -> MappingChannelRegistry.findValidMappingChannels(getSelectedMinecraftVersion()))
             .defaultValue(() -> MappingChannelRegistry.YARN)
             .bindComboBoxTo(mappingChannelComboBox)
             .keyFunction(MappingChannel::translationKey)
-            .valueOfFunction(MappingChannelRegistry.REGISTRY::get)
+            .valueOfFunction(MappingChannel.REGISTRY::get)
             .translate(true)
             .addTransformer(mappingChannelComboBox, mappingVersionComboBox, channel -> {
-                if(channel == null) {
+                if (channel == null) {
                     Railroad.LOGGER.error("Mapping channel is null when transforming for mapping versions");
                     return null;
                 }
@@ -407,13 +364,14 @@ public class FabricProjectDetailsPane extends RRVBox {
 
                 return versions.getLast();
             })
-            .items(MappingChannelRegistry.YARN.listVersionsFor(getSelectedMinecraftVersion()))
+            .items(() -> MappingChannelRegistry.YARN.listVersionsFor(getSelectedMinecraftVersion()))
             .build();
 
         TextFieldComponent authorComponent = FormComponent.textField("Author", "railroad.project.creation.author")
             .bindTextFieldTo(authorField)
             .promptText("railroad.project.creation.author.prompt")
             .validator(ProjectValidators::validateAuthor)
+            .text(System.getProperty("user.name"))
             .build();
 
         TextAreaComponent descriptionComponent = FormComponent.textArea("Description", "railroad.project.creation.description")
@@ -440,33 +398,6 @@ public class FabricProjectDetailsPane extends RRVBox {
             .bindTextFieldTo(sourcesField)
             .promptText("railroad.project.creation.sources.prompt")
             .validator(field -> ProjectValidators.validateGenericUrl(field, "sources"))
-            .build();
-
-        TextFieldComponent groupIdComponent = FormComponent.textField("GroupId", "railroad.project.creation.group_id")
-            .required()
-            .bindTextFieldTo(groupIdField)
-            .promptText("railroad.project.creation.group_id.prompt")
-            .validator(ProjectValidators::validateGroupId)
-            .build();
-
-        TextFieldComponent artifactIdComponent = FormComponent.textField("ArtifactId", "railroad.project.creation.artifact_id")
-            .required()
-            .bindTextFieldTo(artifactIdField)
-            .promptText("railroad.project.creation.artifact_id.prompt")
-            .validator(ProjectValidators::validateArtifactId)
-            .keyTypedHandler(event -> {
-                if (!hasTypedInArtifactId.get() && !artifactIdField.get().getText().isBlank())
-                    hasTypedInArtifactId.set(true);
-                else if (hasTypedInArtifactId.get() && artifactIdField.get().getText().isBlank())
-                    hasTypedInArtifactId.set(false);
-            })
-            .build();
-
-        TextFieldComponent versionComponent = FormComponent.textField("Version", "railroad.project.creation.version")
-            .required()
-            .bindTextFieldTo(versionField)
-            .promptText("railroad.project.creation.version.prompt")
-            .validator(ProjectValidators::validateVersion)
             .build();
 
         Form form = Form.create()
@@ -509,10 +440,19 @@ public class FabricProjectDetailsPane extends RRVBox {
             .disableResetButton()
             .onSubmit((theForm, formData) -> {
                 if (theForm.validate()) {
-                    FabricProjectData data = createData(formData);
-                    getScene().setRoot(new FabricProjectCreationPane(data));
+                    ProjectData data = createData(formData);
+                    var creationPane = new ProjectCreationPane(data);
+
+                    ProjectServiceRegistry serviceRegistry = Services.PROJECT_SERVICE_REGISTRY;
+                    serviceRegistry.get(GradleService.class).setOutputStream(creationPane.getTaos());
+                    creationPane.initService(new ProjectCreationService(Services.PROJECT_CREATION_PIPELINE.createProject(
+                        ProjectTypeRegistry.FABRIC,
+                        serviceRegistry
+                    ), creationPane.getContext()));
+
+                    getScene().setRoot(creationPane);
                 } else {
-                    theForm.runValidation(); // Show validation errors
+                    theForm.runValidation();
                 }
             })
             .build();
@@ -520,30 +460,24 @@ public class FabricProjectDetailsPane extends RRVBox {
         getChildren().add(form.createUI());
 
         projectPathComponent.getComponent().addInformationLabel("railroad.project.creation.location.info", createdAtPath, createdAtPath.get());
+
+        loadFabricMinecraftVersionsAsync();
     }
 
     private String latestFabricApiVersion() {
-        MinecraftVersion minecraftVersion = getSelectedMinecraftVersion();
-        if (minecraftVersion == null)
-            return null;
-
-        return FabricApiVersionService.INSTANCE.latestFor(minecraftVersion).orElse(null);
+        return latestFabricApiVersionProperty.get();
     }
 
     private FabricLoaderVersion latestFabricLoaderVersion() {
-        MinecraftVersion minecraftVersion = getSelectedMinecraftVersion();
-        if (minecraftVersion == null)
-            return null;
-
-        return FabricLoaderVersionService.INSTANCE.getLatestVersion(minecraftVersion);
+        return latestFabricLoaderVersionProperty.get();
     }
 
-    protected static FabricProjectData createData(FormData formData) {
+    protected static ProjectData createData(FormData formData) {
         String projectName = formData.getString("ProjectName");
         var projectPath = Path.of(formData.getString("ProjectPath"));
         boolean createGit = formData.getBoolean("CreateGit");
-        License license = formData.getEnum("License", License.class);
-        String licenseCustom = license == License.CUSTOM ? formData.getString("CustomLicense") : null;
+        License license = formData.get("License", License.class);
+        String licenseCustom = license == LicenseRegistry.CUSTOM ? formData.getString("CustomLicense") : null;
         MinecraftVersion minecraftVersion = formData.get("MinecraftVersion", MinecraftVersion.class);
         FabricLoaderVersion fabricVersion = formData.get("FabricLoaderVersion", FabricLoaderVersion.class);
         Optional<String> fapiVersion = Optional.ofNullable(formData.getBoolean("IncludeFapi") ? formData.get("FabricApiVersion", String.class) : null);
@@ -563,29 +497,214 @@ public class FabricProjectDetailsPane extends RRVBox {
         String artifactId = formData.getString("ArtifactId");
         String version = formData.getString("Version");
 
-        return new FabricProjectData(projectName, projectPath, createGit, license, licenseCustom, minecraftVersion, fabricVersion, fapiVersion, modId, modName, mainClass, useAccessWidener, splitSources, mappingChannel, mappingVersion, author, description, issues, homepage, sources, groupId, artifactId, version);
+        var data = new ProjectData();
+        data.set(ProjectData.DefaultKeys.NAME, projectName);
+        data.set(ProjectData.DefaultKeys.PATH, projectPath);
+        data.set(ProjectData.DefaultKeys.INIT_GIT, createGit);
+
+        data.set(ProjectData.DefaultKeys.LICENSE, license);
+        // TODO: Get rid of this and move into CustomLicense
+        if (licenseCustom != null)
+            data.set(ProjectData.DefaultKeys.LICENSE_CUSTOM, licenseCustom);
+
+        data.set(MinecraftProjectKeys.MINECRAFT_VERSION, minecraftVersion);
+        data.set(FabricProjectKeys.FABRIC_LOADER_VERSION, fabricVersion);
+        fapiVersion.ifPresent(v -> data.set(FabricProjectKeys.FABRIC_API_VERSION, v));
+        data.set(MinecraftProjectKeys.MOD_ID, modId);
+        data.set(MinecraftProjectKeys.MOD_NAME, modName);
+        data.set(MinecraftProjectKeys.MAIN_CLASS, mainClass);
+        data.set(FabricProjectKeys.USE_ACCESS_WIDENER, useAccessWidener);
+        data.set(FabricProjectKeys.SPLIT_SOURCES, splitSources);
+        data.set(MinecraftProjectKeys.MAPPING_CHANNEL, mappingChannel);
+        data.set(MinecraftProjectKeys.MAPPING_VERSION, mappingVersion);
+        author.ifPresent(a -> data.set(ProjectData.DefaultKeys.AUTHOR, a));
+        description.ifPresent(d -> data.set(ProjectData.DefaultKeys.DESCRIPTION, d));
+        issues.ifPresent(i -> data.set(ProjectData.DefaultKeys.ISSUES_URL, i));
+        homepage.ifPresent(h -> data.set(ProjectData.DefaultKeys.HOMEPAGE_URL, h));
+        sources.ifPresent(s -> data.set(ProjectData.DefaultKeys.SOURCES_URL, s));
+        data.set(MavenProjectKeys.GROUP_ID, groupId);
+        data.set(MavenProjectKeys.ARTIFACT_ID, artifactId);
+        data.set(MavenProjectKeys.VERSION, version);
+        return data;
     }
 
-    private List<MinecraftVersion> resolveFabricMinecraftVersions() {
-        return FabricApiVersionService.INSTANCE.listAllVersions()
-            .stream()
-            .map(FabricApiVersionService::toMinecraftVersion)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .distinct()
-            .sorted(Comparator.reverseOrder())
-            .toList();
+    private void loadFabricMinecraftVersionsAsync() {
+        FABRIC_MINECRAFT_VERSIONS_CACHE.getIfPresent().ifPresent(this::applyMinecraftVersions);
+
+        resolveFabricMinecraftVersions().whenComplete((versions, throwable) -> {
+            if (throwable != null) {
+                Railroad.LOGGER.error("Failed to fetch Minecraft versions for Fabric", throwable);
+                return;
+            }
+
+            Platform.runLater(() -> applyMinecraftVersions(versions));
+        });
+    }
+
+    private void applyMinecraftVersions(List<MinecraftVersion> versions) {
+        ComboBox<MinecraftVersion> comboBox = minecraftVersionComboBox.get();
+        if (comboBox == null)
+            return;
+
+        comboBox.getItems().setAll(versions);
+        if (versions.isEmpty()) {
+            comboBox.setValue(null);
+            return;
+        }
+
+        MinecraftVersion current = comboBox.getValue();
+        if (current != null && versions.contains(current))
+            return;
+
+        comboBox.setValue(determineDefaultMinecraftVersion(versions));
+    }
+
+    private CompletableFuture<FabricLoaderVersionsPayload> fetchFabricLoaderVersions(MinecraftVersion version) {
+        Platform.runLater(() -> {
+            ComboBox<FabricLoaderVersion> comboBox = fabricLoaderVersionComboBox.get();
+            if (comboBox != null) {
+                comboBox.getItems().clear();
+                comboBox.setValue(null);
+            }
+            latestFabricLoaderVersionProperty.set(null);
+        });
+
+        if (version == null)
+            return CompletableFuture.completedFuture(new FabricLoaderVersionsPayload(null, Collections.emptyList(), null));
+
+        String versionId = version.id();
+        CompletableFuture<List<FabricLoaderVersion>> versionsFuture = SwitchboardRepositories.FABRIC_LOADER.getVersionsFor(versionId);
+        CompletableFuture<FabricLoaderVersion> latestFuture = SwitchboardRepositories.FABRIC_LOADER.getLatestVersionFor(versionId);
+
+        return versionsFuture.thenCombine(latestFuture, (versions, latest) -> new FabricLoaderVersionsPayload(
+                version,
+                versions == null ? Collections.emptyList() : versions,
+                latest))
+            .exceptionally(throwable -> {
+                Railroad.LOGGER.error("Failed to fetch Fabric Loader versions for Minecraft version {}", version, throwable);
+                return new FabricLoaderVersionsPayload(version, Collections.emptyList(), null);
+            });
+    }
+
+    private void applyFabricLoaderVersions(FabricLoaderVersionsPayload payload) {
+        ComboBox<FabricLoaderVersion> comboBox = fabricLoaderVersionComboBox.get();
+        if (comboBox == null)
+            return;
+
+        if (!Objects.equals(payload.contextVersion(), getSelectedMinecraftVersion()))
+            return;
+
+        List<FabricLoaderVersion> versions = payload.versions();
+        FabricLoaderVersion latest = payload.latest();
+
+        comboBox.getItems().setAll(versions);
+        latestFabricLoaderVersionProperty.set(latest);
+
+        FabricLoaderVersion currentValue = comboBox.getValue();
+        if (currentValue != null && versions.contains(currentValue))
+            return;
+
+        FabricLoaderVersion selection = null;
+        if (latest != null && versions.contains(latest))
+            selection = latest;
+        else if (!versions.isEmpty())
+            selection = versions.getFirst();
+
+        comboBox.setValue(selection);
+    }
+
+    private CompletableFuture<FabricApiVersionsPayload> fetchFabricApiVersions(MinecraftVersion version) {
+        Platform.runLater(() -> {
+            ComboBox<String> comboBox = fapiVersionComboBox.get();
+            if (comboBox != null) {
+                comboBox.getItems().clear();
+                comboBox.setValue(null);
+            }
+            latestFabricApiVersionProperty.set(null);
+        });
+
+        if (version == null)
+            return CompletableFuture.completedFuture(new FabricApiVersionsPayload(null, Collections.emptyList(), null));
+
+        String versionId = version.id();
+        CompletableFuture<List<String>> versionsFuture = SwitchboardRepositories.FABRIC_API.getVersionsFor(versionId);
+        CompletableFuture<String> latestFuture = SwitchboardRepositories.FABRIC_API.getLatestVersionFor(versionId);
+
+        return versionsFuture.thenCombine(latestFuture, (versions, latest) -> new FabricApiVersionsPayload(
+                version,
+                versions == null ? Collections.emptyList() : versions,
+                latest))
+            .exceptionally(throwable -> {
+                Railroad.LOGGER.error("Failed to fetch Fabric API versions for Minecraft version {}", version, throwable);
+                return new FabricApiVersionsPayload(version, Collections.emptyList(), null);
+            });
+    }
+
+    private void applyFabricApiVersions(FabricApiVersionsPayload payload) {
+        ComboBox<String> comboBox = fapiVersionComboBox.get();
+        if (comboBox == null)
+            return;
+
+        if (!Objects.equals(payload.contextVersion(), getSelectedMinecraftVersion()))
+            return;
+
+        List<String> versions = payload.versions();
+        String latest = payload.latest();
+
+        comboBox.getItems().setAll(versions);
+        latestFabricApiVersionProperty.set(latest);
+
+        String currentValue = comboBox.getValue();
+        if (currentValue != null && versions.contains(currentValue))
+            return;
+
+        String selection = null;
+        if (latest != null && versions.contains(latest))
+            selection = latest;
+        else if (!versions.isEmpty())
+            selection = versions.getFirst();
+
+        comboBox.setValue(selection);
+    }
+
+    private CompletableFuture<List<MinecraftVersion>> resolveFabricMinecraftVersions() {
+        return FABRIC_MINECRAFT_VERSIONS_CACHE.getAsync(() ->
+            SwitchboardRepositories.FABRIC_API.getAllVersions()
+                .thenApply(versions -> versions.stream()
+                    .map(FabricApiVersionRepository::getMinecraftVersion)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .distinct()
+                    .map(version -> {
+                        try {
+                            return SwitchboardRepositories.MINECRAFT.getVersionSync(version).orElse(null);
+                        } catch (ExecutionException | InterruptedException exception) {
+                            Railroad.LOGGER.error("Failed to fetch Minecraft version {}", version, exception);
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .sorted(Comparator.reverseOrder())
+                    .toList()
+                )
+        );
+    }
+
+    private record FabricLoaderVersionsPayload(MinecraftVersion contextVersion, List<FabricLoaderVersion> versions,
+                                               FabricLoaderVersion latest) {
+    }
+
+    private record FabricApiVersionsPayload(MinecraftVersion contextVersion, List<String> versions, String latest) {
     }
 
     private MinecraftVersion determineDefaultMinecraftVersion(List<MinecraftVersion> versions) {
-        if (!versions.isEmpty())
-            return versions.getFirst();
+        if (versions == null || versions.isEmpty())
+            return null;
 
-        MinecraftVersion latestStable = MinecraftVersion.getLatestStableVersion();
-        if (latestStable != null)
-            return latestStable;
-
-        return MinecraftVersion.getLatestSnapshotVersion();
+        return versions.stream()
+            .filter(version -> version != null && version.getType() == MinecraftVersion.Type.RELEASE)
+            .findFirst()
+            .orElseGet(versions::getFirst);
     }
 
     private MinecraftVersion getSelectedMinecraftVersion() {

@@ -1,9 +1,10 @@
 package dev.railroadide.railroad.switchboard.repositories;
 
 import com.google.gson.reflect.TypeToken;
-import dev.railroadide.railroad.switchboard.cache.CacheManager;
+import dev.railroadide.core.switchboard.SwitchboardRepository;
+import dev.railroadide.core.switchboard.cache.CacheManager;
+import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
 import dev.railroadide.railroad.switchboard.SwitchboardClient;
-import dev.railroadide.railroad.switchboard.pojo.MinecraftVersion;
 
 import java.time.Duration;
 import java.util.List;
@@ -12,7 +13,8 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-public record MinecraftVersionRepository(SwitchboardClient client, CacheManager cache) {
+public record MinecraftVersionRepository(SwitchboardClient client, CacheManager cache)
+        implements SwitchboardRepository {
     public CompletableFuture<List<MinecraftVersion>> getAllVersions() {
         return cache.getOrFetch(
             "mc:versions",

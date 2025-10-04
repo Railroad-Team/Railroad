@@ -1,7 +1,13 @@
 package dev.railroadide.railroad;
 
+import dev.railroadide.core.project.creation.ProjectCreationPipelineService;
+import dev.railroadide.core.project.creation.ProjectServiceRegistry;
+import dev.railroadide.core.project.creation.service.*;
 import dev.railroadide.railroad.ide.DefaultIDEStateService;
 import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.project.creation.DefaultProjectCreationPipelineService;
+import dev.railroadide.railroad.project.creation.service.*;
+import dev.railroadide.railroad.utility.DiscardingOutputStream;
 import dev.railroadide.railroadpluginapi.services.ApplicationInfoService;
 import dev.railroadide.railroadpluginapi.services.DocumentEditorStateService;
 import dev.railroadide.railroadpluginapi.services.IDEStateService;
@@ -35,6 +41,18 @@ public class Services {
 
     public static final DefaultDocumentEditorStateService DOCUMENT_EDITOR_STATE = new DefaultDocumentEditorStateService();
 
+    public static final ProjectServiceRegistry PROJECT_SERVICE_REGISTRY = new ProjectServiceRegistry() {{
+        bind(ChecksumService.class, new MessageDigestChecksumService());
+        bind(FilesService.class, new NioFilesService());
+        bind(GitService.class, new JGitService());
+        bind(GradleService.class, new ToolingGradleService(new DiscardingOutputStream()));
+        bind(HttpService.class, new OkHttpService(Railroad.HTTP_CLIENT));
+        bind(TemplateEngineService.class, new GroovyTemplateEngineService());
+        bind(ZipService.class, new NioZipService());
+    }};
+
+    public static final DefaultProjectCreationPipelineService PROJECT_CREATION_PIPELINE = new DefaultProjectCreationPipelineService();
+
     /**
      * Retrieves a service instance by its class type.
      *
@@ -57,6 +75,10 @@ public class Services {
             return (T) Railroad.getHostServicess();
         } else if (serviceClass == DocumentEditorStateService.class) {
             return (T) DOCUMENT_EDITOR_STATE;
+        } else if (serviceClass == ProjectServiceRegistry.class) {
+            return (T) PROJECT_SERVICE_REGISTRY;
+        } else if (serviceClass == ProjectCreationPipelineService.class) {
+            return (T) PROJECT_CREATION_PIPELINE;
         }
 
         throw new IllegalArgumentException("Service " + serviceClass.getName() + " is not available.");

@@ -3,24 +3,26 @@ package dev.railroadide.core.form.ui;
 import dev.railroadide.core.ui.localized.LocalizedComboBox;
 import dev.railroadide.core.utility.FromStringFunction;
 import dev.railroadide.core.utility.ToStringFunction;
+import javafx.application.Platform;
 import javafx.scene.control.ComboBox;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * A form combo box component that extends InformativeLabeledHBox to provide
  * a labeled combo box with validation, localization, and styling support.
- * 
+ *
  * @param <T> the type of items in the combo box
  */
 @Getter
 public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> {
     /**
      * Constructs a new FormComboBox with the specified configuration.
-     * 
+     *
      * @param labelKey the localization key for the label text
      * @param required whether the combo box is required
      * @param items the list of items to display in the combo box
@@ -29,27 +31,27 @@ public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> {
      * @param keyFunction the function to convert items to strings for display
      * @param valueOfFunction the function to convert strings back to items
      */
-    public FormComboBox(String labelKey, boolean required, List<T> items, boolean editable, boolean translate, @Nullable ToStringFunction<T> keyFunction, @Nullable FromStringFunction<T> valueOfFunction) {
+    public FormComboBox(String labelKey, boolean required, Supplier<Collection<T>> items, boolean editable, boolean translate, @Nullable ToStringFunction<T> keyFunction, @Nullable FromStringFunction<T> valueOfFunction) {
         super(labelKey, required, Map.of("items", items, "editable", editable, "translate", translate, "keyFunction", keyFunction, "valueOfFunction", valueOfFunction));
     }
 
     /**
      * Creates the primary combo box component with the specified parameters.
-     * 
+     *
      * @param params a map containing the parameters for the combo box
      * @return a new ComboBox instance with the specified configuration
      */
     @SuppressWarnings("unchecked")
     @Override
     public ComboBox<T> createPrimaryComponent(Map<String, Object> params) {
-        List<T> items = (List<T>) params.get("items");
+        Supplier<Collection<T>> items = (Supplier<Collection<T>>) params.get("items");
         boolean editable = (boolean) params.get("editable");
         boolean translate = (boolean) params.get("translate");
         ToStringFunction<T> keyFunction = (ToStringFunction<T>) params.get("keyFunction");
         FromStringFunction<T> valueOfFunction = (FromStringFunction<T>) params.get("valueOfFunction");
 
         ComboBox<T> comboBox = translate ? new LocalizedComboBox<>(keyFunction, valueOfFunction) : new ComboBox<>();
-        comboBox.getItems().addAll(items);
+        new Thread(() -> Platform.runLater(() -> comboBox.getItems().addAll(items.get()))).start();
         comboBox.setEditable(editable);
         comboBox.getStyleClass().add("rr-combo-box");
         return comboBox;

@@ -1,19 +1,16 @@
 package dev.railroadide.railroad.switchboard;
 
 import com.google.gson.reflect.TypeToken;
+import dev.railroadide.core.gson.GsonLocator;
+import dev.railroadide.core.switchboard.pojo.FabricLoaderVersion;
+import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
+import dev.railroadide.core.switchboard.pojo.ParchmentVersion;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.switchboard.pojo.FabricLoaderVersion;
-import dev.railroadide.railroad.switchboard.pojo.MinecraftVersion;
-import dev.railroadide.railroad.switchboard.pojo.ParchmentVersion;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 public record SwitchboardClient(String baseUrl) {
@@ -27,8 +24,7 @@ public record SwitchboardClient(String baseUrl) {
     }
 
     public CompletableFuture<List<MinecraftVersion>> fetchMinecraftVersions() {
-        return getJson("minecraft/versions", new TypeToken<>() {
-        });
+        return getJson("minecraft/versions", new TypeToken<>() {});
     }
 
     private <T> CompletableFuture<T> getJson(String endpoint, TypeToken<T> clazz) {
@@ -276,7 +272,7 @@ public record SwitchboardClient(String baseUrl) {
                 }
 
                 ResponseBody body = Objects.requireNonNull(response.body());
-                T result = Railroad.GSON.fromJson(body.charStream(), clazz.getType());
+                T result = GsonLocator.getInstance().fromJson(body.charStream(), clazz.getType());
                 future.complete(result);
             } catch (Exception exception) {
                 future.completeExceptionally(exception);

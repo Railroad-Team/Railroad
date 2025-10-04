@@ -1,7 +1,8 @@
 package dev.railroadide.railroad.welcome.project.ui;
 
+import dev.railroadide.core.project.ProjectType;
 import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.railroad.welcome.project.ProjectType;
+import dev.railroadide.railroad.project.ProjectTypeRegistry;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
@@ -13,7 +14,7 @@ import java.util.Map;
 
 public class ProjectDetailsPane extends ScrollPane {
     private final Map<ProjectType, Node> projectDetailsPanes = new HashMap<>();
-    private final ObjectProperty<ProjectType> projectType = new SimpleObjectProperty<>(ProjectType.FABRIC);
+    private final ObjectProperty<ProjectType> projectType = new SimpleObjectProperty<>(ProjectTypeRegistry.FABRIC);
 
     public ProjectDetailsPane() {
         setFitToWidth(true);

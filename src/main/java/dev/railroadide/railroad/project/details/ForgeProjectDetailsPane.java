@@ -5,40 +5,46 @@ import dev.railroadide.core.form.FormComponent;
 import dev.railroadide.core.form.FormData;
 import dev.railroadide.core.form.FormSection;
 import dev.railroadide.core.form.impl.*;
+import dev.railroadide.core.project.License;
+import dev.railroadide.core.project.ProjectData;
+import dev.railroadide.core.project.creation.ProjectCreationService;
+import dev.railroadide.core.project.creation.ProjectServiceRegistry;
+import dev.railroadide.core.project.creation.service.GradleService;
+import dev.railroadide.core.project.minecraft.MappingChannel;
+import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.project.DisplayTest;
-import dev.railroadide.railroad.project.License;
-import dev.railroadide.railroad.project.data.ForgeProjectData;
-import dev.railroadide.railroad.project.minecraft.MinecraftVersion;
-import dev.railroadide.railroad.project.minecraft.forge.ForgeVersionService;
-import dev.railroadide.railroad.project.minecraft.MappingChannel;
-import dev.railroadide.railroad.project.minecraft.MappingChannelRegistry;
-import dev.railroadide.railroad.project.creation.ForgeProjectCreationPane;
+import dev.railroadide.railroad.project.LicenseRegistry;
+import dev.railroadide.railroad.project.MappingChannelRegistry;
+import dev.railroadide.railroad.project.ProjectTypeRegistry;
+import dev.railroadide.railroad.project.creation.ui.ProjectCreationPane;
+import dev.railroadide.railroad.project.data.ForgeProjectKeys;
+import dev.railroadide.railroad.project.data.MavenProjectKeys;
+import dev.railroadide.railroad.project.data.MinecraftProjectKeys;
+import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
+import dev.railroadide.railroad.utility.ExpiringCache;
 import dev.railroadide.railroad.welcome.project.ui.widget.StarableListCell;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.scene.control.*;
 import javafx.scene.paint.Color;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 public class ForgeProjectDetailsPane extends RRVBox {
-    private final StringProperty createdAtPath = new SimpleStringProperty(ProjectValidators.getRepairedPath(System.getProperty("user.home") + "\\"));
-
-    private final ObjectProperty<TextField> projectNameField = new SimpleObjectProperty<>();
-    private final ObjectProperty<TextField> projectPathField = new SimpleObjectProperty<>();
-    private final ObjectProperty<CheckBox> createGitCheckBox = new SimpleObjectProperty<>();
-    private final ObjectProperty<ComboBox<License>> licenseComboBox = new SimpleObjectProperty<>();
-    private final ObjectProperty<TextField> licenseCustomField = new SimpleObjectProperty<>();
-
     private final ObjectProperty<ComboBox<MinecraftVersion>> minecraftVersionComboBox = new SimpleObjectProperty<>();
     private final ObjectProperty<ComboBox<String>> forgeVersionComboBox = new SimpleObjectProperty<>();
+    private final ObjectProperty<String> latestForgeVersionProperty = new SimpleObjectProperty<>();
     private final ObjectProperty<TextField> modIdField = new SimpleObjectProperty<>();
     private final ObjectProperty<TextField> modNameField = new SimpleObjectProperty<>();
     private final ObjectProperty<TextField> mainClassField = new SimpleObjectProperty<>();
@@ -49,7 +55,7 @@ public class ForgeProjectDetailsPane extends RRVBox {
     private final ObjectProperty<ComboBox<MappingChannel>> mappingChannelComboBox = new SimpleObjectProperty<>();
     private final ObjectProperty<ComboBox<String>> mappingVersionComboBox = new SimpleObjectProperty<>();
 
-    private final ObjectProperty<TextField> authorField = new SimpleObjectProperty<>(new TextField(System.getProperty("user.name"))); // optional
+    private final ObjectProperty<TextField> authorField = new SimpleObjectProperty<>(); // optional
     private final ObjectProperty<TextField> creditsField = new SimpleObjectProperty<>(); // optional
     private final ObjectProperty<TextArea> descriptionArea = new SimpleObjectProperty<>(); // optional
     private final ObjectProperty<TextField> issuesField = new SimpleObjectProperty<>(); // optional
@@ -58,30 +64,29 @@ public class ForgeProjectDetailsPane extends RRVBox {
     private final ObjectProperty<ComboBox<DisplayTest>> displayTestComboBox = new SimpleObjectProperty<>(); // optional
     private final ObjectProperty<CheckBox> clientSideOnlyCheckBox = new SimpleObjectProperty<>(); // optional
 
-    private final ObjectProperty<TextField> groupIdField = new SimpleObjectProperty<>();
-    private final ObjectProperty<TextField> artifactIdField = new SimpleObjectProperty<>();
-    private final ObjectProperty<TextField> versionField = new SimpleObjectProperty<>();
-
     private final AtomicBoolean hasTypedInProjectName = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInModid = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInModName = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInMainClass = new AtomicBoolean(false);
     private final AtomicBoolean hasTypedInArtifactId = new AtomicBoolean(false);
 
+    private static final ExpiringCache<List<MinecraftVersion>> FORGE_MINECRAFT_VERSIONS_CACHE = new ExpiringCache<>(Duration.ofHours(3));
+
     public ForgeProjectDetailsPane() {
-        TextFieldComponent projectNameComponent = FormComponent.textField("ProjectName", "railroad.project.creation.name")
-            .required()
-            .bindTextFieldTo(projectNameField)
-            .promptText("railroad.project.creation.name.prompt")
-            .validator(ProjectValidators::validateProjectName)
-            .listener((node, observable, oldValue, newValue) -> {
-                String path = ProjectValidators.getRepairedPath(projectPathField.get().getText().trim() + "\\" + projectNameField.get().getText().trim());
-                createdAtPath.set(path);
-            })
+        var projectBasics = new ProjectBasicsComponents();
+        var projectCoordinates = new ProjectCoordinatesComponents();
+
+        StringProperty createdAtPath = projectBasics.createdPathProperty();
+        ObjectProperty<TextField> projectNameField = projectBasics.projectNameFieldProperty();
+        ObjectProperty<TextField> artifactIdField = projectCoordinates.artifactIdFieldProperty();
+
+        projectBasics.projectNameBuilder()
             .keyTypedHandler(event -> {
-                if (!hasTypedInProjectName.get() && !projectNameField.get().getText().isBlank())
+                TextField field = projectNameField.get();
+                String text = field == null ? "" : field.getText();
+                if (!hasTypedInProjectName.get() && !text.isBlank())
                     hasTypedInProjectName.set(true);
-                else if (hasTypedInProjectName.get() && projectNameField.get().getText().isBlank())
+                else if (hasTypedInProjectName.get() && text.isBlank())
                     hasTypedInProjectName.set(false);
             })
             .addTransformer(projectNameField, modIdField, text -> {
@@ -96,79 +101,74 @@ public class ForgeProjectDetailsPane extends RRVBox {
 
                 return text;
             })
-            .build();
+            .addTransformer(projectNameField, mainClassField, text -> {
+                if (!hasTypedInMainClass.get() || mainClassField.get().getText().isBlank()) {
+                    String[] words = text.split("[ _-]+");
+                    var pascalCase = new StringBuilder();
+                    for (String word : words) {
+                        if (word.isBlank())
+                            continue;
 
-        DirectoryChooserComponent projectPathComponent = FormComponent.directoryChooser("ProjectPath", "railroad.project.creation.location")
-            .required()
-            .defaultPath(System.getProperty("user.home"))
-            .bindTextFieldTo(projectPathField)
-            .validator(ProjectValidators::validatePath)
-            .listener((node, observable, oldValue, newValue) -> {
-                String path = ProjectValidators.getRepairedPath(projectPathField.get().getText().trim() + "\\" + projectNameField.get().getText().trim());
-                createdAtPath.set(path);
+                        pascalCase.append(word.substring(0, 1).toUpperCase(Locale.ROOT)).append(word.substring(1));
+                    }
+                    return pascalCase.toString().replaceAll("[^a-zA-Z0-9]", "");
+                }
+                return text;
             })
-            .build();
+            .addTransformer(projectNameField, artifactIdField, text -> {
+                if (!hasTypedInArtifactId.get() || artifactIdField.get().getText().isBlank())
+                    return text.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9-]", "");
 
-        CheckBoxComponent createGitComponent = FormComponent.checkBox("CreateGit", "railroad.project.creation.git")
-            .bindCheckBoxTo(createGitCheckBox)
-            .build();
+                return text;
+            });
 
-        ComboBoxComponent<License> licenseComponent = FormComponent.comboBox("License", "railroad.project.creation.license", License.class)
-            .required()
-            .bindComboBoxTo(licenseComboBox)
-            .keyFunction(License::getName)
-            .valueOfFunction(License::fromName)
-            .translate(false)
-            .items(Arrays.asList(License.values()))
-            .defaultValue(() -> License.LGPL)
-            .build();
+        ProjectBasicsComponents.Components basicsComponents = projectBasics.build();
 
-        TextFieldComponent licenseCustomComponent = FormComponent.textField("CustomLicense", "railroad.project.creation.license.custom")
-            .visible(licenseComboBox.get().valueProperty().isEqualTo(License.CUSTOM))
-            .bindTextFieldTo(licenseCustomField)
-            .promptText("railroad.project.creation.license.custom.prompt")
-            .validator(ProjectValidators::validateCustomLicense)
-            .build();
+        projectCoordinates.artifactIdBuilder()
+            .keyTypedHandler(event -> {
+                TextField field = artifactIdField.get();
+                String text = field == null ? "" : field.getText();
+                if (!hasTypedInArtifactId.get() && !text.isBlank())
+                    hasTypedInArtifactId.set(true);
+                else if (hasTypedInArtifactId.get() && text.isBlank())
+                    hasTypedInArtifactId.set(false);
+            });
 
-        List<MinecraftVersion> supportedVersions = resolveForgeMinecraftVersions();
-        MinecraftVersion latestVersion = MinecraftVersion.determineBestFit(supportedVersions);
+        ProjectCoordinatesComponents.Components coordinateComponents = projectCoordinates.build();
+
+        TextFieldComponent projectNameComponent = basicsComponents.projectNameComponent();
+        DirectoryChooserComponent projectPathComponent = basicsComponents.projectPathComponent();
+        CheckBoxComponent createGitComponent = basicsComponents.createGitComponent();
+        ComboBoxComponent<License> licenseComponent = basicsComponents.licenseComponent();
+        TextFieldComponent licenseCustomComponent = basicsComponents.licenseCustomComponent();
+
+        TextFieldComponent groupIdComponent = coordinateComponents.groupIdComponent();
+        TextFieldComponent artifactIdComponent = coordinateComponents.artifactIdComponent();
+        TextFieldComponent versionComponent = coordinateComponents.versionComponent();
+
         ComboBoxComponent<MinecraftVersion> minecraftVersionComponent = FormComponent.comboBox("MinecraftVersion", "railroad.project.creation.minecraft_version", MinecraftVersion.class)
             .required()
-            .items(supportedVersions)
-            .defaultValue(() -> latestVersion)
+            .items(() -> FORGE_MINECRAFT_VERSIONS_CACHE.getIfPresent()
+                .map(List::copyOf)
+                .orElseGet(Collections::emptyList))
+            .defaultValue(() -> determineDefaultMinecraftVersion(
+                FORGE_MINECRAFT_VERSIONS_CACHE.getIfPresent().orElseGet(Collections::emptyList)))
             .bindComboBoxTo(minecraftVersionComboBox)
             .keyFunction(MinecraftVersion::id)
-            .valueOfFunction(string -> MinecraftVersion.fromId(string).orElse(null))
-            .translate(false)
-            .addTransformer(minecraftVersionComboBox, forgeVersionComboBox, version -> {
-                if(version == null) {
-                    Railroad.LOGGER.error("Minecraft version is null when transforming for Forge versions");
-                    return null;
+            .valueOfFunction(id -> {
+                try {
+                    return SwitchboardRepositories.MINECRAFT.getVersionSync(id).orElse(null);
+                } catch (ExecutionException exception) {
+                    throw new RuntimeException(exception);
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(exception);
                 }
-
-                ComboBox<String> comboBox = forgeVersionComboBox.get();
-                if (comboBox == null) {
-                    Railroad.LOGGER.error("Forge version ComboBox is null when transforming for Minecraft version {}", version);
-                    return null;
-                }
-
-                List<String> newVersions = ForgeVersionService.INSTANCE.listVersionsFor(version);
-                comboBox.getItems().setAll(newVersions);
-                if (newVersions.isEmpty()) {
-                    Railroad.LOGGER.error("No Forge versions found for Minecraft version {}", version);
-                    return null;
-                }
-
-                String latestFor = ForgeVersionService.INSTANCE.latestFor(version).orElse(null);
-                if (latestFor == null) {
-                    Railroad.LOGGER.error("No latest Forge version found for Minecraft version {}", version);
-                    latestFor = newVersions.getLast();
-                }
-
-                return latestFor;
             })
+            .translate(false)
+            .addAsyncTransformer(minecraftVersionComboBox, this::applyForgeVersions, this::fetchForgeVersions)
             .addTransformer(minecraftVersionComboBox, mappingChannelComboBox, version -> {
-                if(version == null) {
+                if (version == null) {
                     Railroad.LOGGER.error("Minecraft version is null when transforming for mapping channels");
                     return null;
                 }
@@ -192,19 +192,21 @@ public class ForgeProjectDetailsPane extends RRVBox {
 
         ComboBoxComponent<String> forgeVersionComponent = FormComponent.comboBox("ForgeVersion", "railroad.project.creation.forge_version", String.class)
             .required()
-            .items(ForgeVersionService.INSTANCE.listVersionsFor(latestVersion))
-            .defaultValue(() -> ForgeVersionService.INSTANCE.latestFor(latestVersion).orElse(null))
+            .items(Collections::emptyList)
+            .defaultValue(this::latestForgeVersion)
             .bindComboBoxTo(forgeVersionComboBox)
             .cellFactory(param -> new StarableListCell<>(
-                ForgeVersionService.INSTANCE::isRecommended,
-                version -> Objects.equals(version, ForgeVersionService.INSTANCE.latestFor(getSelectedMinecraftVersion()).orElse(null)),
+                this::isRecommendedForgeVersion,
+                version -> Objects.equals(version, latestForgeVersion()),
                 Function.identity()))
             .buttonCell(new StarableListCell<>(
-                ForgeVersionService.INSTANCE::isRecommended,
-                version -> Objects.equals(version, ForgeVersionService.INSTANCE.latestFor(getSelectedMinecraftVersion()).orElse(null)),
+                this::isRecommendedForgeVersion,
+                version -> Objects.equals(version, latestForgeVersion()),
                 Function.identity()))
             .translate(false)
             .build();
+
+        loadForgeMinecraftVersionsAsync();
 
         TextFieldComponent modIdComponent = FormComponent.textField("ModId", "railroad.project.creation.mod_id")
             .required()
@@ -272,22 +274,17 @@ public class ForgeProjectDetailsPane extends RRVBox {
 
         ComboBoxComponent<MappingChannel> mappingChannelComponent = FormComponent.comboBox("MappingChannel", "railroad.project.creation.mapping_channel", MappingChannel.class)
             .required()
-            .items(MappingChannelRegistry.findValidMappingChannels(getSelectedMinecraftVersion()))
-            .defaultValue(() -> {
-                MinecraftVersion minecraftVersion = getSelectedMinecraftVersion();
-                if (minecraftVersion == null)
-                    return MappingChannelRegistry.MOJMAP;
-
-                return minecraftVersion.compareTo(MinecraftVersion.fromId("1.14.4").orElseThrow()) < 0 ?
-                    MappingChannelRegistry.MCP :
-                    MappingChannelRegistry.MOJMAP;
+            .items(() -> {
+                MinecraftVersion selectedVersion = getSelectedMinecraftVersion();
+                return selectedVersion == null ? Collections.emptyList() : MappingChannelRegistry.findValidMappingChannels(selectedVersion);
             })
+            .defaultValue(() -> MappingChannelRegistry.MOJMAP)
             .bindComboBoxTo(mappingChannelComboBox)
             .keyFunction(MappingChannel::translationKey)
-            .valueOfFunction(MappingChannelRegistry.REGISTRY::get)
+            .valueOfFunction(MappingChannel.REGISTRY::get)
             .translate(true)
             .addTransformer(mappingChannelComboBox, mappingVersionComboBox, channel -> {
-                if(channel == null) {
+                if (channel == null) {
                     Railroad.LOGGER.error("Mapping channel is null when transforming for mapping versions");
                     return null;
                 }
@@ -298,7 +295,13 @@ public class ForgeProjectDetailsPane extends RRVBox {
                     return null;
                 }
 
-                List<String> newVersions = channel.listVersionsFor(getSelectedMinecraftVersion());
+                MinecraftVersion selectedVersion = getSelectedMinecraftVersion();
+                if (selectedVersion == null) {
+                    comboBox.getItems().clear();
+                    return null;
+                }
+
+                List<String> newVersions = channel.listVersionsFor(selectedVersion);
                 comboBox.getItems().setAll(newVersions);
                 if (newVersions.isEmpty()) {
                     Railroad.LOGGER.error("No mapping versions found for channel {} and Minecraft version {}", channel, getSelectedMinecraftVersion());
@@ -346,7 +349,11 @@ public class ForgeProjectDetailsPane extends RRVBox {
                 if (channel == null)
                     return null;
 
-                List<String> versions = channel.listVersionsFor(getSelectedMinecraftVersion());
+                MinecraftVersion selectedVersion = getSelectedMinecraftVersion();
+                if (selectedVersion == null)
+                    return null;
+
+                List<String> versions = channel.listVersionsFor(selectedVersion);
                 if (versions.isEmpty()) {
                     Railroad.LOGGER.error("No mapping versions found for default mapping version");
                     return null;
@@ -354,13 +361,20 @@ public class ForgeProjectDetailsPane extends RRVBox {
 
                 return versions.getLast();
             })
-            .items(MappingChannelRegistry.MOJMAP.listVersionsFor(getSelectedMinecraftVersion()))
+            .items(() -> {
+                MinecraftVersion selectedVersion = getSelectedMinecraftVersion();
+                if (selectedVersion == null)
+                    return Collections.emptyList();
+
+                return MappingChannelRegistry.MOJMAP.listVersionsFor(selectedVersion);
+            })
             .build();
 
         TextFieldComponent authorComponent = FormComponent.textField("Author", "railroad.project.creation.author")
             .bindTextFieldTo(authorField)
             .promptText("railroad.project.creation.author.prompt")
             .validator(ProjectValidators::validateAuthor)
+            .text(System.getProperty("user.name", ""))
             .build();
 
         TextFieldComponent creditsComponent = FormComponent.textField("Credits", "railroad.project.creation.credits")
@@ -408,33 +422,6 @@ public class ForgeProjectDetailsPane extends RRVBox {
             .bindCheckBoxTo(clientSideOnlyCheckBox)
             .build();
 
-        TextFieldComponent groupIdComponent = FormComponent.textField("GroupId", "railroad.project.creation.group_id")
-            .required()
-            .bindTextFieldTo(groupIdField)
-            .promptText("railroad.project.creation.group_id.prompt")
-            .validator(ProjectValidators::validateGroupId)
-            .build();
-
-        TextFieldComponent artifactIdComponent = FormComponent.textField("ArtifactId", "railroad.project.creation.artifact_id")
-            .required()
-            .bindTextFieldTo(artifactIdField)
-            .promptText("railroad.project.creation.artifact_id.prompt")
-            .validator(ProjectValidators::validateArtifactId)
-            .keyTypedHandler(event -> {
-                if (!hasTypedInArtifactId.get() && !artifactIdField.get().getText().isBlank())
-                    hasTypedInArtifactId.set(true);
-                else if (hasTypedInArtifactId.get() && artifactIdField.get().getText().isBlank())
-                    hasTypedInArtifactId.set(false);
-            })
-            .build();
-
-        TextFieldComponent versionComponent = FormComponent.textField("Version", "railroad.project.creation.version")
-            .required()
-            .bindTextFieldTo(versionField)
-            .promptText("railroad.project.creation.version.prompt")
-            .validator(ProjectValidators::validateVersion)
-            .build();
-
         Form form = Form.create()
             .spacing(15)
             .padding(10)
@@ -477,10 +464,19 @@ public class ForgeProjectDetailsPane extends RRVBox {
             .disableResetButton()
             .onSubmit((theForm, formData) -> {
                 if (theForm.validate()) {
-                    ForgeProjectData data = createData(formData);
-                    getScene().setRoot(new ForgeProjectCreationPane(data));
+                    ProjectData data = createData(formData);
+                    var creationPane = new ProjectCreationPane(data);
+
+                    ProjectServiceRegistry serviceRegistry = Services.PROJECT_SERVICE_REGISTRY;
+                    serviceRegistry.get(GradleService.class).setOutputStream(creationPane.getTaos());
+                    creationPane.initService(new ProjectCreationService(Services.PROJECT_CREATION_PIPELINE.createProject(
+                        ProjectTypeRegistry.FORGE,
+                        serviceRegistry
+                    ), creationPane.getContext()));
+
+                    getScene().setRoot(creationPane);
                 } else {
-                    theForm.runValidation(); // Show validation errors
+                    theForm.runValidation();
                 }
             })
             .build();
@@ -490,24 +486,12 @@ public class ForgeProjectDetailsPane extends RRVBox {
         projectPathComponent.getComponent().addInformationLabel("railroad.project.creation.location.info", createdAtPath, createdAtPath.get());
     }
 
-    private MinecraftVersion getSelectedMinecraftVersion() {
-        MinecraftVersion version = minecraftVersionComboBox.get().getValue();
-        if (version != null)
-            return version;
-
-        List<MinecraftVersion> items = minecraftVersionComboBox.get().getItems();
-        if (items.isEmpty())
-            return null;
-
-        return items.getFirst();
-    }
-
-    protected static ForgeProjectData createData(FormData formData) {
+    protected static ProjectData createData(FormData formData) {
         String projectName = formData.getString("ProjectName");
         var projectPath = Path.of(formData.getString("ProjectPath"));
         boolean createGit = formData.getBoolean("CreateGit");
-        License license = formData.getEnum("License", License.class);
-        String licenseCustom = license == License.CUSTOM ? formData.getString("CustomLicense") : null;
+        License license = formData.get("License", License.class);
+        String licenseCustom = license == LicenseRegistry.CUSTOM ? formData.getString("CustomLicense") : null;
         MinecraftVersion minecraftVersion = formData.get("MinecraftVersion", MinecraftVersion.class);
         String forgeVersion = formData.get("ForgeVersion", String.class);
         String modId = formData.getString("ModId");
@@ -530,21 +514,211 @@ public class ForgeProjectDetailsPane extends RRVBox {
         String artifactId = formData.getString("ArtifactId");
         String version = formData.getString("Version");
 
-        return new ForgeProjectData(projectName, projectPath, createGit, license, licenseCustom,
-            minecraftVersion, forgeVersion, modId, modName, mainClass, useMixins, useAccessTransformer, genRunFolders,
-            mappingChannel, mappingVersion,
-            author, credits, description, issues, updateJsonUrl, displayUrl, displayTest, clientSideOnly,
-            groupId, artifactId, version);
+        var data = new ProjectData();
+        data.set(ProjectData.DefaultKeys.NAME, projectName);
+        data.set(ProjectData.DefaultKeys.PATH, projectPath);
+        data.set(ProjectData.DefaultKeys.INIT_GIT, createGit);
+
+        data.set(ProjectData.DefaultKeys.LICENSE, license);
+        // TODO: Get rid of this and move into CustomLicense (once licenses are registerable)
+        if (licenseCustom != null)
+            data.set(ProjectData.DefaultKeys.LICENSE_CUSTOM, licenseCustom);
+
+        data.set(MinecraftProjectKeys.MINECRAFT_VERSION, minecraftVersion);
+        data.set(ForgeProjectKeys.FORGE_VERSION, forgeVersion);
+        data.set(MinecraftProjectKeys.MOD_ID, modId);
+        data.set(MinecraftProjectKeys.MOD_NAME, modName);
+        data.set(MinecraftProjectKeys.MAIN_CLASS, mainClass);
+        data.set(ForgeProjectKeys.USE_MIXINS, useMixins);
+        data.set(ForgeProjectKeys.USE_ACCESS_TRANSFORMER, useAccessTransformer);
+        data.set(ForgeProjectKeys.GEN_RUN_FOLDERS, genRunFolders);
+        data.set(MinecraftProjectKeys.MAPPING_CHANNEL, mappingChannel);
+        data.set(MinecraftProjectKeys.MAPPING_VERSION, mappingVersion);
+        author.ifPresent(a -> data.set(ProjectData.DefaultKeys.AUTHOR, a));
+        credits.ifPresent(c -> data.set(ProjectData.DefaultKeys.CREDITS, c));
+        description.ifPresent(d -> data.set(ProjectData.DefaultKeys.DESCRIPTION, d));
+        issues.ifPresent(i -> data.set(ProjectData.DefaultKeys.ISSUES_URL, i));
+        updateJsonUrl.ifPresent(u -> data.set(ForgeProjectKeys.UPDATE_JSON_URL, u));
+        displayUrl.ifPresent(u -> data.set(ForgeProjectKeys.DISPLAY_URL, u));
+        data.set(ForgeProjectKeys.DISPLAY_TEST, displayTest);
+        data.set(ForgeProjectKeys.CLIENT_SIDE_ONLY, clientSideOnly);
+        data.set(MavenProjectKeys.GROUP_ID, groupId);
+        data.set(MavenProjectKeys.ARTIFACT_ID, artifactId);
+        data.set(MavenProjectKeys.VERSION, version);
+        return data;
     }
 
-    private List<MinecraftVersion> resolveForgeMinecraftVersions() {
-        return ForgeVersionService.INSTANCE.listAllVersions()
-            .stream()
-            .map(ForgeVersionService::toMinecraftVersion)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .distinct()
-            .sorted(Comparator.reverseOrder())
-            .toList();
+    private void loadForgeMinecraftVersionsAsync() {
+        FORGE_MINECRAFT_VERSIONS_CACHE.getIfPresent().ifPresent(this::applyMinecraftVersions);
+
+        resolveForgeMinecraftVersions().whenComplete((versions, throwable) -> {
+            if (throwable != null) {
+                Railroad.LOGGER.error("Failed to fetch Minecraft versions for Forge", throwable);
+                return;
+            }
+
+            Platform.runLater(() -> applyMinecraftVersions(versions));
+        });
+    }
+
+    private void applyMinecraftVersions(List<MinecraftVersion> versions) {
+        ComboBox<MinecraftVersion> comboBox = minecraftVersionComboBox.get();
+        if (comboBox == null)
+            return;
+
+        comboBox.getItems().setAll(versions);
+        if (versions.isEmpty()) {
+            comboBox.setValue(null);
+            return;
+        }
+
+        MinecraftVersion current = comboBox.getValue();
+        if (current != null && versions.contains(current))
+            return;
+
+        comboBox.setValue(determineDefaultMinecraftVersion(versions));
+    }
+
+    private CompletableFuture<List<MinecraftVersion>> resolveForgeMinecraftVersions() {
+        return FORGE_MINECRAFT_VERSIONS_CACHE.getAsync(() ->
+            SwitchboardRepositories.FORGE.getAllVersions()
+                .thenApply(versions -> versions.stream()
+                    .map(ForgeProjectDetailsPane::extractMinecraftVersionId)
+                    .flatMap(Optional::stream)
+                    .map(this::lookupMinecraftVersion)
+                    .flatMap(Optional::stream)
+                    .distinct()
+                    .sorted(Comparator.reverseOrder())
+                    .toList()
+                )
+        );
+    }
+
+    private CompletableFuture<ForgeVersionsPayload> fetchForgeVersions(MinecraftVersion version) {
+        Platform.runLater(() -> {
+            ComboBox<String> comboBox = forgeVersionComboBox.get();
+            if (comboBox != null) {
+                comboBox.getItems().clear();
+                comboBox.setValue(null);
+            }
+            latestForgeVersionProperty.set(null);
+        });
+
+        if (version == null)
+            return CompletableFuture.completedFuture(new ForgeVersionsPayload(null, Collections.emptyList(), null));
+
+        String minecraftId = version.id();
+        CompletableFuture<List<String>> versionsFuture = SwitchboardRepositories.FORGE.getVersionsFor(minecraftId);
+        CompletableFuture<String> latestFuture = SwitchboardRepositories.FORGE.getLatestVersionFor(minecraftId);
+
+        return versionsFuture.thenCombine(latestFuture, (versions, latest) ->
+                new ForgeVersionsPayload(version, versions == null ? Collections.emptyList() : versions, latest))
+            .exceptionally(throwable -> {
+                Railroad.LOGGER.error("Failed to fetch Forge versions for Minecraft version {}", version, throwable);
+                return new ForgeVersionsPayload(version, Collections.emptyList(), null);
+            });
+    }
+
+    private void applyForgeVersions(ForgeVersionsPayload payload) {
+        ComboBox<String> comboBox = forgeVersionComboBox.get();
+        if (comboBox == null)
+            return;
+
+        if (!Objects.equals(payload.contextVersion(), getSelectedMinecraftVersion()))
+            return;
+
+        List<String> versions = payload.versions();
+        comboBox.getItems().setAll(versions);
+        latestForgeVersionProperty.set(payload.latest());
+
+        String currentValue = comboBox.getValue();
+        if (currentValue != null && versions.contains(currentValue))
+            return;
+
+        String selection = null;
+        String latest = payload.latest();
+        if (latest != null && versions.contains(latest))
+            selection = latest;
+        else if (!versions.isEmpty())
+            selection = versions.getFirst();
+
+        comboBox.setValue(selection);
+    }
+
+    private String latestForgeVersion() {
+        return latestForgeVersionProperty.get();
+    }
+
+    private MinecraftVersion determineDefaultMinecraftVersion(List<MinecraftVersion> versions) {
+        if (versions == null || versions.isEmpty())
+            return null;
+
+        return versions.stream()
+            .filter(version -> version != null && version.getType() == MinecraftVersion.Type.RELEASE)
+            .findFirst()
+            .orElseGet(versions::getFirst);
+    }
+
+    private MinecraftVersion getSelectedMinecraftVersion() {
+        ComboBox<MinecraftVersion> comboBox = minecraftVersionComboBox.get();
+        if (comboBox == null)
+            return null;
+
+        MinecraftVersion value = comboBox.getValue();
+        if (value != null)
+            return value;
+
+        List<MinecraftVersion> items = comboBox.getItems();
+        if (items.isEmpty())
+            return null;
+
+        return items.getFirst();
+    }
+
+    private Optional<MinecraftVersion> lookupMinecraftVersion(String versionId) {
+        try {
+            return SwitchboardRepositories.MINECRAFT.getVersionSync(versionId);
+        } catch (ExecutionException exception) {
+            Railroad.LOGGER.error("Failed to fetch Minecraft version {}", versionId, exception);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            Railroad.LOGGER.error("Interrupted while fetching Minecraft version {}", versionId, exception);
+        }
+
+        return Optional.empty();
+    }
+
+    private static Optional<String> extractMinecraftVersionId(String forgeVersion) {
+        if (forgeVersion == null || forgeVersion.isBlank())
+            return Optional.empty();
+
+        String lower = forgeVersion.toLowerCase(Locale.ROOT);
+        if (lower.contains("25w14craftmine"))
+            return Optional.of("25w14craftmine");
+
+        int lastDash = forgeVersion.indexOf('-');
+        if (lastDash <= 0)
+            return Optional.empty();
+
+        String base = forgeVersion.substring(0, lastDash);
+        if (base.isBlank())
+            return Optional.empty();
+
+        return Optional.of(base);
+    }
+
+    private boolean isRecommendedForgeVersion(String version) {
+        return version != null && Objects.equals(version, latestForgeVersion()) && !isForgePrerelease(version);
+    }
+
+    private static boolean isForgePrerelease(String version) {
+        if (version == null)
+            return false;
+
+        String lower = version.toLowerCase(Locale.ROOT);
+        return lower.contains("beta") || lower.contains("alpha") || lower.contains("rc") || lower.contains("25w14craftmine");
+    }
+
+    private record ForgeVersionsPayload(MinecraftVersion contextVersion, List<String> versions, String latest) {
     }
 }
