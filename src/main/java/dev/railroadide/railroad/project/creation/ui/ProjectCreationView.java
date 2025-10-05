@@ -134,7 +134,13 @@ public class ProjectCreationView extends RRBorderPane {
             }
         });
 
-        getScene().getStylesheets().add(Railroad.getResource("styles/project-creation-view.css").toExternalForm());
+        sceneProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue != null) {
+                newValue.getStylesheets().add(Railroad.getResource("styles/project-creation-view.css").toExternalForm());
+            } else if(oldValue != null) {
+                oldValue.getStylesheets().remove(Railroad.getResource("styles/project-creation-view.css").toExternalForm());
+            }
+        });
     }
 
     public void bindToService(Service<?> service,

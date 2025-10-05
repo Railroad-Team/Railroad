@@ -30,15 +30,10 @@ public record DownloadFabricExampleModStep(HttpService http, FilesService files,
     @Override
     public void run(ProjectContext ctx, ProgressReporter reporter) throws Exception {
         MinecraftVersion mcVersion = ctx.get(ProjectContextKeys.MDK_VERSION);
-        URI url = URI.create("https://github.com/FabricMC/fabric-example-mod/archive/refs/heads/" + mcVersion + ".zip");
+        URI url = URI.create("https://github.com/FabricMC/fabric-example-mod/archive/refs/heads/" + mcVersion.id() + ".zip");
         Path zipPath = ctx.projectDir().resolve("example-mod.zip");
 
         reporter.info("Downloading example mod from " + url);
         http.download(url, zipPath);
-
-        reporter.info("Extracting example mod...");
-        zip.unzip(zipPath, ctx.projectDir());
-
-        files.delete(zipPath);
     }
 }

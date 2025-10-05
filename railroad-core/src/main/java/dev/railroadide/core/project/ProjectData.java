@@ -2,11 +2,10 @@ package dev.railroadide.core.project;
 
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 public final class ProjectData {
-    private final Map<String, Object> data = new ConcurrentHashMap<>();
+    private final Map<String, Object> data = new HashMap<>(); // TODO: Consider whether this should be concurrent
 
     public Object get(String key) {
         return data.get(key);

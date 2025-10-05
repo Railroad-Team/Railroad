@@ -12,7 +12,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 public class MappingChannelRegistry {
-
     public static final MappingChannel MCP = register("mcp", MappingChannel.builder()
         .versionLister(fromRepository("railroad:switchboard/mcp", SwitchboardRepositories.MCP::getVersionsForSync)));
     public static final MappingChannel MOJMAP = register("official", MappingChannel.builder()

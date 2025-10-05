@@ -18,11 +18,13 @@ import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.project.ProjectManager;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetTypeAdapter;
+import dev.railroadide.railroad.project.onboarding.impl.FabricProjectOnboarding;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import dev.railroadide.railroad.settings.ui.themes.ThemeDownloadManager;
 import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
+import dev.railroadide.railroad.utility.LocalDateTimeTypeAdapter;
 import dev.railroadide.railroad.utility.MacUtils;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.vcs.RepositoryManager;
@@ -48,6 +50,8 @@ import okhttp3.OkHttpClient;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -68,6 +72,7 @@ public class Railroad extends Application {
             .setPrettyPrinting()
             .disableHtmlEscaping()
             .registerTypeAdapter(Facet.class, new FacetTypeAdapter())
+            .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeTypeAdapter())
             .create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
@@ -297,6 +302,10 @@ public class Railroad extends Application {
             primaryStage.setMinWidth(scene.getWidth() + 10);
             primaryStage.setMinHeight(scene.getHeight() + 10);
             primaryStage.setScene(scene);
+
+            // TODO: REMOVE ME!
+            new FabricProjectOnboarding().start(scene);
+
             primaryStage.setTitle("Railroad - 1.0.0(dev)");
             primaryStage.getIcons().add(new Image(getResourceAsStream("images/logo.png")));
             primaryStage.show();

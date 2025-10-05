@@ -20,9 +20,6 @@ import dev.railroadide.railroad.project.LicenseRegistry;
 import dev.railroadide.railroad.project.MappingChannelRegistry;
 import dev.railroadide.railroad.project.ProjectTypeRegistry;
 import dev.railroadide.railroad.project.creation.ui.ProjectCreationPane;
-import dev.railroadide.railroad.project.data.FabricProjectKeys;
-import dev.railroadide.railroad.project.data.MavenProjectKeys;
-import dev.railroadide.railroad.project.data.MinecraftProjectKeys;
 import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
 import dev.railroadide.railroad.switchboard.repositories.FabricApiVersionRepository;
 import dev.railroadide.railroad.utility.ExpiringCache;
@@ -498,33 +495,7 @@ public class FabricProjectDetailsPane extends RRVBox {
         String version = formData.getString("Version");
 
         var data = new ProjectData();
-        data.set(ProjectData.DefaultKeys.NAME, projectName);
-        data.set(ProjectData.DefaultKeys.PATH, projectPath);
-        data.set(ProjectData.DefaultKeys.INIT_GIT, createGit);
 
-        data.set(ProjectData.DefaultKeys.LICENSE, license);
-        // TODO: Get rid of this and move into CustomLicense
-        if (licenseCustom != null)
-            data.set(ProjectData.DefaultKeys.LICENSE_CUSTOM, licenseCustom);
-
-        data.set(MinecraftProjectKeys.MINECRAFT_VERSION, minecraftVersion);
-        data.set(FabricProjectKeys.FABRIC_LOADER_VERSION, fabricVersion);
-        fapiVersion.ifPresent(v -> data.set(FabricProjectKeys.FABRIC_API_VERSION, v));
-        data.set(MinecraftProjectKeys.MOD_ID, modId);
-        data.set(MinecraftProjectKeys.MOD_NAME, modName);
-        data.set(MinecraftProjectKeys.MAIN_CLASS, mainClass);
-        data.set(FabricProjectKeys.USE_ACCESS_WIDENER, useAccessWidener);
-        data.set(FabricProjectKeys.SPLIT_SOURCES, splitSources);
-        data.set(MinecraftProjectKeys.MAPPING_CHANNEL, mappingChannel);
-        data.set(MinecraftProjectKeys.MAPPING_VERSION, mappingVersion);
-        author.ifPresent(a -> data.set(ProjectData.DefaultKeys.AUTHOR, a));
-        description.ifPresent(d -> data.set(ProjectData.DefaultKeys.DESCRIPTION, d));
-        issues.ifPresent(i -> data.set(ProjectData.DefaultKeys.ISSUES_URL, i));
-        homepage.ifPresent(h -> data.set(ProjectData.DefaultKeys.HOMEPAGE_URL, h));
-        sources.ifPresent(s -> data.set(ProjectData.DefaultKeys.SOURCES_URL, s));
-        data.set(MavenProjectKeys.GROUP_ID, groupId);
-        data.set(MavenProjectKeys.ARTIFACT_ID, artifactId);
-        data.set(MavenProjectKeys.VERSION, version);
         return data;
     }
 

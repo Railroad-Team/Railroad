@@ -99,6 +99,13 @@ public record FabricApiVersionRepository(SwitchboardClient client, CacheManager 
         if (plus < 0 || plus == fabricApiVersion.length() - 1)
             return Optional.empty();
 
-        return Optional.of(fabricApiVersion.substring(plus + 1));
+        String possibleVersion = fabricApiVersion.substring(plus + 1);
+        if(possibleVersion.contains("build."))
+            return Optional.empty(); // Skip build versions
+
+        if(possibleVersion.endsWith("_experimental"))
+            possibleVersion = possibleVersion.substring(0, possibleVersion.length() - "_experimental".length());
+
+        return Optional.of(possibleVersion);
     }
 }

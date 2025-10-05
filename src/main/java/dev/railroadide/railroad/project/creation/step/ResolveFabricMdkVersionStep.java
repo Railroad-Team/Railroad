@@ -8,6 +8,7 @@ import dev.railroadide.railroad.project.data.MinecraftProjectKeys;
 import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
 import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
 
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -53,7 +54,7 @@ public final class ResolveFabricMdkVersionStep implements CreationStep {
         }
 
         List<MinecraftVersion> versions = fetchAllVersions();
-        long releaseTime = version.releaseTime().getEpochSecond();
+        long releaseTime = version.releaseTime().toEpochSecond(ZoneOffset.UTC);
         MinecraftVersion closest = null;
         for (MinecraftVersion candidate : versions) {
             if (candidate.getType() != MinecraftVersion.Type.RELEASE)
@@ -64,8 +65,9 @@ public final class ResolveFabricMdkVersionStep implements CreationStep {
                 continue;
             }
 
-            long candidateDiff = Math.abs(candidate.releaseTime().getEpochSecond() - releaseTime);
-            long closestDiff = Math.abs(closest.releaseTime().getEpochSecond() - releaseTime);
+            long epochSecond = candidate.releaseTime().toEpochSecond(ZoneOffset.UTC);
+            long candidateDiff = Math.abs(epochSecond - releaseTime);
+            long closestDiff = Math.abs(epochSecond - releaseTime);
             if (candidateDiff < closestDiff) {
                 closest = candidate;
             }

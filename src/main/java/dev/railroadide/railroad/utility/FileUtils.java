@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -380,5 +381,24 @@ public final class FileUtils {
         int exp = (int) (Math.log(size) / Math.log(unit));
         char pre = "KMGTPE".charAt(exp - 1);
         return String.format("%.1f %sB", size / Math.pow(unit, exp), pre);
+    }
+
+    public static void copyDirectoryContents(Path src, Path dst, CopyOption... options) {
+        try(Stream<Path> files = Files.walk(src)) {
+            files.forEach(source -> {
+                try {
+                    Path destination = dst.resolve(src.relativize(source));
+                    if (Files.isDirectory(source)) {
+                        Files.createDirectories(destination);
+                    } else {
+                        Files.copy(source, destination, options);
+                    }
+                } catch (IOException exception) {
+                    throw new RuntimeException("Failed to copy directory contents", exception);
+                }
+            });
+        } catch (IOException exception) {
+            throw new RuntimeException("Failed to copy directory contents", exception);
+        }
     }
 }

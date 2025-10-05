@@ -30,4 +30,6 @@ public interface FilesService {
     List<String> readLines(Path path) throws IOException;
 
     void createFile(Path path) throws IOException;
+
+    void extractDirectoryContents(Path src, Path dst, CopyOption... options) throws IOException;
 }

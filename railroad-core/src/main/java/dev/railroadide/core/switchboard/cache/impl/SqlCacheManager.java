@@ -60,7 +60,7 @@ public class SqlCacheManager implements IterableCacheManager {
         // then check SQLite cache
         CompletableFuture.runAsync(() -> {
             try (PreparedStatement stmt = connection.prepareStatement(
-                "SELECT value, last_fetched, type, ttl_seconds, etag FROM cache_entries WHERE key = ?")) {
+                "SELECT value, type, last_fetched, ttl_seconds, etag FROM cache_entries WHERE key = ?")) {
                 stmt.setString(1, key);
                 ResultSet rs = stmt.executeQuery();
                 if (rs.next()) {
@@ -77,6 +77,8 @@ public class SqlCacheManager implements IterableCacheManager {
                         memoryCache.put(key, entry);
                         future.complete(Optional.of(entry));
                     }
+                } else {
+                    future.complete(Optional.empty());
                 }
             } catch (Exception exception) {
                 future.completeExceptionally(exception);

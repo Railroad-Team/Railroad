@@ -70,4 +70,9 @@ public class NioFilesService implements FilesService {
     public void createFile(Path path) throws IOException {
         Files.createFile(path);
     }
+
+    @Override
+    public void extractDirectoryContents(Path src, Path dst, CopyOption... options) throws IOException {
+        FileUtils.copyDirectoryContents(src, dst, options);
+    }
 }
