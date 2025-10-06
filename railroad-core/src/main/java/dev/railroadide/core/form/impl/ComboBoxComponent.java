@@ -179,6 +179,11 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
             this.data = new Data<>(label);
         }
 
+        @Override
+        public String dataKey() {
+            return dataKey;
+        }
+
         /**
          * Sets the items for the combobox.
          *

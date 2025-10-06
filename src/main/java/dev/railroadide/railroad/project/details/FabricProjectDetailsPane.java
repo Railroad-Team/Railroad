@@ -642,7 +642,7 @@ public class FabricProjectDetailsPane extends RRVBox {
         return FABRIC_MINECRAFT_VERSIONS_CACHE.getAsync(() ->
             SwitchboardRepositories.FABRIC_API.getAllVersions()
                 .thenApply(versions -> versions.stream()
-                    .map(FabricApiVersionRepository::getMinecraftVersion)
+                    .map(FabricApiVersionRepository::fapiToMinecraftVersion)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .distinct()

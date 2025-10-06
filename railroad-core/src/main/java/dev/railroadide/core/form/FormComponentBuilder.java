@@ -11,6 +11,8 @@ import java.util.function.Function;
  * Standardises configuration contracts for form component builders.
  */
 public interface FormComponentBuilder<C extends FormComponent<?, ?, ?, ?>, V extends Node, W, B extends FormComponentBuilder<C, V, W, B>> {
+    String dataKey();
+
     B validator(FormComponentValidator<V> validator);
 
     B listener(FormComponentChangeListener<V, W> listener);
@@ -23,4 +25,3 @@ public interface FormComponentBuilder<C extends FormComponent<?, ?, ?, ?>, V ext
 
     C build();
 }
-

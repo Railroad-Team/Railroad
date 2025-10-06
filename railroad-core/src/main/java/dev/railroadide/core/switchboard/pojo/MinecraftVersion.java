@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Locale;
 
 public record MinecraftVersion(
@@ -13,6 +14,16 @@ public record MinecraftVersion(
     LocalDateTime releaseTime,
     LocalDateTime time
 ) implements Comparable<MinecraftVersion> {
+    public static MinecraftVersion determineDefaultMinecraftVersion(List<MinecraftVersion> versions) {
+        if (versions == null || versions.isEmpty())
+            return null;
+
+        return versions.stream()
+            .filter(version -> version != null && version.getType() == Type.RELEASE)
+            .findFirst()
+            .orElseGet(versions::getFirst);
+    }
+
     public Type getType() {
         return Type.fromString(type);
     }

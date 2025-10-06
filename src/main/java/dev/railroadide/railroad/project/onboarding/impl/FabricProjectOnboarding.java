@@ -1,9 +1,6 @@
 package dev.railroadide.railroad.project.onboarding.impl;
 
 import dev.railroadide.core.form.FormComponent;
-import dev.railroadide.core.form.impl.ComboBoxComponent;
-import dev.railroadide.core.form.impl.DirectoryChooserComponent;
-import dev.railroadide.core.form.impl.TextFieldComponent;
 import dev.railroadide.core.project.ProjectData;
 import dev.railroadide.core.project.creation.ProjectCreationService;
 import dev.railroadide.core.project.creation.ProjectServiceRegistry;
@@ -21,6 +18,7 @@ import dev.railroadide.railroad.project.onboarding.*;
 import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
 import dev.railroadide.railroad.switchboard.repositories.FabricApiVersionRepository;
 import javafx.scene.Scene;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -108,30 +106,28 @@ public class FabricProjectOnboarding {
     }
 
     private OnboardingStep createProjectDetailsStep() {
-        TextFieldComponent.Builder projectNameComponent = FormComponent.textField(ProjectData.DefaultKeys.NAME, "railroad.project.creation.name")
-            .required()
-            .promptText("railroad.project.creation.name.prompt")
-            .validator(ProjectValidators::validateProjectName);
-
-        DirectoryChooserComponent.Builder projectPathComponent = FormComponent.directoryChooser(ProjectData.DefaultKeys.PATH, "railroad.project.creation.location")
-            .required()
-            .defaultPath(System.getProperty("user.home"))
-            .validator(ProjectValidators::validatePath);
-
         return OnboardingFormStep.builder()
             .id("project_details")
-            .title("Project Details")
-            .description("Enter the basic details for your Fabric project.")
+            .title("railroad.project.creation.project_details.title")
+            .description("railroad.project.creation.project_details.description")
             .appendSection("railroad.project.creation.section.project",
-                projectNameComponent, projectPathComponent)
-            .mapData(ProjectData.DefaultKeys.NAME)
-            .mapData(ProjectData.DefaultKeys.PATH, value -> {
-                if (value == null)
-                    return null;
+                OnboardingFormStep.component(
+                    FormComponent.textField(ProjectData.DefaultKeys.NAME, "railroad.project.creation.name")
+                        .required()
+                        .promptText("railroad.project.creation.name.prompt")
+                        .validator(ProjectValidators::validateProjectName)),
+                OnboardingFormStep.component(
+                    FormComponent.directoryChooser(ProjectData.DefaultKeys.PATH, "railroad.project.creation.location")
+                        .required()
+                        .defaultPath(System.getProperty("user.home"))
+                        .validator(ProjectValidators::validatePath),
+                    value -> {
+                        if (value == null)
+                            return null;
 
-                String text = value.toString();
-                return text.isBlank() ? null : Path.of(text);
-            })
+                        String text = value.toString();
+                        return text.isBlank() ? null : Path.of(text);
+                    }))
             .build();
     }
 
@@ -139,63 +135,51 @@ public class FabricProjectOnboarding {
         List<MinecraftVersion> availableVersions = new ArrayList<>();
         var nextInvalidationTime = new AtomicLong(0L);
 
-        ComboBoxComponent.Builder<MinecraftVersion> minecraftVersionComponent = FormComponent.comboBox(MinecraftProjectKeys.MINECRAFT_VERSION, "railroad.project.creation.minecraft_version", MinecraftVersion.class)
-            .items(availableVersions)
-            .defaultValue(() -> determineDefaultMinecraftVersion(availableVersions))
-            .keyFunction(MinecraftVersion::id)
-            .valueOfFunction(string -> {
-                try {
-                    return SwitchboardRepositories.MINECRAFT.getVersionSync(string).orElse(null);
-                } catch (ExecutionException | InterruptedException exception) {
-                    Railroad.LOGGER.error("Failed to fetch Minecraft version {}", string, exception);
-                    return null;
-                }
-            })
-            .translate(false);
-
         return OnboardingFormStep.builder()
             .id("minecraft_version")
-            .title("Minecraft Version")
-            .description("Select the Minecraft version for your Fabric project.")
+            .title("railroad.project.creation.minecraft_version.title")
+            .description("railroad.project.creation.minecraft_version.description")
             .appendSection("railroad.project.creation.section.minecraft_version",
-                minecraftVersionComponent)
-            .mapData(MinecraftProjectKeys.MINECRAFT_VERSION)
+                OnboardingFormStep.component(
+                    FormComponent.comboBox(MinecraftProjectKeys.MINECRAFT_VERSION, "railroad.project.creation.minecraft_version", MinecraftVersion.class)
+                        .items(availableVersions)
+                        .defaultValue(() -> MinecraftVersion.determineDefaultMinecraftVersion(availableVersions))
+                        .keyFunction(MinecraftVersion::id)
+                        .valueOfFunction(FabricProjectOnboarding::getMinecraftVersion)
+                        .translate(false)))
             .onEnter(ctx -> {
-                try {
-                    if (availableVersions.isEmpty() || System.currentTimeMillis() > nextInvalidationTime.get()) {
-                        availableVersions.clear();
-                        availableVersions.addAll(SwitchboardRepositories.FABRIC_API.getAllVersionsSync().stream()
-                            .map(FabricApiVersionRepository::getMinecraftVersion)
-                            .filter(Optional::isPresent)
-                            .map(Optional::get)
-                            .distinct()
-                            .map(version -> {
-                                try {
-                                    return SwitchboardRepositories.MINECRAFT.getVersionSync(version).orElse(null);
-                                } catch (ExecutionException | InterruptedException exception) {
-                                    Railroad.LOGGER.error("Failed to fetch Minecraft version {}", version, exception);
-                                    return null;
-                                }
-                            })
-                            .filter(Objects::nonNull)
-                            .sorted(Comparator.reverseOrder())
-                            .toList());
-                        nextInvalidationTime.set(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(5));
-                    }
-                } catch (ExecutionException | InterruptedException exception) {
-                    Railroad.LOGGER.error("Failed to fetch Fabric API versions", exception);
+                if (availableVersions.isEmpty() || System.currentTimeMillis() > nextInvalidationTime.get()) {
+                    availableVersions.clear();
+                    availableVersions.addAll(getMinecraftVersions());
+                    nextInvalidationTime.set(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(5));
                 }
             })
             .build();
     }
 
-    private MinecraftVersion determineDefaultMinecraftVersion(List<MinecraftVersion> versions) {
-        if (versions == null || versions.isEmpty())
-            return null;
+    private static @NotNull List<MinecraftVersion> getMinecraftVersions() {
+        try {
+            return SwitchboardRepositories.FABRIC_API.getAllVersionsSync().stream()
+                .map(FabricApiVersionRepository::fapiToMinecraftVersion)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .distinct()
+                .map(FabricProjectOnboarding::getMinecraftVersion)
+                .filter(Objects::nonNull)
+                .sorted(Comparator.reverseOrder())
+                .toList();
+        } catch (ExecutionException | InterruptedException exception) {
+            Railroad.LOGGER.error("Failed to fetch Minecraft versions", exception);
+            return Collections.emptyList();
+        }
+    }
 
-        return versions.stream()
-            .filter(version -> version != null && version.getType() == MinecraftVersion.Type.RELEASE)
-            .findFirst()
-            .orElseGet(versions::getFirst);
+    private static MinecraftVersion getMinecraftVersion(String string) {
+        try {
+            return SwitchboardRepositories.MINECRAFT.getVersionSync(string).orElse(null);
+        } catch (ExecutionException | InterruptedException exception) {
+            Railroad.LOGGER.error("Failed to fetch Minecraft version {}", string, exception);
+            return null;
+        }
     }
 }

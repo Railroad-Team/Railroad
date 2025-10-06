@@ -130,6 +130,11 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
             this.data = new Data(label);
         }
 
+        @Override
+        public String dataKey() {
+            return dataKey;
+        }
+
         /**
          * Sets the text of the text field.
          *

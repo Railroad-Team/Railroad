@@ -129,6 +129,11 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
             this.data = new Data(label);
         }
 
+        @Override
+        public String dataKey() {
+            return dataKey;
+        }
+
         /**
          * Sets whether the text area is required.
          *

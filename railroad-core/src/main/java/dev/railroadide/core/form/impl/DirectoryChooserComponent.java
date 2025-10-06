@@ -138,6 +138,11 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
             this.data = new Data(label);
         }
 
+        @Override
+        public String dataKey() {
+            return dataKey;
+        }
+
         /**
          * Sets the default path for the directory chooser.
          *

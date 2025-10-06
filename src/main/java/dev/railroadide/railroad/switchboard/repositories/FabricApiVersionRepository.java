@@ -94,14 +94,14 @@ public record FabricApiVersionRepository(SwitchboardClient client, CacheManager 
         return getLatestVersionFor(minecraftVersionId, includePrereleases).get();
     }
 
-    public static Optional<String> getMinecraftVersion(String fabricApiVersion) {
+    public static Optional<String> fapiToMinecraftVersion(String fabricApiVersion) {
         int plus = fabricApiVersion.indexOf('+');
         if (plus < 0 || plus == fabricApiVersion.length() - 1)
             return Optional.empty();
 
         String possibleVersion = fabricApiVersion.substring(plus + 1);
         if(possibleVersion.contains("build."))
-            return Optional.empty(); // Skip build versions
+            return Optional.empty(); // TODO: Handle this by figuring out what build versions are for
 
         if(possibleVersion.endsWith("_experimental"))
             possibleVersion = possibleVersion.substring(0, possibleVersion.length() - "_experimental".length());

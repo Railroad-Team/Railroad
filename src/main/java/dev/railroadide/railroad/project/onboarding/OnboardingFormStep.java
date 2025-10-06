@@ -47,6 +47,71 @@ public final class OnboardingFormStep implements OnboardingStep {
         return new Builder();
     }
 
+    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder) {
+        return component(builder, builder != null ? builder.dataKey() : null, Function.identity());
+    }
+
+    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, Function<Object, Object> transformer) {
+        return component(builder, builder != null ? builder.dataKey() : null, transformer);
+    }
+
+    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, String contextKey) {
+        return component(builder, contextKey, Function.identity());
+    }
+
+    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, String contextKey, Function<Object, Object> transformer) {
+        return new ComponentSpec(builder, null, contextKey, transformer);
+    }
+
+    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component) {
+        return component(component, component != null ? component.dataKey() : null, Function.identity());
+    }
+
+    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, Function<Object, Object> transformer) {
+        return component(component, component != null ? component.dataKey() : null, transformer);
+    }
+
+    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, String contextKey) {
+        return component(component, contextKey, Function.identity());
+    }
+
+    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, String contextKey, Function<Object, Object> transformer) {
+        return new ComponentSpec(null, component, contextKey, transformer);
+    }
+
+    public static final class ComponentSpec {
+        private final FormComponentBuilder<?, ?, ?, ?> builder;
+        private final FormComponent<?, ?, ?, ?> component;
+        private final String contextKey;
+        private final Function<Object, Object> transformer;
+
+        private ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component, String contextKey, Function<Object, Object> transformer) {
+            if (builder == null && component == null)
+                throw new IllegalArgumentException("Component specification must provide a builder or component instance");
+
+            this.builder = builder;
+            this.component = component;
+            this.contextKey = contextKey;
+            this.transformer = transformer != null ? transformer : Function.identity();
+        }
+
+        FormComponentBuilder<?, ?, ?, ?> builder() {
+            return builder;
+        }
+
+        FormComponent<?, ?, ?, ?> component() {
+            return component;
+        }
+
+        String contextKey() {
+            return contextKey;
+        }
+
+        Function<Object, Object> transformer() {
+            return transformer;
+        }
+    }
+
     @Override
     public String id() {
         return id;
@@ -165,56 +230,50 @@ public final class OnboardingFormStep implements OnboardingStep {
         }
 
         public Builder appendSection(String titleKey, FormComponent<?, ?, ?, ?>... components) {
+            ComponentSpec[] specs = Arrays.stream(components)
+                .map(OnboardingFormStep::component)
+                .toArray(ComponentSpec[]::new);
+            return appendSection(titleKey, builder -> {
+            }, specs);
+        }
+
+        public Builder appendSection(String titleKey, Consumer<FormSection.Builder> customizer, FormComponent<?, ?, ?, ?>... components) {
+            ComponentSpec[] specs = Arrays.stream(components)
+                .map(OnboardingFormStep::component)
+                .toArray(ComponentSpec[]::new);
+            return appendSection(titleKey, customizer, specs);
+        }
+
+        public Builder appendSection(String titleKey, FormComponentBuilder<?, ?, ?, ?>... componentBuilders) {
+            ComponentSpec[] specs = Arrays.stream(componentBuilders)
+                .map(OnboardingFormStep::component)
+                .toArray(ComponentSpec[]::new);
+            return appendSection(titleKey, builder -> {
+            }, specs);
+        }
+
+        public Builder appendSection(String titleKey, Consumer<FormSection.Builder> customizer, FormComponentBuilder<?, ?, ?, ?>... componentBuilders) {
+            ComponentSpec[] specs = Arrays.stream(componentBuilders)
+                .map(OnboardingFormStep::component)
+                .toArray(ComponentSpec[]::new);
+            return appendSection(titleKey, customizer, specs);
+        }
+
+        public Builder appendSection(String titleKey, ComponentSpec... components) {
             return appendSection(titleKey, builder -> {
             }, components);
         }
 
-        public Builder appendSection(String titleKey, Consumer<FormSection.Builder> customizer, FormComponent<?, ?, ?, ?>... components) {
+        public Builder appendSection(String titleKey, Consumer<FormSection.Builder> customizer, ComponentSpec... components) {
             Objects.requireNonNull(titleKey, "titleKey");
             Objects.requireNonNull(customizer, "customizer");
+            Objects.requireNonNull(components, "components");
 
             return appendSection(sectionBuilder -> {
                 sectionBuilder.title(titleKey).borderColor(Color.DARKGRAY);
                 customizer.accept(sectionBuilder);
-                Arrays.stream(components).forEach(component -> {
-                    sectionBuilder.appendComponent(component);
-                    trackComponent(component);
-                });
+                Arrays.stream(components).forEach(spec -> addComponent(sectionBuilder, spec));
             });
-        }
-
-        public Builder appendSection(String titleKey, FormComponentBuilder<?, ?, ?, ?>... componentBuilders) {
-            return appendSection(titleKey, builder -> {
-            }, componentBuilders);
-        }
-
-        public Builder appendSection(String titleKey, Consumer<FormSection.Builder> customizer, FormComponentBuilder<?, ?, ?, ?>... componentBuilders) {
-            Objects.requireNonNull(componentBuilders, "componentBuilders");
-
-            return appendSection(titleKey, customizer,
-                Arrays.stream(componentBuilders)
-                    .map(this::buildAndTrack)
-                    .toArray(FormComponent[]::new));
-        }
-
-        public Builder mapData(String dataKey) {
-            return mapData(dataKey, dataKey, Function.identity());
-        }
-
-        public Builder mapData(String dataKey, Function<Object, Object> transformer) {
-            return mapData(dataKey, dataKey, transformer);
-        }
-
-        public Builder mapData(String dataKey, String contextKey) {
-            return mapData(dataKey, contextKey, Function.identity());
-        }
-
-        public Builder mapData(String dataKey, String contextKey, Function<Object, Object> transformer) {
-            Objects.requireNonNull(dataKey, "dataKey");
-            Objects.requireNonNull(contextKey, "contextKey");
-
-            dataMappings.put(dataKey, new DataMapping(contextKey, transformer != null ? transformer : Function.identity()));
-            return this;
         }
 
         public Builder spacing(int spacing) {
@@ -341,22 +400,27 @@ public final class OnboardingFormStep implements OnboardingStep {
             return new OnboardingFormStep(this, section, valid);
         }
 
-        private FormComponent<?, ?, ?, ?> buildAndTrack(FormComponentBuilder<?, ?, ?, ?> builder) {
-            FormComponent<?, ?, ?, ?> component = builder.build();
-            trackComponent(component);
-            return component;
-        }
-
         private void trackComponent(FormComponent<?, ?, ?, ?> component) {
             if (component == null)
                 return;
 
-            if (!componentsByDataKey.containsKey(component.dataKey())) {
+            if (!componentsByDataKey.containsKey(component.dataKey()))
                 trackedComponents.add(component);
-                componentsByDataKey.put(component.dataKey(), component);
-            }
 
-            dataMappings.putIfAbsent(component.dataKey(), new DataMapping(component.dataKey(), Function.identity()));
+            componentsByDataKey.put(component.dataKey(), component);
+        }
+
+        private void addComponent(FormSection.Builder sectionBuilder, ComponentSpec spec) {
+            FormComponent<?, ?, ?, ?> component = spec.builder() != null ? spec.builder().build() : spec.component();
+            if (component == null)
+                return;
+
+            sectionBuilder.appendComponent(component);
+            trackComponent(component);
+
+            String contextKey = spec.contextKey() != null ? spec.contextKey() : component.dataKey();
+            Function<Object, Object> transformer = spec.transformer() != null ? spec.transformer() : Function.identity();
+            dataMappings.put(component.dataKey(), new DataMapping(contextKey, transformer));
         }
 
         private void setupAutoValidation(BooleanProperty validProperty) {
@@ -383,6 +447,7 @@ public final class OnboardingFormStep implements OnboardingStep {
         private void attachToNode(Object node, Runnable recompute) {
             if (!(node instanceof Node fxNode))
                 return;
+
 
             switch (fxNode) {
                 case TextInputControl textInput ->

@@ -112,6 +112,11 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
             this.data = new Data(label);
         }
 
+        @Override
+        public String dataKey() {
+            return dataKey;
+        }
+
         /**
          * Sets the selected state of the checkbox.
          *
