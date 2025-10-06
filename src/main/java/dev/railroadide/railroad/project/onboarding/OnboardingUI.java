@@ -12,4 +12,8 @@ public interface OnboardingUI {
 
     Node getContent();
     void setContent(Node content);
+
+    default void onStepChanged(OnboardingStep step, int currentIndex, int totalSteps) {}
+
+    default void onBusyStateChanged(boolean busy) {}
 }

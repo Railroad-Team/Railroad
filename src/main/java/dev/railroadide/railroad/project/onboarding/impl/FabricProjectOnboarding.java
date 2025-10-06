@@ -17,7 +17,10 @@ import dev.railroadide.railroad.project.details.ProjectValidators;
 import dev.railroadide.railroad.project.onboarding.*;
 import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
 import dev.railroadide.railroad.switchboard.repositories.FabricApiVersionRepository;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Scene;
+import javafx.scene.control.ComboBox;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
@@ -132,6 +135,7 @@ public class FabricProjectOnboarding {
     }
 
     private OnboardingStep createMinecraftVersionStep() {
+        ObjectProperty<ComboBox<MinecraftVersion>> comboBoxProperty = new SimpleObjectProperty<>();
         List<MinecraftVersion> availableVersions = new ArrayList<>();
         var nextInvalidationTime = new AtomicLong(0L);
 
@@ -142,16 +146,28 @@ public class FabricProjectOnboarding {
             .appendSection("railroad.project.creation.section.minecraft_version",
                 OnboardingFormStep.component(
                     FormComponent.comboBox(MinecraftProjectKeys.MINECRAFT_VERSION, "railroad.project.creation.minecraft_version", MinecraftVersion.class)
-                        .items(availableVersions)
+                        .items(() -> availableVersions)
                         .defaultValue(() -> MinecraftVersion.determineDefaultMinecraftVersion(availableVersions))
                         .keyFunction(MinecraftVersion::id)
                         .valueOfFunction(FabricProjectOnboarding::getMinecraftVersion)
+                        .bindComboBoxTo(comboBoxProperty)
+                        .required()
                         .translate(false)))
             .onEnter(ctx -> {
                 if (availableVersions.isEmpty() || System.currentTimeMillis() > nextInvalidationTime.get()) {
                     availableVersions.clear();
                     availableVersions.addAll(getMinecraftVersions());
                     nextInvalidationTime.set(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(5));
+                    if (comboBoxProperty.get() != null) {
+                        comboBoxProperty.get().getItems().setAll(availableVersions);
+                        MinecraftVersion current = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
+                        if (current != null && availableVersions.contains(current)) {
+                            comboBoxProperty.get().setValue(current);
+                        } else {
+                            MinecraftVersion def = MinecraftVersion.determineDefaultMinecraftVersion(availableVersions);
+                            comboBoxProperty.get().setValue(def);
+                        }
+                    }
                 }
             })
             .build();

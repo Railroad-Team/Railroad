@@ -2,7 +2,12 @@ package dev.railroadide.railroad.project.onboarding;
 
 import dev.railroadide.core.ui.RRBorderPane;
 import dev.railroadide.core.ui.RRButton;
+import dev.railroadide.core.ui.RRButton.ButtonVariant;
+import dev.railroadide.core.ui.RRHBox;
+import dev.railroadide.core.ui.RRVBox;
+import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.localization.L18n;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -11,18 +16,20 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.*;
 import lombok.Getter;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -69,30 +76,101 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
     @Getter
     public static class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
         private final BorderPane buttonBar;
-        private final Button backButton, nextButton, finishButton;
+        private final RRButton backButton, nextButton, finishButton;
+        private final VBox mainContainer;
+        private final VBox header;
+        private final LocalizedLabel titleLabel;
+        private final LocalizedLabel descriptionLabel;
+        private final Label progressLabel;
+        private final ProgressBar progressBar;
+        private final ScrollPane scrollPane;
+        private final VBox contentContainer;
+        private final StackPane contentFrame;
+        private final StackPane busyOverlay;
         private Node content;
 
         public BasicOnboardingUI(Node content) {
-            setPadding(new Insets(10));
-            getStyleClass().add("onboarding-core-ui");
+            getStyleClass().add("onboarding-root");
+            setPadding(new Insets(32, 40, 24, 40));
 
-            setContent(content);
+            this.mainContainer = new RRVBox(24);
+            this.mainContainer.getStyleClass().add("onboarding-main");
+            this.mainContainer.setFillWidth(true);
+            setCenter(mainContainer);
+
+            this.header = new RRVBox(12);
+            this.header.getStyleClass().add("onboarding-header");
+
+            this.titleLabel = new LocalizedLabel("");
+            this.titleLabel.getStyleClass().add("onboarding-title");
+            this.titleLabel.setWrapText(true);
+
+            this.descriptionLabel = new LocalizedLabel("");
+            this.descriptionLabel.getStyleClass().add("onboarding-description");
+            this.descriptionLabel.setWrapText(true);
+
+            this.progressBar = new ProgressBar(0);
+            this.progressBar.getStyleClass().add("onboarding-progress-bar");
+            this.progressBar.setMaxWidth(Double.MAX_VALUE);
+
+            this.progressLabel = new Label();
+            this.progressLabel.getStyleClass().add("onboarding-progress-label");
+
+            var progressContainer = new RRHBox(12);
+            progressContainer.setAlignment(Pos.CENTER_LEFT);
+            progressContainer.getStyleClass().add("onboarding-progress");
+            Region spacer = new Region();
+            HBox.setHgrow(this.progressBar, Priority.ALWAYS);
+            HBox.setHgrow(spacer, Priority.SOMETIMES);
+            progressContainer.getChildren().addAll(this.progressBar, spacer, this.progressLabel);
+
+            this.header.getChildren().addAll(this.titleLabel, this.descriptionLabel, progressContainer);
+
+            this.contentContainer = new RRVBox();
+            this.contentContainer.setSpacing(16);
+            this.contentContainer.getStyleClass().add("onboarding-content-container");
+            this.contentContainer.setFillWidth(true);
+
+            this.scrollPane = new ScrollPane(contentContainer);
+            this.scrollPane.setFitToWidth(true);
+            this.scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+            this.scrollPane.getStyleClass().add("onboarding-scroll-pane");
+
+            this.busyOverlay = new StackPane();
+            this.busyOverlay.getStyleClass().add("onboarding-busy-overlay");
+            this.busyOverlay.setVisible(false);
+            this.busyOverlay.setManaged(false);
+            ProgressIndicator busyIndicator = new ProgressIndicator();
+            busyIndicator.setMaxSize(48, 48);
+            this.busyOverlay.getChildren().add(busyIndicator);
+
+            this.contentFrame = new StackPane(this.scrollPane, this.busyOverlay);
+            this.contentFrame.getStyleClass().add("onboarding-content-frame");
+
+            VBox.setVgrow(this.contentFrame, Priority.ALWAYS);
+            this.mainContainer.getChildren().addAll(this.header, this.contentFrame);
 
             this.backButton = new RRButton("railroad.generic.back");
             this.backButton.getStyleClass().addAll("onboarding-button", "onboarding-back-button");
+            this.backButton.setVariant(ButtonVariant.SECONDARY);
+            this.backButton.managedProperty().bind(this.backButton.visibleProperty());
 
             this.nextButton = new RRButton("railroad.generic.next");
             this.nextButton.getStyleClass().addAll("onboarding-button", "onboarding-next-button");
+            this.nextButton.managedProperty().bind(this.nextButton.visibleProperty());
 
             this.finishButton = new RRButton("railroad.generic.finish");
             this.finishButton.getStyleClass().addAll("onboarding-button", "onboarding-finish-button");
+            this.finishButton.managedProperty().bind(this.finishButton.visibleProperty());
 
             this.buttonBar = new RRBorderPane();
-            this.buttonBar.setPadding(new Insets(5));
+            this.buttonBar.setPadding(new Insets(20, 0, 0, 0));
             this.buttonBar.getStyleClass().add("onboarding-button-bar");
             this.buttonBar.setLeft(this.backButton);
             this.buttonBar.setRight(this.nextButton);
             setBottom(this.buttonBar);
+
+            setContent(content);
         }
 
         @Override
@@ -110,9 +188,53 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
 
         @Override
         public void setContent(Node content) {
+            if (this.content != null) {
+                this.content.getStyleClass().remove("onboarding-step-content");
+            }
+
             this.content = content;
-            this.content.getStyleClass().add("onboarding-content");
-            setCenter(content);
+
+            if (content != null) {
+                if (!content.getStyleClass().contains("onboarding-step-content")) {
+                    content.getStyleClass().add("onboarding-step-content");
+                }
+                this.contentContainer.getChildren().setAll(content);
+            } else {
+                this.contentContainer.getChildren().clear();
+            }
+        }
+
+        @Override
+        public void onStepChanged(OnboardingStep step, int currentIndex, int totalSteps) {
+            if (step == null) {
+                this.titleLabel.setKey("");
+                this.descriptionLabel.setKey("");
+                this.progressLabel.setText("");
+                this.progressBar.setProgress(0);
+                return;
+            }
+
+            this.titleLabel.setKey(step.title());
+            this.descriptionLabel.setKey(step.description());
+
+            int displayedIndex = currentIndex + 1;
+            if (totalSteps <= 0) {
+                this.progressBar.setProgress(0);
+                this.progressLabel.setText("");
+                return;
+            }
+
+            double progressValue = (double) displayedIndex / totalSteps;
+            this.progressBar.setProgress(progressValue);
+
+            this.progressLabel.setText(L18n.localize("railroad.onboarding.step_progress", displayedIndex, totalSteps));
+        }
+
+        @Override
+        public void onBusyStateChanged(boolean busy) {
+            this.scrollPane.setDisable(busy);
+            this.busyOverlay.setVisible(busy);
+            this.busyOverlay.setManaged(busy);
         }
     }
 
@@ -131,33 +253,36 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
         Navigator(N ui, List<String> stepOrder) {
             this.ui = ui;
             this.stepOrder = stepOrder;
+            busy.addListener((obs, oldValue, newValue) -> this.ui.onBusyStateChanged(newValue));
+            this.ui.onBusyStateChanged(busy.get());
         }
 
         void showStep(int targetIndex) {
             if (targetIndex < 0 || targetIndex >= stepOrder.size())
                 return;
 
+            busy.set(true);
+            Platform.runLater(() -> performStepTransition(targetIndex));
+        }
+
+        private void performStepTransition(int targetIndex) {
             cleanupCurrentStep(true);
 
             currentIndex.set(targetIndex);
             currentStep = stepAt(targetIndex);
 
-            try {
-                currentStep.onEnter(context);
-
-                this.ui.setContent(
-                    cachedUIs.computeIfAbsent(
-                        currentStep.id(),
-                        $ -> currentStep.section().createUI()
-                    )
-                );
-                configureNavigation();
-            } catch (Throwable throwable) {
-                Railroad.LOGGER.error("Error during onboarding step's onEnter operation", throwable);
-                cleanupCurrentStep(false);
-                currentStep = null;
-                currentIndex.set(-1);
-            }
+            CompletableFuture.runAsync(() -> currentStep.onEnter(context)).thenRun(
+                () -> Platform.runLater(() -> {
+                    this.ui.setContent(
+                        cachedUIs.computeIfAbsent(
+                            currentStep.id(),
+                            $ -> currentStep.section().createUI()
+                        )
+                    );
+                    this.ui.onStepChanged(currentStep, currentIndex.get(), stepOrder.size());
+                    configureNavigation();
+                    busy.set(false);
+                }));
         }
 
         private OnboardingStep stepAt(int idx) {
@@ -216,7 +341,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
             backButton.disableProperty().unbind();
             backButton.disableProperty().bind(busy.or(currentIndex.isEqualTo(0)));
             backButton.visibleProperty().unbind();
-            backButton.visibleProperty().bind(busy.or(currentIndex.isEqualTo(0)));
+            backButton.visibleProperty().bind(currentIndex.greaterThan(0));
             backButton.setOnAction(event -> {
                 event.consume();
                 handleBack();
@@ -310,6 +435,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
                 this.stepCache.clear();
                 this.cachedUIs.clear();
                 this.ui.setContent(new RRBorderPane());
+                this.ui.onStepChanged(null, currentIndex.get(), stepOrder.size());
 
                 onFinish.accept(context);
             }));

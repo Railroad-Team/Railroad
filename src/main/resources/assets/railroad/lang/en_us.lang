@@ -26,6 +26,7 @@ railroad.generic.collapse_all=Collapse All
 railroad.generic.expand=Expand
 railroad.generic.expand_all=Expand All
 railroad.generic.browse=Browse
+railroad.onboarding.step_progress=Step %d of %d
 
 # =============================================================================
 # APPLICATION
@@ -155,6 +156,10 @@ railroad.project.creation.minecraft_version=Minecraft Version
 railroad.project.creation.forge_version=Forge Version
 railroad.project.creation.neoforge_version=Neoforge Version
 railroad.project.creation.fabric_loader_version=Fabric Loader Version
+railroad.project.creation.project_details.title=Project Details
+railroad.project.creation.project_details.description=Give your project a name and where it should live.
+railroad.project.creation.minecraft_version.title=Minecraft Version
+railroad.project.creation.minecraft_version.description=Pick the Minecraft version and loader components for your mod.
 
 # Mod settings
 railroad.project.creation.mod_id=Mod ID
@@ -235,6 +240,7 @@ railroad.project.creation.version.error.required=You must enter a version
 
 # Project creation sections
 railroad.project.creation.section.project=Project
+railroad.project.creation.section.minecraft_version=Minecraft Version
 railroad.project.creation.section.minecraft=Minecraft
 railroad.project.creation.section.optional=Optional
 railroad.project.creation.section.mappings=Mappings
