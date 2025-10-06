@@ -1,6 +1,8 @@
 package dev.railroadide.core.switchboard.cache.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.reflect.TypeToken;
 import dev.railroadide.core.logger.LoggerServiceLocator;
 import dev.railroadide.core.switchboard.cache.CacheEntryWrapper;
@@ -21,7 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SqlCacheManager implements IterableCacheManager {
     private final Connection connection;
     private final Map<String, MetadataCacheEntry<?>> memoryCache = new ConcurrentHashMap<>();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+        .registerModule(new JavaTimeModule())
+        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     public SqlCacheManager(String uri) throws SQLException {
         this.connection = DriverManager.getConnection(uri);
