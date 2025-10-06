@@ -108,7 +108,7 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
     /**
      * A builder for constructing a {@link TextAreaComponent}.
      */
-    public static class Builder {
+    public static class Builder implements FormComponentBuilder<TextAreaComponent, TextArea, String, Builder> {
         private final String dataKey;
         private final Data data;
         private final List<FormTransformer<TextArea, String, ?>> transformers = new ArrayList<>();
@@ -221,6 +221,7 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          * @param validator the validator
          * @return this builder
          */
+        @Override
         public Builder validator(FormComponentValidator<TextArea> validator) {
             this.validator = validator;
             return this;
@@ -232,6 +233,7 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          * @param listener the listener
          * @return this builder
          */
+        @Override
         public Builder listener(FormComponentChangeListener<TextArea, String> listener) {
             this.listener = listener;
             return this;
@@ -257,7 +259,8 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          * @param <W>                 the type of the component
          * @return this builder
          */
-        public <W> Builder addTransformer(ObservableValue<TextArea> fromComponent, Consumer<W> toComponentFunction, Function<String, W> valueMapper) {
+        @Override
+        public <X> Builder addTransformer(ObservableValue<TextArea> fromComponent, Consumer<X> toComponentFunction, Function<String, X> valueMapper) {
             this.transformers.add(new FormTransformer<>(fromComponent, TextArea::getText, toComponentFunction, valueMapper));
             return this;
         }
@@ -272,7 +275,8 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          * @param <W>           the type of the value
          * @return this builder
          */
-        public <U extends Node, W> Builder addTransformer(ObservableValue<TextArea> fromComponent, ObservableValue<U> toComponent, Function<String, W> valueMapper) {
+        @Override
+        public <U extends Node, X> Builder addTransformer(ObservableValue<TextArea> fromComponent, ObservableValue<U> toComponent, Function<String, X> valueMapper) {
             this.transformers.add(new FormTransformer<>(fromComponent, TextArea::getText, value -> {
                 if (toComponent.getValue() instanceof TextArea textArea) {
                     textArea.setText(value.toString());
@@ -300,6 +304,7 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          * @param visible the visibility
          * @return this builder
          */
+        @Override
         public Builder visible(BooleanBinding visible) {
             this.visible = visible;
             return this;
@@ -310,6 +315,7 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          *
          * @return the text area component
          */
+        @Override
         public TextAreaComponent build() {
             return new TextAreaComponent(dataKey, data, validator, listener, bindTextAreaTo, transformers, keyTypedHandler, visible);
         }

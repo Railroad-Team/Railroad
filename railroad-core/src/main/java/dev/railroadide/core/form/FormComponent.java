@@ -179,6 +179,15 @@ public abstract class FormComponent<T extends Node, U, V extends Node, W> {
     }
 
     /**
+     * Returns the data key associated with this component.
+     *
+     * @return the data key
+     */
+    public String dataKey() {
+        return dataKey;
+    }
+
+    /**
      * Returns the data of the component.
      *
      * @return The data.

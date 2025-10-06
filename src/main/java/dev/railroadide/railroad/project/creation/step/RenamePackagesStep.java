@@ -43,7 +43,7 @@ public record RenamePackagesStep(FilesService files) implements CreationStep {
         reporter.info("Moving source files...");
         if(files.exists(mainJava.resolve("com/example/examplemod"))) {
             Path oldMainJava = mainJava.resolve("com/example/examplemod");
-            files.move(oldMainJava, newMainJava);
+            files.extractDirectoryContents(oldMainJava, newMainJava);
 
             // if 'com/example/examplemod' is empty, delete it
             // if 'com/example' is empty, delete it
@@ -62,7 +62,7 @@ public record RenamePackagesStep(FilesService files) implements CreationStep {
             }
         } else {
             Path oldMainJava = mainJava.resolve("com/example");
-            files.move(oldMainJava, newMainJava);
+            files.extractDirectoryContents(oldMainJava, newMainJava);
 
             // if 'com/example' is empty, delete it
             // if 'com' is empty, delete it
@@ -84,7 +84,7 @@ public record RenamePackagesStep(FilesService files) implements CreationStep {
 
             reporter.info("Moving client source files...");
             Path oldClientJava = clientJava.resolve("com/example");
-            files.move(oldClientJava, newClientJava);
+            files.extractDirectoryContents(oldClientJava, newClientJava);
 
             // if 'com/example' is empty, delete it
             // if 'com' is empty, delete it

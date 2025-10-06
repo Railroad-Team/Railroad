@@ -92,7 +92,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
     /**
      * A builder for constructing a {@link CheckBoxComponent}.
      */
-    public static class Builder {
+    public static class Builder implements FormComponentBuilder<CheckBoxComponent, CheckBox, Boolean, Builder> {
         private final String dataKey;
         private final Data data;
         private final List<FormTransformer<CheckBox, Boolean, ?>> transformers = new ArrayList<>();
@@ -140,6 +140,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @param validator the validator
          * @return this builder
          */
+        @Override
         public Builder validator(FormComponentValidator<CheckBox> validator) {
             this.validator = validator;
             return this;
@@ -151,6 +152,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @param listener the listener
          * @return this builder
          */
+        @Override
         public Builder listener(FormComponentChangeListener<CheckBox, Boolean> listener) {
             this.listener = listener;
             return this;
@@ -176,7 +178,8 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @return this builder
          * @type W - the type of the value
          */
-        public <W> Builder addTransformer(ObservableValue<CheckBox> fromComponent, Consumer<W> toComponentFunction, Function<Boolean, W> valueMapper) {
+        @Override
+        public <X> Builder addTransformer(ObservableValue<CheckBox> fromComponent, Consumer<X> toComponentFunction, Function<Boolean, X> valueMapper) {
             transformers.add(new FormTransformer<>(fromComponent, CheckBox::isSelected, toComponentFunction, valueMapper));
             return this;
         }
@@ -191,7 +194,8 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @type U - the type of the component
          * @type W - the type of the value
          */
-        public <U extends Node, W> Builder addTransformer(ObservableValue<CheckBox> fromComponent, ObservableValue<U> toComponent, Function<Boolean, W> valueMapper) {
+        @Override
+        public <U extends Node, X> Builder addTransformer(ObservableValue<CheckBox> fromComponent, ObservableValue<U> toComponent, Function<Boolean, X> valueMapper) {
             this.transformers.add(new FormTransformer<>(fromComponent, CheckBox::isSelected, value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());
@@ -213,6 +217,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @param visible the visibility
          * @return this builder
          */
+        @Override
         public Builder visible(BooleanBinding visible) {
             this.visible = visible;
             return this;
@@ -223,6 +228,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          *
          * @return the checkbox component
          */
+        @Override
         public CheckBoxComponent build() {
             return new CheckBoxComponent(dataKey, data, validator, listener, bindCheckBoxTo, transformers, visible);
         }

@@ -155,7 +155,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
      *
      * @param <T> the type of the combobox
      */
-    public static class Builder<T> {
+    public static class Builder<T> implements FormComponentBuilder<ComboBoxComponent<T>, ComboBox<T>, T, Builder<T>> {
         private final String dataKey;
         private final Data<T> data;
         private final List<FormTransformer<ComboBox<T>, T, ?>> transformers = new ArrayList<>();
@@ -264,6 +264,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          * @param validator the validator
          * @return this builder
          */
+        @Override
         public Builder<T> validator(FormComponentValidator<ComboBox<T>> validator) {
             this.validator = validator;
             return this;
@@ -275,6 +276,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          * @param listener the listener
          * @return this builder
          */
+        @Override
         public Builder<T> listener(FormComponentChangeListener<ComboBox<T>, T> listener) {
             this.listener = listener;
             return this;
@@ -300,7 +302,8 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          * @param <W>                 the type of the component
          * @return this builder
          */
-        public <W> Builder<T> addTransformer(ObservableValue<ComboBox<T>> fromComponent, Consumer<W> toComponentFunction, Function<T, W> valueMapper) {
+        @Override
+        public <X> Builder<T> addTransformer(ObservableValue<ComboBox<T>> fromComponent, Consumer<X> toComponentFunction, Function<T, X> valueMapper) {
             this.transformers.add(new FormTransformer<>(fromComponent, ComboBox::getValue, toComponentFunction, valueMapper));
             return this;
         }
@@ -322,8 +325,9 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          * @throws IllegalArgumentException if the component type is unsupported
          * @implNote The supported component types are {@link TextField} and {@link ComboBox}.
          */
+        @Override
         @SuppressWarnings({"unchecked", "rawtypes"})
-        public <U extends Node, W> Builder<T> addTransformer(ObservableValue<ComboBox<T>> fromComponent, ObservableValue<U> toComponent, Function<T, W> valueMapper) {
+        public <U extends Node, X> Builder<T> addTransformer(ObservableValue<ComboBox<T>> fromComponent, ObservableValue<U> toComponent, Function<T, X> valueMapper) {
             return addTransformer(fromComponent, value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());
@@ -359,6 +363,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          * @param visible the visibility
          * @return this builder
          */
+        @Override
         public Builder<T> visible(BooleanBinding visible) {
             this.visible = visible;
             return this;
@@ -402,6 +407,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          *
          * @return the combobox component
          */
+        @Override
         public ComboBoxComponent<T> build() {
             return new ComboBoxComponent<>(dataKey, data, validator, listener, bindComboBoxTo, transformers, keyTypedHandler, visible, cellFactory, buttonCell, defaultValue);
         }

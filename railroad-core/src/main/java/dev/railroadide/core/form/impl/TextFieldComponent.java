@@ -109,7 +109,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
     /**
      * A builder for constructing a {@link TextFieldComponent}.
      */
-    public static class Builder {
+    public static class Builder implements FormComponentBuilder<TextFieldComponent, TextField, String, Builder> {
         private final String dataKey;
         private final Data data;
         private final List<FormTransformer<TextField, String, ?>> transformers = new ArrayList<>();
@@ -202,6 +202,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @param validator the validator
          * @return this builder
          */
+        @Override
         public Builder validator(FormComponentValidator<TextField> validator) {
             this.validator = validator;
             return this;
@@ -213,6 +214,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @param listener the listener
          * @return this builder
          */
+        @Override
         public Builder listener(FormComponentChangeListener<TextField, String> listener) {
             this.listener = listener;
             return this;
@@ -238,7 +240,8 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @param <W>                 the type of the component
          * @return this builder
          */
-        public <W> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<W> toComponentFunction, Function<String, W> valueMapper) {
+        @Override
+        public <X> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<X> toComponentFunction, Function<String, X> valueMapper) {
             this.transformers.add(new FormTransformer<>(fromComponent, TextField::getText, toComponentFunction, valueMapper));
             return this;
         }
@@ -253,7 +256,8 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @param <W>           the type of the value
          * @return this builder
          */
-        public <U extends Node, W> Builder addTransformer(ObservableValue<TextField> fromComponent, ObservableValue<U> toComponent, Function<String, W> valueMapper) {
+        @Override
+        public <U extends Node, X> Builder addTransformer(ObservableValue<TextField> fromComponent, ObservableValue<U> toComponent, Function<String, X> valueMapper) {
             this.transformers.add(new FormTransformer<>(fromComponent, TextField::getText, value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());
@@ -281,6 +285,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @param visible the visibility
          * @return this builder
          */
+        @Override
         public Builder visible(BooleanBinding visible) {
             this.visible = visible;
             return this;
@@ -291,6 +296,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          *
          * @return the text field component
          */
+        @Override
         public TextFieldComponent build() {
             return new TextFieldComponent(dataKey, data, validator, listener, bindTextFieldTo, transformers, keyTypedHandler, visible);
         }
