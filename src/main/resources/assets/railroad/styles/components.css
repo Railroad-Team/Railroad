@@ -2276,6 +2276,7 @@
     -fx-min-height: 32px;
     /*-fx-max-height: 40px;*/
 }
+
 /* ===== ONBOARDING LAYOUT ===== */
 .onboarding-root {
     -fx-background-color: -color-bg-default;
@@ -2294,6 +2295,7 @@
 
 .onboarding-header {
     -fx-spacing: 12px;
+    -fx-padding: 8px;
 }
 
 .onboarding-title {
@@ -2361,8 +2363,6 @@
 
 .onboarding-button-bar {
     -fx-padding: 24px 0 0 0;
-    -fx-border-color: -color-border-subtle transparent transparent transparent;
-    -fx-border-width: 1px 0 0 0;
 }
 
 .onboarding-button {

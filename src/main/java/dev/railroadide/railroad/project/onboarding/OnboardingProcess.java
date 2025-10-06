@@ -1,10 +1,7 @@
 package dev.railroadide.railroad.project.onboarding;
 
-import dev.railroadide.core.ui.RRBorderPane;
-import dev.railroadide.core.ui.RRButton;
+import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.RRButton.ButtonVariant;
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
@@ -29,6 +26,7 @@ import lombok.Getter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -75,32 +73,26 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
 
     @Getter
     public static class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
-        private final BorderPane buttonBar;
         private final RRButton backButton, nextButton, finishButton;
-        private final VBox mainContainer;
-        private final VBox header;
-        private final LocalizedLabel titleLabel;
-        private final LocalizedLabel descriptionLabel;
+        private final LocalizedLabel titleLabel, descriptionLabel;
         private final Label progressLabel;
         private final ProgressBar progressBar;
-        private final ScrollPane scrollPane;
         private final VBox contentContainer;
-        private final StackPane contentFrame;
+        private final ScrollPane scrollPane;
         private final StackPane busyOverlay;
+        private final BorderPane buttonBar;
         private Node content;
 
         public BasicOnboardingUI(Node content) {
             getStyleClass().add("onboarding-root");
             setPadding(new Insets(32, 40, 24, 40));
 
-            this.mainContainer = new RRVBox(24);
-            this.mainContainer.getStyleClass().add("onboarding-main");
-            this.mainContainer.setFillWidth(true);
+            var mainContainer = new RRVBox(24);
+            mainContainer.getStyleClass().add("onboarding-main");
+            mainContainer.setFillWidth(true);
             setCenter(mainContainer);
 
-            this.header = new RRVBox(12);
-            this.header.getStyleClass().add("onboarding-header");
-
+            // Header
             this.titleLabel = new LocalizedLabel("");
             this.titleLabel.getStyleClass().add("onboarding-title");
             this.titleLabel.setWrapText(true);
@@ -116,18 +108,12 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
             this.progressLabel = new Label();
             this.progressLabel.getStyleClass().add("onboarding-progress-label");
 
-            var progressContainer = new RRHBox(12);
-            progressContainer.setAlignment(Pos.CENTER_LEFT);
-            progressContainer.getStyleClass().add("onboarding-progress");
-            Region spacer = new Region();
-            HBox.setHgrow(this.progressBar, Priority.ALWAYS);
-            HBox.setHgrow(spacer, Priority.SOMETIMES);
-            progressContainer.getChildren().addAll(this.progressBar, spacer, this.progressLabel);
+            var header = new RRVBox(12);
+            header.getChildren().addAll(titleLabel, descriptionLabel, createProgressContainer());
+            header.getStyleClass().add("onboarding-header");
 
-            this.header.getChildren().addAll(this.titleLabel, this.descriptionLabel, progressContainer);
-
-            this.contentContainer = new RRVBox();
-            this.contentContainer.setSpacing(16);
+            // Content
+            this.contentContainer = new RRVBox(16);
             this.contentContainer.getStyleClass().add("onboarding-content-container");
             this.contentContainer.setFillWidth(true);
 
@@ -136,48 +122,58 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
             this.scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
             this.scrollPane.getStyleClass().add("onboarding-scroll-pane");
 
-            this.busyOverlay = new StackPane();
-            this.busyOverlay.getStyleClass().add("onboarding-busy-overlay");
-            this.busyOverlay.setVisible(false);
-            this.busyOverlay.setManaged(false);
-            ProgressIndicator busyIndicator = new ProgressIndicator();
-            busyIndicator.setMaxSize(48, 48);
-            this.busyOverlay.getChildren().add(busyIndicator);
+            this.busyOverlay = createBusyOverlay();
+            var contentFrame = new RRStackPane();
+            contentFrame.getChildren().addAll(scrollPane, busyOverlay);
+            contentFrame.getStyleClass().add("onboarding-content-frame");
 
-            this.contentFrame = new StackPane(this.scrollPane, this.busyOverlay);
-            this.contentFrame.getStyleClass().add("onboarding-content-frame");
+            VBox.setVgrow(contentFrame, Priority.ALWAYS);
+            mainContainer.getChildren().addAll(header, contentFrame);
 
-            VBox.setVgrow(this.contentFrame, Priority.ALWAYS);
-            this.mainContainer.getChildren().addAll(this.header, this.contentFrame);
-
-            this.backButton = new RRButton("railroad.generic.back");
-            this.backButton.getStyleClass().addAll("onboarding-button", "onboarding-back-button");
-            this.backButton.setVariant(ButtonVariant.SECONDARY);
-            this.backButton.managedProperty().bind(this.backButton.visibleProperty());
-
-            this.nextButton = new RRButton("railroad.generic.next");
-            this.nextButton.getStyleClass().addAll("onboarding-button", "onboarding-next-button");
-            this.nextButton.managedProperty().bind(this.nextButton.visibleProperty());
-
-            this.finishButton = new RRButton("railroad.generic.finish");
-            this.finishButton.getStyleClass().addAll("onboarding-button", "onboarding-finish-button");
-            this.finishButton.managedProperty().bind(this.finishButton.visibleProperty());
+            // Buttons
+            this.backButton = createButton("railroad.generic.back", ButtonVariant.SECONDARY, "onboarding-back-button");
+            this.nextButton = createButton("railroad.generic.next", ButtonVariant.PRIMARY, "onboarding-next-button");
+            this.finishButton = createButton("railroad.generic.finish", ButtonVariant.PRIMARY, "onboarding-finish-button");
 
             this.buttonBar = new RRBorderPane();
-            this.buttonBar.setPadding(new Insets(20, 0, 0, 0));
             this.buttonBar.getStyleClass().add("onboarding-button-bar");
-            this.buttonBar.setLeft(this.backButton);
-            this.buttonBar.setRight(this.nextButton);
-            setBottom(this.buttonBar);
+            this.buttonBar.setLeft(backButton);
+            this.buttonBar.setRight(nextButton);
 
+            setBottom(buttonBar);
             setContent(content);
+        }
+
+        private Node createProgressContainer() {
+            var progressContainer = new RRHBox(12);
+            progressContainer.getChildren().addAll(progressBar, progressLabel);
+            progressContainer.setAlignment(Pos.CENTER_LEFT);
+            progressContainer.getStyleClass().add("onboarding-progress");
+            HBox.setHgrow(progressBar, Priority.ALWAYS);
+            return progressContainer;
+        }
+
+        private StackPane createBusyOverlay() {
+            ProgressIndicator indicator = new ProgressIndicator();
+            indicator.setMaxSize(48, 48);
+            StackPane overlay = new StackPane(indicator);
+            overlay.getStyleClass().add("onboarding-busy-overlay");
+            overlay.setVisible(false);
+            overlay.setManaged(false);
+            return overlay;
+        }
+
+        private RRButton createButton(String key, ButtonVariant variant, String... styleClasses) {
+            var button = new RRButton(key);
+            button.setVariant(variant);
+            button.getStyleClass().addAll("onboarding-button");
+            button.getStyleClass().addAll(styleClasses);
+            button.managedProperty().bind(button.visibleProperty());
+            return button;
         }
 
         @Override
         public void swapRightButton(Button newButton) {
-            if (newButton != this.backButton && newButton != this.nextButton && newButton != this.finishButton)
-                throw new IllegalArgumentException("The new button must be one of the predefined buttons");
-
             this.buttonBar.setRight(newButton);
         }
 
@@ -193,48 +189,40 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
             }
 
             this.content = content;
-
-            if (content != null) {
-                if (!content.getStyleClass().contains("onboarding-step-content")) {
-                    content.getStyleClass().add("onboarding-step-content");
-                }
-                this.contentContainer.getChildren().setAll(content);
-            } else {
-                this.contentContainer.getChildren().clear();
-            }
+            Optional.ofNullable(content).ifPresentOrElse(node -> {
+                node.getStyleClass().add("onboarding-step-content");
+                contentContainer.getChildren().setAll(node);
+            }, () -> contentContainer.getChildren().clear());
         }
 
         @Override
         public void onStepChanged(OnboardingStep step, int currentIndex, int totalSteps) {
             if (step == null) {
-                this.titleLabel.setKey("");
-                this.descriptionLabel.setKey("");
-                this.progressLabel.setText("");
-                this.progressBar.setProgress(0);
+                titleLabel.setKey("");
+                descriptionLabel.setKey("");
+                progressLabel.setText("");
+                progressBar.setProgress(0);
                 return;
             }
 
-            this.titleLabel.setKey(step.title());
-            this.descriptionLabel.setKey(step.description());
+            titleLabel.setKey(step.title());
+            descriptionLabel.setKey(step.description());
 
             int displayedIndex = currentIndex + 1;
-            if (totalSteps <= 0) {
-                this.progressBar.setProgress(0);
-                this.progressLabel.setText("");
-                return;
+            if (totalSteps > 0) {
+                progressBar.setProgress((double) displayedIndex / totalSteps);
+                progressLabel.setText(L18n.localize("railroad.onboarding.step_progress", displayedIndex, totalSteps));
+            } else {
+                progressBar.setProgress(0);
+                progressLabel.setText("");
             }
-
-            double progressValue = (double) displayedIndex / totalSteps;
-            this.progressBar.setProgress(progressValue);
-
-            this.progressLabel.setText(L18n.localize("railroad.onboarding.step_progress", displayedIndex, totalSteps));
         }
 
         @Override
         public void onBusyStateChanged(boolean busy) {
-            this.scrollPane.setDisable(busy);
-            this.busyOverlay.setVisible(busy);
-            this.busyOverlay.setManaged(busy);
+            scrollPane.setDisable(busy);
+            busyOverlay.setVisible(busy);
+            busyOverlay.setManaged(busy);
         }
     }
 
