@@ -16,4 +16,6 @@ public interface OnboardingUI {
     default void onStepChanged(OnboardingStep step, int currentIndex, int totalSteps) {}
 
     default void onBusyStateChanged(boolean busy) {}
+
+    void showSubStep(OnboardingStep step, Runnable onBack);
 }

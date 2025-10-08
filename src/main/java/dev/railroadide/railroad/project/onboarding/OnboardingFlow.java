@@ -6,18 +6,28 @@ import java.util.function.Supplier;
 
 public class OnboardingFlow {
     private final Map<String, Supplier<OnboardingStep>> stepLookup;
-    private final List<String> stepOrder;
+    private final List<OnboardingTransition> transitions;
+    private final String firstStepId;
 
-    public OnboardingFlow(Map<String, Supplier<OnboardingStep>> stepLookup, List<String> stepOrder) {
+    public OnboardingFlow(Map<String, Supplier<OnboardingStep>> stepLookup, List<OnboardingTransition> transitions, String firstStepId) {
         this.stepLookup = Map.copyOf(stepLookup);
-        this.stepOrder = List.copyOf(stepOrder);
+        this.transitions = List.copyOf(transitions);
+        this.firstStepId = firstStepId;
+    }
+
+    public static OnboardingFlowBuilder builder() {
+        return new OnboardingFlowBuilder();
     }
 
     public Supplier<OnboardingStep> lookup(String id) {
         return stepLookup.get(id);
     }
 
-    public List<String> stepOrder() {
-        return stepOrder;
+    public List<OnboardingTransition> getTransitions() {
+        return transitions;
+    }
+
+    public String getFirstStepId() {
+        return firstStepId;
     }
 }

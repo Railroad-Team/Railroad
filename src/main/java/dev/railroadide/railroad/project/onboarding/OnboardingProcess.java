@@ -6,9 +6,9 @@ import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
-import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -23,10 +23,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import lombok.Getter;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -57,13 +54,13 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
     }
 
     public void run(Scene scene) {
-        List<String> order = flow.stepOrder();
-        if (order.isEmpty())
+        String firstStepId = flow.getFirstStepId();
+        if (firstStepId == null || firstStepId.isEmpty())
             return;
 
         scene.setRoot(ui);
 
-        Runnable runnable = () -> new Navigator(ui, order).showStep(0);
+        Runnable runnable = () -> new Navigator(ui).showStep(firstStepId);
         if (Platform.isFxApplicationThread()) {
             runnable.run();
         } else {
@@ -224,13 +221,18 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
             busyOverlay.setVisible(busy);
             busyOverlay.setManaged(busy);
         }
+
+        @Override
+        public void showSubStep(OnboardingStep step, Runnable onBack) {
+            setContent(step.section().createUI());
+            getBackButton().setOnAction(e -> onBack.run());
+        }
     }
 
     private final class Navigator {
         private final N ui;
-        private final List<String> stepOrder;
+        private final List<String> stepHistory = new ArrayList<>();
 
-        private final ReadOnlyIntegerWrapper currentIndex = new ReadOnlyIntegerWrapper(-1);
         private OnboardingStep currentStep;
         private final BooleanProperty busy = new SimpleBooleanProperty(false);
         private EventHandler<KeyEvent> keyHandler;
@@ -238,26 +240,25 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
         private final Map<String, OnboardingStep> stepCache = new HashMap<>();
         private final Map<String, Node> cachedUIs = new HashMap<>();
 
-        Navigator(N ui, List<String> stepOrder) {
+        Navigator(N ui) {
             this.ui = ui;
-            this.stepOrder = stepOrder;
             busy.addListener((obs, oldValue, newValue) -> this.ui.onBusyStateChanged(newValue));
             this.ui.onBusyStateChanged(busy.get());
         }
 
-        void showStep(int targetIndex) {
-            if (targetIndex < 0 || targetIndex >= stepOrder.size())
+        void showStep(String stepId) {
+            if (stepId == null || stepId.isEmpty())
                 return;
 
             busy.set(true);
-            Platform.runLater(() -> performStepTransition(targetIndex));
+            Platform.runLater(() -> performStepTransition(stepId));
         }
 
-        private void performStepTransition(int targetIndex) {
+        private void performStepTransition(String stepId) {
             cleanupCurrentStep(true);
 
-            currentIndex.set(targetIndex);
-            currentStep = stepAt(targetIndex);
+            stepHistory.add(stepId);
+            currentStep = stepAt(stepId);
 
             CompletableFuture.runAsync(() -> currentStep.onEnter(context)).thenRun(
                 () -> Platform.runLater(() -> {
@@ -267,15 +268,13 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
                             $ -> currentStep.section().createUI()
                         )
                     );
-                    this.ui.onStepChanged(currentStep, currentIndex.get(), stepOrder.size());
+                    this.ui.onStepChanged(currentStep, stepHistory.size() - 1, -1);
                     configureNavigation();
                     busy.set(false);
                 }));
         }
 
-        private OnboardingStep stepAt(int idx) {
-            String id = flow.stepOrder().get(idx);
-
+        private OnboardingStep stepAt(String id) {
             return stepCache.computeIfAbsent(id,
                 $ -> {
                     Supplier<OnboardingStep> sup = flow.lookup(id);
@@ -289,7 +288,6 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
             if (busy.get() || currentStep == null || !currentStep.validProperty().get())
                 return;
 
-            int nextIndex = currentIndex.get() + 1;
             busy.set(true);
 
             currentStep.beforeNext(context).whenComplete(
@@ -300,22 +298,47 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
                         return;
                     }
 
-                    if (nextIndex < stepOrder.size()) {
-                        showStep(nextIndex);
+                    List<OnboardingTransition> possibleTransitions = flow.getTransitions().stream()
+                        .filter(t -> t.getFromStepId().equals(currentStep.id()))
+                        .toList();
+
+                    Optional<OnboardingTransition> transition = possibleTransitions.stream()
+                        .filter(t -> t.isConditional() && t.getCondition().test(context))
+                        .findFirst();
+
+                    if (transition.isPresent()) {
+                        showStep(transition.get().getToStepId());
+                        return;
+                    }
+
+                    Optional<OnboardingTransition> simpleTransition = possibleTransitions.stream()
+                        .filter(t -> !t.isConditional())
+                        .findFirst();
+
+                    if (simpleTransition.isPresent()) {
+                        showStep(simpleTransition.get().getToStepId());
                         return;
                     }
 
                     cleanupCurrentStep(true);
                     currentStep = null;
-                    currentIndex.set(nextIndex);
                 }));
         }
 
         private void handleBack() {
-            if (busy.get() || currentStep == null || currentIndex.get() == 0)
+            if (busy.get() || currentStep == null || stepHistory.size() <= 1)
                 return;
 
-            showStep(currentIndex.get() - 1);
+            String lastStepId = stepHistory.removeLast();
+            OnboardingStep lastStep = stepCache.get(lastStepId);
+            if (lastStep != null) {
+                lastStep.dispose(context);
+                stepCache.remove(lastStepId);
+                cachedUIs.remove(lastStepId);
+            }
+
+            String previousStepId = stepHistory.getLast();
+            showStep(previousStepId);
         }
 
         private void configureNavigation() {
@@ -327,18 +350,19 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
 
             backButton.setOnAction(null);
             backButton.disableProperty().unbind();
-            backButton.disableProperty().bind(busy.or(currentIndex.isEqualTo(0)));
-            backButton.visibleProperty().unbind();
-            backButton.visibleProperty().bind(currentIndex.greaterThan(0));
+            backButton.disableProperty().bind(busy.or(Bindings.createBooleanBinding(() -> stepHistory.size() <= 1)));
+            backButton.visibleProperty().set(stepHistory.size() > 1);
             backButton.setOnAction(event -> {
                 event.consume();
                 handleBack();
             });
 
+            boolean hasNextStep = flow.getTransitions().stream().anyMatch(t -> t.getFromStepId().equals(currentStep.id()));
+
             nextButton.setOnAction(null);
             nextButton.disableProperty().unbind();
             nextButton.disableProperty().bind(busy.or(valid.not()));
-            nextButton.visibleProperty().bind(currentIndex.lessThan(stepOrder.size() - 1));
+            nextButton.visibleProperty().set(hasNextStep);
             nextButton.setOnAction(event -> {
                 event.consume();
                 handleNext();
@@ -347,8 +371,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
             finishButton.setOnAction(null);
             finishButton.disableProperty().unbind();
             finishButton.disableProperty().bind(busy.or(valid.not()));
-            finishButton.visibleProperty().unbind();
-            finishButton.visibleProperty().bind(currentIndex.isEqualTo(stepOrder.size() - 1));
+            finishButton.visibleProperty().set(!hasNextStep);
             finishButton.setOnAction(this::onFinish);
 
             if (finishButton.isVisible()) {
@@ -365,7 +388,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
                 if (event.getCode() == KeyCode.ENTER && valid.get() && !busy.get()) {
                     event.consume();
                     handleNext();
-                } else if (event.getCode() == KeyCode.ESCAPE && currentIndex.get() > 0 && !busy.get()) {
+                } else if (event.getCode() == KeyCode.ESCAPE && stepHistory.size() > 1 && !busy.get()) {
                     event.consume();
                     handleBack();
                 }
@@ -414,7 +437,6 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
 
                 cleanupCurrentStep(true);
                 currentStep = null;
-                currentIndex.set(stepOrder.size());
 
                 for (OnboardingStep step : this.stepCache.values()) {
                     step.dispose(context);
@@ -423,7 +445,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
                 this.stepCache.clear();
                 this.cachedUIs.clear();
                 this.ui.setContent(new RRBorderPane());
-                this.ui.onStepChanged(null, currentIndex.get(), stepOrder.size());
+                this.ui.onStepChanged(null, -1, -1);
 
                 onFinish.accept(context);
             }));

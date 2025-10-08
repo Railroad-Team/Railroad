@@ -35,14 +35,11 @@ public class FabricProjectOnboarding {
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     public void start(Scene scene) {
-        // TODO: Turn flow into a builder
-        var flow = new OnboardingFlow(
-            Map.of(
-                "project_details", this::createProjectDetailsStep,
-                "minecraft_version", this::createMinecraftVersionStep
-            ),
-            List.of("project_details", "minecraft_version")
-        );
+        var flow = OnboardingFlow.builder()
+            .addStep("project_details", this::createProjectDetailsStep)
+            .addStep("minecraft_version", this::createMinecraftVersionStep)
+            .addTransition("project_details", "minecraft_version")
+            .build();
 
         var process = OnboardingProcess.createBasic(
             flow,
