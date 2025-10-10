@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.ide.sst.ast.expression;
+package dev.railroadide.railroad.ide.sst.ast.clazz;
 
 import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
@@ -8,23 +8,19 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record FieldAccessExpression(
-        Span span,
-        Expression expression,
-        NameExpression name
-) implements Expression {
+public record AnonymousClassDeclaration(Span span, List<ClassBodyDeclaration> bodyDeclarations) implements AstNode {
     @Override
     public AstKind kind() {
-        return AstKind.FIELD_ACCESS_EXPRESSION;
+        return AstKind.ANONYMOUS_CLASS_DECLARATION;
     }
 
     @Override
     public List<AstNode> children() {
-        return List.of(expression);
+        return List.copyOf(bodyDeclarations);
     }
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitFieldAccessExpression(this);
+        return visitor.visitAnonymousClassDeclaration(this);
     }
 }

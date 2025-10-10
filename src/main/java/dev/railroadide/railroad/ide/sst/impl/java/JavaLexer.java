@@ -270,7 +270,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                 return token(JavaTokenType.SLASH_EQUALS, startOffset, startLine, startCol);
             } else {
                 consume();
-                return token(JavaTokenType.DIVIDE, startOffset, startLine, startCol);
+                return token(JavaTokenType.SLASH, startOffset, startLine, startCol);
             }
         }
 

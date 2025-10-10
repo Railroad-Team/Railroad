@@ -472,6 +472,16 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
         return new Span(start.pos(), end.endPos(), start.line(), start.column());
     }
 
+    public boolean nextIsAnyAt(int offset, JavaTokenType... types) {
+        JavaTokenType nextType = lookaheadType(offset);
+        for (JavaTokenType type : types) {
+            if (nextType == type)
+                return true;
+        }
+
+        return false;
+    }
+
     /**
      * A marker class that allows for rollback or commit of the parser state.
      * This is useful for implementing backtracking or alternative parsing strategies.

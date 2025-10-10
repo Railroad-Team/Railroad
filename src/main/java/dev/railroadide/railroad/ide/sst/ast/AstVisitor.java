@@ -45,6 +45,7 @@ public interface AstVisitor<R> {
     R visitAnnotationTypeDeclaration(AnnotationTypeDeclaration node);
     R visitAnnotationElement(AnnotationElement node);
     R visitEmptyTypeDeclaration(EmptyTypeDeclaration node);
+    R visitAnonymousClassDeclaration(AnonymousClassDeclaration node);
 
     R visitFieldDeclaration(FieldDeclaration node);
     R visitMethodDeclaration(MethodDeclaration node);
@@ -118,6 +119,7 @@ public interface AstVisitor<R> {
     R visitWildcardType(WildcardTypeRef node);
     R visitExceptionType(ThrowsClause.ExceptionType node);
     R visitSugarType(SugarTypeRef node);
+    R visitTypeDiamond(TypeDiamond node);
 
     R visitModifier(Modifier node);
     R visitMarkerAnnotation(MarkerAnnotation node);

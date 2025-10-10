@@ -132,7 +132,7 @@ public enum JavaTokenType {
     PLUS_PLUS, // ++
     MINUS_MINUS, // --
     STAR, // *
-    DIVIDE, // /
+    SLASH, // /
     PERCENT, // %
     TILDA, // ~
     AMPERSAND, // &
@@ -151,6 +151,8 @@ public enum JavaTokenType {
     LEFT_SHIFT_EQUALS, // <<=
     RIGHT_SHIFT_EQUALS, // >>=
     UNSIGNED_RIGHT_SHIFT_EQUALS, // >>>=
+    RIGHT_SHIFT, // >>
+    UNSIGNED_RIGHT_SHIFT, // >>>
 
     EOF, // End of file token
     UNKNOWN; // Represents any token that does not match the above types
@@ -216,7 +218,7 @@ public enum JavaTokenType {
         put('+', PLUS);
         put('-', MINUS);
         put('*', STAR);
-        put('/', DIVIDE);
+        put('/', SLASH);
         put('%', PERCENT);
         put('~', TILDA);
         put('&', AMPERSAND);

@@ -23,6 +23,7 @@ public enum AstKind {
     ANNOTATION_TYPE_DECLARATION,
     ANNOTATION_ELEMENT, // e.g., value = "example" in @MyAnnotation(value = "example")
     EMPTY_TYPE_DECLARATION, // e.g. ';'
+    ANONYMOUS_CLASS_DECLARATION, // e.g., new MyClass() { ... }
 
     // Member Declarations
     FIELD_DECLARATION,
@@ -104,6 +105,7 @@ public enum AstKind {
     WILDCARD_TYPE, // ? extends A, ? super B, or just ?
     EXCEPTION_TYPE, // CLASS_OR_INTERFACE_TYPE or TYPE_VARIABLE
     SUGAR_TYPE, // e.g., final @Deprecated Integer
+    TYPE_DIAMOND, // e.g., <>
 
     // Modifiers
     MODIFIER, // e.g., public, private, protected, static, final, abstract
