@@ -4,13 +4,16 @@ import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
+import dev.railroadide.railroad.ide.sst.ast.generic.LexerToken;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
+import dev.railroadide.railroad.ide.sst.lexer.Token;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 public record UnaryExpression(
         Span span,
-        String operator,
+        LexerToken<JavaTokenType> operator,
         Expression expression,
         boolean isPrefix
 ) implements Expression {
@@ -21,7 +24,7 @@ public record UnaryExpression(
 
     @Override
     public List<AstNode> children() {
-        return List.of(expression);
+        return isPrefix ? List.of(operator, expression) : List.of(expression, operator);
     }
 
     @Override

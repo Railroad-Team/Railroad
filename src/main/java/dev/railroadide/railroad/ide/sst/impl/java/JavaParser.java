@@ -4,10 +4,7 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.*;
 import dev.railroadide.railroad.ide.sst.ast.clazz.*;
-import dev.railroadide.railroad.ide.sst.ast.expression.AssignmentExpression;
-import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
-import dev.railroadide.railroad.ide.sst.ast.expression.LambdaExpression;
-import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
+import dev.railroadide.railroad.ide.sst.ast.expression.*;
 import dev.railroadide.railroad.ide.sst.ast.generic.*;
 import dev.railroadide.railroad.ide.sst.ast.parameter.Parameter;
 import dev.railroadide.railroad.ide.sst.ast.parameter.ReceiverParameter;
@@ -27,14 +24,12 @@ import dev.railroadide.railroad.ide.sst.ast.statements.switches.SwitchStatement;
 import dev.railroadide.railroad.ide.sst.ast.typeref.*;
 import dev.railroadide.railroad.ide.sst.lexer.Lexer;
 import dev.railroadide.railroad.ide.sst.lexer.Token;
+import dev.railroadide.railroad.ide.sst.lexer.TokenChannel;
 import dev.railroadide.railroad.ide.sst.parser.Parser;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
     /**
@@ -71,7 +66,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         Expression left = parseConditionalExpression();
 
         boolean isValidLeftHandSide = AssignmentExpression.isValidLeftHandSide(left);
-        if(!isValidLeftHandSide && lookaheadType(1).isAssignmentOperator()) {
+        if (!isValidLeftHandSide && lookaheadType(1).isAssignmentOperator()) {
             reportError("Left-hand side of assignment must be a variable, field, or array element");
         }
 
@@ -84,6 +79,343 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         }
 
         return left;
+    }
+
+    private Expression parseConditionalExpression() {
+        Span start = currentSpan();
+        Expression condition = parseLogicalOrExpression();
+
+        if (match(JavaTokenType.QUESTION_MARK)) {
+            Expression trueExpr = parseExpression();
+            expect(JavaTokenType.COLON, "Expected ':' in conditional expression");
+
+            Expression falseExpr = isLambdaHeader() ? parseLambdaExpression() : parseConditionalExpression();
+            return new ConditionalExpression(spanFrom(start), condition, trueExpr, falseExpr);
+        }
+
+        return condition;
+    }
+
+    private Expression parseLogicalOrExpression() {
+        Span start = currentSpan();
+        Expression left = parseLogicalAndExpression();
+
+        while (match(JavaTokenType.OR)) {
+            Token<JavaTokenType> operator = previous();
+            LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
+            Expression right = parseLogicalAndExpression();
+            left = new BinaryExpression(spanFrom(start), left, operatorToken, right);
+        }
+
+        return left;
+    }
+
+    private Expression parseLogicalAndExpression() {
+        Span start = currentSpan();
+        Expression left = parseBitwiseOrExpression();
+
+        while (match(JavaTokenType.AND)) {
+            Token<JavaTokenType> operator = previous();
+            LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
+            Expression right = parseBitwiseOrExpression();
+            left = new BinaryExpression(spanFrom(start), left, operatorToken, right);
+        }
+
+        return left;
+    }
+
+    private Expression parseBitwiseOrExpression() {
+        Span start = currentSpan();
+        Expression left = parseBitwiseXorExpression();
+
+        while (match(JavaTokenType.CARET)) {
+            Token<JavaTokenType> operator = previous();
+            LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
+            Expression right = parseBitwiseXorExpression();
+            left = new BinaryExpression(spanFrom(start), left, operatorToken, right);
+        }
+
+        return left;
+    }
+
+    private Expression parseBitwiseXorExpression() {
+        Span start = currentSpan();
+        Expression left = parseBitwiseAndExpression();
+
+        while (match(JavaTokenType.PIPE)) {
+            Token<JavaTokenType> operator = previous();
+            LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
+            Expression right = parseBitwiseAndExpression();
+            left = new BinaryExpression(spanFrom(start), left, operatorToken, right);
+        }
+
+        return left;
+    }
+
+    private Expression parseBitwiseAndExpression() {
+        Span start = currentSpan();
+        Expression left = parseEqualityExpression();
+
+        while (match(JavaTokenType.AMPERSAND)) {
+            Token<JavaTokenType> operator = previous();
+            LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
+            Expression right = parseEqualityExpression();
+            left = new BinaryExpression(spanFrom(start), left, operatorToken, right);
+        }
+
+        return left;
+    }
+
+    private Expression parseEqualityExpression() {
+        Span start = currentSpan();
+        Expression left = parseRelationalExpression();
+
+        while (nextIsAny(JavaTokenType.DOUBLE_EQUALS, JavaTokenType.NOT_EQUALS)) {
+            Token<JavaTokenType> operator = advance();
+            LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
+            Expression right = parseRelationalExpression();
+            left = new BinaryExpression(spanFrom(start), left, operatorToken, right);
+        }
+
+        return left;
+    }
+
+    private Expression parseRelationalExpression() {
+        Span start = currentSpan();
+        Expression left = parseShiftExpression();
+
+        while (nextIsAny(JavaTokenType.LEFT_ANGLED_BRACKET, JavaTokenType.LESS_THAN_OR_EQUALS,
+                JavaTokenType.RIGHT_ANGLED_BRACKET, JavaTokenType.GREATER_THAN_OR_EQUALS,
+                JavaTokenType.INSTANCEOF_KEYWORD)) {
+            Token<JavaTokenType> operator = advance();
+            if (operator.type() == JavaTokenType.INSTANCEOF_KEYWORD) {
+                left = new InstanceofExpression(spanFrom(start), left, parsePattern());
+            } else {
+                LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
+                Expression right = parseShiftExpression();
+                left = new BinaryExpression(spanFrom(start), left, operatorToken, right);
+            }
+        }
+
+        return left;
+    }
+
+    private Expression parseShiftExpression() {
+        Span start = currentSpan();
+        Expression left = parseAdditiveExpression();
+
+        while (nextIsAny(JavaTokenType.LEFT_SHIFT) || isNextRightShift() || isNextUnsignedRightShift()) {
+            Token<JavaTokenType> operator = advanceShiftOperator();
+            LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
+            Expression right = parseAdditiveExpression();
+            left = new BinaryExpression(spanFrom(start), left, operatorToken, right);
+        }
+
+        return left;
+    }
+
+    private Expression parseAdditiveExpression() {
+        Span start = currentSpan();
+        Expression left = parseMultiplicativeExpression();
+
+        while (nextIsAny(JavaTokenType.PLUS, JavaTokenType.MINUS)) {
+            Token<JavaTokenType> operator = advance();
+            LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
+            Expression right = parseMultiplicativeExpression();
+            left = new BinaryExpression(spanFrom(start), left, operatorToken, right);
+        }
+
+        return left;
+    }
+
+    private Expression parseMultiplicativeExpression() {
+        Span start = currentSpan();
+        Expression left = parseUnaryExpression();
+
+        while (nextIsAny(JavaTokenType.STAR, JavaTokenType.SLASH, JavaTokenType.PERCENT)) {
+            Token<JavaTokenType> operator = advance();
+            LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
+            Expression right = parseUnaryExpression();
+            left = new BinaryExpression(spanFrom(start), left, operatorToken, right);
+        }
+
+        return left;
+    }
+
+    private Expression parseUnaryExpression() {
+        Span start = currentSpan();
+
+        if (nextIsAny(JavaTokenType.PLUS_PLUS, JavaTokenType.MINUS_MINUS, JavaTokenType.TILDA, JavaTokenType.PLUS, JavaTokenType.MINUS, JavaTokenType.EXCLAMATION_MARK)) {
+            Token<JavaTokenType> operator = advance();
+            LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
+            Expression operand = parseUnaryExpression();
+            return new UnaryExpression(spanFrom(start), operatorToken, operand, true);
+        }
+
+        if (nextIsAny(JavaTokenType.OPEN_PAREN)) {
+            if (isCastExpressionStart())
+                return parseCastExpression();
+
+            return parsePostfixExpression();
+        }
+
+        if (nextIsAny(JavaTokenType.SWITCH_KEYWORD))
+            return parseSwitchExpression();
+
+        return parsePostfixExpression();
+    }
+
+    private Expression parseSwitchExpression() {
+        Span start = currentSpan();
+        expect(JavaTokenType.SWITCH_KEYWORD, "Expected 'switch' keyword");
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' after 'switch'");
+        Expression selector = parseExpression();
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after switch selector");
+
+        expect(JavaTokenType.OPEN_BRACE, "Expected '{' for switch statement");
+        List<SwitchRule> switchRules = new ArrayList<>();
+        while (nextIsAny(JavaTokenType.DEFAULT_KEYWORD, JavaTokenType.CASE_KEYWORD)) {
+            switchRules.add(parseSwitchRule());
+        }
+        expect(JavaTokenType.CLOSE_BRACE, "Expected '}' to close switch statement");
+
+        return new SwitchExpression(spanFrom(start), selector, switchRules);
+    }
+
+    private Expression parsePostfixExpression() {
+        Span start = currentSpan();
+        Expression expr = parsePrimaryExpression();
+
+        while (nextIsAny(JavaTokenType.DOT, JavaTokenType.OPEN_BRACKET, JavaTokenType.PLUS_PLUS, JavaTokenType.MINUS_MINUS, JavaTokenType.DOUBLE_COLON)) {
+            if (match(JavaTokenType.DOT)) {
+                start = currentSpan();
+                if (nextIsAny(JavaTokenType.IDENTIFIER)) {
+                    Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected identifier after '.'");
+                    expr = new FieldAccessExpression(spanFrom(start), expr, new NameExpression(spanFrom(identifier), List.of(identifier.lexeme())));
+                } else if (match(JavaTokenType.THIS_KEYWORD)) {
+                    expr = new ThisExpression(spanFrom(start));
+                } else if (match(JavaTokenType.SUPER_KEYWORD)) {
+                    expr = new SuperExpression(spanFrom(start));
+                } else if (match(JavaTokenType.NEW_KEYWORD)) {
+                    expr = parseClassInstanceCreationExpression(spanFrom(start), Optional.of(expr));
+                } else {
+                    reportError("Expected identifier, 'this', 'super', or 'new' after '.'");
+                    return expr;
+                }
+            } else if (nextIsAny(JavaTokenType.OPEN_PAREN)) {
+                expr = parseMethodCallExpression(expr);
+            } else if (match(JavaTokenType.OPEN_BRACKET)) {
+                Expression index = parseExpression();
+                expect(JavaTokenType.CLOSE_BRACKET, "Expected ']' after array index");
+                expr = new ArrayAccessExpression(spanFrom(start), expr, index);
+            } else if (match(JavaTokenType.DOUBLE_COLON)) {
+                expr = parseMethodReferenceExpression(expr, start);
+            } else if (nextIsAny(JavaTokenType.PLUS_PLUS, JavaTokenType.MINUS_MINUS)) {
+                Token<JavaTokenType> operator = advance();
+                LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
+                expr = new UnaryExpression(spanFrom(start), operatorToken, expr, false);
+            } else
+                break;
+        }
+
+        return expr;
+    }
+
+    private Expression parseClassInstanceCreationExpression(Span spanStart, Optional<Expression> scope) {
+        expect(JavaTokenType.NEW_KEYWORD, "Expected 'new' keyword");
+
+        List<TypeRef> typeArguments = new ArrayList<>();
+        if (match(JavaTokenType.LEFT_ANGLED_BRACKET)) {
+            do {
+                typeArguments.add(parseTypeReference());
+            } while (match(JavaTokenType.COMMA));
+            expect(JavaTokenType.RIGHT_ANGLED_BRACKET, "Expected '>' after type arguments");
+        }
+
+        List<ClassOrInterfaceTypeRef> types = new ArrayList<>();
+        do {
+            types.add(parseClassOrInterfaceTypeReference());
+        } while (match(JavaTokenType.DOT));
+
+        List<TypeRef> constructorTypeArguments = new ArrayList<>();
+        if (match(JavaTokenType.LEFT_ANGLED_BRACKET)) {
+            if (match(JavaTokenType.RIGHT_ANGLED_BRACKET)) {
+                constructorTypeArguments.add(new TypeDiamond(spanFrom(spanStart)));
+            } else {
+                do {
+                    constructorTypeArguments.add(parseTypeReference());
+                } while (match(JavaTokenType.COMMA));
+                expect(JavaTokenType.RIGHT_ANGLED_BRACKET, "Expected '>' after constructor type arguments");
+            }
+        }
+
+        List<Expression> arguments = new ArrayList<>();
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' to start constructor arguments");
+        if (!nextIsAny(JavaTokenType.CLOSE_PAREN)) {
+            do {
+                arguments.add(parseExpression());
+            } while (match(JavaTokenType.COMMA));
+        }
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' to end constructor arguments");
+
+        Optional<AnonymousClassDeclaration> anonymousClassDeclaration = Optional.empty();
+        if (nextIsAny(JavaTokenType.OPEN_BRACE)) {
+            List<ClassBodyDeclaration> declarations = new ArrayList<>();
+            while (!nextIsAny(JavaTokenType.CLOSE_BRACE) && !isAtEnd()) {
+                ClassBodyDeclaration declaration = tryParse($ -> parseClassBodyDeclaration(types.getLast().parts().getLast().name(), false));
+                if (declaration != null) {
+                    declarations.add(declaration);
+                } else {
+                    reportError("Unexpected token in anonymous class body");
+                    synchronize(defaultSyncSet());
+                    if (!isAtEnd())
+                        advance();
+                }
+            }
+
+            expect(JavaTokenType.CLOSE_BRACE, "Expected '}' to close anonymous class body");
+            anonymousClassDeclaration = Optional.of(new AnonymousClassDeclaration(spanFrom(spanStart), declarations));
+        }
+
+        return new ObjectCreationExpression(
+                spanFrom(spanStart),
+                scope,
+                typeArguments,
+                types,
+                constructorTypeArguments,
+                arguments,
+                anonymousClassDeclaration
+        );
+    }
+
+    private boolean isCastExpressionStart() {
+        int offset = 1;
+        if (lookaheadType(offset) != JavaTokenType.OPEN_PAREN)
+            return false;
+
+        offset++;
+        if (nextIsAnyAt(offset, JavaTokenType.INT_KEYWORD, JavaTokenType.BOOLEAN_KEYWORD,
+                JavaTokenType.CHAR_KEYWORD, JavaTokenType.BYTE_KEYWORD, JavaTokenType.SHORT_KEYWORD,
+                JavaTokenType.LONG_KEYWORD, JavaTokenType.FLOAT_KEYWORD, JavaTokenType.DOUBLE_KEYWORD,
+                JavaTokenType.VOID_KEYWORD))
+            return true;
+
+        if (nextIsAnyAt(offset, JavaTokenType.IDENTIFIER, JavaTokenType.AT)) {
+            offset++;
+
+            if (lookaheadType(offset) == JavaTokenType.LEFT_ANGLED_BRACKET)
+                return true;
+
+            while (lookaheadType(offset) == JavaTokenType.DOT) {
+                offset++;
+                if (lookaheadType(offset) != JavaTokenType.IDENTIFIER)
+                    return false;
+
+                offset++;
+            }
+        }
+
+        return false;
     }
 
     private LambdaExpression parseLambdaExpression() {
@@ -1313,12 +1645,13 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         Expression expression = parseExpression();
 
         expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after switch statement");
-        expect(JavaTokenType.OPEN_BRACE, "Expected '{' for switch statement");
 
+        expect(JavaTokenType.OPEN_BRACE, "Expected '{' for switch statement");
         List<SwitchRule> switchRules = new ArrayList<>();
         while (nextIsAny(JavaTokenType.DEFAULT_KEYWORD, JavaTokenType.CASE_KEYWORD)) {
             switchRules.add(parseSwitchRule());
         }
+        expect(JavaTokenType.CLOSE_BRACE, "Expected '}' to close switch statement");
 
         return new SwitchStatement(
                 spanFrom(start),
@@ -1586,9 +1919,10 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         List<ClassOrInterfaceTypeRef.Part> parts = new ArrayList<>();
         do {
             Span partStart = currentSpan();
+            List<Annotation> annotations = parseAnnotations();
             Token<JavaTokenType> identifierToken = expect(JavaTokenType.IDENTIFIER, "Expected identifier in type reference");
             List<TypeRef> typeArguments = parseTypeArgumentsOptionally();
-            parts.add(new ClassOrInterfaceTypeRef.Part(spanFrom(partStart), new NameExpression(spanFrom(identifierToken), List.of(identifierToken.lexeme())), typeArguments));
+            parts.add(new ClassOrInterfaceTypeRef.Part(spanFrom(partStart), annotations, new NameExpression(spanFrom(identifierToken), List.of(identifierToken.lexeme())), typeArguments));
         } while (match(JavaTokenType.DOT));
 
         return new ClassOrInterfaceTypeRef(spanFrom(parts.getFirst().span()), parts);
@@ -1857,5 +2191,50 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
 
             offset++;
         }
+    }
+
+    private Token<JavaTokenType> advanceShiftOperator() {
+        Span start = currentSpan();
+        if (isNextUnsignedRightShift()) {
+            advance(); // >
+            advance(); // >
+            advance(); // >
+
+            Span span = spanFrom(start);
+            return new Token.SimpleToken<>(JavaTokenType.UNSIGNED_RIGHT_SHIFT,
+                    ">>>",
+                    span.pos(),
+                    span.endPos(),
+                    span.line(),
+                    span.column(),
+                    TokenChannel.DEFAULT,
+                    Collections.emptySet());
+        } else if (isNextRightShift()) {
+            advance(); // >
+            advance(); // >
+
+            Span span = spanFrom(start);
+            return new Token.SimpleToken<>(JavaTokenType.RIGHT_SHIFT,
+                    ">>",
+                    span.pos(),
+                    span.endPos(),
+                    span.line(),
+                    span.column(),
+                    TokenChannel.DEFAULT,
+                    Collections.emptySet());
+        } else {
+            return advance(); // <<
+        }
+    }
+
+    private boolean isNextRightShift() {
+        return nextIsAny(JavaTokenType.RIGHT_ANGLED_BRACKET) &&
+                lookaheadType(2) == JavaTokenType.RIGHT_ANGLED_BRACKET;
+    }
+
+    private boolean isNextUnsignedRightShift() {
+        return nextIsAny(JavaTokenType.RIGHT_ANGLED_BRACKET) &&
+                lookaheadType(2) == JavaTokenType.RIGHT_ANGLED_BRACKET &&
+                lookaheadType(3) == JavaTokenType.RIGHT_ANGLED_BRACKET;
     }
 }
