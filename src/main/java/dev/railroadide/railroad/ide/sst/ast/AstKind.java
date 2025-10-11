@@ -133,5 +133,6 @@ public enum AstKind {
     BOOLEAN_LITERAL,
     CHARACTER_LITERAL,
     STRING_LITERAL,
-    NULL_LITERAL
+    NULL_LITERAL,
+    CLASS_LITERAL // e.g., String.class
 }

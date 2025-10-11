@@ -265,6 +265,23 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         return parsePostfixExpression();
     }
 
+    private Expression parseCastExpression() {
+        Span start = currentSpan();
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' to start cast expression");
+
+        TypeRef type = parseTypeReference();
+
+        List<TypeRef> additionalBounds = new ArrayList<>();
+        while (match(JavaTokenType.AMPERSAND)) {
+            additionalBounds.add(parseTypeReference());
+        }
+
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' to end cast type");
+
+        Expression expr = parseExpression();
+        return new TypeCastExpression(spanFrom(start), type, additionalBounds, expr);
+    }
+
     private Expression parseSwitchExpression() {
         Span start = currentSpan();
         expect(JavaTokenType.SWITCH_KEYWORD, "Expected 'switch' keyword");
@@ -297,13 +314,13 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
                 } else if (match(JavaTokenType.SUPER_KEYWORD)) {
                     expr = new SuperExpression(spanFrom(start));
                 } else if (match(JavaTokenType.NEW_KEYWORD)) {
-                    expr = parseClassInstanceCreationExpression(spanFrom(start), Optional.of(expr));
+                    expr = parseClassInstanceCreationExpression(spanFrom(start), Optional.ofNullable(expr));
                 } else {
                     reportError("Expected identifier, 'this', 'super', or 'new' after '.'");
                     return expr;
                 }
             } else if (nextIsAny(JavaTokenType.OPEN_PAREN)) {
-                expr = parseMethodCallExpression(expr);
+                expr = parseMethodCallExpression(Optional.ofNullable(expr), start);
             } else if (match(JavaTokenType.OPEN_BRACKET)) {
                 Expression index = parseExpression();
                 expect(JavaTokenType.CLOSE_BRACKET, "Expected ']' after array index");
@@ -321,6 +338,380 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         return expr;
     }
 
+    private Expression parsePrimaryExpression() {
+        Span start = currentSpan();
+
+        if (match(JavaTokenType.THIS_KEYWORD))
+            return new ThisExpression(spanFrom(start));
+
+        if (nextIsAny(JavaTokenType.BOOLEAN_LITERAL, JavaTokenType.CHARACTER_LITERAL, JavaTokenType.NULL_LITERAL,
+                JavaTokenType.NUMBER_BINARY_LITERAL, JavaTokenType.NUMBER_FLOATING_POINT_LITERAL,
+                JavaTokenType.NUMBER_HEXADECIMAL_LITERAL, JavaTokenType.NUMBER_INT_LITERAL,
+                JavaTokenType.NUMBER_OCTAL_LITERAL, JavaTokenType.STRING_LITERAL, JavaTokenType.TEXT_BLOCK_LITERAL))
+            return parseLiteral();
+
+        if (match(JavaTokenType.OPEN_PAREN)) {
+            Expression expr = parseExpression();
+            expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after expression");
+            return expr;
+        }
+
+        if (nextIsAny(JavaTokenType.NEW_KEYWORD))
+            return parseClassInstanceCreationOrArrayCreationExpression();
+
+        if (isClassLiteral())
+            return parseClassLiteral();
+
+        if (match(JavaTokenType.SUPER_KEYWORD))
+            return new SuperExpression(spanFrom(start));
+
+        if (nextIsAny(JavaTokenType.IDENTIFIER))
+            return parseQualifiedName();
+
+        reportError("Expected expression");
+        return null;
+    }
+
+    private Expression parseClassInstanceCreationOrArrayCreationExpression() {
+        Span start = currentSpan();
+
+        List<TypeRef> constructorTypeArguments = parseTypeArgumentsOptionally();
+
+        TypeRef baseType = parseNonArrayTypeReference();
+        if (nextIsAny(JavaTokenType.OPEN_PAREN)) {
+            if (baseType instanceof PrimitiveTypeRef) {
+                reportError("Cannot instantiate primitive type with constructor syntax");
+                return null;
+            }
+
+            return parseClassInstanceCreationExpression(start, Optional.empty(), baseType, constructorTypeArguments);
+        }
+
+        if (nextIsAny(JavaTokenType.OPEN_BRACKET))
+            return parseArrayCreationExpression(start, baseType, constructorTypeArguments);
+
+        reportError("Expected '(' or '[' after type in 'new' expression");
+        return null;
+    }
+
+    private Expression parseArrayCreationExpression(Span start, TypeRef baseType, List<TypeRef> constructorTypeArguments) {
+        if (!constructorTypeArguments.isEmpty()) {
+            reportError("Array creation cannot have constructor type arguments");
+        }
+
+        List<Expression> dimensions = new ArrayList<>();
+        while (match(JavaTokenType.OPEN_BRACKET)) {
+            if (!nextIsAny(JavaTokenType.CLOSE_BRACKET)) {
+                dimensions.add(parseExpression());
+            } else {
+                dimensions.add(null);
+            }
+
+            expect(JavaTokenType.CLOSE_BRACKET, "Expected ']' after array dimension");
+        }
+
+        var arrayType = new ArrayTypeRef(spanFrom(start), baseType, dimensions.size());
+
+        Optional<ArrayInitializerExpression> intitializer = Optional.empty();
+        if (nextIsAny(JavaTokenType.OPEN_BRACE)) {
+            intitializer = Optional.of(parseArrayInitializer());
+        }
+
+        return new ArrayCreationExpression(spanFrom(start), arrayType, dimensions, intitializer);
+    }
+
+    private ArrayInitializerExpression parseArrayInitializer() {
+        Span start = currentSpan();
+        expect(JavaTokenType.OPEN_BRACE, "Expected '{' to start array initializer");
+
+        List<Expression> values = new ArrayList<>();
+        if (!nextIsAny(JavaTokenType.CLOSE_BRACE)) {
+            do {
+                if (nextIsAny(JavaTokenType.OPEN_BRACE)) {
+                    values.add(parseArrayInitializer());
+                } else {
+                    values.add(parseExpression());
+                }
+            } while (match(JavaTokenType.COMMA));
+        }
+
+        expect(JavaTokenType.CLOSE_BRACE, "Expected '}' to end array initializer");
+        return new ArrayInitializerExpression(spanFrom(start), values);
+    }
+
+    private ClassLiteralExpression parseClassLiteral() {
+        Span start = currentSpan();
+        TypeRef type = parseTypeReference();
+        expect(JavaTokenType.DOT, "Expected '.' in class literal");
+        expect(JavaTokenType.CLASS_KEYWORD, "Expected 'class' in class literal");
+        return new ClassLiteralExpression(spanFrom(start), type);
+    }
+
+    private LiteralExpression parseLiteral() {
+        Span start = currentSpan();
+        if (match(JavaTokenType.NULL_LITERAL))
+            return new NullLiteralExpression(spanFrom(start));
+        if (nextIsAny(JavaTokenType.BOOLEAN_LITERAL)) {
+            Token<JavaTokenType> boolToken = advance();
+            boolean value = Boolean.parseBoolean(boolToken.lexeme());
+            return new BooleanLiteralExpression(spanFrom(start), value);
+        }
+
+        if (nextIsAny(JavaTokenType.CHARACTER_LITERAL))
+            return parseCharacterLiteral();
+
+        if (nextIsAny(JavaTokenType.STRING_LITERAL) || nextIsAny(JavaTokenType.TEXT_BLOCK_LITERAL))
+            return parseStringLiteral();
+
+        if (nextIsAny(JavaTokenType.NUMBER_BINARY_LITERAL, JavaTokenType.NUMBER_HEXADECIMAL_LITERAL,
+                JavaTokenType.NUMBER_INT_LITERAL, JavaTokenType.NUMBER_OCTAL_LITERAL))
+            return parseIntegerLiteral();
+
+        if (nextIsAny(JavaTokenType.NUMBER_FLOATING_POINT_LITERAL))
+            return parseFloatingPointLiteral();
+
+        reportError("Expected literal");
+        return null;
+    }
+
+    private FloatingPointLiteralExpression parseFloatingPointLiteral() {
+        Span start = currentSpan();
+        Token<JavaTokenType> floatToken = expect(JavaTokenType.NUMBER_FLOATING_POINT_LITERAL, "Expected floating point literal");
+        String lexeme = floatToken.lexeme();
+        double value;
+
+        boolean isFloatSuffix = lexeme.endsWith("F") || lexeme.endsWith("f");
+        try {
+            if (lexeme.endsWith("D") || lexeme.endsWith("d") || isFloatSuffix) {
+                value = Double.parseDouble(lexeme.substring(0, lexeme.length() - 1));
+            } else {
+                value = Double.parseDouble(lexeme);
+            }
+        } catch (NumberFormatException ignored) {
+            reportError("Invalid floating point literal format");
+            return new FloatingPointLiteralExpression(spanFrom(start), lexeme, 0.0, isFloatSuffix);
+        }
+
+        return new FloatingPointLiteralExpression(spanFrom(start), lexeme, value, isFloatSuffix);
+    }
+
+    private IntegerLiteralExpression parseIntegerLiteral() {
+        Span start = currentSpan();
+        Token<JavaTokenType> intToken = expect(nextIsAny(JavaTokenType.NUMBER_BINARY_LITERAL, JavaTokenType.NUMBER_HEXADECIMAL_LITERAL, JavaTokenType.NUMBER_INT_LITERAL, JavaTokenType.NUMBER_OCTAL_LITERAL) ? JavaTokenType.NUMBER_BINARY_LITERAL : nextIsAny(JavaTokenType.NUMBER_HEXADECIMAL_LITERAL) ? JavaTokenType.NUMBER_HEXADECIMAL_LITERAL : nextIsAny(JavaTokenType.NUMBER_OCTAL_LITERAL) ? JavaTokenType.NUMBER_OCTAL_LITERAL : JavaTokenType.NUMBER_INT_LITERAL, "Expected integer literal");
+        String lexeme = intToken.lexeme();
+        long value;
+        int base = 10;
+        boolean isLong = lexeme.endsWith("L") || lexeme.endsWith("l");
+
+        try {
+            if (intToken.type() == JavaTokenType.NUMBER_BINARY_LITERAL) {
+                base = 2;
+
+                if (lexeme.endsWith("L") || lexeme.endsWith("l")) {
+                    value = Long.parseLong(lexeme.substring(2, lexeme.length() - 1), 2);
+                } else {
+                    value = Integer.parseInt(lexeme.substring(2), 2);
+                }
+            } else if (intToken.type() == JavaTokenType.NUMBER_HEXADECIMAL_LITERAL) {
+                base = 16;
+
+                if (lexeme.endsWith("L") || lexeme.endsWith("l")) {
+                    value = Long.parseLong(lexeme.substring(2, lexeme.length() - 1), 16);
+                } else {
+                    value = Integer.parseInt(lexeme.substring(2), 16);
+                }
+            } else if (intToken.type() == JavaTokenType.NUMBER_OCTAL_LITERAL) {
+                base = 8;
+
+                if (lexeme.endsWith("L") || lexeme.endsWith("l")) {
+                    value = Long.parseLong(lexeme.substring(1, lexeme.length() - 1), 8);
+                } else {
+                    value = Integer.parseInt(lexeme.substring(1), 8);
+                }
+            } else { // Decimal
+                if (isLong) {
+                    value = Long.parseLong(lexeme.substring(0, lexeme.length() - 1));
+                } else {
+                    value = Integer.parseInt(lexeme);
+                }
+            }
+        } catch (NumberFormatException ignored) {
+            reportError("Invalid integer literal format");
+            return new IntegerLiteralExpression(spanFrom(start), lexeme, 0, base, isLong);
+        }
+
+        return new IntegerLiteralExpression(spanFrom(start), lexeme, value, base, isLong);
+    }
+
+    private StringLiteralExpression parseStringLiteral() {
+        // TODO: Rewrite to handle escape sequences properly
+
+        Span start = currentSpan();
+        Token<JavaTokenType> stringToken = expect(nextIsAny(JavaTokenType.STRING_LITERAL) ? JavaTokenType.STRING_LITERAL : JavaTokenType.TEXT_BLOCK_LITERAL, "Expected string literal");
+        String lexeme = stringToken.lexeme();
+        boolean isTextBlock = stringToken.type() == JavaTokenType.TEXT_BLOCK_LITERAL;
+
+        if (isTextBlock) {
+            if (lexeme.length() < 6 || !lexeme.startsWith("\"\"\"") || !lexeme.endsWith("\"\"\"")) {
+                reportError("Invalid text block literal format");
+                return new StringLiteralExpression(spanFrom(start), "", true);
+            }
+
+            String value = lexeme.substring(3, lexeme.length() - 3);
+            return new StringLiteralExpression(spanFrom(start), value, true);
+        } else {
+            if (lexeme.length() < 2 || lexeme.charAt(0) != '\"' || lexeme.charAt(lexeme.length() - 1) != '\"') {
+                reportError("Invalid string literal format");
+                return new StringLiteralExpression(spanFrom(start), "", false);
+            }
+
+            var valueBuilder = new StringBuilder();
+            for (int i = 1; i < lexeme.length() - 1; i++) {
+                char c = lexeme.charAt(i);
+                if (c == '\\') {
+                    if (i + 1 >= lexeme.length() - 1) {
+                        reportError("Invalid escape sequence in string literal");
+                        return new StringLiteralExpression(spanFrom(start), "", false);
+                    }
+
+                    char nextChar = lexeme.charAt(i + 1);
+                    switch (nextChar) {
+                        case 'b' -> valueBuilder.append('\b');
+                        case 't' -> valueBuilder.append('\t');
+                        case 'n' -> valueBuilder.append('\n');
+                        case 'f' -> valueBuilder.append('\f');
+                        case 'r' -> valueBuilder.append('\r');
+                        case '"' -> valueBuilder.append('\"');
+                        case '\'' -> valueBuilder.append('\'');
+                        case '\\' -> valueBuilder.append('\\');
+                        case 'u' -> {
+                            if (i + 5 >= lexeme.length() - 1) {
+                                reportError("Invalid Unicode escape sequence in string literal");
+                                return new StringLiteralExpression(spanFrom(start), "", false);
+                            }
+
+                            String hex = lexeme.substring(i + 2, i + 6);
+                            try {
+                                int codePoint = Integer.parseInt(hex, 16);
+                                valueBuilder.append((char) codePoint);
+                                i += 4; // Skip the next 4 characters as they are part of the Unicode escape
+                            } catch (NumberFormatException ignored) {
+                                reportError("Invalid Unicode escape sequence in string literal");
+                                return new StringLiteralExpression(spanFrom(start), "", false);
+                            }
+                        }
+                        default -> {
+                            reportError("Invalid escape sequence in string literal");
+                            return new StringLiteralExpression(spanFrom(start), "", false);
+                        }
+                    }
+
+                    i++; // Skip the next character as it's part of the escape sequence
+                } else {
+                    valueBuilder.append(c);
+                }
+            }
+
+            return new StringLiteralExpression(spanFrom(start), valueBuilder.toString(), false);
+        }
+    }
+
+    private CharacterLiteralExpression parseCharacterLiteral() {
+        Span start = currentSpan();
+        Token<JavaTokenType> charToken = expect(JavaTokenType.CHARACTER_LITERAL, "Expected character literal");
+        String lexeme = charToken.lexeme();
+
+        if (lexeme.length() < 3 || lexeme.charAt(0) != '\'' || lexeme.charAt(lexeme.length() - 1) != '\'') {
+            reportError("Invalid character literal format");
+            return new CharacterLiteralExpression(spanFrom(start), lexeme, '\0');
+        }
+
+        char value;
+        if (lexeme.charAt(1) == '\\') {
+            if (lexeme.length() == 4) {
+                switch (lexeme.charAt(2)) {
+                    case 'b' -> value = '\b';
+                    case 't' -> value = '\t';
+                    case 'n' -> value = '\n';
+                    case 'f' -> value = '\f';
+                    case 'r' -> value = '\r';
+                    case '"' -> value = '\"';
+                    case '\'' -> value = '\'';
+                    case '\\' -> value = '\\';
+                    default -> {
+                        reportError("Invalid escape sequence in character literal");
+                        return new CharacterLiteralExpression(spanFrom(start), lexeme, '\0');
+                    }
+                }
+            } else if (lexeme.length() == 8 && lexeme.charAt(2) == 'u') {
+                // Unicode escape sequence
+                try {
+                    int codePoint = Integer.parseInt(lexeme.substring(3, 7), 16);
+                    value = (char) codePoint;
+                } catch (NumberFormatException ignored) {
+                    reportError("Invalid Unicode escape sequence in character literal");
+                    return new CharacterLiteralExpression(spanFrom(start), lexeme, '\0');
+                }
+            } else {
+                reportError("Invalid escape sequence in character literal");
+                return new CharacterLiteralExpression(spanFrom(start), lexeme, '\0');
+            }
+        } else if (lexeme.length() == 3) {
+            value = lexeme.charAt(1);
+        } else {
+            reportError("Empty character literal");
+            return new CharacterLiteralExpression(spanFrom(start), lexeme, '\0');
+        }
+
+        return new CharacterLiteralExpression(spanFrom(start), lexeme, value); // TODO: Unsure that this is correct
+    }
+
+    private Expression parseMethodCallExpression(Optional<Expression> expr, Span start) {
+        List<TypeRef> typeArguments = parseTypeArgumentsOptionally();
+
+        Token<JavaTokenType> methodNameToken = expect(JavaTokenType.IDENTIFIER, "Expected method name");
+        var methodName = new NameExpression(spanFrom(methodNameToken), List.of(methodNameToken.lexeme()));
+
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' to start method arguments");
+        List<Expression> arguments = new ArrayList<>();
+        if (!nextIsAny(JavaTokenType.CLOSE_PAREN)) {
+            do {
+                arguments.add(parseExpression());
+            } while (match(JavaTokenType.COMMA));
+        }
+        expect(JavaTokenType.CLOSE_PAREN, "Expected ')' to end method arguments");
+
+        return new MethodInvocationExpression(
+                spanFrom(start),
+                expr,
+                typeArguments,
+                methodName,
+                arguments
+        );
+    }
+
+    private Expression parseMethodReferenceExpression(Expression expr, Span spanStart) {
+        List<TypeRef> typeArguments = parseTypeArgumentsOptionally();
+
+        Span nameSpan = currentSpan();
+        if (match(JavaTokenType.NEW_KEYWORD)) {
+            return new MethodReferenceExpression(
+                    spanFrom(spanStart),
+                    expr,
+                    typeArguments,
+                    new NameExpression(spanFrom(nameSpan), List.of("new"))
+            );
+        }
+
+        Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected method name after '::'");
+        return new MethodReferenceExpression(
+                spanFrom(spanStart),
+                expr,
+                typeArguments,
+                new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()))
+        );
+    }
+
     private Expression parseClassInstanceCreationExpression(Span spanStart, Optional<Expression> scope) {
         expect(JavaTokenType.NEW_KEYWORD, "Expected 'new' keyword");
 
@@ -332,11 +723,11 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
             expect(JavaTokenType.RIGHT_ANGLED_BRACKET, "Expected '>' after type arguments");
         }
 
-        List<ClassOrInterfaceTypeRef> types = new ArrayList<>();
-        do {
-            types.add(parseClassOrInterfaceTypeReference());
-        } while (match(JavaTokenType.DOT));
+        TypeRef baseType = parseNonArrayTypeReference();
+        return parseClassInstanceCreationExpression(spanStart, scope, baseType, typeArguments);
+    }
 
+    private @NotNull ObjectCreationExpression parseClassInstanceCreationExpression(Span spanStart, Optional<Expression> scope, TypeRef type, List<TypeRef> typeArguments) {
         List<TypeRef> constructorTypeArguments = new ArrayList<>();
         if (match(JavaTokenType.LEFT_ANGLED_BRACKET)) {
             if (match(JavaTokenType.RIGHT_ANGLED_BRACKET)) {
@@ -362,7 +753,12 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         if (nextIsAny(JavaTokenType.OPEN_BRACE)) {
             List<ClassBodyDeclaration> declarations = new ArrayList<>();
             while (!nextIsAny(JavaTokenType.CLOSE_BRACE) && !isAtEnd()) {
-                ClassBodyDeclaration declaration = tryParse($ -> parseClassBodyDeclaration(types.getLast().parts().getLast().name(), false));
+                ClassBodyDeclaration declaration = tryParse(
+                        $ -> parseClassBodyDeclaration(
+                                type instanceof ClassOrInterfaceTypeRef classOrInterfaceTypeRef ?
+                                        classOrInterfaceTypeRef.parts().getLast().name() :
+                                        null,
+                                false));
                 if (declaration != null) {
                     declarations.add(declaration);
                 } else {
@@ -381,7 +777,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
                 spanFrom(spanStart),
                 scope,
                 typeArguments,
-                types,
+                type,
                 constructorTypeArguments,
                 arguments,
                 anonymousClassDeclaration
@@ -423,7 +819,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
 
         if (nextIsAny(JavaTokenType.IDENTIFIER)) {
             Token<JavaTokenType> identifier = advance();
-            NameExpression paramName = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
+            var paramName = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
             var parameter = new Parameter(spanFrom(start), List.of(), List.of(), Optional.empty(), false, paramName);
             List<Parameter> parameters = List.of(parameter);
 
@@ -1931,6 +2327,11 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
     private List<TypeRef> parseTypeArgumentsOptionally() {
         List<TypeRef> typeArguments = new ArrayList<>();
         if (match(JavaTokenType.LEFT_ANGLED_BRACKET)) {
+            if (nextIsAny(JavaTokenType.RIGHT_ANGLED_BRACKET)) {
+                typeArguments.add(new TypeDiamond(spanFrom(currentSpan())));
+                return typeArguments;
+            }
+
             do {
                 typeArguments.add(parseTypeArgument());
             } while (match(JavaTokenType.COMMA));
@@ -2148,7 +2549,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
             return new ElementValueArray(spanFrom(start), values);
         }
 
-        return (ElementValue) parseExpression();
+        return parseExpression();
     }
 
     private NameExpression parseQualifiedName() {
@@ -2236,5 +2637,49 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         return nextIsAny(JavaTokenType.RIGHT_ANGLED_BRACKET) &&
                 lookaheadType(2) == JavaTokenType.RIGHT_ANGLED_BRACKET &&
                 lookaheadType(3) == JavaTokenType.RIGHT_ANGLED_BRACKET;
+    }
+
+    private boolean isClassLiteral() {
+        int offset = 1;
+        if (nextIsAnyAt(offset, JavaTokenType.IDENTIFIER)) {
+            offset++;
+            while (nextIsAnyAt(offset, JavaTokenType.DOT)) {
+                offset++;
+                if (!nextIsAnyAt(offset, JavaTokenType.IDENTIFIER))
+                    return false;
+
+                offset++;
+            }
+        } else if (nextIsAnyAt(offset, JavaTokenType.INT_KEYWORD, JavaTokenType.BOOLEAN_KEYWORD,
+                JavaTokenType.CHAR_KEYWORD, JavaTokenType.BYTE_KEYWORD, JavaTokenType.SHORT_KEYWORD,
+                JavaTokenType.LONG_KEYWORD, JavaTokenType.FLOAT_KEYWORD, JavaTokenType.DOUBLE_KEYWORD,
+                JavaTokenType.VOID_KEYWORD)) {
+            offset++;
+        } else {
+            return false;
+        }
+
+        if (nextIsAnyAt(offset, JavaTokenType.LEFT_ANGLED_BRACKET)) {
+            int angleBracketBalance = 1;
+            offset++;
+            while (angleBracketBalance > 0 && !isAtEnd()) {
+                if (nextIsAnyAt(offset, JavaTokenType.LEFT_ANGLED_BRACKET)) {
+                    angleBracketBalance++;
+                } else if (nextIsAnyAt(offset, JavaTokenType.RIGHT_ANGLED_BRACKET)) {
+                    angleBracketBalance--;
+                }
+
+                offset++;
+            }
+
+            if (angleBracketBalance != 0)
+                return false; // Unmatched angle brackets
+        }
+
+        while (nextIsAnyAt(offset, JavaTokenType.OPEN_BRACKET, JavaTokenType.CLOSE_BRACKET)) {
+            offset++;
+        }
+
+        return lookaheadType(offset) == JavaTokenType.DOT && lookaheadType(offset + 1) == JavaTokenType.CLASS_KEYWORD;
     }
 }

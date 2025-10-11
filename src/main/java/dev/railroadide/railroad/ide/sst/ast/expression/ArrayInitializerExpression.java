@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.ide.sst.ast.literal;
+package dev.railroadide.railroad.ide.sst.ast.expression;
 
 import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
@@ -8,19 +8,22 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record NullLiteral(Span span) implements Literal {
+public record ArrayInitializerExpression(
+        Span span,
+        List<Expression> values
+) implements Expression {
     @Override
     public AstKind kind() {
-        return AstKind.NULL_LITERAL;
+        return AstKind.ARRAY_INITIALIZER;
     }
 
     @Override
     public List<AstNode> children() {
-        return List.of();
+        return List.copyOf(values);
     }
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitNullLiteral(this);
+        return visitor.visitArrayInitializer(this);
     }
 }

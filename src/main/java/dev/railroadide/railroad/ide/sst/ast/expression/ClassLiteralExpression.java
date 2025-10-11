@@ -7,32 +7,21 @@ import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-public record ArrayCreationExpression(
-        Span span,
-        TypeRef type,
-        List<Expression> dimensions,
-        Optional<ArrayInitializerExpression> initializer
-) implements Expression {
+public record ClassLiteralExpression(Span span, TypeRef type) implements LiteralExpression {
     @Override
     public AstKind kind() {
-        return AstKind.ARRAY_CREATION_EXPRESSION;
+        return AstKind.CLASS_LITERAL;
     }
 
     @Override
     public List<AstNode> children() {
-        List<AstNode> children = new ArrayList<>();
-        children.add(type);
-        children.addAll(dimensions);
-        initializer.ifPresent(children::add);
-        return List.copyOf(children);
+        return List.of(type);
     }
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitArrayCreationExpression(this);
+        return visitor.visitClassLiteral(this);
     }
 }
