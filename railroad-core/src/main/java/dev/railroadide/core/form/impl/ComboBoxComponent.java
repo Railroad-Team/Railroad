@@ -123,7 +123,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
 
             if (newValue != null) {
                 listenerRef.set((observable1, oldValue1, newValue1) ->
-                        listener.changed(newValue.getPrimaryComponent(), observable1, oldValue1, newValue1));
+                    listener.changed(newValue.getPrimaryComponent(), observable1, oldValue1, newValue1));
 
                 newValue.getPrimaryComponent().valueProperty().addListener(listenerRef.get());
             }
@@ -133,16 +133,16 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
     @Override
     protected void bindToFormData(FormData formData) {
         componentProperty()
-                .map(FormComboBox::getPrimaryComponent)
-                .flatMap(ComboBox::valueProperty)
-                .addListener((observable, oldValue, newValue) ->
-                        formData.add(dataKey, newValue));
+            .map(FormComboBox::getPrimaryComponent)
+            .flatMap(ComboBox::valueProperty)
+            .addListener((observable, oldValue, newValue) ->
+                formData.add(dataKey, newValue));
 
         formData.add(dataKey, componentProperty()
-                .map(FormComboBox::getPrimaryComponent)
-                .map(ComboBox::getValue)
-                .orElse(defaultValue == null ? null : defaultValue.get())
-                .getValue());
+            .map(FormComboBox::getPrimaryComponent)
+            .map(ComboBox::getValue)
+            .orElse(defaultValue == null ? null : defaultValue.get())
+            .getValue());
     }
 
     @Override
@@ -164,8 +164,30 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         private Property<ComboBox<T>> bindComboBoxTo;
         private EventHandler<? super KeyEvent> keyTypedHandler;
         private BooleanBinding visible;
-        private Callback<ListView<T>, ListCell<T>> cellFactory;
-        private ListCell<T> buttonCell;
+        private Callback<ListView<T>, ListCell<T>> cellFactory = param -> new ListCell<>() {
+            @Override
+            protected void updateItem(T item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setGraphic(null);
+                    setText(null);
+                } else {
+                    setText(data.keyFunction.toString(item));
+                }
+            }
+        };
+        private ListCell<T> buttonCell = new ListCell<>() {
+            @Override
+            protected void updateItem(T item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setGraphic(null);
+                    setText(null);
+                } else {
+                    setText(data.keyFunction.toString(item));
+                }
+            }
+        };
         private Supplier<T> defaultValue;
 
         /**

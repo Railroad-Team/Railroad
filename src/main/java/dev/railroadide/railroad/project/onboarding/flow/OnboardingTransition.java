@@ -1,9 +1,15 @@
-package dev.railroadide.railroad.project.onboarding;
+package dev.railroadide.railroad.project.onboarding.flow;
+
+import dev.railroadide.railroad.project.onboarding.OnboardingContext;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.function.Predicate;
 
+@Getter
 public class OnboardingTransition {
     private final String fromStepId;
+    @Setter
     private String toStepId;
     private final Predicate<OnboardingContext> condition;
 
@@ -11,22 +17,6 @@ public class OnboardingTransition {
         this.fromStepId = fromStepId;
         this.toStepId = toStepId;
         this.condition = condition;
-    }
-
-    public String getFromStepId() {
-        return fromStepId;
-    }
-
-    public String getToStepId() {
-        return toStepId;
-    }
-
-    public void setToStepId(String toStepId) {
-        this.toStepId = toStepId;
-    }
-
-    public Predicate<OnboardingContext> getCondition() {
-        return condition;
     }
 
     public boolean isConditional() {

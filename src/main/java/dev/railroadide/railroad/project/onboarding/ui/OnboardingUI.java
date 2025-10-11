@@ -1,5 +1,6 @@
-package dev.railroadide.railroad.project.onboarding;
+package dev.railroadide.railroad.project.onboarding.ui;
 
+import dev.railroadide.railroad.project.onboarding.step.OnboardingStep;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 
@@ -16,6 +17,4 @@ public interface OnboardingUI {
     default void onStepChanged(OnboardingStep step, int currentIndex, int totalSteps) {}
 
     default void onBusyStateChanged(boolean busy) {}
-
-    void showSubStep(OnboardingStep step, Runnable onBack);
 }

@@ -1,5 +1,7 @@
-package dev.railroadide.railroad.project.onboarding;
+package dev.railroadide.railroad.project.onboarding.step;
 
+import dev.railroadide.railroad.project.onboarding.OnboardingContext;
+import dev.railroadide.railroad.project.onboarding.ui.OnboardingSection;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 
 import java.util.concurrent.CompletableFuture;

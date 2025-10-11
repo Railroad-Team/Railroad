@@ -16,6 +16,7 @@ import java.net.HttpURLConnection;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.Locale;
 
 public class ProjectValidators {
     private static final String USER_AGENT = "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.1.2) Gecko/20090729 Firefox/3.5.2 (.NET CLR 3.5.30729)";
@@ -305,5 +306,32 @@ public class ProjectValidators {
 
     public static BooleanBinding createBinding(BooleanProperty property) {
         return Bindings.when(property).then(true).otherwise(false);
+    }
+
+    public static String projectNameToMainClass(String projectName) {
+        if (projectName == null || projectName.isBlank())
+            return "";
+
+        StringBuilder builder = new StringBuilder();
+        boolean capitalizeNext = true;
+        for (char c : projectName.toCharArray()) {
+            if (Character.isWhitespace(c) || c == '-' || c == '_') {
+                capitalizeNext = true;
+            } else if (capitalizeNext) {
+                builder.append(Character.toUpperCase(c));
+                capitalizeNext = false;
+            } else {
+                builder.append(c);
+            }
+        }
+
+        return builder.toString();
+    }
+
+    public static String projectNameToModId(String projectName) {
+        if (projectName == null || projectName.isBlank())
+            return "";
+
+        return projectName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_\\-]", "_");
     }
 }

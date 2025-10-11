@@ -1,13 +1,18 @@
 package dev.railroadide.railroad.project.onboarding.impl;
 
 import dev.railroadide.core.form.FormComponent;
+import dev.railroadide.core.project.License;
 import dev.railroadide.core.project.ProjectData;
 import dev.railroadide.core.project.creation.ProjectCreationService;
 import dev.railroadide.core.project.creation.ProjectServiceRegistry;
 import dev.railroadide.core.project.creation.service.GradleService;
+import dev.railroadide.core.project.minecraft.MappingChannel;
+import dev.railroadide.core.switchboard.pojo.FabricLoaderVersion;
 import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.project.LicenseRegistry;
+import dev.railroadide.railroad.project.MappingChannelRegistry;
 import dev.railroadide.railroad.project.ProjectTypeRegistry;
 import dev.railroadide.railroad.project.creation.ui.ProjectCreationPane;
 import dev.railroadide.railroad.project.data.FabricProjectKeys;
@@ -15,20 +20,26 @@ import dev.railroadide.railroad.project.data.MavenProjectKeys;
 import dev.railroadide.railroad.project.data.MinecraftProjectKeys;
 import dev.railroadide.railroad.project.details.ProjectValidators;
 import dev.railroadide.railroad.project.onboarding.*;
+import dev.railroadide.railroad.project.onboarding.flow.OnboardingFlow;
+import dev.railroadide.railroad.project.onboarding.step.OnboardingFormStep;
+import dev.railroadide.railroad.project.onboarding.step.OnboardingStep;
 import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
 import dev.railroadide.railroad.switchboard.repositories.FabricApiVersionRepository;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.scene.Scene;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ComboBoxBase;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class FabricProjectOnboarding {
@@ -37,8 +48,31 @@ public class FabricProjectOnboarding {
     public void start(Scene scene) {
         var flow = OnboardingFlow.builder()
             .addStep("project_details", this::createProjectDetailsStep)
+            .addStep("maven_coordinates", this::createMavenCoordinatesStep)
             .addStep("minecraft_version", this::createMinecraftVersionStep)
-            .addTransition("project_details", "minecraft_version")
+            .addStep("mapping_channel", this::createMappingChannelStep)
+            .addStep("mapping_version", this::createMappingVersionStep)
+            .addStep("fabric_loader", this::createFabricLoaderStep)
+            .addStep("fabric_api", this::createFabricApiStep)
+            .addStep("mod_details", this::createModDetailsStep)
+            .addStep("license", this::createLicenseStep)
+            .addStep("git", this::createGitStep)
+            .addStep("access_widener", this::createAccessWidenerStep)
+            .addStep("split_sources", this::createSplitSourcesStep)
+            .addStep("optional_details", this::createOptionalDetailsStep)
+            .firstStep("project_details")
+            .addTransition("project_details", "maven_coordinates")
+            .addTransition("maven_coordinates", "minecraft_version")
+            .addTransition("minecraft_version", "mapping_channel")
+            .addTransition("mapping_channel", "mapping_version")
+            .addTransition("mapping_version", "fabric_loader")
+            .addTransition("fabric_loader", "fabric_api")
+            .addTransition("fabric_api", "mod_details")
+            .addTransition("mod_details", "license")
+            .addTransition("license", "git")
+            .addTransition("git", "access_widener")
+            .addTransition("access_widener", "split_sources")
+            .addTransition("split_sources", "optional_details")
             .build();
 
         var process = OnboardingProcess.createBasic(
@@ -131,6 +165,31 @@ public class FabricProjectOnboarding {
             .build();
     }
 
+    private OnboardingStep createMavenCoordinatesStep() {
+        return OnboardingFormStep.builder()
+            .id("maven_coordinates")
+            .title("railroad.project.creation.maven_coordinates.title")
+            .description("railroad.project.creation.maven_coordinates.description")
+            .appendSection("railroad.project.creation.section.maven_coordinates",
+                OnboardingFormStep.component(
+                    FormComponent.textField(MavenProjectKeys.GROUP_ID, "railroad.project.creation.group_id")
+                        .required()
+                        .promptText("railroad.project.creation.group_id.prompt")
+                        .validator(ProjectValidators::validateGroupId)),
+                OnboardingFormStep.component(
+                    FormComponent.textField(MavenProjectKeys.ARTIFACT_ID, "railroad.project.creation.artifact_id")
+                        .required()
+                        .promptText("railroad.project.creation.artifact_id.prompt")
+                        .validator(ProjectValidators::validateArtifactId)),
+                OnboardingFormStep.component(
+                    FormComponent.textField(MavenProjectKeys.VERSION, "railroad.project.creation.version")
+                        .required()
+                        .promptText("railroad.project.creation.version.prompt")
+                        .text("1.0.0")
+                        .validator(ProjectValidators::validateVersion)))
+            .build();
+    }
+
     private OnboardingStep createMinecraftVersionStep() {
         ObjectProperty<ComboBox<MinecraftVersion>> comboBoxProperty = new SimpleObjectProperty<>();
         List<MinecraftVersion> availableVersions = new ArrayList<>();
@@ -156,17 +215,272 @@ public class FabricProjectOnboarding {
                     availableVersions.addAll(getMinecraftVersions());
                     nextInvalidationTime.set(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(5));
                     if (comboBoxProperty.get() != null) {
-                        comboBoxProperty.get().getItems().setAll(availableVersions);
-                        MinecraftVersion current = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
-                        if (current != null && availableVersions.contains(current)) {
-                            comboBoxProperty.get().setValue(current);
-                        } else {
-                            MinecraftVersion def = MinecraftVersion.determineDefaultMinecraftVersion(availableVersions);
-                            comboBoxProperty.get().setValue(def);
-                        }
+                        Platform.runLater(() -> {
+                            comboBoxProperty.get().getItems().clear();
+                            comboBoxProperty.get().getItems().addAll(availableVersions);
+                            MinecraftVersion current = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
+                            if (current != null && availableVersions.contains(current)) {
+                                comboBoxProperty.get().setValue(current);
+                            } else {
+                                MinecraftVersion def = MinecraftVersion.determineDefaultMinecraftVersion(availableVersions);
+                                comboBoxProperty.get().setValue(def);
+                            }
+                        });
                     }
                 }
             })
+            .build();
+    }
+
+    private OnboardingStep createMappingChannelStep() {
+        ObservableList<MappingChannel> availableChannels = FXCollections.observableArrayList();
+        return OnboardingFormStep.builder()
+            .id("mapping_channel")
+            .title("railroad.project.creation.mapping_channel.title")
+            .description("railroad.project.creation.mapping_channel.description")
+            .appendSection("railroad.project.creation.section.mapping_channel",
+                OnboardingFormStep.component(
+                    FormComponent.comboBox(MinecraftProjectKeys.MAPPING_CHANNEL, "railroad.project.creation.mapping_channel", MappingChannel.class)
+                        .required()
+                        .items(() -> availableChannels)
+                        .defaultValue(() -> MappingChannelRegistry.YARN)
+                        .keyFunction(MappingChannel::id)
+                        .valueOfFunction(MappingChannel.REGISTRY::get)
+                        .translate(true)))
+            .onEnter(ctx -> {
+                MinecraftVersion mcVersion = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
+                if (mcVersion != null) {
+                    availableChannels.clear();
+                    availableChannels.setAll(MappingChannelRegistry.findValidMappingChannels(mcVersion));
+                }
+            })
+            .build();
+    }
+
+    private OnboardingStep createMappingVersionStep() {
+        ObservableList<String> availableVersions = FXCollections.observableArrayList();
+        return OnboardingFormStep.builder()
+            .id("mapping_version")
+            .title("railroad.project.creation.mapping_version.title")
+            .description("railroad.project.creation.mapping_version.description")
+            .appendSection("railroad.project.creation.section.mapping_version",
+                OnboardingFormStep.component(
+                    FormComponent.comboBox(MinecraftProjectKeys.MAPPING_VERSION, "railroad.project.creation.mapping_version", String.class)
+                        .required()
+                        .items(() -> availableVersions)
+                        .defaultValue(() -> {
+                            if (!availableVersions.isEmpty())
+                                return availableVersions.getFirst();
+
+                            return null;
+                        })
+                        .translate(false)))
+            .onEnter(ctx -> {
+                MinecraftVersion mcVersion = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
+                MappingChannel channel = ctx.get(MinecraftProjectKeys.MAPPING_CHANNEL);
+                if (mcVersion != null && channel != null) {
+                    List<String> newVersions = channel.listVersionsFor(mcVersion);
+                    availableVersions.clear();
+                    availableVersions.setAll(newVersions);
+                }
+            })
+            .build();
+    }
+
+    private OnboardingStep createFabricLoaderStep() {
+        ObservableList<String> availableVersions = FXCollections.observableArrayList();
+        ObjectProperty<FabricLoaderVersion> latestVersionProperty = new SimpleObjectProperty<>();
+        return OnboardingFormStep.builder()
+            .id("fabric_loader")
+            .title("railroad.project.creation.fabric_loader.title")
+            .description("railroad.project.creation.fabric_loader.description")
+            .appendSection("railroad.project.creation.section.fabric_loader",
+                OnboardingFormStep.component(
+                    FormComponent.comboBox(FabricProjectKeys.FABRIC_LOADER_VERSION, "railroad.project.creation.fabric_loader", String.class)
+                        .required()
+                        .items(() -> availableVersions)
+                        .defaultValue(() -> {
+                            if (latestVersionProperty.get() != null)
+                                return latestVersionProperty.get().version();
+
+                            if (!availableVersions.isEmpty())
+                                return availableVersions.getFirst();
+
+                            return null;
+                        })
+                        .translate(false)))
+            .onEnter(ctx -> {
+                MinecraftVersion mcVersion = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
+                if (mcVersion != null) {
+                    try {
+                        CompletableFuture<List<FabricLoaderVersion>> versionsFuture = SwitchboardRepositories.FABRIC_LOADER.getVersionsFor(mcVersion.id());
+                        CompletableFuture<FabricLoaderVersion> latestFuture = SwitchboardRepositories.FABRIC_LOADER.getLatestVersionFor(mcVersion.id());
+
+                        List<FabricLoaderVersion> versions = versionsFuture.get();
+                        FabricLoaderVersion latest = latestFuture.get();
+                        availableVersions.clear();
+                        availableVersions.addAll(versions.stream().map(FabricLoaderVersion::version).toList());
+                        latestVersionProperty.set(latest);
+                    } catch (ExecutionException | InterruptedException exception) {
+                        Railroad.LOGGER.error("Failed to fetch Fabric Loader versions for Minecraft {}", mcVersion.id(), exception);
+                    }
+                }
+            })
+            .build();
+    }
+
+    private OnboardingStep createFabricApiStep() {
+        ObservableList<String> availableVersions = FXCollections.observableArrayList();
+        return OnboardingFormStep.builder()
+            .id("fabric_api")
+            .title("railroad.project.creation.fabric_api.title")
+            .description("railroad.project.creation.fabric_api.description")
+            .appendSection("railroad.project.creation.section.fabric_api",
+                OnboardingFormStep.component(
+                    FormComponent.comboBox(FabricProjectKeys.FABRIC_API_VERSION, "railroad.project.creation.fabric_api", String.class)
+                        .items(() -> availableVersions)
+                        .defaultValue(() -> {
+                            if (!availableVersions.isEmpty())
+                                return availableVersions.getFirst();
+
+                            return null;
+                        })
+                        .keyFunction(v -> v)
+                        .valueOfFunction(v -> v)
+                        .translate(false)))
+            .onEnter(ctx -> {
+                MinecraftVersion mcVersion = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
+                if (mcVersion != null) {
+                    try {
+                        CompletableFuture<List<String>> versionsFuture = SwitchboardRepositories.FABRIC_API.getVersionsFor(mcVersion.id());
+                        List<String> versions = versionsFuture.get();
+                        availableVersions.clear();
+                        availableVersions.addAll(versions);
+                    } catch (ExecutionException | InterruptedException exception) {
+                        Railroad.LOGGER.error("Failed to fetch Fabric API versions for Minecraft {}", mcVersion.id(), exception);
+                    }
+                }
+            })
+            .build();
+    }
+
+    private OnboardingStep createModDetailsStep() {
+        StringProperty projectNameProperty = new SimpleStringProperty();
+        StringProperty groupIdProperty = new SimpleStringProperty();
+        return OnboardingFormStep.builder()
+            .id("mod_details")
+            .title("railroad.project.creation.mod_details.title")
+            .description("railroad.project.creation.mod_details.description")
+            .appendSection("railroad.project.creation.section.mod_details",
+                OnboardingFormStep.component(
+                    FormComponent.textField(MinecraftProjectKeys.MOD_ID, "railroad.project.creation.mod_id")
+                        .required()
+                        .promptText("railroad.project.creation.mod_id.prompt")
+                        .text(() -> ProjectValidators.projectNameToModId(projectNameProperty.get()))
+                        .validator(ProjectValidators::validateModId)),
+                OnboardingFormStep.component(
+                    FormComponent.textField(MinecraftProjectKeys.MOD_NAME, "railroad.project.creation.mod_name")
+                        .required()
+                        .promptText("railroad.project.creation.mod_name.prompt")
+                        .text(projectNameProperty::get)
+                        .validator(ProjectValidators::validateModName)),
+                OnboardingFormStep.component(
+                    FormComponent.textField(MinecraftProjectKeys.MAIN_CLASS, "railroad.project.creation.main_class")
+                        .required()
+                        .promptText("railroad.project.creation.main_class.prompt")
+                        .text(() -> groupIdProperty.get() + "." + MinecraftProjectKeys.MOD_ID + "." + ProjectValidators.projectNameToMainClass(projectNameProperty.get()))
+                        .validator(ProjectValidators::validateMainClass)))
+            .build();
+    }
+
+    private OnboardingStep createLicenseStep() {
+        ObjectProperty<ComboBox<License>> licenseComboBox = new SimpleObjectProperty<>();
+        return OnboardingFormStep.builder()
+            .id("license")
+            .title("railroad.project.creation.license.title")
+            .description("railroad.project.creation.license.description")
+            .appendSection("railroad.project.creation.section.license",
+                OnboardingFormStep.component(
+                    FormComponent.comboBox(ProjectData.DefaultKeys.LICENSE, "railroad.project.creation.license", License.class)
+                        .required()
+                        .bindComboBoxTo(licenseComboBox)
+                        .keyFunction(License::getName)
+                        .valueOfFunction(License::fromName)
+                        .translate(false)
+                        .items(License.REGISTRY::values)
+                        .defaultValue(() -> LicenseRegistry.LGPL)),
+                OnboardingFormStep.component(
+                    FormComponent.textField(ProjectData.DefaultKeys.LICENSE_CUSTOM, "railroad.project.creation.license.custom")
+                        .visible(licenseComboBox.map(ComboBoxBase::valueProperty).map(property -> property.isEqualTo(LicenseRegistry.CUSTOM)).getValue())
+                        .promptText("railroad.project.creation.license.custom.prompt")
+                        .validator(ProjectValidators::validateCustomLicense)))
+            .build();
+    }
+
+    private OnboardingStep createGitStep() {
+        // TODO: Provide options for GitHub, GitLab, Bitbucket initialization (with private/public options)
+        return OnboardingFormStep.builder()
+            .id("git")
+            .title("railroad.project.creation.git.title")
+            .description("railroad.project.creation.git.description")
+            .appendSection("railroad.project.creation.section.git",
+                OnboardingFormStep.component(
+                    FormComponent.checkBox(ProjectData.DefaultKeys.INIT_GIT, "railroad.project.creation.init_git")
+                        .selected(true)))
+            .build();
+    }
+
+    private OnboardingStep createAccessWidenerStep() {
+        // TODO: Provide access widener location option
+        return OnboardingFormStep.builder()
+            .id("access_widener")
+            .title("railroad.project.creation.access_widener.title")
+            .description("railroad.project.creation.access_widener.description")
+            .appendSection("railroad.project.creation.section.access_widener",
+                OnboardingFormStep.component(
+                    FormComponent.checkBox(FabricProjectKeys.USE_ACCESS_WIDENER, "railroad.project.creation.use_access_widener")
+                        .selected(true)))
+            .build();
+    }
+
+    private OnboardingStep createSplitSourcesStep() {
+        return OnboardingFormStep.builder()
+            .id("split_sources")
+            .title("railroad.project.creation.split_sources.title")
+            .description("railroad.project.creation.split_sources.description")
+            .appendSection("railroad.project.creation.section.split_sources",
+                OnboardingFormStep.component(
+                    FormComponent.checkBox(FabricProjectKeys.SPLIT_SOURCES, "railroad.project.creation.split_sources")
+                        .selected(false)))
+            .build();
+    }
+
+    private OnboardingStep createOptionalDetailsStep() {
+        return OnboardingFormStep.builder()
+            .id("optional_details")
+            .title("railroad.project.creation.optional_details.title")
+            .description("railroad.project.creation.optional_details.description")
+            .appendSection("railroad.project.creation.section.optional_details",
+                OnboardingFormStep.component(
+                    FormComponent.textField(ProjectData.DefaultKeys.AUTHOR, "railroad.project.creation.author")
+                        .promptText("railroad.project.creation.author.prompt")
+                        .validator(ProjectValidators::validateAuthor)),
+                OnboardingFormStep.component(
+                    FormComponent.textArea(ProjectData.DefaultKeys.DESCRIPTION, "railroad.project.creation.description")
+                        .promptText("railroad.project.creation.description.prompt")
+                        .validator(ProjectValidators::validateDescription)),
+                OnboardingFormStep.component(
+                    FormComponent.textField(ProjectData.DefaultKeys.ISSUES_URL, "railroad.project.creation.issues_url")
+                        .promptText("railroad.project.creation.issues_url.prompt")
+                        .validator(ProjectValidators::validateIssues)),
+                OnboardingFormStep.component(
+                    FormComponent.textField(ProjectData.DefaultKeys.HOMEPAGE_URL, "railroad.project.creation.homepage_url")
+                        .promptText("railroad.project.creation.homepage_url.prompt")
+                        .validator(textField -> ProjectValidators.validateGenericUrl(textField, "homepage"))),
+                OnboardingFormStep.component(
+                    FormComponent.textField(ProjectData.DefaultKeys.SOURCES_URL, "railroad.project.creation.sources_url")
+                        .promptText("railroad.project.creation.sources_url.prompt")
+                        .validator(textField -> ProjectValidators.validateGenericUrl(textField, "sources"))))
             .build();
     }
 

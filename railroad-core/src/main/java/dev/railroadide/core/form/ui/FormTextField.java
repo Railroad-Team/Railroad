@@ -5,6 +5,7 @@ import javafx.scene.control.TextField;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * A form text field component that extends InformativeLabeledHBox to provide
@@ -13,7 +14,7 @@ import java.util.Map;
 public class FormTextField extends InformativeLabeledHBox<TextField> {
     /**
      * Constructs a new FormTextField with the specified configuration.
-     * 
+     *
      * @param labelKey the localization key for the label text
      * @param required whether the text field is required
      * @param text the initial text content
@@ -21,20 +22,20 @@ public class FormTextField extends InformativeLabeledHBox<TextField> {
      * @param editable whether the text field is editable
      * @param translate whether to use localization for the prompt text
      */
-    public FormTextField(String labelKey, boolean required, String text, String promptText, boolean editable, boolean translate) {
+    public FormTextField(String labelKey, boolean required, Supplier<String> text, String promptText, boolean editable, boolean translate) {
         super(labelKey, required, createParams(text, promptText, editable, translate));
     }
 
     /**
      * Creates the parameters map for the text field component.
-     * 
+     *
      * @param text the initial text content
      * @param promptText the placeholder text
      * @param editable whether the text field is editable
      * @param translate whether to use localization
      * @return a map containing the component parameters
      */
-    private static Map<String, Object> createParams(String text, String promptText, boolean editable, boolean translate) {
+    private static Map<String, Object> createParams(Supplier<String> text, String promptText, boolean editable, boolean translate) {
         Map<String, Object> params = new HashMap<>();
         if (text != null)
             params.put("text", text);
@@ -47,13 +48,14 @@ public class FormTextField extends InformativeLabeledHBox<TextField> {
 
     /**
      * Creates the primary text field component with the specified parameters.
-     * 
+     *
      * @param params a map containing the parameters for the text field
      * @return a new TextField instance with the specified configuration
      */
+    @SuppressWarnings("unchecked")
     @Override
     public TextField createPrimaryComponent(Map<String, Object> params) {
-        String text = (String) params.get("text");
+        String text = ((Supplier<String>) params.get("text")).get();
         String promptText = (String) params.get("promptText");
         boolean editable = (boolean) params.get("editable");
         boolean translate = (boolean) params.get("translate");
@@ -70,7 +72,7 @@ public class FormTextField extends InformativeLabeledHBox<TextField> {
 
     /**
      * Gets the underlying text field component.
-     * 
+     *
      * @return the text field component
      */
     public TextField getTextField() {

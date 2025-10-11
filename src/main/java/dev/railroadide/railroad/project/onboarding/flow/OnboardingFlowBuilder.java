@@ -1,4 +1,7 @@
-package dev.railroadide.railroad.project.onboarding;
+package dev.railroadide.railroad.project.onboarding.flow;
+
+import dev.railroadide.railroad.project.onboarding.OnboardingContext;
+import dev.railroadide.railroad.project.onboarding.step.OnboardingStep;
 
 import java.util.ArrayList;
 import java.util.HashMap;

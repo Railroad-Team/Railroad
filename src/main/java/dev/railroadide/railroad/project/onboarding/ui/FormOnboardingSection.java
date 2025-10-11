@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.project.onboarding;
+package dev.railroadide.railroad.project.onboarding.ui;
 
 import dev.railroadide.core.form.Form;
 import javafx.scene.Node;

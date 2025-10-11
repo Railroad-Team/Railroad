@@ -1,6 +1,9 @@
-package dev.railroadide.railroad.project.onboarding;
+package dev.railroadide.railroad.project.onboarding.step;
 
 import dev.railroadide.core.form.*;
+import dev.railroadide.railroad.project.onboarding.OnboardingContext;
+import dev.railroadide.railroad.project.onboarding.ui.FormOnboardingSection;
+import dev.railroadide.railroad.project.onboarding.ui.OnboardingSection;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -79,13 +82,9 @@ public final class OnboardingFormStep implements OnboardingStep {
         return new ComponentSpec(null, component, contextKey, transformer);
     }
 
-    public static final class ComponentSpec {
-        private final FormComponentBuilder<?, ?, ?, ?> builder;
-        private final FormComponent<?, ?, ?, ?> component;
-        private final String contextKey;
-        private final Function<Object, Object> transformer;
-
-        private ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component, String contextKey, Function<Object, Object> transformer) {
+    public record ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component,
+                                String contextKey, Function<Object, Object> transformer) {
+        public ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component, String contextKey, Function<Object, Object> transformer) {
             if (builder == null && component == null)
                 throw new IllegalArgumentException("Component specification must provide a builder or component instance");
 
@@ -93,22 +92,6 @@ public final class OnboardingFormStep implements OnboardingStep {
             this.component = component;
             this.contextKey = contextKey;
             this.transformer = transformer != null ? transformer : Function.identity();
-        }
-
-        FormComponentBuilder<?, ?, ?, ?> builder() {
-            return builder;
-        }
-
-        FormComponent<?, ?, ?, ?> component() {
-            return component;
-        }
-
-        String contextKey() {
-            return contextKey;
-        }
-
-        Function<Object, Object> transformer() {
-            return transformer;
         }
     }
 

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A form component that represents a text field.
@@ -97,13 +98,13 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
         formData.addProperty(dataKey, componentProperty()
                 .map(FormTextField::getPrimaryComponent)
                 .map(TextField::getText)
-                .orElse(getData().text)
+                .orElse(getData().text.get())
                 .getValue());
     }
 
     @Override
     public void reset() {
-        getComponent().getPrimaryComponent().setText(getData().text);
+        getComponent().getPrimaryComponent().setText(getData().text.get());
     }
 
     /**
@@ -142,7 +143,11 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @return this builder
          */
         public Builder text(String text) {
-            this.data.text = text;
+            return text(() -> text);
+        }
+
+        public Builder text(Supplier<String> textSupplier) {
+            this.data.text = textSupplier;
             return this;
         }
 
@@ -242,7 +247,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @param fromComponent       the observable value of the component to transform
          * @param toComponentFunction the function to set the value of the component
          * @param valueMapper         the function to map the value
-         * @param <W>                 the type of the component
+         * @param <X>                 the type of the component
          * @return this builder
          */
         @Override
@@ -258,7 +263,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @param toComponent   the component to set the value to
          * @param valueMapper   the function to map the value
          * @param <U>           the type of the component
-         * @param <W>           the type of the value
+         * @param <X>           the type of the value
          * @return this builder
          */
         @Override
@@ -312,7 +317,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
      */
     public static class Data {
         private final String label;
-        private String text = "";
+        private Supplier<String> text = () -> "";
         private String promptText;
         private boolean editable = true;
         private boolean required = false;
@@ -334,7 +339,12 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @return this builder
          */
         public Data text(String text) {
-            this.text = text;
+            this.text = () -> text;
+            return this;
+        }
+
+        public Data text(Supplier<String> textSupplier) {
+            this.text = textSupplier;
             return this;
         }
 
