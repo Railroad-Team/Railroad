@@ -472,9 +472,16 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
         return new Span(start.pos(), end.endPos(), start.line(), start.column());
     }
 
-    public boolean nextIsAnyAt(int offset, JavaTokenType... types) {
-        JavaTokenType nextType = lookaheadType(offset);
-        for (JavaTokenType type : types) {
+    /**
+     * Checks if the token at the given offset matches any of the specified types.
+     *
+     * @param offset the lookahead offset (1 for next token, 2 for token after that, etc.)
+     * @param types  the token types to check against
+     * @return true if the token at the offset matches any of the types, false otherwise
+     */
+    public boolean nextIsAnyAt(int offset, T... types) {
+        T nextType = lookaheadType(offset);
+        for (T type : types) {
             if (nextType == type)
                 return true;
         }

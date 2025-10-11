@@ -17,7 +17,7 @@ public record ObjectCreationExpression(
         Span span,
         Optional<Expression> scope,
         List<TypeRef> typeArguments,
-        List<ClassOrInterfaceTypeRef> types,
+        TypeRef type,
         List<TypeRef> constructorTypeArguments,
         List<Expression> arguments,
         Optional<AnonymousClassDeclaration> anonymousClassDeclaration
@@ -32,7 +32,7 @@ public record ObjectCreationExpression(
         List<AstNode> children = new ArrayList<>();
         scope.ifPresent(children::add);
         children.addAll(typeArguments);
-        children.addAll(types);
+        children.add(type);
         children.addAll(constructorTypeArguments);
         children.addAll(arguments);
         anonymousClassDeclaration.ifPresent(children::add);

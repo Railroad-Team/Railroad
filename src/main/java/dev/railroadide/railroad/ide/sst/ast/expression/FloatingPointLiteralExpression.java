@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.ide.sst.ast.literal;
+package dev.railroadide.railroad.ide.sst.ast.expression;
 
 import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
@@ -8,13 +8,15 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record BooleanLiteral(
+public record FloatingPointLiteralExpression(
         Span span,
-        boolean value
-) implements Literal {
+        String rawValue,
+        double value,
+        boolean isFloat
+) implements LiteralExpression {
     @Override
     public AstKind kind() {
-        return AstKind.BOOLEAN_LITERAL;
+        return AstKind.FLOATING_POINT_LITERAL;
     }
 
     @Override
@@ -24,6 +26,6 @@ public record BooleanLiteral(
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitBooleanLiteral(this);
+        return visitor.visitFloatingPointLiteral(this);
     }
 }

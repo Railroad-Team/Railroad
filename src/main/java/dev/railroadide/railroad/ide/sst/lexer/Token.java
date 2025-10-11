@@ -84,7 +84,7 @@ public interface Token<T extends Enum<T>> {
 
         @Override
         public TokenChannel channel() {
-            return null;
+            return TokenChannel.TRIVIA;
         }
 
         @Override

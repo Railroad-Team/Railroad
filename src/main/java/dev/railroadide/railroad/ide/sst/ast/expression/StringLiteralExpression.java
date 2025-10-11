@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.ide.sst.ast.literal;
+package dev.railroadide.railroad.ide.sst.ast.expression;
 
 import dev.railroadide.railroad.ide.sst.ast.AstKind;
 import dev.railroadide.railroad.ide.sst.ast.AstNode;
@@ -8,13 +8,14 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record IntegerLiteral(
+public record StringLiteralExpression(
         Span span,
-        long value
-) implements Literal {
+        String value,
+        boolean isTextBlock
+) implements LiteralExpression {
     @Override
     public AstKind kind() {
-        return AstKind.INTEGER_LITERAL;
+        return AstKind.STRING_LITERAL;
     }
 
     @Override
@@ -24,6 +25,6 @@ public record IntegerLiteral(
 
     @Override
     public <R> R accept(@NotNull AstVisitor<R> visitor) {
-        return visitor.visitIntegerLiteral(this);
+        return visitor.visitStringLiteral(this);
     }
 }

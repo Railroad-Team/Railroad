@@ -7,7 +7,6 @@ import dev.railroadide.railroad.ide.sst.ast.annotation.SingleMemberAnnotation;
 import dev.railroadide.railroad.ide.sst.ast.clazz.*;
 import dev.railroadide.railroad.ide.sst.ast.expression.*;
 import dev.railroadide.railroad.ide.sst.ast.generic.*;
-import dev.railroadide.railroad.ide.sst.ast.literal.*;
 import dev.railroadide.railroad.ide.sst.ast.parameter.Parameter;
 import dev.railroadide.railroad.ide.sst.ast.parameter.ReceiverParameter;
 import dev.railroadide.railroad.ide.sst.ast.parameter.TypeParameter;
@@ -93,7 +92,7 @@ public interface AstVisitor<R> {
     R visitMethodInvocationExpression(MethodInvocationExpression node);
     R visitMethodReferenceExpression(MethodReferenceExpression node);
     R visitObjectCreationExpression(ObjectCreationExpression node);
-    R visitArrayInitializer(ArrayInitializer node);
+    R visitArrayInitializer(ArrayInitializerExpression node);
     R visitArrayCreationExpression(ArrayCreationExpression node);
     R visitArrayAccessExpression(ArrayAccessExpression node);
     R visitFieldAccessExpression(FieldAccessExpression node);
@@ -139,10 +138,11 @@ public interface AstVisitor<R> {
     R visitBlockComment(BlockComment node);
     R visitJavadocComment(JavadocComment node);
 
-    R visitIntegerLiteral(IntegerLiteral node);
-    R visitFloatingPointLiteral(FloatingPointLiteral node);
-    R visitBooleanLiteral(BooleanLiteral node);
-    R visitCharacterLiteral(CharacterLiteral node);
-    R visitStringLiteral(StringLiteral node);
-    R visitNullLiteral(NullLiteral node);
+    R visitIntegerLiteral(IntegerLiteralExpression node);
+    R visitFloatingPointLiteral(FloatingPointLiteralExpression node);
+    R visitBooleanLiteral(BooleanLiteralExpression node);
+    R visitCharacterLiteral(CharacterLiteralExpression node);
+    R visitStringLiteral(StringLiteralExpression node);
+    R visitNullLiteral(NullLiteralExpression node);
+    R visitClassLiteral(ClassLiteralExpression node);
 }
