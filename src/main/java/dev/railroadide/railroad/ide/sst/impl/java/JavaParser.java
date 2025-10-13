@@ -300,49 +300,89 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
     }
 
     private Expression parsePostfixExpression() {
-        Span start = currentSpan();
         Expression expr = parsePrimaryExpression();
+        if (expr == null) {
+            reportError("Expected primary expression");
+            return null;
+        }
 
-        while (nextIsAny(JavaTokenType.DOT, JavaTokenType.OPEN_BRACKET, JavaTokenType.PLUS_PLUS, JavaTokenType.MINUS_MINUS, JavaTokenType.DOUBLE_COLON)) {
+        while (true) {
             if (match(JavaTokenType.DOT)) {
-                start = currentSpan();
-                if (nextIsAny(JavaTokenType.IDENTIFIER)) {
-                    Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected identifier after '.'");
-                    expr = new FieldAccessExpression(spanFrom(start), expr, new NameExpression(spanFrom(identifier), List.of(identifier.lexeme())));
-                } else if (match(JavaTokenType.THIS_KEYWORD)) {
-                    expr = new ThisExpression(spanFrom(start));
-                } else if (match(JavaTokenType.SUPER_KEYWORD)) {
-                    expr = new SuperExpression(spanFrom(start));
-                } else if (match(JavaTokenType.NEW_KEYWORD)) {
-                    expr = parseClassInstanceCreationExpression(spanFrom(start), Optional.ofNullable(expr));
-                } else {
-                    reportError("Expected identifier, 'this', 'super', or 'new' after '.'");
-                    return expr;
+                if (match(JavaTokenType.NEW_KEYWORD)) {
+                    expr = parseClassInstanceCreationExpression(spanFrom(expr), Optional.of(expr));
+                    continue;
                 }
-            } else if (nextIsAny(JavaTokenType.OPEN_PAREN)) {
-                expr = parseMethodCallExpression(Optional.ofNullable(expr), start);
-            } else if (match(JavaTokenType.OPEN_BRACKET)) {
+
+                if (match(JavaTokenType.THIS_KEYWORD)) {
+                    expr = new ThisExpression(spanFrom(expr), Optional.of(expr));
+                    continue;
+                }
+
+                if (match(JavaTokenType.SUPER_KEYWORD)) {
+                    expr = new SuperExpression(spanFrom(expr), Optional.of(expr));
+                    continue;
+                }
+
+                if (nextIsAny(JavaTokenType.LEFT_ANGLED_BRACKET)) {
+                    expr = parseGenericMethodInvocationExpression(expr);
+                    continue;
+                }
+
+                Token<JavaTokenType> name = expect(JavaTokenType.IDENTIFIER, "Expected identifier after '.'");
+                var nameExpr = new NameExpression(spanFrom(name), List.of(name.lexeme()));
+                if (nextIsAny(JavaTokenType.OPEN_PAREN)) {
+                    expect(JavaTokenType.OPEN_PAREN, "Expected '(' to start method arguments");
+                    expr = finishMethodInvocationExpression(spanFrom(expr), Optional.of(expr), List.of(), nameExpr);
+                } else {
+                    expr = new FieldAccessExpression(spanFrom(name), expr, nameExpr);
+                }
+
+                continue;
+            }
+
+            if (match(JavaTokenType.OPEN_PAREN)) {
+                expr = finishMethodInvocationExpression(spanFrom(expr), Optional.of(expr), List.of(), null);
+                continue;
+            }
+
+            if (match(JavaTokenType.OPEN_BRACKET)) {
                 Expression index = parseExpression();
                 expect(JavaTokenType.CLOSE_BRACKET, "Expected ']' after array index");
-                expr = new ArrayAccessExpression(spanFrom(start), expr, index);
-            } else if (match(JavaTokenType.DOUBLE_COLON)) {
-                expr = parseMethodReferenceExpression(expr, start);
-            } else if (nextIsAny(JavaTokenType.PLUS_PLUS, JavaTokenType.MINUS_MINUS)) {
-                Token<JavaTokenType> operator = advance();
+                expr = new ArrayAccessExpression(spanFrom(expr), expr, index);
+                continue;
+            }
+
+            if (match(JavaTokenType.DOUBLE_COLON)) {
+                expr = parseMethodReferenceExpression(expr, spanFrom(expr));
+                continue;
+            }
+
+            if (matchAny(JavaTokenType.PLUS_PLUS, JavaTokenType.MINUS_MINUS) != null) {
+                Token<JavaTokenType> operator = previous();
                 LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
-                expr = new UnaryExpression(spanFrom(start), operatorToken, expr, false);
-            } else
-                break;
+                expr = new UnaryExpression(spanFrom(expr), operatorToken, expr, false);
+                continue;
+            }
+
+            break;
         }
 
         return expr;
+    }
+
+    private @NotNull Expression parseGenericMethodInvocationExpression(Expression expr) {
+        List<TypeRef> typeArguments = parseTypeArgumentsOptionally();
+        Token<JavaTokenType> methodNameToken = expect(JavaTokenType.IDENTIFIER, "Expected method name after type arguments");
+        var methodName = new NameExpression(spanFrom(methodNameToken), List.of(methodNameToken.lexeme()));
+        expect(JavaTokenType.OPEN_PAREN, "Expected '(' to start method arguments");
+        return finishMethodInvocationExpression(spanFrom(expr), Optional.of(expr), typeArguments, methodName);
     }
 
     private Expression parsePrimaryExpression() {
         Span start = currentSpan();
 
         if (match(JavaTokenType.THIS_KEYWORD))
-            return new ThisExpression(spanFrom(start));
+            return new ThisExpression(spanFrom(start), Optional.empty());
 
         if (nextIsAny(JavaTokenType.BOOLEAN_LITERAL, JavaTokenType.CHARACTER_LITERAL, JavaTokenType.NULL_LITERAL,
                 JavaTokenType.NUMBER_BINARY_LITERAL, JavaTokenType.NUMBER_FLOATING_POINT_LITERAL,
@@ -356,17 +396,20 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
             return expr;
         }
 
-        if (nextIsAny(JavaTokenType.NEW_KEYWORD))
+        if (match(JavaTokenType.NEW_KEYWORD))
             return parseClassInstanceCreationOrArrayCreationExpression();
 
         if (isClassLiteral())
             return parseClassLiteral();
 
         if (match(JavaTokenType.SUPER_KEYWORD))
-            return new SuperExpression(spanFrom(start));
+            return new SuperExpression(spanFrom(start), Optional.empty());
 
-        if (nextIsAny(JavaTokenType.IDENTIFIER))
-            return parseQualifiedName();
+        // TODO: Handle field access, method calls, array access, etc. that start with an identifier
+        if (nextIsAny(JavaTokenType.IDENTIFIER)) {
+            Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected identifier");
+            return new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
+        }
 
         reportError("Expected expression");
         return null;
@@ -673,6 +716,10 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         var methodName = new NameExpression(spanFrom(methodNameToken), List.of(methodNameToken.lexeme()));
 
         expect(JavaTokenType.OPEN_PAREN, "Expected '(' to start method arguments");
+        return finishMethodInvocationExpression(spanFrom(start), expr, typeArguments, methodName);
+    }
+
+    private @NotNull MethodInvocationExpression finishMethodInvocationExpression(Span start, Optional<Expression> expr, List<TypeRef> typeArguments, NameExpression methodName) {
         List<Expression> arguments = new ArrayList<>();
         if (!nextIsAny(JavaTokenType.CLOSE_PAREN)) {
             do {
@@ -682,7 +729,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         expect(JavaTokenType.CLOSE_PAREN, "Expected ')' to end method arguments");
 
         return new MethodInvocationExpression(
-                spanFrom(start),
+                start,
                 expr,
                 typeArguments,
                 methodName,
@@ -1010,7 +1057,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         if (nextIsAny(JavaTokenType.ENUM_KEYWORD))
             return parseEnumDeclaration(startSpan, modifiers, annotations);
 
-        if (nextIsAny(JavaTokenType.AT) && lookaheadType(2) == JavaTokenType.INTERFACE_KEYWORD)
+        if (nextIsAny(JavaTokenType.AT_INTERFACE_KEYWORD))
             return parseAnnotationTypeDeclaration(startSpan, modifiers, annotations);
 
         if (nextIsAny(JavaTokenType.RECORD_KEYWORD))
@@ -1389,7 +1436,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         parseModifiersAndAnnotations(modifiers, annotations);
 
         if (nextIsAny(JavaTokenType.CLASS_KEYWORD, JavaTokenType.INTERFACE_KEYWORD, JavaTokenType.ENUM_KEYWORD,
-                JavaTokenType.AT, JavaTokenType.RECORD_KEYWORD))
+                JavaTokenType.AT_INTERFACE_KEYWORD, JavaTokenType.RECORD_KEYWORD))
             return parseTopLevelTypeDeclaration(start, modifiers, annotations);
 
         if (isRecord && nextIsAny(JavaTokenType.OPEN_BRACE))
@@ -1469,7 +1516,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
 
         Optional<Expression> initializer = Optional.empty();
         if (match(JavaTokenType.EQUALS)) {
-            initializer = Optional.of(parseExpression());
+            initializer = Optional.ofNullable(parseExpression());
         }
 
         return new VariableDeclarator(spanFrom(start), name, initializer);
@@ -1496,8 +1543,12 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
     private MethodDeclaration parseMethodDeclaration(Span start, List<Modifier> modifiers, List<Annotation> annotations, List<TypeParameter> typeParameters, TypeRef returnType, NameExpression name) {
         expect(JavaTokenType.OPEN_PAREN, "Expected '(' after method name");
 
-        Optional<ReceiverParameter> receiverParameter = Optional.ofNullable(
-                tryParse($ -> parseReceiverParameter()));
+        Optional<ReceiverParameter> receiverParameter = Optional.empty();
+        if (isReceiverParameter()) {
+            receiverParameter = Optional.ofNullable(
+                    tryParse($ -> parseReceiverParameter()));
+        }
+
         List<Parameter> parameters = new ArrayList<>();
         if (!nextIsAny(JavaTokenType.CLOSE_PAREN)) {
             if (receiverParameter.isPresent())
@@ -1663,10 +1714,26 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         if (nextIsAny(JavaTokenType.IDENTIFIER) && lookaheadType(2) == JavaTokenType.COLON)
             return parseLabeledStatement();
 
-        if (nextIsAny(JavaTokenType.VAR_KEYWORD, JavaTokenType.FINAL_KEYWORD, JavaTokenType.AT) || lookaheadType(2) == JavaTokenType.IDENTIFIER)
-            return parseLocalVariableDeclarationStatement();
+        if (isLocalVariableDeclarationStart())
+            return parseLocalVariableDeclarationStatement(true);
 
         return parseExpressionStatement();
+    }
+
+    private boolean isLocalVariableDeclarationStart() {
+        if (nextIsAny(JavaTokenType.VAR_KEYWORD, JavaTokenType.FINAL_KEYWORD, JavaTokenType.AT))
+            return true;
+
+        Marker mark = mark();
+        TypeRef type = tryParse($ -> parseTypeReference());
+        if (type == null) {
+            mark.rollback();
+            return false;
+        }
+
+        boolean isVarDecl = nextIsAny(JavaTokenType.IDENTIFIER);
+        mark.rollback();
+        return isVarDecl;
     }
 
     private ExpressionStatement parseExpressionStatement() {
@@ -1676,7 +1743,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         return new ExpressionStatement(spanFrom(start), expression);
     }
 
-    private LocalVariableDeclarationStatement parseLocalVariableDeclarationStatement() {
+    private LocalVariableDeclarationStatement parseLocalVariableDeclarationStatement(boolean requireSemicolon) {
         List<Modifier> modifiers = new ArrayList<>();
         List<Annotation> annotations = new ArrayList<>();
         parseModifiersAndAnnotations(modifiers, annotations);
@@ -1704,7 +1771,10 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
             variables.add(parseVariableDeclarator(varName));
         }
 
-        expect(JavaTokenType.SEMICOLON, "Expected ';' after variable declaration");
+        if (requireSemicolon || nextIsAny(JavaTokenType.SEMICOLON)) {
+            expect(JavaTokenType.SEMICOLON, "Expected ';' after variable declaration");
+        }
+
         return new LocalVariableDeclarationStatement(
                 spanFrom(currentSpan()),
                 annotations,
@@ -1822,7 +1892,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         List<LocalVariableDeclarationStatement> resourceStatements = new ArrayList<>();
         if (match(JavaTokenType.OPEN_PAREN)) {
             do {
-                resourceStatements.add(parseLocalVariableDeclarationStatement());
+                resourceStatements.add(parseLocalVariableDeclarationStatement(false));
             } while (!isAtEnd() && !nextIsAny(JavaTokenType.CLOSE_PAREN));
 
             expect(JavaTokenType.CLOSE_PAREN, "Expected ')' after try-with-resources resources");
@@ -1918,7 +1988,8 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
     }
 
     private BasicForStatement parseBasicForStatement(Span start) {
-        Optional<Statement> initializer = Optional.ofNullable(tryParse($ -> parseLocalVariableDeclarationStatement()));
+        Optional<Statement> initializer = Optional.ofNullable(
+                tryParse($ -> parseLocalVariableDeclarationStatement(true)));
 
         Optional<Expression> condition = Optional.empty();
         if (!nextIsAny(JavaTokenType.SEMICOLON)) {
@@ -2144,10 +2215,8 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
                     type, Optional.of(name));
         }
 
-        Marker recordPatternMarker = mark();
         TypeRef type = parseTypeReference();
         if (nextIsAny(JavaTokenType.OPEN_PAREN)) {
-            recordPatternMarker.commit();
             expect(JavaTokenType.OPEN_PAREN, "Expected '(' after type in record pattern");
 
             List<Pattern> components = new ArrayList<>();
@@ -2165,8 +2234,6 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
                     components
             );
         }
-
-        recordPatternMarker.rollback();
 
         Optional<NameExpression> variable = Optional.empty();
         if (nextIsAny(JavaTokenType.IDENTIFIER)) {
@@ -2296,16 +2363,9 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
 
         if (nextIsAny(JavaTokenType.INT_KEYWORD, JavaTokenType.BOOLEAN_KEYWORD, JavaTokenType.CHAR_KEYWORD,
                 JavaTokenType.BYTE_KEYWORD, JavaTokenType.SHORT_KEYWORD, JavaTokenType.LONG_KEYWORD,
-                JavaTokenType.FLOAT_KEYWORD, JavaTokenType.DOUBLE_KEYWORD)) {
+                JavaTokenType.FLOAT_KEYWORD, JavaTokenType.DOUBLE_KEYWORD, JavaTokenType.VOID_KEYWORD)) {
             Token<JavaTokenType> primitiveToken = advance();
             return new PrimitiveTypeRef(spanFrom(start), LexerToken.of(spanFrom(start), primitiveToken));
-        }
-
-        JavaTokenType nextToken = lookaheadType(1);
-        JavaTokenType lookahead2 = lookaheadType(2);
-        if (nextToken == JavaTokenType.IDENTIFIER && lookahead2 != JavaTokenType.DOT && lookahead2 != JavaTokenType.LEFT_ANGLED_BRACKET) {
-            Token<JavaTokenType> identifier = advance();
-            return new TypeVariableRef(spanFrom(start), identifier.lexeme());
         }
 
         return parseClassOrInterfaceTypeReference();
@@ -2681,5 +2741,24 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         }
 
         return lookaheadType(offset) == JavaTokenType.DOT && lookaheadType(offset + 1) == JavaTokenType.CLASS_KEYWORD;
+    }
+
+    private boolean isReceiverParameter() {
+        Parser<JavaTokenType, AstNode, Expression>.Marker marker = mark();
+        parseAnnotations();
+        parseTypeReference();
+
+        if (nextIsAny(JavaTokenType.THIS_KEYWORD, JavaTokenType.SUPER_KEYWORD)) {
+            marker.rollback();
+            return true;
+        } else {
+            marker.rollback();
+            return false;
+        }
+    }
+
+    @Override
+    protected Span spanFrom(AstNode node) {
+        return spanBetween(node.span(), currentSpan());
     }
 }

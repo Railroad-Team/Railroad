@@ -13,7 +13,8 @@ import java.util.List;
 import java.util.Optional;
 
 public record ThisExpression(
-        Span span
+        Span span,
+        Optional<Expression> qualifier
 ) implements Expression {
     @Override
     public AstKind kind() {
@@ -22,7 +23,9 @@ public record ThisExpression(
 
     @Override
     public List<AstNode> children() {
-        return Collections.emptyList();
+        List<AstNode> children = new ArrayList<>();
+        qualifier.ifPresent(children::add);
+        return List.copyOf(children);
     }
 
     @Override
