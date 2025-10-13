@@ -99,7 +99,6 @@ public enum AstKind {
     ARRAY_TYPE, // e.g., int[], String[]
     CLASS_OR_INTERFACE_TYPE, // e.g., List<String>
     CLASS_OR_INTERFACE_TYPE_PART,
-    TYPE_VARIABLE, // <T>
     INTERSECTION_TYPE, // A & B
     UNION_TYPE, // A | B
     WILDCARD_TYPE, // ? extends A, ? super B, or just ?

@@ -462,6 +462,14 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
     }
 
     /**
+     * Creates a span from the given syntax node to the current position.
+     *
+     * @param node the syntax node
+     * @return a new span from the node to current
+     */
+    protected abstract Span spanFrom(N node);
+
+    /**
      * Creates a span from the given start position to the given end position.
      *
      * @param start the start span

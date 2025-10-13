@@ -112,7 +112,6 @@ public interface AstVisitor<R> {
     R visitArrayType(ArrayTypeRef node);
     R visitClassOrInterfaceType(ClassOrInterfaceTypeRef node);
     R visitClassOrInterfaceTypePart(ClassOrInterfaceTypeRef.Part node);
-    R visitTypeVariable(TypeVariableRef node);
     R visitIntersectionType(IntersectionTypeRef node);
     R visitUnionType(UnionTypeRef node);
     R visitWildcardType(WildcardTypeRef node);

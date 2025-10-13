@@ -294,6 +294,18 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         }
 
         if (JavaTokenType.SINGLE_CHAR_TOKENS.containsKey(current)) {
+            if(current == '@') {
+                for (int i = 0; i < "interface ".length(); i++) {
+                    if (peek(i + 1) != "interface ".charAt(i)) {
+                        break;
+                    }
+
+                    if (i == "interface ".length() - 1) {
+                        consume("interface ".length() + 1);
+                        return token(JavaTokenType.AT_INTERFACE_KEYWORD, startOffset, startLine, startCol);
+                    }
+                }
+            }
             consume();
             return token(JavaTokenType.SINGLE_CHAR_TOKENS.get(current), startOffset, startLine, startCol);
         }
@@ -305,6 +317,12 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
             String lexeme = slice(startOffset, pos);
             JavaTokenType type = JavaTokenType.listKeywords().getOrDefault(lexeme, JavaTokenType.IDENTIFIER);
+            if("true".equals(lexeme) || "false".equals(lexeme)) {
+                type = JavaTokenType.BOOLEAN_LITERAL;
+            } else if("null".equals(lexeme)) {
+                type = JavaTokenType.NULL_LITERAL;
+            }
+
             return token(type, startOffset, startLine, startCol);
         }
 
@@ -325,7 +343,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                 consume(2);
                 while (hasNext()) {
                     if (charAt(pos) == '\n' || charAt(pos) == '\r')
-                        return token(JavaTokenType.LINE_COMMENT, startOffset, startLine, startCol, TokenChannel.DEFAULT);
+                        return token(JavaTokenType.LINE_COMMENT, startOffset, startLine, startCol, TokenChannel.TRIVIA);
 
                     consume();
                 }
@@ -336,7 +354,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                     char nextChar = charAt(pos);
                     if (nextChar == '*' && peek(1) == '/') {
                         consume(2);
-                        return token(isJavadoc ? JavaTokenType.JAVADOC_COMMENT : JavaTokenType.BLOCK_COMMENT, startOffset, startLine, startCol, TokenChannel.DEFAULT);
+                        return token(isJavadoc ? JavaTokenType.JAVADOC_COMMENT : JavaTokenType.BLOCK_COMMENT, startOffset, startLine, startCol, TokenChannel.TRIVIA);
                     }
 
                     if (nextChar == '\n')
