@@ -27,4 +27,8 @@ public class OnboardingFlow {
     public Supplier<OnboardingStep> lookup(String id) {
         return stepLookup.get(id);
     }
+
+    public int getTotalSteps() {
+        return stepLookup.size();
+    }
 }

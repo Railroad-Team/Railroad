@@ -111,7 +111,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
                             $ -> currentStep.section().createUI()
                         )
                     );
-                    this.ui.onStepChanged(currentStep, stepHistory.size() - 1, -1);
+                    this.ui.onStepChanged(currentStep, stepHistory.size() - 1, flow.getTotalSteps());
                     configureNavigation();
                     busy.set(false);
                 })).exceptionally(throwable -> {

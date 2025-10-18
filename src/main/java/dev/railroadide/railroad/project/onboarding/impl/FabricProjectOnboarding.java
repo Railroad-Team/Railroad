@@ -417,8 +417,6 @@ public class FabricProjectOnboarding {
 
                             return null;
                         })
-                        .keyFunction(v -> v)
-                        .valueOfFunction(v -> v)
                         .translate(false)))
             .onEnter(ctx -> {
                 MinecraftVersion mcVersion = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
@@ -492,7 +490,6 @@ public class FabricProjectOnboarding {
                         .validator(ProjectValidators::validateMainClass)))
             .onEnter(ctx -> {
                 String projectName = ctx.get(ProjectData.DefaultKeys.NAME);
-                String groupId = ctx.get(MavenProjectKeys.GROUP_ID);
 
                 if (ctx.contains(MinecraftProjectKeys.MOD_ID)) {
                     String contextModId = ctx.get(MinecraftProjectKeys.MOD_ID);

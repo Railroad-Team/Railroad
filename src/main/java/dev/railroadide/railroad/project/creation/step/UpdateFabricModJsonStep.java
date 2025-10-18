@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.project.creation.step;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.railroadide.core.project.License;
 import dev.railroadide.core.project.creation.modjson.*;
@@ -47,8 +49,42 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
         } else {
             int schemaVersion = json.get("schemaVersion").getAsInt();
             if (schemaVersion == 1) {
+                if (json.has("entrypoints") && json.get("entrypoints").isJsonObject()) {
+                    JsonObject entrypointsJson = json.getAsJsonObject("entrypoints");
+                    entrypointsJson.entrySet().forEach(entry -> {
+                        if (!entry.getValue().isJsonArray())
+                            return;
+
+                        JsonArray array = entry.getValue().getAsJsonArray();
+                        boolean requiresNormalization = false;
+                        for (JsonElement element : array) {
+                            if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+                                requiresNormalization = true;
+                                break;
+                            }
+                        }
+
+                        if (!requiresNormalization)
+                            return;
+
+                        JsonArray normalized = new JsonArray();
+                        for (JsonElement element : array) {
+                            if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+                                JsonObject obj = new JsonObject();
+                                obj.addProperty("value", element.getAsString());
+                                obj.addProperty("adapter", "default");
+                                normalized.add(obj);
+                            } else {
+                                normalized.add(element);
+                            }
+                        }
+
+                        entrypointsJson.add(entry.getKey(), normalized);
+                    });
+                }
+
                 // We're in version 1, using 'https://wiki.fabricmc.net/documentation:fabric_mod_json_spec#version_1_current'
-                FabricModJson modJson = Railroad.GSON.fromJson(content, FabricModJson.class);
+                FabricModJson modJson = Railroad.GSON.fromJson(json, FabricModJson.class);
 
                 String modId = ctx.data().getAsString(MinecraftProjectKeys.MOD_ID);
                 String modName = ctx.data().getAsString(MinecraftProjectKeys.MOD_NAME);
@@ -74,14 +110,14 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                 String mainClass = ctx.data().getAsString(MinecraftProjectKeys.MAIN_CLASS);
                 var entrypoints = new EntrypointContainer();
                 entrypoints.put("main", Collections.singletonList(Entrypoint.of(groupId + "." + modId + "." + mainClass)));
-                if (ctx.data().getAsBoolean(FabricProjectKeys.SPLIT_SOURCES)) {
+                if (ctx.data().getAsBoolean(FabricProjectKeys.SPLIT_SOURCES, false)) {
                     entrypoints.put("client", Collections.singletonList(Entrypoint.of(groupId + "." + modId + "." + mainClass + "Client")));
                 }
                 modJson.setEntrypoints(entrypoints);
 
                 List<MixinEnvironment> mixinConfigs = new ArrayList<>();
                 mixinConfigs.add(MixinEnvironment.of(modId + ".mixins.json"));
-                if (ctx.data().getAsBoolean(FabricProjectKeys.SPLIT_SOURCES)) {
+                if (ctx.data().getAsBoolean(FabricProjectKeys.SPLIT_SOURCES, false)) {
                     mixinConfigs.add(new MixinEnvironment(modId + ".client.mixins.json", "client"));
                 }
                 modJson.setMixins(mixinConfigs);
@@ -116,10 +152,15 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
 
                 modJson.setSuggests(null); // Clear out example suggests
 
-                if (ctx.data().getAsBoolean(FabricProjectKeys.ACCESS_WIDENER_PATH)) {
+                if (ctx.data().getAsBoolean(FabricProjectKeys.USE_ACCESS_WIDENER, true)) {
                     // TODO: Use FabricProjectKeys.ACCESS_WIDENER_PATH
-                    String accessWidenerPath = modId + ".accesswidener";
+                    String archivesBaseName = ctx.data().contains(MavenProjectKeys.ARTIFACT_ID)
+                        ? ctx.data().getAsString(MavenProjectKeys.ARTIFACT_ID)
+                        : modId;
+
+                    String accessWidenerPath = archivesBaseName + ".accesswidener";
                     modJson.setAccessWidener(accessWidenerPath);
+                    ctx.data().set(FabricProjectKeys.ACCESS_WIDENER_PATH, accessWidenerPath);
 
                     files.writeString(resourcesDir.resolve(accessWidenerPath), """
                         accessWidener v2 named
@@ -128,6 +169,7 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                         """.stripIndent());
                 } else {
                     modJson.setAccessWidener(null);
+                    ctx.data().remove(FabricProjectKeys.ACCESS_WIDENER_PATH);
                 }
 
                 ContactInformation contact = modJson.getContact();

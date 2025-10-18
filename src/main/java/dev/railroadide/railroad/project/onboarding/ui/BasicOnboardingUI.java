@@ -153,7 +153,7 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
         int displayedIndex = currentIndex + 1;
         if (totalSteps > 0) {
             progressBar.setProgress((double) displayedIndex / totalSteps);
-            progressLabel.setText(L18n.localize("railroad.onboarding.step_progress", displayedIndex, totalSteps));
+            progressLabel.setText(displayedIndex + " / " + totalSteps);
         } else {
             progressBar.setProgress(0);
             progressLabel.setText("");

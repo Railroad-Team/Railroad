@@ -131,129 +131,6 @@ railroad.settings.ide.code_style.auto_pair_inside_strings.title=Auto-pair inside
 railroad.settings.ide.code_style.auto_pair_inside_strings.description=Enable or disable automatic pairing of brackets, braces and parenthesis inside string literals.
 
 # =============================================================================
-# PROJECT CREATION
-# =============================================================================
-# Project basic info
-railroad.project.creation.name=Name
-railroad.project.creation.name.prompt=Enter project name
-railroad.project.creation.name.error.required=You must enter a project name
-railroad.project.creation.name.error.length_short=Project name is too short
-railroad.project.creation.name.error.length_long=Project name is too long
-
-railroad.project.creation.location=Location
-railroad.project.creation.location.warning.onedrive=It is not recommended to create projects in OneDrive as it has a tendency to cause problems.
-railroad.project.creation.location.warning.not_empty=The selected directory is not empty. Creating a project here may overwrite existing files.
-railroad.project.creation.location.info=This will be created at: %s
-
-railroad.project.creation.git=Create Git Repository
-
-railroad.project.creation.license=License
-railroad.project.creation.license.custom=Custom License
-railroad.project.creation.license.custom.prompt=Enter custom license text
-
-# Minecraft settings
-railroad.project.creation.minecraft_version=Minecraft Version
-railroad.project.creation.forge_version=Forge Version
-railroad.project.creation.neoforge_version=Neoforge Version
-railroad.project.creation.fabric_loader_version=Fabric Loader Version
-railroad.project.creation.project_details.title=Project Details
-railroad.project.creation.project_details.description=Give your project a name and where it should live.
-railroad.project.creation.minecraft_version.title=Minecraft Version
-railroad.project.creation.minecraft_version.description=Pick the Minecraft version and loader components for your mod.
-
-# Mod settings
-railroad.project.creation.mod_id=Mod ID
-railroad.project.creation.mod_id.prompt=Enter mod ID
-railroad.project.creation.mod_id.error.required=You must enter a mod ID
-railroad.project.creation.mod_id.error.length_short=Mod ID is too short
-railroad.project.creation.mod_id.error.length_long=Mod ID is too long
-railroad.project.creation.mod_id.error.invalid_characters=Mod ID contains invalid characters
-
-railroad.project.creation.mod_name=Mod Name
-railroad.project.creation.mod_name.prompt=Enter mod name
-railroad.project.creation.mod_name.error.required=You must enter a mod name
-railroad.project.creation.mod_name.error.length_short=Mod name is too short
-railroad.project.creation.mod_name.error.length_long=Mod name is too long
-
-railroad.project.creation.main_class=Main Class
-railroad.project.creation.main_class.prompt=Enter the name of the main class
-railroad.project.creation.main_class.error.required=You must enter the name of the main class
-railroad.project.creation.main_class.error.invalid_characters=Main class name contains invalid characters
-
-# Project features
-railroad.project.creation.use_mixins=Use Mixins
-railroad.project.creation.use_access_transformer=Use Access Transformer
-railroad.project.creation.gen_run_folders=Generate Run Folders
-railroad.project.creation.include_fapi=Include FAPI (Fabric API)
-railroad.project.creation.fabric_api_version=Fabric API Version
-railroad.project.creation.use_access_widener=Use Access Widener
-railroad.project.creation.split_sources=Split Sources
-
-# Mappings
-railroad.project.creation.mapping_channel=Mapping Channel
-railroad.project.creation.mapping_version=Mapping Version
-railroad.mapping_channel.yarn=Yarn
-railroad.mapping_channel.mojmap=Official (Mojmap)
-railroad.mapping_channel.parchment=Parchment
-railroad.mapping_channel.mcp=MCP
-
-# Project metadata
-railroad.project.creation.author=Author
-railroad.project.creation.author.prompt=Enter author name
-
-railroad.project.creation.credits=Credits
-railroad.project.creation.credits.prompt=Enter credits
-
-railroad.project.creation.description=Description
-railroad.project.creation.description.prompt=Enter description
-railroad.project.creation.description.error.length_long=Description is too long (max 2048 characters)
-railroad.project.creation.description.error.length_short=Description is too short (min 10 characters)
-
-# URLs
-railroad.project.creation.issues=Issues URL
-railroad.project.creation.issues.prompt=Enter issues URL
-
-railroad.project.creation.update_json_url=Update JSON URL
-railroad.project.creation.update_json_url.prompt=Enter update JSON URL
-
-railroad.project.creation.display_url=Display URL
-railroad.project.creation.display_url.prompt=Enter the URL to display in the project
-
-railroad.project.creation.homepage=Homepage URL
-railroad.project.creation.homepage.prompt=Enter homepage URL
-
-railroad.project.creation.sources=Source Code URL
-railroad.project.creation.sources.prompt=Enter source code URL
-
-# Maven settings
-railroad.project.creation.group_id=Group ID
-railroad.project.creation.group_id.prompt=Enter group ID
-railroad.project.creation.group_id.error.required=You must enter a group ID
-
-railroad.project.creation.artifact_id=Artifact ID
-railroad.project.creation.artifact_id.prompt=Enter artifact ID
-railroad.project.creation.artifact_id.error.required=You must enter an artifact ID
-
-railroad.project.creation.version=Version
-railroad.project.creation.version.prompt=Enter version
-railroad.project.creation.version.error.required=You must enter a version
-
-# Project creation sections
-railroad.project.creation.section.project=Project
-railroad.project.creation.section.minecraft_version=Minecraft Version
-railroad.project.creation.section.minecraft=Minecraft
-railroad.project.creation.section.optional=Optional
-railroad.project.creation.section.mappings=Mappings
-railroad.project.creation.section.maven=Maven
-
-# Other creation options
-railroad.project.creation.display_test=Display Test
-railroad.project.creation.client_side_only=Client Side Only
-
-# Tooltips
-railroad.tooltip.project.location.info=The project will be created in this directory.
-
-# =============================================================================
 # IDE
 # =============================================================================
 railroad.ide.welcome.message=Welcome to Railroad!
@@ -297,55 +174,7 @@ railroad.theme.preview.text_field=Text Field:
 railroad.theme.preview.password=Password:
 railroad.theme.preview.dropdown=Dropdown:
 
-# Project Creation Status
-railroad.project.creation.status.creating=Creating Project...
-railroad.project.creation.status.creating_fabric=Creating Fabric Project
-railroad.project.creation.status.creating_fabric.subtitle=Setting up your new Fabric mod project: %s
-railroad.project.creation.status.creating_forge=Creating Forge Project
-railroad.project.creation.status.creating_forge.subtitle=Setting up your new Forge mod project: %s
-railroad.project.creation.status.time_elapsed=Time elapsed: %s
-railroad.project.creation.status.task=Current task: %s
-
-# Project creation tasks
-railroad.project.creation.task.creating_directory=Creating project directory
-railroad.project.creation.task.downloading_example_mod=Downloading example mod
-railroad.project.creation.task.extracting_example_mod=Extracting example mod
-railroad.project.creation.task.deleting_example_zip=Cleaning up temporary files
-railroad.project.creation.task.copying_project=Copying project files
-railroad.project.creation.task.updating_gradle=Updating Gradle configuration
-railroad.project.creation.task.renaming_packages=Renaming packages
-railroad.project.creation.task.updating_fabric_mod_json=Updating fabric.mod.json
-railroad.project.creation.task.renaming_mixins=Renaming mixin files
-railroad.project.creation.task.renaming_main_classes=Renaming main classes
-railroad.project.creation.task.refactoring_mixins=Refactoring mixins
-railroad.project.creation.task.updating_build_gradle=Updating build.gradle
-railroad.project.creation.task.creating_project=Creating project
-railroad.project.creation.task.running_gen_sources=Running genSources task
-railroad.project.creation.task.creating_git=Creating Git repository
-railroad.project.creation.task.fabric_completed=Fabric project created successfully!
-railroad.project.creation.task.project_created=Project created successfully!
-
-# Forge-specific tasks
-railroad.project.creation.task.updating_settings_gradle=Updating settings.gradle
-railroad.project.creation.task.refactoring_classes=Refactoring example classes
-railroad.project.creation.task.creating_mixins=Creating mixins configuration
-railroad.project.creation.task.creating_access_transformer=Creating access transformer
-railroad.project.creation.task.setup_gradle=Setting up Gradle
-
-# Project creation errors
-railroad.project.creation.error.title=Project Creation Error
-railroad.project.creation.error.fabric.header=Failed to create Fabric project
-railroad.project.creation.error.forge.header=Failed to create Forge project
-railroad.project.creation.error.content=An error occurred while creating your project. Please check the details below and try again.
-railroad.project.creation.error.open_ide.title=Failed to Open Project
-railroad.project.creation.error.open_ide.header=Project created but failed to open in IDE
-railroad.project.creation.error.open_ide.content=Your project was created successfully, but there was an error opening it in the IDE. You can manually open the project from the welcome screen.
-
-# Project creation cancel
-railroad.project.creation.cancel.title=Cancel Project Creation
-railroad.project.creation.cancel.header=Are you sure you want to cancel?
-railroad.project.creation.cancel.content=This will stop the project creation process and return you to the welcome screen. Any partially created files will remain on disk.
-
+# Not Implemented Dialog
 not_implemented.title=Not Implemented Yet
 not_implemented.subtitle=This feature is under construction. Stay tuned!
 
@@ -409,3 +238,142 @@ railroad.menu.help=Help
 railroad.menu.help.documentation=Documentation
 railroad.menu.help.issues=Report Issues
 railroad.menu.help.discord=Join the Discord
+
+# =============================================================================
+# PROJECT CREATION
+# =============================================================================
+railroad.project.creation.project_details.title=Project Details
+railroad.project.creation.project_details.description=Enter the name and location for your project.
+railroad.project.creation.section.project=Project
+railroad.project.creation.name=Project Name
+railroad.project.creation.name.prompt=My Awesome Mod
+railroad.project.creation.location=Project Location
+
+railroad.project.creation.maven_coordinates.title=Maven Coordinates
+railroad.project.creation.maven_coordinates.description=Enter the Maven coordinates for your project.
+railroad.project.creation.section.maven_coordinates=Maven Coordinates
+railroad.project.creation.group_id=Group ID
+railroad.project.creation.group_id.prompt=com.example
+railroad.project.creation.artifact_id=Artifact ID
+railroad.project.creation.artifact_id.prompt=my-awesome-mod
+railroad.project.creation.version=Version
+railroad.project.creation.version.prompt=1.0.0
+
+railroad.project.creation.minecraft_version.title=Minecraft Version
+railroad.project.creation.minecraft_version.description=Select the Minecraft version for your project.
+railroad.project.creation.section.minecraft_version=Minecraft Version
+railroad.project.creation.minecraft_version=Minecraft Version
+
+railroad.project.creation.mapping_channel.title=Mapping Channel
+railroad.project.creation.mapping_channel.description=Select the mapping channel for your project.
+railroad.project.creation.section.mapping_channel=Mapping Channel
+railroad.project.creation.mapping_channel=Mapping Channel
+
+railroad.project.creation.mapping_version.title=Mapping Version
+railroad.project.creation.mapping_version.description=Select the mapping version for your project.
+railroad.project.creation.section.mapping_version=Mapping Version
+railroad.project.creation.mapping_version=Mapping Version
+
+railroad.project.creation.fabric_loader.title=Fabric Loader
+railroad.project.creation.fabric_loader.description=Select the Fabric Loader version for your project.
+railroad.project.creation.section.fabric_loader=Fabric Loader
+railroad.project.creation.fabric_loader=Fabric Loader
+
+railroad.project.creation.fabric_api.title=Fabric API
+railroad.project.creation.fabric_api.description=Select the Fabric API version for your project.
+railroad.project.creation.section.fabric_api=Fabric API
+railroad.project.creation.fabric_api=Fabric API
+
+railroad.project.creation.mod_details.title=Mod Details
+railroad.project.creation.mod_details.description=Enter the details for your mod.
+railroad.project.creation.section.mod_details=Mod Details
+railroad.project.creation.mod_id=Mod ID
+railroad.project.creation.mod_id.prompt=my-awesome-mod
+railroad.project.creation.mod_name=Mod Name
+railroad.project.creation.mod_name.prompt=My Awesome Mod
+railroad.project.creation.main_class=Main Class
+railroad.project.creation.main_class.prompt=com.example.MyAwesomeMod
+
+railroad.project.creation.license.title=License
+railroad.project.creation.license.description=Select the license for your project.
+railroad.project.creation.section.license=License
+railroad.project.creation.license=License
+railroad.project.creation.license.custom=Custom License
+railroad.project.creation.license.custom.prompt=https://example.com/LICENSE
+
+railroad.project.creation.git.title=Git
+railroad.project.creation.git.description=Initialize a Git repository for your project.
+railroad.project.creation.section.git=Git
+railroad.project.creation.init_git=Initialize Git Repository
+
+railroad.project.creation.access_widener.title=Access Widener
+railroad.project.creation.access_widener.description=Use an access widener to access parts of the game that are normally not accessible.
+railroad.project.creation.section.access_widener=Access Widener
+railroad.project.creation.use_access_widener=Use Access Widener
+
+railroad.project.creation.split_sources.title=Split Sources
+railroad.project.creation.split_sources.description=Split the sources into client and main.
+railroad.project.creation.section.split_sources=Split Sources
+railroad.project.creation.split_sources=Split Sources
+
+railroad.project.creation.optional_details.title=Optional Details
+railroad.project.creation.optional_details.description=Enter optional details for your project.
+railroad.project.creation.section.optional_details=Optional Details
+railroad.project.creation.author=Author
+railroad.project.creation.author.prompt=Your Name
+railroad.project.creation.description=Description
+railroad.project.creation.description.prompt=A short description of your project.
+railroad.project.creation.issues_url=Issues URL
+railroad.project.creation.issues_url.prompt=https://example.com/issues
+railroad.project.creation.homepage_url=Homepage URL
+railroad.project.creation.homepage_url.prompt=https://example.com
+railroad.project.creation.sources_url=Sources URL
+railroad.project.creation.sources_url.prompt=https://example.com/sources
+
+# Validation Errors
+railroad.project.creation.location.error.required=Project location is required.
+railroad.project.creation.location.error.cannot_create=Could not create the project directory.
+railroad.project.creation.location.error.not_directory=The selected path is not a directory.
+railroad.project.creation.location.warning.not_empty=The selected directory is not empty.
+railroad.project.creation.location.error.not_readable=The selected directory is not readable.
+railroad.project.creation.location.error.invalid_path=The selected path is invalid.
+railroad.project.creation.location.warning.onedrive=Using OneDrive for projects is not recommended.
+railroad.project.creation.name.error.required=Project name is required.
+railroad.project.creation.name.error.length_long=Project name is too long (maximum 256 characters).
+railroad.project.creation.name.error.length_short=Project name is too short (minimum 3 characters).
+railroad.project.creation.name.error.invalid_characters=Project name contains invalid characters.
+railroad.project.creation.license.custom.error.required=Custom license URL is required.
+railroad.project.creation.license.custom.error.length_long=Custom license URL is too long (maximum 2048 characters).
+railroad.project.creation.mod_id.error.required=Mod ID is required.
+railroad.project.creation.mod_id.error.length_short=Mod ID is too short (minimum 3 characters).
+railroad.project.creation.mod_id.error.length_long=Mod ID is too long (maximum 64 characters).
+railroad.project.creation.mod_id.error.invalid_characters=Mod ID contains invalid characters.
+railroad.project.creation.mod_name.error.required=Mod name is required.
+railroad.project.creation.mod_name.error.length_long=Mod name is too long (maximum 256 characters).
+railroad.project.creation.mod_name.error.length_short=Mod name is too short (minimum 5 characters).
+railroad.project.creation.main_class.error.required=Main class is required.
+railroad.project.creation.main_class.error.invalid_characters=Main class contains invalid characters.
+railroad.project.creation.author.error.length_long=Author is too long (maximum 256 characters).
+railroad.project.creation.author.error.length_short=Author is too short (minimum 3 characters).
+railroad.project.creation.credits.error.length_long=Credits is too long (maximum 256 characters).
+railroad.project.creation.description.error.length_long=Description is too long (maximum 2048 characters).
+railroad.project.creation.description.error.length_short=Description is too short (minimum 10 characters).
+railroad.project.creation.issues.error.length_long=Issues URL is too long (maximum 256 characters).
+railroad.project.creation.issues.error.invalid_url=Issues URL is not a valid URL.
+railroad.project.creation.issues.error.no_issues=Issues URL does not point to an issues page.
+railroad.project.creation.update_json.error.length_long=Update JSON URL is too long (maximum 256 characters).
+railroad.project.creation.update_json.error.invalid_url=Update JSON URL is not a valid URL.
+railroad.project.creation.update_json.error.invalid_extension=Update JSON URL must end with .json.
+railroad.project.creation.group_id.error.required=Group ID is required.
+railroad.project.creation.group_id.error.length_long=Group ID is too long (maximum 256 characters).
+railroad.project.creation.group_id.error.invalid_characters=Group ID contains invalid characters.
+railroad.project.creation.artifact_id.error.required=Artifact ID is required.
+railroad.project.creation.artifact_id.error.length_long=Artifact ID is too long (maximum 256 characters).
+railroad.project.creation.artifact_id.error.invalid_characters=Artifact ID contains invalid characters.
+railroad.project.creation.version.error.required=Version is required.
+railroad.project.creation.version.error.length_long=Version is too long (maximum 256 characters).
+railroad.project.creation.version.error.invalid_characters=Version contains invalid characters.
+railroad.project.creation.homepage.error.length_long=Homepage URL is too long (maximum 256 characters).
+railroad.project.creation.homepage.error.invalid_url=Homepage URL is not a valid URL.
+railroad.project.creation.sources.error.length_long=Sources URL is too long (maximum 256 characters).
+railroad.project.creation.sources.error.invalid_url=Sources URL is not a valid URL.

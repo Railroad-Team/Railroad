@@ -12,6 +12,6 @@ public class Entrypoint {
     private String adapter;
 
     public static Entrypoint of(String value) {
-        return new Entrypoint(value, null);
+        return new Entrypoint(value, "default");
     }
 }
