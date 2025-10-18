@@ -14,6 +14,7 @@ import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.PluginManager;
 import dev.railroadide.railroad.plugin.defaults.DefaultEventBus;
+import dev.railroadide.railroad.project.MappingChannelRegistry;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.project.ProjectManager;
 import dev.railroadide.railroad.project.facet.Facet;
@@ -279,6 +280,7 @@ public class Railroad extends Application {
             Settings.initialize();
             SettingsHandler.init();
             SwitchboardRepositories.initialize();
+            MappingChannelRegistry.initialize();
 
             L18n.loadLanguage(SettingsHandler.getValue(Settings.LANGUAGE));
             window = primaryStage;

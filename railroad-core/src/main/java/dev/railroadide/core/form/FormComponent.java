@@ -23,7 +23,7 @@ import java.util.function.Function;
  * @param <V> The JavaFX node type of the validation node.
  * @param <W> The data type of the validation node.
  */
-public abstract class FormComponent<T extends Node, U, V extends Node, W> {
+public abstract class FormComponent<T extends Node & HasSetValue, U, V extends Node, W> {
     protected final String dataKey;
     private final UpdatableObjectProperty<U> data = new UpdatableObjectProperty<>();
     private final UpdatableObjectProperty<T> component = new UpdatableObjectProperty<>();

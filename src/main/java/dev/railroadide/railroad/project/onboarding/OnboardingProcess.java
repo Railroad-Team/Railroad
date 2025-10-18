@@ -101,6 +101,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
             } else {
                 suppressHistoryAppend = false;
             }
+
             currentStep = stepAt(stepId);
 
             CompletableFuture.runAsync(() -> currentStep.onEnter(context)).thenRun(
@@ -113,6 +114,8 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
                     );
                     this.ui.onStepChanged(currentStep, stepHistory.size() - 1, flow.getTotalSteps());
                     configureNavigation();
+                    currentStep.onEnterAfterUI(context);
+                    context.clearAllRefreshMarks();
                     busy.set(false);
                 })).exceptionally(throwable -> {
                     Railroad.LOGGER.error("Error during onboarding step's enter operation", throwable);

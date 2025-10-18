@@ -36,6 +36,10 @@ public class MappingChannelRegistry {
                 .toList()
         )));
 
+    public static void initialize() {
+        // Intentionally left blank
+    }
+
     public static MappingChannel register(String id, MappingChannel.Builder channel) {
         return MappingChannel.REGISTRY.register(id, channel.build(id));
     }

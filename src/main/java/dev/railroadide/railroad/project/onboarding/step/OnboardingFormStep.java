@@ -14,11 +14,14 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.paint.Color;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Generic onboarding step backed by a {@link Form}.
@@ -27,20 +30,25 @@ public final class OnboardingFormStep implements OnboardingStep {
     private final String id;
     private final String title;
     private final String description;
-    private final OnboardingSection section;
+
+    private final Supplier<OnboardingSection> section;
+    private OnboardingSection cachedSection;
+
     private final ReadOnlyBooleanProperty validProperty;
     private final Consumer<OnboardingContext> onEnter;
+    private final Consumer<OnboardingContext> onEnterAfterUI;
     private final Consumer<OnboardingContext> onExit;
     private final Consumer<OnboardingContext> onDispose;
     private final Function<OnboardingContext, CompletableFuture<Void>> beforeNext;
 
-    private OnboardingFormStep(Builder builder, OnboardingSection section, ReadOnlyBooleanProperty validProperty) {
+    private OnboardingFormStep(Builder builder, Supplier<OnboardingSection> section, ReadOnlyBooleanProperty validProperty) {
         this.id = Objects.requireNonNull(builder.id, "id");
         this.title = Objects.requireNonNull(builder.title, "title");
         this.description = Objects.requireNonNull(builder.description, "description");
         this.section = Objects.requireNonNull(section, "section");
         this.validProperty = Objects.requireNonNull(validProperty, "validProperty");
         this.onEnter = Objects.requireNonNull(builder.onEnter, "onEnter");
+        this.onEnterAfterUI = Objects.requireNonNull(builder.onEnterAfterUI, "onEnterAfterUI");
         this.onExit = Objects.requireNonNull(builder.onExit, "onExit");
         this.onDispose = Objects.requireNonNull(builder.onDispose, "onDispose");
         this.beforeNext = Objects.requireNonNull(builder.beforeNext, "beforeNext");
@@ -51,40 +59,40 @@ public final class OnboardingFormStep implements OnboardingStep {
     }
 
     public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder) {
-        return component(builder, builder != null ? builder.dataKey() : null, Function.identity());
+        return component(builder, builder != null ? builder.dataKey() : null, Function.identity(), Function.identity());
     }
 
-    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, Function<Object, Object> transformer) {
-        return component(builder, builder != null ? builder.dataKey() : null, transformer);
+    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
+        return component(builder, builder != null ? builder.dataKey() : null, transformer, reverseTransformer);
     }
 
     public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, String contextKey) {
-        return component(builder, contextKey, Function.identity());
+        return component(builder, contextKey, Function.identity(), Function.identity());
     }
 
-    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, String contextKey, Function<Object, Object> transformer) {
-        return new ComponentSpec(builder, null, contextKey, transformer);
+    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
+        return new ComponentSpec(builder, null, contextKey, transformer, reverseTransformer);
     }
 
     public static ComponentSpec component(FormComponent<?, ?, ?, ?> component) {
-        return component(component, component != null ? component.dataKey() : null, Function.identity());
+        return component(component, component != null ? component.dataKey() : null, Function.identity(), Function.identity());
     }
 
-    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, Function<Object, Object> transformer) {
-        return component(component, component != null ? component.dataKey() : null, transformer);
+    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
+        return component(component, component != null ? component.dataKey() : null, transformer, reverseTransformer);
     }
 
     public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, String contextKey) {
-        return component(component, contextKey, Function.identity());
+        return component(component, contextKey, Function.identity(), Function.identity());
     }
 
-    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, String contextKey, Function<Object, Object> transformer) {
-        return new ComponentSpec(null, component, contextKey, transformer);
+    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
+        return new ComponentSpec(null, component, contextKey, transformer, reverseTransformer);
     }
 
     public record ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component,
-                                String contextKey, Function<Object, Object> transformer) {
-        public ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component, String contextKey, Function<Object, Object> transformer) {
+                                String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
+        public ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component, String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
             if (builder == null && component == null)
                 throw new IllegalArgumentException("Component specification must provide a builder or component instance");
 
@@ -92,6 +100,7 @@ public final class OnboardingFormStep implements OnboardingStep {
             this.component = component;
             this.contextKey = contextKey;
             this.transformer = transformer != null ? transformer : Function.identity();
+            this.reverseTransformer = reverseTransformer != null ? reverseTransformer : Function.identity();
         }
     }
 
@@ -112,7 +121,11 @@ public final class OnboardingFormStep implements OnboardingStep {
 
     @Override
     public OnboardingSection section() {
-        return section;
+        if (cachedSection == null) {
+            cachedSection = section.get();
+        }
+
+        return cachedSection;
     }
 
     @Override
@@ -123,6 +136,11 @@ public final class OnboardingFormStep implements OnboardingStep {
     @Override
     public void onEnter(OnboardingContext ctx) {
         onEnter.accept(ctx);
+    }
+
+    @Override
+    public void onEnterAfterUI(OnboardingContext ctx) {
+        onEnterAfterUI.accept(ctx);
     }
 
     @Override
@@ -147,6 +165,8 @@ public final class OnboardingFormStep implements OnboardingStep {
         private ReadOnlyBooleanProperty validProperty = new SimpleBooleanProperty(false);
         private Consumer<OnboardingContext> onEnter = ctx -> {
         };
+        private Consumer<OnboardingContext> onEnterAfterUI = ctx -> {
+        };
         private Consumer<OnboardingContext> onExit = ctx -> {
         };
         private Consumer<OnboardingContext> onDispose = ctx -> {
@@ -163,7 +183,7 @@ public final class OnboardingFormStep implements OnboardingStep {
         private boolean disableSubmitButton = true;
         private boolean disableResetButton = true;
         private Form form;
-        private OnboardingSection section;
+        private Supplier<OnboardingSection> section;
 
         public Builder id(String id) {
             this.id = id;
@@ -196,7 +216,7 @@ public final class OnboardingFormStep implements OnboardingStep {
             return this;
         }
 
-        public Builder section(OnboardingSection section) {
+        public Builder section(Supplier<OnboardingSection> section) {
             this.section = section;
             this.form = null;
             return this;
@@ -307,6 +327,11 @@ public final class OnboardingFormStep implements OnboardingStep {
             return this;
         }
 
+        public Builder onEnterAfterUI(Consumer<OnboardingContext> onEnterAfterUI) {
+            this.onEnterAfterUI = onEnterAfterUI;
+            return this;
+        }
+
         public Builder onExit(Consumer<OnboardingContext> onExit) {
             this.onExit = onExit;
             return this;
@@ -323,64 +348,80 @@ public final class OnboardingFormStep implements OnboardingStep {
         }
 
         public OnboardingFormStep build() {
-            BooleanProperty managedValid = null;
+            AtomicReference<BooleanProperty> managedValid = new AtomicReference<>(null);
             ReadOnlyBooleanProperty valid;
             if (this.validProperty != null) {
                 valid = this.validProperty;
                 if (this.validProperty instanceof BooleanProperty booleanProperty) {
-                    managedValid = booleanProperty;
+                    managedValid.set(booleanProperty);
                 }
             } else {
                 var booleanProperty = new SimpleBooleanProperty(true);
                 valid = booleanProperty;
-                managedValid = booleanProperty;
+                managedValid.set(booleanProperty);
             }
 
-            OnboardingSection section = this.section;
-            if (section == null) {
-                Form resolvedForm = this.form;
-                if (resolvedForm == null) {
-                    Form.Builder builder = Form.create();
-                    builder.spacing(spacing);
-                    builder.padding(padding);
+            Consumer<OnboardingContext> existingOnEnterAfterUI = this.onEnterAfterUI;
+            this.onEnterAfterUI = ctx -> {
+                loadDataFromContext(ctx);
+                existingOnEnterAfterUI.accept(ctx);
+            };
 
-                    if (disableSubmitButton)
-                        builder.disableSubmitButton();
-                    if (disableResetButton)
-                        builder.disableResetButton();
+            Consumer<OnboardingContext> existingOnExit = this.onExit;
+            this.onExit = ctx -> {
+                saveDataToContext(ctx);
+                existingOnExit.accept(ctx);
+            };
 
-                    formSections.forEach(builder::appendSection);
+            Supplier<OnboardingSection> sectionSupplier = () -> {
+                OnboardingSection section = getOrDefaultSection().get();
 
-                    for (Consumer<FormSection.Builder> configurator : sectionConfigurators) {
-                        var sectionBuilder = new FormSection.Builder();
-                        configurator.accept(sectionBuilder);
-                        sectionBuilder.build(builder);
-                    }
-
-                    formCustomizers.forEach(customizer -> customizer.accept(builder));
-
-                    if (formSections.isEmpty() && sectionConfigurators.isEmpty() && formCustomizers.isEmpty())
-                        throw new IllegalStateException("No form configuration provided");
-
-                    resolvedForm = builder.build();
+                if (managedValid.get() != null && !trackedComponents.isEmpty()) {
+                    setupAutoValidation(managedValid.get());
                 }
 
-                section = new FormOnboardingSection(resolvedForm);
-            }
+                return section;
+            };
 
-            if (!dataMappings.isEmpty()) {
-                Consumer<OnboardingContext> existingOnExit = this.onExit;
-                this.onExit = ctx -> {
-                    saveDataToContext(ctx);
-                    existingOnExit.accept(ctx);
+            return new OnboardingFormStep(this, sectionSupplier, valid);
+        }
+
+        private @NotNull Supplier<OnboardingSection> getOrDefaultSection() {
+            Supplier<OnboardingSection> section = this.section;
+            if (section == null) {
+                section = () -> {
+                    Form resolvedForm = this.form;
+                    if (resolvedForm == null) {
+                        Form.Builder builder = Form.create();
+                        builder.spacing(spacing);
+                        builder.padding(padding);
+
+                        if (disableSubmitButton)
+                            builder.disableSubmitButton();
+                        if (disableResetButton)
+                            builder.disableResetButton();
+
+                        formSections.forEach(builder::appendSection);
+
+                        for (Consumer<FormSection.Builder> configurator : sectionConfigurators) {
+                            var sectionBuilder = new FormSection.Builder();
+                            configurator.accept(sectionBuilder);
+                            sectionBuilder.build(builder);
+                        }
+
+                        formCustomizers.forEach(customizer -> customizer.accept(builder));
+
+                        if (formSections.isEmpty() && sectionConfigurators.isEmpty() && formCustomizers.isEmpty())
+                            throw new IllegalStateException("No form configuration provided");
+
+                        resolvedForm = builder.build();
+                    }
+
+                    return new FormOnboardingSection(resolvedForm);
                 };
             }
 
-            if (managedValid != null && !trackedComponents.isEmpty()) {
-                setupAutoValidation(managedValid);
-            }
-
-            return new OnboardingFormStep(this, section, valid);
+            return section;
         }
 
         private void trackComponent(FormComponent<?, ?, ?, ?> component) {
@@ -403,7 +444,8 @@ public final class OnboardingFormStep implements OnboardingStep {
 
             String contextKey = spec.contextKey() != null ? spec.contextKey() : component.dataKey();
             Function<Object, Object> transformer = spec.transformer() != null ? spec.transformer() : Function.identity();
-            dataMappings.put(component.dataKey(), new DataMapping(contextKey, transformer));
+            Function<Object, Object> reverseTransformer = spec.reverseTransformer() != null ? spec.reverseTransformer() : Function.identity();
+            dataMappings.put(component.dataKey(), new DataMapping(contextKey, transformer, reverseTransformer));
         }
 
         private void setupAutoValidation(BooleanProperty validProperty) {
@@ -431,7 +473,6 @@ public final class OnboardingFormStep implements OnboardingStep {
             if (!(node instanceof Node fxNode))
                 return;
 
-
             switch (fxNode) {
                 case TextInputControl textInput ->
                     textInput.textProperty().addListener((obs, oldVal, newVal) -> recompute.run());
@@ -455,6 +496,24 @@ public final class OnboardingFormStep implements OnboardingStep {
             });
         }
 
+        private void loadDataFromContext(OnboardingContext ctx) {
+            dataMappings.forEach((dataKey, mapping) -> {
+                String contextKey = mapping.contextKey();
+                if(!ctx.needsRefresh(contextKey))
+                    return;
+
+                FormComponent<?, ?, ?, ?> component = componentsByDataKey.get(dataKey);
+                if (component == null)
+                    return;
+
+                Object value = ctx.get(contextKey);
+                if (value != null) {
+                    Object transformed = mapping.reverseTransformer().apply(value);
+                    component.getComponent().setValue(transformed);
+                }
+            });
+        }
+
         private Object extractValue(FormComponent<?, ?, ?, ?> component) {
             Object node = component.getValidationNode().getValue();
             if (node instanceof TextInputControl textInput)
@@ -468,7 +527,6 @@ public final class OnboardingFormStep implements OnboardingStep {
             return null;
         }
 
-        private record DataMapping(String contextKey, Function<Object, Object> transformer) {
-        }
+        private record DataMapping(String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {}
     }
 }

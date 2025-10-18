@@ -27,7 +27,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
 import lombok.Getter;
 
@@ -38,7 +37,6 @@ import java.util.function.Consumer;
 public class ProjectCreationView extends RRBorderPane {
     private final StackPane progressStack = new RRStackPane();
     private final MFXProgressSpinner spinner = new MFXProgressSpinner();
-    private final Label percentLabel = new Label("0%");
 
     private final HBox chipRow = new RRHBox(10);
     private final Label taskChip = chip("…");
@@ -58,19 +56,16 @@ public class ProjectCreationView extends RRBorderPane {
         setCenter(bg);
 
         var card = new RRVBox(18);
-        card.getStyleClass().add("rr-card");
         card.setPadding(new Insets(24));
         card.setAlignment(Pos.CENTER);
         card.setMaxWidth(760);
 
         var title = new LocalizedLabel("railroad.project.creation.status.creating.title");
-        title.getStyleClass().add("rr-title");
 
         var subtitle = new LocalizedLabel(
             "railroad.project.creation.status.creating.subtitle",
             data.getAsString(ProjectData.DefaultKeys.NAME)
         );
-        subtitle.getStyleClass().add("rr-subtitle");
 
         var header = new RRVBox(6);
         header.setAlignment(Pos.CENTER);
@@ -79,9 +74,7 @@ public class ProjectCreationView extends RRBorderPane {
         spinner.setRadius(64);
         spinner.setProgress(0);
         spinner.setPrefSize(160, 160);
-        percentLabel.getStyleClass().add("rr-progress-percent");
-        percentLabel.setTextAlignment(TextAlignment.CENTER);
-        progressStack.getChildren().addAll(spinner, percentLabel);
+        progressStack.getChildren().addAll(spinner);
 
         chipRow.setAlignment(Pos.CENTER);
         chipRow.getChildren().addAll(taskChip, timeChip);
@@ -135,9 +128,9 @@ public class ProjectCreationView extends RRBorderPane {
         });
 
         sceneProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue != null) {
+            if (newValue != null) {
                 newValue.getStylesheets().add(Railroad.getResource("styles/project-creation-view.css").toExternalForm());
-            } else if(oldValue != null) {
+            } else if (oldValue != null) {
                 oldValue.getStylesheets().remove(Railroad.getResource("styles/project-creation-view.css").toExternalForm());
             }
         });
@@ -148,13 +141,6 @@ public class ProjectCreationView extends RRBorderPane {
                               Runnable onSuccess,
                               Consumer<Throwable> onError) {
         spinner.progressProperty().bind(service.progressProperty());
-        percentLabel.textProperty().bind(Bindings.createStringBinding(() -> {
-            double p = service.getProgress();
-            if (Double.isNaN(p) || p < 0) return "…";
-            int pct = (int) Math.round(p * 100.0);
-            pct = Math.max(0, Math.min(100, pct));
-            return pct + "%";
-        }, service.progressProperty()));
 
         // Task message → task chip
         taskChip.textProperty().bind(Bindings.createStringBinding(() -> {
@@ -179,13 +165,6 @@ public class ProjectCreationView extends RRBorderPane {
         cancelBtn.setOnAction(e -> {
             if (onCancel != null) onCancel.run();
         });
-    }
-
-    // TODO: Figure out why this isn't used
-    public void appendLog(String line) {
-        if (!logsPane.isExpanded()) logsPane.setExpanded(true);
-        if (logArea.getText().isEmpty()) logArea.appendText(line);
-        else logArea.appendText("\n" + line);
     }
 
     private void startTicker() {

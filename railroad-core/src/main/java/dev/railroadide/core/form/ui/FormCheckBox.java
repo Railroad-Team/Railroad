@@ -1,5 +1,7 @@
 package dev.railroadide.core.form.ui;
 
+import dev.railroadide.core.form.HasSetValue;
+import javafx.application.Platform;
 import javafx.scene.control.CheckBox;
 
 import java.util.Map;
@@ -8,10 +10,10 @@ import java.util.Map;
  * A form checkbox component that extends InformativeLabeledHBox to provide
  * a labeled checkbox with validation and styling support.
  */
-public class FormCheckBox extends InformativeLabeledHBox<CheckBox> {
+public class FormCheckBox extends InformativeLabeledHBox<CheckBox> implements HasSetValue {
     /**
      * Constructs a new FormCheckBox with the specified label, required state, and initial selection.
-     * 
+     *
      * @param label the label text for the checkbox
      * @param required whether the checkbox is required
      * @param selected the initial selected state of the checkbox
@@ -22,7 +24,7 @@ public class FormCheckBox extends InformativeLabeledHBox<CheckBox> {
 
     /**
      * Creates the primary checkbox component with the specified parameters.
-     * 
+     *
      * @param params a map containing the parameters for the checkbox, including "selected" state
      * @return a new CheckBox instance with the specified configuration
      */
@@ -32,5 +34,12 @@ public class FormCheckBox extends InformativeLabeledHBox<CheckBox> {
         checkBox.setSelected(params.get("selected") != null && (boolean) params.get("selected"));
         checkBox.getStyleClass().add("rr-check-box");
         return checkBox;
+    }
+
+    @Override
+    public void setValue(Object value) {
+        if (value instanceof Boolean booleanValue) {
+            Platform.runLater(() -> getPrimaryComponent().setSelected(booleanValue));
+        }
     }
 }

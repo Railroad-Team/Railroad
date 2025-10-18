@@ -2,10 +2,10 @@ package dev.railroadide.core.form.impl;
 
 import dev.railroadide.core.form.*;
 import dev.railroadide.core.form.ui.FormComboBox;
+import dev.railroadide.core.localization.LocalizationServiceLocator;
 import dev.railroadide.core.utility.ComboBoxConverter;
 import dev.railroadide.core.utility.FromStringFunction;
 import dev.railroadide.core.utility.ToStringFunction;
-import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
 import javafx.beans.value.ChangeListener;
@@ -76,19 +76,16 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
             if (currentData.items != null || defaultValue != null) {
                 Collection<T> suppliedItems = currentData.items != null ? currentData.items.get() : List.of();
                 T defValue = defaultValue != null ? defaultValue.get() : null;
-                Platform.runLater(() -> {
-                    if (suppliedItems instanceof ObservableList<?> observableList) {
-                        @SuppressWarnings("unchecked")
-                        ObservableList<T> typedList = (ObservableList<T>) observableList;
-                        formComboBox.getPrimaryComponent().setItems(typedList);
-                    } else {
-                        formComboBox.getPrimaryComponent().getItems().setAll(suppliedItems);
-                    }
+                if (suppliedItems instanceof ObservableList<?> observableList) {
+                    // noinspection unchecked
+                    formComboBox.getPrimaryComponent().setItems((ObservableList<T>) observableList);
+                } else {
+                    formComboBox.getPrimaryComponent().getItems().setAll(suppliedItems);
+                }
 
-                    if (defValue != null && formComboBox.getPrimaryComponent().getItems().contains(defValue)) {
-                        formComboBox.getPrimaryComponent().setValue(defValue);
-                    }
-                });
+                if (defValue != null && formComboBox.getPrimaryComponent().getItems().contains(defValue)) {
+                    formComboBox.getPrimaryComponent().setValue(defValue);
+                }
             }
 
             return formComboBox;
@@ -181,6 +178,12 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         private Property<ComboBox<T>> bindComboBoxTo;
         private EventHandler<? super KeyEvent> keyTypedHandler;
         private BooleanBinding visible;
+        private ToStringFunction<T> defaultDisplayNameFunction = new ToStringFunction<>() {
+            @Override
+            public String toString(T object) {
+                return data.keyFunction.toString(object);
+            }
+        };
         private Callback<ListView<T>, ListCell<T>> cellFactory = param -> new ListCell<>() {
             @Override
             protected void updateItem(T item, boolean empty) {
@@ -189,22 +192,13 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
                     setGraphic(null);
                     setText(null);
                 } else {
-                    setText(data.keyFunction.toString(item));
+                    setText(data.translate ?
+                        LocalizationServiceLocator.getInstance().get(defaultDisplayNameFunction.toString(item)) :
+                        defaultDisplayNameFunction.toString(item));
                 }
             }
         };
-        private ListCell<T> buttonCell = new ListCell<>() {
-            @Override
-            protected void updateItem(T item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null);
-                    setText(null);
-                } else {
-                    setText(data.keyFunction.toString(item));
-                }
-            }
-        };
+        private ListCell<T> buttonCell = cellFactory.call(null);
         private Supplier<T> defaultValue;
 
         /**
@@ -281,6 +275,17 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         }
 
         /**
+         * Sets the default display name function for the combobox. This is only used if no cell factory or button cell is set.
+         *
+         * @param displayNameFunction the display name function
+         * @return this builder
+         */
+        public Builder<T> defaultDisplayNameFunction(ToStringFunction<T> displayNameFunction) {
+            this.defaultDisplayNameFunction = displayNameFunction;
+            return this;
+        }
+
+        /**
          * Sets the key function for the combobox.
          *
          * @param keyFunction the key function
@@ -343,7 +348,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          * @param fromComponent       the observable value of the component to transform
          * @param toComponentFunction the function to set the value of the component
          * @param valueMapper         the value mapper
-         * @param <W>                 the type of the component
+         * @param <X>                 the type of the component
          * @return this builder
          */
         @Override
@@ -364,7 +369,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          * @param toComponent   the component to set the value of
          * @param valueMapper   the value mapper
          * @param <U>           the type of the component
-         * @param <W>           the type of the value
+         * @param <X>           the type of the value
          * @return this builder
          * @throws IllegalArgumentException if the component type is unsupported
          * @implNote The supported component types are {@link TextField} and {@link ComboBox}.

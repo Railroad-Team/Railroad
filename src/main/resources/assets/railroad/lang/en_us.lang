@@ -377,3 +377,8 @@ railroad.project.creation.homepage.error.length_long=Homepage URL is too long (m
 railroad.project.creation.homepage.error.invalid_url=Homepage URL is not a valid URL.
 railroad.project.creation.sources.error.length_long=Sources URL is too long (maximum 256 characters).
 railroad.project.creation.sources.error.invalid_url=Sources URL is not a valid URL.
+
+railroad.mapping_channel.mcp=MCP
+railroad.mapping_channel.yarn=Yarn
+railroad.mapping_channel.official=Official (Mojmaps)
+railroad.mapping_channel.parchment=Parchment

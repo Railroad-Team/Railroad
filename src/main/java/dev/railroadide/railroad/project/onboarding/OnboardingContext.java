@@ -5,12 +5,15 @@ import javafx.collections.ObservableMap;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 @EqualsAndHashCode
 @ToString
 public final class OnboardingContext {
     private final ObservableMap<String, Object> data = FXCollections.observableHashMap();
+    private final Map<String, Boolean> keyRefreshMap = new HashMap<>();
     private final Executor executor;
 
     public OnboardingContext(Executor executor) {
@@ -23,6 +26,22 @@ public final class OnboardingContext {
 
     public Executor executor() {
         return executor;
+    }
+
+    public void markForRefresh(String key) {
+        keyRefreshMap.put(key, true);
+    }
+
+    public boolean needsRefresh(String key) {
+        return keyRefreshMap.getOrDefault(key, false);
+    }
+
+    public void clearRefreshMark(String key) {
+        keyRefreshMap.put(key, false);
+    }
+
+    public void clearAllRefreshMarks() {
+        keyRefreshMap.clear();
     }
 
     @SuppressWarnings("unchecked")

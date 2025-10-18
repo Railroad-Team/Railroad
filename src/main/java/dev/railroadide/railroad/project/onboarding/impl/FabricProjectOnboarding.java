@@ -165,15 +165,19 @@ public class FabricProjectOnboarding {
 
                         String text = value.toString();
                         return text.isBlank() ? null : Path.of(text);
+                    },
+                    value -> {
+                        if (value == null)
+                            return null;
+
+                        return value instanceof Path path ? path.toAbsolutePath().toString() : value.toString();
                     }))
             .build();
     }
 
     private OnboardingStep createMavenCoordinatesStep() {
         StringProperty artifactId = new SimpleStringProperty();
-        ObjectProperty<TextField> artifactIdField = new SimpleObjectProperty<>();
 
-        bindTextField(artifactId, artifactIdField);
         return OnboardingFormStep.builder()
             .id("maven_coordinates")
             .title("railroad.project.creation.maven_coordinates.title")
@@ -189,7 +193,6 @@ public class FabricProjectOnboarding {
                         .required()
                         .promptText("railroad.project.creation.artifact_id.prompt")
                         .text(artifactId::get)
-                        .bindTextFieldTo(artifactIdField)
                         .validator(ProjectValidators::validateArtifactId)),
                 OnboardingFormStep.component(
                     FormComponent.textField(MavenProjectKeys.VERSION, "railroad.project.creation.version")
@@ -204,10 +207,6 @@ public class FabricProjectOnboarding {
                     if (isNullOrBlank(artifactId.get())) {
                         artifactId.set(defaultArtifactId);
                     }
-                }
-
-                if(ctx.contains(MavenProjectKeys.ARTIFACT_ID)) {
-                    artifactId.set(ctx.get(MavenProjectKeys.ARTIFACT_ID));
                 }
             })
             .build();
@@ -269,6 +268,7 @@ public class FabricProjectOnboarding {
                         .defaultValue(() -> MappingChannelRegistry.YARN)
                         .keyFunction(MappingChannel::id)
                         .valueOfFunction(MappingChannel.REGISTRY::get)
+                        .defaultDisplayNameFunction(MappingChannel::translationKey)
                         .translate(true)))
             .onEnter(ctx -> {
                 MinecraftVersion mcVersion = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
@@ -564,37 +564,10 @@ public class FabricProjectOnboarding {
                         .promptText("railroad.project.creation.license.custom.prompt")
                         .validator(ProjectValidators::validateCustomLicense)))
             .onEnter(ctx -> {
-                Runnable update = () -> {
-                    availableLicenses.setAll(License.REGISTRY.values());
-
-                    ComboBox<License> comboBox = licenseComboBox.get();
-                    if (comboBox != null) {
-                        License current = ctx.get(ProjectData.DefaultKeys.LICENSE);
-                        if (current != null && availableLicenses.contains(current)) {
-                            comboBox.setValue(current);
-                        } else if (availableLicenses.contains(LicenseRegistry.LGPL)) {
-                            comboBox.setValue(LicenseRegistry.LGPL);
-                        } else if (!availableLicenses.isEmpty()) {
-                            comboBox.setValue(availableLicenses.getFirst());
-                        } else {
-                            comboBox.setValue(null);
-                        }
-                    }
-
-                    TextField customField = customLicenseField.get();
-                    if (customField != null) {
-                        String customLicenseValue = ctx.get(ProjectData.DefaultKeys.LICENSE_CUSTOM);
-                        if (customLicenseValue != null) {
-                            customField.setText(customLicenseValue);
-                        }
-                    }
-                };
-
-                if (Platform.isFxApplicationThread()) {
-                    update.run();
-                } else {
-                    Platform.runLater(update);
-                }
+                availableLicenses.setAll(License.REGISTRY.values()
+                    .stream()
+                    .sorted(Comparator.comparing(License::getName))
+                    .toList());
             })
             .build();
     }

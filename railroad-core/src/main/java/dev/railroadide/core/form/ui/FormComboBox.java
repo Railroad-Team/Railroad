@@ -1,5 +1,6 @@
 package dev.railroadide.core.form.ui;
 
+import dev.railroadide.core.form.HasSetValue;
 import dev.railroadide.core.ui.localized.LocalizedComboBox;
 import dev.railroadide.core.utility.FromStringFunction;
 import dev.railroadide.core.utility.ToStringFunction;
@@ -8,9 +9,7 @@ import javafx.scene.control.ComboBox;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
 import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * A form combo box component that extends InformativeLabeledHBox to provide
@@ -19,7 +18,7 @@ import java.util.function.Supplier;
  * @param <T> the type of items in the combo box
  */
 @Getter
-public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> {
+public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> implements HasSetValue {
     /**
      * Constructs a new FormComboBox with the specified configuration.
      *
@@ -52,5 +51,11 @@ public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> {
         comboBox.setEditable(editable);
         comboBox.getStyleClass().add("rr-combo-box");
         return comboBox;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public void setValue(Object value) {
+        Platform.runLater(() -> getPrimaryComponent().setValue((T) value));
     }
 }

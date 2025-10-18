@@ -1,26 +1,27 @@
 package dev.railroadide.core.form.ui;
 
+import dev.railroadide.core.form.HasSetValue;
 import dev.railroadide.core.ui.RRTextField;
 import javafx.application.Platform;
 import javafx.scene.control.TextField;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.Objects;
 
 /**
  * A form text field component that extends InformativeLabeledHBox to provide
  * a labeled text field with validation, localization, and styling support.
  */
-public class FormTextField extends InformativeLabeledHBox<TextField> {
+public class FormTextField extends InformativeLabeledHBox<TextField> implements HasSetValue {
     /**
      * Constructs a new FormTextField with the specified configuration.
      *
-     * @param labelKey the localization key for the label text
-     * @param required whether the text field is required
+     * @param labelKey   the localization key for the label text
+     * @param required   whether the text field is required
      * @param promptText the placeholder text to display when empty
-     * @param editable whether the text field is editable
-     * @param translate whether to use localization for the prompt text
+     * @param editable   whether the text field is editable
+     * @param translate  whether to use localization for the prompt text
      */
     public FormTextField(String labelKey, boolean required, String promptText, boolean editable, boolean translate) {
         super(labelKey, required, createParams(promptText, editable, translate));
@@ -30,8 +31,8 @@ public class FormTextField extends InformativeLabeledHBox<TextField> {
      * Creates the parameters map for the text field component.
      *
      * @param promptText the placeholder text
-     * @param editable whether the text field is editable
-     * @param translate whether to use localization
+     * @param editable   whether the text field is editable
+     * @param translate  whether to use localization
      * @return a map containing the component parameters
      */
     private static Map<String, Object> createParams(String promptText, boolean editable, boolean translate) {
@@ -62,6 +63,11 @@ public class FormTextField extends InformativeLabeledHBox<TextField> {
             textField.setPromptText(promptText);
 
         return textField;
+    }
+
+    @Override
+    public void setValue(Object value) {
+        Platform.runLater(() -> getPrimaryComponent().setText(Objects.toString(value, "")));
     }
 
     /**
