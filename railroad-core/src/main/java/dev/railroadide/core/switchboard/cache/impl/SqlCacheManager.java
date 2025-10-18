@@ -80,10 +80,11 @@ public class SqlCacheManager implements IterableCacheManager {
                     if (!entry.isExpired()) {
                         memoryCache.put(key, entry);
                         future.complete(Optional.of(entry));
+                        return;
                     }
-                } else {
-                    future.complete(Optional.empty());
                 }
+
+                future.complete(Optional.empty());
             } catch (Exception exception) {
                 future.completeExceptionally(exception);
             }

@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.project.details;
+package dev.railroadide.railroad.project.details.deprecated;
 
 import dev.railroadide.core.form.FormComponent;
 import dev.railroadide.core.form.impl.CheckBoxComponent;
@@ -7,6 +7,7 @@ import dev.railroadide.core.form.impl.DirectoryChooserComponent;
 import dev.railroadide.core.form.impl.TextFieldComponent;
 import dev.railroadide.core.project.License;
 import dev.railroadide.railroad.project.LicenseRegistry;
+import dev.railroadide.railroad.project.details.ProjectValidators;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;

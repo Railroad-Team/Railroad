@@ -10,6 +10,7 @@ import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
@@ -40,6 +41,7 @@ import java.util.function.Supplier;
  */
 public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBoxComponent.Data<T>, ComboBox<T>, T> {
     private final Supplier<T> defaultValue;
+    private final Supplier<Collection<T>> items;
 
     /**
      * Constructs a new combobox component.
@@ -58,7 +60,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
      */
     public ComboBoxComponent(String dataKey, Data<T> data, FormComponentValidator<ComboBox<T>> validator, FormComponentChangeListener<ComboBox<T>, T> listener, Property<ComboBox<T>> bindComboBoxTo, List<FormTransformer<ComboBox<T>, T, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible, Callback<ListView<T>, ListCell<T>> cellFactory, ListCell<T> buttonCell, Supplier<T> defaultValue) {
         super(dataKey, data, currentData -> {
-            var formComboBox = new FormComboBox<>(currentData.label, currentData.required, currentData.items, currentData.editable, currentData.translate, currentData.keyFunction, currentData.valueOfFunction);
+            var formComboBox = new FormComboBox<>(currentData.label, currentData.required, currentData.editable, currentData.translate, currentData.keyFunction, currentData.valueOfFunction);
             if (!currentData.translate) {
                 formComboBox.getPrimaryComponent().setConverter(new ComboBoxConverter<>(currentData.keyFunction, currentData.valueOfFunction));
             }
@@ -71,8 +73,22 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
                 formComboBox.getPrimaryComponent().setButtonCell(buttonCell);
             }
 
-            if (defaultValue != null) {
-                new Thread(() -> Platform.runLater(() -> formComboBox.getPrimaryComponent().setValue(defaultValue.get()))).start();
+            if (currentData.items != null || defaultValue != null) {
+                Collection<T> suppliedItems = currentData.items != null ? currentData.items.get() : List.of();
+                T defValue = defaultValue != null ? defaultValue.get() : null;
+                Platform.runLater(() -> {
+                    if (suppliedItems instanceof ObservableList<?> observableList) {
+                        @SuppressWarnings("unchecked")
+                        ObservableList<T> typedList = (ObservableList<T>) observableList;
+                        formComboBox.getPrimaryComponent().setItems(typedList);
+                    } else {
+                        formComboBox.getPrimaryComponent().getItems().setAll(suppliedItems);
+                    }
+
+                    if (defValue != null && formComboBox.getPrimaryComponent().getItems().contains(defValue)) {
+                        formComboBox.getPrimaryComponent().setValue(defValue);
+                    }
+                });
             }
 
             return formComboBox;
@@ -106,6 +122,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         }
 
         this.defaultValue = defaultValue;
+        this.items = data.items;
     }
 
     @Override

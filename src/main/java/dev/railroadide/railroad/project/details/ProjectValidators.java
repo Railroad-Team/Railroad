@@ -334,4 +334,11 @@ public class ProjectValidators {
 
         return projectName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_\\-]", "_");
     }
+
+    public static String projectNameToArtifactId(String projectName) {
+        if (projectName == null || projectName.isBlank())
+            return "";
+
+        return projectName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9\\-]", "-");
+    }
 }

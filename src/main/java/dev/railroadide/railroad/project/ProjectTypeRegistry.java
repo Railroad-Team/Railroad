@@ -2,9 +2,9 @@ package dev.railroadide.railroad.project;
 
 import dev.railroadide.core.project.ProjectType;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.details.FabricProjectDetailsPane;
-import dev.railroadide.railroad.project.details.ForgeProjectDetailsPane;
-import dev.railroadide.railroad.project.details.NeoforgeProjectDetailsPane;
+import dev.railroadide.railroad.project.details.deprecated.FabricProjectDetailsPane;
+import dev.railroadide.railroad.project.details.deprecated.ForgeProjectDetailsPane;
+import dev.railroadide.railroad.project.details.deprecated.NeoforgeProjectDetailsPane;
 import javafx.scene.image.Image;
 
 public class ProjectTypeRegistry {

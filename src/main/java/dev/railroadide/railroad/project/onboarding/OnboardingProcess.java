@@ -69,6 +69,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
     private final class Navigator {
         private final N ui;
         private final List<String> stepHistory = new ArrayList<>();
+        private boolean suppressHistoryAppend;
 
         private OnboardingStep currentStep;
         private final BooleanProperty busy = new SimpleBooleanProperty(false);
@@ -93,8 +94,13 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
 
         private void performStepTransition(String stepId) {
             cleanupCurrentStep(true);
-
-            stepHistory.add(stepId);
+            if (!suppressHistoryAppend) {
+                if (stepHistory.isEmpty() || !Objects.equals(stepHistory.getLast(), stepId)) {
+                    stepHistory.add(stepId);
+                }
+            } else {
+                suppressHistoryAppend = false;
+            }
             currentStep = stepAt(stepId);
 
             CompletableFuture.runAsync(() -> currentStep.onEnter(context)).thenRun(
@@ -179,6 +185,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
             }
 
             String previousStepId = stepHistory.getLast();
+            suppressHistoryAppend = true;
             showStep(previousStepId);
         }
 

@@ -83,7 +83,7 @@ public record FabricLoaderVersionRepository(SwitchboardClient client, CacheManag
             FabricLoaderVersion.class,
             LATEST_TTL,
             () -> client.fetchLatestFabricLoaderVersion(normalized, includePrereleases)
-        );
+        ).thenApply(fabricLoaderVersion -> fabricLoaderVersion.version() == null ? null : fabricLoaderVersion);
     }
 
     public FabricLoaderVersion getLatestVersionForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {

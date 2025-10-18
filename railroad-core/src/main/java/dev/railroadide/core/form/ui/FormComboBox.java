@@ -25,14 +25,13 @@ public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> {
      *
      * @param labelKey the localization key for the label text
      * @param required whether the combo box is required
-     * @param items the list of items to display in the combo box
      * @param editable whether the combo box is editable
      * @param translate whether to use localization for the items
      * @param keyFunction the function to convert items to strings for display
      * @param valueOfFunction the function to convert strings back to items
      */
-    public FormComboBox(String labelKey, boolean required, Supplier<Collection<T>> items, boolean editable, boolean translate, @Nullable ToStringFunction<T> keyFunction, @Nullable FromStringFunction<T> valueOfFunction) {
-        super(labelKey, required, Map.of("items", items, "editable", editable, "translate", translate, "keyFunction", keyFunction, "valueOfFunction", valueOfFunction));
+    public FormComboBox(String labelKey, boolean required, boolean editable, boolean translate, @Nullable ToStringFunction<T> keyFunction, @Nullable FromStringFunction<T> valueOfFunction) {
+        super(labelKey, required, Map.of("editable", editable, "translate", translate, "keyFunction", keyFunction, "valueOfFunction", valueOfFunction));
     }
 
     /**
@@ -44,14 +43,12 @@ public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> {
     @SuppressWarnings("unchecked")
     @Override
     public ComboBox<T> createPrimaryComponent(Map<String, Object> params) {
-        Supplier<Collection<T>> items = (Supplier<Collection<T>>) params.get("items");
         boolean editable = (boolean) params.get("editable");
         boolean translate = (boolean) params.get("translate");
         ToStringFunction<T> keyFunction = (ToStringFunction<T>) params.get("keyFunction");
         FromStringFunction<T> valueOfFunction = (FromStringFunction<T>) params.get("valueOfFunction");
 
         ComboBox<T> comboBox = translate ? new LocalizedComboBox<>(keyFunction, valueOfFunction) : new ComboBox<>();
-        new Thread(() -> Platform.runLater(() -> comboBox.getItems().addAll(items.get()))).start();
         comboBox.setEditable(editable);
         comboBox.getStyleClass().add("rr-combo-box");
         return comboBox;

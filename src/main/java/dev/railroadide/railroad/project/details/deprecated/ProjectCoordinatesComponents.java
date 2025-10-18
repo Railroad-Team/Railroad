@@ -1,7 +1,8 @@
-package dev.railroadide.railroad.project.details;
+package dev.railroadide.railroad.project.details.deprecated;
 
 import dev.railroadide.core.form.FormComponent;
 import dev.railroadide.core.form.impl.TextFieldComponent;
+import dev.railroadide.railroad.project.details.ProjectValidators;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.TextField;

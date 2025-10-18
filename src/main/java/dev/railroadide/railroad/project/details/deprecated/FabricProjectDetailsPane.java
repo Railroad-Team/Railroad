@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.project.details;
+package dev.railroadide.railroad.project.details.deprecated;
 
 import dev.railroadide.core.form.Form;
 import dev.railroadide.core.form.FormComponent;
@@ -20,6 +20,7 @@ import dev.railroadide.railroad.project.LicenseRegistry;
 import dev.railroadide.railroad.project.MappingChannelRegistry;
 import dev.railroadide.railroad.project.ProjectTypeRegistry;
 import dev.railroadide.railroad.project.creation.ui.ProjectCreationPane;
+import dev.railroadide.railroad.project.details.ProjectValidators;
 import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
 import dev.railroadide.railroad.switchboard.repositories.FabricApiVersionRepository;
 import dev.railroadide.railroad.utility.ExpiringCache;

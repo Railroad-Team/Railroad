@@ -1,8 +1,8 @@
 package dev.railroadide.core.form.impl;
 
 import dev.railroadide.core.form.*;
-import dev.railroadide.core.form.*;
 import dev.railroadide.core.form.ui.FormTextField;
+import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
 import javafx.beans.value.ChangeListener;
@@ -43,7 +43,18 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
      * @param visible         the visibility of the text field
      */
     public TextFieldComponent(String dataKey, Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
-        super(dataKey, data, currentData -> new FormTextField(currentData.label, currentData.required, currentData.text, currentData.promptText, currentData.editable, currentData.translate), validator, listener, transformers, visible);
+        super(dataKey, data, currentData -> {
+            var formTextField = new FormTextField(currentData.label, currentData.required, currentData.promptText, currentData.editable, currentData.translate);
+            if (currentData.text != null) {
+                new Thread(() -> {
+                    String text = data.text.get();
+                    if (text != null)
+                        Platform.runLater(() -> formTextField.getPrimaryComponent().setText(text));
+                }).start();
+            }
+
+            return formTextField;
+        }, validator, listener, transformers, visible);
 
         if (bindTextFieldTo != null) {
             bindTextFieldTo.bind(componentProperty().map(FormTextField::getPrimaryComponent));
@@ -80,7 +91,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
             if (newValue != null) {
                 TextField textField = newValue.getTextField();
                 listenerRef.set((observable1, oldValue1, newValue1) ->
-                        listener.changed(textField, observable1, oldValue1, newValue1));
+                    listener.changed(textField, observable1, oldValue1, newValue1));
 
                 textField.textProperty().addListener(listenerRef.get());
             }
@@ -90,16 +101,16 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
     @Override
     protected void bindToFormData(FormData formData) {
         componentProperty()
-                .map(FormTextField::getPrimaryComponent)
-                .flatMap(TextField::textProperty)
-                .addListener((observable, oldValue, newValue) ->
-                        formData.addProperty(dataKey, newValue));
+            .map(FormTextField::getPrimaryComponent)
+            .flatMap(TextField::textProperty)
+            .addListener((observable, oldValue, newValue) ->
+                formData.addProperty(dataKey, newValue));
 
         formData.addProperty(dataKey, componentProperty()
-                .map(FormTextField::getPrimaryComponent)
-                .map(TextField::getText)
-                .orElse(getData().text.get())
-                .getValue());
+            .map(FormTextField::getPrimaryComponent)
+            .map(TextField::getText)
+            .orElse(getData().text.get())
+            .getValue());
     }
 
     @Override
