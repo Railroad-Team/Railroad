@@ -87,6 +87,10 @@ public class LicenseRegistry {
         .name("Custom License")
         .build());
 
+    public static void initialize() {
+        // Intentionally left blank.
+    }
+
     public static License register(String id, License license) {
         return License.REGISTRY.register(id, license);
     }

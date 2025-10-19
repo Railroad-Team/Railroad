@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.project.onboarding.impl;
 
 import dev.railroadide.core.form.FormComponent;
+import dev.railroadide.core.form.ValidationResult;
 import dev.railroadide.core.project.License;
 import dev.railroadide.core.project.ProjectData;
 import dev.railroadide.core.project.creation.ProjectCreationService;
@@ -24,21 +25,21 @@ import dev.railroadide.railroad.project.onboarding.OnboardingProcess;
 import dev.railroadide.railroad.project.onboarding.flow.OnboardingFlow;
 import dev.railroadide.railroad.project.onboarding.step.OnboardingFormStep;
 import dev.railroadide.railroad.project.onboarding.step.OnboardingStep;
+import dev.railroadide.railroad.settings.Settings;
+import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
 import dev.railroadide.railroad.switchboard.repositories.FabricApiVersionRepository;
-import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.*;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.ComboBoxBase;
 import javafx.scene.control.TextField;
+import org.apache.commons.collections.ListUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
@@ -177,6 +178,10 @@ public class FabricProjectOnboarding {
 
     private OnboardingStep createMavenCoordinatesStep() {
         StringProperty artifactId = new SimpleStringProperty();
+        String configuredGroupId = SettingsHandler.getValue(Settings.DEFAULT_PROJECT_GROUP_ID);
+        String configuredVersion = SettingsHandler.getValue(Settings.DEFAULT_PROJECT_VERSION);
+        String defaultGroupId = isNullOrBlank(configuredGroupId) ? "" : configuredGroupId;
+        String defaultVersion = isNullOrBlank(configuredVersion) ? "1.0.0" : configuredVersion;
 
         return OnboardingFormStep.builder()
             .id("maven_coordinates")
@@ -187,6 +192,7 @@ public class FabricProjectOnboarding {
                     FormComponent.textField(MavenProjectKeys.GROUP_ID, "railroad.project.creation.group_id")
                         .required()
                         .promptText("railroad.project.creation.group_id.prompt")
+                        .text(() -> defaultGroupId)
                         .validator(ProjectValidators::validateGroupId)),
                 OnboardingFormStep.component(
                     FormComponent.textField(MavenProjectKeys.ARTIFACT_ID, "railroad.project.creation.artifact_id")
@@ -198,7 +204,7 @@ public class FabricProjectOnboarding {
                     FormComponent.textField(MavenProjectKeys.VERSION, "railroad.project.creation.version")
                         .required()
                         .promptText("railroad.project.creation.version.prompt")
-                        .text("1.0.0")
+                        .text(() -> defaultVersion)
                         .validator(ProjectValidators::validateVersion)))
             .onEnter(ctx -> {
                 String projectName = ctx.get(ProjectData.DefaultKeys.NAME);
@@ -213,8 +219,7 @@ public class FabricProjectOnboarding {
     }
 
     private OnboardingStep createMinecraftVersionStep() {
-        ObjectProperty<ComboBox<MinecraftVersion>> comboBoxProperty = new SimpleObjectProperty<>();
-        List<MinecraftVersion> availableVersions = new ArrayList<>();
+        ObservableList<MinecraftVersion> availableVersions = FXCollections.observableArrayList();
         var nextInvalidationTime = new AtomicLong(0L);
 
         return OnboardingFormStep.builder()
@@ -228,7 +233,6 @@ public class FabricProjectOnboarding {
                         .defaultValue(() -> MinecraftVersion.determineDefaultMinecraftVersion(availableVersions))
                         .keyFunction(MinecraftVersion::id)
                         .valueOfFunction(FabricProjectOnboarding::getMinecraftVersion)
-                        .bindComboBoxTo(comboBoxProperty)
                         .required()
                         .translate(false)))
             .onEnter(ctx -> {
@@ -236,19 +240,7 @@ public class FabricProjectOnboarding {
                     availableVersions.clear();
                     availableVersions.addAll(getMinecraftVersions());
                     nextInvalidationTime.set(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(5));
-                    if (comboBoxProperty.get() != null) {
-                        Platform.runLater(() -> {
-                            comboBoxProperty.get().getItems().clear();
-                            comboBoxProperty.get().getItems().addAll(availableVersions);
-                            MinecraftVersion current = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
-                            if (current != null && availableVersions.contains(current)) {
-                                comboBoxProperty.get().setValue(current);
-                            } else {
-                                MinecraftVersion def = MinecraftVersion.determineDefaultMinecraftVersion(availableVersions);
-                                comboBoxProperty.get().setValue(def);
-                            }
-                        });
-                    }
+                    ctx.markForRefresh(MinecraftProjectKeys.MINECRAFT_VERSION);
                 }
             })
             .build();
@@ -275,6 +267,7 @@ public class FabricProjectOnboarding {
                 if (mcVersion != null) {
                     availableChannels.clear();
                     availableChannels.setAll(MappingChannelRegistry.findValidMappingChannels(mcVersion));
+                    ctx.markForRefresh(MinecraftProjectKeys.MAPPING_CHANNEL);
                 }
             })
             .build();
@@ -282,7 +275,6 @@ public class FabricProjectOnboarding {
 
     private OnboardingStep createMappingVersionStep() {
         ObservableList<String> availableVersions = FXCollections.observableArrayList();
-        ObjectProperty<ComboBox<String>> comboBoxProperty = new SimpleObjectProperty<>();
         return OnboardingFormStep.builder()
             .id("mapping_version")
             .title("railroad.project.creation.mapping_version.title")
@@ -292,7 +284,6 @@ public class FabricProjectOnboarding {
                     FormComponent.comboBox(MinecraftProjectKeys.MAPPING_VERSION, "railroad.project.creation.mapping_version", String.class)
                         .required()
                         .items(() -> availableVersions)
-                        .bindComboBoxTo(comboBoxProperty)
                         .defaultValue(() -> {
                             if (!availableVersions.isEmpty())
                                 return availableVersions.getFirst();
@@ -307,20 +298,7 @@ public class FabricProjectOnboarding {
                     List<String> newVersions = channel.listVersionsFor(mcVersion);
                     availableVersions.clear();
                     availableVersions.setAll(newVersions);
-                    Platform.runLater(() -> {
-                        ComboBox<String> comboBox = comboBoxProperty.get();
-                        if (comboBox == null)
-                            return;
-
-                        String current = ctx.get(MinecraftProjectKeys.MAPPING_VERSION);
-                        if (current != null && availableVersions.contains(current)) {
-                            comboBox.setValue(current);
-                        } else if (!availableVersions.isEmpty()) {
-                            comboBox.setValue(availableVersions.getFirst());
-                        } else {
-                            comboBox.setValue(null);
-                        }
-                    });
+                    ctx.markForRefresh(MinecraftProjectKeys.MAPPING_VERSION);
                 }
             })
             .build();
@@ -329,7 +307,6 @@ public class FabricProjectOnboarding {
     private OnboardingStep createFabricLoaderStep() {
         ObservableList<FabricLoaderVersion> availableVersions = FXCollections.observableArrayList();
         ObjectProperty<FabricLoaderVersion> latestVersionProperty = new SimpleObjectProperty<>();
-        ObjectProperty<ComboBox<FabricLoaderVersion>> comboBoxProperty = new SimpleObjectProperty<>();
         return OnboardingFormStep.builder()
             .id("fabric_loader")
             .title("railroad.project.creation.fabric_loader.title")
@@ -339,7 +316,6 @@ public class FabricProjectOnboarding {
                     FormComponent.comboBox(FabricProjectKeys.FABRIC_LOADER_VERSION, "railroad.project.creation.fabric_loader", FabricLoaderVersion.class)
                         .required()
                         .items(() -> availableVersions)
-                        .bindComboBoxTo(comboBoxProperty)
                         .keyFunction(FabricLoaderVersion::version)
                         .defaultValue(() -> {
                             if (latestVersionProperty.get() != null)
@@ -363,34 +339,7 @@ public class FabricProjectOnboarding {
                         availableVersions.clear();
                         availableVersions.addAll(versions);
                         latestVersionProperty.set(latest);
-                        Platform.runLater(() -> {
-                            ComboBox<FabricLoaderVersion> comboBox = comboBoxProperty.get();
-                            if (comboBox == null) {
-                                return;
-                            }
-
-                            Object contextValue = ctx.get(FabricProjectKeys.FABRIC_LOADER_VERSION);
-                            if (contextValue instanceof FabricLoaderVersion fabricLoaderVersion && availableVersions.contains(fabricLoaderVersion)) {
-                                comboBox.setValue(fabricLoaderVersion);
-                                return;
-                            } else if (contextValue instanceof String versionString) {
-                                availableVersions.stream()
-                                    .filter(loader -> loader.version().equals(versionString))
-                                    .findFirst()
-                                    .ifPresent(comboBox::setValue);
-                                if (comboBox.getValue() != null) {
-                                    return;
-                                }
-                            }
-
-                            if (latest != null && availableVersions.contains(latest)) {
-                                comboBox.setValue(latest);
-                            } else if (!availableVersions.isEmpty()) {
-                                comboBox.setValue(availableVersions.getFirst());
-                            } else {
-                                comboBox.setValue(null);
-                            }
-                        });
+                        ctx.markForRefresh(FabricProjectKeys.FABRIC_LOADER_VERSION);
                     } catch (ExecutionException | InterruptedException exception) {
                         Railroad.LOGGER.error("Failed to fetch Fabric Loader versions for Minecraft {}", mcVersion.id(), exception);
                     }
@@ -401,7 +350,6 @@ public class FabricProjectOnboarding {
 
     private OnboardingStep createFabricApiStep() {
         ObservableList<String> availableVersions = FXCollections.observableArrayList();
-        ObjectProperty<ComboBox<String>> comboBoxProperty = new SimpleObjectProperty<>();
         return OnboardingFormStep.builder()
             .id("fabric_api")
             .title("railroad.project.creation.fabric_api.title")
@@ -410,7 +358,6 @@ public class FabricProjectOnboarding {
                 OnboardingFormStep.component(
                     FormComponent.comboBox(FabricProjectKeys.FABRIC_API_VERSION, "railroad.project.creation.fabric_api", String.class)
                         .items(() -> availableVersions)
-                        .bindComboBoxTo(comboBoxProperty)
                         .defaultValue(() -> {
                             if (!availableVersions.isEmpty())
                                 return availableVersions.getFirst();
@@ -426,21 +373,7 @@ public class FabricProjectOnboarding {
                         List<String> versions = versionsFuture.get();
                         availableVersions.clear();
                         availableVersions.addAll(versions);
-                        Platform.runLater(() -> {
-                            ComboBox<String> comboBox = comboBoxProperty.get();
-                            if (comboBox == null) {
-                                return;
-                            }
-
-                            String current = ctx.get(FabricProjectKeys.FABRIC_API_VERSION);
-                            if (current != null && availableVersions.contains(current)) {
-                                comboBox.setValue(current);
-                            } else if (!availableVersions.isEmpty()) {
-                                comboBox.setValue(availableVersions.getFirst());
-                            } else {
-                                comboBox.setValue(null);
-                            }
-                        });
+                        ctx.markForRefresh(FabricProjectKeys.FABRIC_API_VERSION);
                     } catch (ExecutionException | InterruptedException exception) {
                         Railroad.LOGGER.error("Failed to fetch Fabric API versions for Minecraft {}", mcVersion.id(), exception);
                     }
@@ -491,49 +424,43 @@ public class FabricProjectOnboarding {
             .onEnter(ctx -> {
                 String projectName = ctx.get(ProjectData.DefaultKeys.NAME);
 
-                if (ctx.contains(MinecraftProjectKeys.MOD_ID)) {
-                    String contextModId = ctx.get(MinecraftProjectKeys.MOD_ID);
-                    modIdProperty.set(isNullOrBlank(contextModId) ? "" : contextModId);
-                } else if (!isNullOrBlank(projectName)) {
+                if (!isNullOrBlank(projectName)) {
                     modIdProperty.set(ProjectValidators.projectNameToModId(projectName));
-                } else if (isNullOrBlank(modIdProperty.get())) {
-                    modIdProperty.set("");
                 }
 
-                if (ctx.contains(MinecraftProjectKeys.MOD_NAME)) {
-                    String contextModName = ctx.get(MinecraftProjectKeys.MOD_NAME);
-                    modNameProperty.set(isNullOrBlank(contextModName) ? "" : contextModName);
-                } else if (!isNullOrBlank(projectName)) {
+                if (!isNullOrBlank(projectName)) {
                     modNameProperty.set(projectName);
-                } else if (isNullOrBlank(modNameProperty.get())) {
-                    modNameProperty.set("");
-                }
-
-                if (ctx.contains(MinecraftProjectKeys.MAIN_CLASS)) {
-                    String contextMainClass = ctx.get(MinecraftProjectKeys.MAIN_CLASS);
-                    mainClassProperty.set(isNullOrBlank(contextMainClass) ? "" : contextMainClass);
-                    return;
                 }
 
                 if (!isNullOrBlank(projectName)) {
                     String mainClassName = ProjectValidators.projectNameToMainClass(projectName);
                     mainClassProperty.set(isNullOrBlank(mainClassName) ? "" : mainClassName);
-                } else if (isNullOrBlank(mainClassProperty.get())) {
-                    mainClassProperty.set("");
                 }
             })
             .build();
     }
 
     private OnboardingStep createLicenseStep() {
-        ObservableList<License> availableLicenses = FXCollections.observableArrayList(License.REGISTRY.values());
+        ObservableList<License> availableLicenses = FXCollections.observableArrayList();
         ObjectProperty<ComboBox<License>> licenseComboBox = new SimpleObjectProperty<>();
-        ObjectProperty<TextField> customLicenseField = new SimpleObjectProperty<>();
-        BooleanBinding showCustomLicenseField = licenseComboBox
-            .map(ComboBoxBase::valueProperty)
-            .map(property -> property.isEqualTo(LicenseRegistry.CUSTOM))
-            .orElse(Bindings.createBooleanBinding(() -> false))
-            .getValue();
+        BooleanProperty showCustomLicense = new SimpleBooleanProperty(false);
+        ChangeListener<License> licenseSelectionListener = (observable, oldValue, newValue) ->
+            showCustomLicense.set(newValue == LicenseRegistry.CUSTOM);
+
+        licenseComboBox.addListener((observable, oldValue, newValue) -> {
+            if (oldValue != null) {
+                oldValue.valueProperty().removeListener(licenseSelectionListener);
+            }
+
+            if (newValue != null) {
+                showCustomLicense.set(newValue.getValue() == LicenseRegistry.CUSTOM);
+                newValue.valueProperty().addListener(licenseSelectionListener);
+            } else {
+                showCustomLicense.set(false);
+            }
+        });
+
+        BooleanBinding customLicenseVisible = Bindings.createBooleanBinding(showCustomLicense::get, showCustomLicense);
 
         return OnboardingFormStep.builder()
             .id("license")
@@ -544,8 +471,9 @@ public class FabricProjectOnboarding {
                     FormComponent.comboBox(ProjectData.DefaultKeys.LICENSE, "railroad.project.creation.license", License.class)
                         .required()
                         .bindComboBoxTo(licenseComboBox)
-                        .keyFunction(License::getName)
-                        .valueOfFunction(License::fromName)
+                        .keyFunction(License::getSpdxId)
+                        .valueOfFunction(License::fromSpdxId)
+                        .defaultDisplayNameFunction(License::getName)
                         .translate(false)
                         .items(() -> availableLicenses)
                         .defaultValue(() -> {
@@ -559,15 +487,20 @@ public class FabricProjectOnboarding {
                         })),
                 OnboardingFormStep.component(
                     FormComponent.textField(ProjectData.DefaultKeys.LICENSE_CUSTOM, "railroad.project.creation.license.custom")
-                        .bindTextFieldTo(customLicenseField)
-                        .visible(showCustomLicenseField)
+                        .visible(customLicenseVisible)
                         .promptText("railroad.project.creation.license.custom.prompt")
                         .validator(ProjectValidators::validateCustomLicense)))
             .onEnter(ctx -> {
-                availableLicenses.setAll(License.REGISTRY.values()
+                List<License> newValues = License.REGISTRY.values()
                     .stream()
                     .sorted(Comparator.comparing(License::getName))
-                    .toList());
+                    .toList();
+
+                if(availableLicenses.size() != newValues.size() || !ListUtils.isEqualList(availableLicenses, newValues)) {
+                    availableLicenses.clear();
+                    availableLicenses.addAll(newValues);
+                    ctx.markForRefresh(ProjectData.DefaultKeys.LICENSE);
+                }
             })
             .build();
     }
@@ -586,7 +519,29 @@ public class FabricProjectOnboarding {
     }
 
     private OnboardingStep createAccessWidenerStep() {
-        // TODO: Provide access widener location option
+        ObjectProperty<CheckBox> useAccessWidenerCheckBox = new SimpleObjectProperty<>();
+        BooleanProperty accessWidenerEnabled = new SimpleBooleanProperty(true);
+        ChangeListener<Boolean> useAccessWidenerListener = (observable, oldValue, newValue) ->
+            accessWidenerEnabled.set(Boolean.TRUE.equals(newValue));
+
+        useAccessWidenerCheckBox.addListener((observable, oldValue, newValue) -> {
+            if (oldValue != null) {
+                oldValue.selectedProperty().removeListener(useAccessWidenerListener);
+            }
+
+            if (newValue != null) {
+                accessWidenerEnabled.set(newValue.isSelected());
+                newValue.selectedProperty().addListener(useAccessWidenerListener);
+            } else {
+                accessWidenerEnabled.set(false);
+            }
+        });
+
+        BooleanBinding accessWidenerPathVisible = Bindings.createBooleanBinding(
+            accessWidenerEnabled::get,
+            accessWidenerEnabled
+        );
+
         return OnboardingFormStep.builder()
             .id("access_widener")
             .title("railroad.project.creation.access_widener.title")
@@ -594,7 +549,28 @@ public class FabricProjectOnboarding {
             .appendSection("railroad.project.creation.section.access_widener",
                 OnboardingFormStep.component(
                     FormComponent.checkBox(FabricProjectKeys.USE_ACCESS_WIDENER, "railroad.project.creation.use_access_widener")
-                        .selected(true)))
+                        .selected(true)
+                        .bindCheckBoxTo(useAccessWidenerCheckBox)),
+                OnboardingFormStep.component(
+                    FormComponent.textField(FabricProjectKeys.ACCESS_WIDENER_PATH, "railroad.project.creation.access_widener.path")
+                        .text("${modid}.accesswidener")
+                        .promptText("railroad.project.creation.access_widener.path.prompt")
+                        .visible(accessWidenerPathVisible)
+                        .validator(field -> {
+                            if (!accessWidenerEnabled.get())
+                                return ValidationResult.ok();
+
+                            String text = field.getText();
+                            if (text == null || text.isBlank())
+                                return ValidationResult.error("railroad.project.creation.access_widener.path.error.required");
+
+                            return ValidationResult.ok();
+                        })))
+            .onExit(ctx -> {
+                if (!accessWidenerEnabled.get()) {
+                    ctx.data().remove(FabricProjectKeys.ACCESS_WIDENER_PATH);
+                }
+            })
             .build();
     }
 
@@ -606,11 +582,18 @@ public class FabricProjectOnboarding {
             .appendSection("railroad.project.creation.section.split_sources",
                 OnboardingFormStep.component(
                     FormComponent.checkBox(FabricProjectKeys.SPLIT_SOURCES, "railroad.project.creation.split_sources")
-                        .selected(false)))
+                        .selected(true)))
             .build();
     }
 
     private OnboardingStep createOptionalDetailsStep() {
+        String configuredAuthor = SettingsHandler.getValue(Settings.DEFAULT_PROJECT_AUTHOR);
+        String defaultAuthor = !isNullOrBlank(configuredAuthor)
+            ? configuredAuthor
+            : Optional.ofNullable(System.getProperty("user.name"))
+                .filter(name -> !isNullOrBlank(name))
+                .orElse("");
+
         return OnboardingFormStep.builder()
             .id("optional_details")
             .title("railroad.project.creation.optional_details.title")
@@ -618,6 +601,7 @@ public class FabricProjectOnboarding {
             .appendSection("railroad.project.creation.section.optional_details",
                 OnboardingFormStep.component(
                     FormComponent.textField(ProjectData.DefaultKeys.AUTHOR, "railroad.project.creation.author")
+                        .text(() -> defaultAuthor)
                         .promptText("railroad.project.creation.author.prompt")
                         .validator(ProjectValidators::validateAuthor)),
                 OnboardingFormStep.component(

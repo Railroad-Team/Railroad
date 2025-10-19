@@ -153,16 +153,30 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                 modJson.setSuggests(null); // Clear out example suggests
 
                 if (ctx.data().getAsBoolean(FabricProjectKeys.USE_ACCESS_WIDENER, true)) {
-                    // TODO: Use FabricProjectKeys.ACCESS_WIDENER_PATH
-                    String archivesBaseName = ctx.data().contains(MavenProjectKeys.ARTIFACT_ID)
-                        ? ctx.data().getAsString(MavenProjectKeys.ARTIFACT_ID)
-                        : modId;
+                    String accessWidenerTemplate = ctx.data().contains(FabricProjectKeys.ACCESS_WIDENER_PATH)
+                        ? ctx.data().getAsString(FabricProjectKeys.ACCESS_WIDENER_PATH)
+                        : "${modid}.accesswidener";
 
-                    String accessWidenerPath = archivesBaseName + ".accesswidener";
-                    modJson.setAccessWidener(accessWidenerPath);
-                    ctx.data().set(FabricProjectKeys.ACCESS_WIDENER_PATH, accessWidenerPath);
+                    String resolvedAccessWidenerPath = Optional.ofNullable(accessWidenerTemplate)
+                        .map(String::trim)
+                        .filter(path -> !path.isEmpty())
+                        .orElse("${modid}.accesswidener")
+                        .replace("${modid}", modId);
 
-                    files.writeString(resourcesDir.resolve(accessWidenerPath), """
+                    if (resolvedAccessWidenerPath.isBlank()) {
+                        resolvedAccessWidenerPath = modId + ".accesswidener";
+                    }
+
+                    modJson.setAccessWidener(resolvedAccessWidenerPath);
+                    ctx.data().set(FabricProjectKeys.ACCESS_WIDENER_PATH, resolvedAccessWidenerPath);
+
+                    Path accessWidenerFile = resourcesDir.resolve(resolvedAccessWidenerPath);
+                    Path parent = accessWidenerFile.getParent();
+                    if (parent != null) {
+                        files.createDirectories(parent);
+                    }
+
+                    files.writeString(accessWidenerFile, """
                         accessWidener v2 named
 
 

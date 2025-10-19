@@ -99,6 +99,19 @@ railroad.settings.projects.import.description=Configure how projects are importe
 railroad.settings.projects.import.switch_to_ide_after_import.title=Switch to IDE after import
 railroad.settings.projects.import.switch_to_ide_after_import.description=Automatically switch to the IDE after importing a project. This allows you to start working on your project immediately without additional steps.
 
+railroad.settings.projects.defaults.group_id.title=Default Group ID
+railroad.settings.projects.defaults.group_id.description=Manage the default Maven group identifier assigned to new projects.
+railroad.settings.projects.defaults.group_id.default_group_id.title=Override default group ID
+railroad.settings.projects.defaults.group_id.default_group_id.description=Set the Maven group ID that Railroad pre-fills during project onboarding. Leave blank to use the generated value.
+railroad.settings.projects.defaults.version.title=Default Project Version
+railroad.settings.projects.defaults.version.description=Control the default version string applied when creating projects.
+railroad.settings.projects.defaults.version.default_version.title=Override default project version
+railroad.settings.projects.defaults.version.default_version.description=Set the version number Railroad pre-fills during project onboarding. Leave blank to keep the standard value.
+railroad.settings.projects.defaults.author.title=Default Project Author
+railroad.settings.projects.defaults.author.description=Configure the default author shown for newly created projects.
+railroad.settings.projects.defaults.author.default_author.title=Override default project author
+railroad.settings.projects.defaults.author.default_author.description=Set the author name Railroad pre-fills during project onboarding. Leave blank to fall back to the system user name.
+
 # Theme management
 railroad.home.settings.appearance.theme=Select a Theme
 railroad.home.settings.appearance.downloadtheme=Download themes
@@ -310,6 +323,9 @@ railroad.project.creation.access_widener.title=Access Widener
 railroad.project.creation.access_widener.description=Use an access widener to access parts of the game that are normally not accessible.
 railroad.project.creation.section.access_widener=Access Widener
 railroad.project.creation.use_access_widener=Use Access Widener
+railroad.project.creation.access_widener.path=Access Widener Path
+railroad.project.creation.access_widener.path.prompt=${modid}.accesswidener
+railroad.project.creation.access_widener.path.error.required=Access widener path is required when enabled.
 
 railroad.project.creation.split_sources.title=Split Sources
 railroad.project.creation.split_sources.description=Split the sources into client and main.

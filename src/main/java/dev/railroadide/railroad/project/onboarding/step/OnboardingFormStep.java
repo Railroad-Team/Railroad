@@ -499,7 +499,7 @@ public final class OnboardingFormStep implements OnboardingStep {
         private void loadDataFromContext(OnboardingContext ctx) {
             dataMappings.forEach((dataKey, mapping) -> {
                 String contextKey = mapping.contextKey();
-                if(!ctx.needsRefresh(contextKey))
+                if(ctx.needsRefresh(contextKey))
                     return;
 
                 FormComponent<?, ?, ?, ?> component = componentsByDataKey.get(dataKey);
