@@ -255,6 +255,9 @@ railroad.menu.help.discord=Join the Discord
 # =============================================================================
 # PROJECT CREATION
 # =============================================================================
+railroad.project.creation.onboarding.start_button=Start Project Creation
+railroad.project.creation.onboarding.title=Create New Project
+
 railroad.project.creation.project_details.title=Project Details
 railroad.project.creation.project_details.description=Enter the name and location for your project.
 railroad.project.creation.section.project=Project
@@ -295,6 +298,18 @@ railroad.project.creation.section.mapping_version=Mapping Version
 railroad.project.creation.mapping_version=Mapping Version
 railroad.project.creation.mapping_version.info=Specific mapping build that resolves class, method and field names.
 
+railroad.project.creation.forge_version.title=Forge Version
+railroad.project.creation.forge_version.description=Select the Forge version for your project.
+railroad.project.creation.section.forge_version=Forge Version
+railroad.project.creation.forge_version=Forge Version
+railroad.project.creation.forge_version.info=Forge loader build bundled with your generated project.
+
+railroad.project.creation.neoforge_version.title=Neoforge Version
+railroad.project.creation.neoforge_version.description=Select the Neoforge version for your project.
+railroad.project.creation.section.neoforge_version=Neoforge Version
+railroad.project.creation.neoforge_version=Neoforge Version
+railroad.project.creation.neoforge_version.info=Neoforge loader build bundled with your generated project.
+
 railroad.project.creation.fabric_loader.title=Fabric Loader
 railroad.project.creation.fabric_loader.description=Select the Fabric Loader version for your project.
 railroad.project.creation.section.fabric_loader=Fabric Loader
@@ -319,6 +334,15 @@ railroad.project.creation.mod_name.info=Human-readable name shown to players and
 railroad.project.creation.main_class=Main Class
 railroad.project.creation.main_class.prompt=com.example.MyAwesomeMod
 railroad.project.creation.main_class.info=Entry point class generated for your mod's initializer.
+
+railroad.project.creation.section.forge_options=Forge Options
+railroad.project.creation.section.neoforge_options=Neoforge Options
+railroad.project.creation.use_mixins=Enable Mixins
+railroad.project.creation.use_mixins.info=Adds mixin support and configures (Neo)/Forge to apply your mixins.
+railroad.project.creation.use_access_transformer=Enable Access Transformer
+railroad.project.creation.use_access_transformer.info=Generates an access transformer file and registers it for the project.
+railroad.project.creation.gen_run_folders=Generate Run Folders
+railroad.project.creation.gen_run_folders.info=Creates dedicated run configurations and data directories for development.
 
 railroad.project.creation.license.title=License
 railroad.project.creation.license.description=Select the license for your project.
@@ -357,12 +381,25 @@ railroad.project.creation.section.optional_details=Optional Details
 railroad.project.creation.author=Author
 railroad.project.creation.author.prompt=Your Name
 railroad.project.creation.author.info=Author credited in the generated mod metadata.
+railroad.project.creation.credits=Credits
+railroad.project.creation.credits.prompt=Additional acknowledgements
+railroad.project.creation.credits.info=Optional acknowledgements written to mods.toml metadata.
 railroad.project.creation.description=Description
 railroad.project.creation.description.prompt=A short description of your project.
 railroad.project.creation.description.info=Summary shown in launchers and metadata files.
 railroad.project.creation.issues_url=Issues URL
 railroad.project.creation.issues_url.prompt=https://example.com/issues
 railroad.project.creation.issues_url.info=Issue tracker link published in mod metadata.
+railroad.project.creation.update_json_url=Update JSON URL
+railroad.project.creation.update_json_url.prompt=https://example.com/updates.json
+railroad.project.creation.update_json_url.info=Remote JSON describing version updates for distribution platforms.
+railroad.project.creation.display_url=Display URL
+railroad.project.creation.display_url.prompt=https://example.com/promo
+railroad.project.creation.display_url.info=Promotional link shown in launchers such as CurseForge.
+railroad.project.creation.display_test=Display Test
+railroad.project.creation.display_test.info=Controls how the launcher warns players about version mismatches.
+railroad.project.creation.client_side_only=Client Side Only
+railroad.project.creation.client_side_only.info=Mark the mod as client-only in generated metadata.
 railroad.project.creation.homepage_url=Homepage URL
 railroad.project.creation.homepage_url.prompt=https://example.com
 railroad.project.creation.homepage_url.info=Project website presented to players in launcher UIs.
@@ -404,6 +441,8 @@ railroad.project.creation.issues.error.no_issues=Issues URL does not point to an
 railroad.project.creation.update_json.error.length_long=Update JSON URL is too long (maximum 256 characters).
 railroad.project.creation.update_json.error.invalid_url=Update JSON URL is not a valid URL.
 railroad.project.creation.update_json.error.invalid_extension=Update JSON URL must end with .json.
+railroad.project.creation.display_url.error.length_long=Display URL is too long (maximum 256 characters).
+railroad.project.creation.display_url.error.invalid_url=Display URL is not a valid URL.
 railroad.project.creation.group_id.error.required=Group ID is required.
 railroad.project.creation.group_id.error.length_long=Group ID is too long (maximum 256 characters).
 railroad.project.creation.group_id.error.invalid_characters=Group ID contains invalid characters.

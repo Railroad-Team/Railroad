@@ -21,7 +21,7 @@ public class ProjectType {
     private final String description;
     @Getter
     private final Image icon;
-    private final Supplier<? extends Node> detailsPaneSupplier;
+    private final Supplier<? extends Node> onboardingUISupplier;
 
     /**
      * Constructs a new `ProjectType` instance.
@@ -29,22 +29,22 @@ public class ProjectType {
      * @param name                The name of the project type.
      * @param description         A translation key for the project type description.
      * @param icon                An icon representing the project type.
-     * @param detailsPaneSupplier A supplier for creating a details pane for the project type.
+     * @param onboardingUISupplier A supplier for creating an onboarding UI for the project type.
      */
-    protected ProjectType(String name, String description, Image icon, Supplier<? extends Node> detailsPaneSupplier) {
+    protected ProjectType(String name, String description, Image icon, Supplier<? extends Node> onboardingUISupplier) {
         this.name = name;
         this.description = description;
         this.icon = icon;
-        this.detailsPaneSupplier = detailsPaneSupplier;
+        this.onboardingUISupplier = onboardingUISupplier;
     }
 
     /**
-     * Creates and returns a new details pane for the project type.
+     * Creates and returns a new onboarding UI for the project type.
      *
      * @return A `Node` representing the details pane.
      */
-    public Node createDetailsPane() {
-        return detailsPaneSupplier.get();
+    public Node createOnboardingUI() {
+        return onboardingUISupplier.get();
     }
 
     /**
@@ -63,7 +63,7 @@ public class ProjectType {
         private String name;
         private String description;
         private Image icon;
-        private Supplier<? extends Node> detailsPaneSupplier;
+        private Supplier<? extends Node> onboardingUISupplier;
 
         /**
          * Sets the name of the project type.
@@ -104,8 +104,8 @@ public class ProjectType {
          * @param supplier A supplier for creating a details pane.
          * @return The current `Builder` instance.
          */
-        public Builder detailsPane(Supplier<? extends Node> supplier) {
-            this.detailsPaneSupplier = supplier;
+        public Builder onboardingUI(Supplier<? extends Node> supplier) {
+            this.onboardingUISupplier = supplier;
             return this;
         }
 
@@ -115,7 +115,7 @@ public class ProjectType {
          * @return A new `ProjectType` instance.
          */
         public ProjectType build() {
-            return new ProjectType(name, description, icon, detailsPaneSupplier);
+            return new ProjectType(name, description, icon, onboardingUISupplier);
         }
     }
 }

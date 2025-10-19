@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.project.details;
+package dev.railroadide.railroad.project;
 
 import dev.railroadide.core.form.ValidationResult;
 import dev.railroadide.core.utility.StringUtils;
@@ -329,16 +329,13 @@ public class ProjectValidators {
     }
 
     public static String projectNameToModId(String projectName) {
-        if (projectName == null || projectName.isBlank())
-            return "";
-
-        return projectName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_\\-]", "_");
+        return projectNameToArtifactId(projectName);
     }
 
     public static String projectNameToArtifactId(String projectName) {
         if (projectName == null || projectName.isBlank())
             return "";
 
-        return projectName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9\\-]", "-");
+        return projectName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9\\-]", "");
     }
 }

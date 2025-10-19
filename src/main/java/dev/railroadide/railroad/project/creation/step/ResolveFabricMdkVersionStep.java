@@ -1,12 +1,13 @@
 package dev.railroadide.railroad.project.creation.step;
 
 import dev.railroadide.core.project.ProjectContext;
-import dev.railroadide.railroad.project.creation.ProjectContextKeys;
 import dev.railroadide.core.project.creation.CreationStep;
 import dev.railroadide.core.project.creation.ProgressReporter;
+import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
+import dev.railroadide.railroad.project.creation.ProjectContextKeys;
 import dev.railroadide.railroad.project.data.MinecraftProjectKeys;
 import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
-import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.ZoneOffset;
 import java.util.List;
@@ -41,8 +42,15 @@ public final class ResolveFabricMdkVersionStep implements CreationStep {
         if (type == MinecraftVersion.Type.OLD_ALPHA || type == MinecraftVersion.Type.OLD_BETA)
             throw new IllegalStateException("Fabric does not support Minecraft versions older than 1.14.");
 
-        if (type != MinecraftVersion.Type.SNAPSHOT)
-            return version;
+        // 1.21.1 -> 1.21, 1.20.2 -> 1.20, etc.
+        if (type != MinecraftVersion.Type.SNAPSHOT) {
+            if (version.id().matches("\\d+\\.\\d+"))
+                return version;
+
+            String releaseId = version.id().replaceAll("\\.\\d+$", "");
+            Optional<MinecraftVersion> release = fetchVersion(releaseId);
+            return release.orElse(version);
+        }
 
         String id = version.id();
         int dashIndex = id.indexOf('-');
@@ -53,6 +61,11 @@ public final class ResolveFabricMdkVersionStep implements CreationStep {
                 return release.get();
         }
 
+        return findClosestRelease(version);
+    }
+
+    // TODO: Make sure that this will always pick a newer closest release (if it exists) instead of an older one.
+    private @NotNull MinecraftVersion findClosestRelease(MinecraftVersion version) {
         List<MinecraftVersion> versions = fetchAllVersions();
         long releaseTime = version.releaseTime().toEpochSecond(ZoneOffset.UTC);
         MinecraftVersion closest = null;

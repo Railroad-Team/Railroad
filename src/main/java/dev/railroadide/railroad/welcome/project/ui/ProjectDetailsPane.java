@@ -27,10 +27,9 @@ public class ProjectDetailsPane extends ScrollPane {
     }
 
     private Node getOrCreateContentPane(@Nullable ProjectType projectType) {
-        if (projectType == null) {
+        if (projectType == null)
             return new RRVBox();
-        }
 
-        return this.projectDetailsPanes.computeIfAbsent(projectType, ProjectType::createDetailsPane);
+        return this.projectDetailsPanes.computeIfAbsent(projectType, ProjectType::createOnboardingUI);
     }
 }

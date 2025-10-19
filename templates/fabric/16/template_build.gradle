@@ -37,7 +37,7 @@ loom {
     }
 
     <% if(props.useAccessWidener) {
-        out.print("\n    accessWidenerPath = file(\"src/main/resources/\${project.archives_base_name}.accesswidener\")")
+        out.print("\n    accessWidener = file(\"src/main/resources/${props.accessWidenerPath}\")")
     } %>
 }
 

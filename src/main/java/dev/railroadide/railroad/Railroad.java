@@ -14,13 +14,9 @@ import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.PluginManager;
 import dev.railroadide.railroad.plugin.defaults.DefaultEventBus;
-import dev.railroadide.railroad.project.LicenseRegistry;
-import dev.railroadide.railroad.project.MappingChannelRegistry;
-import dev.railroadide.railroad.project.Project;
-import dev.railroadide.railroad.project.ProjectManager;
+import dev.railroadide.railroad.project.*;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetTypeAdapter;
-import dev.railroadide.railroad.project.onboarding.impl.FabricProjectOnboarding;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
@@ -52,7 +48,6 @@ import okhttp3.OkHttpClient;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -283,6 +278,7 @@ public class Railroad extends Application {
             SwitchboardRepositories.initialize();
             MappingChannelRegistry.initialize();
             LicenseRegistry.initialize();
+            ProjectTypeRegistry.initialize();
 
             L18n.loadLanguage(SettingsHandler.getValue(Settings.LANGUAGE));
             window = primaryStage;
@@ -306,9 +302,6 @@ public class Railroad extends Application {
             primaryStage.setMinWidth(scene.getWidth() + 10);
             primaryStage.setMinHeight(scene.getHeight() + 10);
             primaryStage.setScene(scene);
-
-            // TODO: REMOVE ME!
-            new FabricProjectOnboarding().start(scene);
 
             primaryStage.setTitle("Railroad - 1.0.0(dev)");
             primaryStage.getIcons().add(new Image(getResourceAsStream("images/logo.png")));

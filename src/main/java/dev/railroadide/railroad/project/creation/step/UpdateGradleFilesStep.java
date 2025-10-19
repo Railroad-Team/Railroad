@@ -134,14 +134,17 @@ public record UpdateGradleFilesStep(FilesService files, HttpService http, Templa
         ));
 
         Map<String, Object> props = new HashMap<>();
-        if(projectType == ProjectTypeRegistry.FABRIC) {
+        if (projectType == ProjectTypeRegistry.FABRIC) {
             props.putAll(Map.of(
                 "splitSourceSets", data.getAsBoolean(FabricProjectKeys.SPLIT_SOURCES),
                 "includeFabricApi", data.contains(FabricProjectKeys.FABRIC_API_VERSION),
                 "useAccessWidener", data.getAsBoolean(FabricProjectKeys.USE_ACCESS_WIDENER),
+                "accessWidenerPath", data.contains(FabricProjectKeys.ACCESS_WIDENER_PATH) ?
+                    data.getAsString(FabricProjectKeys.ACCESS_WIDENER_PATH) :
+                    data.getAsString(MinecraftProjectKeys.MOD_ID) + ".accesswidener",
                 "modId", data.getAsString(MinecraftProjectKeys.MOD_ID)
             ));
-        } else if(projectType == ProjectTypeRegistry.FORGE || projectType == ProjectTypeRegistry.NEOFORGE) {
+        } else if (projectType == ProjectTypeRegistry.FORGE || projectType == ProjectTypeRegistry.NEOFORGE) {
             props.putAll(Map.of(
                 "useMixins", data.getAsBoolean(ForgeProjectKeys.USE_MIXINS),
                 "useAccessTransformer", data.getAsBoolean(ForgeProjectKeys.USE_ACCESS_TRANSFORMER),
