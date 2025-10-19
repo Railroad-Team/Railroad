@@ -52,6 +52,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+// TODO: Make it so the display test and client side only options are only shown for versions that support it
+// TODO: Make it so the display test and client side only options are in their own steps
+// TODO: Fix the comboboxes not being immediately populated and instead having the data fetched completely async
 public class ForgeProjectOnboarding {
     private static final ExpiringCache<List<MinecraftVersion>> FORGE_MINECRAFT_VERSIONS_CACHE = new ExpiringCache<>(Duration.ofHours(3));
 

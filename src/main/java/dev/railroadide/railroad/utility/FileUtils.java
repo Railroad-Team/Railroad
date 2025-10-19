@@ -165,6 +165,19 @@ public final class FileUtils {
      * @throws RuntimeException if an error occurs during deletion
      */
     public static void deleteFolder(Path folder) throws RuntimeException {
+        if(Files.notExists(folder))
+            return;
+
+        if(!Files.isDirectory(folder)) {
+            try {
+                Files.deleteIfExists(folder);
+            } catch (IOException exception) {
+                throw new RuntimeException("Failed to delete file", exception);
+            }
+
+            return;
+        }
+
         try (Stream<Path> paths = Files.walk(folder)) {
             paths.sorted(Comparator.reverseOrder()).forEach(path -> {
                 try {
