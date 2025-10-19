@@ -6,6 +6,7 @@ import dev.railroadide.core.registry.Registry;
 import dev.railroadide.core.registry.RegistryManager;
 import dev.railroadide.logger.Logger;
 import dev.railroadide.logger.LoggerManager;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroadpluginapi.PluginContext;
@@ -34,8 +35,7 @@ public class DefaultPluginContext implements PluginContext {
 
         String[] mainClassParts = descriptor.getMainClass().split("\\.");
         this.logger = LoggerManager.create(mainClassParts[mainClassParts.length - 1])
-                .logDirectory(ConfigHandler.getConfigDirectory().resolve("logs"))
-                .configFile(ConfigHandler.getConfigDirectory().resolve("logger_config.json"))
+                .service(Railroad.LOGGER.getService())
                 .build();
     }
 

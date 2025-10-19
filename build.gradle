@@ -94,7 +94,7 @@ dependencies {
         exclude group: 'net.java.dev.jna', module: 'jna'
     }
 
-    implementation 'dev.railroadide:RailroadLogger:1.0.2'
+    implementation 'dev.railroadide:RailroadLogger:1.0.3'
     implementation 'dev.railroadide:RailroadPluginAPI:1.0.3'
     implementation project(':railroad-core')
 
