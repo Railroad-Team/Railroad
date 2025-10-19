@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.project.onboarding.impl;
 
 import dev.railroadide.core.form.FormComponent;
+import dev.railroadide.core.form.FormComponentBuilder;
 import dev.railroadide.core.form.ValidationResult;
 import dev.railroadide.core.project.License;
 import dev.railroadide.core.project.ProjectData;
@@ -29,6 +30,7 @@ import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
 import dev.railroadide.railroad.switchboard.repositories.FabricApiVersionRepository;
+import dev.railroadide.core.form.ui.InformativeLabeledHBox;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.*;
@@ -39,6 +41,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
+import javafx.scene.Node;
 import org.apache.commons.collections.ListUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -46,6 +49,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class FabricProjectOnboarding {
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
@@ -150,12 +155,13 @@ public class FabricProjectOnboarding {
             .title("railroad.project.creation.project_details.title")
             .description("railroad.project.creation.project_details.description")
             .appendSection("railroad.project.creation.section.project",
-                OnboardingFormStep.component(
+                described(
                     FormComponent.textField(ProjectData.DefaultKeys.NAME, "railroad.project.creation.name")
                         .required()
                         .promptText("railroad.project.creation.name.prompt")
-                        .validator(ProjectValidators::validateProjectName)),
-                OnboardingFormStep.component(
+                        .validator(ProjectValidators::validateProjectName),
+                    "railroad.project.creation.name.info"),
+                described(
                     FormComponent.directoryChooser(ProjectData.DefaultKeys.PATH, "railroad.project.creation.location")
                         .required()
                         .defaultPath(System.getProperty("user.home"))
@@ -172,7 +178,8 @@ public class FabricProjectOnboarding {
                             return null;
 
                         return value instanceof Path path ? path.toAbsolutePath().toString() : value.toString();
-                    }))
+                    },
+                    "railroad.project.creation.location.info"))
             .build();
     }
 
@@ -188,24 +195,27 @@ public class FabricProjectOnboarding {
             .title("railroad.project.creation.maven_coordinates.title")
             .description("railroad.project.creation.maven_coordinates.description")
             .appendSection("railroad.project.creation.section.maven_coordinates",
-                OnboardingFormStep.component(
+                described(
                     FormComponent.textField(MavenProjectKeys.GROUP_ID, "railroad.project.creation.group_id")
                         .required()
                         .promptText("railroad.project.creation.group_id.prompt")
                         .text(() -> defaultGroupId)
-                        .validator(ProjectValidators::validateGroupId)),
-                OnboardingFormStep.component(
+                        .validator(ProjectValidators::validateGroupId),
+                    "railroad.project.creation.group_id.info"),
+                described(
                     FormComponent.textField(MavenProjectKeys.ARTIFACT_ID, "railroad.project.creation.artifact_id")
                         .required()
                         .promptText("railroad.project.creation.artifact_id.prompt")
                         .text(artifactId::get)
-                        .validator(ProjectValidators::validateArtifactId)),
-                OnboardingFormStep.component(
+                        .validator(ProjectValidators::validateArtifactId),
+                    "railroad.project.creation.artifact_id.info"),
+                described(
                     FormComponent.textField(MavenProjectKeys.VERSION, "railroad.project.creation.version")
                         .required()
                         .promptText("railroad.project.creation.version.prompt")
                         .text(() -> defaultVersion)
-                        .validator(ProjectValidators::validateVersion)))
+                        .validator(ProjectValidators::validateVersion),
+                    "railroad.project.creation.version.info"))
             .onEnter(ctx -> {
                 String projectName = ctx.get(ProjectData.DefaultKeys.NAME);
                 if (projectName != null) {
@@ -227,14 +237,15 @@ public class FabricProjectOnboarding {
             .title("railroad.project.creation.minecraft_version.title")
             .description("railroad.project.creation.minecraft_version.description")
             .appendSection("railroad.project.creation.section.minecraft_version",
-                OnboardingFormStep.component(
+                described(
                     FormComponent.comboBox(MinecraftProjectKeys.MINECRAFT_VERSION, "railroad.project.creation.minecraft_version", MinecraftVersion.class)
                         .items(() -> availableVersions)
                         .defaultValue(() -> MinecraftVersion.determineDefaultMinecraftVersion(availableVersions))
                         .keyFunction(MinecraftVersion::id)
                         .valueOfFunction(FabricProjectOnboarding::getMinecraftVersion)
                         .required()
-                        .translate(false)))
+                        .translate(false),
+                    "railroad.project.creation.minecraft_version.info"))
             .onEnter(ctx -> {
                 if (availableVersions.isEmpty() || System.currentTimeMillis() > nextInvalidationTime.get()) {
                     availableVersions.clear();
@@ -253,7 +264,7 @@ public class FabricProjectOnboarding {
             .title("railroad.project.creation.mapping_channel.title")
             .description("railroad.project.creation.mapping_channel.description")
             .appendSection("railroad.project.creation.section.mapping_channel",
-                OnboardingFormStep.component(
+                described(
                     FormComponent.comboBox(MinecraftProjectKeys.MAPPING_CHANNEL, "railroad.project.creation.mapping_channel", MappingChannel.class)
                         .required()
                         .items(() -> availableChannels)
@@ -261,7 +272,8 @@ public class FabricProjectOnboarding {
                         .keyFunction(MappingChannel::id)
                         .valueOfFunction(MappingChannel.REGISTRY::get)
                         .defaultDisplayNameFunction(MappingChannel::translationKey)
-                        .translate(true)))
+                        .translate(true),
+                    "railroad.project.creation.mapping_channel.info"))
             .onEnter(ctx -> {
                 MinecraftVersion mcVersion = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
                 if (mcVersion != null) {
@@ -280,7 +292,7 @@ public class FabricProjectOnboarding {
             .title("railroad.project.creation.mapping_version.title")
             .description("railroad.project.creation.mapping_version.description")
             .appendSection("railroad.project.creation.section.mapping_version",
-                OnboardingFormStep.component(
+                described(
                     FormComponent.comboBox(MinecraftProjectKeys.MAPPING_VERSION, "railroad.project.creation.mapping_version", String.class)
                         .required()
                         .items(() -> availableVersions)
@@ -290,7 +302,8 @@ public class FabricProjectOnboarding {
 
                             return null;
                         })
-                        .translate(false)))
+                        .translate(false),
+                    "railroad.project.creation.mapping_version.info"))
             .onEnter(ctx -> {
                 MinecraftVersion mcVersion = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
                 MappingChannel channel = ctx.get(MinecraftProjectKeys.MAPPING_CHANNEL);
@@ -312,7 +325,7 @@ public class FabricProjectOnboarding {
             .title("railroad.project.creation.fabric_loader.title")
             .description("railroad.project.creation.fabric_loader.description")
             .appendSection("railroad.project.creation.section.fabric_loader",
-                OnboardingFormStep.component(
+                described(
                     FormComponent.comboBox(FabricProjectKeys.FABRIC_LOADER_VERSION, "railroad.project.creation.fabric_loader", FabricLoaderVersion.class)
                         .required()
                         .items(() -> availableVersions)
@@ -326,7 +339,8 @@ public class FabricProjectOnboarding {
 
                             return null;
                         })
-                        .translate(false)))
+                        .translate(false),
+                    "railroad.project.creation.fabric_loader.info"))
             .onEnter(ctx -> {
                 MinecraftVersion mcVersion = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
                 if (mcVersion != null) {
@@ -355,7 +369,7 @@ public class FabricProjectOnboarding {
             .title("railroad.project.creation.fabric_api.title")
             .description("railroad.project.creation.fabric_api.description")
             .appendSection("railroad.project.creation.section.fabric_api",
-                OnboardingFormStep.component(
+                described(
                     FormComponent.comboBox(FabricProjectKeys.FABRIC_API_VERSION, "railroad.project.creation.fabric_api", String.class)
                         .items(() -> availableVersions)
                         .defaultValue(() -> {
@@ -364,7 +378,8 @@ public class FabricProjectOnboarding {
 
                             return null;
                         })
-                        .translate(false)))
+                        .translate(false),
+                    "railroad.project.creation.fabric_api.info"))
             .onEnter(ctx -> {
                 MinecraftVersion mcVersion = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
                 if (mcVersion != null) {
@@ -400,27 +415,30 @@ public class FabricProjectOnboarding {
             .title("railroad.project.creation.mod_details.title")
             .description("railroad.project.creation.mod_details.description")
             .appendSection("railroad.project.creation.section.mod_details",
-                OnboardingFormStep.component(
+                described(
                     FormComponent.textField(MinecraftProjectKeys.MOD_ID, "railroad.project.creation.mod_id")
                         .required()
                         .promptText("railroad.project.creation.mod_id.prompt")
                         .text(modIdProperty::get)
                         .bindTextFieldTo(modIdField)
-                        .validator(ProjectValidators::validateModId)),
-                OnboardingFormStep.component(
+                        .validator(ProjectValidators::validateModId),
+                    "railroad.project.creation.mod_id.info"),
+                described(
                     FormComponent.textField(MinecraftProjectKeys.MOD_NAME, "railroad.project.creation.mod_name")
                         .required()
                         .promptText("railroad.project.creation.mod_name.prompt")
                         .text(modNameProperty::get)
                         .bindTextFieldTo(modNameField)
-                        .validator(ProjectValidators::validateModName)),
-                OnboardingFormStep.component(
+                        .validator(ProjectValidators::validateModName),
+                    "railroad.project.creation.mod_name.info"),
+                described(
                     FormComponent.textField(MinecraftProjectKeys.MAIN_CLASS, "railroad.project.creation.main_class")
                         .required()
                         .promptText("railroad.project.creation.main_class.prompt")
                         .text(mainClassProperty::get)
                         .bindTextFieldTo(mainClassField)
-                        .validator(ProjectValidators::validateMainClass)))
+                        .validator(ProjectValidators::validateMainClass),
+                    "railroad.project.creation.main_class.info"))
             .onEnter(ctx -> {
                 String projectName = ctx.get(ProjectData.DefaultKeys.NAME);
 
@@ -467,7 +485,7 @@ public class FabricProjectOnboarding {
             .title("railroad.project.creation.license.title")
             .description("railroad.project.creation.license.description")
             .appendSection("railroad.project.creation.section.license",
-                OnboardingFormStep.component(
+                described(
                     FormComponent.comboBox(ProjectData.DefaultKeys.LICENSE, "railroad.project.creation.license", License.class)
                         .required()
                         .bindComboBoxTo(licenseComboBox)
@@ -484,12 +502,14 @@ public class FabricProjectOnboarding {
                                 return availableLicenses.getFirst();
 
                             return null;
-                        })),
-                OnboardingFormStep.component(
+                        }),
+                    "railroad.project.creation.license.info"),
+                described(
                     FormComponent.textField(ProjectData.DefaultKeys.LICENSE_CUSTOM, "railroad.project.creation.license.custom")
                         .visible(customLicenseVisible)
                         .promptText("railroad.project.creation.license.custom.prompt")
-                        .validator(ProjectValidators::validateCustomLicense)))
+                        .validator(ProjectValidators::validateCustomLicense),
+                    "railroad.project.creation.license.custom.info"))
             .onEnter(ctx -> {
                 List<License> newValues = License.REGISTRY.values()
                     .stream()
@@ -512,9 +532,10 @@ public class FabricProjectOnboarding {
             .title("railroad.project.creation.git.title")
             .description("railroad.project.creation.git.description")
             .appendSection("railroad.project.creation.section.git",
-                OnboardingFormStep.component(
+                described(
                     FormComponent.checkBox(ProjectData.DefaultKeys.INIT_GIT, "railroad.project.creation.init_git")
-                        .selected(true)))
+                        .selected(true),
+                    "railroad.project.creation.init_git.info"))
             .build();
     }
 
@@ -547,11 +568,12 @@ public class FabricProjectOnboarding {
             .title("railroad.project.creation.access_widener.title")
             .description("railroad.project.creation.access_widener.description")
             .appendSection("railroad.project.creation.section.access_widener",
-                OnboardingFormStep.component(
+                described(
                     FormComponent.checkBox(FabricProjectKeys.USE_ACCESS_WIDENER, "railroad.project.creation.use_access_widener")
                         .selected(true)
-                        .bindCheckBoxTo(useAccessWidenerCheckBox)),
-                OnboardingFormStep.component(
+                        .bindCheckBoxTo(useAccessWidenerCheckBox),
+                    "railroad.project.creation.use_access_widener.info"),
+                described(
                     FormComponent.textField(FabricProjectKeys.ACCESS_WIDENER_PATH, "railroad.project.creation.access_widener.path")
                         .text("${modid}.accesswidener")
                         .promptText("railroad.project.creation.access_widener.path.prompt")
@@ -565,7 +587,8 @@ public class FabricProjectOnboarding {
                                 return ValidationResult.error("railroad.project.creation.access_widener.path.error.required");
 
                             return ValidationResult.ok();
-                        })))
+                        }),
+                    "railroad.project.creation.access_widener.path.info"))
             .onExit(ctx -> {
                 if (!accessWidenerEnabled.get()) {
                     ctx.data().remove(FabricProjectKeys.ACCESS_WIDENER_PATH);
@@ -580,9 +603,10 @@ public class FabricProjectOnboarding {
             .title("railroad.project.creation.split_sources.title")
             .description("railroad.project.creation.split_sources.description")
             .appendSection("railroad.project.creation.section.split_sources",
-                OnboardingFormStep.component(
+                described(
                     FormComponent.checkBox(FabricProjectKeys.SPLIT_SOURCES, "railroad.project.creation.split_sources")
-                        .selected(true)))
+                        .selected(true),
+                    "railroad.project.creation.split_sources.info"))
             .build();
     }
 
@@ -599,28 +623,74 @@ public class FabricProjectOnboarding {
             .title("railroad.project.creation.optional_details.title")
             .description("railroad.project.creation.optional_details.description")
             .appendSection("railroad.project.creation.section.optional_details",
-                OnboardingFormStep.component(
+                described(
                     FormComponent.textField(ProjectData.DefaultKeys.AUTHOR, "railroad.project.creation.author")
                         .text(() -> defaultAuthor)
                         .promptText("railroad.project.creation.author.prompt")
-                        .validator(ProjectValidators::validateAuthor)),
-                OnboardingFormStep.component(
+                        .validator(ProjectValidators::validateAuthor),
+                    "railroad.project.creation.author.info"),
+                described(
                     FormComponent.textArea(ProjectData.DefaultKeys.DESCRIPTION, "railroad.project.creation.description")
                         .promptText("railroad.project.creation.description.prompt")
-                        .validator(ProjectValidators::validateDescription)),
-                OnboardingFormStep.component(
+                        .validator(ProjectValidators::validateDescription),
+                    "railroad.project.creation.description.info"),
+                described(
                     FormComponent.textField(ProjectData.DefaultKeys.ISSUES_URL, "railroad.project.creation.issues_url")
                         .promptText("railroad.project.creation.issues_url.prompt")
-                        .validator(ProjectValidators::validateIssues)),
-                OnboardingFormStep.component(
+                        .validator(ProjectValidators::validateIssues),
+                    "railroad.project.creation.issues_url.info"),
+                described(
                     FormComponent.textField(ProjectData.DefaultKeys.HOMEPAGE_URL, "railroad.project.creation.homepage_url")
                         .promptText("railroad.project.creation.homepage_url.prompt")
-                        .validator(textField -> ProjectValidators.validateGenericUrl(textField, "homepage"))),
-                OnboardingFormStep.component(
+                        .validator(textField -> ProjectValidators.validateGenericUrl(textField, "homepage")),
+                    "railroad.project.creation.homepage_url.info"),
+                described(
                     FormComponent.textField(ProjectData.DefaultKeys.SOURCES_URL, "railroad.project.creation.sources_url")
                         .promptText("railroad.project.creation.sources_url.prompt")
-                        .validator(textField -> ProjectValidators.validateGenericUrl(textField, "sources"))))
+                        .validator(textField -> ProjectValidators.validateGenericUrl(textField, "sources")),
+                    "railroad.project.creation.sources_url.info"))
             .build();
+    }
+
+    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder, String descriptionKey) {
+        return OnboardingFormStep.component(builder, createDescriptionCustomizer(descriptionKey));
+    }
+
+    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, String descriptionKey) {
+        return OnboardingFormStep.component(builder, builder != null ? builder.dataKey() : null, transformer, reverseTransformer, createDescriptionCustomizer(descriptionKey));
+    }
+
+    private static Consumer<FormComponent<?, ?, ?, ?>> createDescriptionCustomizer(String descriptionKey) {
+        if (isNullOrBlank(descriptionKey))
+            return null;
+
+        return component -> attachDescription(component, descriptionKey);
+    }
+
+    private static void attachDescription(FormComponent<?, ?, ?, ?> component, String descriptionKey) {
+        if (component == null || isNullOrBlank(descriptionKey))
+            return;
+
+        Consumer<Node> applyToNode = node -> {
+            if (node instanceof InformativeLabeledHBox<?> informative) {
+                boolean exists = informative.getInformationLabels().stream()
+                    .anyMatch(label -> descriptionKey.equals(label.getKey()));
+                if (!exists) {
+                    informative.addInformationLabel(descriptionKey);
+                }
+            }
+        };
+
+        Node currentNode = component.componentProperty().get();
+        if (currentNode != null) {
+            applyToNode.accept(currentNode);
+        }
+
+        component.componentProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                applyToNode.accept(newValue);
+            }
+        });
     }
 
     private static @NotNull List<MinecraftVersion> getMinecraftVersions() {

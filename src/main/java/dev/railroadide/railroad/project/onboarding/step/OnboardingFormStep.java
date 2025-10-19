@@ -59,40 +59,56 @@ public final class OnboardingFormStep implements OnboardingStep {
     }
 
     public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder) {
-        return component(builder, builder != null ? builder.dataKey() : null, Function.identity(), Function.identity());
+        return component(builder, builder != null ? builder.dataKey() : null, Function.identity(), Function.identity(), null);
     }
 
     public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
-        return component(builder, builder != null ? builder.dataKey() : null, transformer, reverseTransformer);
+        return component(builder, builder != null ? builder.dataKey() : null, transformer, reverseTransformer, null);
     }
 
     public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, String contextKey) {
-        return component(builder, contextKey, Function.identity(), Function.identity());
+        return component(builder, contextKey, Function.identity(), Function.identity(), null);
     }
 
     public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
-        return new ComponentSpec(builder, null, contextKey, transformer, reverseTransformer);
+        return new ComponentSpec(builder, null, contextKey, transformer, reverseTransformer, null);
     }
 
     public static ComponentSpec component(FormComponent<?, ?, ?, ?> component) {
-        return component(component, component != null ? component.dataKey() : null, Function.identity(), Function.identity());
+        return component(component, component != null ? component.dataKey() : null, Function.identity(), Function.identity(), null);
     }
 
     public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
-        return component(component, component != null ? component.dataKey() : null, transformer, reverseTransformer);
+        return component(component, component != null ? component.dataKey() : null, transformer, reverseTransformer, null);
     }
 
     public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, String contextKey) {
-        return component(component, contextKey, Function.identity(), Function.identity());
+        return component(component, contextKey, Function.identity(), Function.identity(), null);
     }
 
     public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
-        return new ComponentSpec(null, component, contextKey, transformer, reverseTransformer);
+        return new ComponentSpec(null, component, contextKey, transformer, reverseTransformer, null);
+    }
+
+    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+        return component(builder, builder != null ? builder.dataKey() : null, Function.identity(), Function.identity(), customizer);
+    }
+
+    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+        return new ComponentSpec(builder, null, contextKey, transformer, reverseTransformer, customizer);
+    }
+
+    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+        return component(component, component != null ? component.dataKey() : null, Function.identity(), Function.identity(), customizer);
+    }
+
+    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+        return new ComponentSpec(null, component, contextKey, transformer, reverseTransformer, customizer);
     }
 
     public record ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component,
-                                String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
-        public ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component, String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
+                                String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+        public ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component, String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, Consumer<FormComponent<?, ?, ?, ?>> customizer) {
             if (builder == null && component == null)
                 throw new IllegalArgumentException("Component specification must provide a builder or component instance");
 
@@ -101,6 +117,7 @@ public final class OnboardingFormStep implements OnboardingStep {
             this.contextKey = contextKey;
             this.transformer = transformer != null ? transformer : Function.identity();
             this.reverseTransformer = reverseTransformer != null ? reverseTransformer : Function.identity();
+            this.customizer = customizer;
         }
     }
 
@@ -438,6 +455,9 @@ public final class OnboardingFormStep implements OnboardingStep {
             FormComponent<?, ?, ?, ?> component = spec.builder() != null ? spec.builder().build() : spec.component();
             if (component == null)
                 return;
+
+            if (spec.customizer() != null)
+                spec.customizer().accept(component);
 
             sectionBuilder.appendComponent(component);
             trackComponent(component);
