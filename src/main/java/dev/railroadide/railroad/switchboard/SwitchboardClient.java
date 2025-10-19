@@ -1,10 +1,11 @@
 package dev.railroadide.railroad.switchboard;
 
+import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import dev.railroadide.core.gson.GsonLocator;
 import dev.railroadide.core.switchboard.pojo.FabricLoaderVersion;
 import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
 import dev.railroadide.core.switchboard.pojo.ParchmentVersion;
+import dev.railroadide.core.utility.ServiceLocator;
 import dev.railroadide.railroad.Railroad;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
@@ -272,7 +273,7 @@ public record SwitchboardClient(String baseUrl) {
                 }
 
                 ResponseBody body = Objects.requireNonNull(response.body());
-                T result = GsonLocator.getInstance().fromJson(body.charStream(), clazz.getType());
+                T result = ServiceLocator.getService(Gson.class).fromJson(body.charStream(), clazz.getType());
                 future.complete(result);
             } catch (Exception exception) {
                 future.completeExceptionally(exception);

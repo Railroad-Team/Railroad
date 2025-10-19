@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.project.creation.step;
 
 import dev.railroadide.core.project.ProjectContext;
-import dev.railroadide.core.project.creation.service.GitService;
+import dev.railroadide.core.project.ProjectData;
 import dev.railroadide.core.project.creation.CreationStep;
 import dev.railroadide.core.project.creation.ProgressReporter;
-import dev.railroadide.core.project.ProjectData;
+import dev.railroadide.core.project.creation.service.GitService;
 
 public record InitGitStep(GitService git) implements CreationStep {
     @Override

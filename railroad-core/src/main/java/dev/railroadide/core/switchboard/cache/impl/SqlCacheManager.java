@@ -4,9 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.reflect.TypeToken;
-import dev.railroadide.core.logger.LoggerServiceLocator;
 import dev.railroadide.core.switchboard.cache.CacheEntryWrapper;
 import dev.railroadide.core.switchboard.cache.MetadataCacheEntry;
+import dev.railroadide.core.utility.ServiceLocator;
+import dev.railroadide.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
@@ -120,7 +121,7 @@ public class SqlCacheManager implements IterableCacheManager {
 
                 memoryCache.put(key, entry);
             } catch (Exception exception) {
-                LoggerServiceLocator.getInstance().getLogger().error("Failed to put cache entry for key: {}", key, exception);
+                ServiceLocator.getService(Logger.class).error("Failed to put cache entry for key: {}", key, exception);
             }
         });
 
@@ -134,7 +135,7 @@ public class SqlCacheManager implements IterableCacheManager {
             stmt.setString(1, key);
             stmt.executeUpdate();
         } catch (SQLException exception) {
-            LoggerServiceLocator.getInstance().getLogger().error("Failed to invalidate cache entry for key: {}", key, exception);
+            ServiceLocator.getService(Logger.class).error("Failed to invalidate cache entry for key: {}", key, exception);
         }
     }
 
@@ -159,11 +160,11 @@ public class SqlCacheManager implements IterableCacheManager {
 
                     results.add(new CacheEntryWrapper(key, entry, typeToken));
                 } catch (Exception exception) {
-                    LoggerServiceLocator.getInstance().getLogger().error("Failed to deserialize cache entry: {}", key, exception);
+                    ServiceLocator.getService(Logger.class).error("Failed to deserialize cache entry: {}", key, exception);
                 }
             }
         } catch (SQLException exception) {
-            LoggerServiceLocator.getInstance().getLogger().error("Failed to iterate cache entries", exception);
+            ServiceLocator.getService(Logger.class).error("Failed to iterate cache entries", exception);
         }
 
         return results;

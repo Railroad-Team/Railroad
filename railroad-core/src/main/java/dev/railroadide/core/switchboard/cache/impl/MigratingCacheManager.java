@@ -1,10 +1,11 @@
 package dev.railroadide.core.switchboard.cache.impl;
 
 import com.google.gson.reflect.TypeToken;
-import dev.railroadide.core.logger.LoggerServiceLocator;
 import dev.railroadide.core.switchboard.cache.CacheEntryWrapper;
 import dev.railroadide.core.switchboard.cache.CacheManager;
 import dev.railroadide.core.switchboard.cache.MetadataCacheEntry;
+import dev.railroadide.core.utility.ServiceLocator;
+import dev.railroadide.logger.Logger;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
@@ -65,7 +66,7 @@ public class MigratingCacheManager implements CacheManager {
         executor.submit(() -> {
             try {
                 if (!(oldBackend instanceof IterableCacheManager iterableOld)) {
-                    LoggerServiceLocator.getInstance().getLogger().warn("Old cache backend does not support iteration, skipping sweep.");
+                    ServiceLocator.getService(Logger.class).warn("Old cache backend does not support iteration, skipping sweep.");
                     return;
                 }
 
@@ -76,16 +77,16 @@ public class MigratingCacheManager implements CacheManager {
                             newBackend.put(entry.key(), entry.entry());
                         }
                     } catch (Exception exception) {
-                        LoggerServiceLocator.getInstance().getLogger().error("Failed to migrate cache entry: {}", entry.key(), exception);
+                        ServiceLocator.getService(Logger.class).error("Failed to migrate cache entry: {}", entry.key(), exception);
                     }
 
                     // we throttle a bit to avoid hogging hammering the disk
                     Thread.sleep(this.sweepThrottleMs);
                 }
 
-                LoggerServiceLocator.getInstance().getLogger().info("Cache migration sweep complete.");
+                ServiceLocator.getService(Logger.class).info("Cache migration sweep complete.");
             } catch (Exception exception) {
-                LoggerServiceLocator.getInstance().getLogger().error("Cache migration sweep failed", exception);
+                ServiceLocator.getService(Logger.class).error("Cache migration sweep failed", exception);
             } finally {
                 executor.shutdown();
             }

@@ -5,7 +5,6 @@ import dev.railroadide.railroad.project.onboarding.ui.OnboardingSection;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 public interface OnboardingStep {
     String id();

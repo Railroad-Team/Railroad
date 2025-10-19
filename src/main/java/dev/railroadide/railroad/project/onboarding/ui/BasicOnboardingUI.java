@@ -2,7 +2,6 @@ package dev.railroadide.railroad.project.onboarding.ui;
 
 import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
-import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.onboarding.step.OnboardingStep;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

@@ -1,21 +1,21 @@
 package dev.railroadide.railroad.project.creation.step;
 
 import dev.railroadide.core.project.License;
-import dev.railroadide.core.project.ProjectType;
-import dev.railroadide.railroad.project.LicenseRegistry;
 import dev.railroadide.core.project.ProjectContext;
-import dev.railroadide.core.project.creation.service.FilesService;
+import dev.railroadide.core.project.ProjectData;
+import dev.railroadide.core.project.ProjectType;
 import dev.railroadide.core.project.creation.CreationStep;
 import dev.railroadide.core.project.creation.ProgressReporter;
+import dev.railroadide.core.project.creation.service.FilesService;
+import dev.railroadide.core.project.minecraft.MappingChannel;
+import dev.railroadide.core.switchboard.pojo.FabricLoaderVersion;
+import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
+import dev.railroadide.railroad.project.LicenseRegistry;
+import dev.railroadide.railroad.project.MappingChannelRegistry;
 import dev.railroadide.railroad.project.ProjectTypeRegistry;
 import dev.railroadide.railroad.project.data.FabricProjectKeys;
 import dev.railroadide.railroad.project.data.MavenProjectKeys;
 import dev.railroadide.railroad.project.data.MinecraftProjectKeys;
-import dev.railroadide.core.project.ProjectData;
-import dev.railroadide.core.project.minecraft.MappingChannel;
-import dev.railroadide.railroad.project.MappingChannelRegistry;
-import dev.railroadide.core.switchboard.pojo.FabricLoaderVersion;
-import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
 
 import java.io.IOException;
 import java.nio.file.Path;

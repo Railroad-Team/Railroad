@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.project.creation.step;
 
 import dev.railroadide.core.project.ProjectContext;
-import dev.railroadide.core.project.creation.service.GradleService;
 import dev.railroadide.core.project.creation.CreationStep;
 import dev.railroadide.core.project.creation.ProgressReporter;
+import dev.railroadide.core.project.creation.service.GradleService;
 
 public record SetupForgeGradleWrapperStep(GradleService gradle) implements CreationStep {
     @Override

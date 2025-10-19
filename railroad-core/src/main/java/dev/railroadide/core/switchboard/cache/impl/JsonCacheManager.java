@@ -3,9 +3,10 @@ package dev.railroadide.core.switchboard.cache.impl;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import dev.railroadide.core.logger.LoggerServiceLocator;
 import dev.railroadide.core.switchboard.cache.CacheEntryWrapper;
 import dev.railroadide.core.switchboard.cache.MetadataCacheEntry;
+import dev.railroadide.core.utility.ServiceLocator;
+import dev.railroadide.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -67,7 +68,7 @@ public class JsonCacheManager implements IterableCacheManager {
                     return Optional.of(entry);
                 }
             } catch (IOException exception) {
-                LoggerServiceLocator.getInstance().getLogger().warn("Failed to read cache file: {}", file, exception);
+                ServiceLocator.getService(Logger.class).warn("Failed to read cache file: {}", file, exception);
                 invalidate(key);
             }
             return Optional.empty();
@@ -83,7 +84,7 @@ public class JsonCacheManager implements IterableCacheManager {
             StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
             gson.toJson(entry, writer);
         } catch (IOException exception) {
-            LoggerServiceLocator.getInstance().getLogger().warn("Failed to write cache file: {}", file, exception);
+            ServiceLocator.getService(Logger.class).warn("Failed to write cache file: {}", file, exception);
         }
 
         return entry.data();
@@ -96,7 +97,7 @@ public class JsonCacheManager implements IterableCacheManager {
         try {
             Files.deleteIfExists(file);
         } catch (IOException exception) {
-            LoggerServiceLocator.getInstance().getLogger().warn("Failed to delete cache file: {}", file, exception);
+            ServiceLocator.getService(Logger.class).warn("Failed to delete cache file: {}", file, exception);
         }
     }
 
@@ -135,14 +136,14 @@ public class JsonCacheManager implements IterableCacheManager {
 
                         return new CacheEntryWrapper(key, entry, typeToken);
                     } catch (Exception exception) {
-                        LoggerServiceLocator.getInstance().getLogger().error("Failed to read cache entry: {}", path, exception);
+                        ServiceLocator.getService(Logger.class).error("Failed to read cache entry: {}", path, exception);
                         return null;
                     }
                 })
                 .filter(Objects::nonNull)
                 .toList();
         } catch (IOException exception) {
-            LoggerServiceLocator.getInstance().getLogger().error("Failed to list cache directory: {}", baseDir, exception);
+            ServiceLocator.getService(Logger.class).error("Failed to list cache directory: {}", baseDir, exception);
             return List.of();
         }
     }

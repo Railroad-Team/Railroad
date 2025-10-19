@@ -1,9 +1,10 @@
 package dev.railroadide.core.project.minecraft.pistonmeta;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import dev.railroadide.core.gson.GsonLocator;
+import dev.railroadide.core.utility.ServiceLocator;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -52,7 +53,7 @@ public record Library(Download artifact, String name, Optional<List<DownloadRule
 
     public static void readLibraries(Map<String, Path> libraryJars, Path librariesJsonPath) throws IOException {
         String librariesJson = Files.readString(librariesJsonPath);
-        JsonObject librariesObject = GsonLocator.getInstance().fromJson(librariesJson, JsonObject.class);
+        JsonObject librariesObject = ServiceLocator.getService(Gson.class).fromJson(librariesJson, JsonObject.class);
         for (Map.Entry<String, JsonElement> entry : librariesObject.entrySet()) {
             String name = entry.getKey();
             String path = entry.getValue().getAsString();
@@ -98,7 +99,7 @@ public record Library(Download artifact, String name, Optional<List<DownloadRule
 
         public record OperatingSystem(String name) {
             public static OperatingSystem fromJson(JsonObject json) {
-                return GsonLocator.getInstance().fromJson(json, OperatingSystem.class);
+                return ServiceLocator.getService(Gson.class).fromJson(json, OperatingSystem.class);
             }
         }
     }

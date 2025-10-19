@@ -1,13 +1,10 @@
-<<<<<<<< HEAD:src/main/java/dev/railroadide/railroad/project/minecraft/mappings/MappingChannel.java
-package dev.railroadide.railroad.project.minecraft.mappings;
-========
 package dev.railroadide.core.project.minecraft;
->>>>>>>> dev:railroad-core/src/main/java/dev/railroadide/core/project/minecraft/MappingChannel.java
 
-import dev.railroadide.core.logger.LoggerServiceLocator;
 import dev.railroadide.core.registry.Registry;
 import dev.railroadide.core.registry.RegistryManager;
 import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
+import dev.railroadide.core.utility.ServiceLocator;
+import dev.railroadide.logger.Logger;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -38,7 +35,7 @@ public class MappingChannel {
         try {
             return versionLister.apply(minecraftVersion);
         } catch (Exception exception) {
-            LoggerServiceLocator.getInstance().getLogger().error("Failed to list versions for mapping channel {} and Minecraft version {}", id, minecraftVersion.id(), exception);
+            ServiceLocator.getService(Logger.class).error("Failed to list versions for mapping channel {} and Minecraft version {}", id, minecraftVersion.id(), exception);
             return Collections.emptyList();
         }
     }
