@@ -2,10 +2,10 @@ package dev.railroadide.railroad.theme.ui;
 
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRFormSection;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.theme.ThemeDownloadManager;
+import dev.railroadide.railroad.theme.ThemeManager;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
@@ -106,7 +106,7 @@ public class ThemeSelector extends VBox {
     }
 
     private void applyTheme(String themeName) {
-        Railroad.updateTheme(themeName);
+        ThemeManager.setTheme(themeName);
     }
 
     public ObjectProperty<String> selectedThemeProperty() {

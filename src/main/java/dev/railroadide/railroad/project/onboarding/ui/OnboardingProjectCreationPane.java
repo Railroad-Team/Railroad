@@ -3,8 +3,9 @@ package dev.railroadide.railroad.project.onboarding.ui;
 import dev.railroadide.core.ui.RRBorderPane;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.utility.MacUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -53,12 +54,12 @@ public class OnboardingProjectCreationPane extends RRVBox {
         double windowW = screenW * 0.75;
         double windowH = screenH * 0.75;
         var onboardingScene = new Scene(new RRBorderPane(), windowW, windowH);
-        Railroad.handleStyles(onboardingScene);
+        ThemeManager.apply(onboardingScene);
 
         MacUtils.initialize();
         onboardingStage.initOwner(parentWindow);
         onboardingStage.setTitle(L18n.localize("railroad.project.creation.onboarding.title"));
-        onboardingStage.getIcons().add(new Image(Railroad.getResourceAsStream("images/logo.png")));
+        onboardingStage.getIcons().add(new Image(AppResources.getResourceAsStream("images/logo.png")));
         onboardingStage.setMinWidth(onboardingScene.getWidth() + 10);
         onboardingStage.setMinHeight(onboardingScene.getHeight() + 10);
         onboardingStage.setScene(onboardingScene);

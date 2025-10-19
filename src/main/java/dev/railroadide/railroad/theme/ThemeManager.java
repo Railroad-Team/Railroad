@@ -51,6 +51,8 @@ public class ThemeManager {
     }
 
     public static void setTheme(String theme) {
+        if(theme == null) theme = "";
+
         currentTheme = theme;
         reloadAll();
     }

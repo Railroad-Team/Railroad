@@ -5,8 +5,8 @@ import dev.railroadide.core.utility.OperatingSystem;
 import dev.railroadide.nsmenufx.MenuToolkit;
 import dev.railroadide.nsmenufx.dialogs.about.AboutStageBuilder;
 import dev.railroadide.railroad.AppResources;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
+import dev.railroadide.railroad.theme.ThemeManager;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Menu;
@@ -37,7 +37,7 @@ public class MacUtils {
                 settingsStage.setTitle("Settings");
                 var settingsPane = new SettingsPane();
                 var scene = new Scene(settingsPane, 1000, 600);
-                Railroad.handleStyles(scene);
+                ThemeManager.apply(scene);
                 settingsStage.setScene(scene);
                 settingsStage.show();
             });

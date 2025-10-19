@@ -6,11 +6,11 @@ import dev.railroadide.core.settings.DefaultSettingCodecs;
 import dev.railroadide.core.settings.Setting;
 import dev.railroadide.core.settings.SettingCategory;
 import dev.railroadide.core.settings.keybinds.KeybindData;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.localization.Languages;
 import dev.railroadide.railroad.plugin.PluginManager;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
+import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroadpluginapi.PluginDescriptor;
 
 import java.util.HashMap;
@@ -31,7 +31,7 @@ public final class Settings {
         .defaultValue("default-dark")
         .noTitle()
         .noDescription()
-        .addListener((oldValue, newValue) -> Railroad.updateTheme(newValue))
+        .addListener((oldValue, newValue) -> ThemeManager.setTheme(newValue))
         .canBeNull(false)
         .build());
 

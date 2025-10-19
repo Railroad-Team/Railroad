@@ -5,7 +5,7 @@ import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.localized.LocalizedTitledPane;
 import dev.railroadide.core.ui.localized.LocalizedTooltip;
-import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.localization.L18n;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import javafx.animation.FadeTransition;
@@ -129,9 +129,9 @@ public class ProjectCreationView extends RRBorderPane {
 
         sceneProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
-                newValue.getStylesheets().add(Railroad.getResource("styles/project-creation-view.css").toExternalForm());
+                newValue.getStylesheets().add(AppResources.getResource("styles/project-creation-view.css").toExternalForm());
             } else if (oldValue != null) {
-                oldValue.getStylesheets().remove(Railroad.getResource("styles/project-creation-view.css").toExternalForm());
+                oldValue.getStylesheets().remove(AppResources.getResource("styles/project-creation-view.css").toExternalForm());
             }
         });
     }

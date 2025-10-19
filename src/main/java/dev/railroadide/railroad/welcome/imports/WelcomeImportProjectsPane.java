@@ -6,6 +6,7 @@ import dev.railroadide.core.vcs.Repository;
 import dev.railroadide.core.vcs.connections.AbstractConnection;
 import dev.railroadide.core.vcs.connections.VCSProfile;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.Settings;
@@ -111,7 +112,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
 
             var project = Railroad.PROJECT_MANAGER.newProject(new Project(projectDir));
             if (SettingsHandler.getValue(Settings.SWITCH_TO_IDE_AFTER_IMPORT)) {
-                Platform.runLater(() -> Railroad.switchToIDE(project));
+                Platform.runLater(() -> IDESetup.switchToIDE(project));
             }
         }).exceptionally(exception -> {
             showError(exception.getLocalizedMessage(), false);
@@ -281,7 +282,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
 
             chooseDirButton.setOnAction($ -> {
                 var chooser = new DirectoryChooser();
-                File selectedDir = chooser.showDialog(Railroad.getWindow());
+                File selectedDir = chooser.showDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
                 if (selectedDir != null) {
                     lastBaseDirectory = selectedDir.getAbsolutePath();
                     Repository repo = repositoryListView.getSelectionModel().getSelectedItem();
@@ -337,7 +338,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
 
             chooseDirButton.setOnAction($ -> {
                 var chooser = new DirectoryChooser();
-                File selectedDir = chooser.showDialog(Railroad.getWindow());
+                File selectedDir = chooser.showDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
                 if (selectedDir != null) {
                     directoryField.setText(selectedDir.getAbsolutePath());
                 }

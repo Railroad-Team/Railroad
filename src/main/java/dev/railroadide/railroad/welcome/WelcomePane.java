@@ -4,6 +4,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
+import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.welcome.imports.WelcomeImportProjectsPane;
 import dev.railroadide.railroad.welcome.project.ui.NewProjectPane;
 import javafx.application.Platform;
@@ -88,7 +89,7 @@ public class WelcomePane extends HBox {
             }
         });
 
-        Platform.runLater(() -> requestFocus());
+        Platform.runLater(this::requestFocus);
     }
 
     private void openProjectDialog() {
@@ -138,7 +139,7 @@ public class WelcomePane extends HBox {
                 settingsStage.setTitle("Settings");
                 var settingsPane = new SettingsPane();
                 var scene = new Scene(settingsPane, 900, 600);
-                Railroad.handleStyles(scene);
+                ThemeManager.apply(scene);
                 settingsStage.setScene(scene);
                 settingsStage.setOnHidden($ -> settingsStage = null);
                 settingsStage.show();

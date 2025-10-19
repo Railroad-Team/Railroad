@@ -4,9 +4,9 @@ import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRFormSection;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.AppResources;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.theme.ThemeDownloadManager;
+import dev.railroadide.railroad.theme.ThemeManager;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -263,7 +263,7 @@ public class ThemeExamplePane {
         applyButton.setVariant(RRButton.ButtonVariant.PRIMARY);
         applyButton.setOnAction($ -> {
             // Apply the theme to the main application
-            Railroad.updateTheme(themeName.replace(".css", ""));
+            ThemeManager.setTheme(themeName.replace(".css", ""));
             stage.close();
         });
 
