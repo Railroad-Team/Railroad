@@ -54,6 +54,8 @@ dependencies {
 
     implementation "dev.railroadide:RailroadLogger:1.0.2"
     implementation 'org.apache.commons:commons-lang3:3.18.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.0'
 
     compileOnly 'org.jetbrains:annotations:24.0.0'
 

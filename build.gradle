@@ -73,7 +73,8 @@ dependencies {
     implementation 'org.eclipse.jdt:org.eclipse.jdt.core:3.41.0'
     implementation 'com.github.erosb:everit-json-schema:1.14.6'
     implementation 'org.apache.commons:commons-compress:1.27.1'
-    implementation("net.java.dev.jna:jna:5.16.0")
+    implementation 'net.java.dev.jna:jna:5.16.0'
+    implementation 'org.xerial:sqlite-jdbc:3.50.3.0'
 
     implementation 'com.google.guava:guava:33.4.8-jre'
     implementation "org.apache.maven:maven-core:3.9.10"
@@ -93,7 +94,7 @@ dependencies {
         exclude group: 'net.java.dev.jna', module: 'jna'
     }
 
-    implementation 'dev.railroadide:RailroadLogger:1.0.2'
+    implementation 'dev.railroadide:RailroadLogger:1.0.3'
     implementation 'dev.railroadide:RailroadPluginAPI:1.0.3'
     implementation project(':railroad-core')
 

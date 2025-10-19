@@ -1,8 +1,10 @@
 package dev.railroadide.core.form.ui;
 
+import dev.railroadide.core.form.HasSetValue;
 import dev.railroadide.core.ui.BrowseButton;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRTextField;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.paint.Color;
 import lombok.Getter;
@@ -12,6 +14,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * A form directory chooser component that extends InformativeLabeledHBox to provide
@@ -19,13 +22,13 @@ import java.util.Map;
  * Supports validation and modern styling.
  */
 @Getter
-public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryChooser.TextFieldWithButton> {
+public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryChooser.TextFieldWithButton> implements HasSetValue {
     /**
      * Constructs a new FormDirectoryChooser with the specified configuration.
      *
-     * @param labelKey the localization key for the label text
-     * @param required whether the directory chooser is required
-     * @param defaultPath the default path to display in the text field, or null for empty
+     * @param labelKey      the localization key for the label text
+     * @param required      whether the directory chooser is required
+     * @param defaultPath   the default path to display in the text field, or null for empty
      * @param includeButton whether to include a browse button for directory selection
      */
     public FormDirectoryChooser(String labelKey, boolean required, @Nullable String defaultPath, boolean includeButton) {
@@ -35,7 +38,7 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
     /**
      * Creates the parameters map for the directory chooser component.
      *
-     * @param defaultPath the default path to display
+     * @param defaultPath   the default path to display
      * @param includeButton whether to include a browse button
      * @return a map containing the component parameters
      */
@@ -87,6 +90,11 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
         return hbox;
     }
 
+    @Override
+    public void setValue(Object value) {
+        Platform.runLater(() -> getPrimaryComponent().textField.setText(Objects.toString(value, "null")));
+    }
+
     /**
      * A container component that combines a text field with an optional browse button.
      * Used to display the directory chooser interface.
@@ -99,7 +107,7 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
         /**
          * Constructs a new TextFieldWithButton with the specified components.
          *
-         * @param textField the text field for displaying the selected directory path
+         * @param textField    the text field for displaying the selected directory path
          * @param browseButton the browse button for opening the directory chooser, or null if not needed
          */
         public TextFieldWithButton(RRTextField textField, @Nullable BrowseButton browseButton) {

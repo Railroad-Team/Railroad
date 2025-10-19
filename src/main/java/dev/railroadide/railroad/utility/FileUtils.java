@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -164,6 +165,19 @@ public final class FileUtils {
      * @throws RuntimeException if an error occurs during deletion
      */
     public static void deleteFolder(Path folder) throws RuntimeException {
+        if(Files.notExists(folder))
+            return;
+
+        if(!Files.isDirectory(folder)) {
+            try {
+                Files.deleteIfExists(folder);
+            } catch (IOException exception) {
+                throw new RuntimeException("Failed to delete file", exception);
+            }
+
+            return;
+        }
+
         try (Stream<Path> paths = Files.walk(folder)) {
             paths.sorted(Comparator.reverseOrder()).forEach(path -> {
                 try {
@@ -380,5 +394,24 @@ public final class FileUtils {
         int exp = (int) (Math.log(size) / Math.log(unit));
         char pre = "KMGTPE".charAt(exp - 1);
         return String.format("%.1f %sB", size / Math.pow(unit, exp), pre);
+    }
+
+    public static void copyDirectoryContents(Path src, Path dst, CopyOption... options) {
+        try(Stream<Path> files = Files.walk(src)) {
+            files.forEach(source -> {
+                try {
+                    Path destination = dst.resolve(src.relativize(source));
+                    if (Files.isDirectory(source)) {
+                        Files.createDirectories(destination);
+                    } else {
+                        Files.copy(source, destination, options);
+                    }
+                } catch (IOException exception) {
+                    throw new RuntimeException("Failed to copy directory contents", exception);
+                }
+            });
+        } catch (IOException exception) {
+            throw new RuntimeException("Failed to copy directory contents", exception);
+        }
     }
 }

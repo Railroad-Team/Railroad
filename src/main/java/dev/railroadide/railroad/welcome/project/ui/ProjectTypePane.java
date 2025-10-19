@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.welcome.project.ui;
 
+import dev.railroadide.core.project.ProjectType;
 import dev.railroadide.core.ui.RRListView;
 import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.railroad.welcome.project.ProjectType;
 import dev.railroadide.railroad.welcome.project.ui.widget.ProjectTypeCell;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -15,7 +15,7 @@ public class ProjectTypePane extends RRVBox {
     private final ScrollPane projectTypesScroller;
     @Getter
     private final RRListView<ProjectType> projectTypeListView;
-    private final ObservableList<ProjectType> allProjectTypes = FXCollections.observableArrayList(ProjectType.values());
+    private final ObservableList<ProjectType> allProjectTypes = FXCollections.observableArrayList(ProjectType.REGISTRY.values());
 
     public ProjectTypePane() {
         super(16);

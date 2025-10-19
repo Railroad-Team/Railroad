@@ -18,7 +18,7 @@ public class TreeSitterJavaSyntaxHighlighting {
         long start = System.currentTimeMillis();
 
         var highlighter = new SyntaxHighlighter(text);
-        highlighter.traverseTree(null, highlighter.rootNode);
+        highlighter.traverseTree(new TSTreeCursor(highlighter.rootNode), highlighter.rootNode);
 
         var styles = highlighter.spansBuilder.create();
         Railroad.LOGGER.debug("Computed highlighting in {} ms", System.currentTimeMillis() - start);

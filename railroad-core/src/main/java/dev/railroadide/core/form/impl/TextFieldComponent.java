@@ -2,6 +2,7 @@ package dev.railroadide.core.form.impl;
 
 import dev.railroadide.core.form.*;
 import dev.railroadide.core.form.ui.FormTextField;
+import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
 import javafx.beans.value.ChangeListener;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A form component that represents a text field.
@@ -41,7 +43,18 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
      * @param visible         the visibility of the text field
      */
     public TextFieldComponent(String dataKey, Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
-        super(dataKey, data, currentData -> new FormTextField(currentData.label, currentData.required, currentData.text, currentData.promptText, currentData.editable, currentData.translate), validator, listener, transformers, visible);
+        super(dataKey, data, currentData -> {
+            var formTextField = new FormTextField(currentData.label, currentData.required, currentData.promptText, currentData.editable, currentData.translate);
+            if (currentData.text != null) {
+                new Thread(() -> {
+                    String text = data.text.get();
+                    if (text != null)
+                        Platform.runLater(() -> formTextField.getPrimaryComponent().setText(text));
+                }).start();
+            }
+
+            return formTextField;
+        }, validator, listener, transformers, visible);
 
         if (bindTextFieldTo != null) {
             bindTextFieldTo.bind(componentProperty().map(FormTextField::getPrimaryComponent));
@@ -78,7 +91,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
             if (newValue != null) {
                 TextField textField = newValue.getTextField();
                 listenerRef.set((observable1, oldValue1, newValue1) ->
-                        listener.changed(textField, observable1, oldValue1, newValue1));
+                    listener.changed(textField, observable1, oldValue1, newValue1));
 
                 textField.textProperty().addListener(listenerRef.get());
             }
@@ -88,27 +101,27 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
     @Override
     protected void bindToFormData(FormData formData) {
         componentProperty()
-                .map(FormTextField::getPrimaryComponent)
-                .flatMap(TextField::textProperty)
-                .addListener((observable, oldValue, newValue) ->
-                        formData.addProperty(dataKey, newValue));
+            .map(FormTextField::getPrimaryComponent)
+            .flatMap(TextField::textProperty)
+            .addListener((observable, oldValue, newValue) ->
+                formData.addProperty(dataKey, newValue));
 
         formData.addProperty(dataKey, componentProperty()
-                .map(FormTextField::getPrimaryComponent)
-                .map(TextField::getText)
-                .orElse(getData().text)
-                .getValue());
+            .map(FormTextField::getPrimaryComponent)
+            .map(TextField::getText)
+            .orElse(getData().text.get())
+            .getValue());
     }
 
     @Override
     public void reset() {
-        getComponent().getPrimaryComponent().setText(getData().text);
+        getComponent().getPrimaryComponent().setText(getData().text.get());
     }
 
     /**
      * A builder for constructing a {@link TextFieldComponent}.
      */
-    public static class Builder {
+    public static class Builder implements FormComponentBuilder<TextFieldComponent, TextField, String, Builder> {
         private final String dataKey;
         private final Data data;
         private final List<FormTransformer<TextField, String, ?>> transformers = new ArrayList<>();
@@ -129,6 +142,11 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
             this.data = new Data(label);
         }
 
+        @Override
+        public String dataKey() {
+            return dataKey;
+        }
+
         /**
          * Sets the text of the text field.
          *
@@ -136,7 +154,11 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @return this builder
          */
         public Builder text(String text) {
-            this.data.text = text;
+            return text(() -> text);
+        }
+
+        public Builder text(Supplier<String> textSupplier) {
+            this.data.text = textSupplier;
             return this;
         }
 
@@ -201,6 +223,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @param validator the validator
          * @return this builder
          */
+        @Override
         public Builder validator(FormComponentValidator<TextField> validator) {
             this.validator = validator;
             return this;
@@ -212,6 +235,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @param listener the listener
          * @return this builder
          */
+        @Override
         public Builder listener(FormComponentChangeListener<TextField, String> listener) {
             this.listener = listener;
             return this;
@@ -234,10 +258,11 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @param fromComponent       the observable value of the component to transform
          * @param toComponentFunction the function to set the value of the component
          * @param valueMapper         the function to map the value
-         * @param <W>                 the type of the component
+         * @param <X>                 the type of the component
          * @return this builder
          */
-        public <W> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<W> toComponentFunction, Function<String, W> valueMapper) {
+        @Override
+        public <X> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<X> toComponentFunction, Function<String, X> valueMapper) {
             this.transformers.add(new FormTransformer<>(fromComponent, TextField::getText, toComponentFunction, valueMapper));
             return this;
         }
@@ -249,10 +274,11 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @param toComponent   the component to set the value to
          * @param valueMapper   the function to map the value
          * @param <U>           the type of the component
-         * @param <W>           the type of the value
+         * @param <X>           the type of the value
          * @return this builder
          */
-        public <U extends Node, W> Builder addTransformer(ObservableValue<TextField> fromComponent, ObservableValue<U> toComponent, Function<String, W> valueMapper) {
+        @Override
+        public <U extends Node, X> Builder addTransformer(ObservableValue<TextField> fromComponent, ObservableValue<U> toComponent, Function<String, X> valueMapper) {
             this.transformers.add(new FormTransformer<>(fromComponent, TextField::getText, value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());
@@ -280,6 +306,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @param visible the visibility
          * @return this builder
          */
+        @Override
         public Builder visible(BooleanBinding visible) {
             this.visible = visible;
             return this;
@@ -290,6 +317,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          *
          * @return the text field component
          */
+        @Override
         public TextFieldComponent build() {
             return new TextFieldComponent(dataKey, data, validator, listener, bindTextFieldTo, transformers, keyTypedHandler, visible);
         }
@@ -300,7 +328,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
      */
     public static class Data {
         private final String label;
-        private String text = "";
+        private Supplier<String> text = () -> "";
         private String promptText;
         private boolean editable = true;
         private boolean required = false;
@@ -322,7 +350,12 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @return this builder
          */
         public Data text(String text) {
-            this.text = text;
+            this.text = () -> text;
+            return this;
+        }
+
+        public Data text(Supplier<String> textSupplier) {
+            this.text = textSupplier;
             return this;
         }
 

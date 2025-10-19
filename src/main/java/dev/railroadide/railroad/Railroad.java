@@ -5,16 +5,23 @@ import com.google.gson.GsonBuilder;
 import dev.railroadide.core.utility.ServiceLocator;
 import dev.railroadide.logger.Logger;
 import dev.railroadide.logger.LoggerManager;
+import dev.railroadide.logger.LoggerService;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.PluginManager;
 import dev.railroadide.railroad.plugin.defaults.DefaultEventBus;
+import dev.railroadide.railroad.project.LicenseRegistry;
+import dev.railroadide.railroad.project.MappingChannelRegistry;
 import dev.railroadide.railroad.project.ProjectManager;
+import dev.railroadide.railroad.project.ProjectTypeRegistry;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetTypeAdapter;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
+
+import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
+import dev.railroadide.railroad.utility.LocalDateTimeTypeAdapter;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.vcs.RepositoryManager;
 import dev.railroadide.railroad.welcome.WelcomePane;
@@ -30,6 +37,7 @@ import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
 import okhttp3.OkHttpClient;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -43,14 +51,17 @@ import java.util.function.Consumer;
 public class Railroad extends Application {
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
     public static final Logger LOGGER = LoggerManager.create(Railroad.class)
-        .logDirectory(ConfigHandler.getConfigDirectory().resolve("logs"))
-        .configFile(ConfigHandler.getConfigDirectory().resolve("logger_config.json"))
-        .build();
+        .service(LoggerService.builder()
+            .logDirectory(ConfigHandler.getConfigDirectory().resolve("logs"))
+            .configFile(ConfigHandler.getConfigDirectory().resolve("logger_config.json"))
+            .build()
+        ).build();
     public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build();
     public static final Gson GSON = new GsonBuilder()
         .setPrettyPrinting()
         .disableHtmlEscaping()
         .registerTypeAdapter(Facet.class, new FacetTypeAdapter())
+        .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeTypeAdapter())
         .create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
@@ -121,6 +132,11 @@ public class Railroad extends Application {
 
             L18n.loadLanguage(SettingsHandler.getValue(Settings.LANGUAGE));
             WINDOW_MANAGER.showPrimary(new Scene(new WelcomePane()), Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion());
+
+            SwitchboardRepositories.initialize();
+            MappingChannelRegistry.initialize();
+            LicenseRegistry.initialize();
+            ProjectTypeRegistry.initialize();
 
             LOGGER.info("Railroad started");
             PluginManager.enableEnabledPlugins();

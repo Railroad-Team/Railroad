@@ -2276,3 +2276,99 @@
     -fx-min-height: 32px;
     /*-fx-max-height: 40px;*/
 }
+
+/* ===== ONBOARDING LAYOUT ===== */
+.onboarding-root {
+    -fx-background-color: -color-bg-default;
+}
+
+.onboarding-main {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 20px;
+    -fx-border-radius: 20px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-padding: 32px;
+    -fx-spacing: 24px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.18), 24, 0.18, 0, 12);
+}
+
+.onboarding-header {
+    -fx-spacing: 12px;
+    -fx-padding: 8px;
+}
+
+.onboarding-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -color-fg-default;
+}
+
+.onboarding-description {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 14px;
+}
+
+.onboarding-progress {
+    -fx-spacing: 12px;
+}
+
+.onboarding-progress-bar {
+    -fx-accent: -color-accent-emphasis;
+    -fx-pref-height: 6px;
+    -fx-background-radius: 6px;
+}
+
+.onboarding-progress-bar > .bar {
+    -fx-background-radius: 6px;
+}
+
+.onboarding-progress-label {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+.onboarding-content-frame {
+    -fx-background-color: transparent;
+}
+
+.onboarding-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.onboarding-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.onboarding-content-container {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-padding: 24px;
+    -fx-spacing: 16px;
+}
+
+.onboarding-step-content {
+    -fx-padding: 0;
+}
+
+.onboarding-busy-overlay {
+    -fx-background-color: rgba(0, 0, 0, 0.35);
+    -fx-alignment: center;
+}
+
+.onboarding-button-bar {
+    -fx-padding: 24px 0 0 0;
+}
+
+.onboarding-button {
+    -fx-min-width: 120px;
+}
+
+.onboarding-back-button {
+    -fx-background-color: transparent;
+}

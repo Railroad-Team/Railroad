@@ -200,6 +200,6 @@ public class WelcomeProjectsPane extends ScrollPane {
         if (copy.equals(projectsList.getItems()))
             return;
 
-        projectsList.getItems().setAll(FXCollections.observableArrayList(copy));
+        projectsList.setItems(FXCollections.observableArrayList(copy));
     }
 }

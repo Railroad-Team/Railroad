@@ -1,0 +1,95 @@
+package dev.railroadide.railroad.switchboard.repositories;
+
+import dev.railroadide.core.switchboard.SwitchboardRepository;
+import dev.railroadide.core.switchboard.cache.CacheManager;
+import dev.railroadide.railroad.switchboard.SwitchboardClient;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+public record ForgeVersionRepository(SwitchboardClient client, CacheManager cache)
+        implements SwitchboardRepository {
+    private static final Duration VERSIONS_TTL = Duration.ofHours(12);
+    private static final Duration LATEST_TTL = Duration.ofHours(1);
+
+    public CompletableFuture<List<String>> getAllVersions() {
+        return cache.getOrFetch(
+            "forge:versions",
+            SwitchboardClient.LIST_OF_STRINGS,
+            VERSIONS_TTL,
+            client::fetchForgeVersions
+        );
+    }
+
+    public List<String> getAllVersionsSync() throws ExecutionException, InterruptedException {
+        return getAllVersions().get();
+    }
+
+    public CompletableFuture<List<String>> getVersionsFor(String minecraftVersionId) {
+        Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
+        String normalized = minecraftVersionId.toLowerCase(Locale.ROOT);
+        String key = "forge:versions:" + normalized;
+
+        return cache.getOrFetch(
+            key,
+            SwitchboardClient.LIST_OF_STRINGS,
+            VERSIONS_TTL,
+            () -> client.fetchForgeVersions(normalized)
+        );
+    }
+
+    public List<String> getVersionsForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {
+        return getVersionsFor(minecraftVersionId).get();
+    }
+
+    public CompletableFuture<String> getLatestVersion() {
+        return getLatestVersion(false);
+    }
+
+    public CompletableFuture<String> getLatestVersion(boolean includePrereleases) {
+        String key = includePrereleases ? "forge:latest:prereleases" : "forge:latest";
+        return cache.getOrFetch(
+            key,
+            String.class,
+            LATEST_TTL,
+            () -> client.fetchLatestForgeVersion(includePrereleases)
+        );
+    }
+
+    public String getLatestVersionSync() throws ExecutionException, InterruptedException {
+        return getLatestVersion().get();
+    }
+
+    public String getLatestVersionSync(boolean includePrereleases) throws ExecutionException, InterruptedException {
+        return getLatestVersion(includePrereleases).get();
+    }
+
+    public CompletableFuture<String> getLatestVersionFor(String minecraftVersionId) {
+        return getLatestVersionFor(minecraftVersionId, false);
+    }
+
+    public CompletableFuture<String> getLatestVersionFor(String minecraftVersionId, boolean includePrereleases) {
+        Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
+        String normalized = minecraftVersionId.toLowerCase(Locale.ROOT);
+        String key = "forge:latest:" + normalized + (includePrereleases ? ":prereleases" : "");
+
+        return cache.getOrFetch(
+            key,
+            String.class,
+            LATEST_TTL,
+            () -> client.fetchLatestForgeVersion(normalized, includePrereleases)
+        );
+    }
+
+    public String getLatestVersionForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {
+        return getLatestVersionFor(minecraftVersionId).get();
+    }
+
+    public String getLatestVersionForSync(String minecraftVersionId, boolean includePrereleases) throws ExecutionException, InterruptedException {
+        return getLatestVersionFor(minecraftVersionId, includePrereleases).get();
+    }
+}
