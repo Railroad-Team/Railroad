@@ -88,6 +88,17 @@ railroad.settings.keybinds.paste=Paste
 
 # Plugin settings
 railroad.settings.plugins.title=Plugins
+railroad.plugins.search.placeholder=Search plugins...
+railroad.plugins.details.version=Version %s
+railroad.plugins.details.author=Author:
+railroad.plugins.details.website=Website:
+railroad.plugins.details.license=License:
+railroad.plugins.details.id=Plugin ID:
+railroad.plugins.details.main_class=Main Class:
+railroad.plugins.details.dependencies=Dependencies:
+railroad.plugins.placeholder.title=Select a plugin to view its details
+railroad.plugins.placeholder.subtitle=Choose a plugin from the list to learn more about what it provides.
+railroad.plugins.list.version=Version: %s
 
 # Appearance settings
 railroad.settings.appearance.themes.title=Themes

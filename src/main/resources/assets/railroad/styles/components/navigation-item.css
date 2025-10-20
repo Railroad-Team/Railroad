@@ -1,0 +1,116 @@
+/* ===== MODERN NAVIGATION ITEM ===== */
+.rr-navigation-item {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.rr-navigation-item:hover {
+    -fx-background-color: -color-bg-inset;
+}
+
+.rr-navigation-item:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 1px;
+}
+
+.rr-navigation-item.active {
+    -fx-background-color: -color-accent-muted;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 1px;
+}
+
+.rr-navigation-item.disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
+}
+
+.rr-navigation-item.disabled:hover {
+    -fx-background-color: transparent;
+}
+
+.rr-navigation-item.highlighted {
+    -fx-background-color: -color-warning-subtle;
+    -fx-border-color: -color-warning-emphasis;
+    -fx-border-width: 1px;
+}
+
+/* Navigation item content */
+.rr-navigation-item .navigation-icon {
+    -fx-icon-color: -color-fg-muted;
+    -fx-icon-size: 18px;
+}
+
+.rr-navigation-item:hover .navigation-icon {
+    -fx-icon-color: -color-fg-default;
+}
+
+.rr-navigation-item:selected .navigation-icon,
+.rr-navigation-item.active .navigation-icon {
+    -fx-icon-color: -color-accent-emphasis;
+}
+
+.rr-navigation-item .navigation-label {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-weight: 500;
+}
+
+.rr-navigation-item:hover .navigation-label {
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.rr-navigation-item:selected .navigation-label,
+.rr-navigation-item.active .navigation-label {
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-font-weight: 600;
+}
+
+.rr-navigation-item .navigation-badge {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-text-fill: -color-fg-emphasis;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-padding: 2px 6px;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-min-width: 20px;
+    -fx-alignment: center;
+}
+
+/* Navigation item sizes */
+.rr-navigation-item.small {
+    -fx-padding: 6px 10px;
+    -fx-font-size: 12px;
+}
+
+.rr-navigation-item.small .navigation-icon {
+    -fx-icon-size: 16px;
+}
+
+.rr-navigation-item.large {
+    -fx-padding: 12px 16px;
+    -fx-font-size: 16px;
+}
+
+.rr-navigation-item.large .navigation-icon {
+    -fx-icon-size: 20px;
+}
+
+.rr-navigation-item.rounded {
+    -fx-background-radius: 20px;
+    -fx-border-radius: 20px;
+}
+
+.rr-navigation-item.outlined {
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1px;
+}
+
+.rr-navigation-item.compact {
+    -fx-padding: 4px 8px;
+    -fx-spacing: 6;
+}

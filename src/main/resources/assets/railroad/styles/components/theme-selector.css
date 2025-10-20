@@ -1,0 +1,70 @@
+/* Theme selector styling */
+.theme-selector {
+    -fx-background-color: transparent;
+}
+
+.theme-selector .combo-box {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-font-size: 14px;
+    -fx-min-height: 36px;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.theme-selector .combo-box:focused {
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 2px;
+    -fx-background-color: -color-bg-default;
+    -fx-effect: dropshadow(gaussian, rgba(94, 129, 172, 0.2), 4, 0, 0, 0);
+}
+
+.theme-selector .combo-box:hover {
+    -fx-border-color: -color-border-default;
+}
+
+.theme-selector .combo-box .arrow-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0 8px 8px 0;
+    -fx-border-width: 0;
+}
+
+.theme-selector .combo-box .arrow {
+    -fx-background-color: -color-fg-muted;
+    -fx-shape: "M 0 0 L 4 4 L 8 0 Z";
+}
+
+.theme-selector .combo-box:focused .arrow {
+    -fx-background-color: -color-accent-emphasis;
+}
+
+.theme-selector .combo-box .list-view {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 8px;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 8, 0, 0, 4);
+}
+
+.theme-selector .combo-box .list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -color-fg-default;
+    -fx-padding: 8px 12px;
+    -fx-border-width: 0;
+}
+
+.theme-selector .combo-box .list-view .list-cell:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.theme-selector .combo-box .list-view .list-cell:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-accent-emphasis;
+}
+
+.theme-selector .list-view {
+    -fx-pref-height: 400
+}

@@ -12,11 +12,10 @@ import javafx.scene.shape.Rectangle;
  * Provides a clean, elevated design that's perfect for content containers.
  */
 public class RRCard extends VBox {
-    private final Rectangle background;
     private final VBox content;
 
     public RRCard() {
-        this(10);
+        this(8); // Default corner radius to 8 for consistency with CSS
     }
 
     public RRCard(double cornerRadius) {
@@ -24,18 +23,21 @@ public class RRCard extends VBox {
     }
 
     public RRCard(double cornerRadius, Insets padding) {
-        background = new Rectangle();
-        background.setArcWidth(cornerRadius);
-        background.setArcHeight(cornerRadius);
-        background.setFill(Color.TRANSPARENT);
-
         content = new VBox();
         content.setPadding(padding);
         content.setSpacing(8);
         content.visibleProperty().bind(Bindings.isNotEmpty(content.getChildren()));
         content.managedProperty().bind(Bindings.isNotEmpty(content.getChildren()));
 
-        getChildren().addAll(background, content);
+        // Create a clip rectangle for the RRCard itself
+        Rectangle clip = new Rectangle();
+        clip.widthProperty().bind(widthProperty());
+        clip.heightProperty().bind(heightProperty());
+        clip.setArcWidth(cornerRadius);
+        clip.setArcHeight(cornerRadius);
+        setClip(clip);
+
+        getChildren().add(content);
         getStyleClass().addAll("rr-card", "elevated-1");
 
         setSpacing(0);

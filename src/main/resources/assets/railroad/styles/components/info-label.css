@@ -1,0 +1,16 @@
+/* ===== MODERN INFO LABELS ===== */
+.rr-info-label {
+    -fx-font-size: 12px;
+    -fx-padding: 4px 0 0 0;
+    -fx-graphic-text-gap: 6px;
+    -fx-alignment: center-left;
+}
+
+.rr-info-label .ikonli-font-icon {
+    -fx-icon-size: 14px;
+}
+
+/* Information label styling */
+.information-label-bold {
+    -fx-font-weight: bold;
+}

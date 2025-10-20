@@ -1,277 +1,297 @@
 package dev.railroadide.railroad.plugin.ui;
 
+import dev.railroadide.core.localization.LocalizationService;
 import dev.railroadide.core.ui.RRCard;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRTextField;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.core.utility.ServiceLocator;
 import dev.railroadide.railroadpluginapi.PluginDescriptor;
 import dev.railroadide.railroadpluginapi.deps.MavenDep;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.SplitPane;
+import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
-import lombok.Setter;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 public class PluginsPane extends SplitPane {
     @Getter
     private final Map<PluginDescriptor, Boolean> enabledPlugins = new HashMap<>();
 
-    private final VBox pluginsList;
-    private final VBox pluginDetails;
-    private PluginItem selectedPluginItem;
+    private final ObservableList<PluginModel> items = FXCollections.observableArrayList();
+    private final FilteredList<PluginModel> filtered = new FilteredList<>(items);
+
+    private final ListView<PluginModel> listView = new ListView<>();
+    private final VBox detailsBox = new RRVBox(24);
 
     public PluginsPane(Map<PluginDescriptor, Boolean> defaultEnabledPlugins) {
-        var leftPane = new RRVBox();
-        var searchField = new RRTextField();
-        searchField.setPromptText("Search plugins...");
-        var pluginsListScroll = new ScrollPane();
-        pluginsList = new RRVBox();
-        var pluginDetailsScroll = new ScrollPane();
-        pluginDetails = new RRVBox();
-
-        leftPane.getChildren().addAll(searchField, pluginsListScroll);
-        pluginsListScroll.setContent(pluginsList);
-        pluginsListScroll.setFitToWidth(true);
-
-        pluginDetailsScroll.setContent(pluginDetails);
-        pluginDetailsScroll.setFitToWidth(true);
-        pluginDetails.setPadding(new Insets(16));
-        pluginDetails.setSpacing(16);
-
-        getItems().addAll(leftPane, pluginDetailsScroll);
-        setDividerPositions(0.4);
-
         getStyleClass().add("plugins-pane");
 
-        refreshPluginsList(defaultEnabledPlugins);
-        this.enabledPlugins.putAll(defaultEnabledPlugins);
+        var left = new RRVBox(12);
+        left.getStyleClass().add("plugins-left-pane");
+        left.setPadding(new Insets(16, 16, 16, 16));
 
-        searchField.textProperty().addListener((obs, oldText, newText) ->
-                filterPlugins(newText));
-    }
+        var search = new RRTextField("railroad.plugins.search.placeholder");
+        search.setPrefHeight(38);
 
-    public void setEnabledPlugins(Map<PluginDescriptor, Boolean> enabledPlugins) {
-        this.enabledPlugins.clear();
-        this.enabledPlugins.putAll(enabledPlugins);
-        refreshPluginsList(enabledPlugins);
-    }
+        SortedList<PluginModel> sorted = new SortedList<>(filtered, Comparator.comparing(vm -> vm.descriptor().getName().toLowerCase()));
+        listView.setItems(sorted);
+        listView.setFocusTraversable(true);
+        listView.getStyleClass().add("plugins-list");
+        listView.setFixedCellSize(-1);
+        VBox.setVgrow(listView, Priority.ALWAYS);
 
-    private void refreshPluginsList(Map<PluginDescriptor, Boolean> enabledPlugins) {
-        pluginsList.getChildren().clear();
-        pluginsList.setSpacing(8);
-        pluginsList.setPadding(new Insets(8));
+        search.textProperty().addListener((observable, oldValue, newValue) -> {
+            final String query = newValue == null ? "" : newValue.toLowerCase();
+            filtered.setPredicate(vm ->
+                query.isBlank()
+                    || vm.nameLower().contains(query)
+                    || vm.authorLower().contains(query)
+                    || vm.descriptionLower().contains(query));
+        });
 
-        for (Map.Entry<PluginDescriptor, Boolean> entry : enabledPlugins.entrySet()) {
-            PluginDescriptor descriptor = entry.getKey();
-            boolean isEnabled = entry.getValue();
-            var pluginItem = new PluginItem(descriptor, isEnabled);
-            pluginItem.setOnMouseClicked($ -> selectPlugin(pluginItem));
-            pluginItem.setOnEnableChange(enabled -> PluginsPane.this.enabledPlugins.put(descriptor, enabled));
-            pluginsList.getChildren().add(pluginItem);
-        }
+        listView.setCellFactory($ -> new PluginCell());
+        left.getChildren().addAll(search, listView);
 
-        // Clear selection if the selected plugin is no longer available
-        if (selectedPluginItem != null) {
-            boolean stillExists = enabledPlugins.entrySet().stream()
-                    .anyMatch(entry -> entry.getKey().equals(selectedPluginItem.getDescriptor()));
-            if (!stillExists) {
-                selectedPluginItem = null;
-                pluginDetails.getChildren().clear();
+        detailsBox.setPadding(new Insets(24, 28, 24, 28));
+        detailsBox.setFillWidth(true);
+
+        var detailsScroll = new ScrollPane();
+        detailsScroll.setFitToWidth(true);
+        detailsScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        detailsScroll.setContent(detailsBox);
+
+        showPlaceholder();
+
+        listView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null) {
+                showPlaceholder();
+                return;
             }
+
+            showDetails(newValue.descriptor());
+        });
+
+        setEnabledPlugins(defaultEnabledPlugins);
+
+        getItems().addAll(left, detailsScroll);
+        setDividerPositions(0.38);
+    }
+
+    public void setEnabledPlugins(Map<PluginDescriptor, Boolean> state) {
+        enabledPlugins.clear();
+        enabledPlugins.putAll(state);
+
+        items.setAll(
+            state.entrySet().stream()
+                .map(entry -> new PluginModel(entry.getKey(), entry.getValue()))
+                .toList()
+        );
+
+        if (!items.isEmpty() && listView.getSelectionModel().getSelectedItem() == null) {
+            listView.getSelectionModel().selectFirst();
+        } else if (items.isEmpty()) {
+            showPlaceholder();
         }
     }
 
-    private void filterPlugins(String searchText) {
-        for (Node child : pluginsList.getChildren()) {
-            if (child instanceof PluginItem pluginItem) {
-                String name = pluginItem.getDescriptor().getName().toLowerCase();
-                String description = pluginItem.getDescriptor().getDescription() != null ?
-                        pluginItem.getDescriptor().getDescription().toLowerCase() : "";
-                String author = pluginItem.getDescriptor().getAuthor() != null ?
-                        pluginItem.getDescriptor().getAuthor().toLowerCase() : "";
-
-                boolean matches = searchText.isEmpty() ||
-                        name.contains(searchText.toLowerCase()) ||
-                        description.contains(searchText.toLowerCase()) ||
-                        author.contains(searchText.toLowerCase());
-
-                pluginItem.setVisible(matches);
-                pluginItem.setManaged(matches);
-            }
-        }
+    private void showPlaceholder() {
+        detailsBox.getChildren().setAll(createPlaceholderCard());
     }
 
-    private void selectPlugin(PluginItem pluginItem) {
-        if (selectedPluginItem != null) {
-            selectedPluginItem.setSelected(false);
+    private void showDetails(PluginDescriptor descriptor) {
+        var card = new RRCard();
+        card.getStyleClass().add("plugin-details-card");
+        card.setPadding(new Insets(20));
+        card.setSpacing(16);
+
+        var header = new RRHBox(12);
+        header.setAlignment(Pos.CENTER_LEFT);
+        var icon = new FontIcon(FontAwesomeSolid.PUZZLE_PIECE);
+        icon.setIconSize(28);
+        icon.getStyleClass().add("plugin-icon");
+
+        var title = new RRVBox(4);
+        var name = new Label(descriptor.getName());
+        name.getStyleClass().add("plugin-details-name");
+        var version = new LocalizedLabel("railroad.plugins.details.version", descriptor.getVersion());
+        version.getStyleClass().add("plugin-details-version");
+        title.getChildren().addAll(name, version);
+        header.getChildren().addAll(icon, title);
+
+        var info = new RRVBox(12);
+        info.getStyleClass().add("plugin-info-box");
+
+        if (isNotBlankOrNull(descriptor.getDescription())) {
+            var desc = new LocalizedLabel(resolveText(descriptor.getDescription()));
+            desc.getStyleClass().add("plugin-description");
+            desc.setWrapText(true);
+            info.getChildren().add(desc);
         }
 
-        selectedPluginItem = pluginItem;
-        pluginItem.setSelected(true);
+        if (isNotBlankOrNull(descriptor.getAuthor()))
+            info.getChildren().add(infoRow("railroad.plugins.details.author", descriptor.getAuthor()));
 
-        showPluginDetails(pluginItem.getDescriptor());
-    }
+        if (isNotBlankOrNull(descriptor.getWebsite()))
+            info.getChildren().add(infoRow("railroad.plugins.details.website", descriptor.getWebsite()));
 
-    private void showPluginDetails(PluginDescriptor descriptor) {
-        pluginDetails.getChildren().clear();
+        if (isNotBlankOrNull(descriptor.getLicense()))
+            info.getChildren().add(infoRow("railroad.plugins.details.license", descriptor.getLicense()));
 
-        var detailsCard = new RRCard();
-        detailsCard.setPadding(new Insets(20));
-        detailsCard.setSpacing(16);
-        detailsCard.getStyleClass().add("plugin-details-card");
-
-        var headerBox = new RRHBox(12);
-        headerBox.setAlignment(Pos.CENTER_LEFT);
-
-        var pluginIcon = new FontIcon(FontAwesomeSolid.PUZZLE_PIECE);
-        pluginIcon.setIconSize(32);
-        pluginIcon.getStyleClass().add("plugin-icon");
-
-        var titleBox = new RRVBox(4);
-        var nameLabel = new Label(descriptor.getName());
-        nameLabel.getStyleClass().add("plugin-details-name");
-        var versionLabel = new Label("Version " + descriptor.getVersion());
-        versionLabel.getStyleClass().add("plugin-details-version");
-        titleBox.getChildren().addAll(nameLabel, versionLabel);
-
-        headerBox.getChildren().addAll(pluginIcon, titleBox);
-
-        var infoBox = new RRVBox(12);
-        infoBox.getStyleClass().add("plugin-info-box");
-
-        if (descriptor.getDescription() != null && !descriptor.getDescription().isEmpty()) {
-            var descriptionLabel = new LocalizedLabel(descriptor.getDescription());
-            descriptionLabel.setWrapText(true);
-            descriptionLabel.getStyleClass().add("plugin-description");
-            infoBox.getChildren().add(descriptionLabel);
-        }
-
-        if (descriptor.getAuthor() != null && !descriptor.getAuthor().isEmpty()) {
-            var authorBox = createInfoRow("Author", descriptor.getAuthor());
-            infoBox.getChildren().add(authorBox);
-        }
-
-        if (descriptor.getWebsite() != null && !descriptor.getWebsite().isEmpty()) {
-            var websiteBox = createInfoRow("Website", descriptor.getWebsite());
-            infoBox.getChildren().add(websiteBox);
-        }
-
-        if (descriptor.getLicense() != null && !descriptor.getLicense().isEmpty()) {
-            var licenseBox = createInfoRow("License", descriptor.getLicense());
-            infoBox.getChildren().add(licenseBox);
-        }
-
-        var idBox = createInfoRow("Plugin ID", descriptor.getId());
-        infoBox.getChildren().add(idBox);
-
-        var mainClassBox = createInfoRow("Main Class", descriptor.getMainClass());
-        infoBox.getChildren().add(mainClassBox);
+        info.getChildren().add(infoRow("railroad.plugins.details.id", descriptor.getId()));
+        info.getChildren().add(infoRow("railroad.plugins.details.main_class", descriptor.getMainClass()));
 
         if (descriptor.getDependencies() != null && !descriptor.getDependencies().artifacts().isEmpty()) {
-            var dependenciesBox = createDependenciesSection(descriptor.getDependencies().artifacts());
-            infoBox.getChildren().add(dependenciesBox);
+            var depsLabel = new LocalizedLabel("railroad.plugins.details.dependencies");
+            depsLabel.getStyleClass().add("plugin-info-label");
+            var deps = new RRVBox(4);
+            for (MavenDep dependency : descriptor.getDependencies().artifacts()) {
+                var label = new Label("• " + dependency.getFullName());
+                label.getStyleClass().add("plugin-dependency");
+                deps.getChildren().add(label);
+            }
+            info.getChildren().addAll(depsLabel, deps);
         }
 
-        detailsCard.addContent(headerBox, infoBox);
-        pluginDetails.getChildren().add(detailsCard);
+        card.addContent(header, info);
+        detailsBox.getChildren().setAll(card);
     }
 
-    private HBox createInfoRow(String label, String value) {
+    private HBox infoRow(String key, String value) {
         var row = new RRHBox(8);
         row.setAlignment(Pos.CENTER_LEFT);
-
-        var labelNode = new Label(label + ":");
-        labelNode.getStyleClass().add("plugin-info-label");
-        labelNode.setMinWidth(80);
-
-        var valueNode = new Label(value);
-        valueNode.getStyleClass().add("plugin-info-value");
-        valueNode.setWrapText(true);
-        HBox.setHgrow(valueNode, Priority.ALWAYS);
-
-        row.getChildren().addAll(labelNode, valueNode);
+        var keyLabel = new LocalizedLabel(key);
+        keyLabel.getStyleClass().add("plugin-info-label");
+        var valueLabel = new Label(value);
+        valueLabel.getStyleClass().add("plugin-info-value");
+        valueLabel.setWrapText(true);
+        HBox.setHgrow(valueLabel, Priority.ALWAYS);
+        row.getChildren().addAll(keyLabel, valueLabel);
         return row;
     }
 
-    private VBox createDependenciesSection(List<MavenDep> dependencies) {
-        var section = new RRVBox(8);
+    private Node createPlaceholderCard() {
+        var card = new RRCard(18, new Insets(36));
+        card.getStyleClass().add("plugin-details-placeholder-card");
+        var icon = new FontIcon(FontAwesomeSolid.PUZZLE_PIECE);
+        icon.setIconSize(56);
+        icon.getStyleClass().add("plugin-placeholder-icon");
+        var title = new LocalizedLabel("railroad.plugins.placeholder.title");
+        title.getStyleClass().add("plugin-placeholder-title");
+        var sub = new LocalizedLabel("railroad.plugins.placeholder.subtitle");
+        sub.getStyleClass().add("plugin-placeholder-subtitle");
+        sub.setWrapText(true);
+        sub.setMaxWidth(420);
 
-        var sectionLabel = new Label("Dependencies:");
-        sectionLabel.getStyleClass().add("plugin-info-label");
+        var box = new RRVBox(12);
+        box.setAlignment(Pos.CENTER);
+        box.getChildren().addAll(icon, title, sub);
+        card.addContent(box);
 
-        var dependenciesList = new RRVBox(4);
-        for (MavenDep dep : dependencies) {
-            var depLabel = new Label("• " + dep.getFullName());
-            depLabel.getStyleClass().add("plugin-dependency");
-            dependenciesList.getChildren().add(depLabel);
-        }
-
-        section.getChildren().addAll(sectionLabel, dependenciesList);
-        return section;
+        var wrap = new RRVBox(card);
+        wrap.setAlignment(Pos.CENTER);
+        VBox.setVgrow(wrap, Priority.ALWAYS);
+        return wrap;
     }
 
-    public static class PluginItem extends RRCard {
-        @Getter
-        private final PluginDescriptor descriptor;
-        @Getter
-        private boolean selected = false;
-        @Setter
-        private Consumer<Boolean> onEnableChange;
+    private static boolean isNotBlankOrNull(String str) {
+        return str != null && !str.isBlank();
+    }
 
-        public PluginItem(PluginDescriptor descriptor, boolean enabled) {
-            this.descriptor = descriptor;
-            setPadding(new Insets(12));
-            setSpacing(8);
-            getStyleClass().add("plugin-item");
-            setInteractive(true);
+    private static String resolveText(String maybeKey) {
+        var localizationService = ServiceLocator.getService(LocalizationService.class);
+        if (localizationService != null && localizationService.isKeyValid(maybeKey))
+            return localizationService.get(maybeKey);
 
-            var enableCheckBox = new CheckBox();
-            enableCheckBox.setSelected(enabled);
-            enableCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-                if (onEnableChange != null) {
-                    onEnableChange.accept(newValue);
-                }
-            });
+        return maybeKey;
+    }
 
-            var infoBox = new RRVBox(4);
-            var nameLabel = new Label(descriptor.getName());
-            nameLabel.getStyleClass().add("plugin-name");
-
-            var versionLabel = new Label("Version: " + descriptor.getVersion());
-            versionLabel.getStyleClass().add("plugin-version");
-
-            infoBox.getChildren().addAll(nameLabel, versionLabel);
-            VBox.setVgrow(infoBox, Priority.ALWAYS);
-
-            var contentBox = new RRHBox(12);
-            contentBox.setAlignment(Pos.CENTER_LEFT);
-            contentBox.getChildren().addAll(enableCheckBox, infoBox);
-
-            addContent(contentBox);
+    private record PluginModel(PluginDescriptor descriptor, boolean enabled) {
+        String nameLower() {
+            return descriptor.getName().toLowerCase();
         }
 
-        public void setSelected(boolean selected) {
-            this.selected = selected;
-            if (selected) {
-                getStyleClass().add("selected");
-            } else {
-                getStyleClass().remove("selected");
+        String authorLower() {
+            return isNotBlankOrNull(descriptor.getAuthor()) ? descriptor.getAuthor().toLowerCase() : "";
+        }
+
+        String descriptionLower() {
+            var description = descriptor.getDescription();
+            var localizationService = ServiceLocator.getService(LocalizationService.class);
+            String txt = (localizationService != null && localizationService.isKeyValid(description)) ?
+                localizationService.get(description) :
+                description;
+            return isNotBlankOrNull(txt) ? txt.toLowerCase() : "";
+        }
+    }
+
+    private class PluginCell extends ListCell<PluginModel> {
+        private final CheckBox check = new CheckBox();
+        private final Label name = new Label();
+        private final Label meta = new Label();
+        private final Label summary = new Label();
+        private final HBox root = new RRHBox(12);
+
+        PluginCell() {
+            getStyleClass().add("plugin-item");
+            name.getStyleClass().add("plugin-name");
+            meta.getStyleClass().add("plugin-version");
+            summary.getStyleClass().add("plugin-summary");
+            summary.setWrapText(true);
+
+            var info = new RRVBox(4);
+            info.getChildren().addAll(name, meta, summary);
+            HBox.setHgrow(info, Priority.ALWAYS);
+            root.setAlignment(Pos.CENTER_LEFT);
+            root.getChildren().addAll(check, info);
+            setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+
+            root.setMaxWidth(Double.MAX_VALUE);
+        }
+
+        @Override
+        protected void updateItem(PluginModel vm, boolean empty) {
+            super.updateItem(vm, empty);
+            if (empty || vm == null) {
+                setGraphic(null);
+                return;
             }
+
+            var descriptor = vm.descriptor();
+            name.setText(descriptor.getName());
+            meta.setText(ServiceLocator.getService(LocalizationService.class) != null
+                ? ServiceLocator.getService(LocalizationService.class).get("railroad.plugins.list.version", descriptor.getVersion())
+                : "v" + descriptor.getVersion());
+
+            var description = resolveText(descriptor.getDescription());
+            if (isNotBlankOrNull(description)) {
+                summary.setManaged(true);
+                summary.setVisible(true);
+                summary.setText(description.length() > 160 ? description.substring(0, 157) + "…" : description);
+            } else {
+                summary.setManaged(false);
+                summary.setVisible(false);
+            }
+
+            check.setSelected(enabledPlugins.getOrDefault(descriptor, false));
+            check.selectedProperty().addListener((observable, oldValue, newValue) ->
+                enabledPlugins.put(descriptor, newValue));
+
+            setGraphic(root);
         }
     }
 }

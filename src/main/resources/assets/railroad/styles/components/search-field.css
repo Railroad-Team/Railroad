@@ -1,0 +1,27 @@
+.rr-search-field {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6px 12px;
+    -fx-font-size: 13px;
+    -fx-prompt-text-fill: -color-fg-muted;
+    -fx-text-fill: -color-fg-default;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.rr-search-field:focused {
+    -fx-border-color: -color-accent-emphasis;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 4, 0, 0, 2);
+}
+
+.rr-search-field:hover {
+    -fx-border-color: -color-border-default;
+}
+
+/* Search highlight styles */
+.search-highlight {
+    -fx-background-color: yellow;
+    -fx-text-fill: black;
+}
