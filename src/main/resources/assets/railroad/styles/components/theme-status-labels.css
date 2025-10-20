@@ -1,0 +1,18 @@
+/* Status labels */
+.theme-status-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-alignment: center;
+}
+
+.theme-status-label.loading {
+    -fx-text-fill: -color-accent-emphasis;
+}
+
+.theme-status-label.error {
+    -fx-text-fill: -color-danger-emphasis;
+}
+
+.theme-status-label.success {
+    -fx-text-fill: -color-success-emphasis;
+}

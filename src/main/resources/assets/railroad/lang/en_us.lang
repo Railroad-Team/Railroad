@@ -26,7 +26,9 @@ railroad.generic.collapse_all=Collapse All
 railroad.generic.expand=Expand
 railroad.generic.expand_all=Expand All
 railroad.generic.browse=Browse
-railroad.onboarding.step_progress=Step %d of %d
+railroad.generic.enable=Enable
+railroad.generic.disable=Disable
+railroad.generic.dismiss=Dismiss
 
 # =============================================================================
 # APPLICATION
@@ -61,6 +63,7 @@ railroad.home.welcome.project.searchtype=Search Project Types
 # =============================================================================
 # SETTINGS
 # =============================================================================
+railroad.window.settings.title=Settings
 railroad.home.settings.title=Settings
 railroad.home.settings.search=Search settings...
 
@@ -87,7 +90,19 @@ railroad.settings.keybinds.copy=Copy
 railroad.settings.keybinds.paste=Paste
 
 # Plugin settings
+railroad.window.plugins.title=Plugins
 railroad.settings.plugins.title=Plugins
+railroad.plugins.search.placeholder=Search plugins...
+railroad.plugins.details.version=Version %s
+railroad.plugins.details.author=Author:
+railroad.plugins.details.website=Website:
+railroad.plugins.details.license=License:
+railroad.plugins.details.id=Plugin ID:
+railroad.plugins.details.main_class=Main Class:
+railroad.plugins.details.dependencies=Dependencies:
+railroad.plugins.placeholder.title=Select a plugin to view its details
+railroad.plugins.placeholder.subtitle=Choose a plugin from the list to learn more about what it provides.
+railroad.plugins.list.version=Version: %s
 
 # Appearance settings
 railroad.settings.appearance.themes.title=Themes
@@ -257,6 +272,7 @@ railroad.menu.help.discord=Join the Discord
 # =============================================================================
 railroad.project.creation.onboarding.start_button=Start Project Creation
 railroad.project.creation.onboarding.title=Create New Project
+railroad.onboarding.step_progress=Step %d of %d
 
 railroad.project.creation.project_details.title=Project Details
 railroad.project.creation.project_details.description=Enter the name and location for your project.
@@ -456,6 +472,9 @@ railroad.project.creation.homepage.error.length_long=Homepage URL is too long (m
 railroad.project.creation.homepage.error.invalid_url=Homepage URL is not a valid URL.
 railroad.project.creation.sources.error.length_long=Sources URL is too long (maximum 256 characters).
 railroad.project.creation.sources.error.invalid_url=Sources URL is not a valid URL.
+
+railroad.project.creation.error.title=Project Creation Error
+railroad.project.creation.error.header=There was an error creating your project.
 
 railroad.mapping_channel.mcp=MCP
 railroad.mapping_channel.yarn=Yarn

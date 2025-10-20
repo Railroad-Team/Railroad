@@ -1,8 +1,9 @@
 package dev.railroadide.core.project.minecraft.pistonmeta;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import dev.railroadide.core.gson.GsonLocator;
+import dev.railroadide.core.utility.ServiceLocator;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -60,6 +61,6 @@ public record VersionPackage(Arguments arguments, AssetIndex assetIndex, String 
     }
 
     public static VersionPackage fromJsonString(String jsonString) {
-        return fromJson(GsonLocator.getInstance().fromJson(jsonString, JsonObject.class));
+        return fromJson(ServiceLocator.getService(Gson.class).fromJson(jsonString, JsonObject.class));
     }
 }

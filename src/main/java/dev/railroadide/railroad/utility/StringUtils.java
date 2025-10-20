@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.utility;
 
+import io.github.palexdev.mfxcore.utils.ExceptionUtils;
+
 import java.time.*;
 
 public final class StringUtils {
@@ -95,5 +97,17 @@ public final class StringUtils {
         }
 
         return abbreviation.toString();
+    }
+
+    public static String exceptionToString(Throwable exception) {
+        var sb = new StringBuilder();
+        sb.append(ExceptionUtils.formatException(exception));
+        Throwable cause = exception.getCause();
+        while (cause != null) {
+            sb.append("\nCaused by: ").append(ExceptionUtils.formatException(cause));
+            cause = cause.getCause();
+        }
+
+        return sb.toString();
     }
 }

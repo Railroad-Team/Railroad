@@ -1,6 +1,7 @@
 package dev.railroadide.core.ui.localized;
 
-import dev.railroadide.core.localization.LocalizationServiceLocator;
+import dev.railroadide.core.localization.LocalizationService;
+import dev.railroadide.core.utility.ServiceLocator;
 import javafx.scene.control.ListCell;
 
 import java.util.function.Function;
@@ -21,15 +22,15 @@ public class LocalizedListCell<T> extends ListCell<T> {
             if (newValue == null) {
                 setText(null);
             } else {
-                setText(LocalizationServiceLocator.getInstance().get(keyFunction.apply(newValue)));
+                setText(ServiceLocator.getService(LocalizationService.class).get(keyFunction.apply(newValue)));
             }
         });
 
-        LocalizationServiceLocator.getInstance().currentLanguageProperty().addListener((observable, oldValue, newValue) -> {
+        ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) -> {
             if (getItem() == null) {
                 setText(null);
             } else {
-                setText(LocalizationServiceLocator.getInstance().get(keyFunction.apply(getItem())));
+                setText(ServiceLocator.getService(LocalizationService.class).get(keyFunction.apply(getItem())));
             }
         });
     }

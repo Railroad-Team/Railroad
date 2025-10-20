@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.project.facet.detector;
 
 import dev.railroadide.javaVersionExtractorPlugin.model.JavaVersionModel;
+import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
@@ -245,7 +246,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
      * @throws IOException if the script cannot be extracted
      */
     private static Path extractInitScript() throws IOException {
-        try (InputStream inputStream = Railroad.getResourceAsStream("scripts/init-java-version.gradle")) {
+        try (InputStream inputStream = AppResources.getResourceAsStream("scripts/init-java-version.gradle")) {
             if (inputStream == null)
                 throw new IllegalStateException("init script resource missing");
 

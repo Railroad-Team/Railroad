@@ -38,7 +38,6 @@ import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.stage.Window;
 import org.jetbrains.annotations.NotNull;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -107,7 +106,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             if (event.getCode() == KeyCode.DELETE) {
                 event.consume();
 
-                DeleteDialog.open(getScene().getWindow(), item.getPath());
+                DeleteDialog.open(item.getPath());
                 return;
             }
 
@@ -207,7 +206,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         clipboard.setContent(content);
     }
 
-    public static void paste(Window window, PathItem item) {
+    public static void paste(PathItem item) {
         var clipboard = Clipboard.getSystemClipboard();
         if (clipboard.hasFiles()) {
             var files = clipboard.getFiles();
@@ -216,7 +215,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 var targetPath = Path.of(item.getPath().toAbsolutePath().toString(), file.getName());
                 if (Files.exists(targetPath, LinkOption.NOFOLLOW_LINKS)) {
                     var replaceProperty = new SimpleBooleanProperty();
-                    CopyModalDialog.open(window, replaceProperty);
+                    CopyModalDialog.open(replaceProperty);
                     replaceProperty.addListener((observable, oldValue, newValue) -> {
                         if (newValue) {
                             new FileCopyTask(file.toPath(), targetPath).run();
@@ -258,11 +257,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             }
 
             Tab terminalTab = detachableTabPane.addTab("Terminal (" +
-                    detachableTabPane.getTabs()
-                            .stream()
-                            .filter(tab -> tab.getContent() instanceof Terminal)
-                            .count()
-                    + ")", terminal);
+                detachableTabPane.getTabs()
+                    .stream()
+                    .filter(tab -> tab.getContent() instanceof Terminal)
+                    .count()
+                + ")", terminal);
 
             detachableTabPane.getSelectionModel().select(terminalTab);
         });
@@ -281,9 +280,9 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
                 // Check if there's a welcome tab to replace
                 Tab welcomeTab = detachableTabPane.getTabs().stream()
-                        .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
-                        .findFirst()
-                        .orElse(null);
+                    .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
+                    .findFirst()
+                    .orElse(null);
 
                 TextEditorPane editorContent;
                 if (fileName.endsWith(".java")) {
@@ -340,9 +339,9 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
                     // Check if there's a welcome tab to replace
                     Tab welcomeTab = detachableTabPane.getTabs().stream()
-                            .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
-                            .findFirst()
-                            .orElse(null);
+                        .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
+                        .findFirst()
+                        .orElse(null);
 
                     if (welcomeTab != null) {
                         welcomeTab.setContent(new ImageViewerPane(path));
@@ -519,14 +518,14 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             if (dragboard.hasFiles()) {
                 Path sourcePath = dragboard.getFiles().getFirst().toPath();
                 var targetPath = Path.of(
-                        cell.getTreeItem().getValue().getPath().toAbsolutePath().toString(),
-                        sourcePath.getFileName().toString()
+                    cell.getTreeItem().getValue().getPath().toAbsolutePath().toString(),
+                    sourcePath.getFileName().toString()
                 );
 
                 if (Files.exists(targetPath, LinkOption.NOFOLLOW_LINKS)) {
                     Platform.runLater(() -> {
                         var replaceProperty = new SimpleBooleanProperty();
-                        CopyModalDialog.open(getScene().getWindow(), replaceProperty);
+                        CopyModalDialog.open(replaceProperty);
                         replaceProperty.addListener((observable, oldValue, newValue) -> {
                             if (newValue) {
                                 this.executorService.submit(new FileCopyTask(sourcePath, targetPath));

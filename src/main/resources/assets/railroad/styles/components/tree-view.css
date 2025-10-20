@@ -1,0 +1,87 @@
+/* Modern Tree View Styles */
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:filled:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:filled:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-fg-default;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:filled:selected:hover {
+    -fx-background-color: -color-accent-muted;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell > .tree-disclosure-node {
+    -fx-padding: 2px 4px 2px 2px;
+    -fx-background-color: transparent;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell > .tree-disclosure-node > .arrow {
+    -fx-background-color: -color-fg-muted;
+    -fx-shape: "M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z";
+    -fx-scale-shape: false;
+    -fx-padding: 4px;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:expanded > .tree-disclosure-node > .arrow {
+    -fx-rotate: 90;
+    -fx-background-color: -color-accent-emphasis;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell > .tree-disclosure-node:hover > .arrow {
+    -fx-background-color: -color-fg-default;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:expanded > .tree-disclosure-node:hover > .arrow {
+    -fx-background-color: -color-accent-emphasis;
+}
+
+/* File type icons in tree cells */
+.rr-tree-view .ikonli-font-icon {
+    -fx-icon-size: 14px;
+    -fx-fill: -color-fg-default;
+    -fx-opacity: 0.8;
+}
+
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:selected .ikonli-font-icon {
+    -fx-fill: -color-fg-default;
+    -fx-opacity: 1;
+}
+
+/* Scroll bar styling for tree view */
+.rr-tree-view > .virtual-flow > .scroll-bar {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.rr-tree-view > .virtual-flow > .scroll-bar .thumb {
+    -fx-background-color: -color-border-subtle;
+    -fx-background-radius: 4;
+    -fx-background-insets: 2;
+}
+
+.rr-tree-view > .virtual-flow > .scroll-bar .thumb:hover {
+    -fx-background-color: -color-border-default;
+}
+
+.rr-tree-view > .virtual-flow > .scroll-bar .track {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.rr-tree-view > .virtual-flow > .scroll-bar .increment-button,
+.rr-tree-view > .virtual-flow > .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+    -fx-shape: "";
+}
+
+.rr-tree-view > .virtual-flow > .scroll-bar .increment-arrow,
+.rr-tree-view > .virtual-flow > .scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-shape: "";
+}

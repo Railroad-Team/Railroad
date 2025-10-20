@@ -1,8 +1,10 @@
-package dev.railroadide.railroad.settings.ui.themes;
+package dev.railroadide.railroad.theme.ui;
 
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRCard;
 import dev.railroadide.core.ui.localized.LocalizedTooltip;
+import dev.railroadide.railroad.theme.Theme;
+import dev.railroadide.railroad.theme.ThemeDownloadManager;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
@@ -154,4 +156,4 @@ public class ThemeDownloadCell extends ListCell<Theme> {
             setGraphic(card);
         }
     }
-} 
+}

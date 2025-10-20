@@ -1,0 +1,14 @@
+.list-cell {
+    -fx-cell-size: 40;
+}
+
+.list-cell,
+.list-cell:filled,
+.list-cell:empty,
+.list-cell:selected,
+.list-cell:focused,
+.list-cell:hover {
+    -fx-background-color: transparent !important;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}

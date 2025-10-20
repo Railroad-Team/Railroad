@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.localization;
 
 import dev.railroadide.core.localization.Language;
-import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.plugin.PluginManager;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
@@ -101,7 +101,7 @@ public class L18n {
      */
     private static Properties getLanguageProperties(String name, List<InputStream> pluginResources) throws IOException {
         var languageFiles = new InputStream[pluginResources.size() + 1];
-        languageFiles[0] = Railroad.getResourceAsStream(name);
+        languageFiles[0] = AppResources.getResourceAsStream(name);
         for (int i = 0; i < pluginResources.size(); i++) {
             languageFiles[i + 1] = pluginResources.get(i);
         }

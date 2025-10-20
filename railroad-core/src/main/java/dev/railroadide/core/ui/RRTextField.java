@@ -1,6 +1,7 @@
 package dev.railroadide.core.ui;
 
-import dev.railroadide.core.localization.LocalizationServiceLocator;
+import dev.railroadide.core.localization.LocalizationService;
+import dev.railroadide.core.utility.ServiceLocator;
 import javafx.animation.FadeTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -33,7 +34,7 @@ public class RRTextField extends TextField {
 
     /**
      * Constructs a new text field with localized placeholder text and a prefix icon.
-     * 
+     *
      * @param localizationKey the localization key for the placeholder text
      * @param prefixIcon the icon to display before the text field
      */
@@ -44,7 +45,7 @@ public class RRTextField extends TextField {
 
     /**
      * Constructs a new text field with localized placeholder text.
-     * 
+     *
      * @param localizationKey the localization key for the placeholder text
      * @param args optional formatting arguments for the localized text
      */
@@ -209,10 +210,10 @@ public class RRTextField extends TextField {
     }
 
     public void setLocalizedPlaceholder(String localizationKey, Object... args) {
-        setPromptText(LocalizationServiceLocator.getInstance().get(localizationKey, args));
+        setPromptText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args));
         if (localizationKey != null) {
-            LocalizationServiceLocator.getInstance().currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                    setPromptText(LocalizationServiceLocator.getInstance().get(localizationKey, args)));
+            ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
+                    setPromptText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args)));
         }
     }
 
@@ -223,4 +224,4 @@ public class RRTextField extends TextField {
     public enum ValidationState {
         NONE, SUCCESS, ERROR, WARNING
     }
-} 
+}

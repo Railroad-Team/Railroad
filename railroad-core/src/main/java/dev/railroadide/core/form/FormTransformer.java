@@ -1,6 +1,7 @@
 package dev.railroadide.core.form;
 
-import dev.railroadide.core.logger.LoggerServiceLocator;
+import dev.railroadide.core.utility.ServiceLocator;
+import dev.railroadide.logger.Logger;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -64,7 +65,7 @@ public class FormTransformer<T extends Node, V, W> {
      */
     public void transformSync() {
         if (asynchronous) {
-            LoggerServiceLocator.getInstance().getLogger().warn("FormTransformer#transformSync called on asynchronous transformer; falling back to async execution");
+            ServiceLocator.getService(Logger.class).warn("FormTransformer#transformSync called on asynchronous transformer; falling back to async execution");
             transform();
             return;
         }
@@ -75,7 +76,7 @@ public class FormTransformer<T extends Node, V, W> {
 
         future.whenComplete((result, throwable) -> {
             if (throwable != null) {
-                LoggerServiceLocator.getInstance().getLogger().error("Failed to transform form component value synchronously", throwable);
+                ServiceLocator.getService(Logger.class).error("Failed to transform form component value synchronously", throwable);
                 return;
             }
 
@@ -95,7 +96,7 @@ public class FormTransformer<T extends Node, V, W> {
         try {
             value = this.fromComponentFunction.apply(component);
         } catch (Exception exception) {
-            LoggerServiceLocator.getInstance().getLogger().error("Failed to read value from form component", exception);
+            ServiceLocator.getService(Logger.class).error("Failed to read value from form component", exception);
             return;
         }
 
@@ -103,7 +104,7 @@ public class FormTransformer<T extends Node, V, W> {
         try {
             future = this.futureMapper.apply(value);
         } catch (Exception exception) {
-            LoggerServiceLocator.getInstance().getLogger().error("Failed to start asynchronous form transformation", exception);
+            ServiceLocator.getService(Logger.class).error("Failed to start asynchronous form transformation", exception);
             return;
         }
 
@@ -112,7 +113,7 @@ public class FormTransformer<T extends Node, V, W> {
 
         future.whenComplete((result, throwable) -> {
             if (throwable != null) {
-                LoggerServiceLocator.getInstance().getLogger().error("Form transformation failed", throwable);
+                ServiceLocator.getService(Logger.class).error("Form transformation failed", throwable);
                 return;
             }
 

@@ -114,7 +114,7 @@ public record Layout(Tree<LayoutItem> tree) {
     }
 
     private void bindParentSize(Pane parent) {
-        parent.minHeightProperty().bind(Railroad.getWindow().heightProperty());
-        parent.minWidthProperty().bind(Railroad.getWindow().widthProperty());
+        parent.minHeightProperty().bind(Railroad.WINDOW_MANAGER.getPrimaryStage().heightProperty());
+        parent.minWidthProperty().bind(Railroad.WINDOW_MANAGER.getPrimaryStage().widthProperty());
     }
 }

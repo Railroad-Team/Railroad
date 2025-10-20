@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.settings.ui.themes;
+package dev.railroadide.railroad.theme;
 
 import com.google.gson.annotations.SerializedName;
 import lombok.Data;

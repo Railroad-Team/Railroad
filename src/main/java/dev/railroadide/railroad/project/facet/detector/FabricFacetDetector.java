@@ -2,6 +2,7 @@ package dev.railroadide.railroad.project.facet.detector;
 
 import com.google.gson.JsonObject;
 import dev.railroadide.fabricExtractorPlugin.model.FabricExtractorModel;
+import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
@@ -34,7 +35,7 @@ public class FabricFacetDetector implements FacetDetector<FabricFacetData> {
      * @throws IOException if the script cannot be extracted
      */
     private static Path extractInitScript() throws IOException {
-        try (InputStream inputStream = Railroad.getResourceAsStream("scripts/init-fabric-extractor.gradle")) {
+        try (InputStream inputStream = AppResources.getResourceAsStream("scripts/init-fabric-extractor.gradle")) {
             if (inputStream == null)
                 throw new IllegalStateException("init script resource missing");
 

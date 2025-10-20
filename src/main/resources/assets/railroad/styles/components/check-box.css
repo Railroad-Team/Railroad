@@ -1,0 +1,43 @@
+/* ===== MODERN CHECK BOX ===== */
+.rr-check-box {
+    -fx-background-color: transparent;
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 14px;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.rr-check-box .box {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 4px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-min-width: 18px;
+    -fx-min-height: 18px;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.rr-check-box:hover .box {
+    -fx-border-color: -color-border-default;
+    -fx-background-color: -color-bg-default;
+}
+
+.rr-check-box:selected .box {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-border-color: -color-accent-emphasis;
+}
+
+.rr-check-box:selected .mark {
+    -fx-background-color: -color-fg-emphasis;
+    -fx-stroke: -color-fg-emphasis;
+    -fx-stroke-width: 2;
+}
+
+.rr-check-box:disabled {
+    -fx-opacity: 0.6;
+}
+
+.rr-check-box:disabled .box {
+    -fx-background-color: -color-bg-inset;
+    -fx-border-color: -color-border-subtle;
+}

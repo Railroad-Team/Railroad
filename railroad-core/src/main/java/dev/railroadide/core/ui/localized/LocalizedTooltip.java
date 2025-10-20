@@ -1,7 +1,7 @@
 package dev.railroadide.core.ui.localized;
 
 import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.localization.LocalizationServiceLocator;
+import dev.railroadide.core.utility.ServiceLocator;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Tooltip;
@@ -40,7 +40,7 @@ public class LocalizedTooltip extends Tooltip {
 
         // Only set up localization if the key is not empty
         if (key != null && !key.trim().isEmpty()) {
-            LocalizationService service = LocalizationServiceLocator.getInstance();
+            LocalizationService service = ServiceLocator.getService(LocalizationService.class);
             service.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
                     setText(service.get(key, args)));
             setText(service.get(this.key, args));

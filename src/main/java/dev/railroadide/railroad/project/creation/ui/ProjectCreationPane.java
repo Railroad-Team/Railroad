@@ -4,14 +4,17 @@ import dev.railroadide.core.project.ProjectContext;
 import dev.railroadide.core.project.ProjectData;
 import dev.railroadide.core.ui.RRBorderPane;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.utility.javafx.TextAreaOutputStream;
 import dev.railroadide.railroad.welcome.WelcomePane;
+import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
 import javafx.concurrent.Service;
-import javafx.scene.control.ButtonType;
+import javafx.stage.Stage;
 import lombok.Getter;
+
+import java.io.IOException;
 
 @Getter
 public class ProjectCreationPane extends RRBorderPane {
@@ -34,11 +37,20 @@ public class ProjectCreationPane extends RRBorderPane {
             service,
             service::cancel,
             () -> openInIDE(context),
-            ex -> showErrorAndReturnToWelcome(
+            exception -> WindowBuilder.createExceptionAlert(
                 "railroad.project.creation.error.title",
                 "railroad.project.creation.error.header",
-                "railroad.project.creation.error.content",
-                ex != null ? ex.getMessage() : null
+                exception,
+                () -> {
+                    try {
+                        taos.close();
+                    } catch (IOException exception1) {
+                        Railroad.LOGGER.error("Failed to close TextAreaOutputStream", exception1);
+                    }
+
+                    ((Stage) view.sceneProperty().get().getWindow()).close();
+                    returnToWelcome();
+                }
             )
         );
 
@@ -50,36 +62,21 @@ public class ProjectCreationPane extends RRBorderPane {
         Platform.runLater(() -> {
             try {
                 var project = new Project(ctx.projectDir(), ctx.data().getAsString(ProjectData.DefaultKeys.NAME));
-                Railroad.switchToIDE(project);
+                IDESetup.switchToIDE(project);
             } catch (Exception exception) {
                 Railroad.LOGGER.error("Failed to open project in IDE", exception);
-                showErrorAndReturnToWelcome("railroad.project.creation.error.open_ide.title",
+
+                WindowBuilder.createExceptionAlert(
+                    "railroad.project.creation.error.open_ide.title",
                     "railroad.project.creation.error.open_ide.header",
-                    "railroad.project.creation.error.open_ide.content",
-                    null);
+                    exception,
+                    ProjectCreationPane::returnToWelcome
+                );
             }
         });
     }
 
-    protected void showErrorAndReturnToWelcome(String titleKey, String headerKey, String contentKey, String additionalInfo) {
-        Platform.runLater(() -> {
-            String title = L18n.localize(titleKey);
-            String header = L18n.localize(headerKey);
-            String content = L18n.localize(contentKey);
-
-            if (additionalInfo != null) {
-                content += "\n\n" + additionalInfo;
-            }
-
-            Railroad.showErrorAlert(title, header, content, buttonType -> {
-                if (buttonType == ButtonType.OK) {
-                    returnToWelcome();
-                }
-            });
-        });
-    }
-
-    protected void returnToWelcome() {
-        Platform.runLater(() -> getScene().setRoot(new WelcomePane()));
+    protected static void returnToWelcome() {
+        Platform.runLater(() -> Railroad.WINDOW_MANAGER.getPrimaryStage().getScene().setRoot(new WelcomePane()));
     }
 }

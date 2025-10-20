@@ -1,7 +1,7 @@
 package dev.railroadide.core.ui.localized;
 
 import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.localization.LocalizationServiceLocator;
+import dev.railroadide.core.utility.ServiceLocator;
 import javafx.scene.control.TextField;
 
 /**
@@ -19,7 +19,7 @@ public class LocalizedTextField extends TextField {
         super();
         if (key != null) {
             setKey(key);
-            setPromptText(LocalizationServiceLocator.getInstance().get(key));
+            setPromptText(ServiceLocator.getService(LocalizationService.class).get(key));
         }
     }
 
@@ -40,7 +40,7 @@ public class LocalizedTextField extends TextField {
      */
     public void setKey(final String key) {
         currentKey = key;
-        LocalizationService service = LocalizationServiceLocator.getInstance();
+        LocalizationService service = ServiceLocator.getService(LocalizationService.class);
         service.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
                 setPromptText(service.get(key)));
         setPromptText(service.get(currentKey));

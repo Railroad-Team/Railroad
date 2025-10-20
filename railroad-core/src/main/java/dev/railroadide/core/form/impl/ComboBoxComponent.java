@@ -2,9 +2,10 @@ package dev.railroadide.core.form.impl;
 
 import dev.railroadide.core.form.*;
 import dev.railroadide.core.form.ui.FormComboBox;
-import dev.railroadide.core.localization.LocalizationServiceLocator;
+import dev.railroadide.core.localization.LocalizationService;
 import dev.railroadide.core.utility.ComboBoxConverter;
 import dev.railroadide.core.utility.FromStringFunction;
+import dev.railroadide.core.utility.ServiceLocator;
 import dev.railroadide.core.utility.ToStringFunction;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
@@ -193,7 +194,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
                     setText(null);
                 } else {
                     setText(data.translate ?
-                        LocalizationServiceLocator.getInstance().get(defaultDisplayNameFunction.toString(item)) :
+                        ServiceLocator.getService(LocalizationService.class).get(defaultDisplayNameFunction.toString(item)) :
                         defaultDisplayNameFunction.toString(item));
                 }
             }

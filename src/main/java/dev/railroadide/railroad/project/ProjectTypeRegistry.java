@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.project;
 
 import dev.railroadide.core.project.ProjectType;
-import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.project.onboarding.impl.FabricProjectOnboarding;
 import dev.railroadide.railroad.project.onboarding.impl.ForgeProjectOnboarding;
 import dev.railroadide.railroad.project.onboarding.impl.NeoforgeProjectOnboarding;
@@ -13,7 +13,7 @@ public class ProjectTypeRegistry {
         ProjectType.builder()
             .name("Fabric")
             .description("railroad.project.type.fabric.description")
-            .icon(new Image(Railroad.getResourceAsStream("images/fabric.png")))
+            .icon(new Image(AppResources.getResourceAsStream("images/fabric.png")))
             .onboardingUI(() -> new OnboardingProjectCreationPane(scene -> new FabricProjectOnboarding().start(scene)))
             .build());
 
@@ -21,7 +21,7 @@ public class ProjectTypeRegistry {
         ProjectType.builder()
             .name("Forge")
             .description("railroad.project.type.forge.description")
-            .icon(new Image(Railroad.getResourceAsStream("images/forge.png")))
+            .icon(new Image(AppResources.getResourceAsStream("images/forge.png")))
             .onboardingUI(() -> new OnboardingProjectCreationPane(scene -> new ForgeProjectOnboarding().start(scene)))
             .build());
 
@@ -29,7 +29,7 @@ public class ProjectTypeRegistry {
         ProjectType.builder()
             .name("Neoforge")
             .description("railroad.project.type.neoforge.description")
-            .icon(new Image(Railroad.getResourceAsStream("images/neoforge.png")))
+            .icon(new Image(AppResources.getResourceAsStream("images/neoforge.png")))
             .onboardingUI(() -> new OnboardingProjectCreationPane(scene -> new NeoforgeProjectOnboarding().start(scene)))
             .build());
 

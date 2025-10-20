@@ -10,7 +10,7 @@ import dev.railroadide.railroad.localization.Languages;
 import dev.railroadide.railroad.plugin.PluginManager;
 import dev.railroadide.railroad.plugin.ui.PluginsPane;
 import dev.railroadide.railroad.settings.keybinds.KeybindsList;
-import dev.railroadide.railroad.settings.ui.themes.ThemeSettingsSection;
+import dev.railroadide.railroad.theme.ui.ThemeSettingsSection;
 import dev.railroadide.railroadpluginapi.PluginDescriptor;
 import javafx.scene.control.ComboBox;
 

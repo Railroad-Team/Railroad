@@ -1,0 +1,79 @@
+/* Theme styles */
+.theme-description-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-wrap-text: true;
+}
+
+.theme-selector-combo {
+    -fx-font-size: 14px;
+    -fx-min-height: 36px;
+}
+
+.theme-example-main-container {
+    -fx-background-color: -color-bg-default;
+}
+
+.theme-example-nav-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 8 16;
+}
+
+.theme-example-nav-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+    -fx-border-color: transparent;
+    -fx-padding: 8 16;
+}
+
+.theme-example-nav-button-hover {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+    -fx-border-color: transparent;
+    -fx-padding: 8 16;
+}
+
+.theme-example-list-view {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+}
+
+.theme-download-description {
+    -fx-font-size: 14px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-wrap-text: true;
+}
+
+.theme-download-status {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.theme-download-themes-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.theme-download-list-view {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.theme-download-card {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.theme-download-name {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.theme-download-size {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+/* Theme download cell styling */
+.theme-download-cell {
+    -fx-background-color: transparent;
+}

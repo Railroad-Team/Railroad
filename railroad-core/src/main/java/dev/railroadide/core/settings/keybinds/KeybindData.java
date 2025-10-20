@@ -3,7 +3,6 @@ package dev.railroadide.core.settings.keybinds;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a keybind data structure that contains a key code and optional modifiers.

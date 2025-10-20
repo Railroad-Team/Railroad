@@ -1,0 +1,86 @@
+/* Project creation styles */
+.project-creation-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.project-creation-subtitle {
+    -fx-font-size: 16px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.project-creation-output {
+    -fx-background-color: -color-bg-inset;
+    -fx-text-fill: -color-fg-default;
+    -fx-font-family: "Consolas", "Monaco", "Courier New", monospace;
+    -fx-font-size: 12px;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-padding: 12px;
+}
+
+.project-creation-output-scroll {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+}
+
+.project-creation-output-scroll .viewport {
+    -fx-background-color: transparent;
+}
+
+.project-creation-output-scroll .scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.project-creation-output-scroll .scroll-bar .thumb {
+    -fx-background-color: -color-border-default;
+    -fx-background-radius: 4px;
+}
+
+.project-creation-output-scroll .scroll-bar .thumb:hover {
+    -fx-background-color: -color-border-emphasis;
+}
+
+/* Progress spinner styling */
+.mfx-progress-spinner {
+    -fx-progress-color: -color-accent-emphasis;
+}
+
+/* Task and time labels */
+.project-creation-task-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -color-fg-default;
+    -fx-font-weight: 500;
+}
+
+.project-creation-time-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+/* Project creation output */
+.project-creation-output {
+    -fx-background-color: -color-bg-inset;
+    -fx-text-fill: -color-fg-default;
+    -fx-font-family: "Consolas", "Monaco", "Courier New", monospace;
+    -fx-font-size: 12px;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-padding: 12px;
+}
+
+/* New project pane styling */
+.new-project-pane {
+    -fx-background-color: -color-card-bg;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 16px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 12, 0.2, 0, 2);
+    -fx-padding: 8px;
+}

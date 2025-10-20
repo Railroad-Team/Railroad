@@ -1,0 +1,92 @@
+/* ===== MODERN SIDEBAR ===== */
+.rr-sidebar {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 1px 0 0;
+    -fx-min-width: 240px;
+    -fx-max-width: 240px;
+    -fx-transition: all 0.3s ease-in-out;
+}
+
+.rr-sidebar.right {
+    -fx-border-width: 0 0 0 1px;
+}
+
+.rr-sidebar.floating {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 8, 0, 0, 4);
+    -fx-background-radius: 0 12px 12px 0;
+    -fx-border-radius: 0 12px 12px 0;
+}
+
+.rr-sidebar.right.floating {
+    -fx-background-radius: 12px 0 0 12px;
+    -fx-border-radius: 12px 0 0 12px;
+}
+
+.rr-sidebar.transparent {
+    -fx-background-color: rgba(46, 52, 64, 0.8);
+    -fx-background-radius: 0;
+}
+
+/* Sidebar sections */
+.rr-sidebar .sidebar-header {
+    -fx-padding: 0 0 16px 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.rr-sidebar .sidebar-content {
+    -fx-padding: 16px 0;
+}
+
+.rr-sidebar .sidebar-footer {
+    -fx-padding: 16px 0 0 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px 0 0 0;
+}
+
+/* Sidebar sizes */
+.rr-sidebar.small {
+    -fx-min-width: 180px;
+    -fx-max-width: 180px;
+}
+
+.rr-sidebar.large {
+    -fx-min-width: 320px;
+    -fx-max-width: 320px;
+}
+
+#sidebar-separator {
+    -fx-background-color: #23272e;
+    -fx-min-width: 1px;
+    -fx-max-width: 1px;
+    -fx-pref-width: 1px;
+}
+
+.rr-sidebar-tree {
+    -fx-background-color: transparent;
+}
+
+.rr-sidebar-tree .tree-cell {
+    -fx-padding: 10 16 10 24;
+    -fx-background-insets: 0;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-font-size: 15px;
+    -fx-text-fill: -color-fg-default;
+}
+
+.rr-sidebar-tree .tree-cell:filled:selected,
+.rr-sidebar-tree .tree-cell:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-border-color: transparent;
+}
+
+.rr-sidebar-tree .tree-cell:filled:hover {
+    -fx-background-color: -color-bg-inset;
+}
+
+.rr-sidebar-tree .tree-cell .tree-disclosure-node {
+    -fx-padding: 0 6 0 0;
+}

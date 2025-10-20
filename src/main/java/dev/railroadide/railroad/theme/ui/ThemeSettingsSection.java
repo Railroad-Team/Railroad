@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.settings.ui.themes;
+package dev.railroadide.railroad.theme.ui;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

@@ -1,5 +1,6 @@
 package dev.railroadide.core.ui;
 
+import javafx.scene.Node;
 import javafx.scene.layout.VBox;
 
 public class RRVBox extends VBox {
@@ -10,6 +11,16 @@ public class RRVBox extends VBox {
 
     public RRVBox(double spacing) {
         super(spacing);
+        getStyleClass().addAll("Railroad", "Pane", "VBox", "background-2");
+    }
+
+    public RRVBox(double spacing, Node... children) {
+        super(spacing, children);
+        getStyleClass().addAll("Railroad", "Pane", "VBox", "background-2");
+    }
+
+    public RRVBox(Node... children) {
+        super(children);
         getStyleClass().addAll("Railroad", "Pane", "VBox", "background-2");
     }
 }

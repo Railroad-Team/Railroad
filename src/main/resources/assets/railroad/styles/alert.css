@@ -1,0 +1,64 @@
+.alert-overlay {
+    -fx-background-color: rgba(15, 15, 20, 0.55);
+}
+
+.alert-card {
+    -fx-background-color: #1e1f25;
+    -fx-background-radius: 16px;
+    -fx-background-insets: 0;
+    -fx-border-color: #2a2b31;
+    -fx-border-radius: 16px;
+    -fx-border-insets: 0;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 20, 0, 0, 0);
+}
+
+.alert-card.alert-info {
+    -alert-accent-color: #5090ea;
+    -alert-accent-soft: rgba(80, 144, 234, 0.18);
+}
+
+.alert-card.alert-success {
+    -alert-accent-color: #3fb950;
+    -alert-accent-soft: rgba(63, 185, 80, 0.18);
+}
+
+.alert-card.alert-warning {
+    -alert-accent-color: #e2b93b;
+    -alert-accent-soft: rgba(226, 185, 59, 0.2);
+}
+
+.alert-card.alert-error {
+    -alert-accent-color: #e55353;
+    -alert-accent-soft: rgba(229, 83, 83, 0.2);
+}
+
+.alert-icon-wrap {
+    -fx-background-color: transparent;
+}
+
+.alert-icon-bg {
+    -fx-fill: -alert-accent-soft;
+    -fx-stroke: -alert-accent-color;
+    -fx-stroke-width: 1.25px;
+}
+
+.alert-icon {
+    -mfx-color: -alert-accent-color;
+}
+
+.alert-title {
+    -fx-text-fill: white;
+    -fx-font-size: 18px;
+    -fx-font-weight: 600;
+}
+
+.alert-content {
+    -fx-fill: -fx-text-base-color;
+    -fx-text-fill: #d7d7db;
+    -fx-font-size: 14px;
+}
+
+.alert-buttons {
+    -fx-padding: 6px 0 0 0;
+}

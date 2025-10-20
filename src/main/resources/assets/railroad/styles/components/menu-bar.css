@@ -1,0 +1,123 @@
+/* Modern Menu Bar Styles */
+.rr-menu-bar {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 2, 0, 0, 1);
+}
+
+.rr-menu-bar > .container {
+    -fx-padding: 0;
+}
+
+.rr-menu-bar > .container > .menu-button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-padding: 8px 16px;
+    -fx-effect: none;
+    -fx-border-width: 0;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.rr-menu-bar > .container > .menu-button:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.rr-menu-bar > .container > .menu-button:showing {
+    -fx-background-color: -color-accent-subtle;
+}
+
+.rr-menu-bar > .container > .menu-button > .label {
+    -fx-padding: 0;
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+}
+
+.rr-menu-bar > .container > .menu-button > .arrow-button {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+.rr-menu-bar > .container > .menu-button > .arrow-button > .arrow {
+    -fx-padding: 0;
+    -fx-background-color: -color-fg-muted;
+    -fx-shape: "M 0 0 L 4 4 L 8 0 Z";
+    -fx-scale-shape: false;
+}
+
+.rr-menu {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-padding: 4;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 8, 0, 0, 4);
+}
+
+.rr-menu .menu-item {
+    -fx-background-color: transparent;
+    -fx-padding: 8px 12px;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-transition: all 0.15s ease-in-out;
+}
+
+.rr-menu .menu-item:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.rr-menu .menu-item:focused {
+    -fx-background-color: -color-accent-subtle;
+}
+
+.rr-menu .menu-item > .label {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 13px;
+    -fx-padding: 0 8px 0 0;
+}
+
+.rr-menu .menu-item > .graphic-container {
+    -fx-padding: 0 8px 0 0;
+}
+
+.rr-menu .menu-item .ikonli-font-icon {
+    -fx-icon-size: 14px;
+    -fx-fill: -color-fg-default;
+}
+
+.rr-menu .separator {
+    -fx-padding: 4px 0;
+}
+
+.rr-menu .separator .line {
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0.5px;
+    -fx-border-insets: 0 8px;
+}
+
+.rr-menu .check-menu-item > .left-container > .check {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-background-radius: 2;
+    -fx-min-width: 12px;
+    -fx-min-height: 12px;
+    -fx-max-width: 12px;
+    -fx-max-height: 12px;
+}
+
+.rr-menu .check-menu-item:checked > .left-container > .check {
+    -fx-background-color: -color-accent-emphasis;
+}
+
+.rr-menu .check-menu-item:checked > .left-container > .check > .mark {
+    -fx-background-color: white;
+    -fx-shape: "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z";
+    -fx-scale-shape: true;
+    -fx-min-width: 8px;
+    -fx-min-height: 8px;
+    -fx-max-width: 8px;
+    -fx-max-height: 8px;
+}

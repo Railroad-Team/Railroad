@@ -1,7 +1,6 @@
 package dev.railroadide.core.settings;
 
 import com.google.gson.JsonElement;
-import com.google.gson.reflect.TypeToken;
 import javafx.scene.Node;
 
 import java.util.function.BiConsumer;

@@ -1,7 +1,8 @@
 package dev.railroadide.core.project.minecraft.pistonmeta;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import dev.railroadide.core.gson.GsonLocator;
+import dev.railroadide.core.utility.ServiceLocator;
 
 public record Logging(Client client) {
     public static Logging fromJson(JsonObject json) {
@@ -25,7 +26,7 @@ public record Logging(Client client) {
 
         public record LoggingFile(String id, String sha1, int size, String url) {
             public static LoggingFile fromJson(JsonObject json) {
-                return GsonLocator.getInstance().fromJson(json, LoggingFile.class);
+                return ServiceLocator.getService(Gson.class).fromJson(json, LoggingFile.class);
             }
         }
     }

@@ -1,10 +1,10 @@
-package dev.railroadide.railroad.settings.ui.themes;
+package dev.railroadide.railroad.theme.ui;
 
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.RRFormContainer;
-import dev.railroadide.core.ui.RRListView;
+import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
-import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.theme.Theme;
+import dev.railroadide.railroad.theme.ThemeDownloadManager;
+import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -15,9 +15,11 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A modernized theme download pane with improved UI/UX design.
@@ -28,16 +30,8 @@ public class ThemeDownloadPane {
     private ListView<Theme> themeListView;
     private LocalizedLabel statusLabel;
     private RRButton refreshButton;
-    private RRButton closeButton;
 
-    public ThemeDownloadPane() {
-        stage = new Stage();
-        stage.setTitle(L18n.localize("railroad.home.settings.appearance.downloadtheme"));
-        stage.initModality(Modality.APPLICATION_MODAL);
-        stage.setResizable(true);
-        stage.setMinWidth(600);
-        stage.setMinHeight(500);
-
+    public ThemeDownloadPane(Window owner) {
         var mainContainer = new RRFormContainer();
         mainContainer.setLocalizedTitle("railroad.home.settings.appearance.downloadtheme");
         mainContainer.setPadding(new Insets(24));
@@ -51,16 +45,19 @@ public class ThemeDownloadPane {
         var footerSection = createFooterSection();
         mainContainer.addContent(footerSection);
 
-        var scene = new Scene(mainContainer, 700, 600);
-        stage.setScene(scene);
-
         loadThemes();
 
-        stage.show();
+        stage = WindowBuilder.create()
+            .title("railroad.home.settings.appearance.downloadtheme", true)
+            .minSize(690, 590)
+            .owner(owner)
+            .modality(Modality.APPLICATION_MODAL)
+            .scene(new Scene(mainContainer, 700, 600))
+            .build();
     }
 
     private VBox createHeaderSection() {
-        var headerSection = new VBox(16);
+        var headerSection = new RRVBox(16);
         headerSection.setAlignment(Pos.CENTER_LEFT);
 
         var description = new LocalizedLabel("railroad.home.settings.appearance.downloadtheme.description");
@@ -74,10 +71,10 @@ public class ThemeDownloadPane {
     }
 
     private VBox createThemesSection() {
-        var themesSection = new VBox(12);
+        var themesSection = new RRVBox(12);
         VBox.setVgrow(themesSection, Priority.ALWAYS);
 
-        var sectionHeader = new HBox(12);
+        var sectionHeader = new RRHBox(12);
         sectionHeader.setAlignment(Pos.CENTER_LEFT);
 
         var themesLabel = new LocalizedLabel("railroad.home.settings.appearance.themes");
@@ -87,7 +84,7 @@ public class ThemeDownloadPane {
         refreshButton.setIcon(FontAwesomeSolid.SYNC_ALT);
         refreshButton.setButtonSize(RRButton.ButtonSize.SMALL);
         refreshButton.setVariant(RRButton.ButtonVariant.GHOST);
-        refreshButton.setOnAction(e -> loadThemes());
+        refreshButton.setOnAction($ -> loadThemes());
 
         sectionHeader.getChildren().addAll(themesLabel, refreshButton);
 
@@ -101,13 +98,13 @@ public class ThemeDownloadPane {
     }
 
     private HBox createFooterSection() {
-        var footerSection = new HBox(12);
+        var footerSection = new RRHBox(12);
         footerSection.setAlignment(Pos.CENTER_RIGHT);
         footerSection.setPadding(new Insets(16, 0, 0, 0));
 
-        closeButton = new RRButton("railroad.generic.close");
+        var closeButton = new RRButton("railroad.generic.close");
         closeButton.setVariant(RRButton.ButtonVariant.SECONDARY);
-        closeButton.setOnAction(e -> stage.close());
+        closeButton.setOnAction($ -> stage.close());
 
         footerSection.getChildren().add(closeButton);
         return footerSection;
@@ -118,7 +115,7 @@ public class ThemeDownloadPane {
         refreshButton.setLoading(true);
 
         // Load themes in background to avoid blocking UI
-        new Thread(() -> {
+        CompletableFuture.runAsync(() -> {
             List<Theme> themes = ThemeDownloadManager.fetchThemes("https://api.github.com/repos/Railroad-Team/Themes/contents");
 
             Platform.runLater(() -> {
@@ -135,6 +132,6 @@ public class ThemeDownloadPane {
 
                 refreshButton.setLoading(false);
             });
-        }).start();
+        });
     }
-} 
+}

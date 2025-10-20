@@ -1,0 +1,30 @@
+/* Ensure section-header always uses the theme's emphasis color */
+.section-header,
+.rr-form-section .section-header {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-emphasis;
+    -fx-padding: 0 0 8px 0;
+}
+
+.section-label {
+    -fx-font-size: 18px;
+}
+
+.section-description-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-wrap-text: true;
+}
+
+.section-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.section-description {
+    -fx-font-size: 16px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-wrap-text: true;
+}

@@ -1,0 +1,172 @@
+/* ===== MODERN BUTTON ===== */
+.rr-button {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-text-fill: -color-fg-emphasis;
+    -fx-font-weight: 600;
+    -fx-font-size: 14px;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-transition: all 0.2s ease-in-out;
+    -fx-min-height: 36px;
+    -fx-padding: 8px 16px;
+}
+
+.rr-button:hover {
+    -fx-background-color: -color-accent-6;
+    -fx-effect: dropshadow(gaussian, rgba(94, 129, 172, 0.3), 4, 0, 0, 2);
+}
+
+.rr-button:pressed {
+    -fx-background-color: -color-accent-7;
+    -fx-translate-y: 1px;
+}
+
+.rr-button:disabled {
+    -fx-background-color: -color-neutral-muted;
+    -fx-text-fill: -color-fg-muted;
+    -fx-cursor: default;
+}
+
+/* Button variants */
+.rr-button.primary {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.rr-button.secondary {
+    -fx-background-color: -color-bg-subtle;
+    -fx-text-fill: -color-fg-default;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1px;
+}
+
+.rr-button.secondary:hover {
+    -fx-background-color: -color-bg-inset;
+    -fx-border-color: -color-accent-emphasis;
+}
+
+.rr-button.ghost {
+    -fx-background-color: transparent;
+    -fx-text-fill: -color-fg-default;
+    -fx-border-width: 0;
+}
+
+.rr-button.ghost:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.rr-button.danger {
+    -fx-background-color: -color-danger-emphasis;
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.rr-button.danger:hover {
+    -fx-background-color: -color-danger-6;
+}
+
+.rr-button.success {
+    -fx-background-color: -color-success-emphasis;
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.rr-button.success:hover {
+    -fx-background-color: -color-success-6;
+}
+
+.rr-button.warning {
+    -fx-background-color: -color-warning-emphasis;
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.rr-button.warning:hover {
+    -fx-background-color: -color-warning-6;
+}
+
+/* Button sizes */
+.rr-button.small {
+    -fx-min-height: 28px;
+    -fx-padding: 6px 12px;
+    -fx-font-size: 12px;
+}
+
+.rr-button.large {
+    -fx-min-height: 44px;
+    -fx-padding: 12px 20px;
+    -fx-font-size: 16px;
+}
+
+.rr-button.rounded {
+    -fx-background-radius: 20px;
+    -fx-border-radius: 20px;
+}
+
+.rr-button.outlined {
+    -fx-background-color: transparent;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 1px;
+    -fx-text-fill: -color-accent-emphasis;
+}
+
+.rr-button.outlined:hover {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.rr-button.flat {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-text-fill: -color-fg-default;
+}
+
+.rr-button.flat:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+/* Loading button state */
+.rr-button.loading {
+    -fx-opacity: 0.8;
+    -fx-cursor: wait;
+}
+
+.rr-button.loading .loading-spinner {
+    -fx-icon-color: -color-fg-default;
+}
+
+.rr-button.loading.primary .loading-spinner {
+    -fx-icon-color: -color-fg-emphasis;
+}
+
+.rr-button.loading.secondary .loading-spinner {
+    -fx-icon-color: -color-fg-default;
+}
+
+.rr-button.loading.ghost .loading-spinner {
+    -fx-icon-color: -color-fg-default;
+}
+
+.rr-button.loading.danger .loading-spinner {
+    -fx-icon-color: -color-fg-emphasis;
+}
+
+.rr-button.loading.success .loading-spinner {
+    -fx-icon-color: -color-fg-emphasis;
+}
+
+.rr-button.loading.warning .loading-spinner {
+    -fx-icon-color: -color-fg-emphasis;
+}
+
+/* Button container spacing */
+.rr-button {
+    -fx-min-width: 120px;
+    -fx-min-height: 40px;
+}
+
+.square-button {
+    -fx-min-width: 32px;
+    /*-fx-max-width: 40px;*/
+    -fx-min-height: 32px;
+    /*-fx-max-height: 40px;*/
+}

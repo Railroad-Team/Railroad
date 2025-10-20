@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.switchboard;
 
 import dev.railroadide.core.switchboard.SwitchboardRepository;
-import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.core.switchboard.cache.CacheManager;
 import dev.railroadide.core.switchboard.cache.impl.DelegatingCacheManager;
 import dev.railroadide.core.switchboard.cache.impl.JsonCacheManager;
 import dev.railroadide.core.switchboard.cache.impl.SqlCacheManager;
+import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.switchboard.repositories.*;
 
 import java.io.IOException;

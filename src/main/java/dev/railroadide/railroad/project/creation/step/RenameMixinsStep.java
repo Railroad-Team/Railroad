@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.project.creation.step;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.core.project.ProjectContext;
-import dev.railroadide.core.project.creation.service.FilesService;
-import dev.railroadide.core.project.creation.mixin.MixinConfig;
 import dev.railroadide.core.project.creation.CreationStep;
 import dev.railroadide.core.project.creation.ProgressReporter;
+import dev.railroadide.core.project.creation.mixin.MixinConfig;
+import dev.railroadide.core.project.creation.service.FilesService;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.data.FabricProjectKeys;
 import dev.railroadide.railroad.project.data.MavenProjectKeys;
 import dev.railroadide.railroad.project.data.MinecraftProjectKeys;

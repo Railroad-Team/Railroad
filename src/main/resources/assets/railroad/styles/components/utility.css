@@ -1,0 +1,126 @@
+/* ===== UTILITY CLASSES ===== */
+.interactive {
+    -fx-cursor: hand;
+}
+
+.interactive:hover {
+    -fx-opacity: 0.8;
+}
+
+/* Animation classes */
+.fade-in {
+    -fx-opacity: 0;
+    -fx-animation: fadeIn 0.3s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        -fx-opacity: 0;
+    }
+    to {
+        -fx-opacity: 1;
+    }
+}
+
+.slide-in-left {
+    -fx-translate-x: -100%;
+    -fx-animation: slideInLeft 0.3s ease-in-out forwards;
+}
+
+@keyframes slideInLeft {
+    from {
+        -fx-translate-x: -100%;
+    }
+    to {
+        -fx-translate-x: 0;
+    }
+}
+
+.slide-in-right {
+    -fx-translate-x: 100%;
+    -fx-animation: slideInRight 0.3s ease-in-out forwards;
+}
+
+@keyframes slideInRight {
+    from {
+        -fx-translate-x: 100%;
+    }
+    to {
+        -fx-translate-x: 0;
+    }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .rr-sidebar {
+        -fx-min-width: 200px;
+        -fx-max-width: 200px;
+    }
+
+    .rr-button {
+        -fx-min-height: 32px;
+        -fx-padding: 6px 12px;
+        -fx-font-size: 13px;
+    }
+
+    .rr-text-field {
+        -fx-min-height: 32px;
+        -fx-font-size: 13px;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .welcome-title {
+        -fx-font-size: 24px;
+    }
+
+    .welcome-description {
+        -fx-font-size: 16px;
+    }
+
+    .section-title {
+        -fx-font-size: 20px;
+    }
+
+    .feature-text {
+        -fx-font-size: 14px;
+    }
+
+    .rr-button {
+        -fx-min-width: 100px;
+        -fx-min-height: 36px;
+    }
+}
+
+/* Validation styles */
+.validation-error {
+    -fx-border-color: red;
+}
+
+.validation-warning {
+    -fx-border-color: orange;
+}
+
+/* Transparent backgrounds */
+.transparent-background {
+    -fx-background-color: transparent;
+}
+
+.decoration-label {
+    -fx-font-size: 16px;
+}
+
+.decoration-description {
+    -fx-font-size: 14px;
+    -fx-wrap-text: true;
+}
+
+/* Diagnostic pane styling */
+.diagnostic-pane.error {
+    -fx-border-color: red;
+}
+
+.diagnostic-pane.warning {
+    -fx-border-color: orange;
+}

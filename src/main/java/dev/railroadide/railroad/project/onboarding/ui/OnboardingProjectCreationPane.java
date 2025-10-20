@@ -4,18 +4,13 @@ import dev.railroadide.core.ui.RRBorderPane;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.localization.L18n;
-import dev.railroadide.railroad.utility.MacUtils;
+import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
-import javafx.stage.Stage;
-import javafx.stage.Window;
 
 import java.util.function.Consumer;
 
@@ -31,10 +26,7 @@ public class OnboardingProjectCreationPane extends RRVBox {
         startOnboardingButton.setButtonSize(RRButton.ButtonSize.LARGE);
         startOnboardingButton.setVariant(RRButton.ButtonVariant.PRIMARY);
         startOnboardingButton.getStyleClass().add("start-onboarding-button");
-        startOnboardingButton.setOnAction(event -> {
-            Window parentWindow = getScene().getWindow();
-            startOnboarding(parentWindow);
-        });
+        startOnboardingButton.setOnAction(event -> startOnboarding());
 
         getChildren().add(startOnboardingButton);
         VBox.setVgrow(startOnboardingButton, Priority.ALWAYS);
@@ -43,9 +35,7 @@ public class OnboardingProjectCreationPane extends RRVBox {
         getStyleClass().add("project-details-pane");
     }
 
-    private void startOnboarding(Window parentWindow) {
-        var onboardingStage = new Stage();
-
+    private void startOnboarding() {
         Screen screen = Screen.getPrimary();
 
         double screenW = screen.getBounds().getWidth();
@@ -53,19 +43,12 @@ public class OnboardingProjectCreationPane extends RRVBox {
 
         double windowW = screenW * 0.75;
         double windowH = screenH * 0.75;
-        var onboardingScene = new Scene(new RRBorderPane(), windowW, windowH);
-        Railroad.handleStyles(onboardingScene);
 
-        MacUtils.initialize();
-        onboardingStage.initOwner(parentWindow);
-        onboardingStage.setTitle(L18n.localize("railroad.project.creation.onboarding.title"));
-        onboardingStage.getIcons().add(new Image(Railroad.getResourceAsStream("images/logo.png")));
-        onboardingStage.setMinWidth(onboardingScene.getWidth() + 10);
-        onboardingStage.setMinHeight(onboardingScene.getHeight() + 10);
-        onboardingStage.setScene(onboardingScene);
-        onboardingStage.show();
-        MacUtils.show(onboardingStage);
-
-        this.onStartOnboarding.accept(onboardingScene);
+        this.onStartOnboarding.accept(WindowBuilder.create()
+            .minSize(windowW + 10, windowH + 10)
+            .owner(Railroad.WINDOW_MANAGER.getPrimaryStage())
+            .title("railroad.project.creation.onboarding.title", true)
+            .scene(new Scene(new RRBorderPane(), windowW, windowH))
+            .build().getScene());
     }
 }

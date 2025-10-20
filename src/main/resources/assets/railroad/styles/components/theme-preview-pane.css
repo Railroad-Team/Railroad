@@ -1,0 +1,12 @@
+/* Theme preview pane styling */
+.theme-preview-pane {
+    -fx-background-color: -color-bg-default;
+}
+
+.theme-preview-pane .image-view {
+    -fx-background-color: -color-bg-inset;
+    -fx-background-radius: 8px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+}

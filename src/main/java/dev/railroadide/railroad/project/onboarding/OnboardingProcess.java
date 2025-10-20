@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.project.onboarding;
 
-import dev.railroadide.core.ui.*;
+import dev.railroadide.core.ui.RRBorderPane;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.onboarding.flow.OnboardingFlow;
 import dev.railroadide.railroad.project.onboarding.flow.OnboardingTransition;
@@ -17,7 +17,7 @@ import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 

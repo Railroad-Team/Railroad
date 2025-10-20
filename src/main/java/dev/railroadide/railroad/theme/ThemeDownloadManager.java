@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.settings.ui.themes;
+package dev.railroadide.railroad.theme;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonArray;

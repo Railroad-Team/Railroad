@@ -1,7 +1,7 @@
 package dev.railroadide.core.settings.keybinds;
 
-import dev.railroadide.core.logger.LoggerServiceLocator;
-import lombok.Getter;
+import dev.railroadide.core.logger.LoggerService;
+import dev.railroadide.core.utility.ServiceLocator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ public class KeybindContexts {
      */
     public static KeybindContext registerContext(KeybindContext context) {
         if (contexts.containsKey(context.id())) {
-            LoggerServiceLocator.getInstance().getLogger().warn("Attempted to register a duplicate keybind context: {}", context);
+            ServiceLocator.getService(LoggerService.class).getLogger().warn("Attempted to register a duplicate keybind context: {}", context);
             return getContext(context.id());
         }
         contexts.put(context.id(), context);

@@ -6,7 +6,6 @@ import dev.railroadide.railroad.ide.ui.TextEditorPane;
 import dev.railroadide.railroadpluginapi.services.DocumentEditorStateService;
 import dev.railroadide.railroadpluginapi.state.Cursor;
 import dev.railroadide.railroadpluginapi.state.Selection;
-import lombok.Setter;
 
 import java.util.List;
 

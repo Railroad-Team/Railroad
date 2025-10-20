@@ -1,10 +1,10 @@
-package dev.railroadide.railroad.settings.ui.themes;
+package dev.railroadide.railroad.theme.ui;
 
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.RRFormSection;
+import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.theme.ThemeManager;
+import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -19,28 +19,19 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
-import java.nio.file.Path;
 import java.util.Arrays;
 
 /**
  * A modernized theme preview pane that shows a live UI demonstration.
  * Features various components styled according to the selected theme.
  */
+// TODO: Translate
 public class ThemeExamplePane {
     private final Stage stage;
-    private final Scene previewScene;
     private final String themeName;
 
     public ThemeExamplePane(final String themeName) {
         this.themeName = themeName;
-
-        stage = new Stage();
-        stage.setTitle(L18n.localize("railroad.home.settings.appearance.preview") + " - " + formatThemeName(themeName));
-        stage.initModality(Modality.APPLICATION_MODAL);
-        stage.setResizable(true);
-        stage.setMinWidth(800);
-        stage.setMinHeight(600);
-
         var previewContent = createPreviewContent();
 
         var scrollPane = new ScrollPane(previewContent);
@@ -48,16 +39,21 @@ public class ThemeExamplePane {
         scrollPane.setFitToHeight(true);
         scrollPane.getStyleClass().add("theme-preview-scroll-pane");
 
-        previewScene = new Scene(scrollPane, 900, 700);
+        var previewScene = new Scene(scrollPane, 900, 700);
+        ThemeManager.applyThemeToScene(themeName, previewScene);
 
-        applyThemeToPreview();
-
-        stage.setScene(previewScene);
-        stage.show();
+        this.stage = WindowBuilder.create()
+            .title(L18n.localize("railroad.home.settings.appearance.preview") + " - " + formatThemeName(themeName))
+            .scene(previewScene)
+            .modality(Modality.APPLICATION_MODAL)
+            .resizable(true)
+            .minWidth(890)
+            .minHeight(690)
+            .build();
     }
 
     private VBox createPreviewContent() {
-        var mainContainer = new VBox(20);
+        var mainContainer = new RRVBox(20);
         mainContainer.setPadding(new Insets(24));
         mainContainer.setAlignment(Pos.TOP_LEFT);
         mainContainer.getStyleClass().add("theme-example-main-container");
@@ -84,7 +80,7 @@ public class ThemeExamplePane {
     }
 
     private VBox createHeaderSection() {
-        var header = new VBox(8);
+        var header = new RRVBox(8);
         header.setAlignment(Pos.CENTER_LEFT);
 
         var title = new LocalizedLabel("railroad.home.settings.appearance.preview.title");
@@ -98,13 +94,13 @@ public class ThemeExamplePane {
     }
 
     private HBox createNavigationSection() {
-        var navigation = new HBox(12);
+        var navigation = new RRHBox(12);
         navigation.setAlignment(Pos.CENTER_LEFT);
         navigation.setPadding(new Insets(16, 0, 16, 0));
 
         var navItems = Arrays.asList("Home", "Projects", "Settings", "Help");
         for (String item : navItems) {
-            var navButton = new Button(item);
+            var navButton = new RRButton(item);
             navButton.setOnMouseEntered(e -> navButton.getStyleClass().add("theme-example-nav-button-hover"));
             navButton.setOnMouseExited(e -> navButton.getStyleClass().remove("theme-example-nav-button-hover"));
             navButton.getStyleClass().add("theme-example-nav-button");
@@ -118,39 +114,39 @@ public class ThemeExamplePane {
         var formSection = new RRFormSection();
         formSection.setLocalizedHeaderText("railroad.home.settings.appearance.preview.form.components");
 
-        var textFieldRow = new HBox(12);
+        var textFieldRow = new RRHBox(12);
         textFieldRow.setAlignment(Pos.CENTER_LEFT);
 
-        var textField = new TextField();
+        var textField = new RRTextField();
         textField.setPromptText("Enter text here...");
         textField.setPrefWidth(200);
 
-        var passwordField = new PasswordField();
+        var passwordField = new PasswordField(); // TODO: Create RRPasswordField
         passwordField.setPromptText("Password");
         passwordField.setPrefWidth(200);
 
         textFieldRow.getChildren().addAll(
-                new LocalizedLabel("railroad.theme.preview.text_field"), textField,
-                new LocalizedLabel("railroad.theme.preview.password"), passwordField
+            new LocalizedLabel("railroad.theme.preview.text_field"), textField,
+            new LocalizedLabel("railroad.theme.preview.password"), passwordField
         );
 
-        var controlsRow = new HBox(12);
+        var controlsRow = new RRHBox(12);
         controlsRow.setAlignment(Pos.CENTER_LEFT);
 
-        var comboBox = new ComboBox<>();
+        var comboBox = new ComboBox<>(); // TODO: Use LocalizedComboBox
         comboBox.getItems().addAll("Option 1", "Option 2", "Option 3");
         comboBox.setValue("Option 1");
         comboBox.setPrefWidth(150);
 
-        var checkBox = new CheckBox("Enable feature");
+        var checkBox = new CheckBox("Enable feature"); // TODO: Create RRCheckBox
         checkBox.setSelected(true);
 
-        var radioButton = new RadioButton("Radio option");
+        var radioButton = new RadioButton("Radio option"); // TODO: Create RRRadioButton
         radioButton.setSelected(true);
 
         controlsRow.getChildren().addAll(
-                new LocalizedLabel("railroad.theme.preview.dropdown"), comboBox,
-                checkBox, radioButton
+            new LocalizedLabel("railroad.theme.preview.dropdown"), comboBox,
+            checkBox, radioButton
         );
 
         formSection.addContent(textFieldRow, controlsRow);
@@ -161,16 +157,16 @@ public class ThemeExamplePane {
         var listSection = new RRFormSection();
         listSection.setLocalizedHeaderText("railroad.home.settings.appearance.preview.list.components");
 
-        var listView = new ListView<>();
+        var listView = new RRListView<>();
         listView.getItems().addAll(
-                "Project 1 - Minecraft Mod",
-                "Project 2 - Fabric Plugin",
-                "Project 3 - Forge Extension",
-                "Project 4 - Neoforge Addon",
-                "Project 5 - Quilt Mod",
-                "Project 6 - Bukkit Plugin",
-                "Project 7 - Spigot Extension",
-                "Project 8 - Paper Addon"
+            "Project 1 - Minecraft Mod",
+            "Project 2 - Fabric Plugin",
+            "Project 3 - Forge Extension",
+            "Project 4 - Neoforge Addon",
+            "Project 5 - Quilt Mod",
+            "Project 6 - Bukkit Plugin",
+            "Project 7 - Spigot Extension",
+            "Project 8 - Paper Addon"
         );
         listView.setPrefHeight(250);
         listView.setMinHeight(200);
@@ -189,13 +185,14 @@ public class ThemeExamplePane {
         typeColumn.setPrefWidth(120);
         statusColumn.setPrefWidth(120);
 
+        // noinspection unchecked
         table.getColumns().addAll(nameColumn, typeColumn, statusColumn);
 
         ObservableList<ProjectData> data = FXCollections.observableArrayList(
-                new ProjectData("MyMod", "Fabric", "Active"),
-                new ProjectData("CoolPlugin", "Forge", "Inactive"),
-                new ProjectData("AwesomeAddon", "Neoforge", "Active"),
-                new ProjectData("DemoMod", "Bukkit", "Inactive")
+            new ProjectData("MyMod", "Fabric", "Active"),
+            new ProjectData("CoolPlugin", "Forge", "Inactive"),
+            new ProjectData("AwesomeAddon", "Neoforge", "Active"),
+            new ProjectData("DemoMod", "Bukkit", "Inactive")
         );
         table.setItems(data);
         table.setPrefHeight(250);
@@ -209,7 +206,7 @@ public class ThemeExamplePane {
         var buttonSection = new RRFormSection();
         buttonSection.setLocalizedHeaderText("railroad.home.settings.appearance.preview.button.components");
 
-        var buttonRow1 = new HBox(12);
+        var buttonRow1 = new RRHBox(12);
         buttonRow1.setAlignment(Pos.CENTER_LEFT);
 
         var primaryButton = new RRButton("Primary Button");
@@ -226,7 +223,7 @@ public class ThemeExamplePane {
 
         buttonRow1.getChildren().addAll(primaryButton, secondaryButton, dangerButton, successButton);
 
-        var buttonRow2 = new HBox(12);
+        var buttonRow2 = new RRHBox(12);
         buttonRow2.setAlignment(Pos.CENTER_LEFT);
 
         var ghostButton = new RRButton("Ghost Button");
@@ -249,7 +246,7 @@ public class ThemeExamplePane {
     }
 
     private HBox createFooterSection() {
-        var footer = new HBox(12);
+        var footer = new RRHBox(12);
         footer.setAlignment(Pos.CENTER_RIGHT);
         footer.setPadding(new Insets(16, 0, 0, 0));
 
@@ -261,7 +258,7 @@ public class ThemeExamplePane {
         applyButton.setVariant(RRButton.ButtonVariant.PRIMARY);
         applyButton.setOnAction($ -> {
             // Apply the theme to the main application
-            Railroad.updateTheme(themeName.replace(".css", ""));
+            ThemeManager.setTheme(themeName.replace(".css", ""));
             stage.close();
         });
 
@@ -269,56 +266,17 @@ public class ThemeExamplePane {
         return footer;
     }
 
-    private void applyThemeToPreview() {
-        previewScene.getStylesheets().clear();
-
-        String baseTheme = Railroad.getResource("styles/base.css").toExternalForm();
-        String components = Railroad.getResource("styles/components.css").toExternalForm();
-        String themes = Railroad.getResource("styles/themes-setting.css").toExternalForm();
-        previewScene.getStylesheets().add(baseTheme);
-        previewScene.getStylesheets().add(components);
-        previewScene.getStylesheets().add(themes);
-
-        if (themeName.startsWith("default")) {
-            String themePath = Railroad.getResource("styles/" + themeName).toExternalForm();
-            previewScene.getStylesheets().add(themePath);
-        } else {
-            Path themeFile = ThemeDownloadManager.getThemesDirectory().resolve(themeName);
-            if (themeFile.toFile().exists()) {
-                previewScene.getStylesheets().add(themeFile.toUri().toString());
-            }
-        }
-    }
-
     private String formatThemeName(String themeName) {
         return themeName
-                .replace("\"", "")
-                .replace(".css", "")
-                .replace("-", " ")
-                .replace("_", " ");
+            .replace("\"", "")
+            .replace(".css", "")
+            .replace("-", " ")
+            .replace("_", " ");
     }
 
-    public static class ProjectData {
-        private final SimpleStringProperty name;
-        private final SimpleStringProperty type;
-        private final SimpleStringProperty status;
-
+    public record ProjectData(SimpleStringProperty name, SimpleStringProperty type, SimpleStringProperty status) {
         public ProjectData(String name, String type, String status) {
-            this.name = new SimpleStringProperty(name);
-            this.type = new SimpleStringProperty(type);
-            this.status = new SimpleStringProperty(status);
-        }
-
-        public String getName() {
-            return name.get();
-        }
-
-        public String getType() {
-            return type.get();
-        }
-
-        public String getStatus() {
-            return status.get();
+            this(new SimpleStringProperty(name), new SimpleStringProperty(type), new SimpleStringProperty(status));
         }
     }
 }
