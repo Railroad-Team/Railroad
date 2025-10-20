@@ -68,7 +68,7 @@ public class ThemeSelector extends VBox {
         downloadButton = new RRButton("railroad.home.settings.appearance.downloadtheme");
         downloadButton.setIcon(FontAwesomeSolid.DOWNLOAD);
         downloadButton.setVariant(RRButton.ButtonVariant.PRIMARY);
-        downloadButton.setOnAction(e -> new ThemeDownloadPane());
+        downloadButton.setOnAction(e -> new ThemeDownloadPane(getScene().getWindow()));
 
         section.addContent(downloadButton);
 

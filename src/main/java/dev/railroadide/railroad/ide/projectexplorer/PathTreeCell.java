@@ -76,7 +76,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
 
         cut.setOnAction(event -> ProjectExplorerPane.cut((PathTreeItem) cell.getTreeItem(), cell.getTreeView()));
         copy.setOnAction(event -> ProjectExplorerPane.copy(cell.getItem()));
-        paste.setOnAction(event -> ProjectExplorerPane.paste(window, cell.getItem()));
+        paste.setOnAction(event -> ProjectExplorerPane.paste(cell.getItem()));
 
         var rename = new MenuItem("Rename");
         var delete = new MenuItem("Delete");
@@ -85,7 +85,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
             cell.allowEdit = true;
             cell.startEdit();
         });
-        delete.setOnAction(event -> DeleteDialog.open(window, currentPath));
+        delete.setOnAction(event -> DeleteDialog.open(currentPath));
 
         var openIn = new Menu("Open In");
         var openInExplorer = new MenuItem("Explorer");

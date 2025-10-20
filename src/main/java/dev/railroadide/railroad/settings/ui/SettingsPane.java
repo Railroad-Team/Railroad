@@ -7,8 +7,12 @@ import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRTextField;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.plugin.ui.PluginsPane;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
+import dev.railroadide.railroad.window.WindowBuilder;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -20,6 +24,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.Screen;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -195,5 +200,44 @@ public class SettingsPane extends RRVBox {
             tree.getSelectionModel().select(firstCategory);
             tree.scrollTo(tree.getRow(firstCategory));
         }
+    }
+
+    public static void openSettingsWindow() {
+        Platform.runLater(() -> {
+            Screen screen = Screen.getPrimary();
+            double screenW = screen.getBounds().getWidth();
+            double screenH = screen.getBounds().getHeight();
+
+            double windowW = screenW * 0.75;
+            double windowH = screenH * 0.75;
+
+            var scene = new Scene(new SettingsPane(), windowW, windowH);
+            WindowBuilder.create()
+                .owner(Railroad.WINDOW_MANAGER.getPrimaryStage())
+                .scene(scene)
+                .title("railroad.window.settings.title", true)
+                .minSize(windowW * 0.7, windowH * 0.7)
+                .build();
+        });
+    }
+
+    public static void openPluginsWindow() {
+        Platform.runLater(() -> {
+            Screen screen = Screen.getPrimary();
+            double screenW = screen.getBounds().getWidth();
+            double screenH = screen.getBounds().getHeight();
+
+            double windowW = screenW * 0.75;
+            double windowH = screenH * 0.75;
+
+            var scene = new Scene(new PluginsPane(), windowW, windowH);
+            WindowBuilder.create()
+                .owner(Railroad.WINDOW_MANAGER.getPrimaryStage())
+                .scene(scene)
+                .title("railroad.window.plugins.title", true)
+                .minSize(windowW * 0.7, windowH * 0.7)
+                .shouldBlockOwnerWindow(true)
+                .build();
+        });
     }
 }

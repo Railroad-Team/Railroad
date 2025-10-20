@@ -4,7 +4,6 @@ import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
 /**
@@ -100,4 +99,4 @@ public class RRCard extends VBox {
             getStyleClass().remove("selected");
         }
     }
-} 
+}

@@ -13,6 +13,8 @@ import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.GitUtils;
+import dev.railroadide.railroad.window.AlertType;
+import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -20,8 +22,6 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -41,7 +41,7 @@ import java.util.concurrent.CompletableFuture;
 @Getter
 public class WelcomeImportProjectsPane extends RRHBox {
     private final RRListView<Object> sidebar = new RRListView<>();
-    private final String REPO_URL_OPTION = "REPO_URL_OPTION";
+    private static final String REPO_URL_OPTION = "REPO_URL_OPTION";
     private final RRVBox rightPane = new RRVBox(18);
     private final RRListView<Repository> repositoryListView = new RRListView<>();
     private final ProgressIndicator progressIndicator = new ProgressIndicator();
@@ -115,7 +115,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
                 Platform.runLater(() -> IDESetup.switchToIDE(project));
             }
         }).exceptionally(exception -> {
-            showError(exception.getLocalizedMessage(), false);
+            showError(exception);
             Platform.runLater(stage::close);
             return null;
         });
@@ -124,16 +124,17 @@ public class WelcomeImportProjectsPane extends RRHBox {
     }
 
     private static void showError(String content) {
-        showError(content, true);
+        WindowBuilder.createAlert(AlertType.ERROR,
+            "railroad.importprojects.clone",
+            "",
+            content,
+            alertBuilder -> alertBuilder.translateContent(true),
+            () -> {
+            });
     }
 
-    private static void showError(String content, boolean translateContent) {
-        Platform.runLater(() -> {
-            var alert = new Alert(AlertType.ERROR);
-            alert.setTitle(L18n.localize("railroad.importprojects.clone"));
-            alert.setHeaderText(null);
-            alert.setContentText(translateContent ? L18n.localize(content) : content);
-            alert.showAndWait();
+    private static void showError(Throwable throwable) {
+        WindowBuilder.createExceptionAlert("railroad.importprojects.clone", "", throwable, () -> {
         });
     }
 
@@ -148,7 +149,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
                 String lower = filter.toLowerCase(Locale.ROOT);
                 for (Repository repo : baseList) {
                     if (repo.getRepositoryName().toLowerCase(Locale.ROOT).contains(lower) ||
-                            repo.getRepositoryURL().toLowerCase(Locale.ROOT).contains(lower)) {
+                        repo.getRepositoryURL().toLowerCase(Locale.ROOT).contains(lower)) {
                         filtered.add(repo);
                     }
                 }
@@ -188,13 +189,13 @@ public class WelcomeImportProjectsPane extends RRHBox {
         connectionCache.put(profile, connection);
 
         connection.getRepositories().addListener((ListChangeListener<Repository>) change ->
-                Platform.runLater(() -> {
-                    filterRepositories(currentFilter);
-                    searchField.setDisable(false);
-                    isLoading = false;
-                    lastLoadedProfile = profile;
-                    updateRightPane(profile);
-                }));
+            Platform.runLater(() -> {
+                filterRepositories(currentFilter);
+                searchField.setDisable(false);
+                isLoading = false;
+                lastLoadedProfile = profile;
+                updateRightPane(profile);
+            }));
     }
 
     private void updateRightPane(Object selected) {

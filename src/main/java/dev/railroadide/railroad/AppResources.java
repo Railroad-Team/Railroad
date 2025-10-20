@@ -24,7 +24,7 @@ public class AppResources {
      * @return The URL of the resource
      */
     public static URL getResource(String path) {
-        return Railroad.class.getClassLoader().getResource("assets/railroad/" + path);
+        return Railroad.class.getClassLoader().getResource("assets/railroad/" + (path.startsWith("/") ? path.substring(1) : path));
     }
 
     /**
@@ -34,6 +34,6 @@ public class AppResources {
      * @return The InputStream of the resource
      */
     public static InputStream getResourceAsStream(String path) {
-        return Railroad.class.getClassLoader().getResourceAsStream("assets/railroad/" + path);
+        return Railroad.class.getClassLoader().getResourceAsStream("assets/railroad/" + (path.startsWith("/") ? path.substring(1) : path));
     }
 }

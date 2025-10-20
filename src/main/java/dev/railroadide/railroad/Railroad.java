@@ -25,6 +25,7 @@ import dev.railroadide.railroad.utility.LocalDateTimeTypeAdapter;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.vcs.RepositoryManager;
 import dev.railroadide.railroad.welcome.WelcomePane;
+import dev.railroadide.railroad.window.WindowBuilder;
 import dev.railroadide.railroad.window.WindowManager;
 import dev.railroadide.railroadpluginapi.event.EventBus;
 import dev.railroadide.railroadpluginapi.events.ApplicationStartEvent;
@@ -33,16 +34,12 @@ import javafx.application.Application;
 import javafx.application.HostServices;
 import javafx.application.Platform;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
 import okhttp3.OkHttpClient;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
 
 /**
  * The main class of the application
@@ -74,38 +71,6 @@ public class Railroad extends Application {
 
     public static void main(String[] args) {
         RailroadLauncher.launchWithPreloader(args);
-    }
-
-    /**
-     * Show an error alert
-     *
-     * @param title   The title of the alert
-     * @param header  The header of the alert
-     * @param content The content of the alert
-     * @param action  The action to perform when the alert is closed
-     */
-    public static void showErrorAlert(String title, String header, String content, Consumer<ButtonType> action) {
-        var alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(header);
-        alert.setContentText(content);
-
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            action.accept(result.get());
-        }
-    }
-
-    /**
-     * Show an error alert
-     *
-     * @param title   The title of the alert
-     * @param header  The header of the alert
-     * @param content The content of the alert
-     */
-    public static void showErrorAlert(String title, String header, String content) {
-        showErrorAlert(title, header, content, buttonType -> {
-        });
     }
 
     /**
@@ -160,7 +125,7 @@ public class Railroad extends Application {
                 step.action().run();
             } catch (Throwable exception) {
                 startupException = exception;
-                LOGGER.error("Error during Railroad initialization step: " + step.message(), exception);
+                LOGGER.error("Error during Railroad initialization step: {}", step.message(), exception);
                 notifyPreloader(new RailroadPreloader.ErrorNotification("Failed: " + step.message()));
                 return;
             }
@@ -171,12 +136,15 @@ public class Railroad extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        WINDOW_MANAGER.setPrimaryStage(primaryStage);
-
         hostServices = getHostServices();
 
         if (startupException != null) {
-            showErrorAlert("Error", "Error starting Railroad", "An error occurred while starting Railroad.", buttonType -> Platform.exit());
+            WindowBuilder.createExceptionAlert(
+                "railroad.generic.error",
+                "railroad.startup.error.title",
+                startupException,
+                Platform::exit
+            );
             return;
         }
 
@@ -186,7 +154,12 @@ public class Railroad extends Application {
             EVENT_BUS.publish(new ApplicationStartEvent());
         } catch (Throwable exception) {
             LOGGER.error("Error starting Railroad", exception);
-            showErrorAlert("Error", "Error starting Railroad", "An error occurred while starting Railroad.", buttonType -> Platform.exit());
+            WindowBuilder.createExceptionAlert(
+                "railroad.generic.error",
+                "railroad.startup.error.title",
+                exception,
+                Platform::exit
+            );
         }
     }
 
@@ -199,8 +172,7 @@ public class Railroad extends Application {
         LoggerManager.shutdown();
     }
 
-    private record InitializationStep(String message, CheckedRunnable action) {
-    }
+    private record InitializationStep(String message, CheckedRunnable action) {}
 
     @FunctionalInterface
     private interface CheckedRunnable {

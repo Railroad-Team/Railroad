@@ -12,13 +12,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.*;
-import java.util.Collections;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
@@ -33,8 +30,8 @@ public class ThemeManager {
     private static final Set<Scene> TRACKED_SCENES = Collections.synchronizedSet(new HashSet<>());
 
     public static void init() {
-        baseCss = get("styles/base.css");
-        debugCss = get("styles/debug.css");
+        baseCss = getAsExternalForm("styles/base.css");
+        debugCss = getAsExternalForm("styles/debug.css");
 
         try {
             COMPONENTS_CSS.addAll(getComponentCssFiles());
@@ -45,7 +42,7 @@ public class ThemeManager {
         currentTheme = SettingsHandler.getValue(Settings.THEME);
     }
 
-    private static String get(String path) {
+    public static String getAsExternalForm(String path) {
         return AppResources.getResource(path).toExternalForm();
     }
 
@@ -53,7 +50,7 @@ public class ThemeManager {
         if (scene == null) return;
 
         TRACKED_SCENES.add(scene);
-        applyThemeToScene(scene);
+        applyThemeToScene(currentTheme, scene);
 
         scene.setOnKeyReleased(event -> {
             if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.D) {
@@ -87,22 +84,22 @@ public class ThemeManager {
                 }
 
                 for (Scene scene : TRACKED_SCENES) {
-                    applyThemeToScene(scene);
+                    applyThemeToScene(currentTheme, scene);
                 }
             }
         });
     }
 
-    private static void applyThemeToScene(Scene scene) {
+    public static void applyThemeToScene(String theme, Scene scene) {
         scene.getStylesheets().clear();
 
-        if (currentTheme != null && !currentTheme.isEmpty()) {
-            if (currentTheme.startsWith("default")) {
-                scene.getStylesheets().add(get("styles/" + currentTheme + ".css"));
+        if (theme != null && !theme.isEmpty()) {
+            if (theme.startsWith("default")) {
+                scene.getStylesheets().add(getAsExternalForm("styles/" + theme + ".css"));
             } else {
                 scene.getStylesheets().add(
                     new File(ThemeDownloadManager.getThemesDirectory()
-                        + "/" + currentTheme + ".css").toURI().toString()
+                        + "/" + theme + ".css").toURI().toString()
                 );
             }
         }
@@ -115,7 +112,7 @@ public class ThemeManager {
         }
     }
 
-    private static void toggleDebug(Scene scene) {
+    public static void toggleDebug(Scene scene) {
         if (debug) {
             scene.getStylesheets().remove(debugCss);
         } else {
@@ -125,7 +122,7 @@ public class ThemeManager {
         debug = !debug;
     }
 
-    private static List<String> getComponentCssFiles() throws URISyntaxException, IOException {
+    public static List<String> getComponentCssFiles() throws URISyntaxException, IOException {
         final List<String> componentCss = new ArrayList<>();
         String folderPath = "assets/railroad/styles/components";
 
@@ -138,7 +135,7 @@ public class ThemeManager {
             if (url.getProtocol().equals("file")) {
                 try (Stream<Path> walk = Files.walk(Paths.get(url.toURI()), 1)) {
                     walk.filter(Files::isRegularFile)
-                            .forEach(p -> componentCss.add(get("styles/components/" + p.getFileName().toString())));
+                            .forEach(p -> componentCss.add(getAsExternalForm("styles/components/" + p.getFileName().toString())));
                 }
             } else if (url.getProtocol().equals("jar")) {
                 String jarPath = url.getPath().substring(5, url.getPath().indexOf("!"));
@@ -148,7 +145,7 @@ public class ThemeManager {
                         JarEntry entry = entries.nextElement();
                         String name = entry.getName();
                         if (name.startsWith(folderPath) && !name.equals(folderPath) && !entry.isDirectory()) {
-                            componentCss.add(get("styles/components/" + name.substring(folderPath.length() + 1)));
+                            componentCss.add(getAsExternalForm("styles/components/" + name.substring(folderPath.length() + 1)));
                         }
                     }
                 }

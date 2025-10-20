@@ -126,14 +126,6 @@ public class ProjectCreationView extends RRBorderPane {
                 logsPane.setExpanded(!logsPane.isExpanded());
             }
         });
-
-        sceneProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue != null) {
-                newValue.getStylesheets().add(AppResources.getResource("styles/project-creation-view.css").toExternalForm());
-            } else if (oldValue != null) {
-                oldValue.getStylesheets().remove(AppResources.getResource("styles/project-creation-view.css").toExternalForm());
-            }
-        });
     }
 
     public void bindToService(Service<?> service,

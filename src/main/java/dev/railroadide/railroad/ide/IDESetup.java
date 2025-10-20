@@ -18,12 +18,9 @@ import dev.railroadide.railroad.ide.ui.ConsolePane;
 import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
 import dev.railroadide.railroad.ide.ui.ImageViewerPane;
 import dev.railroadide.railroad.ide.ui.StatusBarPane;
-import dev.railroadide.railroad.plugin.PluginManager;
-import dev.railroadide.railroad.plugin.ui.PluginsPane;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
-import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.window.WindowBuilder;
 import dev.railroadide.railroadpluginapi.events.ProjectEvent;
 import javafx.application.Platform;
@@ -258,27 +255,11 @@ public class IDESetup {
         var settingsItem = new LocalizedMenuItem("railroad.menu.tools.settings");
         settingsItem.setGraphic(new FontIcon(FontAwesomeSolid.COG));
         settingsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.SHORTCUT_DOWN));
-        settingsItem.setOnAction($ -> Platform.runLater(() -> {
-            var settingsStage = new Stage(); // TODO: Replace with WindowBuilder
-            settingsStage.setTitle("Settings");
-            var settingsPane = new SettingsPane();
-            var scene = new Scene(settingsPane, 1000, 600);
-            ThemeManager.apply(scene);
-            settingsStage.setScene(scene);
-            settingsStage.show();
-        }));
+        settingsItem.setOnAction($ -> SettingsPane.openSettingsWindow());
 
         var pluginsItem = new LocalizedMenuItem("railroad.menu.tools.plugins");
         pluginsItem.setGraphic(new FontIcon(FontAwesomeSolid.PUZZLE_PIECE));
-        pluginsItem.setOnAction($ -> Platform.runLater(() -> {
-            var pluginsStage = new Stage(); // TODO: Replace with WindowBuilder
-            pluginsStage.setTitle("Plugins");
-            var pluginsPane = new PluginsPane(PluginManager.getEnabledPlugins());
-            var scene = new Scene(pluginsPane, 1000, 600);
-            ThemeManager.apply(scene);
-            pluginsStage.setScene(scene);
-            pluginsStage.show();
-        }));
+        pluginsItem.setOnAction($ -> SettingsPane.openPluginsWindow());
 
         var terminalItem = new LocalizedMenuItem("railroad.menu.tools.terminal");
         terminalItem.setGraphic(new FontIcon(FontAwesomeSolid.TERMINAL));

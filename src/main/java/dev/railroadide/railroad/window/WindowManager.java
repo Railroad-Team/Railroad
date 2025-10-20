@@ -1,11 +1,7 @@
 package dev.railroadide.railroad.window;
 
-import dev.railroadide.railroad.AppResources;
-import dev.railroadide.railroad.theme.ThemeManager;
-import dev.railroadide.railroad.utility.MacUtils;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
-import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import lombok.Getter;
@@ -15,7 +11,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * Centralized manager for all application windows and popups.
@@ -55,9 +50,7 @@ public class WindowManager {
      */
     public void showPrimary(Scene scene, String title) {
         this.primaryScene = scene;
-        ThemeManager.apply(this.primaryScene);
 
-        // Calculate window size based on screen
         Screen screen = Screen.getPrimary();
         double screenW = screen.getBounds().getWidth();
         double screenH = screen.getBounds().getHeight();
@@ -65,44 +58,12 @@ public class WindowManager {
         double windowW = screenW * 0.75;
         double windowH = screenH * 0.75;
 
-        primaryStage.setTitle(title);
-        primaryStage.getIcons().add(AppResources.icon());
-
-        primaryStage.setScene(scene);
-        primaryStage.setMinWidth(windowW * 0.5);
-        primaryStage.setMinHeight(windowH * 0.5);
-        primaryStage.setWidth(windowW);
-        primaryStage.setHeight(windowH);
-
-        // Create a MacOS specific Menu Bar and Application Menu
-        MacUtils.initialize();
-
-        primaryStage.show();
-
-        // Show the MacOS specific menu bar
-        MacUtils.show(primaryStage);
-    }
-
-    /**
-     * Create and show a sub-window with the given scene.
-     *
-     * @param title Window title
-     * @param scene Content scene
-     * @param init  Optional Stage configuration (resizable, icons, etc.)
-     * @return the Stage created
-     */
-    public Stage createSubWindow(String title, Scene scene, Consumer<Stage> init) {
-        Stage stage = WindowBuilder.create()
+        setPrimaryStage(WindowBuilder.create()
+            .scene(this.primaryScene)
             .title(title)
-            .scene(scene)
-            .owner(primaryStage)
-            .modality(Modality.NONE)
-            .onInit(init)
-            .build();
-
-        childWindows.add(stage);
-        stage.setOnCloseRequest(e -> childWindows.remove(stage));
-        return stage;
+            .size(windowW, windowH)
+            .minSize(windowW * 0.5, windowH * 0.5)
+            .build());
     }
 
     /**
@@ -126,26 +87,6 @@ public class WindowManager {
     }
 
     /**
-     * Show a blocking popup (modal window).
-     *
-     * @param title Window title
-     * @param scene Popup content
-     * @param init  Optional Stage configuration
-     * @return the Stage created (already shown)
-     */
-    public Stage showPopup(String title, Scene scene, Consumer<Stage> init) {
-        return WindowBuilder.create()
-            .title(title)
-            .scene(scene)
-            .owner(primaryStage)
-            .modality(Modality.APPLICATION_MODAL)
-            .resizable(false)
-            .onInit(init)
-            .showImmediately(true)
-            .build();
-    }
-
-    /**
      * Set the title of the primary application window.
      *
      * @param title New window title
@@ -164,5 +105,10 @@ public class WindowManager {
         if (iconStream != null) {
             primaryStage.getIcons().add(new Image(iconStream));
         }
+    }
+
+    public void registerChildWindow(Stage stage) {
+        childWindows.add(stage);
+        stage.setOnCloseRequest(event -> childWindows.remove(stage));
     }
 }

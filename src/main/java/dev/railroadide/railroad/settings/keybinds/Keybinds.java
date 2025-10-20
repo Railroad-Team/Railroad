@@ -28,7 +28,7 @@ public class Keybinds {
             .addAction(KeybindContexts.of("railroad:project_explorer"), node -> {
                 @SuppressWarnings("unchecked")
                 TreeView<PathItem> tree = (TreeView<PathItem>) node;
-                ProjectExplorerPane.paste(node.getScene().getWindow(), tree.getSelectionModel().getSelectedItem().getValue());
+                ProjectExplorerPane.paste(tree.getSelectionModel().getSelectedItem().getValue());
             })
             .build());
 

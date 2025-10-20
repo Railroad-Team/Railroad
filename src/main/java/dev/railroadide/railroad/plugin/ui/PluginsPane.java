@@ -7,6 +7,7 @@ import dev.railroadide.core.ui.RRTextField;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.utility.ServiceLocator;
+import dev.railroadide.railroad.plugin.PluginManager;
 import dev.railroadide.railroadpluginapi.PluginDescriptor;
 import dev.railroadide.railroadpluginapi.deps.MavenDep;
 import javafx.collections.FXCollections;
@@ -37,6 +38,10 @@ public class PluginsPane extends SplitPane {
 
     private final ListView<PluginModel> listView = new ListView<>();
     private final VBox detailsBox = new RRVBox(24);
+
+    public PluginsPane() {
+        this(PluginManager.getEnabledPlugins());
+    }
 
     public PluginsPane(Map<PluginDescriptor, Boolean> defaultEnabledPlugins) {
         getStyleClass().add("plugins-pane");
