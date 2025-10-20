@@ -31,6 +31,7 @@ import dev.railroadide.railroadpluginapi.events.ApplicationStartEvent;
 import dev.railroadide.railroadpluginapi.events.ApplicationStopEvent;
 import javafx.application.Application;
 import javafx.application.HostServices;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -38,6 +39,7 @@ import javafx.stage.Stage;
 import okhttp3.OkHttpClient;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -68,6 +70,11 @@ public class Railroad extends Application {
     public static final EventBus EVENT_BUS = new DefaultEventBus();
     public static final WindowManager WINDOW_MANAGER = new WindowManager();
     private static HostServices hostServices;
+    private volatile Throwable startupException;
+
+    public static void main(String[] args) {
+        RailroadLauncher.launchWithPreloader(args);
+    }
 
     /**
      * Show an error alert
@@ -114,46 +121,72 @@ public class Railroad extends Application {
     }
 
     @Override
-    public void start(Stage primaryStage) {
-        WINDOW_MANAGER.setPrimaryStage(primaryStage);
+    public void init() {
+        if (hostServices == null) {
+            hostServices = getHostServices();
+        }
 
-        hostServices = getHostServices();
-
-        try {
-            LoggerManager.init();
-
-            ConfigHandler.initConfig();
-            PluginManager.loadPlugins(ConfigHandler.getConfigDirectory().resolve("plugins"));
-            Keybinds.initialize();
-            Settings.initialize();
-            SettingsHandler.init();
-            ThemeManager.init();
-
-            ServiceLocator.setServiceProvider(Services::getService);
-
-            L18n.loadLanguage(SettingsHandler.getValue(Settings.LANGUAGE));
-            WINDOW_MANAGER.showPrimary(new Scene(new WelcomePane()), Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion());
-
-            SwitchboardRepositories.initialize();
-            MappingChannelRegistry.initialize();
-            LicenseRegistry.initialize();
-            ProjectTypeRegistry.initialize();
-
-            LOGGER.info("Railroad started");
-            PluginManager.enableEnabledPlugins();
-            PluginManager.loadReadyPlugins();
-            SettingsHandler.loadSettings();
-            EVENT_BUS.publish(new ApplicationStartEvent());
-            ShutdownHooks.addHook(() -> {
+        List<InitializationStep> steps = List.of(
+            new InitializationStep("Initializing logger", LoggerManager::init),
+            new InitializationStep("Loading configuration", ConfigHandler::initConfig),
+            new InitializationStep("Scanning plugins", () -> PluginManager.loadPlugins(ConfigHandler.getConfigDirectory().resolve("plugins"))),
+            new InitializationStep("Registering keybinds", Keybinds::initialize),
+            new InitializationStep("Loading settings", Settings::initialize),
+            new InitializationStep("Preparing settings handler", SettingsHandler::init),
+            new InitializationStep("Preparing themes", ThemeManager::init),
+            new InitializationStep("Binding service locator", () -> ServiceLocator.setServiceProvider(Services::getService)),
+            new InitializationStep("Loading language", () -> L18n.loadLanguage(SettingsHandler.getValue(Settings.LANGUAGE))),
+            new InitializationStep("Initializing repositories", SwitchboardRepositories::initialize),
+            new InitializationStep("Loading mapping channels", MappingChannelRegistry::initialize),
+            new InitializationStep("Loading license registry", LicenseRegistry::initialize),
+            new InitializationStep("Registering project types", ProjectTypeRegistry::initialize),
+            new InitializationStep("Enabling plugins", PluginManager::enableEnabledPlugins),
+            new InitializationStep("Activating ready plugins", PluginManager::loadReadyPlugins),
+            new InitializationStep("Restoring settings", SettingsHandler::loadSettings),
+            new InitializationStep("Registering shutdown hooks", () -> ShutdownHooks.addHook(() -> {
                 try (ExecutorService executorService = HTTP_CLIENT.dispatcher().executorService()) {
                     executorService.shutdown();
                 }
 
                 HTTP_CLIENT.connectionPool().evictAll();
-            });
+            }))
+        );
+
+        int totalSteps = steps.size();
+        for (int stepIndex = 0; stepIndex < totalSteps; stepIndex++) {
+            InitializationStep step = steps.get(stepIndex);
+            notifyPreloader(new RailroadPreloader.StatusNotification(step.message(), (double) stepIndex / totalSteps));
+            try {
+                step.action().run();
+            } catch (Throwable exception) {
+                startupException = exception;
+                LOGGER.error("Error during Railroad initialization step: " + step.message(), exception);
+                notifyPreloader(new RailroadPreloader.ErrorNotification("Failed: " + step.message()));
+                return;
+            }
+        }
+
+        notifyPreloader(new RailroadPreloader.StatusNotification("Initialization complete", 1.0));
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        WINDOW_MANAGER.setPrimaryStage(primaryStage);
+
+        hostServices = getHostServices();
+
+        if (startupException != null) {
+            showErrorAlert("Error", "Error starting Railroad", "An error occurred while starting Railroad.", buttonType -> Platform.exit());
+            return;
+        }
+
+        try {
+            WINDOW_MANAGER.showPrimary(new Scene(new WelcomePane()), Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion());
+            LOGGER.info("Railroad started");
+            EVENT_BUS.publish(new ApplicationStartEvent());
         } catch (Throwable exception) {
             LOGGER.error("Error starting Railroad", exception);
-            showErrorAlert("Error", "Error starting Railroad", "An error occurred while starting Railroad.");
+            showErrorAlert("Error", "Error starting Railroad", "An error occurred while starting Railroad.", buttonType -> Platform.exit());
         }
     }
 
@@ -164,5 +197,13 @@ public class Railroad extends Application {
         ConfigHandler.saveConfig();
         ShutdownHooks.runHooks();
         LoggerManager.shutdown();
+    }
+
+    private record InitializationStep(String message, CheckedRunnable action) {
+    }
+
+    @FunctionalInterface
+    private interface CheckedRunnable {
+        void run() throws Exception;
     }
 }
