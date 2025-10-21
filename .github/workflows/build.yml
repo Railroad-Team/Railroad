@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  lint-and-build:
+  build:
     runs-on: self-hosted
 
     steps:
