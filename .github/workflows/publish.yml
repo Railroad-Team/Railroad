@@ -44,7 +44,7 @@ jobs:
         with:
           cf_zone_id: ${{ secrets.CF_ZONE_ID }}
           cf_api_token: ${{ secrets.CF_API_TOKEN }}
-      - run: gradlew.bat jpackageInstaller jpackageImage
+      - run: .\gradlew.bat jpackageInstaller jpackageImage
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
