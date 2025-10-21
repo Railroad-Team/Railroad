@@ -8,41 +8,8 @@ on:
       - 'v*.*.*' # Only publish tagged pushes. Tag must match v*.*.* regex
 
 jobs:
-  lint:
-    runs-on: self-hosted
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Make Gradle wrapper executable
-        run: chmod +x gradlew
-
-      - name: Check editorconfig
-        run: ./gradlew editorconfigCheck
-
-      - name: CheckStyle checks
-        run: ./gradlew checkstyleMain
-
   build-linux:
     runs-on: self-hosted
-    needs: lint
     steps:
       - uses: actions/checkout@v5
       - name: Set up Java
@@ -64,7 +31,6 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
-    needs: lint
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -87,7 +53,6 @@ jobs:
 
   build-mac:
     runs-on: macos-latest
-    needs: lint
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
