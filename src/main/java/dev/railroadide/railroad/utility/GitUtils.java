@@ -20,9 +20,9 @@ public class GitUtils {
     public static CompletableFuture<Boolean> clone(String uri, Path dest) {
         return CompletableFuture.supplyAsync(() -> {
             try (Git git = Git.cloneRepository()
-                    .setURI(uri)
-                    .setDirectory(dest.toFile())
-                    .call()) {
+                .setURI(uri)
+                .setDirectory(dest.toFile())
+                .call()) {
                 return git.getRepository().getDirectory() != null;
             } catch (GitAPIException exception) {
                 throw new RuntimeException("Failed to clone repository from " + uri + " to " + dest, exception);

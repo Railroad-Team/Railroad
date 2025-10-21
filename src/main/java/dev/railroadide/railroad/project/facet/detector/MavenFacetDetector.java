@@ -34,10 +34,10 @@ public class MavenFacetDetector implements FacetDetector<MavenFacetData> {
 
         try {
             ModelBuildingRequest req = new DefaultModelBuildingRequest()
-                    .setProcessPlugins(false)
-                    .setPomFile(pomFile.toFile())
-                    .setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL)
-                    .setTwoPhaseBuilding(false);
+                .setProcessPlugins(false)
+                .setPomFile(pomFile.toFile())
+                .setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL)
+                .setTwoPhaseBuilding(false);
 
             ModelBuildingResult result = BUILDER.build(req);
             Model effectiveModel = result.getEffectiveModel();

@@ -40,7 +40,7 @@ public class RRNavigationItem extends VBox {
 
     /**
      * Constructs a new navigation item with the specified text.
-     * 
+     *
      * @param text the text to display on the navigation item
      */
     public RRNavigationItem(String text) {
@@ -49,10 +49,10 @@ public class RRNavigationItem extends VBox {
 
     /**
      * Constructs a new navigation item with localized text and an icon.
-     * 
+     *
      * @param localizationKey the localization key for the text
-     * @param iconCode the icon to display
-     * @param args optional formatting arguments for the localized text
+     * @param iconCode        the icon to display
+     * @param args            optional formatting arguments for the localized text
      */
     public RRNavigationItem(String localizationKey, Ikon iconCode, Object... args) {
         initialize();
@@ -62,9 +62,9 @@ public class RRNavigationItem extends VBox {
 
     /**
      * Constructs a new navigation item with localized text.
-     * 
+     *
      * @param localizationKey the localization key for the text
-     * @param args optional formatting arguments for the localized text
+     * @param args            optional formatting arguments for the localized text
      */
     public RRNavigationItem(String localizationKey, Object... args) {
         this(localizationKey, null, args);
@@ -72,7 +72,7 @@ public class RRNavigationItem extends VBox {
 
     /**
      * Create a navigation item with text and icon
-     * 
+     *
      * @param text the text to display
      * @param icon the icon to display
      * @return a new RRNavigationItem instance
@@ -83,7 +83,7 @@ public class RRNavigationItem extends VBox {
 
     /**
      * Create a navigation item with text only
-     * 
+     *
      * @param text the text to display
      * @return a new RRNavigationItem instance
      */
@@ -252,7 +252,7 @@ public class RRNavigationItem extends VBox {
     /**
      * Set a badge on the navigation item using plain text.
      * The badge will be displayed next to the navigation item text.
-     * 
+     *
      * @param badgeText the text to display in the badge, or null/empty to hide the badge
      */
     public void setBadge(String badgeText) {
@@ -283,4 +283,4 @@ public class RRNavigationItem extends VBox {
     public enum NavigationItemState {
         NORMAL, ACTIVE, DISABLED, HIGHLIGHTED
     }
-} 
+}

@@ -12,7 +12,8 @@ import dev.railroadide.railroad.project.data.ForgeProjectKeys;
 import java.net.URI;
 import java.nio.file.Path;
 
-public record DownloadForgeMdkStep(HttpService http, FilesService files, ZipService zip, ChecksumService checksum) implements CreationStep {
+public record DownloadForgeMdkStep(HttpService http, FilesService files, ZipService zip,
+                                   ChecksumService checksum) implements CreationStep {
     @Override
     public String id() {
         return "railroad:download_forge_mdk";
@@ -28,7 +29,7 @@ public record DownloadForgeMdkStep(HttpService http, FilesService files, ZipServ
         reporter.info("Downloading Forge MDK...");
 
         String forgeVersion = ctx.data().getAsString(ForgeProjectKeys.FORGE_VERSION);
-        if(forgeVersion == null)
+        if (forgeVersion == null)
             throw new IllegalStateException("Forge version is not set");
 
         Path projectDir = ctx.projectDir();
@@ -42,7 +43,7 @@ public record DownloadForgeMdkStep(HttpService http, FilesService files, ZipServ
         Path mdkSha256Path = projectDir.resolve("forge-mdk.zip.sha256");
         http.download(new URI(sha256Url), mdkSha256Path);
         String expectedChecksum = files.readString(mdkSha256Path).trim();
-        if(!checksum.verify(mdkPath, "SHA-256", expectedChecksum)) {
+        if (!checksum.verify(mdkPath, "SHA-256", expectedChecksum)) {
             reporter.info("Cleaning up invalid Forge MDK files...");
             files.delete(mdkPath);
             files.delete(mdkSha256Path);

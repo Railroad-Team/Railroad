@@ -42,7 +42,7 @@ public class LocalizedTooltip extends Tooltip {
         if (key != null && !key.trim().isEmpty()) {
             LocalizationService service = ServiceLocator.getService(LocalizationService.class);
             service.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                    setText(service.get(key, args)));
+                setText(service.get(key, args)));
             setText(service.get(this.key, args));
         } else {
             // Clear the text if the key is empty

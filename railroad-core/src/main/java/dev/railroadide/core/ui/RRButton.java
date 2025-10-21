@@ -160,7 +160,7 @@ public class RRButton extends Button {
      * The text will automatically update when the application language changes.
      *
      * @param localizationKey the localization key for the text
-     * @param args optional formatting arguments for the localized text
+     * @param args            optional formatting arguments for the localized text
      */
     public void setLocalizedText(String localizationKey, Object... args) {
         this.localizationKey = localizationKey;

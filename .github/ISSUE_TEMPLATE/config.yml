@@ -7,10 +7,10 @@ contact_links:
 issue_templates:
   - name: 🐛 Bug Report
     description: Report a bug in Railroad IDE
-    labels: ["bug"]
+    labels: [ "bug" ]
     file: bug_report.yml
 
   - name: ✨ Feature Request
     description: Suggest a new feature or enhancement
-    labels: ["enhancement"]
+    labels: [ "enhancement" ]
     file: feature_request.yml

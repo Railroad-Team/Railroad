@@ -50,9 +50,9 @@ public class SettingsUIHandler {
             for (int index = 0; index < parts.length; index++) {
                 String key = String.join(".", Arrays.copyOfRange(parts, 0, index + 1));
                 Optional<TreeItem<LocalizedLabel>> folder = currNode.getChildren()
-                        .stream()
-                        .filter(l -> l.getValue().getUserData().equals(key))
-                        .findFirst();
+                    .stream()
+                    .filter(l -> l.getValue().getUserData().equals(key))
+                    .findFirst();
 
                 if (folder.isEmpty()) {
                     var newFolder = createItem(key);
@@ -70,8 +70,8 @@ public class SettingsUIHandler {
     /**
      * Creates a VBox containing settings grouped by their categories.
      *
-     * @param settings The collection of settings to be displayed.
-     * @param parent   The parent category to filter settings by.
+     * @param settings       The collection of settings to be displayed.
+     * @param parent         The parent category to filter settings by.
      * @param applyListeners A list of listeners to be notified when settings are applied.
      * @return A VBox containing the settings organized by category.
      */
@@ -90,7 +90,7 @@ public class SettingsUIHandler {
 
             categoryMap.putIfAbsent(categoryId, category);
 
-            if(!folderBoxes.containsKey(categoryId)) {
+            if (!folderBoxes.containsKey(categoryId)) {
                 var folderBox = new RRVBox();
                 folderBoxes.put(categoryId, folderBox);
                 VBox.setMargin(folderBox, new Insets(5, 10, 0, 10));
@@ -110,13 +110,13 @@ public class SettingsUIHandler {
             applyListeners.add(() -> setting.readValueFromNode(settingNode));
 
             Node titleNode = null;
-            if(setting.isHasTitle()) {
+            if (setting.isHasTitle()) {
                 titleNode = new LocalizedLabel(setting.getTitle());
                 titleNode.getStyleClass().add("section-label");
             }
 
             Node descriptionNode = null;
-            if(setting.isHasDescription()) {
+            if (setting.isHasDescription()) {
                 var descriptionLabel = new LocalizedLabel(setting.getDescription());
                 descriptionLabel.getStyleClass().add("section-description-label");
                 descriptionLabel.setWrapText(true);
@@ -148,23 +148,24 @@ public class SettingsUIHandler {
             headerBox.setPadding(new Insets(5, 10, 0, 10));
 
             Node titleNode = null;
-            if(category.hasTitle()) {
+            if (category.hasTitle()) {
                 titleNode = new LocalizedLabel(category.title());
-                titleNode.getStyleClass().add("section-label");;
+                titleNode.getStyleClass().add("section-label");
+                ;
             }
 
             var separator = new Separator();
             separator.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(separator, Priority.ALWAYS);
 
-            if(titleNode != null) {
+            if (titleNode != null) {
                 headerBox.getChildren().add(titleNode);
             }
             headerBox.getChildren().add(separator);
             vbox.getChildren().add(headerBox);
 
             Node descriptionNode = null;
-            if(category.hasDescription()) {
+            if (category.hasDescription()) {
                 var descriptionLabel = new LocalizedLabel(category.description());
                 descriptionLabel.getStyleClass().add("section-description-label");
                 descriptionLabel.setWrapText(true);

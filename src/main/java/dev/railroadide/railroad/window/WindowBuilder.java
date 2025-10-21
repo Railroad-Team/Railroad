@@ -238,12 +238,12 @@ public class WindowBuilder {
 
         stage.initModality(modality);
 
-        if(minWidth >= 0) stage.setMinWidth(minWidth);
-        if(minHeight >= 0) stage.setMinHeight(minHeight);
-        if(width >= 0) stage.setWidth(width);
-        if(height >= 0) stage.setHeight(height);
-        if(maxWidth >= 0) stage.setMaxWidth(maxWidth);
-        if(maxHeight >= 0) stage.setMaxHeight(maxHeight);
+        if (minWidth >= 0) stage.setMinWidth(minWidth);
+        if (minHeight >= 0) stage.setMinHeight(minHeight);
+        if (width >= 0) stage.setWidth(width);
+        if (height >= 0) stage.setHeight(height);
+        if (maxWidth >= 0) stage.setMaxWidth(maxWidth);
+        if (maxHeight >= 0) stage.setMaxHeight(maxHeight);
 
         if (onInit != null) {
             onInit.accept(stage);

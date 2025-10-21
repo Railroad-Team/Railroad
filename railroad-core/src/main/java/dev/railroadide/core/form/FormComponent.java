@@ -76,7 +76,7 @@ public abstract class FormComponent<T extends Node & HasSetValue, U, V extends N
             this.component.get().visibleProperty().bind(this.visible);
 
         this.data.addListener((observable, oldValue, newValue) ->
-                component.set(componentFactory.apply(newValue)));
+            component.set(componentFactory.apply(newValue)));
         this.component.addListener((observable, oldValue, newValue) -> {
             this.data.set(newValue == null ? null : this.data.get());
             if (this.visible != null)

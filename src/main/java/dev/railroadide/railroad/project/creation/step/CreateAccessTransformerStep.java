@@ -21,7 +21,7 @@ public record CreateAccessTransformerStep(FilesService files) implements Creatio
 
     @Override
     public void run(ProjectContext ctx, ProgressReporter reporter) throws Exception {
-        if(!ctx.data().getAsBoolean(ForgeProjectKeys.USE_ACCESS_TRANSFORMER, false)) {
+        if (!ctx.data().getAsBoolean(ForgeProjectKeys.USE_ACCESS_TRANSFORMER, false)) {
             reporter.info("Skipping access transformer creation as access transformers are not used.");
             Thread.sleep(1000); // sleeping to allow the user to read the message
             return;

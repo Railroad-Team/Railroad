@@ -36,11 +36,11 @@ public final class ProjectData {
     }
 
     public int getAsInt(String key) throws NoSuchElementException, ClassCastException {
-        if(!contains(key))
+        if (!contains(key))
             throw new NoSuchElementException("No value present for key: " + key);
 
         Object object = get(key);
-        if(object instanceof Integer theInt)
+        if (object instanceof Integer theInt)
             return theInt;
 
         throw new ClassCastException("Value for key: " + key + " is not of type int");
@@ -51,11 +51,11 @@ public final class ProjectData {
     }
 
     public boolean getAsBoolean(String key) throws NoSuchElementException, ClassCastException {
-        if(!contains(key))
+        if (!contains(key))
             throw new NoSuchElementException("No value present for key: " + key);
 
         Object object = get(key);
-        if(object instanceof Boolean theBool)
+        if (object instanceof Boolean theBool)
             return theBool;
 
         throw new ClassCastException("Value for key: " + key + " is not of type boolean");
@@ -66,11 +66,11 @@ public final class ProjectData {
     }
 
     public String getAsString(String key) throws NoSuchElementException, ClassCastException {
-        if(!contains(key))
+        if (!contains(key))
             throw new NoSuchElementException("No value present for key: " + key);
 
         Object object = get(key);
-        if(object instanceof String theString)
+        if (object instanceof String theString)
             return theString;
 
         throw new ClassCastException("Value for key: " + key + " is not of type String");
@@ -81,11 +81,11 @@ public final class ProjectData {
     }
 
     public float getAsFloat(String key) throws NoSuchElementException, ClassCastException {
-        if(!contains(key))
+        if (!contains(key))
             throw new NoSuchElementException("No value present for key: " + key);
 
         Object object = get(key);
-        if(object instanceof Float theFloat)
+        if (object instanceof Float theFloat)
             return theFloat;
 
         throw new ClassCastException("Value for key: " + key + " is not of type float");
@@ -96,11 +96,11 @@ public final class ProjectData {
     }
 
     public double getAsDouble(String key) throws NoSuchElementException, ClassCastException {
-        if(!contains(key))
+        if (!contains(key))
             throw new NoSuchElementException("No value present for key: " + key);
 
         Object object = get(key);
-        if(object instanceof Double theDouble)
+        if (object instanceof Double theDouble)
             return theDouble;
 
         throw new ClassCastException("Value for key: " + key + " is not of type double");
@@ -111,11 +111,11 @@ public final class ProjectData {
     }
 
     public long getAsLong(String key) throws NoSuchElementException, ClassCastException {
-        if(!contains(key))
+        if (!contains(key))
             throw new NoSuchElementException("No value present for key: " + key);
 
         Object object = get(key);
-        if(object instanceof Long theLong)
+        if (object instanceof Long theLong)
             return theLong;
 
         throw new ClassCastException("Value for key: " + key + " is not of type long");
@@ -126,11 +126,11 @@ public final class ProjectData {
     }
 
     public short getAsShort(String key) throws NoSuchElementException, ClassCastException {
-        if(!contains(key))
+        if (!contains(key))
             throw new NoSuchElementException("No value present for key: " + key);
 
         Object object = get(key);
-        if(object instanceof Short theShort)
+        if (object instanceof Short theShort)
             return theShort;
 
         throw new ClassCastException("Value for key: " + key + " is not of type short");
@@ -141,11 +141,11 @@ public final class ProjectData {
     }
 
     public byte getAsByte(String key) throws NoSuchElementException, ClassCastException {
-        if(!contains(key))
+        if (!contains(key))
             throw new NoSuchElementException("No value present for key: " + key);
 
         Object object = get(key);
-        if(object instanceof Byte theByte)
+        if (object instanceof Byte theByte)
             return theByte;
 
         throw new ClassCastException("Value for key: " + key + " is not of type byte");
@@ -156,11 +156,11 @@ public final class ProjectData {
     }
 
     public char getAsChar(String key) throws NoSuchElementException, ClassCastException {
-        if(!contains(key))
+        if (!contains(key))
             throw new NoSuchElementException("No value present for key: " + key);
 
         Object object = get(key);
-        if(object instanceof Character theChar)
+        if (object instanceof Character theChar)
             return theChar;
 
         throw new ClassCastException("Value for key: " + key + " is not of type char");
@@ -171,11 +171,11 @@ public final class ProjectData {
     }
 
     public byte[] getAsByteArray(String key) throws NoSuchElementException, ClassCastException {
-        if(!contains(key))
+        if (!contains(key))
             throw new NoSuchElementException("No value present for key: " + key);
 
         Object object = get(key);
-        if(object instanceof byte[] theByteArray)
+        if (object instanceof byte[] theByteArray)
             return theByteArray;
 
         throw new ClassCastException("Value for key: " + key + " is not of type byte[]");
@@ -190,11 +190,11 @@ public final class ProjectData {
     }
 
     public <E extends Enum<E>> E getAsEnum(String key, Class<E> enumType) throws NoSuchElementException, ClassCastException {
-        if(!contains(key))
+        if (!contains(key))
             throw new NoSuchElementException("No value present for key: " + key);
 
         Object object = get(key);
-        if(enumType.isInstance(object))
+        if (enumType.isInstance(object))
             return enumType.cast(object);
 
         throw new ClassCastException("Value for key: " + key + " is not of type " + enumType.getName());
@@ -205,11 +205,11 @@ public final class ProjectData {
     }
 
     public Path getAsPath(String key) throws NoSuchElementException, ClassCastException {
-        if(!contains(key))
+        if (!contains(key))
             throw new NoSuchElementException("No value present for key: " + key);
 
         Object object = get(key);
-        if(object instanceof Path thePath)
+        if (object instanceof Path thePath)
             return thePath;
 
         throw new ClassCastException("Value for key: " + key + " is not of type Path");

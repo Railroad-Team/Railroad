@@ -1,15 +1,15 @@
 name: "🐛 Bug Report"
 description: "Report a bug in Railroad IDE"
 title: "[Bug]: "
-labels: ["bug"]
-assignees: []
+labels: [ "bug" ]
+assignees: [ ]
 
 body:
   - type: markdown
     attributes:
       value: |
         ## 🐞 Bug Report
-        Thanks for taking the time to report a bug in **Railroad IDE**.  
+        Thanks for taking the time to report a bug in **Railroad IDE**.
         Please provide as much detail as possible to help us reproduce and resolve the issue.
 
   - type: input
@@ -27,7 +27,7 @@ body:
       label: "Detailed Description"
       description: "Explain what the issue is, what behavior you expected, and what actually happened."
       placeholder: |
-        I tried to create a new Fabric mod using the built-in wizard.  
+        I tried to create a new Fabric mod using the built-in wizard.
         After finishing, the project view is empty and no files are generated.
     validations:
       required: true

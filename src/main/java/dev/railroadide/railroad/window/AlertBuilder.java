@@ -39,7 +39,8 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
     protected boolean translateTitle = true;
     protected String content = "";
     protected boolean translateContent = true;
-    protected Runnable onClose = () -> {};
+    protected Runnable onClose = () -> {
+    };
     protected AlertType alertType = AlertType.INFO;
 
     public static AlertBuilder<?> create() {
@@ -77,7 +78,8 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
     }
 
     public T onClose(Runnable onClose) {
-        this.onClose = onClose == null ? () -> {} : onClose;
+        this.onClose = onClose == null ? () -> {
+        } : onClose;
         return (T) this;
     }
 
@@ -154,7 +156,8 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
         Runnable close = () -> {
             try {
                 onClose.run();
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
 
             var window = overlay.getScene() != null ? overlay.getScene().getWindow() : null;
             if (window instanceof Stage stage) {

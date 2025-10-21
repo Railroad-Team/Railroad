@@ -22,11 +22,11 @@ public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> impleme
     /**
      * Constructs a new FormComboBox with the specified configuration.
      *
-     * @param labelKey the localization key for the label text
-     * @param required whether the combo box is required
-     * @param editable whether the combo box is editable
-     * @param translate whether to use localization for the items
-     * @param keyFunction the function to convert items to strings for display
+     * @param labelKey        the localization key for the label text
+     * @param required        whether the combo box is required
+     * @param editable        whether the combo box is editable
+     * @param translate       whether to use localization for the items
+     * @param keyFunction     the function to convert items to strings for display
      * @param valueOfFunction the function to convert strings back to items
      */
     public FormComboBox(String labelKey, boolean required, boolean editable, boolean translate, @Nullable ToStringFunction<T> keyFunction, @Nullable FromStringFunction<T> valueOfFunction) {

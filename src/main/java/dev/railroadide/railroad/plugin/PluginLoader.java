@@ -143,16 +143,16 @@ public class PluginLoader {
             }
 
             return DefaultPluginDescriptor.builder(id)
-                    .name(name)
-                    .version(version)
-                    .author(author)
-                    .description(description)
-                    .website(website)
-                    .license(license)
-                    .iconPath(iconPath)
-                    .mainClass(mainClass)
-                    .dependencies(new MavenDeps(repositories, artifacts))
-                    .build();
+                .name(name)
+                .version(version)
+                .author(author)
+                .description(description)
+                .website(website)
+                .license(license)
+                .iconPath(iconPath)
+                .mainClass(mainClass)
+                .dependencies(new MavenDeps(repositories, artifacts))
+                .build();
         }
     }
 

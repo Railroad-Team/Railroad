@@ -15,6 +15,7 @@ public class LocalizedMenuItem extends MenuItem {
 
     /**
      * Creates a new LocalizedMenuItem with the specified key.
+     *
      * @param key The localization key
      */
     public LocalizedMenuItem(final String key) {
@@ -25,6 +26,7 @@ public class LocalizedMenuItem extends MenuItem {
 
     /**
      * Creates a new LocalizedMenuItem with the specified key and URL.
+     *
      * @param key The localization key
      * @param url The URL to open when the item is clicked
      */
@@ -35,6 +37,7 @@ public class LocalizedMenuItem extends MenuItem {
 
     /**
      * Returns the current localization key for this menu item.
+     *
      * @return The current localization key
      */
     public String getKey() {
@@ -43,17 +46,19 @@ public class LocalizedMenuItem extends MenuItem {
 
     /**
      * Sets the localization key for this menu item and updates the text accordingly.
+     *
      * @param key The new localization key to set
      */
     public void setKey(final String key) {
         currentKey = key;
         ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                setText(ServiceLocator.getService(LocalizationService.class).get(key)));
+            setText(ServiceLocator.getService(LocalizationService.class).get(key)));
         setText(ServiceLocator.getService(LocalizationService.class).get(currentKey));
     }
 
     /**
      * Sets the associated keybind data for this menu item.
+     *
      * @param keybindData the keybind data to associate with this menu item
      */
     public void setKeybindData(KeybindData keybindData) {

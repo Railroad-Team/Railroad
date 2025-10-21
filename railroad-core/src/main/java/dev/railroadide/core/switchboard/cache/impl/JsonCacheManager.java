@@ -131,7 +131,8 @@ public class JsonCacheManager implements IterableCacheManager {
                             try {
                                 String className = root.get("dataClass").getAsString();
                                 typeToken = TypeToken.get(Class.forName(className));
-                            } catch (Exception ignored) {}
+                            } catch (Exception ignored) {
+                            }
                         }
 
                         return new CacheEntryWrapper(key, entry, typeToken);

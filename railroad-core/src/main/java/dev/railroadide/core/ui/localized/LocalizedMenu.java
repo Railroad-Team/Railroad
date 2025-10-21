@@ -12,6 +12,7 @@ public class LocalizedMenu extends Menu {
 
     /**
      * Creates a new LocalizedMenu with the specified key.
+     *
      * @param key The localization key
      */
     public LocalizedMenu(final String key) {
@@ -22,6 +23,7 @@ public class LocalizedMenu extends Menu {
 
     /**
      * Returns the current localization key for this menu.
+     *
      * @return The current localization key
      */
     public String getKey() {
@@ -30,12 +32,13 @@ public class LocalizedMenu extends Menu {
 
     /**
      * Sets the localization key for this menu and updates the text accordingly.
+     *
      * @param key The new localization key to set
      */
     public void setKey(final String key) {
         currentKey = key;
         ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                setText(ServiceLocator.getService(LocalizationService.class).get(key)));
+            setText(ServiceLocator.getService(LocalizationService.class).get(key)));
         setText(ServiceLocator.getService(LocalizationService.class).get(currentKey));
     }
 }

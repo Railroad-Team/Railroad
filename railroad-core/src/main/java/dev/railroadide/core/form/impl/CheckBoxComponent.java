@@ -61,7 +61,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
 
             if (newValue != null) {
                 listenerRef.set((observable1, oldValue1, newValue1) ->
-                        listener.changed(newValue.getPrimaryComponent(), observable1, oldValue1, newValue1));
+                    listener.changed(newValue.getPrimaryComponent(), observable1, oldValue1, newValue1));
 
                 newValue.getPrimaryComponent().selectedProperty().addListener(listenerRef.get());
             }
@@ -71,16 +71,16 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
     @Override
     protected void bindToFormData(FormData formData) {
         componentProperty()
-                .map(FormCheckBox::getPrimaryComponent)
-                .flatMap(CheckBox::selectedProperty)
-                .addListener((observable, oldValue, newValue) ->
-                        formData.addProperty(dataKey, newValue));
+            .map(FormCheckBox::getPrimaryComponent)
+            .flatMap(CheckBox::selectedProperty)
+            .addListener((observable, oldValue, newValue) ->
+                formData.addProperty(dataKey, newValue));
 
         formData.addProperty(dataKey, componentProperty()
-                .map(FormCheckBox::getPrimaryComponent)
-                .map(CheckBox::isSelected)
-                .orElse(getData().selected)
-                .getValue());
+            .map(FormCheckBox::getPrimaryComponent)
+            .map(CheckBox::isSelected)
+            .orElse(getData().selected)
+            .getValue());
     }
 
     @Override
@@ -179,8 +179,8 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @param fromComponent       the observable value to get the value from
          * @param toComponentFunction the function to set the value to the component
          * @param valueMapper         the function to map the value
+         * @param <W>                 the type of the value
          * @return this builder
-         * @param <W> the type of the value
          */
         @Override
         public <X> Builder addTransformer(ObservableValue<CheckBox> fromComponent, Consumer<X> toComponentFunction, Function<Boolean, X> valueMapper) {
@@ -194,9 +194,9 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @param fromComponent the observable value to get the value from
          * @param toComponent   the observable value to set the value to
          * @param valueMapper   the function to map the value
+         * @param <U>           the type of the component
+         * @param <W>           the type of the value
          * @return this builder
-         * @param <U> the type of the component
-         * @param <W> the type of the value
          */
         @Override
         public <U extends Node, X> Builder addTransformer(ObservableValue<CheckBox> fromComponent, ObservableValue<U> toComponent, Function<Boolean, X> valueMapper) {

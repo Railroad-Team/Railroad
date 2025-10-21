@@ -89,16 +89,16 @@ public class FabricFacetDetector implements FacetDetector<FabricFacetData> {
 
             String minecraftVersion, fabricLoaderVersion, fabricApiVersion, yarnMappingsVersion, loomVersion;
             try (ProjectConnection connection = GradleConnector.newConnector()
-                    .forProjectDirectory(path.toFile())
-                    .connect()) {
+                .forProjectDirectory(path.toFile())
+                .connect()) {
                 Path initScriptPath = extractInitScript();
 
                 OutputStream outputStream = OutputStream.nullOutputStream();
                 FabricExtractorModel model = connection.model(FabricExtractorModel.class)
-                        .withArguments("--init-script", initScriptPath.toAbsolutePath().toString())
-                        .setStandardOutput(outputStream)
-                        .setStandardError(outputStream)
-                        .get();
+                    .withArguments("--init-script", initScriptPath.toAbsolutePath().toString())
+                    .setStandardOutput(outputStream)
+                    .setStandardError(outputStream)
+                    .get();
 
                 minecraftVersion = model.minecraftVersion();
                 fabricLoaderVersion = model.loaderVersion();

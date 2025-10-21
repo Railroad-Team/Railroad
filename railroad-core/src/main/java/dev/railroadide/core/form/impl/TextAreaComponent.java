@@ -78,7 +78,7 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
             if (newValue != null) {
                 TextArea textArea = newValue.getTextArea();
                 listenerRef.set((observable1, oldValue1, newValue1) ->
-                        listener.changed(textArea, observable1, oldValue1, newValue1));
+                    listener.changed(textArea, observable1, oldValue1, newValue1));
                 textArea.textProperty().addListener(listenerRef.get());
             }
         });
@@ -87,16 +87,16 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
     @Override
     protected void bindToFormData(FormData formData) {
         componentProperty()
-                .map(FormTextArea::getPrimaryComponent)
-                .flatMap(TextArea::textProperty)
-                .addListener((observable, oldValue, newValue) ->
-                        formData.addProperty(dataKey, newValue));
+            .map(FormTextArea::getPrimaryComponent)
+            .flatMap(TextArea::textProperty)
+            .addListener((observable, oldValue, newValue) ->
+                formData.addProperty(dataKey, newValue));
 
         formData.addProperty(dataKey, componentProperty()
-                .map(FormTextArea::getPrimaryComponent)
-                .map(TextArea::getText)
-                .orElse(getData().text)
-                .getValue());
+            .map(FormTextArea::getPrimaryComponent)
+            .map(TextArea::getText)
+            .orElse(getData().text)
+            .getValue());
     }
 
     @Override

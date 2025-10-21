@@ -13,6 +13,7 @@ public class KeybindContexts {
 
     /**
      * Registers a new keybind context.
+     *
      * @param context The context to register.
      * @return The registered context, or the existing context if a duplicate was attempted to be registered.
      */
@@ -28,6 +29,7 @@ public class KeybindContexts {
 
     /**
      * Creates a keybind context with the given id.
+     *
      * @param id The id of the context, which is used to distinguish between contexts.
      * @return The keybind context with the given id, or the existing context if a context with that id already exists.
      */
@@ -41,5 +43,6 @@ public class KeybindContexts {
         return contexts.get(id);
     }
 
-    public record KeybindContext(String id) {}
+    public record KeybindContext(String id) {
+    }
 }

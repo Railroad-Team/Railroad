@@ -109,7 +109,7 @@ public class CLIArguments {
         List<Argument> args = readKeyValues(array, (arguments, element) -> {
             if (element.isJsonObject()) {
                 JsonObject object = element.getAsJsonObject();
-                if(!object.has("rules")) {
+                if (!object.has("rules")) {
                     throw new IllegalArgumentException("Argument must have rules! " + object);
                 }
 
@@ -121,7 +121,7 @@ public class CLIArguments {
                     }
 
                     JsonObject ruleObject = ruleElement.getAsJsonObject();
-                    if(!ruleObject.has("action")) {
+                    if (!ruleObject.has("action")) {
                         throw new IllegalArgumentException("Rule must have an action! " + ruleObject);
                     }
 
@@ -134,15 +134,15 @@ public class CLIArguments {
                     }
 
                     Map<String, String> os = new HashMap<>();
-                    if(ruleObject.has("os")) {
+                    if (ruleObject.has("os")) {
                         JsonObject osObject = ruleObject.getAsJsonObject("os");
                         for (Map.Entry<String, JsonElement> entry : osObject.entrySet()) {
-                            if(!entry.getValue().isJsonPrimitive()) {
+                            if (!entry.getValue().isJsonPrimitive()) {
                                 throw new IllegalArgumentException("OS value must be a primitive! " + entry);
                             }
 
                             JsonPrimitive primitive = entry.getValue().getAsJsonPrimitive();
-                            if(!primitive.isString()) {
+                            if (!primitive.isString()) {
                                 throw new IllegalArgumentException("OS value must be a string! " + entry);
                             }
 
@@ -151,15 +151,15 @@ public class CLIArguments {
                     }
 
                     Map<String, Boolean> features = new HashMap<>();
-                    if(ruleObject.has("features")) {
+                    if (ruleObject.has("features")) {
                         JsonObject featuresObject = ruleObject.getAsJsonObject("features");
                         for (Map.Entry<String, JsonElement> entry : featuresObject.entrySet()) {
-                            if(!entry.getValue().isJsonPrimitive()) {
+                            if (!entry.getValue().isJsonPrimitive()) {
                                 throw new IllegalArgumentException("Feature value must be a primitive! " + entry);
                             }
 
                             JsonPrimitive primitive = entry.getValue().getAsJsonPrimitive();
-                            if(!primitive.isBoolean()) {
+                            if (!primitive.isBoolean()) {
                                 throw new IllegalArgumentException("Feature value must be a boolean! " + entry);
                             }
 
@@ -170,13 +170,13 @@ public class CLIArguments {
                     rules.add(new Argument.Rule(action, os, features));
                 }
 
-                if(!object.has("value")) {
+                if (!object.has("value")) {
                     throw new IllegalArgumentException("Argument must have a value! " + object);
                 }
 
                 // can either be a string or an array of strings
                 JsonElement valueElement = object.get("value");
-                if(valueElement.isJsonArray()) {
+                if (valueElement.isJsonArray()) {
                     List<Argument> valueArguments = readKeyValues(valueElement.getAsJsonArray(), (arguments1, jsonElement1) -> {
                         throw new IllegalArgumentException("Argument value must be a string! " + jsonElement1);
                     });
@@ -184,7 +184,7 @@ public class CLIArguments {
                     for (Argument argument : valueArguments) {
                         arguments.add(new Argument(argument.name(), argument.value(), rules));
                     }
-                } else if(valueElement.isJsonPrimitive()) {
+                } else if (valueElement.isJsonPrimitive()) {
                     var valueArray = new JsonArray();
                     valueArray.add(valueElement);
 

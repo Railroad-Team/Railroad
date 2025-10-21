@@ -118,10 +118,10 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
                     context.clearAllRefreshMarks();
                     busy.set(false);
                 })).exceptionally(throwable -> {
-                    Railroad.LOGGER.error("Error during onboarding step's enter operation", throwable);
+                Railroad.LOGGER.error("Error during onboarding step's enter operation", throwable);
 
-                    return null;
-                });
+                return null;
+            });
         }
 
         private OnboardingStep stepAt(String id) {

@@ -49,7 +49,7 @@ public class FormSection {
         this.spacing = builder.spacing;
         this.padding = builder.padding;
         this.border = Objects.requireNonNullElseGet(builder.border,
-                () -> new Border(new BorderStroke(builder.borderColor, builder.borderStyle, builder.borderRadii, builder.borderWidths)));
+            () -> new Border(new BorderStroke(builder.borderColor, builder.borderStyle, builder.borderRadii, builder.borderWidths)));
         this.titleConsumer = builder.titleConsumer;
     }
 
@@ -129,7 +129,7 @@ public class FormSection {
      */
     private void addChildNode(RRVBox vbox, FormComponent<?, ?, ?, ?> component) {
         int index = fields.indexOf(component);
-        if(index == 0) {
+        if (index == 0) {
             vbox.getChildren().add(1, component.getComponent());
             return;
         }

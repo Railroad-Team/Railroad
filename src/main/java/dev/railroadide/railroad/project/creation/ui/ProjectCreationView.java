@@ -5,7 +5,6 @@ import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.localized.LocalizedTitledPane;
 import dev.railroadide.core.ui.localized.LocalizedTooltip;
-import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.localization.L18n;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import javafx.animation.FadeTransition;

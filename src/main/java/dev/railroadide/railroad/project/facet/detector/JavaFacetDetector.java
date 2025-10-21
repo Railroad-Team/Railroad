@@ -79,10 +79,10 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             return JavaVersion.fromMajor(-1); // No class files found
 
         return classFiles.stream()
-                .map(JavaFacetDetector::parseJavaVersionFromClassFile)
-                .filter(version -> version.major() != -1)
-                .max(Comparator.naturalOrder())
-                .orElse(JavaVersion.fromMajor(-1));
+            .map(JavaFacetDetector::parseJavaVersionFromClassFile)
+            .filter(version -> version.major() != -1)
+            .max(Comparator.naturalOrder())
+            .orElse(JavaVersion.fromMajor(-1));
     }
 
     /**
@@ -94,7 +94,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
     private static List<Path> findAllClassFiles(@NotNull Path path) {
         try (Stream<Path> classFiles = Files.walk(path)) {
             return classFiles.filter(p -> p.toString().endsWith(".class"))
-                    .toList();
+                .toList();
         } catch (IOException exception) {
             Railroad.LOGGER.error("Error while finding class files in path: {}", path, exception);
             return List.of();
@@ -142,8 +142,8 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             return JavaVersion.fromMajor(-1); // No Gradle build file found
 
         try (ProjectConnection connection = GradleConnector.newConnector()
-                .forProjectDirectory(path.toFile())
-                .connect()) {
+            .forProjectDirectory(path.toFile())
+            .connect()) {
             if (connection == null)
                 return JavaVersion.fromMajor(-1); // No Gradle connection
 
@@ -151,10 +151,10 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
 
             OutputStream outputStream = OutputStream.nullOutputStream();
             JavaVersionModel model = connection.model(JavaVersionModel.class)
-                    .withArguments("--init-script", initScriptPath.toAbsolutePath().toString())
-                    .setStandardOutput(outputStream)
-                    .setStandardError(outputStream)
-                    .get();
+                .withArguments("--init-script", initScriptPath.toAbsolutePath().toString())
+                .setStandardOutput(outputStream)
+                .setStandardError(outputStream)
+                .get();
             if (model == null) {
                 Railroad.LOGGER.warn("No Java version model found in Gradle project at path: {}", path);
                 return JavaVersion.fromMajor(-1);
@@ -166,8 +166,8 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             System.out.println("Target compatibility: " + targetVersion);
 
             return sourceVersion.compareTo(targetVersion) >= 0 ?
-                    sourceVersion :
-                    targetVersion;
+                sourceVersion :
+                targetVersion;
         } catch (IOException exception) {
             Railroad.LOGGER.error("IO exception while detecting Java version in path: {}", path, exception);
         } catch (GradleException | BuildException ignored) {
@@ -191,12 +191,12 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
 
         try {
             ModelBuildingRequest req = new DefaultModelBuildingRequest()
-                    .setProcessPlugins(false)
-                    .setPomFile(pom.toFile());
+                .setProcessPlugins(false)
+                .setPomFile(pom.toFile());
 
             ModelBuildingResult res = new DefaultModelBuilderFactory()
-                    .newInstance()
-                    .build(req);
+                .newInstance()
+                .build(req);
 
             Model model = res.getEffectiveModel();
 
@@ -209,9 +209,9 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
                 Build build = model.getBuild();
                 for (Plugin plugin : build.getPlugins()) {
                     if ("org.apache.maven.plugins:maven-compiler-plugin"
-                            .equals(plugin.getGroupId() + ":" + plugin.getArtifactId())) {
+                        .equals(plugin.getGroupId() + ":" + plugin.getArtifactId())) {
                         var cfg = (XmlPlexusConfiguration)
-                                plugin.getConfiguration();
+                            plugin.getConfiguration();
                         if (src == null && cfg.getChild("source") != null) {
                             src = cfg.getChild("source").getValue();
                         }
@@ -231,8 +231,8 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             JavaVersion targetVer = JavaVersion.fromReleaseString(tgt);
 
             return sourceVer.compareTo(targetVer) >= 0
-                    ? sourceVer
-                    : targetVer;
+                ? sourceVer
+                : targetVer;
         } catch (XmlPullParserException | ModelBuildingException | PlexusConfigurationException exception) {
             Railroad.LOGGER.error("Error reading POM for Java version: {}", projectDir, exception);
             return JavaVersion.fromMajor(-1);
@@ -269,7 +269,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
         try {
             if (Files.isDirectory(path)) {
                 try (Stream<Path> javaFiles = Files.find(path, 10,
-                        (p, attrs) -> p.toString().endsWith(".java"))) {
+                    (p, attrs) -> p.toString().endsWith(".java"))) {
                     javaFileCount = javaFiles.count();
                 }
             } else if (path.toString().endsWith(".java")) {
@@ -287,7 +287,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
         }
 
         return javaFileCount > 0 ?
-                Optional.of(new Facet<>(FacetManager.JAVA, data)) :
-                Optional.empty();
+            Optional.of(new Facet<>(FacetManager.JAVA, data)) :
+            Optional.empty();
     }
 }

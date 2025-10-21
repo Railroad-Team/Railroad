@@ -50,7 +50,7 @@ public final class SwitchboardRepositories {
 
     private static CacheManager createCacheManager() throws SQLException {
         Path dbPath = ConfigHandler.getConfigDirectory().resolve("switchboard.db");
-        if(Files.notExists(dbPath)) {
+        if (Files.notExists(dbPath)) {
             try {
                 Files.createFile(dbPath);
             } catch (IOException exception) {

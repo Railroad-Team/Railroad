@@ -27,7 +27,7 @@ public record CreateMixinsJsonStep(FilesService files) implements CreationStep {
 
     @Override
     public void run(ProjectContext ctx, ProgressReporter reporter) throws Exception {
-        if(ctx.data().getAsBoolean(ForgeProjectKeys.USE_MIXINS, false)) {
+        if (ctx.data().getAsBoolean(ForgeProjectKeys.USE_MIXINS, false)) {
             reporter.info("Skipping mixins.json creation as mixins are not used.");
             Thread.sleep(1000); // sleeping to allow the user to read the message
             return;
@@ -44,7 +44,7 @@ public record CreateMixinsJsonStep(FilesService files) implements CreationStep {
         config.setCompatibilityLevel("JAVA_21"); // TODO: Grab from project data
         config.setMixins(new ArrayList<>());
         config.setClient(new ArrayList<>());
-        if(!ctx.data().getAsBoolean(ForgeProjectKeys.CLIENT_SIDE_ONLY, false))
+        if (!ctx.data().getAsBoolean(ForgeProjectKeys.CLIENT_SIDE_ONLY, false))
             config.setServer(new ArrayList<>());
 
         config.setInjectors(Map.of("defaultRequire", 1));

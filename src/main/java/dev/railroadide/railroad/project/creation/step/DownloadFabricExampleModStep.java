@@ -16,7 +16,8 @@ import java.nio.file.Path;
 /**
  * @param checksum TODO: Possibly consider holding some known checksums for example mods?
  */
-public record DownloadFabricExampleModStep(HttpService http, FilesService files, ZipService zip, ChecksumService checksum) implements CreationStep {
+public record DownloadFabricExampleModStep(HttpService http, FilesService files, ZipService zip,
+                                           ChecksumService checksum) implements CreationStep {
     @Override
     public String id() {
         return "railroad:download_fabric_example_mod";

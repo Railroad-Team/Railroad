@@ -8,20 +8,24 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class DialogBuilder extends AlertBuilder<DialogBuilder> {
-    private Runnable onConfirm = () -> {};
-    private Runnable onCancel = () -> {};
+    private Runnable onConfirm = () -> {
+    };
+    private Runnable onCancel = () -> {
+    };
 
     public static DialogBuilder create() {
         return new DialogBuilder();
     }
 
     public DialogBuilder onConfirm(Runnable onConfirm) {
-        this.onConfirm = onConfirm == null ? () -> {} : onConfirm;
+        this.onConfirm = onConfirm == null ? () -> {
+        } : onConfirm;
         return this;
     }
 
     public DialogBuilder onCancel(Runnable onCancel) {
-        this.onCancel = onCancel == null ? () -> {} : onCancel;
+        this.onCancel = onCancel == null ? () -> {
+        } : onCancel;
         return this;
     }
 

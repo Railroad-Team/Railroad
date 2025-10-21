@@ -3,7 +3,7 @@ package dev.railroadide.railroad.ide.classparser;
 import java.util.List;
 
 public sealed interface Type
-        permits Type.ClassType, Type.PrimitiveType, Type.ArrayType, Type.TypeVariable, Type.WildcardType {
+    permits Type.ClassType, Type.PrimitiveType, Type.ArrayType, Type.TypeVariable, Type.WildcardType {
     static Type fromAsmType(org.objectweb.asm.Type asmType) {
         return switch (asmType.getSort()) {
             case org.objectweb.asm.Type.VOID -> new PrimitiveType("void");

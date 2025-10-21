@@ -126,9 +126,9 @@ public class SettingsPane extends RRVBox {
 
             pathLabel.setText(pathBuilder.toString());
             settingsContentBox.getChildren().setAll(SettingsUIHandler.createSettingsSection(
-                    SettingsHandler.SETTINGS_REGISTRY.values(),
-                    parts[parts.length - 1],
-                    applyListeners
+                SettingsHandler.SETTINGS_REGISTRY.values(),
+                parts[parts.length - 1],
+                applyListeners
             ));
         });
 

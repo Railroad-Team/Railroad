@@ -29,18 +29,18 @@ public class PluginClassLoader extends URLClassLoader {
 
     private void addDependenciesToClasspath(@NotNull MavenDeps deps) throws MalformedURLException {
         List<MavenRepository> repositories = deps.repositories().stream()
-                .map(mavenRepo -> MavenRepository.of(mavenRepo.url()))
-                .toList();
+            .map(mavenRepo -> MavenRepository.of(mavenRepo.url()))
+            .toList();
         Fetch fetch = Fetch.create()
-                .addRepositories(repositories.toArray(new MavenRepository[0]))
-                .addRepositories(Repository.central())
-                .addDependencies(
-                        deps.artifacts().stream()
-                                .map(mavenDep -> Dependency.of(
-                                        mavenDep.groupId(),
-                                        mavenDep.artifactId(),
-                                        mavenDep.version()))
-                                .toArray(Dependency[]::new));
+            .addRepositories(repositories.toArray(new MavenRepository[0]))
+            .addRepositories(Repository.central())
+            .addDependencies(
+                deps.artifacts().stream()
+                    .map(mavenDep -> Dependency.of(
+                        mavenDep.groupId(),
+                        mavenDep.artifactId(),
+                        mavenDep.version()))
+                    .toArray(Dependency[]::new));
         try {
             List<File> jars = fetch.fetch();
             for (File jar : jars) {

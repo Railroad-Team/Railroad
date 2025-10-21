@@ -10,5 +10,6 @@ public interface GradleService {
     void runTasks(Path projectDir, String... tasks) throws Exception;
 
     void setOutputStream(OutputStream outputStream);
+
     OutputStream getOutputStream();
 }

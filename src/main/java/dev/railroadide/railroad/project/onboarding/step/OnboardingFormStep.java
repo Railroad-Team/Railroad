@@ -107,7 +107,9 @@ public final class OnboardingFormStep implements OnboardingStep {
     }
 
     public record ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component,
-                                String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+                                String contextKey, Function<Object, Object> transformer,
+                                Function<Object, Object> reverseTransformer,
+                                Consumer<FormComponent<?, ?, ?, ?>> customizer) {
         public ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component, String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, Consumer<FormComponent<?, ?, ?, ?>> customizer) {
             if (builder == null && component == null)
                 throw new IllegalArgumentException("Component specification must provide a builder or component instance");
@@ -519,7 +521,7 @@ public final class OnboardingFormStep implements OnboardingStep {
         private void loadDataFromContext(OnboardingContext ctx) {
             dataMappings.forEach((dataKey, mapping) -> {
                 String contextKey = mapping.contextKey();
-                if(ctx.needsRefresh(contextKey))
+                if (ctx.needsRefresh(contextKey))
                     return;
 
                 FormComponent<?, ?, ?, ?> component = componentsByDataKey.get(dataKey);
@@ -547,6 +549,8 @@ public final class OnboardingFormStep implements OnboardingStep {
             return null;
         }
 
-        private record DataMapping(String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {}
+        private record DataMapping(String contextKey, Function<Object, Object> transformer,
+                                   Function<Object, Object> reverseTransformer) {
+        }
     }
 }

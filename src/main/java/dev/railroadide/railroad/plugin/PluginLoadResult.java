@@ -78,10 +78,10 @@ public final class PluginLoadResult {
     @Override
     public String toString() {
         return "PluginLoadResult{" +
-                "pluginPath=" + pluginPath +
-                ", descriptor=" + descriptor +
-                ", pluginInstance=" + pluginInstance +
-                ", classLoader=" + classLoader +
-                '}';
+            "pluginPath=" + pluginPath +
+            ", descriptor=" + descriptor +
+            ", pluginInstance=" + pluginInstance +
+            ", classLoader=" + classLoader +
+            '}';
     }
 }

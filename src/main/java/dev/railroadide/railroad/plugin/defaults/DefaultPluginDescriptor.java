@@ -190,7 +190,7 @@ public class DefaultPluginDescriptor implements PluginDescriptor {
          */
         public DefaultPluginDescriptor build() {
             return new DefaultPluginDescriptor(id, name, version, author, description, website, license, iconPath,
-                    mainClass, dependencies);
+                mainClass, dependencies);
         }
     }
 }

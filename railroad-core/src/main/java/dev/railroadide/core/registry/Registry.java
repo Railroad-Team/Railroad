@@ -28,7 +28,7 @@ public interface Registry<T> {
     /**
      * Registers an item in the registry.
      *
-     * @param id the identifier for the item
+     * @param id   the identifier for the item
      * @param item the item to register
      * @return the registered item, which may be the same as the input item or a modified version
      */

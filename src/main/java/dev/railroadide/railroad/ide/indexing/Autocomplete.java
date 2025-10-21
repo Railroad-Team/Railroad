@@ -30,8 +30,8 @@ public class Autocomplete {
             return List.of();
 
         return stub.getMembers().stream()
-                .map(Stub::name)
-                .filter(member -> member.startsWith(prefix))
-                .toList();
+            .map(Stub::name)
+            .filter(member -> member.startsWith(prefix))
+            .toList();
     }
 }

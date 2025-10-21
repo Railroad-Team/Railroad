@@ -1,6 +1,7 @@
 # Contributing
 
-We appreciate your interest in contributing to this project. Please read the following guidelines before making a contribution.
+We appreciate your interest in contributing to this project. Please read the following guidelines before making a
+contribution.
 
 ## Code of Conduct
 
@@ -41,11 +42,13 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 11. Celebrate your success
 
 > [!IMPORTANT]
-> When you create a fork, please fork to your personal github, rather than an organization, as our code reviewers will not be able to fix minor issues in your pull request if you use an organization.
+> When you create a fork, please fork to your personal github, rather than an organization, as our code reviewers will
+> not be able to fix minor issues in your pull request if you use an organization.
 
 ## Reporting Bugs
 
-If you find a bug, please report it by creating an issue. Make sure to include a detailed description of the bug and how to reproduce it.
+If you find a bug, please report it by creating an issue. Make sure to include a detailed description of the bug and how
+to reproduce it.
 
 Also, include the following information:
 
@@ -62,9 +65,11 @@ Also, when reporting a bug, please use the `bug` label, and check to see if the 
 
 ## Requesting Features
 
-If you have a feature request, please report it by creating an issue. Make sure to include a detailed description of the feature and why you think it should be added.
+If you have a feature request, please report it by creating an issue. Make sure to include a detailed description of the
+feature and why you think it should be added.
 
-When requesting a feature, please use the `enhancement` label, and check to see if the feature has already been requested.
+When requesting a feature, please use the `enhancement` label, and check to see if the feature has already been
+requested.
 
 ## Contact
 

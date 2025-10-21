@@ -42,9 +42,9 @@ public class FormTransformer<T extends Node, V, W> {
     }
 
     public static <T extends Node, V, W> FormTransformer<T, V, W> async(@NotNull ObservableValue<T> fromComponent,
-                                                                       @NotNull Function<T, V> fromComponentFunction,
-                                                                       @NotNull Consumer<W> toComponentFunction,
-                                                                       @NotNull Function<V, CompletableFuture<W>> futureMapper) {
+                                                                        @NotNull Function<T, V> fromComponentFunction,
+                                                                        @NotNull Consumer<W> toComponentFunction,
+                                                                        @NotNull Function<V, CompletableFuture<W>> futureMapper) {
         return new FormTransformer<>(fromComponent, fromComponentFunction, toComponentFunction, futureMapper, true);
     }
 

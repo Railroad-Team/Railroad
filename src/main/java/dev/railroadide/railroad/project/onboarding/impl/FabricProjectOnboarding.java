@@ -516,7 +516,7 @@ public class FabricProjectOnboarding {
                     .sorted(Comparator.comparing(License::getName))
                     .toList();
 
-                if(availableLicenses.size() != newValues.size() || !ListUtils.isEqualList(availableLicenses, newValues)) {
+                if (availableLicenses.size() != newValues.size() || !ListUtils.isEqualList(availableLicenses, newValues)) {
                     availableLicenses.clear();
                     availableLicenses.addAll(newValues);
                     ctx.markForRefresh(ProjectData.DefaultKeys.LICENSE);
@@ -615,8 +615,8 @@ public class FabricProjectOnboarding {
         String defaultAuthor = !isNullOrBlank(configuredAuthor)
             ? configuredAuthor
             : Optional.ofNullable(System.getProperty("user.name"))
-                .filter(name -> !isNullOrBlank(name))
-                .orElse("");
+            .filter(name -> !isNullOrBlank(name))
+            .orElse("");
 
         return OnboardingFormStep.builder()
             .id("optional_details")

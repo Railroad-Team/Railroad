@@ -29,7 +29,7 @@ public class RRFormContainer extends VBox {
 
         titleLabel = new LocalizedLabel("");
         titleLabel.getStyleClass().add("form-title");
-        
+
         if (title != null && !title.trim().isEmpty()) {
             if (title.contains(".")) {
                 titleLabel.setKey(title);
@@ -145,4 +145,4 @@ public class RRFormContainer extends VBox {
             getStyleClass().remove("interactive");
         }
     }
-} 
+}

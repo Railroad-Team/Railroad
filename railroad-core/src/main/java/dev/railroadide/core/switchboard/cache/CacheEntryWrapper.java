@@ -6,4 +6,5 @@ public record CacheEntryWrapper(
     String key,
     MetadataCacheEntry<?> entry,
     TypeToken<?> typeToken
-) {}
+) {
+}

@@ -40,9 +40,9 @@ public class ClassStubVisitor extends ClassVisitor {
         } else {
             this.superClass = (superName == null) ? null : Type.fromAsmType(org.objectweb.asm.Type.getObjectType(superName));
             this.interfaces = Arrays.stream(interfaces)
-                    .map(org.objectweb.asm.Type::getObjectType)
-                    .map(Type::fromAsmType)
-                    .toList();
+                .map(org.objectweb.asm.Type::getObjectType)
+                .map(Type::fromAsmType)
+                .toList();
         }
     }
 
@@ -88,8 +88,8 @@ public class ClassStubVisitor extends ClassVisitor {
             returnType = signatureVisitor.returnType;
         } else {
             parameterTypes = Arrays.stream(org.objectweb.asm.Type.getArgumentTypes(descriptor))
-                    .map(Type::fromAsmType)
-                    .toList();
+                .map(Type::fromAsmType)
+                .toList();
 
             returnType = Type.fromAsmType(org.objectweb.asm.Type.getReturnType(descriptor));
         }
@@ -121,16 +121,16 @@ public class ClassStubVisitor extends ClassVisitor {
         //    int modifiers,
         //    List<AnnotationStub> annotations
         return new ClassStub(
-                packageName,
-                className,
-                typeParameters,
-                superClass,
-                interfaces,
-                fields,
-                methods,
-                constructors,
-                modifiers,
-                annotations
+            packageName,
+            className,
+            typeParameters,
+            superClass,
+            interfaces,
+            fields,
+            methods,
+            constructors,
+            modifiers,
+            annotations
         );
     }
 
@@ -357,11 +357,11 @@ public class ClassStubVisitor extends ClassVisitor {
 
             if (name.equals("<init>")) {
                 var constructorStub = new ConstructorStub(
-                        parameters, access, methodAnnotations, finalMethodTypeParameters);
+                    parameters, access, methodAnnotations, finalMethodTypeParameters);
                 ClassStubVisitor.this.constructors.add(constructorStub);
             } else {
                 var methodStub = new MethodStub(
-                        name, returnType, parameters, access, methodAnnotations, finalMethodTypeParameters);
+                    name, returnType, parameters, access, methodAnnotations, finalMethodTypeParameters);
                 ClassStubVisitor.this.methods.add(methodStub);
             }
         }

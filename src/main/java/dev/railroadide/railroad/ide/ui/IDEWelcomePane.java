@@ -84,11 +84,11 @@ public class IDEWelcomePane extends ScrollPane {
         featuresGrid.getStyleClass().add("features-grid");
 
         var features = new FeatureItem[]{
-                new FeatureItem(FontAwesomeSolid.CUBE, "railroad.ide.welcome.feature.model_viewer_editor"),
-                new FeatureItem(FontAwesomeSolid.BUILDING, "railroad.ide.welcome.feature.structure_viewer_editor"),
-                new FeatureItem(FontAwesomeSolid.IMAGE, "railroad.ide.welcome.feature.texture_viewer_editor"),
-                new FeatureItem(FontAwesomeSolid.VOLUME_UP, "railroad.ide.welcome.feature.sound_visualizer"),
-                new FeatureItem(FontAwesomeSolid.CODE, "railroad.ide.welcome.feature.mixin_support")
+            new FeatureItem(FontAwesomeSolid.CUBE, "railroad.ide.welcome.feature.model_viewer_editor"),
+            new FeatureItem(FontAwesomeSolid.BUILDING, "railroad.ide.welcome.feature.structure_viewer_editor"),
+            new FeatureItem(FontAwesomeSolid.IMAGE, "railroad.ide.welcome.feature.texture_viewer_editor"),
+            new FeatureItem(FontAwesomeSolid.VOLUME_UP, "railroad.ide.welcome.feature.sound_visualizer"),
+            new FeatureItem(FontAwesomeSolid.CODE, "railroad.ide.welcome.feature.mixin_support")
         };
 
         for (var feature : features) {

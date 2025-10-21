@@ -47,12 +47,12 @@ public class TextEditorPane extends CodeArea {
         Pair<Integer, Integer> endPos = getLineAndColumn(text, position + netLength);
 
         return new FileModifiedEvent.Change(
-                getChangeType(change),
-                removed,
-                inserted,
-                new FileModifiedEvent.Range(
-                        startPos.getKey(), startPos.getValue(),
-                        endPos.getKey(), endPos.getValue()));
+            getChangeType(change),
+            removed,
+            inserted,
+            new FileModifiedEvent.Range(
+                startPos.getKey(), startPos.getValue(),
+                endPos.getKey(), endPos.getValue()));
     }
 
     private static FileModifiedEvent.Change.Type getChangeType(PlainTextChange change) {
@@ -145,27 +145,27 @@ public class TextEditorPane extends CodeArea {
             }
 
             multiPlainChanges()
-                    .successionEnds(Duration.ofMillis(500))
-                    .retainLatestUntilLater(changeExecutor)
-                    .map(changes -> changes.stream()
-                            .map(change -> TextEditorPane.getChange(getText(), change))
-                            .toList())
-                    .subscribe(changes -> {
-                        var document = new DefaultDocument(this.filePath.getFileName().toString(), this.filePath);
-                        Railroad.EVENT_BUS.publish(new FileModifiedEvent(document, changes));
+                .successionEnds(Duration.ofMillis(500))
+                .retainLatestUntilLater(changeExecutor)
+                .map(changes -> changes.stream()
+                    .map(change -> TextEditorPane.getChange(getText(), change))
+                    .toList())
+                .subscribe(changes -> {
+                    var document = new DefaultDocument(this.filePath.getFileName().toString(), this.filePath);
+                    Railroad.EVENT_BUS.publish(new FileModifiedEvent(document, changes));
 
-                        String text = getText();
-                        try {
-                            if (!Files.readString(this.filePath).equals(text)) {
-                                Files.writeString(this.filePath, text);
-                                Railroad.EVENT_BUS.publish(new FileEvent(
-                                        document,
-                                        FileEvent.EventType.SAVED));
-                            }
-                        } catch (IOException exception) {
-                            Railroad.LOGGER.error("Failed to write file", exception);
+                    String text = getText();
+                    try {
+                        if (!Files.readString(this.filePath).equals(text)) {
+                            Files.writeString(this.filePath, text);
+                            Railroad.EVENT_BUS.publish(new FileEvent(
+                                document,
+                                FileEvent.EventType.SAVED));
                         }
-                    });
+                    } catch (IOException exception) {
+                        Railroad.LOGGER.error("Failed to write file", exception);
+                    }
+                });
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to read file", exception);
         }

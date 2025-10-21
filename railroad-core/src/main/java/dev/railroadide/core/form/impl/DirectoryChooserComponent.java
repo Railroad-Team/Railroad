@@ -83,7 +83,7 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
 
             if (newValue != null) {
                 listenerRef.set((observable1, oldValue1, newValue1) ->
-                        listener.changed(newValue.getPrimaryComponent().getTextField(), observable1, oldValue1, newValue1));
+                    listener.changed(newValue.getPrimaryComponent().getTextField(), observable1, oldValue1, newValue1));
 
                 newValue.getPrimaryComponent().getTextField().textProperty().addListener(listenerRef.get());
             }
@@ -93,18 +93,18 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
     @Override
     protected void bindToFormData(FormData formData) {
         componentProperty()
-                .map(FormDirectoryChooser::getPrimaryComponent)
-                .map(FormDirectoryChooser.TextFieldWithButton::getTextField)
-                .flatMap(TextField::textProperty)
-                .addListener((observable, oldValue, newValue) ->
-                        formData.addProperty(dataKey, newValue));
+            .map(FormDirectoryChooser::getPrimaryComponent)
+            .map(FormDirectoryChooser.TextFieldWithButton::getTextField)
+            .flatMap(TextField::textProperty)
+            .addListener((observable, oldValue, newValue) ->
+                formData.addProperty(dataKey, newValue));
 
         formData.addProperty(dataKey, componentProperty()
-                .map(FormDirectoryChooser::getPrimaryComponent)
-                .map(FormDirectoryChooser.TextFieldWithButton::getTextField)
-                .map(TextField::getText)
-                .orElse(getData().defaultPath)
-                .getValue());
+            .map(FormDirectoryChooser::getPrimaryComponent)
+            .map(FormDirectoryChooser.TextFieldWithButton::getTextField)
+            .map(TextField::getText)
+            .orElse(getData().defaultPath)
+            .getValue());
     }
 
     @Override

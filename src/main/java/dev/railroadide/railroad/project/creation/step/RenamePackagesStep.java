@@ -41,7 +41,7 @@ public record RenamePackagesStep(FilesService files) implements CreationStep {
         files.createDirectories(newMainJava);
 
         reporter.info("Moving source files...");
-        if(files.exists(mainJava.resolve("com/example/examplemod"))) {
+        if (files.exists(mainJava.resolve("com/example/examplemod"))) {
             Path oldMainJava = mainJava.resolve("com/example/examplemod");
             files.extractDirectoryContents(oldMainJava, newMainJava);
 
@@ -76,7 +76,7 @@ public record RenamePackagesStep(FilesService files) implements CreationStep {
             }
         }
 
-        if(splitSources) {
+        if (splitSources) {
             reporter.info("Renaming client packages to " + newFolderPath);
             Path clientJava = projectDir.resolve("src/client/java");
             Path newClientJava = clientJava.resolve(newFolderPath);

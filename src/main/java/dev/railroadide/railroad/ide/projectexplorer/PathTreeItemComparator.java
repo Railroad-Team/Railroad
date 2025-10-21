@@ -18,7 +18,7 @@ public class PathTreeItemComparator implements Comparator<TreeItem<PathItem>>, S
             return 1;
         } else {
             return item1.getValue().getPath().getFileName().toString()
-                    .compareToIgnoreCase(item2.getValue().getPath().getFileName().toString());
+                .compareToIgnoreCase(item2.getValue().getPath().getFileName().toString());
         }
     }
 }

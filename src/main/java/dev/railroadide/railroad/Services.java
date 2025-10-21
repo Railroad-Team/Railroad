@@ -99,11 +99,11 @@ public class Services {
             return (T) Railroad.getHostServicess();
         } else if (serviceClass == DocumentEditorStateService.class) {
             return (T) DOCUMENT_EDITOR_STATE;
-        } else if(serviceClass == LocalizationService.class) {
+        } else if (serviceClass == LocalizationService.class) {
             return (T) LOCALIZATION_SERVICE;
         } else if (serviceClass == LoggerService.class) {
             return (T) LOGGER;
-        } else if(serviceClass == Gson.class) {
+        } else if (serviceClass == Gson.class) {
             return (T) Railroad.GSON;
         } else if (serviceClass == ProjectServiceRegistry.class) {
             return (T) PROJECT_SERVICE_REGISTRY;

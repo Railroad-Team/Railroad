@@ -60,7 +60,7 @@ public class RegistryManager {
     /**
      * Retrieves a registry by its ID.
      *
-     * @param id the unique identifier for the registry
+     * @param id  the unique identifier for the registry
      * @param <T> the type of elements in the registry
      * @return the Registry instance associated with the given ID
      * @throws IllegalArgumentException if no registry is found with the specified ID

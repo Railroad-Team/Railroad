@@ -19,8 +19,8 @@ public class FuzzySearch<D, R> {
     /**
      * Constructs a new FuzzySearch instance.
      *
-     * @param data The data to search in, e.g., a map or a list.
-     * @param extractor A function to extract a list of search strings from the data.
+     * @param data        The data to search in, e.g., a map or a list.
+     * @param extractor   A function to extract a list of search strings from the data.
      * @param transformer A function to transform a matching key into a result.
      */
     public FuzzySearch(D data, Function<D, List<String>> extractor, Function<String, R> transformer) {
@@ -51,12 +51,12 @@ public class FuzzySearch<D, R> {
         }
 
         return sb.toString()
-                .replaceAll("[AEIOU]", "")
-                .replaceAll("PH", "F")
-                .replaceAll("KN", "N")
-                .replaceAll("GH", "H")
-                .replaceAll("GN", "N")
-                .replaceAll("MB$", "M");
+            .replaceAll("[AEIOU]", "")
+            .replaceAll("PH", "F")
+            .replaceAll("KN", "N")
+            .replaceAll("GH", "H")
+            .replaceAll("GN", "N")
+            .replaceAll("MB$", "M");
     }
 
     /**
@@ -113,7 +113,7 @@ public class FuzzySearch<D, R> {
      * and Levenshtein distance.
      *
      * @param query The string to search for.
-     * @param key The string to compare against.
+     * @param key   The string to compare against.
      * @return true if the two strings are considered similar, false otherwise.
      */
     public boolean isSimilar(String query, String key) {

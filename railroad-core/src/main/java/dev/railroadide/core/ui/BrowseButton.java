@@ -45,9 +45,9 @@ public class BrowseButton extends LocalizedButton {
                         textField.setText(fileChooser.showOpenDialog(parentWindow.get()).getAbsolutePath());
                     } else {
                         textField.setText(fileChooser.showOpenMultipleDialog(parentWindow.get()).stream()
-                                .map(File::getAbsolutePath)
-                                .reduce((a, b) -> a + ", " + b)
-                                .orElse(""));
+                            .map(File::getAbsolutePath)
+                            .reduce((a, b) -> a + ", " + b)
+                            .orElse(""));
                     }
                 }
                 case DIRECTORY -> {
@@ -60,9 +60,9 @@ public class BrowseButton extends LocalizedButton {
                         textField.setText(imageChooser.showOpenDialog(parentWindow.get()).getAbsolutePath());
                     } else {
                         textField.setText(imageChooser.showOpenMultipleDialog(parentWindow.get()).stream()
-                                .map(File::getAbsolutePath)
-                                .reduce((a, b) -> a + ", " + b)
-                                .orElse(""));
+                            .map(File::getAbsolutePath)
+                            .reduce((a, b) -> a + ", " + b)
+                            .orElse(""));
                     }
                 }
             }

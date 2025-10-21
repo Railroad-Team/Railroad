@@ -34,19 +34,20 @@ import java.util.concurrent.Executors;
 
 public class JsonCodeEditorPane extends TextEditorPane {
     private static final String DEFAULT_SCHEMA = """
-            {
-              "$schema": "http://json-schema.org/draft-07/schema",
-              "type": "object",
-              "properties": {
-                "name": {"type": "string"},
-                "version": {"type": "string"}
-              },
-              "required": ["name", "version"]
-            }
-            """;
+        {
+          "$schema": "http://json-schema.org/draft-07/schema",
+          "type": "object",
+          "properties": {
+            "name": {"type": "string"},
+            "version": {"type": "string"}
+          },
+          "required": ["name", "version"]
+        }
+        """;
     private final ExecutorService executor0 = Executors.newSingleThreadExecutor();
     private final ObservableMap<ValidationException, ValidationEntry> errors = FXCollections.observableHashMap();
     private Schema schema;
+
     public JsonCodeEditorPane(Path item) {
         super(item);
         syntaxHighlight();
@@ -67,19 +68,19 @@ public class JsonCodeEditorPane extends TextEditorPane {
     private void syntaxHighlight() {
         applyHighlighting(computeHighlighting(getText()));
         multiPlainChanges()
-                .successionEnds(Duration.ofMillis(5))
-                .retainLatestUntilLater(executor0)
-                .supplyTask(this::computeHighlightingAsync)
-                .awaitLatest(multiPlainChanges())
-                .filterMap(throwable -> {
-                    if (throwable.isSuccess()) {
-                        return throwable.toOptional();
-                    } else {
-                        Railroad.LOGGER.error("Failed to compute highlighting", throwable.getFailure());
-                        return Optional.empty();
-                    }
-                })
-                .subscribe(this::applyHighlighting);
+            .successionEnds(Duration.ofMillis(5))
+            .retainLatestUntilLater(executor0)
+            .supplyTask(this::computeHighlightingAsync)
+            .awaitLatest(multiPlainChanges())
+            .filterMap(throwable -> {
+                if (throwable.isSuccess()) {
+                    return throwable.toOptional();
+                } else {
+                    Railroad.LOGGER.error("Failed to compute highlighting", throwable.getFailure());
+                    return Optional.empty();
+                }
+            })
+            .subscribe(this::applyHighlighting);
     }
 
     private void autoInsertPairs() {
@@ -262,7 +263,7 @@ public class JsonCodeEditorPane extends TextEditorPane {
                     return;
 
                 int pos = JsonCodeEditorPane.this.hit(event.getX(), event.getY())
-                        .getCharacterIndex().orElse(-1);
+                    .getCharacterIndex().orElse(-1);
                 if (pos < start || pos > end) {
                     popup.hide();
                 }
@@ -278,8 +279,8 @@ public class JsonCodeEditorPane extends TextEditorPane {
         }
 
         String prop = pointer.substring(pointer.lastIndexOf('/') + 1)
-                .replace("~1", "/")
-                .replace("~0", "~");
+            .replace("~1", "/")
+            .replace("~0", "~");
         String search = "\"" + prop + "\"";
         int nameIdx = text.indexOf(search);
         if (nameIdx < 0) {

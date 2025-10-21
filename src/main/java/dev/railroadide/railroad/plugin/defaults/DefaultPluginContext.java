@@ -35,8 +35,8 @@ public class DefaultPluginContext implements PluginContext {
 
         String[] mainClassParts = descriptor.getMainClass().split("\\.");
         this.logger = LoggerManager.create(mainClassParts[mainClassParts.length - 1])
-                .service(Railroad.LOGGER.getService())
-                .build();
+            .service(Railroad.LOGGER.getService())
+            .build();
     }
 
     @Override
@@ -76,10 +76,10 @@ public class DefaultPluginContext implements PluginContext {
     @Override
     public <T> List<T> getExtensions(Class<T> extensionPoint) {
         return this.extensions.get(extensionPoint)
-                .stream()
-                .filter(extensionPoint::isInstance)
-                .map(extensionPoint::cast)
-                .toList();
+            .stream()
+            .filter(extensionPoint::isInstance)
+            .map(extensionPoint::cast)
+            .toList();
     }
 
     @Override

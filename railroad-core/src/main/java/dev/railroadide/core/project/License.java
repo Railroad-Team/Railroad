@@ -12,7 +12,7 @@ import lombok.ToString;
 @EqualsAndHashCode
 @AllArgsConstructor
 public class License {
-    public static final Registry<License> REGISTRY =  RegistryManager.createRegistry("railroad:license", License.class);
+    public static final Registry<License> REGISTRY = RegistryManager.createRegistry("railroad:license", License.class);
 
     private final String name;
     private final String url;

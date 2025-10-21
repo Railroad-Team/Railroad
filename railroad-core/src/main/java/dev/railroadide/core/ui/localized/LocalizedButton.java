@@ -35,12 +35,13 @@ public class LocalizedButton extends Button {
     /**
      * Sets the key property to the new key and updates the text to reflect these changes.
      * A listener is added to listen for changes to the selected language, this allows for the button to update when the language is changed.
+     *
      * @param key The new key
      */
     public void setKey(String key) {
         currentKey = key;
         ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                setText(ServiceLocator.getService(LocalizationService.class).get(key)));
+            setText(ServiceLocator.getService(LocalizationService.class).get(key)));
         setText(ServiceLocator.getService(LocalizationService.class).get(currentKey));
     }
 }

@@ -26,9 +26,9 @@ public class ProjectType {
     /**
      * Constructs a new `ProjectType` instance.
      *
-     * @param name                The name of the project type.
-     * @param description         A translation key for the project type description.
-     * @param icon                An icon representing the project type.
+     * @param name                 The name of the project type.
+     * @param description          A translation key for the project type description.
+     * @param icon                 An icon representing the project type.
      * @param onboardingUISupplier A supplier for creating an onboarding UI for the project type.
      */
     protected ProjectType(String name, String description, Image icon, Supplier<? extends Node> onboardingUISupplier) {

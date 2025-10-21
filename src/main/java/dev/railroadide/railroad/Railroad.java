@@ -172,7 +172,8 @@ public class Railroad extends Application {
         LoggerManager.shutdown();
     }
 
-    private record InitializationStep(String message, CheckedRunnable action) {}
+    private record InitializationStep(String message, CheckedRunnable action) {
+    }
 
     @FunctionalInterface
     private interface CheckedRunnable {

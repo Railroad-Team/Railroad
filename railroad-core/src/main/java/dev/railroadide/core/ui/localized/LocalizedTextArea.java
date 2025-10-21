@@ -41,7 +41,7 @@ public class LocalizedTextArea extends TextArea {
     public void setKey(final String key) {
         currentKey = key;
         ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                setPromptText(ServiceLocator.getService(LocalizationService.class).get(key)));
+            setPromptText(ServiceLocator.getService(LocalizationService.class).get(key)));
         setPromptText(ServiceLocator.getService(LocalizationService.class).get(currentKey));
     }
 }

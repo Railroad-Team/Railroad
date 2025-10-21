@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public record FabricApiVersionRepository(SwitchboardClient client, CacheManager cache)
-        implements SwitchboardRepository {
+    implements SwitchboardRepository {
     private static final Duration VERSIONS_TTL = Duration.ofHours(12);
     private static final Duration LATEST_TTL = Duration.ofHours(1);
 
@@ -100,10 +100,10 @@ public record FabricApiVersionRepository(SwitchboardClient client, CacheManager 
             return Optional.empty();
 
         String possibleVersion = fabricApiVersion.substring(plus + 1);
-        if(possibleVersion.contains("build."))
+        if (possibleVersion.contains("build."))
             return Optional.empty(); // TODO: Handle this by figuring out what build versions are for
 
-        if(possibleVersion.endsWith("_experimental"))
+        if (possibleVersion.endsWith("_experimental"))
             possibleVersion = possibleVersion.substring(0, possibleVersion.length() - "_experimental".length());
 
         return Optional.of(possibleVersion);

@@ -68,7 +68,7 @@ public class CreateFileDialog {
 
         listView.getItems().addAll(switch (type) {
             case JAVA_CLASS ->
-                    new TypeSelection[]{TypeSelection.JAVA_CLASS, TypeSelection.JAVA_INTERFACE, TypeSelection.JAVA_ENUM, TypeSelection.JAVA_ANNOTATION};
+                new TypeSelection[]{TypeSelection.JAVA_CLASS, TypeSelection.JAVA_INTERFACE, TypeSelection.JAVA_ENUM, TypeSelection.JAVA_ANNOTATION};
             case JSON -> new TypeSelection[]{TypeSelection.JSON};
             case TXT -> new TypeSelection[]{TypeSelection.TXT};
             default -> new TypeSelection[0];
@@ -86,8 +86,8 @@ public class CreateFileDialog {
                 var fileName = textField.getText();
                 var extension = selectedItem.getExtension();
                 var content = template
-                        .replace("<package_loc>", path.toString().replace("\\", ".").replace("/", "."))
-                        .replace("<class_name>", fileName);
+                    .replace("<package_loc>", path.toString().replace("\\", ".").replace("/", "."))
+                    .replace("<class_name>", fileName);
 
                 try {
                     Path file = path.resolve(fileName + "." + extension);
@@ -130,40 +130,40 @@ public class CreateFileDialog {
     @Getter
     public enum TypeSelection {
         JAVA_CLASS("Java Class", "java", null, """
-                package <package_loc>.<class_name>;
+            package <package_loc>.<class_name>;
 
-                public class <class_name> {
-                    public <class_name>() {
+            public class <class_name> {
+                public <class_name>() {
 
-                    }
                 }
-                """),
+            }
+            """),
         JAVA_INTERFACE("Java Interface", "java", null, """
-                package <package_loc>.<class_name>;
+            package <package_loc>.<class_name>;
 
-                public interface <class_name> {
+            public interface <class_name> {
 
-                }
-                """),
+            }
+            """),
         JAVA_ENUM("Java Enum", "java", null, """
-                package <package_loc>.<class_name>;
+            package <package_loc>.<class_name>;
 
-                public enum <class_name> {
+            public enum <class_name> {
 
-                }
-                """),
+            }
+            """),
         JAVA_ANNOTATION("Java Annotation", "java", null, """
-                package <package_loc>.<class_name>;
+            package <package_loc>.<class_name>;
 
-                public @interface <class_name> {
+            public @interface <class_name> {
 
-                }
-                """),
+            }
+            """),
         JSON("JSON File", "json", null, """
-                {
+            {
 
-                }
-                """),
+            }
+            """),
         TXT("Text File", "txt", null, "");
 
 

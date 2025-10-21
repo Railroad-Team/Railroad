@@ -7,9 +7,10 @@ pluginManagement {
             url = 'https://maven.minecraftforge.net/'
         }
 
-        <% if(mappings.channel == 'parchment') {
+                < %
+        if (mappings.channel == 'parchment') {
             out.print("\n    maven { url = 'https://maven.parchmentmc.org' }")
-        } %>
+        } % >
     }
 }
 

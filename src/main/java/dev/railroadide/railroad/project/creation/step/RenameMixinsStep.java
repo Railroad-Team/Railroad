@@ -40,7 +40,7 @@ public record RenameMixinsStep(FilesService files) implements CreationStep {
         config.setPackageName(groupId + "." + modid + ".mixins");
         files.writeString(newPath, Railroad.GSON.toJson(config));
 
-        if(ctx.data().getAsBoolean(FabricProjectKeys.SPLIT_SOURCES)) {
+        if (ctx.data().getAsBoolean(FabricProjectKeys.SPLIT_SOURCES)) {
             reporter.info("Renaming client mixin configuration files...");
             Path clientResourcesDir = ctx.projectDir().resolve("src/client/resources");
             Path newClientPath = clientResourcesDir.resolve(modid + ".client.mixins.json");

@@ -12,7 +12,8 @@ public class LocalizedTitledPane extends TitledPane {
     private final ObservableList<Object> args = FXCollections.observableArrayList();
     private String key;
 
-    public LocalizedTitledPane() {}
+    public LocalizedTitledPane() {
+    }
 
     public LocalizedTitledPane(Node content, String titleKey, @NotNull Object... args) {
         super(titleKey, content);

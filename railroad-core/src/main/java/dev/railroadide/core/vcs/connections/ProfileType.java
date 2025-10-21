@@ -47,8 +47,8 @@ public final class ProfileType {
         if (obj == null || obj.getClass() != this.getClass()) return false;
         var that = (ProfileType) obj;
         return Objects.equals(this.name, that.name) &&
-                Objects.equals(this.icon, that.icon) &&
-                Objects.equals(this.iconProvider, that.iconProvider);
+            Objects.equals(this.icon, that.icon) &&
+            Objects.equals(this.iconProvider, that.iconProvider);
     }
 
     @Override
@@ -59,7 +59,7 @@ public final class ProfileType {
     @Override
     public String toString() {
         return "ProfileType[" +
-                "name=" + name + ", " +
-                "icon=" + icon + ']';
+            "name=" + name + ", " +
+            "icon=" + icon + ']';
     }
 }

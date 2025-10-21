@@ -77,9 +77,9 @@ public class ThemeDownloadManager {
      */
     public static boolean isDownloaded(final Theme theme) {
         return getDownloaded().stream()
-                .map(Path::getFileName)
-                .map(Path::toString)
-                .anyMatch(t -> t.equals(theme.getName().replace("\"", "")));
+            .map(Path::getFileName)
+            .map(Path::toString)
+            .anyMatch(t -> t.equals(theme.getName().replace("\"", "")));
     }
 
     /**

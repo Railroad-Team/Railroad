@@ -29,7 +29,7 @@ public class RRFormSection extends VBox {
 
         headerLabel = new LocalizedLabel("");
         headerLabel.getStyleClass().add("section-header");
-        
+
         if (headerText != null && !headerText.trim().isEmpty()) {
             if (headerText.contains(".")) {
                 headerLabel.setKey(headerText);
@@ -146,4 +146,4 @@ public class RRFormSection extends VBox {
             getStyleClass().remove("interactive");
         }
     }
-} 
+}

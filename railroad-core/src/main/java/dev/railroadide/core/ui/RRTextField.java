@@ -36,7 +36,7 @@ public class RRTextField extends TextField {
      * Constructs a new text field with localized placeholder text and a prefix icon.
      *
      * @param localizationKey the localization key for the placeholder text
-     * @param prefixIcon the icon to display before the text field
+     * @param prefixIcon      the icon to display before the text field
      */
     public RRTextField(String localizationKey, Ikon prefixIcon) {
         this(localizationKey);
@@ -47,7 +47,7 @@ public class RRTextField extends TextField {
      * Constructs a new text field with localized placeholder text.
      *
      * @param localizationKey the localization key for the placeholder text
-     * @param args optional formatting arguments for the localized text
+     * @param args            optional formatting arguments for the localized text
      */
     public RRTextField(String localizationKey, Object... args) {
         super();
@@ -213,7 +213,7 @@ public class RRTextField extends TextField {
         setPromptText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args));
         if (localizationKey != null) {
             ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                    setPromptText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args)));
+                setPromptText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args)));
         }
     }
 

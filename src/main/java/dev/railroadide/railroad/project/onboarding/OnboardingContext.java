@@ -46,7 +46,7 @@ public final class OnboardingContext {
 
     @SuppressWarnings("unchecked")
     public <T> T get(String key) {
-        if(!data.containsKey(key))
+        if (!data.containsKey(key))
             return null;
 
         return (T) data.get(key);

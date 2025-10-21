@@ -164,7 +164,7 @@ tasks.register('jpackageInstaller', Exec) {
     dependsOn jpackageImage
 
     def outputDir = file("${layout.buildDirectory.get()}/jpackage")
-    if(outputDir.exists()) {
+    if (outputDir.exists()) {
         outputDir.deleteDir()
     }
 

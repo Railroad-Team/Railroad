@@ -14,11 +14,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public record MinecraftVersionRepository(SwitchboardClient client, CacheManager cache)
-        implements SwitchboardRepository {
+    implements SwitchboardRepository {
     public CompletableFuture<List<MinecraftVersion>> getAllVersions() {
         return cache.getOrFetch(
             "mc:versions",
-            new TypeToken<List<MinecraftVersion>>() {},
+            new TypeToken<List<MinecraftVersion>>() {
+            },
             Duration.ofHours(12),
             client::fetchMinecraftVersions
         );

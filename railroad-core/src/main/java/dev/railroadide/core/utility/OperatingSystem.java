@@ -31,8 +31,8 @@ public enum OperatingSystem {
         if (os.contains("mac"))
             return MAC;
         if (os.contains("nux")
-                || os.contains("nix")
-                || os.contains("aix"))
+            || os.contains("nix")
+            || os.contains("aix"))
             return LINUX;
 
         return UNKNOWN;

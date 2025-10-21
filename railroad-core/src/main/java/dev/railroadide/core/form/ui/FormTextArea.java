@@ -18,14 +18,14 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> implements Ha
     /**
      * Constructs a new FormTextArea with the specified configuration.
      *
-     * @param labelKey the localization key for the label text
-     * @param required whether the text area is required
-     * @param text the initial text content
+     * @param labelKey   the localization key for the label text
+     * @param required   whether the text area is required
+     * @param text       the initial text content
      * @param promptText the placeholder text to display when empty
-     * @param editable whether the text area is editable
-     * @param resizable whether the text area should auto-resize based on content
-     * @param wrapText whether text should wrap to new lines
-     * @param translate whether to use localization for the prompt text
+     * @param editable   whether the text area is editable
+     * @param resizable  whether the text area should auto-resize based on content
+     * @param wrapText   whether text should wrap to new lines
+     * @param translate  whether to use localization for the prompt text
      */
     public FormTextArea(String labelKey, boolean required, String text, String promptText, boolean editable, boolean resizable, boolean wrapText, boolean translate) {
         super(labelKey, required, createParams(text, promptText, editable, resizable, wrapText, translate));
@@ -34,12 +34,12 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> implements Ha
     /**
      * Creates the parameters map for the text area component.
      *
-     * @param text the initial text content
+     * @param text       the initial text content
      * @param promptText the placeholder text
-     * @param editable whether the text area is editable
-     * @param resizable whether the text area should auto-resize
-     * @param wrapText whether text should wrap
-     * @param translate whether to use localization
+     * @param editable   whether the text area is editable
+     * @param resizable  whether the text area should auto-resize
+     * @param wrapText   whether text should wrap
+     * @param translate  whether to use localization
      * @return a map containing the component parameters
      */
     private static Map<String, Object> createParams(String text, String promptText, boolean editable, boolean resizable, boolean wrapText, boolean translate) {
@@ -76,7 +76,7 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> implements Ha
         textArea.getStyleClass().add("rr-text-area");
         if (resizable) {
             textArea.textProperty().addListener((observable, oldValue, newValue) ->
-                    textArea.setMinHeight(newValue.lines().count() * 20 + 40));
+                textArea.setMinHeight(newValue.lines().count() * 20 + 40));
         }
         textArea.setWrapText(wrapText);
         if (!translate)

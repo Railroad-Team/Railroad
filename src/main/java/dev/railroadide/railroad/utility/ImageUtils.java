@@ -33,7 +33,7 @@ public final class ImageUtils {
         if (pixelFormat.getType() == PixelFormat.Type.INT_ARGB) {
             return 32; // 8 bits per channel + alpha channel
         } else if (pixelFormat.getType() == PixelFormat.Type.BYTE_BGRA ||
-                pixelFormat.getType() == PixelFormat.Type.BYTE_BGRA_PRE) {
+            pixelFormat.getType() == PixelFormat.Type.BYTE_BGRA_PRE) {
             return 32; // 8 bits per channel + alpha channel
         } else if (pixelFormat.getType() == PixelFormat.Type.BYTE_RGB) {
             return 24; // 8 bits per channel, no alpha channel

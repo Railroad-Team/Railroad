@@ -1,15 +1,15 @@
 name: "✨ Feature Request"
 description: "Suggest a new feature or enhancement for Railroad IDE"
 title: "[Feature]: "
-labels: ["enhancement"]
-assignees: []
+labels: [ "enhancement" ]
+assignees: [ ]
 
 body:
   - type: markdown
     attributes:
       value: |
         ## ✨ Feature Request
-        Thank you for helping improve **Railroad IDE**!  
+        Thank you for helping improve **Railroad IDE**!
         Please describe your feature idea clearly to help us understand and evaluate it.
 
   - type: input

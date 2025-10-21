@@ -4,23 +4,25 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0,6.2)'
-    <% if(mappings.channel == 'parchment') {
+            < %
+    if (mappings.channel == 'parchment') {
         out.print("\n    id 'org.parchmentmc.librarian.forgegradle' version '1.+'")
     }
 
-    if(props.useMixins) {
+    if (props.useMixins) {
         out.print("\n    id 'org.spongepowered.mixin' version '0.7.+'")
-    } %>
+    } % >
 }
 
-<% if (props.useMixins)
+        < %
+if (props.useMixins)
     out.println("""\nmixin {
     add sourceSets.main, '\${archivesName}.refmap.json'
     config '\${archivesName}.mixins.json'
     debug.export = true
-}""") %>
+}""") % >
 
-version = mod_version
+            version = mod_version
 group = mod_group_id
 
 base {
@@ -35,47 +37,49 @@ minecraft {
 
     copyIdeResources = true
 
-    <% if(props.genRunFolders) {
+            < %
+    if (props.genRunFolders) {
         out.print("\n    generateRunFolders = true")
-    } %>
+    } % >
 
-    <% if(props.useAccessTransformer) {
+            < %
+    if (props.useAccessTransformer) {
         out.print("\n    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')")
-    } %>
+    } % >
 
-    runs {
-        configureEach {
-            workingDirectory project.file('run')
+            runs {
+                configureEach {
+                    workingDirectory project.file('run')
 
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
+                    property 'forge.logging.markers', 'REGISTRIES'
+                    property 'forge.logging.console.level', 'debug'
 
-            mods {
-                mod_id {
-                    source sourceSets.main
+                    mods {
+                        mod_id {
+                            source sourceSets.main
+                        }
+                    }
+                }
+
+                client {
+                    property 'forge.enabledGameTestNamespaces', mod_id
+                }
+
+                server {
+                    property 'forge.enabledGameTestNamespaces', mod_id
+                    args '--nogui'
+                }
+
+                gameTestServer {
+                    property 'forge.enabledGameTestNamespaces', mod_id
+                }
+
+                data {
+                    workingDirectory project.file('run-data')
+
+                    args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
                 }
             }
-        }
-
-        client {
-            property 'forge.enabledGameTestNamespaces', mod_id
-        }
-
-        server {
-            property 'forge.enabledGameTestNamespaces', mod_id
-            args '--nogui'
-        }
-
-        gameTestServer {
-            property 'forge.enabledGameTestNamespaces', mod_id
-        }
-
-        data {
-            workingDirectory project.file('run-data')
-
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-        }
-    }
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
@@ -112,11 +116,11 @@ dependencies {
 
 tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
-            minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
-            forge_version: forge_version, forge_version_range: forge_version_range,
+            minecraft_version   : minecraft_version, minecraft_version_range: minecraft_version_range,
+            forge_version       : forge_version, forge_version_range: forge_version_range,
             loader_version_range: loader_version_range,
-            mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
-            mod_authors: mod_authors, mod_description: mod_description,
+            mod_id              : mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
+            mod_authors         : mod_authors, mod_description: mod_description,
     ]
     inputs.properties replaceProperties
 
@@ -127,21 +131,22 @@ tasks.named('processResources', ProcessResources).configure {
 
 tasks.named('jar', Jar).configure {
     final manifestAttributes = [
-            'Specification-Title'     : mod_id,
-            'Specification-Vendor'    : mod_authors,
-            'Specification-Version'   : '1',
-            'Implementation-Title'    : project.name,
-            'Implementation-Version'  : project.jar.archiveVersion,
-            'Implementation-Vendor'   : mod_authors
+            'Specification-Title'   : mod_id,
+            'Specification-Vendor'  : mod_authors,
+            'Specification-Version' : '1',
+            'Implementation-Title'  : project.name,
+            'Implementation-Version': project.jar.archiveVersion,
+            'Implementation-Vendor' : mod_authors
     ]
 
-    <% if(props.useMixins) {
+            < %
+    if (props.useMixins) {
         out.println("manifestAttributes.put('MixinConfigs', '\${archivesName}.mixins.json')")
-    } %>
+    } % >
 
-    manifest {
-        attributes(manifestAttributes)
-    }
+            manifest {
+                attributes(manifestAttributes)
+            }
 
     // This is the preferred method to reobfuscate your jar file
     finalizedBy 'reobfJar'

@@ -165,10 +165,10 @@ public final class FileUtils {
      * @throws RuntimeException if an error occurs during deletion
      */
     public static void deleteFolder(Path folder) throws RuntimeException {
-        if(Files.notExists(folder))
+        if (Files.notExists(folder))
             return;
 
-        if(!Files.isDirectory(folder)) {
+        if (!Files.isDirectory(folder)) {
             try {
                 Files.deleteIfExists(folder);
             } catch (IOException exception) {
@@ -280,13 +280,13 @@ public final class FileUtils {
             case "mp3", "wav", "flac", "ogg", "m4a", "wma", "aac" -> new FontIcon(FontAwesomeRegular.FILE_AUDIO);
             case "zip", "rar", "7z", "tar", "gz", "xz", "bz2" -> new FontIcon(FontAwesomeRegular.FILE_ARCHIVE);
             case "csv", "tsv", "xls", "xlsx", "ods", "dbf", "sql", "json", "xml", "yaml", "yml" ->
-                    new FontIcon(FontAwesomeRegular.FILE_EXCEL);
+                new FontIcon(FontAwesomeRegular.FILE_EXCEL);
             case "pdf" -> new FontIcon(FontAwesomeRegular.FILE_PDF);
             case "doc", "docx", "odt", "rtf", "txt", "md" -> new FontIcon(FontAwesomeRegular.FILE_WORD);
             case "ppt", "pptx", "odp" -> new FontIcon(FontAwesomeRegular.FILE_POWERPOINT);
             case "html", "htm", "css", "js", "ts", "java", "py", "c", "cpp", "h", "hpp", "cs", "php", "rb", "go", "rs",
                  "kt", "swift", "dart", "groovy", "gradle", "kts", "sh", "bat", "cmd", "ps1" ->
-                    new FontIcon(FontAwesomeRegular.FILE_CODE);
+                new FontIcon(FontAwesomeRegular.FILE_CODE);
             default -> new FontIcon(FontAwesomeRegular.FILE_ALT);
         };
     }
@@ -397,7 +397,7 @@ public final class FileUtils {
     }
 
     public static void copyDirectoryContents(Path src, Path dst, CopyOption... options) {
-        try(Stream<Path> files = Files.walk(src)) {
+        try (Stream<Path> files = Files.walk(src)) {
             files.forEach(source -> {
                 try {
                     Path destination = dst.resolve(src.relativize(source));

@@ -554,10 +554,10 @@ public class Setting<T> {
         private String buildKey() {
             String[] parts = id.split(":");
             if (parts.length != 2)
-               throw new IllegalArgumentException("Setting ID must be in the format 'pluginId:settingId', got: " + id);
+                throw new IllegalArgumentException("Setting ID must be in the format 'pluginId:settingId', got: " + id);
 
             String key = parts[0] + ".settings.";
-            if(category != null && category.id() != null) {
+            if (category != null && category.id() != null) {
                 key += category.id().split(":")[1] + ".";
             }
 
@@ -576,16 +576,16 @@ public class Setting<T> {
                 throw new IllegalStateException("Setting is missing required fields");
 
             String key = buildKey();
-            if(this.title == null) {
+            if (this.title == null) {
                 this.title = key + ".title";
             }
 
-            if(this.description == null) {
+            if (this.description == null) {
                 this.description = key + ".description";
             }
 
             var setting = new Setting<>(id, treePath, codec, type, canBeNull, defaultValue, category,
-                    title, description, hasTitle, hasDescription);
+                title, description, hasTitle, hasDescription);
             for (BiConsumer<T, T> listener : listeners) {
                 setting.addListener(listener);
             }

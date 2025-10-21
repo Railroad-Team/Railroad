@@ -266,8 +266,8 @@ public class LayoutParser {
             if (endIndex != -1) {
                 String subContent = value.substring(0, endIndex + 1).trim();
                 return new Pair<>(
-                        new Token(Token.Type.PROPERTY_OBJECT, property + ":" + subContent, line, column, line, column + colonIndex + endIndex),
-                        value.substring(endIndex + 1).trim());
+                    new Token(Token.Type.PROPERTY_OBJECT, property + ":" + subContent, line, column, line, column + colonIndex + endIndex),
+                    value.substring(endIndex + 1).trim());
             } else {
                 throw new LayoutParseException("Invalid property value: '" + value + "' at line " + line + " column " + column);
             }
@@ -276,31 +276,31 @@ public class LayoutParser {
             if (endIndex != -1) {
                 String subContent = value.substring(0, endIndex + 1).trim();
                 return new Pair<>(
-                        new Token(Token.Type.PROPERTY_ARRAY, property + ":" + subContent, line, column, line, column + colonIndex + endIndex),
-                        value.substring(endIndex + 1).trim());
+                    new Token(Token.Type.PROPERTY_ARRAY, property + ":" + subContent, line, column, line, column + colonIndex + endIndex),
+                    value.substring(endIndex + 1).trim());
             } else {
                 throw new LayoutParseException("Invalid property value: '" + value + "' at line " + line + " column " + column);
             }
         } else if (Character.isDigit(value.charAt(0))) {
             String number = extractNumber(value);
             return new Pair<>(
-                    new Token(Token.Type.PROPERTY_NUMBER, property + ":" + number, line, column, line, column + colonIndex + number.length()),
-                    value.substring(value.indexOf(number) + number.length()).trim());
+                new Token(Token.Type.PROPERTY_NUMBER, property + ":" + number, line, column, line, column + colonIndex + number.length()),
+                value.substring(value.indexOf(number) + number.length()).trim());
         } else if (value.startsWith("\"")) {
             int endIndex = value.indexOf("\"", 1);
             if (endIndex != -1) {
                 String subContent = value.substring(0, endIndex + 1).replace("\\", "\\\\").trim();
                 return new Pair<>(
-                        new Token(Token.Type.PROPERTY_STRING, property + ":" + subContent, line, column, line, column + colonIndex + endIndex),
-                        value.substring(endIndex + 1).trim());
+                    new Token(Token.Type.PROPERTY_STRING, property + ":" + subContent, line, column, line, column + colonIndex + endIndex),
+                    value.substring(endIndex + 1).trim());
             } else {
                 throw new LayoutParseException("Invalid property value: '" + value + "' at line " + line + " column " + column);
             }
         } else if (value.startsWith("true") || value.startsWith("false")) {
             int beginIndex = value.contains(" ") ? value.indexOf(" ") : value.length();
             return new Pair<>(
-                    new Token(Token.Type.PROPERTY_BOOLEAN, property + ":" + value.substring(0, beginIndex), line, column, line, column + colonIndex + beginIndex),
-                    value.substring(beginIndex).trim());
+                new Token(Token.Type.PROPERTY_BOOLEAN, property + ":" + value.substring(0, beginIndex), line, column, line, column + colonIndex + beginIndex),
+                value.substring(beginIndex).trim());
         } else {
             throw new LayoutParseException("Invalid property value: '" + value + "' at line " + line + " column " + column);
         }

@@ -100,10 +100,10 @@ public class PluginManager {
             return;
 
         for (PluginDescriptor descriptor : enabledPlugins.entrySet()
-                .stream()
-                .filter(Map.Entry::getValue)
-                .map(Map.Entry::getKey)
-                .toList()) {
+            .stream()
+            .filter(Map.Entry::getValue)
+            .map(Map.Entry::getKey)
+            .toList()) {
             if (PluginManager.isPluginEnabledForce(descriptor))
                 continue; // Skip if already enabled
 
@@ -173,9 +173,9 @@ public class PluginManager {
             throw new IllegalArgumentException("PluginDescriptor cannot be null");
 
         PluginLoadResult loadResult = LOADED_PLUGINS.stream()
-                .filter(result -> result.descriptor().equals(descriptor))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Plugin not found: " + descriptor.getName()));
+            .filter(result -> result.descriptor().equals(descriptor))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Plugin not found: " + descriptor.getName()));
 
         Path pluginPath = loadResult.pluginPath();
         try {
@@ -224,9 +224,9 @@ public class PluginManager {
             throw new IllegalArgumentException("PluginDescriptor cannot be null");
 
         PluginLoadResult loadResult = LOADED_PLUGINS.stream()
-                .filter(result -> result.descriptor().equals(descriptor))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Plugin not found: " + descriptor.getName()));
+            .filter(result -> result.descriptor().equals(descriptor))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Plugin not found: " + descriptor.getName()));
 
         if (!PluginManager.isPluginEnabledForce(descriptor)) {
             Railroad.LOGGER.warn("Plugin {} is not enabled, cannot disable", descriptor.getName());
@@ -288,10 +288,10 @@ public class PluginManager {
             throw new IllegalArgumentException("PluginDescriptor cannot be null");
 
         return LOADED_PLUGINS.stream()
-                .anyMatch(result ->
-                        result.descriptor().equals(descriptor) &&
-                                result.pluginInstance() != null &&
-                                result.classLoader() != null);
+            .anyMatch(result ->
+                result.descriptor().equals(descriptor) &&
+                    result.pluginInstance() != null &&
+                    result.classLoader() != null);
     }
 
     /**
@@ -374,10 +374,10 @@ public class PluginManager {
             boolean isEnabled = entry.getValue().getAsBoolean();
 
             PluginDescriptor descriptor = LOADED_PLUGINS.stream()
-                    .map(PluginLoadResult::descriptor)
-                    .filter(pd -> pd.getId().equals(pluginId))
-                    .findFirst()
-                    .orElse(null);
+                .map(PluginLoadResult::descriptor)
+                .filter(pd -> pd.getId().equals(pluginId))
+                .findFirst()
+                .orElse(null);
 
             if (descriptor != null) {
                 enabledPlugins.put(descriptor, isEnabled);
@@ -408,9 +408,9 @@ public class PluginManager {
         }
 
         PluginLoadResult loadResult = LOADED_PLUGINS.stream()
-                .filter(result -> result.descriptor().equals(descriptor))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Plugin not found: " + descriptor.getName()));
+            .filter(result -> result.descriptor().equals(descriptor))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Plugin not found: " + descriptor.getName()));
 
         PluginClassLoader classLoader = loadResult.classLoader();
         if (classLoader == null)

@@ -33,7 +33,7 @@ public record ExtractFabricExampleModStep(FilesService files, ZipService zip) im
 
         reporter.info("Moving example mod files...");
         Path extractedDir = projectDir.resolve("fabric-example-mod-" + ctx.get(ProjectContextKeys.EXAMPLE_MOD_BRANCH));
-        if(!files.exists(extractedDir))
+        if (!files.exists(extractedDir))
             throw new IllegalStateException("Extracted example mod directory not found: " + extractedDir);
 
         files.extractDirectoryContents(extractedDir, projectDir, StandardCopyOption.REPLACE_EXISTING);

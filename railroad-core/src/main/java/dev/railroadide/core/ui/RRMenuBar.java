@@ -9,6 +9,7 @@ import javafx.scene.control.SeparatorMenuItem;
 public class RRMenuBar extends MenuBar {
     /**
      * Creates a new RRMenuBar with the specified child menus.
+     *
      * @param children The initial menus to add to the menu bar.
      */
     public RRMenuBar(Menu... children) {
@@ -17,8 +18,9 @@ public class RRMenuBar extends MenuBar {
 
     /**
      * Creates a new RRMenuBar, optionally adding default menus such as Help.
+     *
      * @param addDefaults If true, adds default menus like Help with links to documentation, issues, and Discord.
-     * @param children The initial menus to add to the menu bar.
+     * @param children    The initial menus to add to the menu bar.
      */
     public RRMenuBar(boolean addDefaults, Menu... children) {
         this(children);

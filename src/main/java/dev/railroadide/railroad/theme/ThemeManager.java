@@ -62,7 +62,7 @@ public class ThemeManager {
     }
 
     public static void setTheme(String theme) {
-        if(theme == null) theme = "";
+        if (theme == null) theme = "";
 
         currentTheme = theme;
         reloadAll();
@@ -135,7 +135,7 @@ public class ThemeManager {
             if (url.getProtocol().equals("file")) {
                 try (Stream<Path> walk = Files.walk(Paths.get(url.toURI()), 1)) {
                     walk.filter(Files::isRegularFile)
-                            .forEach(p -> componentCss.add(getAsExternalForm("styles/components/" + p.getFileName().toString())));
+                        .forEach(p -> componentCss.add(getAsExternalForm("styles/components/" + p.getFileName().toString())));
                 }
             } else if (url.getProtocol().equals("jar")) {
                 String jarPath = url.getPath().substring(5, url.getPath().indexOf("!"));

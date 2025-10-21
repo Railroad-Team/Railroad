@@ -42,7 +42,7 @@ public class LocalizedTextField extends TextField {
         currentKey = key;
         LocalizationService service = ServiceLocator.getService(LocalizationService.class);
         service.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                setPromptText(service.get(key)));
+            setPromptText(service.get(key)));
         setPromptText(service.get(currentKey));
     }
 }

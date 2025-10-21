@@ -29,7 +29,8 @@ public class DeleteDialog {
                     Railroad.LOGGER.error("Failed to delete file or directory: {}", path, exception);
                 }
             },
-            () -> {}
+            () -> {
+            }
         );
     }
 }

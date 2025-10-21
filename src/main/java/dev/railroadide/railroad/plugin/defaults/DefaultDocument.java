@@ -45,7 +45,7 @@ public class DefaultDocument implements Document {
 
     @Override
     public long getLineCount() {
-        try(Stream<String> lines = Files.lines(this.path)) {
+        try (Stream<String> lines = Files.lines(this.path)) {
             return lines.count();
         } catch (IOException exception) {
             throw new RuntimeException("Failed to read document content from: " + this.path, exception);
@@ -55,8 +55,8 @@ public class DefaultDocument implements Document {
     @Override
     public String getLanguageId() {
         return this.name.contains(".") ?
-                this.name.substring(this.name.lastIndexOf('.') + 1) :
-                "plaintext";
+            this.name.substring(this.name.lastIndexOf('.') + 1) :
+            "plaintext";
     }
 
     @Override

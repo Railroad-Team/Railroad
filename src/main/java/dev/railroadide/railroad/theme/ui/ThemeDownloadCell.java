@@ -101,12 +101,12 @@ public class ThemeDownloadCell extends ListCell<Theme> {
 
     private void setupPropertyBindings() {
         ObservableValue<String> themeName = themeProperty.map(theme ->
-                WordUtils.capitalize(
-                        theme.getName()
-                                .replace("\"", "")
-                                .replace(".css", "")
-                                .replace("-", " ")
-                ));
+            WordUtils.capitalize(
+                theme.getName()
+                    .replace("\"", "")
+                    .replace(".css", "")
+                    .replace("-", " ")
+            ));
         themeNameLabel.textProperty().bind(themeName);
 
         ObservableValue<String> themeSize = themeProperty.map(theme -> {

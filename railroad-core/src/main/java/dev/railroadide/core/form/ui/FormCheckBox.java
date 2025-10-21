@@ -14,7 +14,7 @@ public class FormCheckBox extends InformativeLabeledHBox<CheckBox> implements Ha
     /**
      * Constructs a new FormCheckBox with the specified label, required state, and initial selection.
      *
-     * @param label the label text for the checkbox
+     * @param label    the label text for the checkbox
      * @param required whether the checkbox is required
      * @param selected the initial selected state of the checkbox
      */

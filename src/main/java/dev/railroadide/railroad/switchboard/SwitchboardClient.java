@@ -15,17 +15,22 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 public record SwitchboardClient(String baseUrl) {
-    public static final TypeToken<List<String>> LIST_OF_STRINGS = new TypeToken<>() {};
-    public static final TypeToken<List<FabricLoaderVersion>> LIST_OF_FABRIC_LOADER_VERSIONS = new TypeToken<>() {};
-    public static final TypeToken<List<ParchmentVersion>> LIST_OF_PARCHMENT_VERSIONS = new TypeToken<>() {};
-    public static final TypeToken<Map<String, List<ParchmentVersion>>> MAP_OF_PARCHMENT_VERSIONS = new TypeToken<>() {};
+    public static final TypeToken<List<String>> LIST_OF_STRINGS = new TypeToken<>() {
+    };
+    public static final TypeToken<List<FabricLoaderVersion>> LIST_OF_FABRIC_LOADER_VERSIONS = new TypeToken<>() {
+    };
+    public static final TypeToken<List<ParchmentVersion>> LIST_OF_PARCHMENT_VERSIONS = new TypeToken<>() {
+    };
+    public static final TypeToken<Map<String, List<ParchmentVersion>>> MAP_OF_PARCHMENT_VERSIONS = new TypeToken<>() {
+    };
 
     public SwitchboardClient(String baseUrl) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
     }
 
     public CompletableFuture<List<MinecraftVersion>> fetchMinecraftVersions() {
-        return getJson("minecraft/versions", new TypeToken<>() {});
+        return getJson("minecraft/versions", new TypeToken<>() {
+        });
     }
 
     private <T> CompletableFuture<T> getJson(String endpoint, TypeToken<T> clazz) {

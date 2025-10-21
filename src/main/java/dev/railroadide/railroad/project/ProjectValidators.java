@@ -172,10 +172,10 @@ public class ProjectValidators {
                 return ValidationResult.warning("railroad.project.creation.issues.error.no_issues");
 
             try (Response response = Railroad.HTTP_CLIENT_NO_FOLLOW.newCall(new Request.Builder()
-                    .url(text)
-                    .head()
-                    .header("User-Agent", USER_AGENT)
-                    .build()).execute()) {
+                .url(text)
+                .head()
+                .header("User-Agent", USER_AGENT)
+                .build()).execute()) {
                 if (response.code() != HttpURLConnection.HTTP_OK)
                     return ValidationResult.warning("railroad.project.creation.issues.error.invalid_url");
             } catch (IOException exception) {
@@ -196,10 +196,10 @@ public class ProjectValidators {
                 return ValidationResult.warning("railroad.project.creation.update_json.error.invalid_url");
 
             try (Response response = Railroad.HTTP_CLIENT_NO_FOLLOW.newCall(new Request.Builder()
-                    .url(text)
-                    .head()
-                    .header("User-Agent", USER_AGENT)
-                    .build()).execute()) {
+                .url(text)
+                .head()
+                .header("User-Agent", USER_AGENT)
+                .build()).execute()) {
                 if (response.code() != HttpURLConnection.HTTP_OK)
                     return ValidationResult.warning("railroad.project.creation.update_json.error.invalid_url");
             } catch (IOException exception) {
@@ -223,10 +223,10 @@ public class ProjectValidators {
                 return ValidationResult.warning("railroad.project.creation." + errorKey + ".error.invalid_url");
 
             try (Response response = Railroad.HTTP_CLIENT_NO_FOLLOW.newCall(new Request.Builder()
-                    .url(text)
-                    .head()
-                    .header("User-Agent", USER_AGENT)
-                    .build()).execute()) {
+                .url(text)
+                .head()
+                .header("User-Agent", USER_AGENT)
+                .build()).execute()) {
                 if (response.code() != HttpURLConnection.HTTP_OK)
                     return ValidationResult.warning("railroad.project.creation." + errorKey + ".error.invalid_url");
             } catch (IOException exception) {

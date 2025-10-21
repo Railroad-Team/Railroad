@@ -193,7 +193,7 @@ public class SettingsHandler {
         Class<?> settingType = setting.getType();
         if (!type.isAssignableFrom(settingType))
             throw new ClassCastException(
-                    "Setting with ID '" + id + "' is of type " + settingType.getName() + ", cannot cast to " + type.getName());
+                "Setting with ID '" + id + "' is of type " + settingType.getName() + ", cannot cast to " + type.getName());
 
         return (Setting<T>) setting;
     }

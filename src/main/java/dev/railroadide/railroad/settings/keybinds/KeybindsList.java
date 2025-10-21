@@ -175,7 +175,7 @@ public class KeybindsList extends TreeView {
         List<String> expandedCategoryIds = new ArrayList<>();
         for (TreeItem<RRHBox> item : root.getChildren()) {
             if (item.isExpanded() &&
-                    item.getValue().getChildren().getFirst() instanceof LocalizedLabel label) {
+                item.getValue().getChildren().getFirst() instanceof LocalizedLabel label) {
                 expandedCategoryIds.add(label.getId());
             }
         }
@@ -186,25 +186,25 @@ public class KeybindsList extends TreeView {
             KeybindCategory category = KeybindHandler.getKeybind(entry.getKey()).getCategory();
 
             TreeItem<RRHBox> categoryItem = root.getChildren().stream()
-                    .filter(item -> item.getValue().getChildren().getFirst() instanceof LocalizedLabel label &&
-                            label.getId().equals(category.id()))
-                    .findFirst()
-                    .orElseGet(() -> {
-                        var categoryHeader = new LocalizedLabel(category.titleKey());
-                        categoryHeader.setId(category.id());
-                        var content = new RRHBox();
-                        content.getChildren().add(categoryHeader);
-                        var newCategoryItem = new TreeItem<>(content);
-                        root.getChildren().add(newCategoryItem);
-                        return newCategoryItem;
-                    });
+                .filter(item -> item.getValue().getChildren().getFirst() instanceof LocalizedLabel label &&
+                    label.getId().equals(category.id()))
+                .findFirst()
+                .orElseGet(() -> {
+                    var categoryHeader = new LocalizedLabel(category.titleKey());
+                    categoryHeader.setId(category.id());
+                    var content = new RRHBox();
+                    content.getChildren().add(categoryHeader);
+                    var newCategoryItem = new TreeItem<>(content);
+                    root.getChildren().add(newCategoryItem);
+                    return newCategoryItem;
+                });
 
             categoryItem.getChildren().add(createKeybindTreeItem(entry.getKey(), entry.getValue()));
         }
 
         for (TreeItem<RRHBox> item : root.getChildren()) {
             if (item.getValue().getChildren().getFirst() instanceof LocalizedLabel label &&
-                    expandedCategoryIds.contains(label.getId())) {
+                expandedCategoryIds.contains(label.getId())) {
                 item.setExpanded(true);
             }
         }

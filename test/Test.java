@@ -105,8 +105,8 @@ public class Test {
         // Method demonstrating lambda expressions and streams
         public void processNumbers(List<Integer> numbers) {
             List<Integer> squaredNumbers = numbers.stream()
-                    .map(n -> n * n)
-                    .collect(Collectors.toList());
+                .map(n -> n * n)
+                .collect(Collectors.toList());
             System.out.println("Squared Numbers: " + squaredNumbers);
         }
 
