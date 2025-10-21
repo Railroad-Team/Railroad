@@ -1,7 +1,7 @@
 
 # Railroad IDE
 
-![Railroad IDE Logo]("/src/main/resources/assets/railroad/images/logo.png")
+![Railroad IDE Logo](/src/main/resources/assets/railroad/images/logo.png)
 
 ![Static Badge](https://img.shields.io/badge/java-21-orange?logo=openjdk&label=Java)
 ![Static Badge](https://img.shields.io/badge/JavaFX-grey?logo=openjdk)
