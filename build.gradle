@@ -3,16 +3,21 @@ plugins {
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.1.0'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'checkstyle'
+    id 'org.ec4j.editorconfig' version '0.1.0'
 }
 
-group 'io.github'
-version '1.0-SNAPSHOT'
+group 'dev.railroadide'
+version '1.0.0'
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven { url 'https://repo.gradle.org/gradle/libs-releases' }
     maven { url 'https://github.com/javaterminal/terminalfx/raw/master/releases' }
     maven { url 'https://packages.jetbrains.team/maven/p/ij/intellij-dependencies' }
+    maven { url "https://maven.railroadide.dev/releases" }
+    maven { url 'https://jitpack.io' }
 }
 
 java {
@@ -25,7 +30,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 application {
-    mainClass = 'io.github.railroad.Startup'
+    mainClass = 'dev.railroadide.railroad.Railroad'
 }
 
 javafx {
@@ -33,9 +38,21 @@ javafx {
     modules = ['javafx.controls', 'javafx.swing', 'javafx.web', 'javafx.fxml', 'javafx.graphics', 'javafx.media']
 }
 
+checkstyle {
+    toolVersion = '10.20.2'
+    configFile = file('checkstyle.xml')
+}
+
+tasks.withType(Checkstyle).configureEach {
+    reports {
+        xml.required = false
+        html.required = true
+    }
+}
+
 dependencies {
-    implementation 'org.kordamp.ikonli:ikonli-javafx:12.3.1'
-    implementation 'org.kordamp.ikonli:ikonli-fontawesome5-pack:12.3.1'
+    implementation 'org.kordamp.ikonli:ikonli-javafx:12.4.0'
+    implementation 'org.kordamp.ikonli:ikonli-fontawesome6-pack:12.4.0'
     implementation 'org.jetbrains:annotations:24.1.0'
     implementation 'com.google.code.gson:gson:2.10'
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.14'
@@ -56,17 +73,53 @@ dependencies {
     implementation 'org.eclipse.jdt:org.eclipse.jdt.core:3.41.0'
     implementation 'com.github.erosb:everit-json-schema:1.14.6'
     implementation 'org.apache.commons:commons-compress:1.27.1'
+    implementation 'net.java.dev.jna:jna:5.16.0'
+    implementation 'org.xerial:sqlite-jdbc:3.50.3.0'
+
+    implementation 'com.google.guava:guava:33.4.8-jre'
+    implementation "org.apache.maven:maven-core:3.9.10"
+    implementation "org.apache.maven:maven-project:3.0-alpha-2"
+    implementation "org.apache.maven:maven-settings:3.9.10"
+    implementation "org.apache.maven:maven-settings-builder:3.9.10"
+    implementation "org.apache.maven:maven-repository-metadata:3.9.10"
+    implementation "org.codehaus.plexus:plexus-container-default:2.1.0"
+
+    implementation 'dev.railroadide:java-version-extractor-plugin:1.0.0'
+    implementation 'dev.railroadide:fabric-extractor-plugin:1.0.0'
+
+    implementation 'io.get-coursier:interface:1.0.29-M1'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r'
+
+    implementation("dev.railroadide:nsmenufx:1.0.0") {
+        exclude group: 'net.java.dev.jna', module: 'jna'
+    }
+
+    implementation 'dev.railroadide:RailroadLogger:1.0.3'
+    implementation 'dev.railroadide:RailroadPluginAPI:1.0.3'
+    implementation project(':railroad-core')
 
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
     compileOnly 'org.projectlombok:lombok:1.18.32'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+run {
+    def loggingConfig = file("src/jpackage/logging.properties").absolutePath
+    jvmArgs += "-Djava.util.logging.config.file=$loggingConfig"
 }
 
 jar {
     manifest {
         attributes(
                 "Implementation-Title": "Railroad",
-                "Implementation-Version": "1.0-alpha",
-                "Main-Class": "io.github.railroad.Startup"
+                "Implementation-Version": "1.0-alpha", //TODO use a variable?
+                "Main-Class": "dev.railroadide.railroad.Railroad"
         )
     }
 }
@@ -83,8 +136,17 @@ tasks.register('jpackageImage', Exec) {
 
     def inputDir = file("${layout.buildDirectory.get()}/libs")
     def outputDir = file("${layout.buildDirectory.get()}/jpackage")
-    if(outputDir.exists()) {
-        inputDir.deleteDir()
+
+    if (outputDir.exists()) {
+        outputDir.deleteDir()
+    }
+
+    // Copy logging.properties to inputDir so jpackage sees it
+    doFirst {
+        copy {
+            from "src/jpackage/logging.properties"
+            into inputDir
+        }
     }
 
     commandLine 'jpackage',
@@ -92,9 +154,10 @@ tasks.register('jpackageImage', Exec) {
             '--dest', outputDir,
             '--name', 'Railroad',
             '--main-jar', shadowJar.archiveFileName.get(),
-            '--main-class', 'io.github.railroad.Startup',
+            '--main-class', 'dev.railroadide.railroad.RailroadLauncher',
             '--type', 'app-image',
-            '--java-options', '-Xmx2048m'
+            '--java-options', '-Xmx2048m',
+            '--java-options', '-Djava.util.logging.config.file=$APPDIR/logging.properties'
 }
 
 tasks.register('jpackageInstaller', Exec) {
@@ -105,11 +168,26 @@ tasks.register('jpackageInstaller', Exec) {
         outputDir.deleteDir()
     }
 
+    def imageDir, imageType;
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        imageDir = 'Railroad'
+        imageType = 'msi'
+    } else if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+        imageDir = 'Railroad.app'
+        imageType = 'dmg'
+    } else if (System.getProperty('os.name').toLowerCase().contains('linux')) {
+        imageDir = 'Railroad'
+        imageType = 'deb'
+    } else {
+        throw new GradleException("Unsupported OS for jpackage: ${System.getProperty('os.name')}")
+    }
+
     commandLine 'jpackage',
-            '--app-image', "${outputDir}/Railroad",
+            '--app-image', "${outputDir}/${imageDir}",
+            '--type', "${imageType}",
             '--dest', outputDir,
             '--name', 'Railroad',
-            '--app-version', '1.0.0',
+            '--app-version', version,
             '--vendor', 'Railroad Team',
             '--description', 'Railroad Application'
 

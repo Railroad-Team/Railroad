@@ -1,0 +1,10 @@
+/* Theme settings section styling */
+.theme-settings-section {
+    -fx-background-color: transparent;
+}
+
+.theme-settings-section .separator {
+    -fx-background-color: -color-border-subtle;
+    -fx-min-height: 1px;
+    -fx-max-height: 1px;
+}

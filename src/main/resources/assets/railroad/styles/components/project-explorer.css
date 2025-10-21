@@ -1,0 +1,49 @@
+/* Project explorer styles */
+.project-explorer-selected-cell {
+    -fx-background-color: -color-accent-4;
+}
+
+/* Modern Project Explorer Styles */
+.rr-project-explorer {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 1 0 0;
+}
+
+.project-explorer-header {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 2, 0, 0, 1);
+}
+
+.project-icon {
+    -fx-fill: -color-accent-emphasis;
+    -fx-opacity: 0.9;
+}
+
+.project-name {
+    -fx-font-weight: 600;
+    -fx-font-size: 14px;
+    -fx-text-fill: -color-fg-default;
+}
+
+/* Project Explorer Header Buttons - Extra Small */
+.project-explorer-button {
+    -fx-min-width: 24px !important;
+    -fx-min-height: 24px !important;
+    -fx-pref-width: 24px !important;
+    -fx-pref-height: 24px !important;
+    -fx-max-width: 24px !important;
+    -fx-max-height: 24px !important;
+    -fx-padding: 4px !important;
+}
+
+.project-explorer-button .ikonli-font-icon {
+    -fx-icon-size: 12px !important;
+}
+
+/* Project explorer drag target styling */
+.project-explorer-drag-target {
+    -fx-background-color: -color-accent-4;
+}

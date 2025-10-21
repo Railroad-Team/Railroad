@@ -1,0 +1,59 @@
+/* ===== MODERN TEXT AREA ===== */
+.rr-text-area {
+    -fx-background-color: -color-bg-subtle;
+    -fx-text-fill: -color-fg-default;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-font-size: 14px;
+    -fx-min-height: 80px;
+    -fx-transition: all 0.2s ease-in-out;
+    -fx-padding: 8px 12px;
+    -fx-caret-color: -color-accent-emphasis;
+}
+
+.rr-text-area:focused {
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 2px;
+    -fx-background-color: -color-bg-default;
+    -fx-effect: dropshadow(gaussian, rgba(94, 129, 172, 0.2), 4, 0, 0, 0);
+}
+
+.rr-text-area:hover {
+    -fx-border-color: -color-border-default;
+}
+
+.rr-text-area:disabled {
+    -fx-background-color: -color-bg-inset;
+    -fx-text-fill: -color-fg-muted;
+    -fx-opacity: 0.6;
+}
+
+.rr-text-area .content {
+    -fx-background-color: transparent;
+    -fx-background-radius: 6px;
+    -fx-padding: 0;
+}
+
+.rr-text-area .scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background-radius: 6px;
+}
+
+.rr-text-area .scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.rr-text-area .scroll-pane .scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.rr-text-area .scroll-pane .scroll-bar .thumb {
+    -fx-background-color: -color-border-default;
+    -fx-background-radius: 4px;
+}
+
+.rr-text-area .scroll-pane .scroll-bar .thumb:hover {
+    -fx-background-color: -color-border-emphasis;
+}

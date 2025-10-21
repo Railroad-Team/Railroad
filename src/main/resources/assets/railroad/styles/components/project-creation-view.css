@@ -1,0 +1,66 @@
+.rr-bg {
+    -fx-background-color: transparent;
+}
+
+.rr-gradient {
+    -fx-background-radius: 0;
+    -fx-background-insets: 0;
+    -fx-background-color: linear-gradient(to bottom right, #121826 0%, #1d2433 45%, #0f1629 100%);
+}
+
+.rr-glass {
+    -fx-background-color: rgba(255, 255, 255, 0.03);
+}
+
+.rr-card {
+    -fx-background-color: rgba(255, 255, 255, 0.06);
+    -fx-background-radius: 18;
+    -fx-padding: 24;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 24, 0.25, 0, 12);
+    -fx-border-color: rgba(255, 255, 255, 0.08);
+    -fx-border-radius: 18;
+}
+
+.rr-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: 700;
+    -fx-text-fill: white;
+}
+
+.rr-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: rgba(255, 255, 255, 0.75);
+}
+
+.rr-progress-percent {
+    -fx-font-size: 28px;
+    -fx-font-weight: 700;
+    -fx-text-fill: white;
+}
+
+.rr-chip {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+    -fx-text-fill: rgba(255, 255, 255, 0.95);
+    -fx-background-radius: 9999;
+    -fx-border-radius: 9999;
+    -fx-border-color: rgba(255, 255, 255, 0.12);
+}
+
+.rr-log-area {
+    -fx-control-inner-background: rgba(0, 0, 0, 0.25);
+    -fx-text-fill: rgba(255, 255, 255, 0.92);
+    -fx-highlight-fill: rgba(255, 255, 255, 0.2);
+    -fx-highlight-text-fill: white;
+    -fx-background-insets: 0;
+    -fx-padding: 10;
+}
+
+.rr-logs-pane > .title {
+    -fx-background-color: transparent;
+    -fx-text-fill: rgba(255, 255, 255, 0.85);
+    -fx-font-weight: 600;
+}
+
+.rr-log-scroll {
+    -fx-background-color: transparent;
+}

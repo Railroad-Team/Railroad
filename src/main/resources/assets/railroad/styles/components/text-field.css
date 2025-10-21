@@ -1,0 +1,92 @@
+/* ===== MODERN TEXT FIELD ===== */
+.rr-text-field {
+    -fx-background-color: -color-bg-subtle;
+    -fx-text-fill: -color-fg-default;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-font-size: 14px;
+    -fx-min-height: 36px;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.rr-text-field:focused {
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 2px;
+    -fx-background-color: -color-bg-default;
+    -fx-effect: dropshadow(gaussian, rgba(94, 129, 172, 0.2), 4, 0, 0, 0);
+}
+
+.rr-text-field:hover {
+    -fx-border-color: -color-border-default;
+}
+
+.rr-text-field:disabled {
+    -fx-background-color: -color-bg-inset;
+    -fx-text-fill: -color-fg-muted;
+    -fx-opacity: 0.6;
+}
+
+/* Text field sizes */
+.rr-text-field.small {
+    -fx-min-height: 28px;
+    -fx-font-size: 12px;
+    -fx-padding: 6px 10px;
+}
+
+.rr-text-field.large {
+    -fx-min-height: 44px;
+    -fx-font-size: 16px;
+    -fx-padding: 12px 16px;
+}
+
+/* Text field states */
+.rr-text-field.success {
+    -fx-border-color: -color-success-emphasis;
+}
+
+.rr-text-field.success:focused {
+    -fx-border-color: -color-success-emphasis;
+    -fx-effect: dropshadow(gaussian, rgba(80, 143, 142, 0.2), 4, 0, 0, 0);
+}
+
+.rr-text-field.error {
+    -fx-border-color: -color-danger-emphasis;
+}
+
+.rr-text-field.error:focused {
+    -fx-border-color: -color-danger-emphasis;
+    -fx-effect: dropshadow(gaussian, rgba(191, 97, 106, 0.2), 4, 0, 0, 0);
+}
+
+.rr-text-field.warning {
+    -fx-border-color: -color-warning-emphasis;
+}
+
+.rr-text-field.warning:focused {
+    -fx-border-color: -color-warning-emphasis;
+    -fx-effect: dropshadow(gaussian, rgba(187, 122, 101, 0.2), 4, 0, 0, 0);
+}
+
+.rr-text-field.rounded {
+    -fx-background-radius: 20px;
+    -fx-border-radius: 20px;
+}
+
+.rr-text-field.outlined {
+    -fx-background-color: transparent;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1px;
+}
+
+/* Icon styling */
+.rr-text-field .prefix-icon,
+.rr-text-field .suffix-icon {
+    -fx-icon-color: -color-fg-muted;
+}
+
+.rr-text-field:focused .prefix-icon,
+.rr-text-field:focused .suffix-icon {
+    -fx-icon-color: -color-accent-emphasis;
+}

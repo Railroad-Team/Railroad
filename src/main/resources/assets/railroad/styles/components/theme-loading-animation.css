@@ -1,0 +1,14 @@
+/* Loading animation */
+.loading-spinner {
+    -fx-rotate: 0;
+    -fx-animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        -fx-rotate: 0;
+    }
+    to {
+        -fx-rotate: 360;
+    }
+}

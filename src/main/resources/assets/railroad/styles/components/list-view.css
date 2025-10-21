@@ -1,0 +1,134 @@
+/* ===== MODERN LIST VIEW ===== */
+.rr-list-view {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-insets: 0;
+}
+
+.rr-list-view.bordered {
+    -fx-border-width: 1.5px;
+    -fx-border-color: -color-border-subtle;
+    -fx-background-insets: 0;
+    -fx-border-radius: 8px;
+    -fx-border-insets: 0;
+}
+
+.rr-list-view:hover {
+    -fx-border-color: -color-border-default;
+}
+
+.rr-list-view:focused {
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 2px;
+}
+
+.rr-list-view .list-cell {
+    -fx-padding: 8px 12px;
+    -fx-border-width: 0;
+    -fx-transition: all 0.15s ease-in-out;
+}
+
+.rr-list-view .list-cell:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.rr-list-view .list-cell:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-accent-emphasis;
+}
+
+.rr-list-view .list-cell:selected:hover {
+    -fx-background-color: -color-accent-muted;
+}
+
+/* List view variants */
+.rr-list-view.bordered .list-cell {
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.rr-list-view.bordered .list-cell:last {
+    -fx-border-width: 0;
+}
+
+.rr-list-view.striped .list-cell:filled:odd {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.rr-list-view.dense .list-cell {
+    -fx-padding: 4px 8px;
+}
+
+.rr-list-view.edge-to-edge {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+
+/* List view sizes */
+.rr-list-view.small .list-cell {
+    -fx-padding: 4px 8px;
+    -fx-font-size: 12px;
+}
+
+.rr-list-view.large .list-cell {
+    -fx-padding: 12px 16px;
+    -fx-font-size: 16px;
+}
+
+.rr-list-view .list-cell.compact {
+    -fx-padding: 4px 8px;
+    -fx-font-size: 13px;
+    -fx-min-height: 32px;
+    -fx-background-radius: 6px;
+}
+
+/* Remove hover/selected background for empty cells */
+.rr-list-view .list-cell:empty:hover,
+.rr-list-view .list-cell:empty:selected {
+    -fx-background-color: transparent;
+}
+
+.rr-list-view.hide-empty-cells .list-cell:empty {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-min-height: 0;
+    -fx-max-height: 0;
+    -fx-border-width: 0;
+}
+
+.account-list-cell-container {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px;
+    -fx-cursor: hand;
+}
+
+.account-list-cell-container.selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(94, 129, 172, 0.2), 6, 0, 0, 3);
+}
+
+.account-list-cell-icon {
+    -mfx-color: -color-fg-emphasis;
+}
+
+.account-list-cell-title-container {
+    -fx-background-color: transparent;
+}
+
+.account-list-cell-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.account-list-cell-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-muted;
+}

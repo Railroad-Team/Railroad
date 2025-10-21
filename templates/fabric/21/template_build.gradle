@@ -1,6 +1,6 @@
 // fileName: defaultName
 plugins {
-    id 'fabric-loom' version '1.7-SNAPSHOT'
+    id 'fabric-loom' version '1.11-SNAPSHOT'
     id 'maven-publish'
 }
 
@@ -37,7 +37,7 @@ loom {
     }
 
     <% if(props.useAccessWidener) {
-        out.print("\n    accessWidenerPath = file(\"src/main/resources/\${project.archives_base_name}.accesswidener\")")
+        out.print("\n    accessWidenerPath = file(\"src/main/resources/${props.accessWidenerPath}\")")
     } %>
 }
 

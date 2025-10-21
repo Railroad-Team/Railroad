@@ -1,0 +1,110 @@
+#settings-search-bar {
+    -fx-padding: 10 16 10 16;
+    -fx-background-radius: 6;
+    -fx-font-size: 15px;
+}
+
+.settings-row {
+    -fx-padding: 12 0 12 0;
+}
+
+.settings-group-divider {
+    -fx-background-color: -color-border-default;
+    -fx-min-height: 1px;
+    -fx-max-height: 1px;
+}
+
+/* Ensure button bar is always bottom-aligned if needed */
+.settings-button-bar {
+    -fx-alignment: center-right;
+    -fx-padding: 24 0 0 0;
+}
+
+.rr-settings-border-container {
+    -fx-background-color: -color-bg-elevated;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-padding: 24;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.06), 12, 0.18, 0, 6);
+}
+
+/* Settings styles */
+.settings-path-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.settings-left-vbox {
+    -fx-background-color: transparent;
+}
+
+.settings-right-vbox {
+    -fx-background-color: transparent;
+}
+
+.settings-left-pane {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 16px;
+    -fx-background-radius: 16px;
+    -fx-padding: 16 24 16 16;
+    -fx-spacing: 14px;
+}
+
+.settings-right-pane {
+    -fx-background-color: transparent;
+    -fx-spacing: 14px;
+}
+
+.settings-content-box {
+    -fx-spacing: 24px;
+    -fx-padding: 0 0 0 32;
+}
+
+.settings-content-stack {
+    -fx-background-color: transparent;
+    -fx-spacing: 24px;
+}
+
+.settings-category-tree {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.settings-sidebar-separator {
+    -fx-background-color: -color-border-default;
+}
+
+.settings-path-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.settings-split-pane {
+    -fx-divider-width: 8px;
+    -fx-padding: 0;
+}
+
+.settings-divider {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-pref-width: 0;
+    -fx-max-width: 0;
+    -fx-min-width: 0;
+}
+
+/* Github styles */
+.github-alias-label {
+    -fx-font-size: 16px;
+    -fx-text-fill: -color-fg-default;
+}
+
+.github-access-token-label {
+    -fx-font-size: 16px;
+    -fx-text-fill: -color-fg-default;
+}

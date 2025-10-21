@@ -1,6 +1,10 @@
-<img src="/src/main/resources/assets/railroad/images/logo.png" width="128" height="128" alt="The Railroad IDE logo"/>
 
 # Railroad IDE
+
+![Railroad IDE Logo](/src/main/resources/assets/railroad/images/logo.png)
+
+![Static Badge](https://img.shields.io/badge/java-21-orange?logo=openjdk&label=Java)
+![Static Badge](https://img.shields.io/badge/JavaFX-grey?logo=openjdk)
 
 Railroad IDE is an IDE that is made specifically for Minecraft mod development using Forge and Fabric. It aims to make the mod development experience better.
 
@@ -12,7 +16,7 @@ This project was started by [TurtyWurty](https://www.youtube.com/TurtyWurty).
 
 ### Is there a Discord server I can join?
 
-There is not a dedicated Discord server for Railroad IDE, but there is a section in TurtyWurty's server dedicated to it. The server is available [here](https://discord.turtywurty.dev).
+There is not a dedicated Discord server for Railroad IDE, but there is a section in [TurtyWurty's server](https://discord.turtywurty.dev) dedicated to it.
 
 ### Is Railroad IDE complete?
 
@@ -20,11 +24,11 @@ Railroad IDE is not complete and is still in development.
 
 ### Is there a website available?
 
-There is no website available.
+[Yes!](https://railroadide.dev)
 
 ### Where do I report bugs?
 
-To report a bug go [here](https://github.com/Railroad-Team/Railroad/issues). Use the bug report form and fill it out.
+To report a bug, create an [issue](https://github.com/Railroad-Team/Railroad/issues). Use the bug report form and fill it out.
 
 ### How do I contribute?
 

@@ -1,0 +1,21 @@
+/* Theme download pane styling */
+.theme-download-pane {
+    -fx-background-color: -color-bg-default;
+}
+
+.theme-download-pane .list-view {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.theme-download-pane .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 4px 0px 4px 0px;
+}
+
+.theme-download-pane .list-cell:empty {
+    -fx-padding: 0px;
+    -fx-background-color: transparent;
+    -fx-min-height: 0px;
+    -fx-max-height: 0px;
+}

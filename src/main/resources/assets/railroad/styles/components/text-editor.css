@@ -1,0 +1,68 @@
+/* Text editor font size classes */
+.text-editor-font-size-6 {
+    -fx-font-size: 6px;
+}
+
+.text-editor-font-size-8 {
+    -fx-font-size: 8px;
+}
+
+.text-editor-font-size-10 {
+    -fx-font-size: 10px;
+}
+
+.text-editor-font-size-12 {
+    -fx-font-size: 12px;
+}
+
+.text-editor-font-size-14 {
+    -fx-font-size: 14px;
+}
+
+.text-editor-font-size-16 {
+    -fx-font-size: 16px;
+}
+
+.text-editor-font-size-18 {
+    -fx-font-size: 18px;
+}
+
+.text-editor-font-size-20 {
+    -fx-font-size: 20px;
+}
+
+.text-editor-font-size-24 {
+    -fx-font-size: 24px;
+}
+
+.text-editor-font-size-26 {
+    -fx-font-size: 26px;
+}
+
+.text-editor-font-size-28 {
+    -fx-font-size: 28px;
+}
+
+.text-editor-font-size-30 {
+    -fx-font-size: 30px;
+}
+
+.text-editor-font-size-36 {
+    -fx-font-size: 36px;
+}
+
+.text-editor-font-size-40 {
+    -fx-font-size: 40px;
+}
+
+.text-editor-font-size-48 {
+    -fx-font-size: 48px;
+}
+
+.text-editor-font-size-56 {
+    -fx-font-size: 56px;
+}
+
+.text-editor-font-size-60 {
+    -fx-font-size: 60px;
+}

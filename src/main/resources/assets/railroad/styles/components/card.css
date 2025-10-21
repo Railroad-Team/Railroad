@@ -1,0 +1,50 @@
+.rr-card.interactive {
+    -fx-cursor: hand;
+}
+
+.rr-card.interactive:hover {
+    -fx-background-color: -color-bg-inset;
+    -fx-border-color: -color-accent-emphasis;
+}
+
+.rr-card.highlighted {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-emphasis;
+}
+
+.rr-card.selected {
+    -fx-background-color: -color-accent-muted;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 2px;
+}
+
+/* Compact style for cards and list cells */
+.rr-card.compact {
+    -fx-padding: 8px 12px;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+}
+
+/* Enhanced card styles for welcome pane */
+.rr-card {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 10, 0, 0, 2);
+    -fx-transition: all 0.18s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.rr-card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 15, 0, 0, 4);
+    -fx-border-color: -color-border-default;
+}
+
+.rr-card.elevated-1 {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 12, 0.2, 0, 2);
+}
+
+.rr-card.elevated-2 {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 12, 0.2, 0, 2);
+}

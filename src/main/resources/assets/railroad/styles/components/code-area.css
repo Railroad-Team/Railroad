@@ -1,0 +1,161 @@
+.apply-font {
+    -fx-font-family: "JetBrains Mono";
+}
+
+.code-area {
+    -fx-background-color: -color-bg-overlay;
+}
+
+.code-area .paragraph-box .paragraph-text, .paragraph-text .text {
+    -fx-font-family: "JetBrains Mono";
+    -fx-font-weight: normal;
+    -fx-padding: 0 0 0 3;
+    -fx-tab-size: 10px;
+}
+
+.code-area .lineno {
+    -fx-font-family: "Fira Code";
+    -fx-background-radius: 0;
+    -fx-box-border: none;
+
+    -fx-background-color: -color-bg-inset;
+    -fx-text-fill: -color-fg-subtle;
+
+    -fx-padding: 0 35 0 5;
+}
+
+.code-area .error-lineno {
+    -fx-text-fill: -color-danger-emphasis;
+    -fx-font-weight: bold;
+    -fx-background-color: -color-danger-emphasis;
+}
+
+.code-area .text {
+    -fx-fill: -color-fg-default;
+}
+
+.styled-text-area .selection {
+    -fx-fill: -color-neutral-emphasis;
+    -fx-border-width: 0;
+}
+
+.caret {
+    -fx-stroke: -color-fg-default;
+}
+
+.paragraph-box:has-caret, .has-caret {
+    -fx-background-color: -color-base-8;
+}
+
+.code-area .class {
+    -fx-fill: #ff2e88;
+}
+
+.code-area .package, .code-area .import {
+    -fx-fill: #8c55ff;
+}
+
+.code-area .name {
+    -fx-fill: #8bffea;
+}
+
+.code-area .comment {
+    -fx-fill: #5bb094;
+}
+
+.code-area .annotation {
+    -fx-fill: #5a9a0f;
+}
+
+.code-area .array {
+    -fx-fill: #ff8c00;
+}
+
+.code-area .keyword {
+    -fx-fill: #a50fce;
+}
+
+.code-area .operator {
+    -fx-fill: #57b949;
+}
+
+.code-area .block {
+    -fx-fill: #ffdc2e;
+}
+
+.code-area .string {
+    -fx-fill: #2effaf;
+}
+
+.code-area .constructor {
+    -fx-fill: #ff8c2e;
+}
+
+.code-area .enum {
+    -fx-fill: #2effee;
+}
+
+.code-area .expression {
+    -fx-fill: #692eff;
+}
+
+.code-area .field {
+    -fx-fill: #cb2eff;
+}
+
+.code-area .label {
+    -fx-fill: #2eb6ff;
+}
+
+.code-area .object {
+    -fx-fill: #ff2e2e;
+}
+
+.code-area .parameter {
+    -fx-fill: #2eff3f;
+}
+
+.code-area .type {
+    -fx-fill: #ffc42e;
+}
+
+.code-area .record {
+    -fx-fill: #150fce;
+}
+
+.code-area .variable {
+    -fx-fill: #d9ff2e;
+}
+
+.code-area .lambda {
+    -fx-fill: #ff2e8c;
+}
+
+.code-area .module {
+    -fx-fill: #2e58ff;
+}
+
+.code-area .modifier {
+    -fx-fill: #d000ff;
+}
+
+.code-area .number {
+    -fx-fill: #ff2e2e;
+}
+
+.code-area .error {
+    -rtfx-underline-color: -color-danger-emphasis;
+    -rtfx-underline-width: 1;
+    -rtfx-underline-wave-radius: 1.5;
+}
+
+.code-area .bracket-highlighter {
+    -rtfx-border-color: red;
+    -rtfx-border-width: 0 0 0 1;
+    -rtfx-border-style: solid;
+}
+
+.diagnostic-pane {
+    -fx-background-color: -color-bg-overlay;
+    -fx-border-width: 0 0 1 0;
+}

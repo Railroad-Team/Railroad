@@ -5,7 +5,8 @@ build/
 !**/src/test/**/build/
 
 ### Logs ###
-log
+logs/
+log/
 
 ### IntelliJ IDEA ###
 .idea/

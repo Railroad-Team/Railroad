@@ -1,0 +1,34 @@
+initscript {
+    repositories {
+        mavenLocal()
+    }
+    dependencies {
+        classpath "dev.railroadide.railroad:fabricextractor:1.0.0"
+    }
+}
+
+def capturedLoomVersion = null
+
+// 1) During settings evaluation, intercept plugin resolution
+gradle.settingsEvaluated { settings ->
+    settings.pluginManagement {
+        resolutionStrategy {
+            eachPlugin { details ->
+                if (details.requested.id.id == 'fabric-loom') {
+                    capturedLoomVersion = details.requested.version
+                }
+            }
+        }
+    }
+}
+
+// 2) Once all projects are loaded, stamp that version into each project
+gradle.projectsLoaded { rootProject ->
+    rootProject.allprojects { project ->
+        if (capturedLoomVersion) {
+            project.extensions.extraProperties.set('fabricLoomVersion', capturedLoomVersion)
+        }
+        // Apply your extractor plugin (on the initscript classpath)
+        project.plugins.apply dev.railroadide.railroad.fabricextractor.FabricExtractorPlugin
+    }
+}

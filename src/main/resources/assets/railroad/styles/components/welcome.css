@@ -1,0 +1,255 @@
+/* Welcome pane styles */
+.welcome-app-name {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.welcome-app-version {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.welcome-nav-item {
+    -fx-font-size: 15px;
+}
+
+.welcome-message {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-fill: -color-fg-default;
+}
+
+.welcome-subtitle {
+    -fx-font-size: 14px;
+    -fx-fill: -color-fg-muted;
+}
+
+.welcome-projects-message {
+    -fx-font-size: 18px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.welcome-right-pane {
+    -fx-background-color: transparent;
+}
+
+/* Project type pane styles */
+.project-type-search-field {
+    -fx-font-size: 15px;
+}
+
+.project-types-scroller {
+    -fx-background-color: transparent;
+}
+
+/* Project list cell styles */
+.project-list-card {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 5, 0.1, 0, 1);
+}
+
+.project-list-name {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.project-list-path {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-weight: 400;
+}
+
+.project-list-last-opened {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-style: italic;
+    -fx-font-weight: 400;
+}
+
+.project-list-ellipsis-button {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1px;
+    -fx-background-radius: 50%;
+    -fx-border-radius: 50%;
+    -fx-padding: 0;
+    -fx-alignment: center;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 5, 0.1, 0, 1);
+    -fx-min-width: 32px;
+    -fx-min-height: 32px;
+    -fx-max-width: 32px;
+    -fx-max-height: 32px;
+    -fx-font-size: 16px;
+    -fx-transition: all 0.18s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.project-list-ellipsis-button:hover {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.10), 4, 0.15, 0, 2);
+}
+
+.project-list-ellipsis-button .ikonli-font-icon {
+    -fx-icon-size: 16px;
+    -fx-fill: -color-fg-default;
+    -fx-alignment: center;
+}
+
+/* Import project list cell styles */
+.import-project-card {
+    -fx-background-color: -color-card-bg;
+}
+
+.import-project-card-selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 12, 0.2, 0, 2);
+}
+
+.import-project-card-selected:hover {
+    -fx-background-color: -color-accent-muted;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 16, 0.25, 0, 4);
+}
+
+.import-project-content {
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.import-project-name {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.import-project-url {
+    -fx-font-size: 13px;
+    -fx-text-fill: #808080;
+}
+
+.features-icon {
+    -fx-text-fill: -color-accent-9;
+}
+
+.getting-started-icon {
+    -fx-text-fill: -color-accent-9;
+}
+
+.features-grid {
+    -fx-padding: 8 0;
+}
+
+.feature-item {
+    -fx-padding: 12 16;
+    -fx-background-radius: 8;
+    -fx-background-color: transparent;
+    -fx-border-radius: 8;
+    -fx-border-color: transparent;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+}
+
+.feature-item:hover {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+}
+
+.feature-icon {
+    -fx-text-fill: -color-accent-9;
+    -fx-opacity: 0.8;
+}
+
+.feature-text {
+    -fx-font-size: 16px;
+    -fx-text-fill: -color-fg-default;
+    -fx-font-weight: normal;
+}
+
+/* Welcome ScrollPane styles */
+.welcome-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+.welcome-scroll-pane .viewport {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.welcome-scroll-pane .scroll-bar {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.welcome-scroll-pane .scroll-bar .thumb {
+    -fx-background-color: -color-border-subtle;
+    -fx-background-radius: 4;
+    -fx-background-insets: 2;
+}
+
+.welcome-scroll-pane .scroll-bar .thumb:hover {
+    -fx-background-color: -color-border-default;
+}
+
+.welcome-scroll-pane .scroll-bar .track {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.welcome-scroll-pane .scroll-bar .increment-button,
+.welcome-scroll-pane .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+    -fx-shape: "";
+}
+
+.welcome-scroll-pane .scroll-bar .increment-arrow,
+.welcome-scroll-pane .scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-shape: "";
+}
+
+/* Welcome pane card styling */
+.welcome-card {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 8, 0.15, 0, 2);
+}
+
+/* Project type cell styling */
+.project-type-cell {
+    /* Default state - no special styling */
+}
+
+.project-type-cell.selected {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-text-fill: white;
+}
+
+.welcome-left-pane, .welcome-left-pane .Pane, .project-type-pane, .project-type-pane .Pane, .settings-categories-pane, .settings-categories-pane .Pane {
+    -fx-background-color: -color-bg-inset;
+}
+
+.welcome-left-pane-list, .welcome-projects-list, .project-type-list, .settings-categories-list {
+    -fx-background-color: -color-bg-inset;
+    -fx-border-width: 0;
+}
+
+/* Remove border/background for selected sidebar items in the sidebar */
+.welcome-left-pane-list .list-cell:selected,
+.rr-navigation-item.selected {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: transparent;
+    -fx-effect: none;
+}

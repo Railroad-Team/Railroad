@@ -16,4 +16,8 @@
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
+
+    <logger name="org.eclipse.jgit" level="WARN"/>
+    <logger name="com.pty4j" level="WARN"/>
+    <logger name="org.gradle.tooling" level="INFO"/>
 </configuration>

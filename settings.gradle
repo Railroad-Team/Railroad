@@ -1,1 +1,2 @@
 rootProject.name = "railroad"
+include 'railroad-core'
