@@ -145,15 +145,15 @@ public class L18n {
      * @return the localized string
      */
     public static String localize(String key) {
+        if (key != null && key.isBlank())
+            return "";
+
         LOGGER.debug("Getting localized string for key {}", key);
 
         if (key == null) {
             LOGGER.error("Localize called with null key");
             return "null";
         }
-
-        if (key.isBlank())
-            return "";
 
         if (LANG_CACHE.get(key) == null) {
             LOGGER.error("Error finding translations for key '{}' in language {}", key, CURRENT_LANG.getValue());

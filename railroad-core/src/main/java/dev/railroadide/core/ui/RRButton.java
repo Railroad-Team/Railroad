@@ -7,7 +7,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.layout.HBox;
 import javafx.util.Duration;
 import lombok.Getter;
 import org.kordamp.ikonli.Ikon;
@@ -36,20 +35,25 @@ public class RRButton extends Button {
     }
 
     public RRButton(String localizationKey, Ikon icon, Object... args) {
-        super(ServiceLocator.getService(LocalizationService.class).get(localizationKey));
+        super((localizationKey != null && !localizationKey.isBlank()) ? ServiceLocator.getService(LocalizationService.class).get(localizationKey) : "");
         setIcon(icon);
         initialize();
-        this.localizationKey = localizationKey;
-        this.localizationArgs = args;
-        addLocalizationListener();
+        if(localizationKey != null && !localizationKey.isBlank()) {
+            this.localizationKey = localizationKey;
+            this.localizationArgs = args;
+            addLocalizationListener();
+        }
     }
 
     public RRButton(String localizationKey, Node graphic, Object... args) {
-        super(ServiceLocator.getService(LocalizationService.class).get(localizationKey), graphic);
+        super((localizationKey != null && !localizationKey.isBlank()) ? ServiceLocator.getService(LocalizationService.class).get(localizationKey) : "");
+        setGraphic(graphic);
         initialize();
-        this.localizationKey = localizationKey;
-        this.localizationArgs = args;
-        addLocalizationListener();
+        if(localizationKey != null && !localizationKey.isBlank()) {
+            this.localizationKey = localizationKey;
+            this.localizationArgs = args;
+            addLocalizationListener();
+        }
     }
 
     public RRButton(String localizationKey, Object... args) {
@@ -250,7 +254,7 @@ public class RRButton extends Button {
             setDisable(true);
             getStyleClass().add("loading");
 
-            HBox loadingContent = new HBox(8);
+            var loadingContent = new RRHBox(8);
             loadingContent.setAlignment(Pos.CENTER);
             loadingContent.getChildren().addAll(loadingSpinner);
 
@@ -315,7 +319,7 @@ public class RRButton extends Button {
             return; // Don't update content while loading
 
         if (icon != null) {
-            HBox content = new HBox(8);
+            var content = new RRHBox(8);
             content.setAlignment(Pos.CENTER);
             content.getChildren().add(icon);
 
