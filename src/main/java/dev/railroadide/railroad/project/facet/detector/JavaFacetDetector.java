@@ -12,7 +12,6 @@ import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.building.*;
-import org.apache.maven.shared.utils.xml.pull.XmlPullParserException;
 import org.codehaus.plexus.configuration.PlexusConfigurationException;
 import org.codehaus.plexus.configuration.xml.XmlPlexusConfiguration;
 import org.gradle.api.GradleException;
@@ -190,6 +189,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             return JavaVersion.fromMajor(-1);
 
         try {
+            // TODO: Look into replacement of these as they are deprecated(?)
             ModelBuildingRequest req = new DefaultModelBuildingRequest()
                 .setProcessPlugins(false)
                 .setPomFile(pom.toFile());
@@ -218,6 +218,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
                         if (tgt == null && cfg.getChild("target") != null) {
                             tgt = cfg.getChild("target").getValue();
                         }
+
                         break;
                     }
                 }
@@ -230,10 +231,8 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             JavaVersion sourceVer = JavaVersion.fromReleaseString(src);
             JavaVersion targetVer = JavaVersion.fromReleaseString(tgt);
 
-            return sourceVer.compareTo(targetVer) >= 0
-                ? sourceVer
-                : targetVer;
-        } catch (XmlPullParserException | ModelBuildingException | PlexusConfigurationException exception) {
+            return sourceVer.compareTo(targetVer) >= 0 ? sourceVer : targetVer;
+        } catch (ModelBuildingException | PlexusConfigurationException exception) {
             Railroad.LOGGER.error("Error reading POM for Java version: {}", projectDir, exception);
             return JavaVersion.fromMajor(-1);
         }

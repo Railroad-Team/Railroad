@@ -2,6 +2,8 @@ package dev.railroadide.railroad.theme.ui;
 
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRCard;
+import dev.railroadide.core.ui.RRHBox;
+import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.theme.Theme;
 import dev.railroadide.railroad.theme.ThemeDownloadManager;
@@ -15,7 +17,7 @@ import javafx.scene.control.ListCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import org.gradle.internal.impldep.org.apache.commons.lang.WordUtils;
+import org.apache.commons.text.WordUtils;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 /**
@@ -45,10 +47,10 @@ public class ThemeDownloadCell extends ListCell<Theme> {
         card.setInteractive(false);
         card.getStyleClass().add("theme-download-card");
 
-        content = new HBox(16);
+        content = new RRHBox(16);
         content.setAlignment(Pos.CENTER_LEFT);
 
-        infoSection = new VBox(4);
+        infoSection = new RRVBox(4);
         infoSection.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(infoSection, Priority.ALWAYS);
 
@@ -60,7 +62,7 @@ public class ThemeDownloadCell extends ListCell<Theme> {
 
         infoSection.getChildren().addAll(themeNameLabel, themeSizeLabel);
 
-        actionSection = new HBox(8);
+        actionSection = new RRHBox(8);
         actionSection.setAlignment(Pos.CENTER_RIGHT);
 
         previewButton = new RRButton();
