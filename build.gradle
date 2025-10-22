@@ -1,8 +1,11 @@
+import org.gradle.internal.os.OperatingSystem
+
 plugins {
     id 'java'
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.1.0'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'org.beryx.runtime' version '2.0.0'
 }
 
 group 'dev.railroadide'
@@ -14,7 +17,7 @@ repositories {
     maven { url 'https://repo.gradle.org/gradle/libs-releases' }
     maven { url 'https://github.com/javaterminal/terminalfx/raw/master/releases' }
     maven { url 'https://packages.jetbrains.team/maven/p/ij/intellij-dependencies' }
-    maven { url "https://maven.railroadide.dev/releases" }
+    maven { url 'https://maven.railroadide.dev/releases' }
     maven { url 'https://jitpack.io' }
 }
 
@@ -30,7 +33,7 @@ tasks.withType(JavaCompile).configureEach {
 application {
     mainClass = 'dev.railroadide.railroad.RailroadLauncher'
     applicationDefaultJvmArgs = [
-        '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader'
+            '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader'
     ]
 }
 
@@ -66,12 +69,12 @@ dependencies {
     implementation 'org.xerial:sqlite-jdbc:3.50.3.0'
 
     implementation 'com.google.guava:guava:33.4.8-jre'
-    implementation "org.apache.maven:maven-core:3.9.10"
-    implementation "org.apache.maven:maven-project:3.0-alpha-2"
-    implementation "org.apache.maven:maven-settings:3.9.10"
-    implementation "org.apache.maven:maven-settings-builder:3.9.10"
-    implementation "org.apache.maven:maven-repository-metadata:3.9.10"
-    implementation "org.codehaus.plexus:plexus-container-default:2.1.0"
+    implementation 'org.apache.maven:maven-core:3.9.10'
+    implementation 'org.apache.maven:maven-project:3.0-alpha-2'
+    implementation 'org.apache.maven:maven-settings:3.9.10'
+    implementation 'org.apache.maven:maven-settings-builder:3.9.10'
+    implementation 'org.apache.maven:maven-repository-metadata:3.9.10'
+    implementation 'org.codehaus.plexus:plexus-container-default:2.1.0'
 
     implementation 'dev.railroadide:java-version-extractor-plugin:1.0.0'
     implementation 'dev.railroadide:fabric-extractor-plugin:1.0.0'
@@ -79,7 +82,7 @@ dependencies {
     implementation 'io.get-coursier:interface:1.0.29-M1'
     implementation 'org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r'
 
-    implementation("dev.railroadide:nsmenufx:1.0.0") {
+    implementation('dev.railroadide:nsmenufx:1.0.0') {
         exclude group: 'net.java.dev.jna', module: 'jna'
     }
 
@@ -98,17 +101,12 @@ test {
     useJUnitPlatform()
 }
 
-run {
-    def loggingConfig = file("src/jpackage/logging.properties").absolutePath
-    jvmArgs += "-Djava.util.logging.config.file=$loggingConfig"
-}
-
 jar {
     manifest {
         attributes(
-                "Implementation-Title": "Railroad",
-                "Implementation-Version": version,
-                "Main-Class": "dev.railroadide.railroad.RailroadLauncher"
+                'Implementation-Title': 'Railroad',
+                'Implementation-Version': version,
+                'Main-Class': 'dev.railroadide.railroad.RailroadLauncher'
         )
     }
 }
@@ -116,114 +114,61 @@ jar {
 shadowJar {
     zip64 true
     mergeServiceFiles()
-    archiveClassifier = '' // This makes shadowJar the default jar
     manifest {
         attributes(
-                "Implementation-Title": "Railroad",
-                "Implementation-Version": version,
-                "Main-Class": "dev.railroadide.railroad.RailroadLauncher"
+                'Implementation-Title': 'Railroad',
+                'Implementation-Version': version,
+                'Main-Class': 'dev.railroadide.railroad.RailroadLauncher'
         )
     }
 }
 
-// Configure jpackage to use the shadow jar
-tasks.register('jpackageImage', Exec) {
-    dependsOn shadowJar
+// ---- Beryx Runtime ----
+runtime {
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
 
-    def inputDir = layout.buildDirectory.dir("libs").get().asFile
-    def outputDir = layout.buildDirectory.dir("jpackage").get().asFile
-    def resourcesDir = file("src/jpackage")
+    launcher {
+        jvmArgs = [
+                '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader'
+        ]
+    }
 
-    doFirst {
-        if (outputDir.exists()) outputDir.deleteDir()
-        if (!resourcesDir.exists()) {
-            throw new GradleException("Missing src/jpackage with logging.properties")
+    jpackage {
+        imageName = 'Railroad'
+        installerName = 'Railroad'
+        appVersion = project.version.toString()
+        description = 'Railroad IDE - A Modern Java IDE for Minecraft Modding'
+
+        def currentOs = OperatingSystem.current()
+        def imgType = currentOs.windows ? 'ico' : currentOs.macOsX ? 'icns' : 'png'
+        def iconPath = file("src/main/resources/assets/railroad/images/logo.$imgType").absolutePath
+        imageOptions += ['--icon', iconPath]
+        installerOptions += ['--vendor', 'Railroad Team']
+        installerOptions += ['--copyright', 'GNU General Public License v3.0']
+        installerOptions += ['--about-url', 'https://railroadide.dev']
+
+        if (currentOs.windows) {
+            installerOptions += ['--win-per-user-install', '--win-dir-chooser', '--win-menu', '--win-shortcut-prompt', '--win-upgrade-uuid', '46af0894-7027-40b2-8772-40d5e3052c7e']
+            installerOptions += ['--win-help-url', 'https://discord.turtywurty.dev/']
+        } else if (currentOs.linux) {
+            installerOptions += ['--linux-package-name', 'Railroad', '--linux-shortcut']
+        } else if (currentOs.macOsX) {
+            installerOptions += ['--mac-package-name', 'Railroad']
         }
-    }
-
-    def mainCls = 'dev.railroadide.railroad.RailroadLauncher'
-
-    def osName = System.getProperty('os.name').toLowerCase()
-    def iconFile = null
-    if (osName.contains('windows')) {
-        iconFile = file("src/main/resources/assets/railroad/images/logo.ico")
-    } else if (osName.contains('linux')) {
-        iconFile = file("src/main/resources/assets/railroad/images/logo.png")
-    } else if (osName.contains('mac')) {
-        iconFile = file("src/main/resources/assets/railroad/images/logo.icns")
-    }
-
-    def command = [
-            'jpackage',
-            '--type', 'app-image',
-            '--input', inputDir.absolutePath,
-            '--dest', outputDir.absolutePath,
-            '--name', 'Railroad',
-            '--main-jar', shadowJar.archiveFileName.get(),
-            '--main-class', mainCls,
-            '--resource-dir', resourcesDir.absolutePath,
-            '--java-options', '-Djava.util.logging.config.file=$APPDIR/logging.properties',
-            '--java-options', '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader'
-    ]
-
-    if (iconFile != null && iconFile.exists()) {
-        command += ['--icon', iconFile.absolutePath]
-    }
-
-    commandLine command
-}
-
-tasks.register('jpackageInstaller', Exec) {
-    dependsOn jpackageImage
-
-    def baseDir = file("${layout.buildDirectory.get()}/jpackage")
-
-    def osName = System.getProperty('os.name').toLowerCase()
-    def imageDir, imageType
-    if (osName.contains('windows')) {
-        imageDir = 'Railroad'
-        imageType = 'msi'
-    } else if (osName.contains('mac')) {
-        imageDir = 'Railroad.app'
-        imageType = 'dmg'
-    } else if (osName.contains('linux')) {
-        imageDir = 'Railroad'
-        imageType = 'deb'
-    } else {
-        throw new GradleException("Unsupported OS for jpackage: ${osName}")
-    }
-
-    def appImageDir = new File(baseDir, imageDir)
-    def installerDir = new File(baseDir, "installer")
-
-    doFirst {
-        if (!appImageDir.exists()) {
-            throw new GradleException("App image not found at ${appImageDir}. Run jpackageImage first.")
-        }
-
-        if (installerDir.exists()) {
-            installerDir.deleteDir()
-        }
-
-        installerDir.mkdirs()
-    }
-
-    commandLine 'jpackage',
-            '--app-image', appImageDir.absolutePath,
-            '--type', imageType,
-            '--dest', installerDir.absolutePath,
-            '--name', 'Railroad',
-            '--app-version', version,
-            '--vendor', 'Railroad Team',
-            '--description', 'Railroad Application'
-
-    // Add platform-specific options
-    if (osName.contains('windows')) {
-        args '--win-dir-chooser', '--win-menu', '--win-shortcut'
-    } else if (osName.contains('mac')) {
-        args '--mac-package-name', 'Railroad'
     }
 }
 
-// Make build depend on shadowJar instead of jar
-build.dependsOn shadowJar
+// Ensure the packaging tasks use the shaded jar
+['jre', 'runtime', 'createRuntimeImage', 'runtimeZip', 'jpackage'].each { taskName ->
+    tasks.matching { it.name == taskName }.configureEach {
+        dependsOn tasks.named('shadowJar')
+    }
+}
+
+tasks.matching { it.name == 'startShadowScripts' }.configureEach {
+    dependsOn tasks.named('jar')
+}
+
+tasks.named('build') {
+    dependsOn tasks.named('shadowJar')
+}

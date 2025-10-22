@@ -53,6 +53,7 @@ public class Railroad extends Application {
         .service(LoggerService.builder()
             .logDirectory(ConfigHandler.getConfigDirectory().resolve("logs"))
             .configFile(ConfigHandler.getConfigDirectory().resolve("logger_config.json"))
+            .addLogFile("latest.log")
             .build()
         ).build();
     public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build();
