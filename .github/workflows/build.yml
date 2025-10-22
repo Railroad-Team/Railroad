@@ -34,4 +34,4 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build
-        run: ./gradlew shadowJar
+        run: ./gradlew jpackage

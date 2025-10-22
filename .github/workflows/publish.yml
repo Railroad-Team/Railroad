@@ -22,7 +22,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y fakeroot dpkg
       - run: chmod +x gradlew
-      - run: ./gradlew jpackageInstaller jpackageImage
+      - run: ./gradlew jpackage
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -44,7 +44,7 @@ jobs:
         with:
           cf_zone_id: ${{ secrets.CF_ZONE_ID }}
           cf_api_token: ${{ secrets.CF_API_TOKEN }}
-      - run: .\gradlew.bat jpackageInstaller jpackageImage
+      - run: .\gradlew.bat jpackage
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -67,7 +67,7 @@ jobs:
           cf_zone_id: ${{ secrets.CF_ZONE_ID }}
           cf_api_token: ${{ secrets.CF_API_TOKEN }}
       - run: chmod +x gradlew
-      - run: ./gradlew jpackageInstaller jpackageImage
+      - run: ./gradlew jpackage
       - name: Upload Mac artifacts
         uses: actions/upload-artifact@v4
         with:
