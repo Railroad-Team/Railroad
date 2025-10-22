@@ -136,10 +136,12 @@ runtime {
     jpackage {
         imageName = 'Railroad'
         installerName = 'Railroad'
-        appVersion = project.version.toString()
         description = 'Railroad IDE - A Modern Java IDE for Minecraft Modding'
 
         def currentOs = OperatingSystem.current()
+        if(!currentOs.macOsX)
+            appVersion = project.version.toString()
+
         def imgType = currentOs.windows ? 'ico' : currentOs.macOsX ? 'icns' : 'png'
         def iconPath = file("src/main/resources/assets/railroad/images/logo.$imgType").absolutePath
         imageOptions += ['--icon', iconPath]
