@@ -6,7 +6,7 @@ plugins {
 }
 
 group 'dev.railroadide'
-version '1.0.0'
+version '0.0.3'
 
 repositories {
     mavenLocal()
@@ -28,7 +28,10 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 application {
-    mainClass = 'dev.railroadide.railroad.Railroad'
+    mainClass = 'dev.railroadide.railroad.RailroadLauncher'
+    applicationDefaultJvmArgs = [
+        '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader'
+    ]
 }
 
 javafx {
@@ -104,8 +107,8 @@ jar {
     manifest {
         attributes(
                 "Implementation-Title": "Railroad",
-                "Implementation-Version": "1.0-alpha", //TODO use a variable?
-                "Main-Class": "dev.railroadide.railroad.Railroad"
+                "Implementation-Version": version,
+                "Main-Class": "dev.railroadide.railroad.RailroadLauncher"
         )
     }
 }
@@ -114,73 +117,110 @@ shadowJar {
     zip64 true
     mergeServiceFiles()
     archiveClassifier = '' // This makes shadowJar the default jar
+    manifest {
+        attributes(
+                "Implementation-Title": "Railroad",
+                "Implementation-Version": version,
+                "Main-Class": "dev.railroadide.railroad.RailroadLauncher"
+        )
+    }
 }
 
 // Configure jpackage to use the shadow jar
 tasks.register('jpackageImage', Exec) {
     dependsOn shadowJar
 
-    def inputDir = file("${layout.buildDirectory.get()}/libs")
-    def outputDir = file("${layout.buildDirectory.get()}/jpackage")
+    def inputDir = layout.buildDirectory.dir("libs").get().asFile
+    def outputDir = layout.buildDirectory.dir("jpackage").get().asFile
+    def resourcesDir = file("src/jpackage")
 
-    if (outputDir.exists()) {
-        outputDir.deleteDir()
-    }
-
-    // Copy logging.properties to inputDir so jpackage sees it
     doFirst {
-        copy {
-            from "src/jpackage/logging.properties"
-            into inputDir
+        if (outputDir.exists()) outputDir.deleteDir()
+        if (!resourcesDir.exists()) {
+            throw new GradleException("Missing src/jpackage with logging.properties")
         }
     }
 
-    commandLine 'jpackage',
-            '--input', inputDir,
-            '--dest', outputDir,
+    def mainCls = 'dev.railroadide.railroad.RailroadLauncher'
+
+    def osName = System.getProperty('os.name').toLowerCase()
+    def iconFile = null
+    if (osName.contains('windows')) {
+        iconFile = file("src/main/resources/assets/railroad/images/logo.ico")
+    } else if (osName.contains('linux')) {
+        iconFile = file("src/main/resources/assets/railroad/images/logo.png")
+    } else if (osName.contains('mac')) {
+        iconFile = file("src/main/resources/assets/railroad/images/logo.icns")
+    }
+
+    def command = [
+            'jpackage',
+            '--type', 'app-image',
+            '--input', inputDir.absolutePath,
+            '--dest', outputDir.absolutePath,
             '--name', 'Railroad',
             '--main-jar', shadowJar.archiveFileName.get(),
-            '--main-class', 'dev.railroadide.railroad.RailroadLauncher',
-            '--type', 'app-image',
-            '--java-options', '-Xmx2048m',
-            '--java-options', '-Djava.util.logging.config.file=$APPDIR/logging.properties'
+            '--main-class', mainCls,
+            '--resource-dir', resourcesDir.absolutePath,
+            '--java-options', '-Djava.util.logging.config.file=$APPDIR/logging.properties',
+            '--java-options', '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader'
+    ]
+
+    if (iconFile != null && iconFile.exists()) {
+        command += ['--icon', iconFile.absolutePath]
+    }
+
+    commandLine command
 }
 
 tasks.register('jpackageInstaller', Exec) {
     dependsOn jpackageImage
 
-    def outputDir = file("${layout.buildDirectory.get()}/jpackage")
-    if (outputDir.exists()) {
-        outputDir.deleteDir()
-    }
+    def baseDir = file("${layout.buildDirectory.get()}/jpackage")
 
-    def imageDir, imageType;
-    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+    def osName = System.getProperty('os.name').toLowerCase()
+    def imageDir, imageType
+    if (osName.contains('windows')) {
         imageDir = 'Railroad'
         imageType = 'msi'
-    } else if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+    } else if (osName.contains('mac')) {
         imageDir = 'Railroad.app'
         imageType = 'dmg'
-    } else if (System.getProperty('os.name').toLowerCase().contains('linux')) {
+    } else if (osName.contains('linux')) {
         imageDir = 'Railroad'
         imageType = 'deb'
     } else {
-        throw new GradleException("Unsupported OS for jpackage: ${System.getProperty('os.name')}")
+        throw new GradleException("Unsupported OS for jpackage: ${osName}")
+    }
+
+    def appImageDir = new File(baseDir, imageDir)
+    def installerDir = new File(baseDir, "installer")
+
+    doFirst {
+        if (!appImageDir.exists()) {
+            throw new GradleException("App image not found at ${appImageDir}. Run jpackageImage first.")
+        }
+
+        if (installerDir.exists()) {
+            installerDir.deleteDir()
+        }
+
+        installerDir.mkdirs()
     }
 
     commandLine 'jpackage',
-            '--app-image', "${outputDir}/${imageDir}",
-            '--type', "${imageType}",
-            '--dest', outputDir,
+            '--app-image', appImageDir.absolutePath,
+            '--type', imageType,
+            '--dest', installerDir.absolutePath,
             '--name', 'Railroad',
             '--app-version', version,
             '--vendor', 'Railroad Team',
             '--description', 'Railroad Application'
 
     // Add platform-specific options
-    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+    if (osName.contains('windows')) {
         args '--win-dir-chooser', '--win-menu', '--win-shortcut'
-    } else if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+    } else if (osName.contains('mac')) {
         args '--mac-package-name', 'Railroad'
     }
 }

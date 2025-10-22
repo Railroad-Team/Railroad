@@ -28,12 +28,12 @@ public class Services {
     public static final ApplicationInfoService APPLICATION_INFO = new ApplicationInfoService() {
         @Override
         public String getVersion() {
-            return L18n.localize("railroad.app.version");
+            return "0.0.3";
         }
 
         @Override
         public String getName() {
-            return L18n.localize("railroad.app.name");
+            return "Railroad IDE";
         }
 
         @Override

@@ -31,12 +31,6 @@ railroad.generic.disable=Disable
 railroad.generic.dismiss=Dismiss
 
 # =============================================================================
-# APPLICATION
-# =============================================================================
-railroad.app.name=Railroad
-railroad.app.version=1.0.0 (dev)
-
-# =============================================================================
 # HOME/WELCOME SCREEN
 # =============================================================================
 railroad.home.welcome.greeting=Welcome to Railroad!

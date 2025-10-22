@@ -10,6 +10,7 @@ import javafx.scene.input.KeyCode;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.JarURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -138,8 +139,8 @@ public class ThemeManager {
                         .forEach(p -> componentCss.add(getAsExternalForm("styles/components/" + p.getFileName().toString())));
                 }
             } else if (url.getProtocol().equals("jar")) {
-                String jarPath = url.getPath().substring(5, url.getPath().indexOf("!"));
-                try (JarFile jarFile = new JarFile(jarPath)) {
+                JarURLConnection connection = (JarURLConnection) url.openConnection();
+                try (JarFile jarFile = connection.getJarFile()) {
                     Enumeration<JarEntry> entries = jarFile.entries();
                     while (entries.hasMoreElements()) {
                         JarEntry entry = entries.nextElement();

@@ -3,8 +3,8 @@ package dev.railroadide.railroad.welcome;
 import dev.railroadide.core.ui.RRListView;
 import dev.railroadide.core.ui.RRNavigationItem;
 import dev.railroadide.core.ui.RRSidebar;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.AppResources;
+import dev.railroadide.railroad.Services;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;
@@ -15,6 +15,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.scene.text.Text;
 import lombok.Getter;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
@@ -36,10 +37,10 @@ public class WelcomeLeftPane extends RRSidebar {
         topBox.setPadding(new Insets(0, 0, 8, 0));
         topBox.setPrefHeight(110);
 
-        var logo = new ImageView(new Image(AppResources.getResourceAsStream("images/logo.png"), 80, 80, true, true));
-        var appName = new LocalizedLabel("railroad.app.name");
+        var logo = new ImageView(new Image(AppResources.iconStream(), 80, 80, true, true));
+        var appName = new Text(Services.APPLICATION_INFO.getName());
         appName.getStyleClass().add("welcome-app-name");
-        var appVersion = new LocalizedLabel("railroad.app.version");
+        var appVersion = new Text(Services.APPLICATION_INFO.getVersion());
         appVersion.getStyleClass().add("welcome-app-version");
         topBox.getChildren().addAll(logo, appName, appVersion);
 

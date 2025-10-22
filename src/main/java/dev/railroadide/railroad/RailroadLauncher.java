@@ -11,7 +11,10 @@ public final class RailroadLauncher {
     }
 
     public static void launchWithPreloader(String[] args) {
-        System.setProperty("javafx.preloader", RailroadPreloader.class.getName());
+        String preloader = System.getProperty("javafx.preloader");
+        if (preloader == null || preloader.isBlank()) {
+            System.setProperty("javafx.preloader", RailroadPreloader.class.getName());
+        }
         Application.launch(Railroad.class, args);
     }
 }

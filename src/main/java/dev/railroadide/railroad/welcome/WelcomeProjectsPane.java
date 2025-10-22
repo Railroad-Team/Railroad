@@ -2,6 +2,7 @@ package dev.railroadide.railroad.welcome;
 
 import dev.railroadide.core.ui.RRListView;
 import dev.railroadide.core.ui.RRTextField;
+import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
@@ -11,6 +12,8 @@ import dev.railroadide.railroad.welcome.project.ProjectSort;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -130,10 +133,10 @@ public class WelcomeProjectsPane extends ScrollPane {
     private void updateEmptyState() {
         if (projectsList.getItems().isEmpty()) {
             // Show empty state illustration and message
-            var emptyBox = new VBox(12);
-            emptyBox.setAlignment(javafx.geometry.Pos.CENTER);
-            emptyBox.setPadding(new javafx.geometry.Insets(40, 0, 40, 0));
-            var illustration = new ImageView(new Image(AppResources.getResourceAsStream("images/logo.png"), 96, 96, true, true));
+            var emptyBox = new RRVBox(12);
+            emptyBox.setAlignment(Pos.CENTER);
+            emptyBox.setPadding(new Insets(40, 0, 40, 0));
+            var illustration = new ImageView(new Image(AppResources.iconStream(), 96, 96, true, true));
             var message = new LocalizedLabel("railroad.home.welcome.projects.empty");
             message.getStyleClass().add("welcome-projects-message");
             emptyBox.getChildren().addAll(illustration, message);
