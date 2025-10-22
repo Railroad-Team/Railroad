@@ -27,7 +27,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: build/jpackage/*.deb
+          path: build/jpackage/*.AppImage, build/jpackage/*.deb, build/jpackage/*.rpm, build/jpackage/*.tar.gz
 
   build-windows:
     runs-on: windows-latest
@@ -49,7 +49,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: build/jpackage/*.msi
+          path: build/jpackage/*.msi, build/jpackage/*.exe, build/jpackage/*.zip
 
   build-mac:
     runs-on: macos-latest
@@ -72,7 +72,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mac-build
-          path: build/jpackage/*.dmg
+          path: build/jpackage/*.dmg, build/jpackage/*.pkg, build/jpackage/*.zip
 
   release:
     runs-on: self-hosted
@@ -118,7 +118,14 @@ jobs:
           body: ${{ steps.changelog.outputs.changelog }}
           files: | # TODO - Add executable files as well as installers.
             dist/linux/*.deb
+            dist/linux/*.rpm
+            dist/linux/*.AppImage
+            dist/linux/*.tar.gz
             dist/windows/*.msi
+            dist/windows/*.exe
+            dist/windows/*.zip
             dist/mac/*.dmg
+            dist/mac/*.pkg
+            dist/mac/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
