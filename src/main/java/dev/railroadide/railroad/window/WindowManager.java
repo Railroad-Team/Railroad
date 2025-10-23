@@ -1,5 +1,8 @@
 package dev.railroadide.railroad.window;
 
+import dev.railroadide.railroad.AppResources;
+import dev.railroadide.railroad.theme.ThemeManager;
+import dev.railroadide.railroad.utility.MacUtils;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Screen;
@@ -39,6 +42,9 @@ public class WindowManager {
     public void setPrimaryStage(@NotNull Stage primaryStage) {
         Objects.requireNonNull(primaryStage, "Primary stage cannot be null");
         this.primaryStage = primaryStage;
+        this.primaryScene = primaryStage.getScene();
+        ThemeManager.apply(this.primaryScene);
+        this.primaryStage.getIcons().add(AppResources.icon());
     }
 
     /**
@@ -48,7 +54,7 @@ public class WindowManager {
      * @param scene Main content scene
      * @param title Window title
      */
-    public void showPrimary(Scene scene, String title) {
+    public void showPrimary(Stage primaryStage, Scene scene, String title) {
         this.primaryScene = scene;
 
         Screen screen = Screen.getPrimary();
@@ -58,12 +64,21 @@ public class WindowManager {
         double windowW = screenW * 0.75;
         double windowH = screenH * 0.75;
 
-        setPrimaryStage(WindowBuilder.create()
-            .scene(this.primaryScene)
-            .title(title)
-            .size(windowW, windowH)
-            .minSize(windowW * 0.5, windowH * 0.5)
-            .build());
+        primaryStage.setScene(this.primaryScene);
+        primaryStage.setTitle(title);
+        primaryStage.setWidth(windowW);
+        primaryStage.setHeight(windowH);
+        primaryStage.setMinWidth(windowW * 0.5);
+        primaryStage.setMinHeight(windowH * 0.5);
+        setPrimaryStage(primaryStage);
+
+        // Create a MacOS specific Menu Bar and Application Menu
+        MacUtils.initialize();
+
+        primaryStage.show();
+
+        // Show the MacOS specific menu bar
+        MacUtils.show(primaryStage);
     }
 
     /**

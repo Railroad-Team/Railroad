@@ -86,7 +86,7 @@ dependencies {
         exclude group: 'net.java.dev.jna', module: 'jna'
     }
 
-    implementation 'dev.railroadide:RailroadLogger:1.0.3'
+    implementation 'dev.railroadide:RailroadLogger:1.0.4'
     implementation 'dev.railroadide:RailroadPluginAPI:1.0.3'
     implementation project(':railroad-core')
 
@@ -125,7 +125,8 @@ shadowJar {
 
 // ---- Beryx Runtime ----
 runtime {
-    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    options = []
+    modules = ['ALL-MODULE-PATH']
 
     launcher {
         jvmArgs = [

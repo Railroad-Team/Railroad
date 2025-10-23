@@ -150,7 +150,11 @@ public class Railroad extends Application {
         }
 
         try {
-            WINDOW_MANAGER.showPrimary(new Scene(new WelcomePane()), Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion());
+            WINDOW_MANAGER.showPrimary(
+                primaryStage,
+                new Scene(new WelcomePane()),
+                Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()
+            );
             LOGGER.info("Railroad started");
             EVENT_BUS.publish(new ApplicationStartEvent());
         } catch (Throwable exception) {

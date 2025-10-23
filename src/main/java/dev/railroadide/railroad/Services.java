@@ -3,10 +3,10 @@ package dev.railroadide.railroad;
 import com.google.gson.Gson;
 import dev.railroadide.core.localization.Language;
 import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.logger.LoggerService;
 import dev.railroadide.core.project.creation.ProjectCreationPipelineService;
 import dev.railroadide.core.project.creation.ProjectServiceRegistry;
 import dev.railroadide.core.project.creation.service.*;
+import dev.railroadide.logger.Logger;
 import dev.railroadide.railroad.ide.DefaultDocumentEditorStateService;
 import dev.railroadide.railroad.ide.DefaultIDEStateService;
 import dev.railroadide.railroad.localization.L18n;
@@ -63,8 +63,6 @@ public class Services {
         }
     };
 
-    public static final LoggerService LOGGER = () -> Railroad.LOGGER;
-
     public static final ProjectServiceRegistry PROJECT_SERVICE_REGISTRY = new ProjectServiceRegistry() {{
         bind(ChecksumService.class, new MessageDigestChecksumService());
         bind(FilesService.class, new NioFilesService());
@@ -101,8 +99,8 @@ public class Services {
             return (T) DOCUMENT_EDITOR_STATE;
         } else if (serviceClass == LocalizationService.class) {
             return (T) LOCALIZATION_SERVICE;
-        } else if (serviceClass == LoggerService.class) {
-            return (T) LOGGER;
+        } else if (serviceClass == Logger.class) {
+            return (T) Railroad.LOGGER;
         } else if (serviceClass == Gson.class) {
             return (T) Railroad.GSON;
         } else if (serviceClass == ProjectServiceRegistry.class) {

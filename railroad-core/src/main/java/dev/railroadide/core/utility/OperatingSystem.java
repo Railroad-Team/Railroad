@@ -28,8 +28,10 @@ public enum OperatingSystem {
         String os = System.getProperty("os.name", "unknown").toLowerCase(Locale.ENGLISH);
         if (os.contains("win"))
             return WINDOWS;
+
         if (os.contains("mac"))
             return MAC;
+
         if (os.contains("nux")
             || os.contains("nix")
             || os.contains("aix"))

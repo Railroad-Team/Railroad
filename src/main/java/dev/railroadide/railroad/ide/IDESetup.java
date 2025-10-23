@@ -21,7 +21,6 @@ import dev.railroadide.railroad.ide.ui.StatusBarPane;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
-import dev.railroadide.railroad.window.WindowBuilder;
 import dev.railroadide.railroadpluginapi.events.ProjectEvent;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
@@ -35,6 +34,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
@@ -62,7 +62,7 @@ public class IDESetup {
      */
     public static Scene createIDEScene(Project project) {
         var root = new RRBorderPane();
-        root.setTop(createMenuBar());
+        //root.setTop(createMenuBar()); // TODO: This doesn't work in production
 
         var leftPane = new DetachableTabPane();
         leftPane.addTab("Project", new ProjectExplorerPane(project, root));
@@ -140,17 +140,12 @@ public class IDESetup {
 
         Platform.runLater(() -> {
             try {
-                Railroad.WINDOW_MANAGER.getPrimaryStage().close();
-
                 Scene ideScene = IDESetup.createIDEScene(project);
-                Stage ideStage = WindowBuilder.create()
-                    .title(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion() + " - " + project.getAlias())
-                    .scene(ideScene)
-                    .owner(null)
-                    .resizable(true)
-                    .maximized(true)
-                    .build();
-
+                Stage ideStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
+                ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion() + " - " + project.getAlias());
+                ideStage.setScene(ideScene);
+                ideStage.setResizable(true);
+                ideStage.setMaximized(true);
                 Railroad.WINDOW_MANAGER.setPrimaryStage(ideStage);
 
                 try {

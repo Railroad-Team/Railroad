@@ -5,6 +5,7 @@ import dev.railroadide.core.localization.LocalizationService;
 import dev.railroadide.core.logger.LoggerService;
 import dev.railroadide.core.ui.localized.LocalizedTooltip;
 import dev.railroadide.core.utility.ServiceLocator;
+import dev.railroadide.logger.Logger;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Node;
@@ -296,7 +297,7 @@ public abstract class FormComponent<T extends Node & HasSetValue, U, V extends N
             String message = result.message();
             Tooltip.install(node, new LocalizedTooltip(message));
 
-            ServiceLocator.getService(LoggerService.class).getLogger().warn("Validation error: {}", ServiceLocator.getService(LocalizationService.class).get(message));
+            ServiceLocator.getService(Logger.class).warn("Validation error: {}", ServiceLocator.getService(LocalizationService.class).get(message));
         } else {
             Tooltip.uninstall(node, null);
         }
