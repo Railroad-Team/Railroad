@@ -22,12 +22,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y fakeroot dpkg
       - run: chmod +x gradlew
-      - run: ./gradlew jpackage --type app-image
+      - run: ./gradlew jpackage
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: build/jpackage/*.AppImage, build/jpackage/*.deb, build/jpackage/*.rpm, build/jpackage/*.tar.gz
+          path: build/jpackage/*.deb
 
   build-windows:
     runs-on: windows-latest
