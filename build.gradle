@@ -157,7 +157,6 @@ runtime {
         } else if (currentOs.linux) {
             installerOptions += ['--linux-package-name', 'Railroad']
             installerOptions += ['--linux-shortcut']
-            installerOptions += ['--type', 'app-image']
         } else if (currentOs.macOsX) {
             installerOptions += ['--mac-package-name', 'Railroad']
         }
