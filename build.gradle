@@ -154,14 +154,14 @@ runtime {
             installerOptions += ['--win-per-user-install', '--win-dir-chooser', '--win-menu', '--win-shortcut-prompt']
             installerOptions += ['--win-upgrade-uuid', '46af0894-7027-40b2-8772-40d5e3052c7e']
             installerOptions += ['--win-help-url', 'https://discord.turtywurty.dev/']
-            installerOptions += ['--type' 'msi']
+            installerOptions += ['--type', 'msi']
         } else if (currentOs.linux) {
             installerOptions += ['--linux-package-name', 'Railroad']
             installerOptions += ['--linux-shortcut']
-            installerOptions += ['--type' 'deb']
+            installerOptions += ['--type', 'deb']
         } else if (currentOs.macOsX) {
             installerOptions += ['--mac-package-name', 'Railroad']
-            installerOptions += ['--type' 'dmg']
+            installerOptions += ['--type', 'dmg']
         }
     }
 }
