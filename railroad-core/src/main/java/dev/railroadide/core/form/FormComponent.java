@@ -2,7 +2,6 @@ package dev.railroadide.core.form;
 
 import dev.railroadide.core.form.impl.*;
 import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.logger.LoggerService;
 import dev.railroadide.core.ui.localized.LocalizedTooltip;
 import dev.railroadide.core.utility.ServiceLocator;
 import dev.railroadide.logger.Logger;

@@ -9,7 +9,6 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
-import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 public class MacUtils {

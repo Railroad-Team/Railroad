@@ -1,6 +1,5 @@
 package dev.railroadide.core.settings.keybinds;
 
-import dev.railroadide.core.logger.LoggerService;
 import dev.railroadide.core.utility.ServiceLocator;
 import dev.railroadide.logger.Logger;
 

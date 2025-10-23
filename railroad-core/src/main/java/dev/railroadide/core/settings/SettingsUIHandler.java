@@ -1,6 +1,5 @@
 package dev.railroadide.core.settings;
 
-import dev.railroadide.core.logger.LoggerService;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
