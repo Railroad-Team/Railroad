@@ -1,0 +1,476 @@
+# =============================================================================
+# Языковой файл Railroad - Русский (ru_ru)
+# =============================================================================
+
+# =============================================================================
+# ОБЩЕЕ
+# =============================================================================
+railroad.generic.apply=Принять
+railroad.generic.ok=Ок
+railroad.generic.cancel=Отмена
+railroad.generic.back=Назад
+railroad.generic.next=Далее
+railroad.generic.finish=Готово
+railroad.generic.close=Закрыть
+railroad.generic.confirm=Подтвердить
+railroad.generic.save=Сохранить
+railroad.generic.delete=Удалить
+railroad.generic.edit=Изменить
+railroad.generic.create=Создать
+railroad.generic.search=Поиск
+railroad.generic.select=Выбрать
+railroad.generic.load=Загрузить
+railroad.generic.refresh=Обновить
+railroad.generic.collapse=Свернуть
+railroad.generic.collapse_all=Свернуть всё
+railroad.generic.expand=Развернуть
+railroad.generic.expand_all=Развернуть всё
+railroad.generic.browse=Обзор
+railroad.generic.enable=Включить
+railroad.generic.disable=Выключить
+railroad.generic.dismiss=Отклонить
+
+# =============================================================================
+# ЭКРАН ПРИВЕТСТВИЯ
+# =============================================================================
+railroad.home.welcome.greeting=Добро пожаловать в Railroad!
+railroad.home.welcome.projects=Список проектов
+railroad.home.welcome.projects.subtitle=Легко управляйте своими проектами
+railroad.home.welcome.projects.empty=Пока проектов нет! Создайте свой первый.
+railroad.home.welcome.projectsearch=Искать проекты...
+railroad.home.welcome.home=Главная
+railroad.home.welcome.openproject=Открыть проект
+railroad.home.welcome.newproject=Новый проект
+railroad.home.welcome.importproject=Импорт проекта
+railroad.home.welcome.settings=Настройки
+
+# Сортировка проектов
+railroad.home.welcome.sort.none=Без сортировки
+railroad.home.welcome.sort.name=По имени
+railroad.home.welcome.sort.date=По дате
+
+# Project actions
+railroad.home.welcome.project.open=Открыть
+railroad.home.welcome.project.remove=Убрать
+railroad.home.welcome.project.searchtype=Искать типы проектов
+
+# =============================================================================
+# НАСТРОЙКИ
+# =============================================================================
+railroad.window.settings.title=Настройки
+railroad.home.settings.title=Настройки
+railroad.home.settings.search=Искать настройки...
+
+# Категории настроек
+settings.tree.general=Основное
+settings.tree.appearance=Внешний вид
+settings.tree.ide=IDE
+settings.tree.plugins=Плагины
+settings.tree.projects=Проекты
+settings.tree.keybinds=Горячие клавиши
+
+# Основные настройки
+railroad.settings.general.language.title=Язык
+railroad.settings.general.language.description=Выберите языке для интерфейса Railroad.
+
+# Настройки горячих клавиш
+railroad.settings.keybinds.title=Горячие клавиши
+
+# Категории горячих клавиш
+railroad.settings.keybinds.category.general=Основное
+
+# Горячие клавиши
+railroad.settings.keybinds.copy=Копировать
+railroad.settings.keybinds.paste=Вставить
+
+# Настройки плагинов
+railroad.window.plugins.title=Плагины
+railroad.settings.plugins.title=Плагины
+railroad.plugins.search.placeholder=Искать плагины...
+railroad.plugins.details.version=Версия %s
+railroad.plugins.details.author=Автор:
+railroad.plugins.details.website=Сайт:
+railroad.plugins.details.license=Лицензия:
+railroad.plugins.details.id=ID плагина:
+railroad.plugins.details.main_class=Main Class:
+railroad.plugins.details.dependencies=Зависимости:
+railroad.plugins.placeholder.title=Выберите плагин чтобы просмотреть его подробную информацию
+railroad.plugins.placeholder.subtitle=Выберите плагин из списка чтобы посмотреть, что он добавляет.
+railroad.plugins.list.version=Версия: %s
+
+# Настройки внешнего вида
+railroad.settings.appearance.themes.title=Темы
+railroad.settings.appearance.themes.description=Настройте внешний вид Railroad, выбрав одну из доступных тем или загрузив новые из репозитория тем.
+
+# Настройки проектов
+railroad.settings.projects.import.title=Импортирование проектов
+railroad.settings.projects.import.description=Настройте способ импорта проектов в Railroad. Можно задать профили VCS и другие параметры импорта.
+railroad.settings.projects.import.switch_to_ide_after_import.title=Переключаться на IDE после импорта
+railroad.settings.projects.import.switch_to_ide_after_import.description=Автоматически переключаться на IDE после импорта проекта. Позволяет начать работу сразу, без лишних действий.
+
+railroad.settings.projects.defaults.group_id.title=ID группы по умолчанию
+railroad.settings.projects.defaults.group_id.description=Управляйте идентификатором Maven группы, присваиваемым новым проектам.
+railroad.settings.projects.defaults.group_id.default_group_id.title=Переопределять ID группы по умолчанию
+railroad.settings.projects.defaults.group_id.default_group_id.description=Задайте идентификатор группы Maven, который Railroad подставляет при создании проекта. Оставьте пустым для использования сгенерированного значения.
+railroad.settings.projects.defaults.version.title=Версия проекта по умолчанию
+railroad.settings.projects.defaults.version.description=Управляйте строкой версии, применяемой при создании проектов.
+railroad.settings.projects.defaults.version.default_version.title=Переопределять версию проекта по умолчанию
+railroad.settings.projects.defaults.version.default_version.description=Задайте номер версии, который Railroad подставляет при создании проекта. Оставьте пустым, чтобы использовать стандартное значение.
+railroad.settings.projects.defaults.author.title=Автор проекта по умолчанию
+railroad.settings.projects.defaults.author.description=Настройте автора, отображаемого для новых проектов.
+railroad.settings.projects.defaults.author.default_author.title=Переопределить автора проекта по умолчанию
+railroad.settings.projects.defaults.author.default_author.description=Укажите имя автора, которое Railroad будет подставлять при создании проекта. Оставьте пустым, чтобы использовать системное имя пользователя.
+
+# Управление темами
+railroad.home.settings.appearance.theme=Выбрать тему
+railroad.home.settings.appearance.downloadtheme=Скачать темы
+railroad.home.settings.appearance.downloadtheme.description=Просматривайте и загружайте темы из официального репозитория Railroad.
+railroad.home.settings.appearance.notfound=Темы не найдены
+railroad.home.settings.appearance.loading=Загрузка тем...
+railroad.home.settings.appearance.themes=Доступные темы
+railroad.home.settings.appearance.themes.found=Найдено %d тем
+railroad.home.settings.appearance.download=Скачать
+railroad.home.settings.appearance.installed=Установлено
+railroad.home.settings.appearance.preview=Предпросмотр
+railroad.home.settings.appearance.preview.error=Не удалось загрузить предпросмотр
+railroad.home.settings.appearance.preview.loaded=Предпросмотр загружен
+railroad.home.settings.appearance.selecttheme=Выбрать тему
+
+# Управление предпросмотров
+railroad.home.settings.appearance.preview.title=Предпросмотр темы
+railroad.home.settings.appearance.preview.subtitle=Этот предпросмотр показывает, как различные элементы интерфейса будут выглядеть с выбранной темой.
+railroad.home.settings.appearance.preview.form.components=Элементы формы
+railroad.home.settings.appearance.preview.list.components=Элементы списка
+railroad.home.settings.appearance.preview.button.components=Кнопки
+railroad.home.settings.appearance.preview.close=Закрыть предпросмотр
+railroad.home.settings.appearance.preview.apply=Применить тему
+railroad.home.settings.appearance.preview.tooltip=Предпросмотр темы
+
+# Настройки IDE
+railroad.settings.ide.code_style.title=Стиль кода
+railroad.settings.ide.code_style.description=Настройте стиль кода для проектов, включая отступы, переносы строк и параметры форматирования.
+railroad.settings.ide.code_style.auto_pair_inside_strings.title=Автовставка парных скобок внутри строк
+railroad.settings.ide.code_style.auto_pair_inside_strings.description=Включите или отключите автоматическую вставку парных скобок (фигурных, квадратных, круглых) и кавычек внутри строк.
+
+# =============================================================================
+# IDE
+# =============================================================================
+railroad.ide.welcome.message=Добро пожаловать в Railroad!
+railroad.ide.welcome.message.description=Чтобы начать, создайте новый файл или откройте уже существующий.
+railroad.ide.welcome.features=Функции
+
+railroad.ide.welcome.feature.model_viewer_editor=Просмотр и редактирование моделей
+railroad.ide.welcome.feature.structure_viewer_editor=Просмотр и редактирование структуры
+railroad.ide.welcome.feature.texture_viewer_editor=Просмотр и редактирование текстур
+railroad.ide.welcome.feature.sound_visualizer=Визуализатор звука
+railroad.ide.welcome.feature.mixin_support=Поддержка Mixin
+
+railroad.ide.welcome.getting_started=Начало работы
+railroad.ide.welcome.getting_started.description=Узнайте, как работать с Railroad, используя нашу вики и обучающие материалы.
+railroad.ide.welcome.getting_started.wiki=Вики
+railroad.ide.welcome.getting_started.tutorials=Обучения
+
+railroad.ide.project_explorer.search_field=Поиск файлов...
+
+# =============================================================================
+# ДИАЛОГОВЫЕ ОКНА
+# =============================================================================
+railroad.dialog.open_project.title=Открыть проект
+railroad.dialog.open_project.error.invalid_directory=Недействительная директория проекта
+railroad.dialog.open_project.error.invalid_directory.message=Выбранная директория, кажется, не является действительным проектом. Пожалуйста, выберите правильную директорию с проектом.
+
+# Диалоговые окна проводника проекта
+railroad.dialog.delete.title=Удалить файл
+railroad.dialog.delete.message=Вы уверены, что хотите удалить этот файл?
+railroad.dialog.copy.title=Файл уже существует
+railroad.dialog.copy.message=Элемент уже существует в этом месте. Хотите заменить его?
+railroad.dialog.create_file.title=Создать файл
+railroad.dialog.create_file.title.file=Создать новый файл
+railroad.dialog.create_file.title.folder=Создать новую папку
+railroad.dialog.create_file.title.java_class=Создать Java класс
+railroad.dialog.create_file.title.json=Создать JSON файл
+railroad.dialog.create_file.title.txt=Создать текстовый файл
+
+# Элементы предпросмотра темы
+railroad.theme.preview.text_field=Текстовое поле:
+railroad.theme.preview.password=Пароль:
+railroad.theme.preview.dropdown=Выпадающий список:
+
+# Диалог-окно "Не реализовано"
+not_implemented.title=Ещё не реализовано
+not_implemented.subtitle=Эта функция находится в разработке. Следите за обновлениями!
+
+# =============================================================================
+# ПАНЕЛЬ ИМПОРТА ПРОЕКТОВ
+# =============================================================================
+railroad.importprojects.title=Импорт проектов
+railroad.importprojects.search=Поиск репозиториев...
+railroad.importprojects.empty=Репозитории не найдены. Попробуйте добавить профиль VCS или проверьте своё соединение.
+railroad.importprojects.loading=Загрузка репозиториев...
+railroad.importprojects.error=Не удалось загрузить репозитории.
+railroad.importprojects.clone=Клонировать
+railroad.importprojects.clone.success=Репозиторий успешно клонирован!
+railroad.importprojects.clone.invalid_url=Недопустимый URL репозитория
+railroad.importprojects.clone.invalid_directory=Недопустимая директория
+railroad.importprojects.clone.invalid_selection=Недопустимый репозиторий
+railroad.importprojects.clone.directory_not_empty=Выбранная директория не пуста. Выберите пустую директорию или другое место.
+railroad.importprojects.clone.title=Клонировать репозиторий
+railroad.importprojects.clone.loading=Клонирование репозитория...
+railroad.importprojects.repositoryurl=URL репозитория
+railroad.importprojects.directory=Директория
+railroad.importprojects.choosedirectory=Выбрать директорию
+railroad.importprojects.repositoryurl.placeholder=Введите URL репозитория для клонирования.
+
+# =============================================================================
+# МЕНЮ IDE
+# =============================================================================
+railroad.menu.file=Файл
+railroad.menu.file.new_file=Новый файл
+railroad.menu.file.open_file=Открыть файл...
+railroad.menu.file.save=Сохранить
+railroad.menu.file.save_as=Сохранить как...
+railroad.menu.file.exit=Выход
+
+railroad.menu.edit=Изменить
+railroad.menu.edit.undo=Отменить
+railroad.menu.edit.redo=Повторить
+railroad.menu.edit.cut=Вырезать
+railroad.menu.edit.copy=Копировать
+railroad.menu.edit.paste=Вставить
+railroad.menu.edit.find=Найти...
+railroad.menu.edit.replace=Заменить...
+
+railroad.menu.view=Вид
+railroad.menu.view.project_explorer=Проводник проекта
+railroad.menu.view.properties=Свойства
+railroad.menu.view.console=Консоль
+railroad.menu.view.full_screen=Полноэкранный режим
+
+railroad.menu.run=Выполнить
+railroad.menu.run.run=Запуск
+railroad.menu.run.debug=Отладка
+railroad.menu.run.stop=Остановить
+
+railroad.menu.tools=Инструменты
+railroad.menu.tools.settings=Настройки
+railroad.menu.tools.plugins=Плагины
+railroad.menu.tools.terminal=Терминал
+
+railroad.menu.help=Справка
+railroad.menu.help.documentation=Документация
+railroad.menu.help.issues=Сообщить о проблеме
+railroad.menu.help.discord=Присоединиться к Discord
+
+# =============================================================================
+# СОЗДАНИЕ ПРОЕКТА
+# =============================================================================
+railroad.project.creation.onboarding.start_button=Начать создание проекта
+railroad.project.creation.onboarding.title=Создать новый проект
+railroad.onboarding.step_progress=Шаг %d из %d
+
+railroad.project.creation.project_details.title=Детали проекта
+railroad.project.creation.project_details.description=Введите название и расположение проекта.
+railroad.project.creation.section.project=Проект
+railroad.project.creation.name=Название проекта
+railroad.project.creation.name.prompt=My Awesome Mod
+railroad.project.creation.name.info=Отображаемое название проекта, используемое в метаданных и интерфейсе.
+railroad.project.creation.location=Расположение проекта
+railroad.project.creation.location.info=Папка, в которой Railroad создаст структуру проекта.
+
+railroad.project.creation.maven_coordinates.title=Координаты Maven
+railroad.project.creation.maven_coordinates.description=Введите координаты Maven для проекта.
+railroad.project.creation.section.maven_coordinates=Координаты Maven
+railroad.project.creation.group_id=Group ID
+railroad.project.creation.group_id.prompt=com.example
+railroad.project.creation.group_id.info=Базовый пакет и идентификатор Maven группы для сгенерированных исходников и публикации.
+railroad.project.creation.artifact_id=Artifact ID
+railroad.project.creation.artifact_id.prompt=my-awesome-mod
+railroad.project.creation.artifact_id.info=Имя артефакта для сгенерированных JAR и Gradle метаданных.
+railroad.project.creation.version=Версия
+railroad.project.creation.version.prompt=1.0.0
+railroad.project.creation.version.info=Начальная версия проекта, вставляемая в скрипты сборки и метаданные мода.
+
+railroad.project.creation.minecraft_version.title=Версия Minecraft
+railroad.project.creation.minecraft_version.description=Выберите версию Minecraft для проекта.
+railroad.project.creation.section.minecraft_version=Версия Minecraft
+railroad.project.creation.minecraft_version=Версия Minecraft
+railroad.project.creation.minecraft_version.info=Релиз Minecraft, на который ориентирован мод; определяет совместимые маппинги и зависимости.
+
+railroad.project.creation.mapping_channel.title=Канал маппинга
+railroad.project.creation.mapping_channel.description=Выберите канал маппинга для проекта.
+railroad.project.creation.section.mapping_channel=Канал маппинга
+railroad.project.creation.mapping_channel=Канал маппинга
+railroad.project.creation.mapping_channel.info=Распределение маппинга (Yarn, Mojmap, Parchment и др.) с читаемыми именами элементов игры.
+
+railroad.project.creation.mapping_version.title=Версия маппинга
+railroad.project.creation.mapping_version.description=Выберите версию маппинга для проекта.
+railroad.project.creation.section.mapping_version=Версия маппинга
+railroad.project.creation.mapping_version=Версия маппинга
+railroad.project.creation.mapping_version.info=Определённая сборка маппинга, разрешающая имена классов, методов и полей.
+
+railroad.project.creation.forge_version.title=Версия Forge
+railroad.project.creation.forge_version.description=Выберите версию Forge для проекта.
+railroad.project.creation.section.forge_version=Версия Forge
+railroad.project.creation.forge_version=Версия Forge
+railroad.project.creation.forge_version.info=Сборка загрузчика Forge, включённая в сгенерированный проект.
+
+railroad.project.creation.neoforge_version.title=Версия Neoforge
+railroad.project.creation.neoforge_version.description=Выберите версию Neoforge для проекта.
+railroad.project.creation.section.neoforge_version=Версия Neoforge
+railroad.project.creation.neoforge_version=Версия Neoforge
+railroad.project.creation.neoforge_version.info=Сборка загрузчика Neoforge, включённая в сгенерированный проект..
+
+railroad.project.creation.fabric_loader.title=Fabric Loader
+railroad.project.creation.fabric_loader.description=Выберите версию загрузчика Fabric для проекта.
+railroad.project.creation.section.fabric_loader=Fabric Loader
+railroad.project.creation.fabric_loader=Fabric Loader
+railroad.project.creation.fabric_loader.info=Версия загрузчика Fabric, включённая в сгенерированный проект.
+
+railroad.project.creation.fabric_api.title=Fabric API
+railroad.project.creation.fabric_api.description=Выберите версию Fabric API для проекта.
+railroad.project.creation.section.fabric_api=Fabric API
+railroad.project.creation.fabric_api=Fabric API
+railroad.project.creation.fabric_api.info=Зависимость Fabric API, которую Railroad добавляет в Gradle сборку.
+
+railroad.project.creation.mod_details.title=Подробности мода
+railroad.project.creation.mod_details.description=Введите подробности о моде.
+railroad.project.creation.section.mod_details=Подробности мода
+railroad.project.creation.mod_id=ID мода
+railroad.project.creation.mod_id.prompt=my-awesome-mod
+railroad.project.creation.mod_id.info=Уникальный идентификатор мода для имён файлов и регистрации во время выполнения.
+railroad.project.creation.mod_name=Название мода
+railroad.project.creation.mod_name.prompt=My Awesome Mod
+railroad.project.creation.mod_name.info=Читаемое название, отображаемое игрокам и в метаданных мода.
+railroad.project.creation.main_class=Main Class
+railroad.project.creation.main_class.prompt=com.example.MyAwesomeMod
+railroad.project.creation.main_class.info=Класс точки входа, сгенерированный для инициализатора мода.
+
+railroad.project.creation.section.forge_options=Опции Forge
+railroad.project.creation.section.neoforge_options=Опции Forge
+railroad.project.creation.use_mixins=Включить Mixins
+railroad.project.creation.use_mixins.info=Добавляет поддержку mixin и настраивает (Neo)/Forge для их применения.
+railroad.project.creation.use_access_transformer=Включить Access Transformer
+railroad.project.creation.use_access_transformer.info=Генерирует файл access transformer и регистрирует его для проекта.
+railroad.project.creation.gen_run_folders=Создать папки для запуска
+railroad.project.creation.gen_run_folders.info=Создает отдельные конфигурации запуска и папки данных для разработки.
+
+railroad.project.creation.license.title=Лицензия
+railroad.project.creation.license.description=Select the license for your project.
+railroad.project.creation.section.license=Лицензия
+railroad.project.creation.license=Лицензия
+railroad.project.creation.license.custom=Своя лицензия
+railroad.project.creation.license.custom.prompt=https://example.com/LICENSE
+railroad.project.creation.license.info=Лицензия, применяемая к исходникам и включаемая в проект.
+railroad.project.creation.license.custom.info=Укажите свой идентификатор SPDX или ссылку при использовании кастомной лицензии.
+
+railroad.project.creation.git.title=Git
+railroad.project.creation.git.description=Инициализировать Git репозиторий для проекта.
+railroad.project.creation.section.git=Git
+railroad.project.creation.init_git=Инициализировать Git репозиторий
+railroad.project.creation.init_git.info=Создает Git репозиторий с начальным коммитом в папке проекта.
+
+railroad.project.creation.access_widener.title=Access Widener
+railroad.project.creation.access_widener.description=Использовать access widener для доступа к недоступным частям игры.
+railroad.project.creation.section.access_widener=Access Widener
+railroad.project.creation.use_access_widener=Использовать Access Widener
+railroad.project.creation.access_widener.path=Путь к Access Widener
+railroad.project.creation.access_widener.path.prompt=${modid}.accesswidener
+railroad.project.creation.access_widener.path.error.required=Путь к access widener обязателен при включении.
+railroad.project.creation.use_access_widener.info=Генерирует файл access widener и настраивает загрузчик Fabric для его применения
+railroad.project.creation.access_widener.path.info=Относительный путь к файлу access widener; ${modid} заменяется на ID мода при создании.
+
+railroad.project.creation.split_sources.title=Разделение исходников
+railroad.project.creation.split_sources.description=Разделить исходники на client и main.
+railroad.project.creation.section.split_sources=Разделение исходников
+railroad.project.creation.split_sources=Разделение исходников
+railroad.project.creation.split_sources.info=Создает отдельные наборы исходников для клиентского и общего кода.
+
+railroad.project.creation.optional_details.title=Дополнительно
+railroad.project.creation.optional_details.description=Введите дополнительные сведения о проекте.
+railroad.project.creation.section.optional_details=Дополнительно
+railroad.project.creation.author=Автор
+railroad.project.creation.author.prompt=Ваше имя
+railroad.project.creation.author.info=Автор, указанный в метаданных мода.
+railroad.project.creation.credits=Благодарности
+railroad.project.creation.credits.prompt=Дополнительные упоминания
+railroad.project.creation.credits.info=Опциональные благодарности в mods.toml.
+railroad.project.creation.description=Описание
+railroad.project.creation.description.prompt=Короткое описание проекта.
+railroad.project.creation.description.info=Краткое описание, отображаемое в лаунчерах и метаданных.
+railroad.project.creation.issues_url=Issues URL
+railroad.project.creation.issues_url.prompt=https://example.com/issues
+railroad.project.creation.issues_url.info=Ссылка на трекер проблем в метаданных мода.
+railroad.project.creation.update_json_url=URL обновлений JSON
+railroad.project.creation.update_json_url.prompt=https://example.com/updates.json
+railroad.project.creation.update_json_url.info=Удаленный JSON с информацией об обновлениях версий.
+railroad.project.creation.display_url=Промо-ссылка
+railroad.project.creation.display_url.prompt=https://example.com/promo
+railroad.project.creation.display_url.info=Ссылка, показываемая в лаунчерах, таких как CurseForge.
+railroad.project.creation.display_test=Проверка отображения
+railroad.project.creation.display_test.info=Определяет, как лаунчер предупреждает о несоответствии версий.
+railroad.project.creation.client_side_only=Только клиент
+railroad.project.creation.client_side_only.info=Отметить мод как клиентский в метаданных.
+railroad.project.creation.homepage_url=URL домашней страницы
+railroad.project.creation.homepage_url.prompt=https://example.com
+railroad.project.creation.homepage_url.info=Сайт проекта, показываемый игрокам в лаунчере.
+railroad.project.creation.sources_url=URL исходников
+railroad.project.creation.sources_url.prompt=https://example.com/sources
+railroad.project.creation.sources_url.info=Ссылка на репозиторий исходников в метаданных мода.
+
+# Ошибки валидации
+railroad.project.creation.location.error.required=Укажите расположение проекта.
+railroad.project.creation.location.error.cannot_create=Не удалось создать папку проекта.
+railroad.project.creation.location.error.not_directory=Выбранный путь не является директорией.
+railroad.project.creation.location.warning.not_empty=Выбранная папка не пуста.
+railroad.project.creation.location.error.not_readable=Выбранная директория недоступна для чтения.
+railroad.project.creation.location.error.invalid_path=Выбранный путь недействителен.
+railroad.project.creation.location.warning.onedrive=Использование OneDrive для проектов не рекомендуется.
+railroad.project.creation.name.error.required=Укажите название проекта.
+railroad.project.creation.name.error.length_long=Название проекта слишком длинное (максимум 256 символов).
+railroad.project.creation.name.error.length_short=Название проекта слишком короткое (минимум 3 символа).
+railroad.project.creation.name.error.invalid_characters=Название проекта содержит недопустимые символы.
+railroad.project.creation.license.custom.error.required=Укажите URL кастомной лицензии.
+railroad.project.creation.license.custom.error.length_long=URL кастомной лицензии слишком длинный (максимум 2048 символов).
+railroad.project.creation.mod_id.error.required=Укажите Mod ID.
+railroad.project.creation.mod_id.error.length_short=Mod ID слишком короткий (минимум 3 символа).
+railroad.project.creation.mod_id.error.length_long=Mod ID слишком длинный (максимум 64 символа).
+railroad.project.creation.mod_id.error.invalid_characters=Mod ID содержит недопустимые символы.
+railroad.project.creation.mod_name.error.required=Укажите название мода.
+railroad.project.creation.mod_name.error.length_long=Название мода слишком длинное (максимум 256 символов).
+railroad.project.creation.mod_name.error.length_short=Название мода слишком короткое (минимум 5 символов).
+railroad.project.creation.main_class.error.required=Укажите main class.
+railroad.project.creation.main_class.error.invalid_characters=Main class содержит недопустимые символы.
+railroad.project.creation.author.error.length_long=Имя автора слишком длинное (максимум 256 символов).
+railroad.project.creation.author.error.length_short=Имя автора слишком короткое (минимум 3 символа).
+railroad.project.creation.credits.error.length_long=Слишком длинный список благодарностей (максимум 256 символов).
+railroad.project.creation.description.error.length_long=Описание слишком длинное (максимум 2048 символов).
+railroad.project.creation.description.error.length_short=Описание слишком короткое (минимум 10 символов).
+railroad.project.creation.issues.error.length_long=Issues ссылка слишком длинная (максимум 256 символов).
+railroad.project.creation.issues.error.invalid_url=Недействительная ссылка для Issues.
+railroad.project.creation.issues.error.no_issues=Issues ссылка не ведет на нужную страницу.
+railroad.project.creation.update_json.error.length_long=URL обновлений JSON слишком длинный (максимум 256 символов).
+railroad.project.creation.update_json.error.invalid_url=Недействительная ссылка для обновлений JSON.
+railroad.project.creation.update_json.error.invalid_extension=URL обновлений JSON должен оканчиваться на .json.
+railroad.project.creation.display_url.error.length_long=Промо-ссылка слишком длинная (максимум 256 символов).
+railroad.project.creation.display_url.error.invalid_url=Недействительная промо-ссылка.
+railroad.project.creation.group_id.error.required=Укажите Group ID.
+railroad.project.creation.group_id.error.length_long=Group ID слишком длинный (максимум 256 символов).
+railroad.project.creation.group_id.error.invalid_characters=Group ID содержит недопустимые символы.
+railroad.project.creation.artifact_id.error.required=Укажите Artifact ID.
+railroad.project.creation.artifact_id.error.length_long=Artifact ID слишком длинный (максимум 256 символов).
+railroad.project.creation.artifact_id.error.invalid_characters=Artifact ID содержит недопустимые символы.
+railroad.project.creation.version.error.required=Укажите версию.
+railroad.project.creation.version.error.length_long=Версия слишком длинная (максимум 256 символов).
+railroad.project.creation.version.error.invalid_characters=Версия содержит недопустимые символы.
+railroad.project.creation.homepage.error.length_long=URL домашней страницы слишком длинный (максимум 256 символов).
+railroad.project.creation.homepage.error.invalid_url=Недействительная ссылка на домашнюю страницу
+railroad.project.creation.sources.error.length_long=URL исходников слишком длинный (максимум 256 символов).
+railroad.project.creation.sources.error.invalid_url=Недействительная ссылка на исходники.
+
+railroad.project.creation.error.title=Ошибка создания проекта
+railroad.project.creation.error.header=Произошла ошибка при создании проекта.
+
+railroad.mapping_channel.mcp=MCP
+railroad.mapping_channel.yarn=Yarn
+railroad.mapping_channel.official=Оффициальные (Mojmaps)
+railroad.mapping_channel.parchment=Parchment

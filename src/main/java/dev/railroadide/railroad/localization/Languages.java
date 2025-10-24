@@ -22,4 +22,9 @@ public final class Languages {
         .languageCode("de")
         .countryCode("DE")
         .build();
+
+    public static final Language RU_RU = Language.builder("Русский")
+        .languageCode("ru")
+        .countryCode("RU")
+        .build();
 }
