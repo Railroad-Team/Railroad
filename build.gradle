@@ -156,12 +156,13 @@ runtime {
             installerOptions += ['--win-help-url', 'https://discord.turtywurty.dev/']
             installerOptions += ['--type', 'msi']
         } else if (currentOs.linux) {
-            installerOptions += ['--linux-package-name', 'Railroad']
+            installerOptions += ['--linux-package-name', 'railroad']
             installerOptions += ['--linux-shortcut']
             installerOptions += ['--type', 'deb']
         } else if (currentOs.macOsX) {
-            installerOptions += ['--mac-package-name', 'Railroad']
+            installerOptions += ['--mac-package-name', 'railroad']
             installerOptions += ['--type', 'dmg']
+            appVersion = '1.0.3'
         }
     }
 }
