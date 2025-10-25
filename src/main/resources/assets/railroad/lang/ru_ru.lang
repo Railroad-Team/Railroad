@@ -355,7 +355,7 @@ railroad.project.creation.gen_run_folders=Создать папки для за�
 railroad.project.creation.gen_run_folders.info=Создает отдельные конфигурации запуска и папки данных для разработки.
 
 railroad.project.creation.license.title=Лицензия
-railroad.project.creation.license.description=Select the license for your project.
+railroad.project.creation.license.description=Выберите лицензию для вашего проекта.
 railroad.project.creation.section.license=Лицензия
 railroad.project.creation.license=Лицензия
 railroad.project.creation.license.custom=Своя лицензия
