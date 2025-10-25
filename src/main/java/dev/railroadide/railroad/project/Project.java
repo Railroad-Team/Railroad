@@ -118,7 +118,7 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
 
     private void discoverFacets() {
         this.facets.clear();
-        /*FacetManager.scan(this).thenAcceptAsync(facets -> {
+        FacetManager.scan(this).thenAcceptAsync(facets -> {
             for (Facet<?> facet : facets) {
                 if (facet != null) {
                     this.facets.add(facet);
@@ -129,7 +129,7 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
         }).exceptionally(ex -> {
             Railroad.LOGGER.error("Failed to discover facets for project: {}", getPathString(), ex);
             return null;
-        });*/
+        });
     }
 
     @Override

@@ -4,6 +4,7 @@ import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRCard;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.utility.StringUtils;
 import io.github.palexdev.mfxcore.builders.InsetsBuilder;
 import javafx.geometry.Insets;
@@ -31,11 +32,12 @@ public class ProjectListCell extends ListCell<Project> {
     private final RRCard card = new RRCard(14, new Insets(8, 32, 8, 32));
     private final HBox root = new HBox(16);
     private final ImageView icon = new ImageView();
-    private final VBox infoBox = new VBox(7);
+    private final VBox infoBox = new VBox(4);
     private final Label nameLabel = new Label();
     private final Label pathLabel = new Label();
     private final Label lastOpenedLabel = new Label();
     private final RRButton ellipsisButton = new RRButton();
+    private final HBox facetTagsBox = new HBox(5); // 5px spacing between tags
 
     /**
      * Constructs a new ProjectListCell with modern styling and context menu functionality.
@@ -60,13 +62,17 @@ public class ProjectListCell extends ListCell<Project> {
         icon.setEffect(new DropShadow(8, Color.rgb(0, 0, 0, 0.10)));
 
         infoBox.setAlignment(Pos.CENTER_LEFT);
-        infoBox.setSpacing(7);
+        // infoBox.setSpacing(7); // This is now set in the field declaration
         VBox.setVgrow(infoBox, Priority.ALWAYS);
         nameLabel.getStyleClass().add("project-list-name");
+
+        facetTagsBox.getStyleClass().add("project-list-facet-tags");
+        facetTagsBox.setAlignment(Pos.CENTER_LEFT);
+
         pathLabel.getStyleClass().add("project-list-path");
         lastOpenedLabel.getStyleClass().add("project-list-last-opened");
-        infoBox.getChildren().addAll(nameLabel, pathLabel, lastOpenedLabel);
 
+        infoBox.getChildren().addAll(nameLabel, facetTagsBox, pathLabel, lastOpenedLabel);
         var ellipsisIcon = new FontIcon(FontAwesomeSolid.ELLIPSIS_V);
         ellipsisIcon.setIconSize(16);
         ellipsisButton.setGraphic(ellipsisIcon);
@@ -105,6 +111,10 @@ public class ProjectListCell extends ListCell<Project> {
     @Override
     protected void updateItem(Project project, boolean empty) {
         super.updateItem(project, empty);
+
+        // Always clear old tags, as cells are reused
+        facetTagsBox.getChildren().clear(); 
+
         if (empty || project == null) {
             setText(null);
             setGraphic(null);
@@ -114,7 +124,18 @@ public class ProjectListCell extends ListCell<Project> {
             nameLabel.setText(project.getAlias());
             pathLabel.setText(project.getPathString());
             lastOpenedLabel.setText(StringUtils.formatElapsed(project.getLastOpened()));
+
+            // Populate Facet Tags
+            for (Facet<?> facet : project.getFacets()) {
+                if (facet != null && facet.getType() != null) {
+                    // Use the FacetType's name for the tag
+                    Label tagLabel = new Label(facet.getType().name()); 
+                    tagLabel.getStyleClass().add("project-list-facet-tag");
+                    facetTagsBox.getChildren().add(tagLabel);
+                }
+            }
             setGraphic(card);
         }
     }
+
 } 
