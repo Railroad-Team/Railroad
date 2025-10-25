@@ -405,10 +405,13 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         if (match(JavaTokenType.SUPER_KEYWORD))
             return new SuperExpression(spanFrom(start), Optional.empty());
 
-        // TODO: Handle field access, method calls, array access, etc. that start with an identifier
         if (nextIsAny(JavaTokenType.IDENTIFIER)) {
             Token<JavaTokenType> identifier = expect(JavaTokenType.IDENTIFIER, "Expected identifier");
-            return new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
+            var nameExpression = new NameExpression(spanFrom(identifier), List.of(identifier.lexeme()));
+            if (match(JavaTokenType.OPEN_PAREN))
+                return finishMethodInvocationExpression(spanFrom(start), Optional.empty(), List.of(), nameExpression);
+
+            return nameExpression;
         }
 
         reportError("Expected expression");
@@ -421,7 +424,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         List<TypeRef> constructorTypeArguments = parseTypeArgumentsOptionally();
 
         TypeRef baseType = parseNonArrayTypeReference();
-        if (nextIsAny(JavaTokenType.OPEN_PAREN)) {
+        if (nextIsAny(JavaTokenType.OPEN_PAREN, JavaTokenType.LEFT_ANGLED_BRACKET)) {
             if (baseType instanceof PrimitiveTypeRef) {
                 reportError("Cannot instantiate primitive type with constructor syntax");
                 return null;
@@ -485,7 +488,9 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
     private ClassLiteralExpression parseClassLiteral() {
         Span start = currentSpan();
         TypeRef type = parseTypeReference();
-        expect(JavaTokenType.DOT, "Expected '.' in class literal");
+        if (previous().type() != JavaTokenType.DOT)
+            expect(JavaTokenType.DOT, "Expected '.' in class literal");
+
         expect(JavaTokenType.CLASS_KEYWORD, "Expected 'class' in class literal");
         return new ClassLiteralExpression(spanFrom(start), type);
     }
@@ -540,7 +545,15 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
 
     private IntegerLiteralExpression parseIntegerLiteral() {
         Span start = currentSpan();
-        Token<JavaTokenType> intToken = expect(nextIsAny(JavaTokenType.NUMBER_BINARY_LITERAL, JavaTokenType.NUMBER_HEXADECIMAL_LITERAL, JavaTokenType.NUMBER_INT_LITERAL, JavaTokenType.NUMBER_OCTAL_LITERAL) ? JavaTokenType.NUMBER_BINARY_LITERAL : nextIsAny(JavaTokenType.NUMBER_HEXADECIMAL_LITERAL) ? JavaTokenType.NUMBER_HEXADECIMAL_LITERAL : nextIsAny(JavaTokenType.NUMBER_OCTAL_LITERAL) ? JavaTokenType.NUMBER_OCTAL_LITERAL : JavaTokenType.NUMBER_INT_LITERAL, "Expected integer literal");
+        Token<JavaTokenType> intToken = expect(
+                nextIsAny(JavaTokenType.NUMBER_BINARY_LITERAL) ?
+                        JavaTokenType.NUMBER_BINARY_LITERAL :
+                        nextIsAny(JavaTokenType.NUMBER_HEXADECIMAL_LITERAL) ?
+                                JavaTokenType.NUMBER_HEXADECIMAL_LITERAL :
+                                nextIsAny(JavaTokenType.NUMBER_OCTAL_LITERAL) ?
+                                        JavaTokenType.NUMBER_OCTAL_LITERAL :
+                                        JavaTokenType.NUMBER_INT_LITERAL,
+                "Expected integer literal");
         String lexeme = intToken.lexeme();
         long value;
         int base = 10;
@@ -595,19 +608,9 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         boolean isTextBlock = stringToken.type() == JavaTokenType.TEXT_BLOCK_LITERAL;
 
         if (isTextBlock) {
-            if (lexeme.length() < 6 || !lexeme.startsWith("\"\"\"") || !lexeme.endsWith("\"\"\"")) {
-                reportError("Invalid text block literal format");
-                return new StringLiteralExpression(spanFrom(start), "", true);
-            }
-
             String value = lexeme.substring(3, lexeme.length() - 3);
             return new StringLiteralExpression(spanFrom(start), value, true);
         } else {
-            if (lexeme.length() < 2 || lexeme.charAt(0) != '\"' || lexeme.charAt(lexeme.length() - 1) != '\"') {
-                reportError("Invalid string literal format");
-                return new StringLiteralExpression(spanFrom(start), "", false);
-            }
-
             var valueBuilder = new StringBuilder();
             for (int i = 1; i < lexeme.length() - 1; i++) {
                 char c = lexeme.charAt(i);
@@ -681,6 +684,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
                     case '"' -> value = '\"';
                     case '\'' -> value = '\'';
                     case '\\' -> value = '\\';
+                    case '0' -> value = '\0';
                     default -> {
                         reportError("Invalid escape sequence in character literal");
                         return new CharacterLiteralExpression(spanFrom(start), lexeme, '\0');
@@ -707,16 +711,6 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         }
 
         return new CharacterLiteralExpression(spanFrom(start), lexeme, value); // TODO: Unsure that this is correct
-    }
-
-    private Expression parseMethodCallExpression(Optional<Expression> expr, Span start) {
-        List<TypeRef> typeArguments = parseTypeArgumentsOptionally();
-
-        Token<JavaTokenType> methodNameToken = expect(JavaTokenType.IDENTIFIER, "Expected method name");
-        var methodName = new NameExpression(spanFrom(methodNameToken), List.of(methodNameToken.lexeme()));
-
-        expect(JavaTokenType.OPEN_PAREN, "Expected '(' to start method arguments");
-        return finishMethodInvocationExpression(spanFrom(start), expr, typeArguments, methodName);
     }
 
     private @NotNull MethodInvocationExpression finishMethodInvocationExpression(Span start, Optional<Expression> expr, List<TypeRef> typeArguments, NameExpression methodName) {
@@ -903,11 +897,6 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
                 Parameter parameter = parseLambdaParameter();
                 if (isInferred && parameter.type().isPresent())
                     isInferred = false;
-//                TODO: Come back and check if the semantic analyzer can handle this
-//                else if(!isInferred && parameter.type().isEmpty()) {
-//                    reportError("Cannot mix inferred and explicit lambda parameter types");
-//                    return null;
-//                }
 
                 parameters.add(parameter);
             } while (match(JavaTokenType.COMMA));
@@ -2148,15 +2137,15 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
             }
         } else {
             do {
-                Span labelStart = currentSpan();
                 if (nextIsAny(JavaTokenType.DEFAULT_KEYWORD)) {
+                    Span labelStart = currentSpan();
                     reportError("`default` cannot appear in a `case` label list for a switch rule");
                     advance();
                     labels.add(new SwitchLabel.DefaultLabel(spanFrom(labelStart)));
                     continue;
                 }
 
-                labels.add(parseCaseLabel(labelStart));
+                labels.add(parseCaseLabel());
             } while (match(JavaTokenType.COMMA));
         }
 
@@ -2166,7 +2155,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         return new SwitchRule(spanFrom(start), labels, body);
     }
 
-    private SwitchLabel.CaseLabel parseCaseLabel(Span labelStart) {
+    private SwitchLabel.CaseLabel parseCaseLabel() {
         Span start = currentSpan();
 
         List<CaseItem> items = new ArrayList<>();
@@ -2174,7 +2163,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
             items.add(parseCaseItem());
         } while (match(JavaTokenType.COMMA));
 
-        return new SwitchLabel.CaseLabel(spanFrom(labelStart), items);
+        return new SwitchLabel.CaseLabel(spanFrom(start), items);
     }
 
     private CaseItem parseCaseItem() {
@@ -2183,7 +2172,27 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         if (match(JavaTokenType.NULL_LITERAL))
             return new CaseItem.CaseNull(spanFrom(start));
 
+        if (lookaheadType(1).isLiteral() || isSwitchCaseEnumConstant()) {
+            Expression constantExpression = parseExpression();
+            return new CaseItem.CaseConstant(spanFrom(start), constantExpression);
+        }
+
         return parsePatternCaseItem(start);
+    }
+
+    private boolean isSwitchCaseEnumConstant() {
+        if (!nextIsAny(JavaTokenType.IDENTIFIER))
+            return false;
+
+        Marker mark = mark();
+        do {
+            if (!match(JavaTokenType.IDENTIFIER))
+                break;
+        } while (match(JavaTokenType.DOT));
+
+        boolean isEnumConst = nextIsAny(JavaTokenType.COMMA, JavaTokenType.COLON, JavaTokenType.ARROW);
+        mark.rollback();
+        return isEnumConst;
     }
 
     private CaseItem.CasePattern parsePatternCaseItem(Span start) {
@@ -2379,18 +2388,15 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
             Token<JavaTokenType> identifierToken = expect(JavaTokenType.IDENTIFIER, "Expected identifier in type reference");
             List<TypeRef> typeArguments = parseTypeArgumentsOptionally();
             parts.add(new ClassOrInterfaceTypeRef.Part(spanFrom(partStart), annotations, new NameExpression(spanFrom(identifierToken), List.of(identifierToken.lexeme())), typeArguments));
-        } while (match(JavaTokenType.DOT));
+        } while (match(JavaTokenType.DOT) && !nextIsAny(JavaTokenType.SUPER_KEYWORD, JavaTokenType.THIS_KEYWORD, JavaTokenType.CLASS_KEYWORD));
 
         return new ClassOrInterfaceTypeRef(spanFrom(parts.getFirst().span()), parts);
     }
 
     private List<TypeRef> parseTypeArgumentsOptionally() {
         List<TypeRef> typeArguments = new ArrayList<>();
-        if (match(JavaTokenType.LEFT_ANGLED_BRACKET)) {
-            if (nextIsAny(JavaTokenType.RIGHT_ANGLED_BRACKET)) {
-                typeArguments.add(new TypeDiamond(spanFrom(currentSpan())));
-                return typeArguments;
-            }
+        if (nextIsAny(JavaTokenType.LEFT_ANGLED_BRACKET) && !nextIsAnyAt(2, JavaTokenType.RIGHT_ANGLED_BRACKET)) {
+            expect(JavaTokenType.LEFT_ANGLED_BRACKET, "Expected '<' for type arguments");
 
             do {
                 typeArguments.add(parseTypeArgument());
@@ -2705,6 +2711,9 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
             offset++;
             while (nextIsAnyAt(offset, JavaTokenType.DOT)) {
                 offset++;
+                if (nextIsAnyAt(offset, JavaTokenType.CLASS_KEYWORD))
+                    return true;
+
                 if (!nextIsAnyAt(offset, JavaTokenType.IDENTIFIER))
                     return false;
 

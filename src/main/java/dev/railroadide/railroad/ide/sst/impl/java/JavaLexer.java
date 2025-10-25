@@ -443,7 +443,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         number.append(current);
 
         if (current == '0' && hasNext()) {
-            char next = peek(1);
+            char next = peek(0);
             switch (Character.toLowerCase(next)) {
                 case 'x' -> {
                     consume();
