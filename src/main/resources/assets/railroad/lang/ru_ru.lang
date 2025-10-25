@@ -318,7 +318,7 @@ railroad.project.creation.neoforge_version.title=Версия Neoforge
 railroad.project.creation.neoforge_version.description=Выберите версию Neoforge для проекта.
 railroad.project.creation.section.neoforge_version=Версия Neoforge
 railroad.project.creation.neoforge_version=Версия Neoforge
-railroad.project.creation.neoforge_version.info=Сборка загрузчика Neoforge, включённая в сгенерированный проект..
+railroad.project.creation.neoforge_version.info=Сборка загрузчика Neoforge, включённая в сгенерированный проект.
 
 railroad.project.creation.fabric_loader.title=Fabric Loader
 railroad.project.creation.fabric_loader.description=Выберите версию загрузчика Fabric для проекта.
