@@ -164,7 +164,8 @@ public enum JavaTokenType {
         );
         put('-', List.of(
                 Map.entry("--", MINUS_MINUS),
-                Map.entry("-=", MINUS_EQUALS))
+                Map.entry("-=", MINUS_EQUALS),
+                Map.entry("->", ARROW))
         );
         put('*', List.of(
                 Map.entry("*=", STAR_EQUALS))
@@ -197,8 +198,7 @@ public enum JavaTokenType {
                 Map.entry("<=", LESS_THAN_OR_EQUALS))
         );
         put('=', List.of(
-                Map.entry("==", DOUBLE_EQUALS),
-                Map.entry("=>", ARROW))
+                Map.entry("==", DOUBLE_EQUALS))
         );
         put('!', List.of(
                 Map.entry("!=", NOT_EQUALS))
@@ -276,6 +276,15 @@ public enum JavaTokenType {
             case EQUALS, PLUS_EQUALS, MINUS_EQUALS, STAR_EQUALS, SLASH_EQUALS, PERCENT_EQUALS,
                  AMPERSAND_EQUALS, PIPE_EQUALS, CARET_EQUALS, LEFT_SHIFT_EQUALS, RIGHT_SHIFT_EQUALS,
                  UNSIGNED_RIGHT_SHIFT_EQUALS -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isLiteral() {
+        return switch (this) {
+            case NULL_LITERAL, BOOLEAN_LITERAL, NUMBER_INT_LITERAL, NUMBER_HEXADECIMAL_LITERAL,
+                 NUMBER_BINARY_LITERAL, NUMBER_OCTAL_LITERAL, NUMBER_FLOATING_POINT_LITERAL,
+                 CHARACTER_LITERAL, STRING_LITERAL, TEXT_BLOCK_LITERAL -> true;
             default -> false;
         };
     }

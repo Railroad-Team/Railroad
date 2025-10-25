@@ -21,7 +21,7 @@ public class SSTTesting {
     public static void main(String[] args) throws IOException {
         System.out.println("SST Testing");
 
-        String code = Files.readString(Path.of("E:\\Programming\\Java\\Railroad\\src\\main\\java\\dev\\railroadide\\railroad\\ide\\sst\\SSTTesting.java"));
+        String code = Files.readString(Path.of("E:\\Programming\\Java\\Railroad\\src\\main\\java\\dev\\railroadide\\railroad\\ide\\sst\\impl\\java\\JavaParser.java"));
 
         System.out.println("Code to parse:");
         System.out.println(code);
