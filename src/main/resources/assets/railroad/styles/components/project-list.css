@@ -12,3 +12,21 @@
 .project-list-node, .project-list-node .Pane {
     -fx-background-color: -color-bg-subtle;
 }
+/* Style for the individual tag */
+.project-list-facet-tag {
+    -fx-font-size: 0.8em; /* 10px if base is 12.5px */
+    -fx-font-weight: 500;
+    -fx-padding: 2px 6px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+
+    /* Uses theme variables for light/dark mode compatibility */
+    -fx-background-color: -rr-base-color-level-3;
+    -fx-text-fill: -rr-text-color-level-2;
+}
+
+/* Style for the HBox container */
+.project-list-facet-tags {
+    /* Ensures the tags box doesn't take up space if it's empty */
+    -fx-padding: 0;
+}
