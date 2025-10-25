@@ -71,7 +71,7 @@ settings.tree.keybinds=Горячие клавиши
 
 # Основные настройки
 railroad.settings.general.language.title=Язык
-railroad.settings.general.language.description=Выберите языке для интерфейса Railroad.
+railroad.settings.general.language.description=Выберите язык для интерфейса Railroad.
 
 # Настройки горячих клавиш
 railroad.settings.keybinds.title=Горячие клавиши
