@@ -4,23 +4,23 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0.36,6.2)'
-            < %
+            <%
     if (mappings.channel == 'parchment') {
         out.print("\n    id 'org.parchmentmc.librarian.forgegradle' version '1.+'")
     }
 
     if (props.useMixins) {
         out.print("\n    id 'org.spongepowered.mixin' version '0.7.+'")
-    } % >
+    } %>
 }
 
-        < %
+        <%
 if (props.useMixins)
     out.println("""\nmixin {
     add sourceSets.main, '\${archivesName}.refmap.json'
     config '\${archivesName}.mixins.json'
     debug.export = true
-}""") % >
+}""") %>
 
             version = mod_version
 group = mod_group_id
@@ -38,15 +38,15 @@ minecraft {
     reobf = false
     copyIdeResources = true
 
-            < %
+            <%
     if (props.genRunFolders) {
         out.print("\n    generateRunFolders = true")
-    } % >
+    } %>
 
-            < %
+            <%
     if (props.useAccessTransformer) {
         out.print("\n    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')")
-    } % >
+    } %>
 
             runs {
                 configureEach {
@@ -134,10 +134,10 @@ tasks.named('jar', Jar).configure {
             'Implementation-Vendor' : mod_authors
     ]
 
-            < %
+            <%
     if (props.useMixins) {
         out.println("manifestAttributes.put('MixinConfigs', '\${archivesName}.mixins.json')")
-    } % >
+    } %>
 
             manifest {
                 attributes(manifestAttributes)

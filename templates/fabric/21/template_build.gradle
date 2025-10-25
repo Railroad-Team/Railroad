@@ -17,36 +17,33 @@ repositories {
     // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html
     // for more information about repositories.
-    < % if (mappings.channel == 'parchment') {
+    <% if (mappings.channel == 'parchment') {
         out.print("\n    maven { url = 'https://maven.parchmentmc.org/' }")
-    } % >
+    } %>
 }
 
 loom {
-    < % if (props.splitSourceSets) {
+    <% if (props.splitSourceSets) {
         out.print("splitEnvironmentSourceSets()")
-    } % >
+    } %>
 
-            mods {
-                < % out.print("""\"\${project.archives_base_name}\" {
+    mods {
+        <% out.print("""\"\${project.archives_base_name}\" {
             sourceSet sourceSets.main\n""")
                 if (props.splitSourceSets) {
                     out.print("\n            sourceSet sourceSets.client")
                 }
-                out.print("\n        }") % >
-            }
+        out.print("\n        }") %>
+    }
 
-            < %
-    if (props.useAccessWidener) {
+    <% if (props.useAccessWidener) {
         out.print("\n    accessWidenerPath = file(\"src/main/resources/${props.accessWidenerPath}\")")
-    } % >
+    } %>
 }
 
 dependencies {
     minecraft "com.mojang:minecraft:\${project.minecraft_version}"
-
-            < %
-    if (mappings.channel == 'yarn') {
+    <% if (mappings.channel == 'yarn') {
         out.print("\n    mappings \"net.fabricmc:yarn:\${project.yarn_mappings}:v2\"")
     } else if (mappings.channel == 'mojmap') {
         out.print("\n    mappings loom.officialMojangMappings()")
@@ -55,13 +52,12 @@ dependencies {
          officialMojangMappings()
          parchment(\"org.parchmentmc.data:parchment-\${project.minecraft_version}:\${project.parchment_version}@zip\")
      }""")
-    } % >
+    } %>
 
-            modImplementation "net.fabricmc:fabric-loader:\${project.loader_version}"
-            < %
-    if (props.includeFabricApi) {
+    modImplementation "net.fabricmc:fabric-loader:\${project.loader_version}"
+    <% if (props.includeFabricApi) {
         out.print("\n    modImplementation \"net.fabricmc.fabric-api:fabric-api:\${project.fabric_version}\"")
-    } % >
+    } %>
 }
 
 processResources {
