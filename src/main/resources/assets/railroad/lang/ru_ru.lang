@@ -472,5 +472,5 @@ railroad.project.creation.error.header=Произошла ошибка при с
 
 railroad.mapping_channel.mcp=MCP
 railroad.mapping_channel.yarn=Yarn
-railroad.mapping_channel.official=Оффициальные (Mojmaps)
+railroad.mapping_channel.official=Официальные (Mojmaps)
 railroad.mapping_channel.parchment=Parchment
