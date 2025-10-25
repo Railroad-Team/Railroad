@@ -12,3 +12,29 @@
 .project-list-node, .project-list-node .Pane {
     -fx-background-color: -color-bg-subtle;
 }
+/* base tag style */
+.project-list-facet-tag {
+    -fx-font-size: 0.8em; 
+    -fx-font-weight: 500;
+    -fx-padding: 2px 6px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-background-color: -rr-base-color-level-3;
+    -fx-text-fill: -rr-text-color-level-2;
+}
+
+
+.facet-java {
+    -fx-background-color: #E89D42; /* Orange */
+    -fx-text-fill: #3D2D1A;
+}
+
+.facet-gradle {
+    -fx-background-color: #38809A; /* Blue */
+    -fx-text-fill: #FFFFFF;
+}
+
+.facet-fabric {
+    -fx-background-color: #C3C3C3; /* Light Grey */
+    -fx-text-fill: #2B2B2B;
+}
