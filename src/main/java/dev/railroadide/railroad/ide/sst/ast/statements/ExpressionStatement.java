@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record ExpressionStatement(Span span, Expression expression) implements Statement, LambdaBody {
+public record ExpressionStatement(Span span, Expression expression) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.EXPRESSION_STATEMENT;
