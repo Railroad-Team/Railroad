@@ -8,18 +8,7 @@ public final class Languages {
         .countryCode("US")
         .build();
 
-    public static final Language ES_ES = Language.builder("Español")
-        .languageCode("es")
-        .countryCode("ES")
-        .build();
-
-    public static final Language FR_FR = Language.builder("Français")
-        .languageCode("fr")
-        .countryCode("FR")
-        .build();
-
-    public static final Language DE_DE = Language.builder("Deutsch")
-        .languageCode("de")
-        .countryCode("DE")
-        .build();
+    public static void initialize() {
+        LanguageRegistryLoader.load();
+    }
 }

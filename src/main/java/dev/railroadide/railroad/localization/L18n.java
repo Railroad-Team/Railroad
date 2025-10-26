@@ -11,6 +11,9 @@ import javafx.beans.property.SimpleObjectProperty;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
@@ -57,7 +60,9 @@ public class L18n {
         try {
             InputStream langFileStream = PluginManager.loadResource(descriptor, langFileName);
             if (langFileStream != null) {
-                LANG_CACHE.load(langFileStream);
+                try (var reader = new InputStreamReader(langFileStream, StandardCharsets.UTF_8)) {
+                    LANG_CACHE.load(reader);
+                }
                 LOGGER.debug("Language file {} loaded for plugin {}", langFileName, descriptor.getId());
 
                 CURRENT_LANG.setValue(language);
@@ -100,14 +105,28 @@ public class L18n {
      * @throws IOException if an error occurs while reading the language file
      */
     private static Properties getLanguageProperties(String name, List<InputStream> pluginResources) throws IOException {
-        var languageFiles = new InputStream[pluginResources.size() + 1];
-        languageFiles[0] = AppResources.getResourceAsStream(name);
-        for (int i = 0; i < pluginResources.size(); i++) {
-            languageFiles[i + 1] = pluginResources.get(i);
-        }
+        String base = "lang/en_us.lang";
 
-        Properties props = mergeLanguageFiles(languageFiles);
-        for (InputStream stream : languageFiles) {
+        List<InputStream> streams = new ArrayList<>();
+
+        // setting base language
+        InputStream appBase = AppResources.getResourceAsStream(base);
+        if (appBase != null) {
+            streams.add(appBase);
+        }
+        List<InputStream> pluginBaseResources = PluginManager.loadResourcesFromAllPlugins(base);
+        streams.addAll(pluginBaseResources);
+
+        // setting name language
+        InputStream appCurrent = AppResources.getResourceAsStream(name);
+        if (appCurrent != null) {
+            streams.add(appCurrent);
+        }
+        streams.addAll(pluginResources);
+
+        Properties props = mergeLanguageFiles(streams.toArray(InputStream[]::new));
+
+        for (InputStream stream : streams) {
             if (stream != null) {
                 try {
                     stream.close();
@@ -132,7 +151,9 @@ public class L18n {
             if (stream == null)
                 continue;
 
-            mergedProperties.load(stream);
+            try (var reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+                mergedProperties.load(reader);
+            }
         }
 
         return mergedProperties;
