@@ -128,7 +128,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         Span start = currentSpan();
         Expression left = parseBitwiseXorExpression();
 
-        while (match(JavaTokenType.CARET)) {
+        while (match(JavaTokenType.PIPE)) {
             Token<JavaTokenType> operator = previous();
             LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
             Expression right = parseBitwiseXorExpression();
@@ -142,7 +142,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         Span start = currentSpan();
         Expression left = parseBitwiseAndExpression();
 
-        while (match(JavaTokenType.PIPE)) {
+        while (match(JavaTokenType.CARET)) {
             Token<JavaTokenType> operator = previous();
             LexerToken<JavaTokenType> operatorToken = LexerToken.of(spanFrom(operator), operator);
             Expression right = parseBitwiseAndExpression();
