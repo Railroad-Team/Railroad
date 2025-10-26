@@ -3,6 +3,7 @@ package dev.railroadide.railroad.settings.keybinds;
 import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.utility.OperatingSystem;
+import dev.railroadide.railroad.localization.L18n;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
@@ -10,176 +11,125 @@ import javafx.scene.input.KeyEvent;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public class KeyComboNode extends RRButton {
     @Setter
     private Consumer<KeybindData> onComboModified;
-
     private KeybindData keybindData;
 
     private boolean editing = false;
+    private KeyCode pendingKeyCode;
+    private KeyCombination.Modifier[] pendingModifiers = new KeyCombination.Modifier[0];
 
-    private KeyCode tempKeyCode = null;
-    private KeyCombination.Modifier[] tempModifiers = new KeyCombination.Modifier[0];
+    public KeyComboNode(KeybindData data) {
+        super("");
+        this.keybindData = data == null
+            ? new KeybindData(KeyCode.UNDEFINED, new KeyCombination.Modifier[0])
+            : data;
 
-    /**
-     * Creates a new KeyComboNode with the specified keybind data.
-     *
-     * @param keybindData The keybind data to initialize the node with.
-     */
-    public KeyComboNode(KeybindData keybindData) {
-        this.keybindData = keybindData;
-        setVariant(ButtonVariant.PRIMARY);
-
-        if (keybindData.keyCode() == KeyCode.UNDEFINED) {
-            setText("");
-        } else {
-            updateText();
-        }
+        setVariant(ButtonVariant.SECONDARY);
+        setButtonSize(ButtonSize.SMALL);
+        getStyleClass().add("keybind-shortcut-chip");
+        updateLabel();
     }
 
-    /**
-     * Checks if two arrays of KeyCombination.Modifier are equal.
-     *
-     * @param a Array of modifiers to compare.
-     * @param b Array of modifiers to compare against.
-     * @return True if both arrays contain the same modifiers, false otherwise.
-     */
-    private static boolean areModifiersEqual(KeyCombination.Modifier[] a, KeyCombination.Modifier[] b) {
-        if (a == null && b == null) return true;
-        if (a == null || b == null) return false;
-        if (a.length != b.length) return false;
-        for (KeyCombination.Modifier modA : a) {
-            boolean found = false;
-            for (KeyCombination.Modifier modB : b) {
-                if (modA.equals(modB)) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) return false;
-        }
-        return true;
-    }
-
-    /**
-     * Toggles the editing mode for this KeyComboNode.
-     * When enabled, the node will listen for key events to capture a new key combination.
-     */
     public void toggleEditing() {
-        if (editing) return;
-
-        editing = true;
-        setText("[Recording...]");
-
-        Scene scene = getScene();
-        if (scene == null)
-            throw new IllegalStateException("KeyComboNode must be attached to a scene.");
-
-        scene.addEventFilter(KeyEvent.KEY_PRESSED, this::onKeyPressed);
-        scene.addEventFilter(KeyEvent.KEY_RELEASED, this::onKeyReleased);
-    }
-
-    /**
-     * Called when a key is pressed in editing mode, and then appends the key code and modifiers to the temporary variables,
-     * which are then used to update the keybind data when the keys are released.
-     */
-    private void onKeyPressed(KeyEvent event) {
-        event.consume();
-
-        tempKeyCode = event.getCode();
-        List<KeyCombination.Modifier> mods = new ArrayList<>();
-
-        if (event.isControlDown()) mods.add(KeyCombination.CONTROL_DOWN);
-        if (event.isAltDown()) mods.add(KeyCombination.ALT_DOWN);
-        if (event.isShiftDown()) mods.add(KeyCombination.SHIFT_DOWN);
-        if (event.isShortcutDown()) mods.add(KeyCombination.SHORTCUT_DOWN);
-
-        tempModifiers = mods.toArray(new KeyCombination.Modifier[0]);
-        if (tempModifiers.length == 0) {
-            tempModifiers = null;
-        }
-    }
-
-    /**
-     * Called when a key is released in editing mode. It checks if the key combination has changed,
-     * and if so, it updates the keybind data and calls the onComboModified consumer if set.
-     * It then resets the editing state and updates the node.
-     *
-     * @param event
-     */
-    private void onKeyReleased(KeyEvent event) {
-        if (!editing || tempKeyCode == null) return;
-        if (tempKeyCode.isModifierKey()) return;
-        event.consume();
-
-        boolean changed = !tempKeyCode.equals(this.keybindData.keyCode()) || !areModifiersEqual(this.keybindData.modifiers(), tempModifiers);
-
-        if (changed && onComboModified != null) {
-            onComboModified.accept(new KeybindData(tempKeyCode, tempModifiers));
-        }
-
-        this.keybindData = new KeybindData(tempKeyCode, tempModifiers);
-        updateText();
-
-        editing = false;
-        tempKeyCode = null;
-        tempModifiers = null;
-
-        Scene scene = getScene();
-        if (scene != null) {
-            scene.removeEventFilter(KeyEvent.KEY_PRESSED, this::onKeyPressed);
-            scene.removeEventFilter(KeyEvent.KEY_RELEASED, this::onKeyReleased);
-        }
-    }
-
-    /**
-     * Updates the text of the button to reflect the current keybind data.
-     */
-    private void updateText() {
-        StringBuilder label = new StringBuilder();
-        if (this.keybindData.modifiers() == null || this.keybindData.modifiers().length == 0) {
-            label.append(this.keybindData.keyCode());
-            setText(label.toString());
+        if (editing) {
             return;
         }
 
-        for (KeyCombination.Modifier mod : this.keybindData.modifiers()) {
-            label.append(localizeModifier(mod)).append(" + ");
+        Scene scene = getScene();
+        if (scene == null) {
+            throw new IllegalStateException("KeyComboNode must be attached to a Scene before editing.");
         }
 
-        label.append(this.keybindData.keyCode());
+        editing = true;
+        getStyleClass().add("recording");
+        setText(L18n.localize("railroad.settings.keybinds.recording"));
+
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+        scene.addEventFilter(KeyEvent.KEY_RELEASED, this::handleKeyReleased);
+    }
+
+    private void handleKeyPressed(KeyEvent event) {
+        event.consume();
+        pendingKeyCode = event.getCode();
+
+        List<KeyCombination.Modifier> modifiers = new ArrayList<>();
+        if (event.isShortcutDown()) modifiers.add(KeyCombination.SHORTCUT_DOWN);
+        if (event.isControlDown()) modifiers.add(KeyCombination.CONTROL_DOWN);
+        if (event.isAltDown()) modifiers.add(KeyCombination.ALT_DOWN);
+        if (event.isShiftDown()) modifiers.add(KeyCombination.SHIFT_DOWN);
+
+        pendingModifiers = modifiers.isEmpty() ? null : modifiers.toArray(new KeyCombination.Modifier[0]);
+    }
+
+    private void handleKeyReleased(KeyEvent event) {
+        if (!editing || pendingKeyCode == null) {
+            return;
+        }
+
+        event.consume();
+
+        if (pendingKeyCode.isModifierKey()) {
+            return; // Wait for a non-modifier key before finalizing
+        }
+
+        KeybindData updated = new KeybindData(pendingKeyCode, pendingModifiers);
+        boolean changed = !Objects.equals(keybindData.keyCode(), updated.keyCode())
+            || !Arrays.equals(keybindData.modifiers(), updated.modifiers());
+
+        if (changed && onComboModified != null) {
+            onComboModified.accept(updated);
+        }
+
+        keybindData = updated;
+        finishEditing(event.getSource());
+    }
+
+    private void finishEditing(Object source) {
+        editing = false;
+        pendingKeyCode = null;
+        pendingModifiers = null;
+
+        getStyleClass().remove("recording");
+        updateLabel();
+
+        Scene scene = getScene();
+        if (scene != null) {
+            scene.removeEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+            scene.removeEventFilter(KeyEvent.KEY_RELEASED, this::handleKeyReleased);
+        }
+    }
+
+    private void updateLabel() {
+        if (keybindData.keyCode() == null || keybindData.keyCode() == KeyCode.UNDEFINED) {
+            setText(L18n.localize("railroad.settings.keybinds.click_to_record"));
+            return;
+        }
+
+        StringBuilder label = new StringBuilder();
+        KeyCombination.Modifier[] modifiers = keybindData.modifiers();
+        if (modifiers != null) {
+            for (KeyCombination.Modifier modifier : modifiers) {
+                label.append(localizeModifier(modifier)).append(" + ");
+            }
+        }
+        label.append(keybindData.keyCode().getName());
         setText(label.toString());
     }
 
-    /**
-     * Converts Modifier names to the correct name depending on the operating system.
-     *
-     * @param modifier The modifier to convert.
-     * @return The localized name of the modifier.
-     */
     private String localizeModifier(KeyCombination.Modifier modifier) {
         return switch (modifier.getKey()) {
-            case SHORTCUT:
-                if (OperatingSystem.CURRENT == OperatingSystem.MAC) {
-                    yield "Command";
-                } else {
-                    yield "Control";
-                }
-            case ALT:
-                if (OperatingSystem.CURRENT == OperatingSystem.MAC) {
-                    yield "Option";
-                } else {
-                    yield "Alt";
-                }
-            case CONTROL:
-                yield "Control";
-            case SHIFT:
-                yield "Shift";
-            default:
-                yield modifier.getKey().toString();
+            case SHORTCUT -> OperatingSystem.CURRENT == OperatingSystem.MAC ? "⌘" : "Ctrl";
+            case CONTROL -> "Ctrl";
+            case ALT -> OperatingSystem.CURRENT == OperatingSystem.MAC ? "⌥" : "Alt";
+            case SHIFT -> "Shift";
+            default -> modifier.getKey().getName();
         };
     }
 }

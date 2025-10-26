@@ -3,44 +3,324 @@ package dev.railroadide.railroad.settings.keybinds;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import dev.railroadide.core.settings.keybinds.Keybind;
 import dev.railroadide.core.settings.keybinds.KeybindCategory;
 import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.RRHBox;
+import dev.railroadide.core.ui.RRCard;
+import dev.railroadide.core.ui.RRTextField;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.Railroad;
-import io.github.palexdev.mfxcore.builders.InsetsBuilder;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
+import dev.railroadide.railroad.localization.L18n;
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
-import lombok.Getter;
+import javafx.scene.layout.*;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+public class KeybindsList extends RRVBox {
+    private final Map<String, List<KeybindData>> keybinds = new LinkedHashMap<>();
 
-public class KeybindsList extends TreeView {
-    @Getter
-    private final Map<String, List<KeybindData>> keybinds = new HashMap<>();
+    private final RRTextField searchField = new RRTextField();
+    private final FlowPane categoryBar = new FlowPane();
+    private final ToggleGroup categoryToggleGroup = new ToggleGroup();
+    private final VBox cardsContainer = new VBox(12);
+    private final LocalizedLabel emptyTitle = new LocalizedLabel("railroad.settings.keybinds.empty.title");
+    private final LocalizedLabel emptySubtitle = new LocalizedLabel("railroad.settings.keybinds.empty.subtitle");
+    private final VBox emptyState = new VBox(6, emptyTitle, emptySubtitle);
+    private final StackPane listStack = new StackPane();
 
-    /**
-     * Creates a new KeybindsList with the given keybinds map.
-     *
-     * @param map a map of keybind IDs to their corresponding list of KeybindData.
-     */
-    public KeybindsList(Map<String, List<KeybindData>> map) {
-        super(new TreeItem<>(new RRHBox()));
-        loadKeybinds(map);
-        this.setShowRoot(false);
+    private String activeCategoryId;
+    private String pendingEditKey;
+    private int pendingEditIndex = -1;
 
-        TreeItem<RRHBox> root = this.getRoot();
-        root.setExpanded(true);
+    public KeybindsList() {
+        this(null);
+    }
 
-        refreshTree();
+    public KeybindsList(Map<String, List<KeybindData>> initialKeybinds) {
+        getStyleClass().add("keybinds-pane");
+        setSpacing(18);
+        setFillWidth(true);
+
+        createHeader();
+        createCategoryBar();
+        createListArea();
+
+        loadKeybinds(initialKeybinds);
+    }
+
+    public Map<String, List<KeybindData>> getKeybinds() {
+        Map<String, List<KeybindData>> copy = new LinkedHashMap<>();
+        keybinds.forEach((id, bindings) -> copy.put(id, new ArrayList<>(bindings)));
+        return copy;
+    }
+
+    public void loadKeybinds(Map<String, List<KeybindData>> incoming) {
+        keybinds.clear();
+
+        Map<String, List<KeybindData>> defaults = KeybindHandler.getDefaults();
+        defaults.forEach((id, combos) -> keybinds.put(id, new ArrayList<>(combos)));
+
+        if (incoming != null) {
+            incoming.forEach((id, combos) -> keybinds.put(id, new ArrayList<>(combos)));
+        }
+
+        rebuildCategoryFilters();
+        renderKeybindCards();
+    }
+
+    private void createHeader() {
+        var title = new LocalizedLabel("railroad.settings.keybinds.title");
+        title.getStyleClass().add("keybinds-header-title");
+        var subtitle = new LocalizedLabel("railroad.settings.keybinds.subtitle");
+        subtitle.getStyleClass().add("keybinds-header-subtitle");
+
+        searchField.setLocalizedPlaceholder("railroad.settings.keybinds.search");
+        searchField.textProperty().addListener((obs, oldText, newText) -> renderKeybindCards());
+
+        var headerBox = new VBox(4, title, subtitle);
+        headerBox.getStyleClass().add("keybinds-header");
+
+        getChildren().addAll(headerBox, searchField);
+    }
+
+    private void createCategoryBar() {
+        categoryBar.getStyleClass().add("keybinds-category-bar");
+        categoryBar.setHgap(8);
+        categoryBar.setVgap(8);
+        getChildren().add(categoryBar);
+    }
+
+    private void createListArea() {
+        cardsContainer.getStyleClass().add("keybinds-card-container");
+
+        emptyState.getStyleClass().add("keybinds-empty-state");
+        emptyState.setAlignment(Pos.CENTER);
+
+        listStack.getChildren().addAll(cardsContainer, emptyState);
+
+        var scrollPane = new ScrollPane(listStack);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.getStyleClass().add("keybinds-scroll");
+
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+        getChildren().add(scrollPane);
+    }
+
+    private void rebuildCategoryFilters() {
+        categoryBar.getChildren().clear();
+
+        ToggleButton allButton = createCategoryChip("railroad.settings.keybinds.filter.all", null);
+        categoryBar.getChildren().add(allButton);
+
+        Set<String> seenCategories = new LinkedHashSet<>();
+        keybinds.keySet().forEach(id -> {
+            Keybind keybind = KeybindHandler.getKeybind(id);
+            if (keybind == null) return;
+            KeybindCategory category = keybind.getCategory();
+            if (category == null) return;
+            if (seenCategories.add(category.id())) {
+                categoryBar.getChildren().add(createCategoryChip(category.titleKey(), category.id()));
+            }
+        });
+
+        if (activeCategoryId == null) {
+            allButton.setSelected(true);
+            categoryToggleGroup.selectToggle(allButton);
+        } else {
+            categoryToggleGroup.getToggles().stream()
+                .filter(toggle -> Objects.equals(toggle.getUserData(), activeCategoryId))
+                .findFirst()
+                .ifPresent(toggle -> {
+                    toggle.setSelected(true);
+                    categoryToggleGroup.selectToggle(toggle);
+                });
+        }
+    }
+
+    private ToggleButton createCategoryChip(String localizationKey, String categoryId) {
+        ToggleButton chip = new ToggleButton();
+        chip.getStyleClass().add("keybinds-category-chip");
+        chip.setToggleGroup(categoryToggleGroup);
+        chip.setUserData(categoryId);
+        chip.textProperty().bind(Bindings.createStringBinding(() ->
+                localizationKey == null ? "" : L18n.localize(localizationKey),
+            L18n.currentLanguageProperty()));
+        chip.setOnAction(event -> {
+            activeCategoryId = categoryId;
+            renderKeybindCards();
+        });
+        return chip;
+    }
+
+    private void renderKeybindCards() {
+        String query = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase(Locale.ENGLISH);
+
+        List<Map.Entry<String, List<KeybindData>>> filtered = keybinds.entrySet().stream()
+            .filter(entry -> KeybindHandler.getKeybind(entry.getKey()) != null)
+            .filter(entry -> matchesCategory(entry.getKey()))
+            .filter(entry -> matchesSearch(entry.getKey(), query))
+            .sorted(Comparator.comparing(entry -> getDisplayName(entry.getKey()), String.CASE_INSENSITIVE_ORDER))
+            .toList();
+
+        cardsContainer.getChildren().setAll(filtered.stream()
+            .map(entry -> createKeybindCard(entry.getKey(), entry.getValue()))
+            .toList());
+
+        boolean hasResults = !filtered.isEmpty();
+        cardsContainer.setVisible(hasResults);
+        cardsContainer.setManaged(hasResults);
+        emptyState.setVisible(!hasResults);
+        emptyState.setManaged(!hasResults);
+
+        if (!hasResults) {
+            pendingEditKey = null;
+            pendingEditIndex = -1;
+        }
+    }
+
+    private boolean matchesCategory(String keybindId) {
+        if (activeCategoryId == null || activeCategoryId.isBlank()) {
+            return true;
+        }
+        Keybind keybind = KeybindHandler.getKeybind(keybindId);
+        return keybind != null &&
+            keybind.getCategory() != null &&
+            activeCategoryId.equals(keybind.getCategory().id());
+    }
+
+    private boolean matchesSearch(String keybindId, String query) {
+        if (query.isBlank()) return true;
+        String display = getDisplayName(keybindId).toLowerCase(Locale.ENGLISH);
+        return display.contains(query) || keybindId.toLowerCase(Locale.ENGLISH).contains(query);
+    }
+
+    private Node createKeybindCard(String keybindId, List<KeybindData> bindings) {
+        var card = new RRCard();
+        card.getStyleClass().add("keybind-card");
+
+        var title = new LocalizedLabel(localizationKeyFor(keybindId));
+        title.getStyleClass().add("keybind-card-title");
+
+        var subtitle = createSubtitleLabel(keybindId);
+        if (subtitle != null) {
+            subtitle.getStyleClass().add("keybind-card-subtitle");
+        }
+
+        var titleBox = new VBox(4);
+        titleBox.getChildren().add(title);
+        if (subtitle != null) {
+            titleBox.getChildren().add(subtitle);
+        }
+
+        var addButton = new RRButton("railroad.settings.keybinds.add_binding", FontAwesomeSolid.PLUS);
+        addButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        addButton.setVariant(RRButton.ButtonVariant.SECONDARY);
+        addButton.getStyleClass().add("keybind-card-add");
+        addButton.setOnAction(event -> addBlankShortcut(keybindId, bindings));
+
+        var header = new HBox(12, titleBox, addButton);
+        header.getStyleClass().add("keybind-card-header");
+        header.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(titleBox, Priority.ALWAYS);
+
+        var shortcutsBox = new VBox(8);
+        shortcutsBox.getStyleClass().add("keybind-card-shortcuts");
+
+        if (bindings.isEmpty()) {
+            var emptyLabel = new LocalizedLabel("railroad.settings.keybinds.no_shortcuts");
+            emptyLabel.getStyleClass().add("keybind-card-shortcuts-empty");
+            shortcutsBox.getChildren().add(emptyLabel);
+        } else {
+            for (int i = 0; i < bindings.size(); i++) {
+                shortcutsBox.getChildren().add(createShortcutRow(keybindId, bindings, bindings.get(i), i));
+            }
+        }
+
+        card.addContent(header, shortcutsBox);
+        return card;
+    }
+
+    private LocalizedLabel createSubtitleLabel(String keybindId) {
+        String descriptionKey = localizationKeyFor(keybindId) + ".description";
+        if (L18n.isKeyValid(descriptionKey)) {
+            return new LocalizedLabel(descriptionKey);
+        }
+
+        Keybind keybind = KeybindHandler.getKeybind(keybindId);
+        if (keybind != null && keybind.getCategory() != null) {
+            String categoryKey = keybind.getCategory().titleKey();
+            if (categoryKey != null && L18n.isKeyValid(categoryKey)) {
+                return new LocalizedLabel(categoryKey);
+            }
+        }
+
+        return null;
+    }
+
+    private Node createShortcutRow(String keybindId, List<KeybindData> bindings, KeybindData binding, int index) {
+        var row = new HBox(8);
+        row.getStyleClass().add("keybind-shortcut-row");
+        row.setAlignment(Pos.CENTER_LEFT);
+
+        var comboNode = new KeyComboNode(binding);
+        comboNode.setOnAction(event -> comboNode.toggleEditing());
+        comboNode.setOnComboModified(updated -> bindings.set(index, updated));
+        maybeStartPendingEdit(keybindId, index, comboNode);
+
+        var removeButton = new RRButton("", FontAwesomeSolid.TRASH);
+        removeButton.setVariant(RRButton.ButtonVariant.DANGER);
+        removeButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        removeButton.getStyleClass().add("keybind-shortcut-remove");
+        removeButton.setOnAction(event -> {
+            bindings.remove(index);
+            renderKeybindCards();
+        });
+
+        row.getChildren().addAll(comboNode, removeButton);
+        return row;
+    }
+
+    private void maybeStartPendingEdit(String keybindId, int index, KeyComboNode comboNode) {
+        if (Objects.equals(pendingEditKey, keybindId) && pendingEditIndex == index) {
+            Platform.runLater(comboNode::toggleEditing);
+            pendingEditKey = null;
+            pendingEditIndex = -1;
+        }
+    }
+
+    private void addBlankShortcut(String keybindId, List<KeybindData> bindings) {
+        var newBinding = new KeybindData(KeyCode.UNDEFINED, new KeyCombination.Modifier[0]);
+        bindings.add(newBinding);
+        pendingEditKey = keybindId;
+        pendingEditIndex = bindings.size() - 1;
+        renderKeybindCards();
+    }
+
+    private String getDisplayName(String keybindId) {
+        String key = localizationKeyFor(keybindId);
+        if (L18n.isKeyValid(key)) {
+            return L18n.localize(key);
+        }
+        return keybindId;
+    }
+
+    private String localizationKeyFor(String keybindId) {
+        if (keybindId == null || !keybindId.contains(":")) {
+            return "railroad.settings.keybinds." + keybindId;
+        }
+        return "railroad.settings.keybinds." + keybindId.split(":", 2)[1];
     }
 
     /**
@@ -80,7 +360,7 @@ public class KeybindsList extends TreeView {
      * @return a map of keybind IDs to lists of KeybindData.
      */
     public static Map<String, List<KeybindData>> fromJson(JsonElement json) {
-        var map = new HashMap<String, List<KeybindData>>();
+        var map = new LinkedHashMap<String, List<KeybindData>>();
 
         for (Map.Entry<String, JsonElement> keybindJson : json.getAsJsonObject().entrySet()) {
             var id = keybindJson.getKey();
@@ -104,20 +384,11 @@ public class KeybindsList extends TreeView {
 
                 for (String mod : modParts) {
                     switch (mod.trim()) {
-                        case "Shortcut":
-                            modifiers.add(KeyCombination.SHORTCUT_DOWN);
-                            break;
-                        case "Ctrl":
-                            modifiers.add(KeyCombination.CONTROL_DOWN);
-                            break;
-                        case "Shift":
-                            modifiers.add(KeyCombination.SHIFT_DOWN);
-                            break;
-                        case "Alt":
-                            modifiers.add(KeyCombination.ALT_DOWN);
-                            break;
-                        default:
-                            throw new IllegalArgumentException("Unknown modifier: " + mod);
+                        case "Shortcut" -> modifiers.add(KeyCombination.SHORTCUT_DOWN);
+                        case "Ctrl" -> modifiers.add(KeyCombination.CONTROL_DOWN);
+                        case "Shift" -> modifiers.add(KeyCombination.SHIFT_DOWN);
+                        case "Alt" -> modifiers.add(KeyCombination.ALT_DOWN);
+                        default -> throw new IllegalArgumentException("Unknown modifier: " + mod);
                     }
                 }
 
@@ -139,20 +410,11 @@ public class KeybindsList extends TreeView {
 
                 for (int i = 0; i < modParts.length; i++) {
                     switch (modParts[i]) {
-                        case "Shortcut":
-                            modifiers[i] = KeyCombination.SHORTCUT_DOWN;
-                            break;
-                        case "Ctrl":
-                            modifiers[i] = KeyCombination.CONTROL_DOWN;
-                            break;
-                        case "Shift":
-                            modifiers[i] = KeyCombination.SHIFT_DOWN;
-                            break;
-                        case "Alt":
-                            modifiers[i] = KeyCombination.ALT_DOWN;
-                            break;
-                        default:
-                            throw new IllegalArgumentException("Unknown modifier: " + modParts[i]);
+                        case "Shortcut" -> modifiers[i] = KeyCombination.SHORTCUT_DOWN;
+                        case "Ctrl" -> modifiers[i] = KeyCombination.CONTROL_DOWN;
+                        case "Shift" -> modifiers[i] = KeyCombination.SHIFT_DOWN;
+                        case "Alt" -> modifiers[i] = KeyCombination.ALT_DOWN;
+                        default -> throw new IllegalArgumentException("Unknown modifier: " + modParts[i]);
                     }
                 }
 
@@ -163,126 +425,5 @@ public class KeybindsList extends TreeView {
         }
 
         return map;
-    }
-
-    /**
-     * Refreshes the tree view to display the current keybinds.
-     * It caches the currently expanded categories, to then restore them after clearing the tree.
-     */
-    private void refreshTree() {
-        TreeItem<RRHBox> root = this.getRoot();
-
-        List<String> expandedCategoryIds = new ArrayList<>();
-        for (TreeItem<RRHBox> item : root.getChildren()) {
-            if (item.isExpanded() &&
-                item.getValue().getChildren().getFirst() instanceof LocalizedLabel label) {
-                expandedCategoryIds.add(label.getId());
-            }
-        }
-
-        root.getChildren().clear();
-
-        for (Map.Entry<String, List<KeybindData>> entry : keybinds.entrySet()) {
-            KeybindCategory category = KeybindHandler.getKeybind(entry.getKey()).getCategory();
-
-            TreeItem<RRHBox> categoryItem = root.getChildren().stream()
-                .filter(item -> item.getValue().getChildren().getFirst() instanceof LocalizedLabel label &&
-                    label.getId().equals(category.id()))
-                .findFirst()
-                .orElseGet(() -> {
-                    var categoryHeader = new LocalizedLabel(category.titleKey());
-                    categoryHeader.setId(category.id());
-                    var content = new RRHBox();
-                    content.getChildren().add(categoryHeader);
-                    var newCategoryItem = new TreeItem<>(content);
-                    root.getChildren().add(newCategoryItem);
-                    return newCategoryItem;
-                });
-
-            categoryItem.getChildren().add(createKeybindTreeItem(entry.getKey(), entry.getValue()));
-        }
-
-        for (TreeItem<RRHBox> item : root.getChildren()) {
-            if (item.getValue().getChildren().getFirst() instanceof LocalizedLabel label &&
-                expandedCategoryIds.contains(label.getId())) {
-                item.setExpanded(true);
-            }
-        }
-    }
-
-    /**
-     * Creates a TreeItem for a keybind. Which contains an add button, remove button and edit button for each keybind/key combination.
-     *
-     * @param id       the keybind ID
-     * @param keybinds a KeybindData list containing the keybinds/key combinations for the given ID.
-     * @return a TreeItem containing the keybind configuration UI.
-     */
-    private TreeItem<RRHBox> createKeybindTreeItem(String id, List<KeybindData> keybinds) {
-        var titleBox = new RRHBox();
-        var configBox = new RRVBox();
-
-        var localeKey = "railroad.settings.keybinds." + id.split(":")[1];
-
-        titleBox.getChildren().addAll(new LocalizedLabel(localeKey));
-
-        var addButton = new RRButton("", FontAwesomeSolid.PLUS);
-        addButton.setPadding(InsetsBuilder.all(5));
-        addButton.getStyleClass().add("square-button");
-        addButton.setVariant(RRButton.ButtonVariant.PRIMARY);
-        addButton.setOnAction(e -> {
-            var newKeybind = new KeybindData(KeyCode.UNDEFINED, new KeyCombination.Modifier[0]);
-            keybinds.add(newKeybind);
-            refreshTree();
-        });
-
-        titleBox.getChildren().add(addButton);
-
-        for (KeybindData keybind : keybinds) {
-            var keybindBox = new RRHBox(5);
-            var keyComboNode = new KeyComboNode(keybind);
-            keyComboNode.setOnComboModified((keybindData) -> {
-                int index = keybinds.indexOf(keybind);
-                if (index != -1 && !keybindData.equals(keybind)) {
-                    keybinds.set(index, keybindData);
-                }
-            });
-
-            var buttonBox = new RRHBox(5);
-
-            var removeButton = new RRButton("", FontAwesomeSolid.MINUS);
-            removeButton.setVariant(RRButton.ButtonVariant.DANGER);
-            removeButton.getStyleClass().add("square-button");
-            removeButton.setOnAction(e -> {
-                keybinds.remove(keybinds.get(this.keybinds.get(id).indexOf(keybind)));
-                refreshTree();
-            });
-
-            var editButton = new RRButton("", FontAwesomeSolid.PENCIL_ALT);
-            editButton.setVariant(RRButton.ButtonVariant.SECONDARY);
-            editButton.getStyleClass().add("square-button");
-            editButton.setOnAction(e -> {
-                ;
-                keyComboNode.toggleEditing();
-            });
-
-            buttonBox.getChildren().addAll(removeButton, editButton);
-            keybindBox.getChildren().addAll(keyComboNode, buttonBox);
-
-            configBox.getChildren().addAll(keybindBox);
-        }
-
-        var treeNodeContent = new RRHBox();
-        treeNodeContent.getChildren().addAll(titleBox, configBox);
-        return new TreeItem<>(treeNodeContent);
-    }
-
-    /**
-     * Loads the provided keybinds into the current instance.
-     *
-     * @param keybinds a map of keybind IDs to their corresponding KeybindData list.
-     */
-    public void loadKeybinds(Map<String, List<KeybindData>> keybinds) {
-        this.keybinds.clear();
-        this.keybinds.putAll(keybinds);
     }
 }

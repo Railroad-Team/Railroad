@@ -84,6 +84,15 @@ railroad.settings.general.language.description=Select the language for the Railr
 
 # Keybind settings
 railroad.settings.keybinds.title=Keybinds
+railroad.settings.keybinds.subtitle=Fine-tune shortcuts to match your workflow.
+railroad.settings.keybinds.search=Search keybinds...
+railroad.settings.keybinds.filter.all=All categories
+railroad.settings.keybinds.empty.title=No keybinds match your filters
+railroad.settings.keybinds.empty.subtitle=Try adjusting your search or category filters to see more shortcuts.
+railroad.settings.keybinds.add_binding=Add shortcut
+railroad.settings.keybinds.no_shortcuts=No shortcuts assigned yet
+railroad.settings.keybinds.click_to_record=Click to record
+railroad.settings.keybinds.recording=Recording...
 
 # Keybinds categories
 railroad.settings.keybinds.category.general=General

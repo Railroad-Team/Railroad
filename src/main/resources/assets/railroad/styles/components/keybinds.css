@@ -1,0 +1,138 @@
+/* ===== KEYBINDS PANE ===== */
+.keybinds-pane {
+    -fx-spacing: 18px;
+}
+
+.keybinds-header {
+    -fx-spacing: 4px;
+}
+
+.keybinds-header-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.keybinds-header-subtitle {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 13px;
+}
+
+.keybinds-category-bar {
+    -fx-padding: 4px 0 0 0;
+}
+
+.keybinds-category-bar .keybinds-category-chip {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-background-radius: 18px;
+    -fx-border-radius: 18px;
+    -fx-padding: 6px 14px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-cursor: hand;
+}
+
+.keybinds-category-bar .keybinds-category-chip:hover {
+    -fx-background-color: -color-bg-inset;
+}
+
+.keybinds-category-chip:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-border-width: 1.5px;
+}
+
+.keybinds-scroll {
+    -fx-background-color: transparent;
+    -fx-padding: 0 4px 0 0;
+}
+
+.keybinds-card-container {
+    -fx-padding: 4px 0 20px 0;
+}
+
+.keybind-card {
+    -fx-padding: 0;
+    -fx-background-radius: 14px;
+    -fx-border-radius: 14px;
+}
+
+.keybind-card-header {
+    -fx-padding: 4px 4px 0 4px;
+}
+
+.keybind-card-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.keybind-card-subtitle {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 12px;
+}
+
+.keybind-card-add {
+    -fx-padding: 4px 10px;
+    -fx-background-color: -color-bg-subtle;
+}
+
+.keybind-card-add .ikonli-font-icon {
+    -fx-background-color: transparent;
+}
+
+.keybind-card-shortcuts {
+    -fx-padding: 8px 4px 4px 4px;
+}
+
+.keybind-card-shortcuts-empty {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-style: italic;
+}
+
+.keybind-shortcut-row {
+    -fx-padding: 0;
+}
+
+.keybind-shortcut-chip {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-muted;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-text-fill: -color-fg-default;
+    -fx-padding: 6px 12px;
+}
+
+.keybind-shortcut-chip:hover {
+    -fx-border-color: -color-accent-emphasis;
+}
+
+.keybind-shortcut-chip.recording {
+    -fx-border-color: -color-warning-emphasis;
+    -fx-background-color: -color-warning-subtle;
+    -fx-text-fill: -color-warning-fg;
+}
+
+.keybind-shortcut-remove {
+    -fx-padding: 4px 8px;
+    -fx-text-fill: -color-danger-emphasis;
+}
+
+.keybind-shortcut-remove:hover {
+    -fx-background-color: -color-danger-subtle;
+    -fx-text-fill: -color-danger-fg;
+}
+
+.keybinds-empty-state {
+    -fx-alignment: center;
+    -fx-padding: 48px;
+}
+
+.keybinds-empty-state .label {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 13px;
+    -fx-text-alignment: center;
+}
