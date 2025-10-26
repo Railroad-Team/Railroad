@@ -1,11 +1,8 @@
-/* Responsive design */
-@media (max-width: 768px) {
-    .theme-selector .combo-box {
-        -fx-min-height: 32px;
-        -fx-font-size: 13px;
-    }
+.theme-compact .theme-selector .combo-box {
+    -fx-min-height: 32px;
+    -fx-font-size: 13px;
+}
 
-    .theme-download-pane .list-cell {
-        -fx-padding: 2px 0px 2px 0px;
-    }
+.theme-compact .theme-download-pane .list-cell {
+    -fx-padding: 2px 0px 2px 0px;
 }
