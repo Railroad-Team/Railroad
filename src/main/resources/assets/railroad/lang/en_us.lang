@@ -29,6 +29,7 @@ railroad.generic.browse=Browse
 railroad.generic.enable=Enable
 railroad.generic.disable=Disable
 railroad.generic.dismiss=Dismiss
+railroad.generic.unknown=Unknown
 
 # =============================================================================
 # HOME/WELCOME SCREEN
@@ -105,6 +106,18 @@ railroad.plugins.details.dependencies=Dependencies:
 railroad.plugins.placeholder.title=Select a plugin to view its details
 railroad.plugins.placeholder.subtitle=Choose a plugin from the list to learn more about what it provides.
 railroad.plugins.list.version=Version: %s
+railroad.plugins.list.author=Author: %s
+railroad.plugins.list.empty=No plugins available
+railroad.plugins.details.enable=Enable plugin
+railroad.plugins.details.no_description=No description provided.
+railroad.plugins.details.dependencies.none=No dependencies
+railroad.plugins.details.dependencies.count=%d repositories, %d artifacts
+railroad.plugins.details.label.identifier=Identifier
+railroad.plugins.details.label.version=Version
+railroad.plugins.details.label.author=Author
+railroad.plugins.details.label.license=License
+railroad.plugins.details.label.main_class=Main Class
+railroad.plugins.details.label.dependencies=Dependencies
 
 # Appearance settings
 railroad.settings.appearance.themes.title=Themes

@@ -1,326 +1,117 @@
-/* Plugin styles */
-.plugin-name-label {
-    -fx-font-size: 16px;
-    -fx-text-fill: -color-fg-default;
-}
-
-/* Plugins Pane Layout */
+/* ===== PLUGINS PANE ===== */
 .plugins-pane {
     -fx-background-color: transparent;
-    -fx-padding: 16;
 }
 
-.plugins-pane .split-pane-divider {
-    -fx-background-color: transparent, -color-border-subtle;
-    -fx-background-insets: 0, 2;
-    -fx-padding: 0 6px 0 6px;
-}
-
-.plugins-pane .split-pane-divider:hover {
-    -fx-background-color: transparent, -color-border-default;
-}
-
-.plugins-left-pane {
-    -fx-background-color: -color-bg-elevated;
-    -fx-border-color: -color-border-subtle;
-    -fx-border-width: 1px;
-    -fx-border-radius: 18px;
-    -fx-background-radius: 18px;
-    -fx-spacing: 16px;
-    -fx-padding: 20 28 20 24;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.06), 10, 0.18, 0, 4);
-}
-
-.plugins-search-field {
-    -fx-background-radius: 12px;
-    -fx-border-radius: 12px;
-}
-
-.plugins-list-scroll,
-.plugin-details-scroll {
-    -fx-padding: 0;
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-}
-
-.plugins-list-scroll .viewport,
-.plugin-details-scroll .viewport {
-    -fx-background-color: transparent;
-}
-
-/* ListView look */
-.plugins-list {
-    -fx-background-color: transparent;
-    -fx-padding: 6 0 6 0;
-}
-
-.list-cell.plugin-item {
-    -fx-background-color: -color-bg-default;
-    -fx-border-color: -color-border-subtle;
-    -fx-border-width: 1px;
-    -fx-background-radius: 14px;
-    -fx-border-radius: 14px;
-    -fx-padding: 10 14;
-    -fx-cursor: hand;
-    -fx-effect: null;
-    -fx-spacing: 0;
-    -fx-alignment: CENTER_LEFT;
-    -fx-wrap-text: true;
-}
-
-.list-cell.plugin-item:selected,
-.list-cell.plugin-item:hover {
-    -fx-background-color: -color-bg-subtle;
-    -fx-border-color: -color-border-default;
-}
-
-.plugin-details-container {
-    -fx-spacing: 28px;
-    -fx-padding: 28 20 28 36;
-}
-
-/* Plugin Item Styles */
-.plugin-item {
-    -fx-background-color: -color-bg-default;
-    -fx-border-color: -color-border-subtle;
-    -fx-border-width: 1px;
-    -fx-border-radius: 14px;
-    -fx-background-radius: 14px;
-    -fx-cursor: hand;
-    -fx-max-width: 100%;
-}
-
-.plugin-item:hover {
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 6, 0.12, 0, 2);
-}
-
-.plugin-item.selected {
-    -fx-background-color: -color-accent-subtle;
-    -fx-border-color: -color-accent-emphasis;
-    -fx-border-width: 2px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 8, 0.18, 0, 3);
-}
-
-.plugin-item-content {
-    -fx-spacing: 16px;
-}
-
-.plugin-item-info {
-    -fx-spacing: 6px;
-}
-
-.plugin-item .plugin-name {
+.plugins-pane-title {
     -fx-font-size: 16px;
     -fx-font-weight: 600;
     -fx-text-fill: -color-fg-emphasis;
 }
 
-.plugin-item .plugin-version {
-    -fx-font-size: 13px;
+.plugins-pane-placeholder {
     -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 14px;
+    -fx-padding: 32px;
 }
 
-.plugin-item .plugin-author {
-    -fx-font-size: 13px;
-    -fx-text-fill: -color-fg-muted;
-}
-
-.plugin-item .plugin-summary {
-    -fx-font-size: 13px;
-    -fx-text-fill: -color-fg-muted;
-    -fx-line-spacing: 1.2;
-    -fx-padding: 4 0 0 0;
-}
-
-.plugin-item .check-box,
-.plugin-item .plugin-toggle {
+/* ===== PLUGIN DETAIL VIEW ===== */
+.plugin-detail-scroll {
+    -fx-background-color: transparent;
     -fx-padding: 0;
 }
 
-.plugin-item .check-box .box {
-    -fx-background-color: -color-bg-inset;
-    -fx-border-color: -color-border-default;
-    -fx-border-width: 1px;
-    -fx-border-radius: 4px;
-    -fx-background-radius: 4px;
-    -fx-min-width: 18px;
-    -fx-min-height: 18px;
-    -fx-max-width: 18px;
-    -fx-max-height: 18px;
-}
-
-.plugin-item .check-box:hover .box {
-    -fx-border-color: -color-accent-emphasis;
-    -fx-background-color: -color-bg-subtle;
-}
-
-.plugin-item .check-box:selected .box {
-    -fx-background-color: -color-accent-emphasis;
-    -fx-border-color: -color-accent-emphasis;
-}
-
-.plugin-item .check-box:selected .mark {
-    -fx-background-color: -color-fg-emphasis;
-    -fx-stroke: -color-fg-emphasis;
-    -fx-stroke-width: 2;
-    -fx-translate-x: 1;
-    -fx-translate-y: 1;
-}
-
-/* Plugin Details Styles */
-.plugin-details-card {
-    -fx-background-color: -color-bg-default;
+.plugin-detail-container {
+    -fx-background-color: -color-bg-elevated;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 1px;
-    -fx-border-radius: 16px;
-    -fx-background-radius: 16px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 8, 0.15, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 12, 0, 0, 6);
 }
 
-.plugin-details-name {
-    -fx-font-size: 24px;
+.plugin-detail-icon {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 50%;
+    -fx-padding: 16px;
+}
+
+.plugin-detail-name {
+    -fx-font-size: 22px;
     -fx-font-weight: 700;
     -fx-text-fill: -color-fg-emphasis;
 }
 
-.plugin-details-version {
-    -fx-font-size: 14px;
+.plugin-detail-meta {
     -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 13px;
+}
+
+.plugin-detail-description {
+    -fx-text-fill: -color-fg-default;
+    -fx-line-spacing: 4px;
+}
+
+.plugin-detail-grid {
+    -fx-padding: 12px 0 0 0;
+}
+
+.plugin-detail-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-weight: 600;
+    -fx-text-transform: uppercase;
+}
+
+.plugin-detail-value {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 13px;
+}
+
+.plugin-detail-value Hyperlink,
+.plugin-detail-container Hyperlink {
+    -fx-text-fill: -color-accent-fg;
     -fx-font-weight: 500;
 }
 
-.plugin-icon {
+.plugin-detail-value Hyperlink:hover,
+.plugin-detail-container Hyperlink:hover {
     -fx-text-fill: -color-accent-emphasis;
-    -fx-opacity: 0.9;
 }
 
-.plugin-info-box {
-    -fx-spacing: 16px;
-}
-
-.plugin-description {
-    -fx-font-size: 15px;
-    -fx-text-fill: -color-fg-default;
-    -fx-line-spacing: 1.4;
-    -fx-padding: 0 0 8 0;
-}
-
-.plugin-info-label {
-    -fx-font-size: 14px;
-    -fx-font-weight: 600;
-    -fx-text-fill: -color-fg-emphasis;
-    -fx-min-width: 100px;
-}
-
-.plugin-info-value {
-    -fx-font-size: 14px;
-    -fx-text-fill: -color-fg-default;
-    -fx-line-spacing: 1.2;
-}
-
-.plugin-dependency {
-    -fx-font-size: 13px;
-    -fx-text-fill: -color-fg-muted;
-    -fx-padding: 2 0 2 16;
-}
-
-.plugin-details-placeholder {
-    -fx-alignment: center;
-    -fx-padding: 24 0 24 0;
-}
-
-.plugin-details-placeholder-card {
-    -fx-background-color: -color-bg-default;
-    -fx-border-color: -color-border-subtle;
-    -fx-border-width: 1px;
-    -fx-border-radius: 18px;
-    -fx-background-radius: 18px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.06), 10, 0.18, 0, 3);
-}
-
-.plugin-placeholder-icon {
-    -fx-text-fill: -color-accent-emphasis;
-    -fx-opacity: 0.85;
-}
-
-.plugin-placeholder-title {
-    -fx-font-size: 18px;
-    -fx-font-weight: 600;
-    -fx-text-fill: -color-fg-emphasis;
-}
-
-.plugin-placeholder-subtitle {
-    -fx-font-size: 13px;
-    -fx-text-fill: -color-fg-muted;
-    -fx-alignment: center;
-    -fx-text-alignment: center;
-}
-
-/* Plugin Search Field */
-.plugins-pane .text-field {
-    -fx-background-color: -color-bg-inset;
-    -fx-border-color: -color-border-subtle;
-    -fx-border-width: 1px;
-    -fx-border-radius: 12px;
-    -fx-background-radius: 12px;
-    -fx-padding: 10 14;
-    -fx-font-size: 14px;
-    -fx-text-fill: -color-fg-default;
-}
-
-.plugins-pane .text-field:focused {
-    -fx-border-color: -color-accent-emphasis;
-    -fx-background-color: -color-bg-default;
-}
-
-.plugins-pane .text-field:hover {
-    -fx-border-color: -color-border-default;
-}
-
-/* Scroll Pane Styles */
-.plugins-pane .scroll-pane {
+/* ===== PLUGIN LIST CELLS ===== */
+.plugin-cell-container {
     -fx-background-color: transparent;
-    -fx-background: transparent;
+    -fx-padding: 6px 10px;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
     -fx-border-color: transparent;
-    -fx-border-width: 0;
+    -fx-border-width: 1px;
+    -fx-transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
+        -fx-effect 0.15s ease-in-out;
 }
 
-.plugins-pane .scroll-pane .viewport {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
+.plugin-cell-container:hover {
+    -fx-background-color: -color-bg-subtle;
 }
 
-.plugins-pane .scroll-pane .scroll-bar {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
+.plugin-cell-container.plugin-cell-selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-effect: dropshadow(gaussian, rgba(94, 129, 172, 0.18), 8, 0, 0, 2);
 }
 
-.plugins-pane .scroll-pane .scroll-bar .thumb {
-    -fx-background-color: -color-border-subtle;
-    -fx-background-radius: 4px;
-    -fx-background-insets: 2;
+.plugin-cell-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -color-fg-default;
 }
 
-.plugins-pane .scroll-pane .scroll-bar .thumb:hover {
-    -fx-background-color: -color-border-default;
+.plugin-cell-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-muted;
 }
 
-.plugins-pane .scroll-pane .scroll-bar .track {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
-}
-
-.plugins-pane .scroll-pane .scroll-bar .increment-button,
-.plugins-pane .scroll-pane .scroll-bar .decrement-button {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
-    -fx-padding: 0;
-    -fx-shape: "";
-}
-
-.plugins-pane .scroll-pane .scroll-bar .increment-arrow,
-.plugins-pane .scroll-pane .scroll-bar .decrement-arrow {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
-    -fx-shape: "";
+.plugin-cell-icon {
+    -mfx-color: -color-fg-muted;
 }
