@@ -866,12 +866,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
 
             expect(JavaTokenType.ARROW, "Expected '->' after lambda parameter");
 
-            Statement body = parseStatement();
-            if (!(body instanceof LambdaBody lambdaBody)) {
-                reportError("Expected lambda body to be a single expression or block");
-                return null;
-            }
-
+            LambdaBody lambdaBody = parseLambdaBody();
             return new LambdaExpression(spanFrom(start), parameters, true, lambdaBody);
         }
 
@@ -880,12 +875,7 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
             advance(); // )
             expect(JavaTokenType.ARROW, "Expected '->' after lambda parameters");
 
-            Statement body = parseStatement();
-            if (!(body instanceof LambdaBody lambdaBody)) {
-                reportError("Expected lambda body to be a single expression or block");
-                return null;
-            }
-
+            LambdaBody lambdaBody = parseLambdaBody();
             return new LambdaExpression(spanFrom(start), List.of(), true, lambdaBody);
         }
 
@@ -905,13 +895,18 @@ public class JavaParser extends Parser<JavaTokenType, AstNode, Expression> {
         expect(JavaTokenType.CLOSE_PAREN, "Expected ')' to end lambda parameters");
         expect(JavaTokenType.ARROW, "Expected '->' after lambda parameters");
 
-        Statement body = parseStatement();
-        if (!(body instanceof LambdaBody lambdaBody)) {
-            reportError("Expected lambda body to be a single expression or block");
-            return null;
+        LambdaBody lambdaBody = parseLambdaBody();
+        return new LambdaExpression(spanFrom(start), parameters, isInferred, lambdaBody);
+    }
+
+    private @NotNull LambdaBody parseLambdaBody() {
+        if (nextIsAny(JavaTokenType.OPEN_BRACE)) {
+            BlockStatement blockStatement = parseBlock();
+            return LambdaBody.block(spanFrom(blockStatement), blockStatement);
         }
 
-        return new LambdaExpression(spanFrom(start), parameters, isInferred, lambdaBody);
+        Expression expression = parseExpression();
+        return LambdaBody.expression(spanFrom(expression), expression);
     }
 
     private Parameter parseLambdaParameter() {

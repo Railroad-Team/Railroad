@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record BlockStatement(Span span, List<Statement> statements) implements Statement, LambdaBody {
+public record BlockStatement(Span span, List<Statement> statements) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.BLOCK_STATEMENT;

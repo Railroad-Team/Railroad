@@ -130,6 +130,7 @@ public interface AstVisitor<R> {
     R visitReceiverParameter(ReceiverParameter node);
     R visitTypeParameter(TypeParameter node);
     R visitVariableDeclarator(VariableDeclarator node);
+    R visitLambdaBody(LambdaBody node);
 
     R visitToken(LexerToken<?> node);
     R visitWhitespace(Whitespace node);

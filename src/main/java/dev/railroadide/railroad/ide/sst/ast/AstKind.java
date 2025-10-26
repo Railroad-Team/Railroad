@@ -120,6 +120,8 @@ public enum AstKind {
     TYPE_PARAMETER,
     THROWS_CLAUSE,
     VARIABLE_DECLARATOR,
+    LAMBDA_BODY,
+
     TOKEN, // Generic token node to wrap tokens like operators, punctuation, keywords
     WHITESPACE, // Whitespace node to preserve formatting
     LINE_COMMENT,
