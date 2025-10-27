@@ -8,6 +8,7 @@ import dev.railroadide.logger.LoggerManager;
 import dev.railroadide.logger.LoggerService;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.localization.Languages;
 import dev.railroadide.railroad.plugin.PluginManager;
 import dev.railroadide.railroad.plugin.defaults.DefaultEventBus;
 import dev.railroadide.railroad.project.LicenseRegistry;
@@ -97,6 +98,7 @@ public class Railroad extends Application {
             new InitializationStep("Loading configuration", ConfigHandler::initConfig),
             new InitializationStep("Scanning plugins", () -> PluginManager.loadPlugins(ConfigHandler.getConfigDirectory().resolve("plugins"))),
             new InitializationStep("Registering keybinds", Keybinds::initialize),
+            new InitializationStep("Scanning language files", Languages::initialize),
             new InitializationStep("Loading settings", Settings::initialize),
             new InitializationStep("Preparing settings handler", SettingsHandler::init),
             new InitializationStep("Preparing themes", ThemeManager::init),
