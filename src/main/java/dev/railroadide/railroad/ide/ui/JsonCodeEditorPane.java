@@ -92,6 +92,10 @@ public class JsonCodeEditorPane extends TextEditorPane {
                 case "[" -> "]";
                 case "{" -> "}";
                 case "\"" -> "\"";
+                case "(" -> ")";
+                case "'" -> "'";
+                case "<" -> ">";
+                case "`" -> "`";
                 default -> null;
             };
 

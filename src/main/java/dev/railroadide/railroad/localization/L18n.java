@@ -12,6 +12,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -124,19 +125,7 @@ public class L18n {
         }
         streams.addAll(pluginResources);
 
-        Properties props = mergeLanguageFiles(streams.toArray(InputStream[]::new));
-
-        for (InputStream stream : streams) {
-            if (stream != null) {
-                try {
-                    stream.close();
-                } catch (IOException exception) {
-                    LOGGER.error("Error closing language file stream", exception);
-                }
-            }
-        }
-
-        return props;
+        return mergeLanguageFiles(streams.toArray(InputStream[]::new));
     }
 
     private static void setProps(Properties properties) {
@@ -151,8 +140,10 @@ public class L18n {
             if (stream == null)
                 continue;
 
-            try (var reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
-                mergedProperties.load(reader);
+            try (Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+                var tempProperties = new Properties();
+                tempProperties.load(reader);
+                mergedProperties.putAll(tempProperties);
             }
         }
 
@@ -166,22 +157,21 @@ public class L18n {
      * @return the localized string
      */
     public static String localize(String key) {
-        if (key != null && key.isBlank())
-            return "";
-
-        LOGGER.debug("Getting localized string for key {}", key);
-
         if (key == null) {
             LOGGER.error("Localize called with null key");
             return "null";
         }
 
-        if (LANG_CACHE.get(key) == null) {
+        if (key.isBlank())
+            return "";
+
+        Object value = LANG_CACHE.get(key);
+        if (value == null) {
             LOGGER.error("Error finding translations for key '{}' in language {}", key, CURRENT_LANG.getValue());
             return key;
         }
 
-        return LANG_CACHE.get(key).toString();
+        return value.toString();
     }
 
     /**
@@ -205,6 +195,7 @@ public class L18n {
      * @return true if the key is valid, false otherwise
      */
     public static boolean isKeyValid(String key) {
-        return LANG_CACHE.get(key) != null && LANG_CACHE.get(key) != "";
+        Object value = LANG_CACHE.get(key);
+        return value != null && !value.toString().isEmpty();
     }
 }

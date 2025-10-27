@@ -253,3 +253,168 @@
     -fx-border-color: transparent;
     -fx-effect: none;
 }
+
+.welcome-hero {
+    -fx-alignment: center-left;
+    -fx-spacing: 18px;
+}
+
+.welcome-hero-icon {
+    -fx-icon-size: 32px;
+    -fx-fill: -color-accent-emphasis;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 6, 0.3, 0, 1);
+}
+
+.welcome-hero-text {
+    -fx-spacing: 4px;
+}
+
+.welcome-stats-bar {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px;
+    -fx-padding: 10px 16px;
+    -fx-spacing: 20px;
+}
+
+.welcome-stat {
+    -fx-alignment: center-left;
+    -fx-spacing: 8px;
+}
+
+.welcome-stat-icon {
+    -fx-icon-size: 16px;
+    -fx-fill: -color-accent-emphasis;
+}
+
+.welcome-stat-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -color-fg-default;
+}
+
+.welcome-tip {
+    -fx-alignment: center-left;
+    -fx-spacing: 6px;
+}
+
+.welcome-tip-icon {
+    -fx-icon-size: 14px;
+    -fx-fill: -color-accent-emphasis;
+}
+
+.welcome-tip-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.welcome-options-row {
+    -fx-spacing: 14px;
+}
+
+
+/* Project sort combo box */
+.project-sort-combo {
+    -fx-pref-width: 220px;
+}
+
+.project-sort-option {
+    -fx-alignment: center-left;
+    -fx-spacing: 12px;
+    -fx-padding: 4px 0;
+}
+
+.project-sort-option-icon {
+    -fx-icon-size: 16px;
+    -fx-fill: -color-accent-emphasis;
+}
+
+.project-sort-option-text {
+    -fx-spacing: 2px;
+}
+
+.project-sort-option-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -color-fg-default;
+}
+
+.project-sort-option-description {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.project-sort-tooltip {
+    -fx-font-size: 12px;
+    -fx-background-color: -color-bg-subtle;
+    -fx-text-fill: -color-fg-default;
+    -fx-padding: 8px 12px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+}
+
+/* Welcome search bar */
+.welcome-search-container {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 999px;
+    -fx-background-radius: 999px;
+    -fx-padding: 6px 12px;
+    -fx-spacing: 10px;
+    -fx-min-height: 44px;
+    -fx-alignment: center-left;
+}
+
+.welcome-search-container:focused {
+    -fx-border-color: -color-accent-emphasis;
+    -fx-background-color: -color-bg-default;
+    -fx-effect: dropshadow(gaussian, rgba(94, 129, 172, 0.2), 8, 0.2, 0, 1);
+}
+
+.welcome-search-icon {
+    -fx-icon-size: 16px;
+    -fx-fill: -color-fg-muted;
+}
+
+.welcome-search-container:focused .welcome-search-icon {
+    -fx-fill: -color-accent-emphasis;
+}
+
+.welcome-search-input {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -color-fg-default;
+    -fx-prompt-text-fill: -color-fg-muted;
+    -fx-font-size: 14px;
+    -fx-padding: 0;
+}
+
+.welcome-search-input:focused {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.welcome-search-clear {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 50%;
+    -fx-border-radius: 50%;
+    -fx-padding: 4px;
+    -fx-cursor: hand;
+}
+
+.welcome-search-clear:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.welcome-search-clear-icon {
+    -fx-icon-size: 12px;
+    -fx-fill: -color-fg-muted;
+}
+
+.welcome-search-container:focused .welcome-search-clear-icon {
+    -fx-fill: -color-accent-emphasis;
+}

@@ -49,6 +49,14 @@ railroad.home.welcome.sort.none=None
 railroad.home.welcome.sort.name=Name
 railroad.home.welcome.sort.date=Date
 
+railroad.home.welcome.sort.none.description=Show projects in their natural order.
+railroad.home.welcome.sort.name.description=Arrange projects alphabetically.
+railroad.home.welcome.sort.date.description=Put the most recently opened projects first.
+railroad.home.welcome.sort.tooltip=Sorting projects by %s
+
+railroad.home.welcome.stats.projects=%d projects ready
+railroad.home.welcome.header.tip=Tip: Use search and sorting to jump back into work faster.
+
 # Project actions
 railroad.home.welcome.project.open=Open
 railroad.home.welcome.project.remove=Remove
