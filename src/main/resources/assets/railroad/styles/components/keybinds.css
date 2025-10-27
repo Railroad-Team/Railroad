@@ -79,7 +79,7 @@
     -fx-background-color: -color-bg-subtle;
 }
 
-.keybind-card-add .ikonli-font-icon {
+.keybind-card-add > * {
     -fx-background-color: transparent;
 }
 
