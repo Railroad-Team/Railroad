@@ -39,7 +39,7 @@ public class ProjectListCell extends ListCell<Project> {
     private final Label pathLabel = new Label();
     private final Label lastOpenedLabel = new Label();
     private final RRButton ellipsisButton = new RRButton();
-    private final HBox facetTagsBox = new HBox(5); // 5px spacing between tags
+    private final HBox facetTagsBox = new HBox(5);
 
     /**
      * Constructs a new ProjectListCell with modern styling and context menu functionality.
@@ -64,7 +64,6 @@ public class ProjectListCell extends ListCell<Project> {
         icon.setEffect(new DropShadow(8, Color.rgb(0, 0, 0, 0.10)));
 
         infoBox.setAlignment(Pos.CENTER_LEFT);
-        // infoBox.setSpacing(7); // This is now set in the field declaration
         VBox.setVgrow(infoBox, Priority.ALWAYS);
         nameLabel.getStyleClass().add("project-list-name");
 
@@ -136,7 +135,7 @@ public class ProjectListCell extends ListCell<Project> {
                     tagLabel.getStyleClass().add("facet-" + facet.getType().id());
                     String description = facet.getType().description();
                     if (description != null && !description.isBlank()) {
-                        javafx.scene.control.Tooltip.install(tagLabel, new javafx.scene.control.Tooltip(description));
+                        Tooltip.install(tagLabel, new Tooltip(description));
                     }
                     facetTagsBox.getChildren().add(tagLabel);
                 }

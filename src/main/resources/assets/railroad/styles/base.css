@@ -1,4 +1,3 @@
-@import "components/project-list.css";
 .Railroad, .split-pane, .scroll-pane {
     -fx-background-color: -color-bg-default;
     -fx-text-fill: -color-fg-default;
