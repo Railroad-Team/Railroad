@@ -159,3 +159,24 @@
     -fx-background-color: -color-bg-overlay;
     -fx-border-width: 0 0 1 0;
 }
+
+.signature-help-container {
+    -fx-background-color: rgba(40, 40, 40, 0.95);
+    -fx-padding: 6px 8px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-color: rgba(255, 255, 255, 0.25);
+}
+
+.signature-help-text {
+    -fx-text-fill: white;
+}
+
+.signature-param {
+    -fx-text-fill: #d0d0d0;
+}
+
+.signature-param-active {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
