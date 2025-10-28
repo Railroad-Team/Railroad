@@ -11,6 +11,7 @@ import dev.railroadide.core.ui.localized.LocalizedCheckMenuItem;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.localized.LocalizedMenu;
 import dev.railroadide.core.ui.localized.LocalizedMenuItem;
+import dev.railroadide.core.utility.OperatingSystem;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
@@ -301,7 +302,9 @@ public class IDESetup {
         toolsMenu.getStyleClass().add("rr-menu");
 
         var menuBar = new RRMenuBar(true, fileMenu, editMenu, viewMenu, runMenu, toolsMenu);
-        menuBar.setUseSystemMenuBar(true);
+        if(OperatingSystem.isMac()) {
+            menuBar.useSystemMenuBarProperty().set(true);
+        }
         menuBar.getStyleClass().add("rr-menu-bar");
         return menuBar;
     }

@@ -39,4 +39,16 @@ public enum OperatingSystem {
 
         return UNKNOWN;
     }
+
+    public static boolean isMac() {
+        return CURRENT == MAC;
+    }
+
+    public static boolean isWindows() {
+        return CURRENT == WINDOWS;
+    }
+
+    public static boolean isLinux() {
+        return CURRENT == LINUX;
+    }
 }

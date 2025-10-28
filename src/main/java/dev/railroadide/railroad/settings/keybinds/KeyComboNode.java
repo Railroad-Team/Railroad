@@ -125,9 +125,9 @@ public class KeyComboNode extends RRButton {
 
     private String localizeModifier(KeyCombination.Modifier modifier) {
         return switch (modifier.getKey()) {
-            case SHORTCUT -> OperatingSystem.CURRENT == OperatingSystem.MAC ? "⌘" : "Ctrl";
+            case SHORTCUT -> OperatingSystem.isMac() ? "⌘" : "Ctrl";
             case CONTROL -> "Ctrl";
-            case ALT -> OperatingSystem.CURRENT == OperatingSystem.MAC ? "⌥" : "Alt";
+            case ALT -> OperatingSystem.isMac() ? "⌥" : "Alt";
             case SHIFT -> "Shift";
             default -> modifier.getKey().getName();
         };

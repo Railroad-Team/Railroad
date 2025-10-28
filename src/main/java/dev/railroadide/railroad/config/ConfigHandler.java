@@ -13,9 +13,8 @@ public final class ConfigHandler {
     private final Config config = new Config();
 
     public static Path getConfigDirectory() {
-        OperatingSystem os = OperatingSystem.CURRENT;
         String userHome = System.getProperty("user.home");
-        return switch (os) {
+        return switch (OperatingSystem.CURRENT) {
             case WINDOWS -> {
                 String roaming = System.getenv("APPDATA");
                 if (roaming != null && !roaming.isBlank()) {
