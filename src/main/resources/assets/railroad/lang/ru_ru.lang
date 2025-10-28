@@ -49,7 +49,15 @@ railroad.home.welcome.sort.none=Без сортировки
 railroad.home.welcome.sort.name=По имени
 railroad.home.welcome.sort.date=По дате
 
-# Project actions
+railroad.home.welcome.sort.none.description=Показать проекты в исходном порядке.
+railroad.home.welcome.sort.name.description=Отсортировать проекты по алфавиту.
+railroad.home.welcome.sort.date.description=Показывать недавно открытые проекты первыми.
+railroad.home.welcome.sort.tooltip=Сортировка проектов по %s
+
+railroad.home.welcome.stats.projects=Проектов: %d
+railroad.home.welcome.header.tip=Совет: используй поиск и сортировку, чтобы быстрее вернуться к работе.
+
+# Действия с проектами
 railroad.home.welcome.project.open=Открыть
 railroad.home.welcome.project.remove=Убрать
 railroad.home.welcome.project.searchtype=Искать типы проектов
@@ -75,6 +83,15 @@ railroad.settings.general.language.description=Выберите язык для 
 
 # Настройки горячих клавиш
 railroad.settings.keybinds.title=Горячие клавиши
+railroad.settings.keybinds.subtitle=Настрой сочетания клавиш под свой стиль работы.
+railroad.settings.keybinds.search=Поиск по сочетаниям...
+railroad.settings.keybinds.filter.all=Все категории
+railroad.settings.keybinds.empty.title=Нет сочетаний, подходящих под фильтр
+railroad.settings.keybinds.empty.subtitle=Попробуй изменить поиск или категорию, чтобы увидеть больше сочетаний.
+railroad.settings.keybinds.add_binding=Добавить сочетание
+railroad.settings.keybinds.no_shortcuts=Пока нет назначенных сочетаний
+railroad.settings.keybinds.click_to_record=Нажми, чтобы записать
+railroad.settings.keybinds.recording=Запись...
 
 # Категории горячих клавиш
 railroad.settings.keybinds.category.general=Основное
@@ -97,6 +114,18 @@ railroad.plugins.details.dependencies=Зависимости:
 railroad.plugins.placeholder.title=Выберите плагин чтобы просмотреть его подробную информацию
 railroad.plugins.placeholder.subtitle=Выберите плагин из списка чтобы посмотреть, что он добавляет.
 railroad.plugins.list.version=Версия: %s
+railroad.plugins.list.author=Автор: %s
+railroad.plugins.list.empty=Нет доступных плагинов
+railroad.plugins.details.enable=Включить плагин
+railroad.plugins.details.no_description=Описание отсутствует.
+railroad.plugins.details.dependencies.none=Нет зависимостей
+railroad.plugins.details.dependencies.count=%d репозиториев, %d артефактов
+railroad.plugins.details.label.identifier=Идентификатор
+railroad.plugins.details.label.version=Версия
+railroad.plugins.details.label.author=Автор
+railroad.plugins.details.label.license=Лицензия
+railroad.plugins.details.label.main_class=Main Class
+railroad.plugins.details.label.dependencies=Зависимости
 
 # Настройки внешнего вида
 railroad.settings.appearance.themes.title=Темы
