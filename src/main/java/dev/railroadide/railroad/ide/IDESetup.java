@@ -62,7 +62,7 @@ public class IDESetup {
      */
     public static Scene createIDEScene(Project project) {
         var root = new RRBorderPane();
-        //root.setTop(createMenuBar()); // TODO: This doesn't work in production
+        root.setTop(createMenuBar());
 
         var leftPane = new DetachableTabPane();
         leftPane.addTab("Project", new ProjectExplorerPane(project, root));
