@@ -3,15 +3,12 @@ package dev.railroadide.railroad.localization;
 import dev.railroadide.core.localization.Language;
 import dev.railroadide.railroad.Railroad;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
+import java.net.URI;
 import java.net.URL;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.Enumeration;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,7 +16,8 @@ public final class LanguageRegistryLoader {
     private static final String FOLDER = "assets/railroad/lang";
     private static final Pattern FILE_PATTERN = Pattern.compile("^([a-z]{2})_([a-z]{2})\\.lang$");
 
-    private LanguageRegistryLoader() {}
+    private LanguageRegistryLoader() {
+    }
 
     public static void load() {
         try {
@@ -36,15 +34,28 @@ public final class LanguageRegistryLoader {
     }
 
 
-    private static void discoverFromFileSystem(URL url) throws IOException, URISyntaxException {
-        Path dirPath = Paths.get(url.toURI());
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dirPath)) {
-            for (Path file : stream) {
-                if (Files.isRegularFile(file)) {
-                    String fileName = file.getFileName().toString();
-                    tryRegisterFromFileName(fileName);
+    private static void discoverFromFileSystem(URL url) throws Exception {
+        String protocol = url.getProtocol();
+        if ("file".equals(protocol)) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(url.toURI()), "*.lang")) {
+                for (Path path : stream)
+                    tryRegisterFromFileName(path.getFileName().toString());
+            }
+        } else if ("jar".equals(protocol)) {
+            String spec = url.toString();
+            int bang = spec.indexOf("!/");
+            URI jarUri = URI.create(spec.substring(0, bang));
+            String inJarPath = spec.substring(bang + 2);
+
+            try (FileSystem fileSystem = FileSystems.newFileSystem(jarUri, Map.of())) {
+                Path dir = fileSystem.getPath(inJarPath);
+                try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.lang")) {
+                    for (Path path : stream)
+                        tryRegisterFromFileName(path.getFileName().toString());
                 }
             }
+        } else {
+            Railroad.LOGGER.warn("Unsupported URL scheme for languages: {}", url);
         }
     }
 
