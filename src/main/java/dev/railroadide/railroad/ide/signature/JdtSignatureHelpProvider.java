@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.signature;
 
+import dev.railroadide.railroad.ide.completion.JdtCompletionProvider;
 import org.eclipse.jdt.core.dom.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -181,7 +182,7 @@ public record JdtSignatureHelpProvider(Path filePath, String[] systemModulePaths
 
     private SignatureHelp createSignatureHelp(IMethodBinding binding, int requestedIndex) {
         ITypeBinding declaring = binding.getDeclaringClass();
-        String ownerQualified = declaring != null ? renderType(declaring) : "";
+        String ownerQualified = declaring != null ? JdtCompletionProvider.renderType(declaring) : "";
         String ownerDisplay = declaring != null ? simpleName(ownerQualified) : "";
         String methodName = binding.isConstructor() ? ownerDisplay : binding.getName();
 
@@ -189,7 +190,7 @@ public record JdtSignatureHelpProvider(Path filePath, String[] systemModulePaths
         List<SignatureHelp.ParameterInfo> parameters = new ArrayList<>(parameterTypes.length);
         for (int i = 0; i < parameterTypes.length; i++) {
             ITypeBinding parameterType = parameterTypes[i];
-            String typeLabel = renderType(parameterType);
+            String typeLabel = JdtCompletionProvider.renderType(parameterType);
             boolean varargs = binding.isVarargs() && i == parameterTypes.length - 1;
             if (varargs && typeLabel.endsWith("[]")) {
                 typeLabel = typeLabel.substring(0, typeLabel.length() - 2) + "...";
@@ -200,7 +201,7 @@ public record JdtSignatureHelpProvider(Path filePath, String[] systemModulePaths
         }
 
         int activeIndex = computeActiveParameter(requestedIndex, parameters.size(), binding.isVarargs());
-        String returnType = binding.isConstructor() ? ownerQualified : renderType(binding.getReturnType());
+        String returnType = binding.isConstructor() ? ownerQualified : JdtCompletionProvider.renderType(binding.getReturnType());
 
         return new SignatureHelp(
             ownerQualified,
@@ -222,31 +223,6 @@ public record JdtSignatureHelpProvider(Path filePath, String[] systemModulePaths
             return Math.max(0, requestedIndex);
 
         return varargs ? parameterCount - 1 : parameterCount - 1;
-    }
-
-    private String renderType(ITypeBinding type) {
-        if (type == null)
-            return "?";
-
-        if (type.isArray())
-            return renderType(type.getComponentType()) + "[]";
-
-        if (type.isPrimitive() || type.isNullType())
-            return type.getName();
-
-        if (type.isTypeVariable()) {
-            ITypeBinding erasure = type.getErasure();
-            if (erasure != null)
-                return renderType(erasure);
-        }
-
-        ITypeBinding declaration = type.getTypeDeclaration();
-        String qualified = declaration != null ? declaration.getQualifiedName() : type.getQualifiedName();
-        if (qualified != null && !qualified.isBlank())
-            return qualified;
-
-        String name = type.getName();
-        return name != null && !name.isBlank() ? name : "?";
     }
 
     private String simpleName(String qualified) {
