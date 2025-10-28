@@ -2,6 +2,10 @@ package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.core.ui.RRListView;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.signature.JdtSignatureHelpProvider;
+import dev.railroadide.railroad.ide.signature.SignatureHelp;
+import dev.railroadide.railroad.ide.signature.SignatureHelp.ParameterInfo;
+import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 import dev.railroadide.railroad.ide.syntaxhighlighting.TreeSitterJavaSyntaxHighlighting;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.utility.ShutdownHooks;
@@ -85,12 +89,14 @@ public class JavaCodeEditorPane extends TextEditorPane {
     private final TextFlow signatureTextFlow = new TextFlow();
     private final AtomicInteger signatureGeneration = new AtomicInteger();
     private final AtomicReference<SignatureHelp> activeSignatureHelp = new AtomicReference<>(null);
+    private final SignatureHelpProvider signatureHelpProvider;
 
     private int[] bracketHighlightRange;
 
     public JavaCodeEditorPane(Project project, Path item) {
         super(item);
         this.project = Objects.requireNonNull(project, "project");
+        this.signatureHelpProvider = new JdtSignatureHelpProvider(filePath, SYSTEM_MODULE_PATHS);
 
         diagnosticPopup.setAutoHide(true);
         signaturePopup.setAutoHide(false);
@@ -132,8 +138,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
         int caret = getCaretPosition();
         int generation = signatureGeneration.incrementAndGet();
 
-        CompletableFuture
-            .supplyAsync(() -> computeSignatureHelp(snapshot, caret), worker)
+        CompletableFuture.supplyAsync(() -> signatureHelpProvider.compute(snapshot, caret), worker)
             .thenAccept(help -> Platform.runLater(() -> applySignatureHelp(generation, help)))
             .exceptionally(throwable -> {
                 Railroad.LOGGER.error("Failed to compute signature help", throwable);
@@ -177,6 +182,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
             headerBuilder.append(help.methodName());
         }
+
         headerBuilder.append("(");
 
         var header = new Text(headerBuilder.toString());
@@ -243,245 +249,6 @@ public class JavaCodeEditorPane extends TextEditorPane {
         if (signaturePopup.isShowing()) {
             signaturePopup.hide();
         }
-    }
-
-    private SignatureHelp computeSignatureHelp(String text, int caretPosition) {
-        if (caretPosition < 0 || text.isEmpty())
-            return null;
-
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setSource(text.toCharArray());
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setResolveBindings(true);
-        parser.setBindingsRecovery(true);
-        parser.setStatementsRecovery(true);
-        parser.setUnitName(filePath.getFileName().toString());
-        parser.setEnvironment(SYSTEM_MODULE_PATHS, null, null, false);
-
-        CompilationUnit unit = (CompilationUnit) parser.createAST(null);
-        int searchAt = Math.max(0, Math.min(Math.max(text.length() - 1, 0), caretPosition > 0 ? caretPosition - 1 : 0));
-        NodeFinder finder = new NodeFinder(unit, searchAt, 0);
-        ASTNode node = finder.getCoveringNode();
-
-        while (node != null) {
-            SignatureHelp help = null;
-            switch (node) {
-                case MethodInvocation invocation ->
-                    help = buildSignatureHelpForMethodInvocation(invocation, caretPosition, text);
-                case ClassInstanceCreation creation ->
-                    help = buildSignatureHelpForClassInstanceCreation(creation, caretPosition, text);
-                case SuperMethodInvocation invocation ->
-                    help = buildSignatureHelpForSuperMethodInvocation(invocation, caretPosition, text);
-                case ConstructorInvocation invocation ->
-                    help = buildSignatureHelpForConstructorInvocation(invocation, caretPosition, text);
-                case SuperConstructorInvocation invocation ->
-                    help = buildSignatureHelpForSuperConstructorInvocation(invocation, caretPosition, text);
-                default -> {
-                }
-            }
-
-            if (help != null)
-                return help;
-
-            node = node.getParent();
-        }
-
-        return null;
-    }
-
-    private SignatureHelp buildSignatureHelpForMethodInvocation(
-        MethodInvocation invocation,
-        int caretPosition,
-        String text
-    ) {
-        if (isInvalidSignatureBounds(caretPosition, findParenthesisBounds(invocation, text)))
-            return null;
-
-        IMethodBinding binding = invocation.resolveMethodBinding();
-        if (binding == null)
-            return null;
-
-        int argumentIndex = computeArgumentIndex(invocation.arguments(), caretPosition);
-        return createSignatureHelp(binding, argumentIndex);
-    }
-
-    private SignatureHelp buildSignatureHelpForSuperMethodInvocation(
-        SuperMethodInvocation invocation,
-        int caretPosition,
-        String text
-    ) {
-        if (isInvalidSignatureBounds(caretPosition, findParenthesisBounds(invocation, text)))
-            return null;
-
-        IMethodBinding binding = invocation.resolveMethodBinding();
-        if (binding == null)
-            return null;
-
-        int argumentIndex = computeArgumentIndex(invocation.arguments(), caretPosition);
-        return createSignatureHelp(binding, argumentIndex);
-    }
-
-    private SignatureHelp buildSignatureHelpForClassInstanceCreation(
-        ClassInstanceCreation creation,
-        int caretPosition,
-        String text
-    ) {
-        if (isInvalidSignatureBounds(caretPosition, findParenthesisBounds(creation, text)))
-            return null;
-
-        IMethodBinding binding = creation.resolveConstructorBinding();
-        if (binding == null)
-            return null;
-
-        int argumentIndex = computeArgumentIndex(creation.arguments(), caretPosition);
-        return createSignatureHelp(binding, argumentIndex);
-    }
-
-    private boolean isInvalidSignatureBounds(int caretPosition, int[] parenthesisBounds) {
-        int open = parenthesisBounds[0];
-        int close = parenthesisBounds[1];
-        if (open == -1 || caretPosition < open + 1)
-            return true;
-
-        return close != -1 && caretPosition > close;
-    }
-
-    private SignatureHelp buildSignatureHelpForConstructorInvocation(
-        ConstructorInvocation invocation,
-        int caretPosition,
-        String text
-    ) {
-        int[] bounds = findParenthesisBounds(invocation, text);
-        int open = bounds[0];
-        int close = bounds[1];
-        if (open == -1 || caretPosition < open + 1)
-            return null;
-
-        if (close != -1 && caretPosition > close)
-            return null;
-
-        IMethodBinding binding = invocation.resolveConstructorBinding();
-        if (binding == null)
-            return null;
-
-        int argumentIndex = computeArgumentIndex(invocation.arguments(), caretPosition);
-        return createSignatureHelp(binding, argumentIndex);
-    }
-
-    private SignatureHelp buildSignatureHelpForSuperConstructorInvocation(
-        SuperConstructorInvocation invocation,
-        int caretPosition,
-        String text
-    ) {
-        int[] bounds = findParenthesisBounds(invocation, text);
-        int open = bounds[0];
-        int close = bounds[1];
-        if (open == -1 || caretPosition < open + 1)
-            return null;
-
-        if (close != -1 && caretPosition > close)
-            return null;
-
-        IMethodBinding binding = invocation.resolveConstructorBinding();
-        if (binding == null)
-            return null;
-
-        int argumentIndex = computeArgumentIndex(invocation.arguments(), caretPosition);
-        return createSignatureHelp(binding, argumentIndex);
-    }
-
-    private int[] findParenthesisBounds(ASTNode node, String text) {
-        int start = node.getStartPosition();
-        int length = Math.max(0, node.getLength());
-        int end = Math.min(text.length(), start + length);
-        if (start < 0 || start >= text.length())
-            return new int[]{-1, -1};
-
-        String snippet = text.substring(start, end);
-        int openOffset = snippet.indexOf('(');
-        if (openOffset < 0)
-            return new int[]{-1, -1};
-
-        int closeOffset = snippet.lastIndexOf(')');
-        int open = start + openOffset;
-        int close = closeOffset >= 0 ? start + closeOffset : -1;
-        return new int[]{open, close};
-    }
-
-    private int computeArgumentIndex(List<?> arguments, int caretPosition) {
-        if (arguments == null || arguments.isEmpty())
-            return 0;
-
-        for (int i = 0; i < arguments.size(); i++) {
-            Object argObj = arguments.get(i);
-            if (!(argObj instanceof ASTNode arg))
-                continue;
-
-            int start = arg.getStartPosition();
-            int end = start + Math.max(0, arg.getLength());
-            if (caretPosition <= start)
-                return i;
-
-            if (caretPosition <= end)
-                return i;
-        }
-
-        return arguments.size();
-    }
-
-    private SignatureHelp createSignatureHelp(IMethodBinding binding, int requestedIndex) {
-        ITypeBinding declaring = binding.getDeclaringClass();
-        String ownerQualified = declaring != null ? renderType(declaring) : "";
-        String ownerDisplay = declaring != null ? simpleName(ownerQualified) : "";
-        String methodName = binding.isConstructor() ? ownerDisplay : binding.getName();
-
-        ITypeBinding[] parameterTypes = binding.getParameterTypes();
-        List<ParameterInfo> parameters = new ArrayList<>(parameterTypes.length);
-        for (int i = 0; i < parameterTypes.length; i++) {
-            ITypeBinding type = parameterTypes[i];
-            String typeLabel = renderType(type);
-            boolean varargs = binding.isVarargs() && i == parameterTypes.length - 1;
-            if (varargs && typeLabel.endsWith("[]")) {
-                typeLabel = typeLabel.substring(0, typeLabel.length() - 2) + "...";
-            }
-
-            String name = "arg" + i;
-            parameters.add(new ParameterInfo(typeLabel, name, varargs));
-        }
-
-        int activeIndex = computeActiveParameter(requestedIndex, parameters.size(), binding.isVarargs());
-        String returnType = binding.isConstructor() ? ownerQualified : renderType(binding.getReturnType());
-
-        return new SignatureHelp(
-            ownerQualified,
-            ownerDisplay.isBlank() ? ownerQualified : ownerDisplay,
-            methodName,
-            parameters,
-            activeIndex,
-            binding.isConstructor(),
-            returnType,
-            binding.isVarargs());
-    }
-
-    private int computeActiveParameter(int requestedIndex, int parameterCount, boolean varargs) {
-        if (parameterCount == 0)
-            return -1;
-
-        if (requestedIndex < parameterCount)
-            return Math.max(0, requestedIndex);
-
-        return varargs ? parameterCount - 1 : parameterCount - 1;
-    }
-
-    private String simpleName(String qualified) {
-        if (qualified == null || qualified.isBlank())
-            return "";
-
-        int lastDot = qualified.lastIndexOf('.');
-        if (lastDot == -1)
-            return qualified;
-
-        return qualified.substring(lastDot + 1);
     }
 
     private static String[] resolveSystemModules() {
@@ -1352,21 +1119,6 @@ public class JavaCodeEditorPane extends TextEditorPane {
         public String getMessage(Locale locale) {
             return message;
         }
-    }
-
-    private record SignatureHelp(
-        String ownerQualified,
-        String ownerDisplay,
-        String methodName,
-        List<ParameterInfo> parameters,
-        int activeParameter,
-        boolean constructor,
-        String returnType,
-        boolean varargs
-    ) {
-    }
-
-    private record ParameterInfo(String type, String name, boolean varargs) {
     }
 
     private record CompletionTarget(ITypeBinding type, boolean staticContext) {
