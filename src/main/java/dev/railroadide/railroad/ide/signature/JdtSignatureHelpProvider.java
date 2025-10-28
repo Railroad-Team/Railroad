@@ -26,10 +26,11 @@ public record JdtSignatureHelpProvider(Path filePath, String[] systemModulePaths
         parser.setBindingsRecovery(true);
         parser.setStatementsRecovery(true);
         parser.setUnitName(filePath.getFileName().toString());
+        parser.setEnvironment(systemModulePaths, null, null, false);
 
         CompilationUnit unit = (CompilationUnit) parser.createAST(null);
         int searchAt = Math.max(0, Math.min(Math.max(document.length() - 1, 0), caretPosition > 0 ? caretPosition - 1 : 0));
-        NodeFinder finder = new NodeFinder(unit, searchAt, 0);
+        var finder = new NodeFinder(unit, searchAt, 0);
         ASTNode node = finder.getCoveringNode();
 
         while (node != null) {
