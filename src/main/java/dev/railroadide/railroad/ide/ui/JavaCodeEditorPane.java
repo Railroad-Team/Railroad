@@ -6,6 +6,9 @@ import dev.railroadide.railroad.ide.completion.CompletionItem;
 import dev.railroadide.railroad.ide.completion.CompletionProvider;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
 import dev.railroadide.railroad.ide.completion.JdtCompletionProvider;
+import dev.railroadide.railroad.ide.diagnostics.DiagnosticsProvider;
+import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic;
+import dev.railroadide.railroad.ide.diagnostics.JdtDiagnosticsProvider;
 import dev.railroadide.railroad.ide.signature.JdtSignatureHelpProvider;
 import dev.railroadide.railroad.ide.signature.SignatureHelp;
 import dev.railroadide.railroad.ide.signature.SignatureHelp.ParameterInfo;
@@ -35,18 +38,11 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Popup;
-import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.compiler.IProblem;
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTParser;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.fxmisc.richtext.event.MouseOverTextEvent;
 import org.fxmisc.richtext.model.PlainTextChange;
 import org.fxmisc.richtext.model.StyleSpans;
-import org.jetbrains.annotations.NotNull;
 
 import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -81,7 +77,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
     private volatile StyleSpans<Collection<String>> lastHighlight =
         TreeSitterJavaSyntaxHighlighting.computeHighlighting("");
-    private volatile List<ProblemDiagnostic> visibleDiagnostics = List.of();
+    private volatile List<EditorDiagnostic> visibleDiagnostics = List.of();
     private final Map<Integer, Diagnostic.Kind> lineSeverity = new ConcurrentHashMap<>();
 
     private final Popup diagnosticPopup = new Popup();
@@ -96,6 +92,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
     private final TextFlow signatureTextFlow = new TextFlow();
     private final AtomicInteger signatureGeneration = new AtomicInteger();
     private final AtomicReference<SignatureHelp> activeSignatureHelp = new AtomicReference<>(null);
+    private final DiagnosticsProvider diagnosticsProvider;
     private final SignatureHelpProvider signatureHelpProvider;
 
     private int[] bracketHighlightRange;
@@ -104,6 +101,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
         super(item);
         this.project = Objects.requireNonNull(project, "project");
         this.completionProvider = new JdtCompletionProvider(filePath, SYSTEM_MODULE_PATHS);
+        this.diagnosticsProvider = new JdtDiagnosticsProvider(filePath);
         this.signatureHelpProvider = new JdtSignatureHelpProvider(filePath, SYSTEM_MODULE_PATHS);
 
         diagnosticPopup.setAutoHide(true);
@@ -311,8 +309,8 @@ public class JavaCodeEditorPane extends TextEditorPane {
             grid.add(icon, 1, 0);
 
             String tooltipText = visibleDiagnostics.stream()
-                .filter(diagnostic -> diagnostic.line() == line + 1)
-                .map(ProblemDiagnostic::message)
+                .filter(diagnostic -> diagnostic.getLineNumber() == line + 1)
+                .map(diagnostic -> diagnostic.getMessage(Locale.getDefault()))
                 .findFirst()
                 .orElse(severity == Diagnostic.Kind.ERROR ? "Error" : "Warning");
             Tooltip.install(icon, new Tooltip(tooltipText));
@@ -330,8 +328,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
     private void requestHighlight(String snapshot) {
         int generation = highlightGeneration.incrementAndGet();
-        CompletableFuture
-            .supplyAsync(() -> TreeSitterJavaSyntaxHighlighting.computeHighlighting(snapshot), worker)
+        CompletableFuture.supplyAsync(() -> TreeSitterJavaSyntaxHighlighting.computeHighlighting(snapshot), worker)
             .thenAccept(spans -> Platform.runLater(() -> applyHighlightIfLatest(generation, spans)))
             .exceptionally(throwable -> {
                 Railroad.LOGGER.error("Failed to compute Java syntax highlighting", throwable);
@@ -358,8 +355,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
     private void requestDiagnostics(String snapshot) {
         int generation = diagnosticsGeneration.incrementAndGet();
-        CompletableFuture
-            .supplyAsync(() -> analyseDiagnostics(snapshot), worker)
+        CompletableFuture.supplyAsync(() -> diagnosticsProvider.compute(snapshot), worker)
             .thenAccept(result -> Platform.runLater(() -> applyDiagnosticsIfLatest(generation, result)))
             .exceptionally(throwable -> {
                 Railroad.LOGGER.error("Failed to analyse Java diagnostics", throwable);
@@ -367,47 +363,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
             });
     }
 
-    private List<ProblemDiagnostic> analyseDiagnostics(String text) {
-        char[] source = text.toCharArray();
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setResolveBindings(false);
-        parser.setBindingsRecovery(false);
-        parser.setStatementsRecovery(true);
-        parser.setSource(source);
-        parser.setUnitName(filePath.getFileName().toString());
-
-        Map<String, String> options = JavaCore.getOptions();
-        JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);
-        parser.setCompilerOptions(options);
-
-        CompilationUnit unit = (CompilationUnit) parser.createAST(null);
-        return getProblemDiagnostics(unit, source);
-    }
-
-    private static @NotNull List<ProblemDiagnostic> getProblemDiagnostics(CompilationUnit unit, char[] source) {
-        IProblem[] problems = unit.getProblems();
-
-        List<ProblemDiagnostic> diagnostics = new ArrayList<>(problems.length);
-        for (IProblem problem : problems) {
-            Diagnostic.Kind kind = problem.isError()
-                ? Diagnostic.Kind.ERROR
-                : (problem.isWarning() ? Diagnostic.Kind.WARNING : Diagnostic.Kind.OTHER);
-            if (kind == Diagnostic.Kind.OTHER)
-                continue;
-
-            int start = Math.max(0, problem.getSourceStart());
-            int end = Math.min(source.length, problem.getSourceEnd() + 1);
-            long line = problem.getSourceLineNumber();
-            long column = computeColumn(source, start);
-            String message = problem.getMessage();
-            diagnostics.add(new ProblemDiagnostic(kind, start, end, line, column, message));
-        }
-
-        return diagnostics;
-    }
-
-    private void applyDiagnosticsIfLatest(int generation, List<ProblemDiagnostic> diagnostics) {
+    private void applyDiagnosticsIfLatest(int generation, List<EditorDiagnostic> diagnostics) {
         if (diagnosticsGeneration.get() != generation)
             return;
 
@@ -427,9 +383,12 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
     private void recomputeLineSeverity() {
         lineSeverity.clear();
-        for (ProblemDiagnostic diagnostic : visibleDiagnostics) {
-            int line = (int) diagnostic.line();
-            Diagnostic.Kind kind = diagnostic.kind();
+        for (EditorDiagnostic diagnostic : visibleDiagnostics) {
+            int line = (int) diagnostic.getLineNumber();
+            if (line <= 0)
+                continue;
+
+            Diagnostic.Kind kind = diagnostic.getKind();
             if (kind == Diagnostic.Kind.ERROR) {
                 lineSeverity.put(line, Diagnostic.Kind.ERROR);
             } else if (!lineSeverity.containsKey(line) || lineSeverity.get(line) == Diagnostic.Kind.WARNING) {
@@ -439,10 +398,13 @@ public class JavaCodeEditorPane extends TextEditorPane {
     }
 
     private void overlayDiagnostics() {
-        for (ProblemDiagnostic diagnostic : visibleDiagnostics) {
-            String style = diagnostic.kind() == Diagnostic.Kind.ERROR ? "error" : "warning";
+        for (EditorDiagnostic diagnostic : visibleDiagnostics) {
+            String style = diagnostic.getKind() == Diagnostic.Kind.ERROR ? "error" : "warning";
+            int start = (int) diagnostic.getStartPosition();
+            int end = (int) diagnostic.getEndPosition();
             try {
-                setStyleClass(diagnostic.start(), diagnostic.end(), style);
+                if (start >= 0 && end >= start)
+                    setStyleClass(start, end, style);
             } catch (IndexOutOfBoundsException ignored) {
                 // Ignore invalid ranges caused by parser desync
             }
@@ -455,19 +417,19 @@ public class JavaCodeEditorPane extends TextEditorPane {
         addEventHandler(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
     }
 
-    private ProblemDiagnostic findDiagnosticAt(int index) {
+    private EditorDiagnostic findDiagnosticAt(int index) {
         if (index < 0)
             return null;
 
-        for (ProblemDiagnostic diagnostic : visibleDiagnostics) {
-            if (index >= diagnostic.start() && index <= diagnostic.end())
+        for (EditorDiagnostic diagnostic : visibleDiagnostics) {
+            if (index >= diagnostic.getStartPosition() && index <= diagnostic.getEndPosition())
                 return diagnostic;
         }
 
         return null;
     }
 
-    private void showDiagnosticPopup(ProblemDiagnostic diagnostic, double screenX, double screenY) {
+    private void showDiagnosticPopup(EditorDiagnostic diagnostic, double screenX, double screenY) {
         diagnosticPopup.getContent().clear();
         diagnosticPopup.getContent().add(new DiagnosticPane(diagnostic));
         diagnosticPopup.show(this, screenX, screenY);
@@ -499,8 +461,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
     private void triggerCompletion(int dotIndex) {
         String snapshot = getText();
         int generation = completionGeneration.incrementAndGet();
-        CompletableFuture
-            .supplyAsync(() -> completionProvider.compute(snapshot, dotIndex), worker)
+        CompletableFuture.supplyAsync(() -> completionProvider.compute(snapshot, dotIndex), worker)
             .thenAccept(result -> Platform.runLater(() -> {
                 if (completionGeneration.get() != generation)
                     return;
@@ -746,26 +707,13 @@ public class JavaCodeEditorPane extends TextEditorPane {
         }
     }
 
-    private static long computeColumn(char[] source, int position) {
-        int column = 1;
-        for (int i = position - 1; i >= 0; i--) {
-            char c = source[i];
-            if (c == '\n' || c == '\r')
-                break;
-
-            column++;
-        }
-
-        return column;
-    }
-
     public String getLanguageId() {
         return "java";
     }
 
     private void handleMouseOverText(MouseOverTextEvent event) {
         int index = event.getCharacterIndex();
-        ProblemDiagnostic diagnostic = findDiagnosticAt(index);
+        EditorDiagnostic diagnostic = findDiagnosticAt(index);
         if (diagnostic == null)
             return;
 
@@ -793,60 +741,6 @@ public class JavaCodeEditorPane extends TextEditorPane {
         if (inserted.endsWith(".")) {
             int dotIndex = change.getPosition() + inserted.length() - 1;
             triggerCompletion(dotIndex);
-        }
-    }
-
-    private record ProblemDiagnostic(
-        Diagnostic.Kind kind,
-        int start,
-        int end,
-        long line,
-        long column,
-        String message
-    ) implements Diagnostic<JavaFileObject> {
-        @Override
-        public Diagnostic.Kind getKind() {
-            return kind;
-        }
-
-        @Override
-        public JavaFileObject getSource() {
-            return null;
-        }
-
-        @Override
-        public long getPosition() {
-            return start;
-        }
-
-        @Override
-        public long getStartPosition() {
-            return start;
-        }
-
-        @Override
-        public long getEndPosition() {
-            return end;
-        }
-
-        @Override
-        public long getLineNumber() {
-            return line;
-        }
-
-        @Override
-        public long getColumnNumber() {
-            return column;
-        }
-
-        @Override
-        public String getCode() {
-            return null;
-        }
-
-        @Override
-        public String getMessage(Locale locale) {
-            return message;
         }
     }
 
