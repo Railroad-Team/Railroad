@@ -55,7 +55,7 @@ railroad.home.welcome.sort.date.description=Показывать недавно 
 railroad.home.welcome.sort.tooltip=Сортировка проектов по %s
 
 railroad.home.welcome.stats.projects=Проектов: %d
-railroad.home.welcome.header.tip=Совет: используй поиск и сортировку, чтобы быстрее вернуться к работе.
+railroad.home.welcome.header.tip=Совет: используйте поиск и сортировку, чтобы быстрее вернуться к работе.
 
 # Действия с проектами
 railroad.home.welcome.project.open=Открыть
@@ -83,11 +83,11 @@ railroad.settings.general.language.description=Выберите язык для 
 
 # Настройки горячих клавиш
 railroad.settings.keybinds.title=Горячие клавиши
-railroad.settings.keybinds.subtitle=Настрой сочетания клавиш под свой стиль работы.
+railroad.settings.keybinds.subtitle=Настройте сочетания клавиш под свой стиль работы.
 railroad.settings.keybinds.search=Поиск по сочетаниям...
 railroad.settings.keybinds.filter.all=Все категории
 railroad.settings.keybinds.empty.title=Нет сочетаний, подходящих под фильтр
-railroad.settings.keybinds.empty.subtitle=Попробуй изменить поиск или категорию, чтобы увидеть больше сочетаний.
+railroad.settings.keybinds.empty.subtitle=Попробуйте изменить поиск или категорию, чтобы увидеть больше сочетаний.
 railroad.settings.keybinds.add_binding=Добавить сочетание
 railroad.settings.keybinds.no_shortcuts=Пока нет назначенных сочетаний
 railroad.settings.keybinds.click_to_record=Нажми, чтобы записать
