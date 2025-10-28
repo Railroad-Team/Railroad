@@ -30,9 +30,9 @@ public class RRMenuBar extends MenuBar {
             help.getItems().add(new LocalizedMenuItem("railroad.menu.help.documentation", "https://railroadide.dev/"));
             help.getItems().add(new SeparatorMenuItem());
             help.getItems().add(new LocalizedMenuItem("railroad.menu.help.issues", "https://github.com/Railroad-Team/Railroad/issues"));
-            help.getItems().add(new LocalizedMenuItem("railroad.menu.help.discord", "https://railroadide.dev/discord"));
+            help.getItems().add(new LocalizedMenuItem("railroad.menu.help.discord", "https://discord.turtywurty.dev/"));
 
-            this.getMenus().addLast(help);
+            getMenus().addLast(help);
         }
     }
 }
