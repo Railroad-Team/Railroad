@@ -15,10 +15,7 @@ import dev.railroadide.core.utility.OperatingSystem;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
-import dev.railroadide.railroad.ide.ui.ConsolePane;
-import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
-import dev.railroadide.railroad.ide.ui.ImageViewerPane;
-import dev.railroadide.railroad.ide.ui.StatusBarPane;
+import dev.railroadide.railroad.ide.ui.*;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
@@ -68,7 +65,6 @@ public class IDESetup {
         leftPane.addTab("Project", new ProjectExplorerPane(project, root));
 
         var rightPane = new DetachableTabPane();
-        rightPane.addTab("Properties", createNotImplementedPane());
 
         var editorPane = new DetachableTabPane();
         editorPane.addTab("Welcome", new IDEWelcomePane());

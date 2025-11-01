@@ -284,6 +284,41 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                     .findFirst()
                     .orElse(null);
 
+                if (fileName.endsWith(".md")) {
+                    Tab tab;
+                    var preview = new MarkdownPreviewPane(path);
+                    if (welcomeTab != null) {
+                        welcomeTab.setContent(preview);
+                        welcomeTab.setText(fileName);
+                        tab = welcomeTab;
+                    } else {
+                        tab = detachableTabPane.addTab(fileName, preview);
+                    }
+
+                    detachableTabPane.getSelectionModel().select(tab);
+
+                    var document = new DefaultDocument(fileName, path);
+                    Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.OPENED));
+                    Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.ACTIVATED));
+
+                    tab.setOnClosed(event -> {
+                        Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.CLOSED));
+                        if (tab.isSelected()) {
+                            Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.DEACTIVATED));
+                        }
+                    });
+
+                    tab.setOnSelectionChanged(event -> {
+                        if (tab.isSelected()) {
+                            Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.ACTIVATED));
+                        } else {
+                            Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.DEACTIVATED));
+                            Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(null);
+                        }
+                    });
+                    return;
+                }
+
                 TextEditorPane editorContent;
                 if (fileName.endsWith(".java")) {
                     editorContent = new JavaCodeEditorPane(project, path);
