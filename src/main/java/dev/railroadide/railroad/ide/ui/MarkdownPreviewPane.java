@@ -17,9 +17,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-    public class MarkdownPreviewPane extends RRVBox {
+public class MarkdownPreviewPane extends RRVBox {
     private final MarkdownWebView preview;
     private final Path markdownFile;
+
+    private TextEditorPane textEditorPane;
+    private SplitPane splitPane;
+    private WebView webViewPane;
 
     private final Button codeView = new RRButton("", FontAwesomeSolid.CODE);
     private final Button splitView = new RRButton("", FontAwesomeSolid.COLUMNS);
@@ -59,17 +63,32 @@ import java.nio.file.Path;
         });
     }
 
-    private TextEditorPane codeView(){
-        return new TextEditorPane(markdownFile);
+    private TextEditorPane codeView() {
+        if(textEditorPane != null)
+            return textEditorPane;
+
+        textEditorPane = new TextEditorPane(markdownFile);
+        textEditorPane.textProperty().addListener(
+            (observable, oldValue, newValue) -> preview.setContent(newValue));
+
+        return textEditorPane;
     }
 
-    private SplitPane splitView(){
-        SplitPane splitPane = new SplitPane(new TextEditorPane(markdownFile), previewView());
+    private SplitPane splitView() {
+        if(splitPane != null)
+            return splitPane;
+
+        splitPane = new SplitPane(codeView(), previewView());
         splitPane.setDividerPosition(0, 0.5);
+
         return splitPane;
     }
 
-    private WebView previewView(){
-        return preview.launch();
+    private WebView previewView() {
+        if(webViewPane != null)
+            return webViewPane;
+
+        webViewPane = preview.launch();
+        return webViewPane;
     }
 }
