@@ -23,6 +23,7 @@ public class RRButton extends Button {
     private FontIcon icon;
     @Getter
     private boolean isLoading = false;
+    private boolean square = false;
     private String localizationKey;
     private Object[] localizationArgs;
 
@@ -289,6 +290,24 @@ public class RRButton extends Button {
             getStyleClass().add("rounded");
         } else {
             getStyleClass().remove("rounded");
+        }
+    }
+
+    /**
+     * Force the button into a square shape.
+     */
+    public void setSquare(boolean square) {
+        if (this.square == square)
+            return;
+
+        this.square = square;
+
+        if (square) {
+            if (!getStyleClass().contains("square")) {
+                getStyleClass().add("square");
+            }
+        } else {
+            getStyleClass().remove("square");
         }
     }
 

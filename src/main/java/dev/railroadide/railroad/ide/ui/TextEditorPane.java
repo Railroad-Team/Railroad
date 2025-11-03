@@ -74,7 +74,10 @@ public class TextEditorPane extends CodeArea {
         subscribeToChanges();
         startExternalWatcher();
 
-        moveTo(0);
+        Platform.runLater(() -> {
+            moveTo(0);
+            scrollToPixel(0, 0);
+        });
 
         ShutdownHooks.addHook(() -> {
             watcherExecutor.shutdownNow();

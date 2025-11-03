@@ -164,9 +164,13 @@
     -fx-min-height: 40px;
 }
 
+.rr-button.square,
 .square-button {
     -fx-min-width: 32px;
-    /*-fx-max-width: 40px;*/
+    -fx-pref-width: 32px;
+    -fx-max-width: 32px;
     -fx-min-height: 32px;
-    /*-fx-max-height: 40px;*/
+    -fx-pref-height: 32px;
+    -fx-max-height: 32px;
+    -fx-padding: 0;
 }
