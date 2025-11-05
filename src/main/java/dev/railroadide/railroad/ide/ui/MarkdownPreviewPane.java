@@ -3,6 +3,8 @@ package dev.railroadide.railroad.ide.ui;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.settings.Settings;
+import dev.railroadide.railroad.theme.ThemeManager;
 import io.github.raghultech.markdown.javafx.preview.MarkdownWebView;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
@@ -48,6 +50,11 @@ public class MarkdownPreviewPane extends RRVBox {
         switchButtons = createViewButtons();
 
         topRow = new HBox(markdownButtons, switchButtons);
+
+        preview.setDarkMode(ThemeManager.getTheme().contains("dark"));
+        
+        Settings.THEME.addListener((ignored, newThemeName) ->
+            preview.setDarkMode(newThemeName.contains("dark")));
 
         showContent(splitView(), topRow);
     }
