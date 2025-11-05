@@ -8,6 +8,8 @@ import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -114,25 +116,89 @@ public class MarkdownPreviewPane extends RRVBox {
 
     private HBox createMarkdownButtons(){
         Button headingButton = createButton(FontAwesomeSolid.HEADING);
+
+        var headingMenu = new javafx.scene.control.ContextMenu();
+
+        // example font sizes for H1..H5 (adjust as desired)
+        int[] headingFontSizes = {32, 24, 18, 16, 13, 10};
+
+        for (int level = 1; level <= 6; level++) {
+            CustomMenuItem item = createMenuItem(level, headingFontSizes, headingMenu);
+
+            headingMenu.getItems().add(item);
+        }
+
+        headingButton.setOnAction(e -> {
+            if (!headingMenu.isShowing()) {
+                headingMenu.show(headingButton, javafx.geometry.Side.BOTTOM, 0, 0);
+            } else {
+                headingMenu.hide();
+            }
+        });
+
+
         Button boldButton = createButton(FontAwesomeSolid.BOLD);
+        setButtonOnAction(boldButton, "**", "**");
         Button italicButton = createButton(FontAwesomeSolid.ITALIC);
+        setButtonOnAction(italicButton, "_", "_");
 
         Button quoteButton = createButton(FontAwesomeSolid.QUOTE_LEFT);
+        setButtonOnAction(quoteButton, "> ");
         Button codeButton = createButton(FontAwesomeSolid.CODE);
+        setButtonOnAction(codeButton, "`", "`");
         Button linkButton = createButton(FontAwesomeSolid.LINK);
+        setButtonOnAction(linkButton, "[", "](url)");
 
         Button unorderedListButton = createButton(FontAwesomeSolid.LIST_UL);
+        setButtonOnAction(unorderedListButton, "- ");
         Button orderedListButton = createButton(FontAwesomeSolid.LIST_OL);
-        Button taskListButton = createButton(FontAwesomeSolid.TASKS);
+        setButtonOnAction(orderedListButton, "1. ");
+        //Button taskListButton = createButton(FontAwesomeSolid.TASKS);
+        //setButtonOnAction(taskListButton, "- [ ]");
+
 
         return new HBox(headingButton, boldButton, italicButton, quoteButton, codeButton, linkButton,
-            unorderedListButton, orderedListButton, taskListButton);
+            unorderedListButton, orderedListButton/*, taskListButton*/);
     }
 
-    public Button createButton(Ikon icon){
+    private CustomMenuItem createMenuItem(int level, int[] headingFontSizes, ContextMenu headingMenu) {
+        String labelText = "H" + level;
+
+        javafx.scene.control.Label preview = new javafx.scene.control.Label(labelText);
+        // monospace + padding + approximate size per heading level
+        preview.setStyle("-fx-font-family: 'monospace'; -fx-padding: 6 12; -fx-font-size: " + headingFontSizes[level - 1] + "px;");
+
+        CustomMenuItem item = new CustomMenuItem(preview, true);
+        // hide menu when clicked; replace body with your insertion logic later
+
+        item.setOnAction(e -> {
+            headingMenu.hide();
+            textEditorPane.insertText(textEditorPane.getCaretPosition(), "#".repeat(level) + " ");
+            textEditorPane.requestFocus();
+        });
+        return item;
+    }
+
+    private Button createButton(Ikon icon){
         RRButton button = new RRButton("", icon);
         button.setSquare(true);
         button.setRounded(false);
         return button;
+    }
+
+    private void setButtonOnAction(Button button, String prefix){
+        button.setOnAction(v -> {
+            textEditorPane.insertText(textEditorPane.getCaretPosition(), prefix + " ");
+            textEditorPane.requestFocus();
+        });
+    }
+
+    private void setButtonOnAction(Button button, String prefix, String postfix){
+        button.setOnAction(v -> {
+            int caretPosition = textEditorPane.getCaretPosition();
+            textEditorPane.insertText(caretPosition, prefix + postfix);
+            textEditorPane.moveTo(caretPosition + prefix.length());
+            textEditorPane.requestFocus();
+        });
     }
 }
