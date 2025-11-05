@@ -57,7 +57,9 @@ public class RRListView<T> extends ListView<T> {
     }
 
     private void initialize() {
-        getStyleClass().addAll("rr-list-view", "list-view");
+        if (!getStyleClass().contains("rr-list-view")) {
+            getStyleClass().add("rr-list-view");
+        }
         setPadding(new Insets(8));
 
         // Enable smooth scrolling

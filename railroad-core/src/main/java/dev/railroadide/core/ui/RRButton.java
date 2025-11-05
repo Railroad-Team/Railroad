@@ -120,7 +120,9 @@ public class RRButton extends Button {
     }
 
     private void initialize() {
-        getStyleClass().addAll("rr-button", "button");
+        if (!getStyleClass().contains("rr-button")) {
+            getStyleClass().add("rr-button"); // ensure custom styles override default button theme
+        }
         setAlignment(Pos.CENTER);
         setPadding(new Insets(8, 16, 8, 16));
 

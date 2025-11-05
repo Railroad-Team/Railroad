@@ -56,7 +56,9 @@ public class RRTextField extends TextField {
     }
 
     private void initialize() {
-        getStyleClass().addAll("rr-text-field", "text-field");
+        if (!getStyleClass().contains("rr-text-field")) {
+            getStyleClass().add("rr-text-field");
+        }
         setPadding(new Insets(8, 12, 8, 12));
 
         container = new HBox();
