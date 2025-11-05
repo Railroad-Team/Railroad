@@ -15,7 +15,10 @@ import dev.railroadide.core.utility.OperatingSystem;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
-import dev.railroadide.railroad.ide.ui.*;
+import dev.railroadide.railroad.ide.ui.ConsolePane;
+import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
+import dev.railroadide.railroad.ide.ui.ImageViewerPane;
+import dev.railroadide.railroad.ide.ui.StatusBarPane;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
@@ -231,6 +234,10 @@ public class IDESetup {
         var fullScreenItem = new LocalizedMenuItem("railroad.menu.view.full_screen");
         fullScreenItem.setGraphic(new FontIcon(FontAwesomeSolid.EXPAND));
         fullScreenItem.setAccelerator(new KeyCodeCombination(KeyCode.F11));
+        fullScreenItem.setOnAction($ -> {
+            Stage primaryStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
+            primaryStage.setFullScreen(!primaryStage.isFullScreen());
+        });
 
         var runItem = new LocalizedMenuItem("railroad.menu.run.run");
         runItem.setGraphic(new FontIcon(FontAwesomeSolid.PLAY));
