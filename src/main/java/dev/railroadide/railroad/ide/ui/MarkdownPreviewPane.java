@@ -85,7 +85,6 @@ public class MarkdownPreviewPane extends RRVBox {
         return webViewPane;
     }
 
-    // helper that replaces the content below the top row and makes it grow
     private void showContent(Node content, HBox topRow) {
         getChildren().clear();
         getChildren().addAll(topRow, content);
