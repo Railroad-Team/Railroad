@@ -65,6 +65,7 @@ public class IDESetup {
         leftPane.addTab("Project", new ProjectExplorerPane(project, root));
 
         var rightPane = new DetachableTabPane();
+        rightPane.addTab("Properties", createNotImplementedPane());
 
         var editorPane = new DetachableTabPane();
         editorPane.addTab("Welcome", new IDEWelcomePane());

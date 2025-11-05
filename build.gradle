@@ -68,7 +68,7 @@ dependencies {
     implementation 'org.apache.commons:commons-text:1.14.0'
     implementation 'net.java.dev.jna:jna:5.18.1'
     implementation 'org.xerial:sqlite-jdbc:3.50.3.0'
-    implementation group: 'io.github.raghul-tech', name: 'javafx-markdown-preview-all', version: '1.0.3'
+    implementation 'io.github.raghul-tech:javafx-markdown-preview-all:1.0.3'
 
     implementation 'com.google.guava:guava:33.5.0-jre'
     implementation 'org.apache.maven:maven-core:4.0.0-rc-4'
