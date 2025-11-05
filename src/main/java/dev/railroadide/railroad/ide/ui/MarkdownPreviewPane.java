@@ -60,7 +60,7 @@ public class MarkdownPreviewPane extends RRVBox {
     }
 
     private TextEditorPane codeView() {
-        if(textEditorPane != null)
+        if (textEditorPane != null)
             return textEditorPane;
 
         textEditorPane = new TextEditorPane(markdownFile);
@@ -78,7 +78,7 @@ public class MarkdownPreviewPane extends RRVBox {
     }
 
     private WebView previewView() {
-        if(webViewPane != null)
+        if (webViewPane != null)
             return webViewPane;
 
         webViewPane = preview.launch();
@@ -90,7 +90,8 @@ public class MarkdownPreviewPane extends RRVBox {
         getChildren().clear();
         getChildren().addAll(topRow, content);
         VBox.setVgrow(content, Priority.ALWAYS);
-        textEditorPane.scrollToPixel(0, 0);
+        if (textEditorPane != null)
+            textEditorPane.scrollToPixel(0, 0);
     }
 
     private HBox createViewButtons(){
@@ -194,17 +195,21 @@ public class MarkdownPreviewPane extends RRVBox {
 
     private void setButtonOnAction(Button button, String prefix){
         button.setOnAction($ -> {
-            textEditorPane.insertText(textEditorPane.getCaretPosition(), prefix + " ");
-            textEditorPane.requestFocus();
+            if (textEditorPane != null){
+                textEditorPane.insertText(textEditorPane.getCaretPosition(), prefix + " ");
+                textEditorPane.requestFocus();
+            }
         });
     }
 
     private void setButtonOnAction(Button button, String prefix, String postfix){
         button.setOnAction($ -> {
-            int caretPosition = textEditorPane.getCaretPosition();
-            textEditorPane.insertText(caretPosition, prefix + postfix);
-            textEditorPane.moveTo(caretPosition + prefix.length());
-            textEditorPane.requestFocus();
+            if (textEditorPane != null) {
+                int caretPosition = textEditorPane.getCaretPosition();
+                textEditorPane.insertText(caretPosition, prefix + postfix);
+                textEditorPane.moveTo(caretPosition + prefix.length());
+                textEditorPane.requestFocus();
+            }
         });
     }
 }
