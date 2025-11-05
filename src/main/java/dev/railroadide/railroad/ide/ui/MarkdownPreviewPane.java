@@ -13,6 +13,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.web.WebView;
+import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
@@ -27,6 +28,10 @@ public class MarkdownPreviewPane extends RRVBox {
     private TextEditorPane textEditorPane;
     private WebView webViewPane;
 
+    private final HBox topRow;
+    private final HBox markdownButtons;
+    private final HBox switchButtons;
+
     public MarkdownPreviewPane(Path markdownFile) {
         this.markdownFile = markdownFile;
 
@@ -36,35 +41,13 @@ public class MarkdownPreviewPane extends RRVBox {
             throw new RuntimeException(e);
         }
 
-        Button codeView = new RRButton("", FontAwesomeSolid.CODE);
-        Button splitView = new RRButton("", FontAwesomeSolid.COLUMNS);
-        Button previewView = new RRButton("", FontAwesomeBrands.MARKDOWN);
-
-        HBox switchButtons = new HBox(codeView, splitView, previewView);
-        switchButtons.setAlignment(Pos.TOP_RIGHT);
-        HBox markdownButtons = new HBox();
-        HBox topRow = new HBox(markdownButtons, switchButtons);
+        markdownButtons = createMarkdownButtons();
         HBox.setHgrow(markdownButtons, Priority.ALWAYS);
+        switchButtons = createViewButtons();
 
-        // show initial split view and make it grow
+        topRow = new HBox(markdownButtons, switchButtons);
+
         showContent(splitView(), topRow);
-
-        codeView.setOnAction(v -> {
-            // restore markdown buttons when switching back from preview
-            markdownButtons.setVisible(true);
-            showContent(codeView(), topRow);
-        });
-
-        splitView.setOnAction(v -> {
-            markdownButtons.setVisible(true);
-            showContent(splitView(), topRow);
-        });
-
-        previewView.setOnAction(v -> {
-            // hide markdown buttons in preview-only mode
-            markdownButtons.setVisible(false);
-            showContent(previewView(), topRow);
-        });
     }
 
     private TextEditorPane codeView() {
@@ -99,5 +82,57 @@ public class MarkdownPreviewPane extends RRVBox {
         getChildren().addAll(topRow, content);
         VBox.setVgrow(content, Priority.ALWAYS);
         textEditorPane.scrollToPixel(0, 0);
+    }
+
+    private HBox createViewButtons(){
+        Button codeView = createButton(FontAwesomeSolid.CODE);
+        Button splitView = createButton(FontAwesomeSolid.COLUMNS);
+        Button previewView = createButton(FontAwesomeBrands.MARKDOWN);
+
+        HBox switchButtons = new HBox(codeView, splitView, previewView);
+        switchButtons.setAlignment(Pos.TOP_RIGHT);
+
+        codeView.setOnAction(v -> {
+            // restore markdown buttons when switching back from preview
+            markdownButtons.setVisible(true);
+            showContent(codeView(), topRow);
+        });
+
+        splitView.setOnAction(v -> {
+            markdownButtons.setVisible(true);
+            showContent(splitView(), topRow);
+        });
+
+        previewView.setOnAction(v -> {
+            // hide markdown buttons in preview-only mode
+            markdownButtons.setVisible(false);
+            showContent(previewView(), topRow);
+        });
+
+        return switchButtons;
+    }
+
+    private HBox createMarkdownButtons(){
+        Button headingButton = createButton(FontAwesomeSolid.HEADING);
+        Button boldButton = createButton(FontAwesomeSolid.BOLD);
+        Button italicButton = createButton(FontAwesomeSolid.ITALIC);
+
+        Button quoteButton = createButton(FontAwesomeSolid.QUOTE_LEFT);
+        Button codeButton = createButton(FontAwesomeSolid.CODE);
+        Button linkButton = createButton(FontAwesomeSolid.LINK);
+
+        Button unorderedListButton = createButton(FontAwesomeSolid.LIST_UL);
+        Button orderedListButton = createButton(FontAwesomeSolid.LIST_OL);
+        Button taskListButton = createButton(FontAwesomeSolid.TASKS);
+
+        return new HBox(headingButton, boldButton, italicButton, quoteButton, codeButton, linkButton,
+            unorderedListButton, orderedListButton, taskListButton);
+    }
+
+    public Button createButton(Ikon icon){
+        RRButton button = new RRButton("", icon);
+        button.setSquare(true);
+        button.setRounded(false);
+        return button;
     }
 }
