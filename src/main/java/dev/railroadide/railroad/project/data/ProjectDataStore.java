@@ -179,10 +179,9 @@ public final class ProjectDataStore {
     public synchronized List<Path> listFiles() {
         Path dir = dataDirectory();
         try (var stream = Files.walk(dir)) {
-            List<Path> files = stream.filter(Files::isRegularFile)
+            return stream.filter(Files::isRegularFile)
                 .map(dir::relativize)
                 .toList();
-            return List.copyOf(files);
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to enumerate project data files under " + dir, exception);
         }
@@ -199,7 +198,17 @@ public final class ProjectDataStore {
                 throw new IllegalArgumentException("Path escapes project data directory: " + relative);
         }
 
-        return dataDirectory().resolve(normalized);
+        Path resolved = dataDirectory().resolve(normalized);
+        try {
+            Path dataDirReal = dataDirectory().toRealPath();
+            Path resolvedReal = resolved.toRealPath();
+            if (!resolvedReal.startsWith(dataDirReal))
+                throw new IllegalArgumentException("Resolved path escapes project data directory: " + relative);
+
+            return resolved;
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to resolve real path for " + resolved, exception);
+        }
     }
 
     private void ensureWatcherStarted() {
@@ -332,16 +341,19 @@ public final class ProjectDataStore {
             watchService = null;
             watchRoot = null;
 
-            if (service != null) {
+            if (service != null || executor != null) {
                 try {
-                    service.close();
+                    if (service != null) {
+                        service.close();
+                    }
                 } catch (IOException exception) {
                     Railroad.LOGGER.warn("Failed to close project data watch service", exception);
+                } finally {
+                    if (executor != null) {
+                        executor.shutdownNow();
+                    }
                 }
             }
-
-            if (executor != null)
-                executor.shutdownNow();
         }
     }
 
