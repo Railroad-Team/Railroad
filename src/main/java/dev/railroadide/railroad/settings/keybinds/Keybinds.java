@@ -6,6 +6,7 @@ import dev.railroadide.core.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.projectexplorer.PathItem;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
+import dev.railroadide.railroad.window.WindowManager;
 import javafx.scene.control.TreeView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
@@ -39,8 +40,7 @@ public class Keybinds {
         .category(new KeybindCategory("railroad:general", "railroad.settings.keybinds.category.general"))
         .addDefaultKey(KeyCode.F11)
         .addAction(KeybindContexts.of("railroad:ide"), $ -> {
-            Stage primaryStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
-            primaryStage.setFullScreen(!primaryStage.isFullScreen());
+            WindowManager.toggleFullScreen();
         })
         .build());
 

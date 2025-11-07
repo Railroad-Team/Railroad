@@ -19,6 +19,7 @@ import dev.railroadide.railroad.ide.ui.*;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
+import dev.railroadide.railroad.window.WindowManager;
 import dev.railroadide.railroadpluginapi.events.ProjectEvent;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
@@ -231,8 +232,7 @@ public class IDESetup {
         var fullScreenItem = new LocalizedMenuItem("railroad.menu.view.full_screen");
         fullScreenItem.setGraphic(new FontIcon(FontAwesomeSolid.EXPAND));
         fullScreenItem.setOnAction($ -> {
-            Stage primaryStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
-            primaryStage.setFullScreen(!primaryStage.isFullScreen());
+            WindowManager.toggleFullScreen();
         });
 
         var runItem = new LocalizedMenuItem("railroad.menu.run.run");

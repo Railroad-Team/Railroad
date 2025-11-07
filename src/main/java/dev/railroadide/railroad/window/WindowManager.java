@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.window;
 
 import dev.railroadide.railroad.AppResources;
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.utility.MacUtils;
 import javafx.scene.Scene;
@@ -125,5 +126,10 @@ public class WindowManager {
     public void registerChildWindow(Stage stage) {
         childWindows.add(stage);
         stage.setOnCloseRequest(event -> childWindows.remove(stage));
+    }
+
+    public static void toggleFullScreen(){
+        Stage primaryStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
+        primaryStage.setFullScreen(!primaryStage.isFullScreen());
     }
 }
