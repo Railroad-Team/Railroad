@@ -39,9 +39,7 @@ public class Keybinds {
         .id("railroad:fullscreen")
         .category(new KeybindCategory("railroad:general", "railroad.settings.keybinds.category.general"))
         .addDefaultKey(KeyCode.F11)
-        .addAction(KeybindContexts.of("railroad:ide"), $ -> {
-            WindowManager.toggleFullScreen();
-        })
+        .addAction(KeybindContexts.of("railroad:ide"), $ -> WindowManager.toggleFullScreen())
         .build());
 
     public static void initialize() {
