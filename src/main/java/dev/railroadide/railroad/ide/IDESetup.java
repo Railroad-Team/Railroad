@@ -230,7 +230,6 @@ public class IDESetup {
 
         var fullScreenItem = new LocalizedMenuItem("railroad.menu.view.full_screen");
         fullScreenItem.setGraphic(new FontIcon(FontAwesomeSolid.EXPAND));
-        fullScreenItem.setAccelerator(new KeyCodeCombination(KeyCode.F11));
         fullScreenItem.setOnAction($ -> {
             Stage primaryStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
             primaryStage.setFullScreen(!primaryStage.isFullScreen());
