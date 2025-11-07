@@ -231,9 +231,7 @@ public class IDESetup {
 
         var fullScreenItem = new LocalizedMenuItem("railroad.menu.view.full_screen");
         fullScreenItem.setGraphic(new FontIcon(FontAwesomeSolid.EXPAND));
-        fullScreenItem.setOnAction($ -> {
-            WindowManager.toggleFullScreen();
-        });
+        fullScreenItem.setOnAction($ -> WindowManager.toggleFullScreen());
 
         var runItem = new LocalizedMenuItem("railroad.menu.run.run");
         runItem.setGraphic(new FontIcon(FontAwesomeSolid.PLAY));
