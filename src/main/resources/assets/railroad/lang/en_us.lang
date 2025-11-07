@@ -129,6 +129,7 @@ railroad.settings.keybinds.category.general=General
 # Keybinds
 railroad.settings.keybinds.copy=Copy
 railroad.settings.keybinds.paste=Paste
+railroad.settings.keybinds.fullscreen=Fullscreen
 
 # Plugin settings
 railroad.window.plugins.title=Plugins
