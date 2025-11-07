@@ -8,7 +8,6 @@ import dev.railroadide.core.project.creation.ProjectCreationPipelineService;
 import dev.railroadide.core.project.creation.ProjectServiceRegistry;
 import dev.railroadide.core.project.creation.service.*;
 import dev.railroadide.railroad.project.ProjectTypeRegistry;
-import dev.railroadide.railroad.project.creation.step.*;
 import dev.railroadide.railroad.project.onboarding.creation.step.*;
 import org.jetbrains.annotations.NotNull;
 
