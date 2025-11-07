@@ -9,6 +9,7 @@ import dev.railroadide.core.vcs.Repository;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.ide.IDESetup;
+import dev.railroadide.railroad.project.data.ProjectDataStore;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
@@ -19,6 +20,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableSet;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import javax.imageio.ImageIO;
@@ -38,6 +40,8 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
     private final ObjectProperty<Repository> repository = new SimpleObjectProperty<>();
     private final StringProperty id = new SimpleStringProperty();
     private final ObservableSet<Facet<?>> facets = FXCollections.observableSet();
+    @Getter
+    private final ProjectDataStore dataStore;
 
     public Project(Path path) {
         this(path, path.getFileName().toString());
@@ -51,6 +55,7 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
         this.path.set(path);
         this.alias.set(alias);
         this.icon.set(icon == null ? createIcon(this) : icon);
+        this.dataStore = new ProjectDataStore(this);
     }
 
     private static BufferedImage createIconImage(Project project) {
