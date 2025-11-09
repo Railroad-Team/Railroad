@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.runconfig.defaults.data;
 
 import dev.railroadide.core.form.*;
+import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationData;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
@@ -35,8 +36,8 @@ public class JavaApplicationRunConfigurationData extends RunConfigurationData {
     }
 
     @Override
-    public Form createConfigurationForm(Project project) {
-        return createBaseFormBuilder(project)
+    public Form createConfigurationForm(Project project, RunConfiguration<?> configuration) {
+        return createBaseFormBuilder(project, configuration)
             .appendSection(FormSection.create("railroad.runconfig.java_application.configuration.section.title")
                 .appendComponent(FormComponent.checkBox("buildBeforeRun", "railroad.runconfig.java_application.configuration.buildBeforeRun.label")
                     .selected(this.buildBeforeRun)

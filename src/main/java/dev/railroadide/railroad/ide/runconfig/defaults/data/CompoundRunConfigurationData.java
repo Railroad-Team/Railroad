@@ -32,8 +32,8 @@ public class CompoundRunConfigurationData extends RunConfigurationData {
     }
 
     @Override
-    public Form createConfigurationForm(Project project) {
-        return createBaseFormBuilder(project)
+    public Form createConfigurationForm(Project project, RunConfiguration<?> configuration) {
+        return createBaseFormBuilder(project, configuration)
             .appendSection(FormSection.create("railroad.runconfig.compound.configurations.title")
                 .appendComponent(FormComponent.radioButtonGroup("runMode", "railroad.runconfig.compound.configuration.runMode.label", RunMode.class)
                     .required()

@@ -12,7 +12,7 @@ public abstract class RunConfigurationData {
 
     public abstract RunConfigurationType<?> getType();
 
-    public abstract Form createConfigurationForm(Project project);
+    public abstract Form createConfigurationForm(Project project, RunConfiguration<?> configuration);
 
     public abstract void applyConfigurationFormData(FormData formData);
 
@@ -22,7 +22,7 @@ public abstract class RunConfigurationData {
         this.showConsoleOnRun = formData.getBoolean("showConsoleOnRun");
     }
 
-    protected Form.Builder createBaseFormBuilder(Project project) {
+    protected Form.Builder createBaseFormBuilder(Project project, RunConfiguration<?> configuration) {
         return Form.create()
             .disableSubmitButton()
             .disableResetButton()
@@ -36,7 +36,7 @@ public abstract class RunConfigurationData {
                         if (text == null || text.isBlank())
                             return ValidationResult.error("railroad.runconfig.general.name.validation.required");
 
-                        if (project.getRunConfigManager().isDuplicateName(text, getType()))
+                        if (project.getRunConfigManager().isDuplicateName(text, getType(), configuration.uuid()))
                             return ValidationResult.error("railroad.runconfig.general.name.validation.duplicate");
 
                         return ValidationResult.ok();

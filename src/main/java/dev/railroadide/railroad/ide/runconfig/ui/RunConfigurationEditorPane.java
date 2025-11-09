@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.ide.runconfig.ui;
 
+import dev.railroadide.core.form.Form;
+import dev.railroadide.core.form.FormData;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRVBox;
@@ -28,7 +30,10 @@ import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
 public class RunConfigurationEditorPane extends RRVBox {
     private final ObservableList<RunConfiguration<?>> configurations = FXCollections.observableArrayList();
@@ -40,7 +45,7 @@ public class RunConfigurationEditorPane extends RRVBox {
     private final StackPane centerContentContainer;
     private final Node noConfigurationsPane;
     private final Node detailsEmptyStatePane;
-    private final VBox detailsPane;
+    private final Map<UUID, ConfigurationFormContext> configurationFormContexts = new HashMap<>();
 
     public RunConfigurationEditorPane(Project project) {
         this.project = project;
@@ -48,8 +53,8 @@ public class RunConfigurationEditorPane extends RRVBox {
         this.noConfigurationsPane = createEmptyStatePane();
         this.detailsEmptyStatePane = createEmptyStatePane();
         this.configurationTreeView = new RunConfigurationTreeView(configurations);
-        this.detailsPane = createDetailsPane();
         this.detailContentContainer = new StackPane();
+        this.detailContentContainer.getStyleClass().add("run-configuration-details-pane");
         this.centerContentContainer = new StackPane();
         this.editorSplitPane = createEditorSplitPane();
         this.selectedConfiguration.bindBidirectional(configurationTreeView.selectedConfigurationProperty());
@@ -58,6 +63,7 @@ public class RunConfigurationEditorPane extends RRVBox {
         initializeUI();
         initializeBindings();
         updateEditorContent();
+        updateDetailContent(selectedConfiguration.get());
     }
 
     private void initializeUI() {
@@ -73,20 +79,25 @@ public class RunConfigurationEditorPane extends RRVBox {
     }
 
     private void initializeBindings() {
-        configurations.addListener(
-            (ListChangeListener<RunConfiguration<?>>) change -> updateEditorContent());
+        configurations.addListener((ListChangeListener<RunConfiguration<?>>) change -> {
+            while (change.next()) {
+                if (change.wasRemoved()) {
+                    change.getRemoved().forEach(config -> configurationFormContexts.remove(config.uuid()));
+                }
+            }
+            updateEditorContent();
+        });
 
-        selectedConfiguration.addListener((obs, oldValue, newValue) -> updateDetailContent(newValue != null));
-
-        updateDetailContent(selectedConfiguration.get() != null);
+        selectedConfiguration.addListener((obs, oldValue, newValue) -> updateDetailContent(newValue));
     }
 
-    private void updateDetailContent(boolean hasSelection) {
-        if (hasSelection) {
-            detailContentContainer.getChildren().setAll(detailsPane);
-        } else {
+    private void updateDetailContent(RunConfiguration<?> configuration) {
+        if (configuration == null) {
             detailContentContainer.getChildren().setAll(detailsEmptyStatePane);
+            return;
         }
+
+        detailContentContainer.getChildren().setAll(getConfigurationFormNode(configuration));
     }
 
     private void updateEditorContent() {
@@ -113,13 +124,6 @@ public class RunConfigurationEditorPane extends RRVBox {
 
         container.getChildren().addAll(title, description);
         return container;
-    }
-
-    private VBox createDetailsPane() {
-        var placeholder = new RRVBox();
-        placeholder.getStyleClass().add("run-configuration-details-pane");
-        VBox.setVgrow(placeholder, Priority.ALWAYS);
-        return placeholder;
     }
 
     private SplitPane createEditorSplitPane() {
@@ -210,9 +214,8 @@ public class RunConfigurationEditorPane extends RRVBox {
         var okButton = new RRButton("railroad.generic.ok", FontAwesomeSolid.CHECK);
         okButton.setVariant(RRButton.ButtonVariant.PRIMARY);
         okButton.setOnAction(event -> {
-            for (RunConfiguration<?> configuration : configurations) {
-                //configuration.data().applyConfigurationFormData(this.detailsPane.retrieveFormData());
-            }
+            if (!applySelectedConfigurationChanges())
+                return;
 
             project.getRunConfigManager().sendUpdatedConfigurations(configurations);
             getScene().getWindow().hide();
@@ -225,9 +228,8 @@ public class RunConfigurationEditorPane extends RRVBox {
         var applyButton = new RRButton("railroad.generic.apply", FontAwesomeSolid.CHECK_DOUBLE);
         applyButton.setVariant(RRButton.ButtonVariant.SUCCESS);
         applyButton.setOnAction(event -> {
-            for (RunConfiguration<?> configuration : configurations) {
-                //configuration.data().applyConfigurationFormData(this.detailsPane.retrieveFormData());
-            }
+            if (!applySelectedConfigurationChanges())
+                return;
 
             project.getRunConfigManager().sendUpdatedConfigurations(configurations);
         });
@@ -238,6 +240,41 @@ public class RunConfigurationEditorPane extends RRVBox {
 
     public void selectConfiguration(RunConfiguration<?> runConfiguration) {
         selectedConfiguration.set(runConfiguration);
+    }
+
+    private Node getConfigurationFormNode(RunConfiguration<?> configuration) {
+        ConfigurationFormContext context = configurationFormContexts.get(configuration.uuid());
+        if (context == null) {
+            Form form = configuration.data().createConfigurationForm(project, configuration);
+            Node formNode = form.createUI();
+            VBox.setVgrow(formNode, Priority.ALWAYS);
+            context = new ConfigurationFormContext(form, formNode);
+            configurationFormContexts.put(configuration.uuid(), context);
+        }
+
+        return context.node();
+    }
+
+    private boolean applySelectedConfigurationChanges() {
+        RunConfiguration<?> configuration = selectedConfiguration.get();
+        if (configuration == null)
+            return true;
+
+        ConfigurationFormContext context = configurationFormContexts.get(configuration.uuid());
+        if (context == null)
+            return true;
+
+        Form form = context.form();
+        form.runValidation();
+        if (!form.validate())
+            return false;
+
+        FormData formData = form.getFormData();
+        configuration.data().applyConfigurationFormData(formData);
+        return true;
+    }
+
+    private record ConfigurationFormContext(Form form, Node node) {
     }
 
 }

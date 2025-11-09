@@ -104,13 +104,15 @@ public class RunConfigurationManager {
     /**
      * Checks if a run configuration name is duplicate within the same type.
      *
-     * @param name The name to check.
-     * @param type The run configuration type.
+     * @param name         The name to check.
+     * @param type         The run configuration type.
+     * @param excludeUUIDs UUIDs to exclude from the check.
      * @return True if the name can be accepted, false otherwise.
      */
-    public boolean isDuplicateName(String name, RunConfigurationType<?> type) {
-        return this.configurations.stream().noneMatch(
-            cfg -> cfg.data().getName().equalsIgnoreCase(name) && cfg.type() == type);
+    public boolean isDuplicateName(String name, RunConfigurationType<?> type, UUID... excludeUUIDs) {
+        return this.configurations.stream().anyMatch(
+            cfg -> cfg.data().getName().equalsIgnoreCase(name) && cfg.type() == type &&
+                (excludeUUIDs == null || excludeUUIDs.length == 0 || !List.of(excludeUUIDs).contains(cfg.uuid())));
     }
 
     /**

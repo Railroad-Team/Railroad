@@ -13,13 +13,21 @@ import org.gradle.tooling.*;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class GradleRunConfigurationType extends RunConfigurationType<GradleRunConfigurationData> {
     private final Map<RunConfiguration<GradleRunConfigurationData>, GradleExecutionHandle> executions =
         new ConcurrentHashMap<>();
+    private final ExecutorService handleCloser = Executors.newSingleThreadExecutor(runnable -> {
+        var thread = new Thread(runnable, "gradle-handle-closer");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     public GradleRunConfigurationType() {
         super("railroad.runconfig.gradle", RailroadBrandsIcon.GRADLE, Color.web("#6dc24f"));
@@ -109,11 +117,13 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         if (handle == null)
             return;
 
-        try {
-            handle.close();
-        } catch (Exception exception) {
-            Railroad.LOGGER.error("Failed to close Gradle connection", exception);
-        }
+        handleCloser.execute(() -> {
+            try {
+                handle.close();
+            } catch (Exception exception) {
+                Railroad.LOGGER.error("Failed to close Gradle connection", exception);
+            }
+        });
     }
 
     private void executeGradleBuild(RunConfiguration<GradleRunConfigurationData> configuration,
@@ -121,8 +131,9 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         GradleRunConfigurationData data = configuration.data();
         String task = requireTask(data);
         Path gradleProjectPath = requireGradleProjectPath(data);
-        Map<String, String> environmentVariables =
-            data.getEnvironmentVariables() == null ? Map.of() : data.getEnvironmentVariables();
+        Map<String, String> environmentVariables = new HashMap<>(System.getenv());
+        if (data.getEnvironmentVariables() != null)
+            environmentVariables.putAll(data.getEnvironmentVariables());
         String[] vmOptions = data.getVmOptions() == null ? new String[0] : data.getVmOptions();
         JDK javaHome = requireJavaHome(data);
 

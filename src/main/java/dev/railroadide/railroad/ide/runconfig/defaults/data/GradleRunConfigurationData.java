@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.runconfig.defaults.data;
 
 import dev.railroadide.core.form.*;
+import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationData;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
@@ -35,7 +36,7 @@ public class GradleRunConfigurationData extends RunConfigurationData {
     }
 
     @Override
-    public Form createConfigurationForm(Project project) {
+    public Form createConfigurationForm(Project project, RunConfiguration<?> configuration) {
         ObjectProperty<ComboBox<JDK>> javaHomeComboBoxProperty = new SimpleObjectProperty<>();
         javaHomeComboBoxProperty.addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
@@ -44,7 +45,7 @@ public class GradleRunConfigurationData extends RunConfigurationData {
                 newValue.setMaxHeight(72);
             }
         });
-        return createBaseFormBuilder(project)
+        return createBaseFormBuilder(project, configuration)
             .appendSection(FormSection.create("railroad.runconfig.gradle.configuration.title")
                 .appendComponent(FormComponent.textField("task", "railroad.runconfig.gradle.configuration.task.label")
                     .required()

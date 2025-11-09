@@ -102,6 +102,7 @@ public class Railroad extends Application {
 
         List<InitializationStep> steps = List.of(
             new InitializationStep("Initializing logger", LoggerManager::init),
+            new InitializationStep("Initializing run configuration types", RunConfigurationTypes::initialize),
             new InitializationStep("Loading configuration", ConfigHandler::initConfig),
             new InitializationStep("Scanning plugins", () -> PluginManager.loadPlugins(ConfigHandler.getConfigDirectory().resolve("plugins"))),
             new InitializationStep("Registering keybinds", Keybinds::initialize),
@@ -109,7 +110,6 @@ public class Railroad extends Application {
             new InitializationStep("Loading settings", Settings::initialize),
             new InitializationStep("Preparing settings handler", SettingsHandler::init),
             new InitializationStep("Preparing themes", ThemeManager::init),
-            new InitializationStep("Initializing run configuration types", RunConfigurationTypes::initialize),
             new InitializationStep("Binding service locator", () -> ServiceLocator.setServiceProvider(Services::getService)),
             new InitializationStep("Finding Java versions", JDKManager::refreshJDKs),
             new InitializationStep("Loading language", () -> L18n.loadLanguage(SettingsHandler.getValue(Settings.LANGUAGE))),

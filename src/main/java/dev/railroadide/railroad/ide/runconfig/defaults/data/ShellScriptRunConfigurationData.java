@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.runconfig.defaults.data;
 
 import dev.railroadide.core.form.*;
 import dev.railroadide.core.utility.OperatingSystem;
+import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationData;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
@@ -43,7 +44,7 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
     }
 
     @Override
-    public Form createConfigurationForm(Project project) {
+    public Form createConfigurationForm(Project project, RunConfiguration<?> configuration) {
         var executeModeComponent = FormComponent.radioButtonGroup("executeMode", "railroad.runconfig.shell_script.configuration.executeMode.label", ExecuteMode.class)
             .required()
             .selected(() -> this.executeMode)
@@ -61,7 +62,7 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
         var interpreterArgsValue = this.interpreterArgs == null ? new String[0] : this.interpreterArgs;
         var environmentValues = this.environmentVariables == null ? Map.<String, String>of() : this.environmentVariables;
 
-        return createBaseFormBuilder(project)
+        return createBaseFormBuilder(project, configuration)
             .appendSection(FormSection.create("railroad.runconfig.shell_script.configuration.section.title")
                 .appendComponent(executeModeComponent)
                 .appendComponent(FormComponent.fileChooser("scriptPath", "railroad.runconfig.shell_script.configuration.scriptPath.label")
