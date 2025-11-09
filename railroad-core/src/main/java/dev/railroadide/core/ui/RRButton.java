@@ -206,6 +206,7 @@ public class RRButton extends Button {
         if (iconCode != null) {
             icon = new FontIcon(iconCode);
             icon.setIconSize(16);
+            icon.getStyleClass().add("button-icon");
         } else {
             icon = null;
         }

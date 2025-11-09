@@ -194,7 +194,7 @@ public class NeoforgeProjectOnboarding {
                     FormComponent.directoryChooser(ProjectData.DefaultKeys.PATH, "railroad.project.creation.location")
                         .required()
                         .defaultPath(System.getProperty("user.home"))
-                        .validator(ProjectValidators::validatePath),
+                        .validator(ProjectValidators::validateDirectoryPath),
                     value -> {
                         if (value == null)
                             return null;

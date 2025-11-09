@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.utility;
+package dev.railroadide.railroad.utility.json;
 
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;

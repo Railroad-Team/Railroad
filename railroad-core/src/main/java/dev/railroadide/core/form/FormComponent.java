@@ -171,6 +171,29 @@ public abstract class FormComponent<T extends Node & HasSetValue, U, V extends N
     }
 
     /**
+     * Creates a new file chooser component.
+     *
+     * @param dataKey The key of the data.
+     * @param label   The label of the component.
+     * @return The builder for the file chooser component.
+     */
+    public static FileChooserComponent.Builder fileChooser(@NotNull String dataKey, @NotNull String label) {
+        return new FileChooserComponent.Builder(dataKey, label);
+    }
+
+    /**
+     * Creates a new radio button group component backed by an enum.
+     *
+     * @param dataKey   The key of the data.
+     * @param label     The label of the component.
+     * @param enumClass The enum class providing the options.
+     * @return The builder for the radio button group component.
+     */
+    public static <E extends Enum<E>> RadioButtonGroupComponent.Builder<E> radioButtonGroup(@NotNull String dataKey, @NotNull String label, @NotNull Class<E> enumClass) {
+        return new RadioButtonGroupComponent.Builder<>(dataKey, label, enumClass);
+    }
+
+    /**
      * Returns a property that represents the default data of the component.
      *
      * @return The data property.

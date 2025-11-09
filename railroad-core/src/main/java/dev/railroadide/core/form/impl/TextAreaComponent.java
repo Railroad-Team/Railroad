@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A form component that represents a text area.
@@ -41,7 +42,10 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
      * @param visible         the visibility of the text area
      */
     public TextAreaComponent(String dataKey, Data data, FormComponentValidator<TextArea> validator, FormComponentChangeListener<TextArea, String> listener, Property<TextArea> bindTextAreaTo, List<FormTransformer<TextArea, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
-        super(dataKey, data, currentData -> new FormTextArea(currentData.label, currentData.required, currentData.text, currentData.promptText, currentData.editable, currentData.resize, currentData.wrapText, currentData.translate), validator, listener, transformers, visible);
+        super(dataKey, data, currentData -> {
+            String initialText = currentData.text == null ? "" : currentData.text.get();
+            return new FormTextArea(currentData.label, currentData.required, initialText, currentData.promptText, currentData.editable, currentData.resize, currentData.wrapText, currentData.translate);
+        }, validator, listener, transformers, visible);
 
         if (bindTextAreaTo != null) {
             bindTextAreaTo.bind(componentProperty().map(FormTextArea::getPrimaryComponent));
@@ -95,13 +99,13 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
         formData.addProperty(dataKey, componentProperty()
             .map(FormTextArea::getPrimaryComponent)
             .map(TextArea::getText)
-            .orElse(getData().text)
+            .orElse(getData().text.get())
             .getValue());
     }
 
     @Override
     public void reset() {
-        getComponent().getPrimaryComponent().setText(getData().text);
+        getComponent().getPrimaryComponent().setText(getData().text.get());
     }
 
     /**
@@ -160,7 +164,17 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          * @return this builder
          */
         public Builder text(String text) {
-            data.text = text;
+            return text(() -> text);
+        }
+
+        /**
+         * Sets the text supplier of the text area.
+         *
+         * @param textSupplier supplier returning the text
+         * @return this builder
+         */
+        public Builder text(Supplier<String> textSupplier) {
+            data.text(textSupplier);
             return this;
         }
 
@@ -260,7 +274,7 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          * @param fromComponent       the observable value of the component to transform
          * @param toComponentFunction the function to set the value of the component
          * @param valueMapper         the function to map the value to the desired type
-         * @param <W>                 the type of the component
+         * @param <X>                 the type of the component
          * @return this builder
          */
         @Override
@@ -276,7 +290,7 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          * @param toComponent   the component to set the value to
          * @param valueMapper   the function to map the value to the desired type
          * @param <U>           the type of the component
-         * @param <W>           the type of the value
+         * @param <X>           the type of the value
          * @return this builder
          */
         @Override
@@ -331,7 +345,7 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
     public static class Data {
         public final String label;
         public boolean required;
-        public String text = "";
+        private Supplier<String> text = () -> "";
         public String promptText;
         public boolean editable = true;
         public boolean resize;
@@ -365,7 +379,18 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          * @return this data
          */
         public Data text(String text) {
-            this.text = text;
+            this.text = () -> text;
+            return this;
+        }
+
+        /**
+         * Sets the text supplier of the text area.
+         *
+         * @param supplier supplier returning the text
+         * @return this data
+         */
+        public Data text(Supplier<String> supplier) {
+            this.text = supplier != null ? supplier : () -> "";
             return this;
         }
 

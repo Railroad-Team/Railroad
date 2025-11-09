@@ -1,0 +1,31 @@
+.run-button .ikonli-font-icon {
+    -fx-icon-color: #82a157;
+}
+
+.run-button:hover .ikonli-font-icon {
+    -fx-icon-color: #a3c17f;
+}
+
+.stop-button .ikonli-font-icon {
+    -fx-icon-color: #cd4b55;
+}
+
+.stop-button:hover .ikonli-font-icon {
+    -fx-icon-color: #e5737a;
+}
+
+.debug-button .ikonli-font-icon {
+    -fx-icon-color: #cd5268;
+}
+
+.debug-button:hover .ikonli-font-icon {
+    -fx-icon-color: #e68a9a;
+}
+
+.more-actions-button .ikonli-font-icon {
+    -fx-icon-color: #ddc03a;
+}
+
+.more-actions-button:hover .ikonli-font-icon {
+    -fx-icon-color: #eed76a;
+}

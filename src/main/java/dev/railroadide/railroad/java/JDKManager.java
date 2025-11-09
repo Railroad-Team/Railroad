@@ -5,6 +5,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.JavaVersion;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -50,6 +51,19 @@ public class JDKManager {
      */
     public static List<JDK> getAvailableJDKs() {
         return Collections.unmodifiableList(JDKS);
+    }
+
+    /**
+     * Retrieves the first discovered JDK from the cached list, or {@code null} if no JDKs are found.
+     *
+     * @return first available JDK or {@code null} when none are detected
+     */
+    public static @Nullable JDK getDefaultJDK() {
+        List<JDK> jdks = getAvailableJDKs();
+        if (jdks.isEmpty())
+            return null;
+
+        return jdks.getFirst();
     }
 
     /**

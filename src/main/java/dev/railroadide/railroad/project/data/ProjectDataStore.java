@@ -198,9 +198,15 @@ public final class ProjectDataStore {
                 throw new IllegalArgumentException("Path escapes project data directory: " + relative);
         }
 
-        Path resolved = dataDirectory().resolve(normalized);
+        Path path = dataDirectory();
+        Path resolved = path.resolve(normalized);
         try {
-            Path dataDirReal = dataDirectory().toRealPath();
+            if (Files.notExists(resolved)) {
+                Files.createDirectories(resolved.getParent());
+                Files.createFile(resolved);
+            }
+
+            Path dataDirReal = path.toRealPath();
             Path resolvedReal = resolved.toRealPath();
             if (!resolvedReal.startsWith(dataDirReal))
                 throw new IllegalArgumentException("Resolved path escapes project data directory: " + relative);

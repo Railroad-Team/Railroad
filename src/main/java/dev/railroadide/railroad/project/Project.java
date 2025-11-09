@@ -9,6 +9,9 @@ import dev.railroadide.core.vcs.Repository;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.ide.IDESetup;
+import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
+import dev.railroadide.railroad.ide.runconfig.defaults.GradleRunConfigurationType;
+import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
@@ -21,6 +24,7 @@ import javafx.collections.ObservableSet;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 import lombok.Getter;
+import org.gradle.tooling.*;
 import org.jetbrains.annotations.NotNull;
 
 import javax.imageio.ImageIO;
@@ -31,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class Project implements JsonSerializable<JsonObject>, dev.railroadide.railroadpluginapi.dto.Project {
     private final ObjectProperty<Path> path = new ReadOnlyObjectWrapper<>();
@@ -42,6 +47,8 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
     private final ObservableSet<Facet<?>> facets = FXCollections.observableSet();
     @Getter
     private final ProjectDataStore dataStore;
+    @Getter
+    private final RunConfigurationManager runConfigManager;
 
     public Project(Path path) {
         this(path, path.getFileName().toString());
@@ -56,6 +63,7 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
         this.alias.set(alias);
         this.icon.set(icon == null ? createIcon(this) : icon);
         this.dataStore = new ProjectDataStore(this);
+        this.runConfigManager = new RunConfigurationManager(this);
     }
 
     private static BufferedImage createIconImage(Project project) {
@@ -135,6 +143,39 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
             Railroad.LOGGER.error("Failed to discover facets for project: {}", getPathString(), ex);
             return null;
         });
+    }
+
+    /**
+     * Check if the project has a facet of the specified type.
+     *
+     * @param type The facet type to check.
+     * @return True if the project has the facet, false otherwise.
+     */
+    public boolean hasFacet(FacetType<?> type) {
+        for (Facet<?> facet : facets) {
+            if (facet.getType().equals(type)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get the facet of the specified type.
+     *
+     * @param type The facet type to get.
+     * @param <T>  The facet type.
+     * @return An Optional containing the facet if found, otherwise empty.
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends Facet<?>> Optional<T> getFacet(FacetType<T> type) {
+        for (Facet<?> facet : facets) {
+            if (facet.getType().equals(type))
+                return Optional.of((T) facet);
+        }
+
+        return Optional.empty();
     }
 
     @Override
@@ -367,5 +408,59 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
 
     public LongProperty lastOpenedProperty() {
         return lastOpened;
+    }
+
+    public CompletableFuture<Runnable> build(JDK jdk) {
+        CompletableFuture<Runnable> future = new CompletableFuture<>();
+        CompletableFuture.runAsync(() -> {
+            if (hasFacet(FacetManager.GRADLE)) {
+                var connector = GradleConnector.newConnector()
+                    .forProjectDirectory(getPath().toFile())
+                    .useBuildDistribution();
+
+                ProjectConnection connection = connector.connect();
+                CancellationTokenSource tokenSource = GradleConnector.newCancellationTokenSource();
+                var handle = new GradleRunConfigurationType.GradleExecutionHandle(connection, tokenSource);
+                connection.newBuild()
+                    .forTasks("build")
+                    .withCancellationToken(tokenSource.token())
+                    .setJavaHome(jdk.path().toFile())
+                    .setColorOutput(true)
+                    .setStandardOutput(System.out) // TODO: Redirect to IDE build console
+                    .setStandardError(System.err) // TODO: Redirect to IDE build console
+                    .setStandardInput(System.in) // TODO: Redirect to IDE build console
+                    .run(new ResultHandler<>() {
+                        @Override
+                        public void onComplete(Void result) {
+                            future.complete(() -> {
+                                try {
+                                    handle.close();
+                                } catch (Exception exception) {
+                                    Railroad.LOGGER.error("Failed to close Gradle connection", exception);
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onFailure(GradleConnectionException failure) {
+                            future.complete(() -> {
+                                try {
+                                    handle.close();
+                                } catch (Exception exception) {
+                                    Railroad.LOGGER.error("Failed to close Gradle connection", exception);
+                                }
+
+                                Railroad.LOGGER.error("Gradle build failed", failure);
+                            });
+                        }
+                    });
+            } else if (hasFacet(FacetManager.MAVEN)) {
+                // TODO: Implement Maven build support
+                future.completeExceptionally(new UnsupportedOperationException("Maven build support is not implemented yet."));
+            } else {
+                future.completeExceptionally(new IllegalStateException("Project does not have a build facet."));
+            }
+        });
+        return future;
     }
 }

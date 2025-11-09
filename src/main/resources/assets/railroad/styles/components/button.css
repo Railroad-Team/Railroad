@@ -174,3 +174,9 @@
     -fx-max-height: 32px;
     -fx-padding: 0;
 }
+
+/* Icon button */
+.rr-button > * {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+}

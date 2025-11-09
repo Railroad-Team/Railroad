@@ -22,17 +22,20 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
      * @param valueOfFunction The function that converts the key to the object.
      */
     public LocalizedComboBox(ToStringFunction<T> keyFunction, FromStringFunction<T> valueOfFunction) {
+        var localizationService = ServiceLocator.getService(LocalizationService.class);
+
         setConverter(new StringConverter<>() {
             @Override
             public String toString(T object) {
-                if (object == null)
-                    return "NullObject";
-
                 String key = keyFunction.toString(object);
-                if (key == null)
-                    return "NullKey";
+                if (key == null || key.isEmpty())
+                    return "";
 
-                return ServiceLocator.getService(LocalizationService.class).get(key);
+                if (localizationService.isKeyValid(key)) {
+                    return localizationService.get(key);
+                }
+
+                return key;
             }
 
             @Override

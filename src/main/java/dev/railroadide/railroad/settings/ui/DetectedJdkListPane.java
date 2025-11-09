@@ -76,7 +76,7 @@ public class DetectedJdkListPane extends RRVBox {
         countLabel.setKey("railroad.settings.ide.jdk_management.detected.count", detected.size());
     }
 
-    private static class JdkCell extends ListCell<JDK> {
+    public static class JdkCell extends ListCell<JDK> {
         private final HBox container = new HBox(12);
         private final VBox textContainer = new VBox(2);
         private final LocalizedLabel versionLabel = new LocalizedLabel("");

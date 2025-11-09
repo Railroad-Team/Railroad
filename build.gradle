@@ -53,6 +53,9 @@ javafx {
 dependencies {
     implementation 'org.kordamp.ikonli:ikonli-javafx:12.4.0'
     implementation 'org.kordamp.ikonli:ikonli-fontawesome6-pack:12.4.0'
+    implementation 'org.kordamp.ikonli:ikonli-devicons-pack:12.4.0'
+    implementation 'org.kordamp.jipsy:jipsy-processor:1.2.0'
+    annotationProcessor 'org.kordamp.jipsy:jipsy-annotations:1.2.0'
     implementation 'org.jetbrains:annotations:26.0.2-1'
     implementation 'com.google.code.gson:gson:2.13.2'
     implementation 'com.squareup.okhttp3:okhttp:5.2.1'
@@ -78,7 +81,7 @@ dependencies {
     implementation 'org.xerial:sqlite-jdbc:3.50.3.0'
     implementation 'com.github.numind-tech:javafxsvg:ce188ef95d'
     implementation 'io.github.raghul-tech:javafx-markdown-preview-all:1.0.3'
-
+    implementation 'org.joml:joml:1.10.8'
     implementation 'com.google.guava:guava:33.5.0-jre'
     implementation 'org.apache.maven:maven-core:4.0.0-rc-4'
     implementation 'org.apache.maven:maven-settings:4.0.0-rc-4'

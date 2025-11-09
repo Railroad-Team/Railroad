@@ -32,6 +32,113 @@ railroad.generic.dismiss=Dismiss
 railroad.generic.unknown=Unknown
 
 # =============================================================================
+# RUN CONFIGURATIONS
+# =============================================================================
+railroad.ide.toolbar.edit_run_configurations=Edit Run/Debug Configurations
+railroad.ide.toolbar.run_configurations.tooltip=Select a run configuration
+railroad.ide.toolbar.run.tooltip=Run selected configuration
+railroad.ide.toolbar.debug.tooltip=Debug selected configuration
+railroad.ide.toolbar.stop.tooltip=Stop running configuration
+railroad.ide.toolbar.run_configurations.more_actions.tooltip=Show more actions for the selected configuration
+railroad.ide.toolbar.no_run_configurations=No run configurations
+railroad.window.ide.toolbar.edit_run_configurations=Edit Run/Debug Configurations
+railroad.runconfig.tree.empty=No run configurations yet.
+railroad.runconfig.tree.empty_filtered=No matching run configurations.
+railroad.runconfig.tree.search_prompt=Search run configurations...
+railroad.runconfig.run.tooltip=Run configuration
+railroad.runconfig.debug.tooltip=Debug configuration
+railroad.runconfig.moreactions.tooltip=Show more actions for this configuration
+railroad.runconfig.action.run=Run
+railroad.runconfig.action.debug=Debug
+railroad.runconfig.details.empty.title=Create a run configuration
+railroad.runconfig.details.empty.description=Use the + button to add your first configuration.
+railroad.run_configuration.edit=Edit configuration
+railroad.run_configuration.pin=Pin to toolbar
+railroad.run_configuration.delete=Delete configuration
+
+# Run configuration type names
+railroad.runconfig.shellscript=Shell Script
+railroad.runconfig.java_application=Java Application
+railroad.runconfig.jar_application=JAR Application
+railroad.runconfig.gradle=Gradle Task
+railroad.runconfig.compound=Compound
+
+# Generic configuration section
+railroad.runconfig.general.title=General Settings
+railroad.runconfig.general.name.label=Configuration name
+railroad.runconfig.general.name.prompt=Enter a unique configuration name
+railroad.runconfig.general.name.validation.required=A configuration name is required.
+railroad.runconfig.general.name.validation.duplicate=A configuration with this name already exists.
+railroad.runconfig.general.allowMultipleInstances.label=Allow multiple instances
+railroad.runconfig.general.showConsoleOnRun.label=Show console when running
+
+# Compound configurations
+railroad.runconfig.compound.configurations.title=Compound Settings
+railroad.runconfig.compound.configuration.runMode.label=Run mode
+railroad.runconfig.compound.runMode.=Compound run mode
+railroad.runconfig.compound.runMode.parallel=Parallel
+railroad.runconfig.compound.runMode.sequential=Sequential
+
+# Gradle configurations
+railroad.runconfig.gradle.configuration.title=Gradle Settings
+railroad.runconfig.gradle.configuration.task.label=Task
+railroad.runconfig.gradle.configuration.task.prompt=e.g. build
+railroad.runconfig.gradle.configuration.projectPath.label=Gradle project directory
+railroad.runconfig.gradle.configuration.envVariables.label=Environment variables
+railroad.runconfig.gradle.configuration.envVariables.prompt=KEY=VALUE;KEY2=VALUE2
+railroad.runconfig.gradle.configuration.envVariables.invalid=Environment variables must be KEY=VALUE pairs separated by semicolons.
+railroad.runconfig.gradle.configuration.vmOptions.label=VM options
+railroad.runconfig.gradle.configuration.vmOptions.prompt=e.g. -Xmx1G
+railroad.runconfig.gradle.configuration.javaHome.label=Java home (optional)
+
+# JAR application configurations
+railroad.runconfig.jar_application.configuration.section.title=JAR Settings
+railroad.runconfig.jar_application.configuration.jarPath.label=Executable JAR file
+railroad.runconfig.jar_application.configuration.vmOptions.label=VM options
+railroad.runconfig.jar_application.configuration.vmOptions.prompt=e.g. -Xmx1G
+railroad.runconfig.jar_application.configuration.programArguments.label=Program arguments
+railroad.runconfig.jar_application.configuration.programArguments.prompt=Arguments separated by spaces
+railroad.runconfig.jar_application.configuration.workingDirectory.label=Working directory
+railroad.runconfig.jar_application.configuration.envVariables.label=Environment variables
+railroad.runconfig.jar_application.configuration.envVariables.prompt=KEY=VALUE;KEY2=VALUE2
+railroad.runconfig.jar_application.configuration.envVariables.invalid=Environment variables must be KEY=VALUE pairs separated by semicolons.
+railroad.runconfig.jar_application.configuration.jre.label=Runtime (JRE/JDK)
+
+# Java application configurations
+railroad.runconfig.java_application.configuration.section.title=Java Application Settings
+railroad.runconfig.java_application.configuration.buildBeforeRun.label=Build before run
+railroad.runconfig.java_application.configuration.jdk.label=JDK
+railroad.runconfig.java_application.configuration.mainClass.label=Main class
+railroad.runconfig.java_application.configuration.mainClass.prompt=com.example.Main
+railroad.runconfig.java_application.configuration.classpathEntries.label=Classpath entries
+railroad.runconfig.java_application.configuration.classpathEntries.prompt=Path1;Path2;Path3
+railroad.runconfig.java_application.configuration.programArguments.label=Program arguments
+railroad.runconfig.java_application.configuration.programArguments.prompt=Arguments separated by spaces
+railroad.runconfig.java_application.configuration.vmOptions.label=VM options
+railroad.runconfig.java_application.configuration.vmOptions.prompt=e.g. -Xmx1G
+railroad.runconfig.java_application.configuration.envVariables.label=Environment variables
+railroad.runconfig.java_application.configuration.envVariables.prompt=KEY=VALUE;KEY2=VALUE2
+railroad.runconfig.java_application.configuration.envVariables.invalid=Environment variables must be KEY=VALUE pairs separated by semicolons.
+
+# Shell script configurations
+railroad.runconfig.shell_script.configuration.section.title=Shell Script Settings
+railroad.runconfig.shell_script.configuration.executeMode.label=Execution mode
+railroad.runconfig.shell_script.configuration.scriptPath.label=Script file
+railroad.runconfig.shell_script.configuration.scriptText.label=Inline script
+railroad.runconfig.shell_script.configuration.scriptText.prompt=Paste the script contents here
+railroad.runconfig.shell_script.configuration.scriptArgs.label=Script arguments
+railroad.runconfig.shell_script.configuration.scriptArgs.prompt=Arguments separated by spaces
+railroad.runconfig.shell_script.configuration.workingDirectory.label=Working directory
+railroad.runconfig.shell_script.configuration.envVariables.label=Environment variables
+railroad.runconfig.shell_script.configuration.envVariables.prompt=KEY=VALUE;KEY2=VALUE2
+railroad.runconfig.shell_script.configuration.envVariables.invalid=Environment variables must be KEY=VALUE pairs separated by semicolons.
+railroad.runconfig.shell_script.configuration.interpreterPath.label=Interpreter path
+railroad.runconfig.shell_script.configuration.interpreterArgs.label=Interpreter arguments
+railroad.runconfig.shell_script.configuration.interpreterArgs.prompt=Arguments separated by spaces
+railroad.runconfig.shell_script.configuration.executeInTerminal.label=Run in terminal
+
+
+# =============================================================================
 # HOME/WELCOME SCREEN
 # =============================================================================
 railroad.home.welcome.greeting=Welcome to Railroad!
@@ -481,10 +588,12 @@ railroad.project.creation.sources_url.info=Source code repository URL advertised
 railroad.project.creation.location.error.required=Project location is required.
 railroad.project.creation.location.error.cannot_create=Could not create the project directory.
 railroad.project.creation.location.error.not_directory=The selected path is not a directory.
+railroad.project.creation.location.error.is_directory=The selected path is not a file.
 railroad.project.creation.location.warning.not_empty=The selected directory is not empty.
 railroad.project.creation.location.error.not_readable=The selected directory is not readable.
 railroad.project.creation.location.error.invalid_path=The selected path is invalid.
 railroad.project.creation.location.warning.onedrive=Using OneDrive for projects is not recommended.
+railroad.project.creation.location.error.invalid_extension=The selected file has an invalid extension.
 railroad.project.creation.name.error.required=Project name is required.
 railroad.project.creation.name.error.length_long=Project name is too long (maximum 256 characters).
 railroad.project.creation.name.error.length_short=Project name is too short (minimum 3 characters).
@@ -500,6 +609,8 @@ railroad.project.creation.mod_name.error.length_long=Mod name is too long (maxim
 railroad.project.creation.mod_name.error.length_short=Mod name is too short (minimum 5 characters).
 railroad.project.creation.main_class.error.required=Main class is required.
 railroad.project.creation.main_class.error.invalid_characters=Main class contains invalid characters.
+railroad.project.creation.qualified_main_class.error.required=Qualified main class is required.
+railroad.project.creation.qualified_main_class.error.invalid_characters=Qualified main class contains invalid characters
 railroad.project.creation.author.error.length_long=Author is too long (maximum 256 characters).
 railroad.project.creation.author.error.length_short=Author is too short (minimum 3 characters).
 railroad.project.creation.credits.error.length_long=Credits is too long (maximum 256 characters).

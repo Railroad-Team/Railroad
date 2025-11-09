@@ -21,23 +21,52 @@ import java.util.Locale;
 public class ProjectValidators {
     private static final String USER_AGENT = "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.1.2) Gecko/20090729 Firefox/3.5.2 (.NET CLR 3.5.30729)";
 
-    public static ValidationResult validatePath(TextField field) {
+    public static ValidationResult validateDirectoryPath(TextField field) {
+        return validatePath(field, true);
+    }
+
+    public static ValidationResult validateFilePath(TextField field, String extension) {
+        ValidationResult result = validatePath(field, false);
+        if (result.status() == ValidationResult.Status.ERROR)
+            return result;
+
+        String text = field.getText();
+        if (extension != null && !extension.isBlank() && !text.endsWith("." + extension))
+            return ValidationResult.error("railroad.project.creation.location.error.invalid_extension");
+
+        return ValidationResult.ok();
+    }
+
+    private static ValidationResult validatePath(TextField field, boolean expectDirectory) {
         String text = field.getText();
         if (text == null || text.isBlank())
             return ValidationResult.error("railroad.project.creation.location.error.required");
 
+        Path path;
         try {
-            Path path = Path.of(text);
-            if (Files.notExists(path)) {
-                // Create the directory if it doesn't exist
-                try {
-                    Files.createDirectories(path);
-                    Files.deleteIfExists(path);
-                } catch (IOException ignored) {
-                    return ValidationResult.error("railroad.project.creation.location.error.cannot_create");
-                }
-            }
+            path = Path.of(text);
+        } catch (InvalidPathException exception) {
+            return ValidationResult.error("railroad.project.creation.location.error.invalid_path");
+        }
 
+        if (Files.notExists(path)) {
+            try {
+                if (expectDirectory) {
+                    Files.createDirectories(path);
+                } else {
+                    Path parent = path.getParent();
+                    if (parent != null) {
+                        Files.createDirectories(parent);
+                    }
+                }
+
+                Files.deleteIfExists(path);
+            } catch (IOException ignored) {
+                return ValidationResult.error("railroad.project.creation.location.error.cannot_create");
+            }
+        }
+
+        if (expectDirectory) {
             if (!Files.isDirectory(path))
                 return ValidationResult.error("railroad.project.creation.location.error.not_directory");
 
@@ -48,8 +77,8 @@ public class ProjectValidators {
             } catch (IOException ignored) {
                 return ValidationResult.error("railroad.project.creation.location.error.not_readable");
             }
-        } catch (InvalidPathException exception) {
-            return ValidationResult.error("railroad.project.creation.location.error.invalid_path");
+        } else if (Files.isDirectory(path)) {
+            return ValidationResult.error("railroad.project.creation.location.error.is_directory");
         }
 
         if (text.contains("OneDrive"))
@@ -123,6 +152,18 @@ public class ProjectValidators {
 
         if (!text.matches("[a-zA-Z0-9_]+"))
             return ValidationResult.error("railroad.project.creation.main_class.error.invalid_characters");
+
+        return ValidationResult.ok();
+    }
+
+    // TODO: Not project creation specific
+    public static ValidationResult validateQualifiedMainClass(TextField field) {
+        String text = field.getText();
+        if (text == null || text.isBlank())
+            return ValidationResult.error("railroad.project.creation.qualified_main_class.error.required");
+
+        if (!text.matches("([a-zA-Z_][a-zA-Z0-9_]*\\.)*[a-zA-Z_][a-zA-Z0-9_]*"))
+            return ValidationResult.error("railroad.project.creation.qualified_main_class.error.invalid_format");
 
         return ValidationResult.ok();
     }

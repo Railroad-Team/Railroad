@@ -9,6 +9,7 @@ import dev.railroadide.logger.Logger;
 import dev.railroadide.logger.LoggerManager;
 import dev.railroadide.logger.LoggerService;
 import dev.railroadide.railroad.config.ConfigHandler;
+import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.java.JDKManager;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.localization.Languages;
@@ -25,8 +26,9 @@ import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
 import dev.railroadide.railroad.theme.ThemeManager;
-import dev.railroadide.railroad.utility.LocalDateTimeTypeAdapter;
+import dev.railroadide.railroad.utility.json.LocalDateTimeTypeAdapter;
 import dev.railroadide.railroad.utility.ShutdownHooks;
+import dev.railroadide.railroad.utility.json.PathTypeAdapter;
 import dev.railroadide.railroad.vcs.RepositoryManager;
 import dev.railroadide.railroad.welcome.WelcomePane;
 import dev.railroadide.railroad.window.WindowBuilder;
@@ -41,6 +43,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import okhttp3.OkHttpClient;
 
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -66,6 +69,7 @@ public class Railroad extends Application {
         .disableHtmlEscaping()
         .registerTypeAdapter(Facet.class, new FacetTypeAdapter())
         .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeTypeAdapter())
+        .registerTypeHierarchyAdapter(Path.class, new PathTypeAdapter())
         .create();
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
     public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
@@ -105,6 +109,7 @@ public class Railroad extends Application {
             new InitializationStep("Loading settings", Settings::initialize),
             new InitializationStep("Preparing settings handler", SettingsHandler::init),
             new InitializationStep("Preparing themes", ThemeManager::init),
+            new InitializationStep("Initializing run configuration types", RunConfigurationTypes::initialize),
             new InitializationStep("Binding service locator", () -> ServiceLocator.setServiceProvider(Services::getService)),
             new InitializationStep("Finding Java versions", JDKManager::refreshJDKs),
             new InitializationStep("Loading language", () -> L18n.loadLanguage(SettingsHandler.getValue(Settings.LANGUAGE))),

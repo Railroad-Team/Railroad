@@ -14,6 +14,7 @@ import javafx.scene.input.KeyEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -150,6 +151,17 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
          */
         public Builder defaultPath(@Nullable String defaultPath) {
             this.data.defaultPath(defaultPath);
+            return this;
+        }
+
+        /**
+         * Sets the default path for the directory chooser.
+         *
+         * @param defaultPath the default path for the directory chooser
+         * @return this builder
+         */
+        public Builder defaultPath(@Nullable Path defaultPath) {
+            this.data.defaultPath(defaultPath != null ? defaultPath.toString() : null);
             return this;
         }
 

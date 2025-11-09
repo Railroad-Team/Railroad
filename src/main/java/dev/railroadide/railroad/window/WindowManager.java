@@ -10,6 +10,8 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Matrix3x2d;
+import org.joml.Vector4d;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -58,19 +60,9 @@ public class WindowManager {
     public void showPrimary(Stage primaryStage, Scene scene, String title) {
         this.primaryScene = scene;
 
-        Screen screen = Screen.getPrimary();
-        double screenW = screen.getBounds().getWidth();
-        double screenH = screen.getBounds().getHeight();
-
-        double windowW = screenW * 0.75;
-        double windowH = screenH * 0.75;
-
         primaryStage.setScene(this.primaryScene);
         primaryStage.setTitle(title);
-        primaryStage.setWidth(windowW);
-        primaryStage.setHeight(windowH);
-        primaryStage.setMinWidth(windowW * 0.5);
-        primaryStage.setMinHeight(windowH * 0.5);
+        applyPreferredSize(primaryStage);
         setPrimaryStage(primaryStage);
 
         // Create a MacOS specific Menu Bar and Application Menu
@@ -80,6 +72,40 @@ public class WindowManager {
 
         // Show the MacOS specific menu bar
         MacUtils.show(primaryStage);
+    }
+
+    /**
+     * Apply the preferred window size to the given stage.
+     *
+     * @param stage Stage to apply sizes to
+     */
+    public void applyPreferredSize(Stage stage) {
+        Matrix3x2d windowSizes = calculatePreferredWindowSize();
+        stage.setMinWidth(windowSizes.m00());
+        stage.setMinHeight(windowSizes.m01());
+        stage.setWidth(windowSizes.m10());
+        stage.setHeight(windowSizes.m11());
+        stage.setMaxWidth(windowSizes.m20());
+        stage.setMaxHeight(windowSizes.m21());
+    }
+
+    /**
+     * Calculate the preferred window size based on 75% of the primary screen dimensions.
+     *
+     * @return {@link Matrix3x2d} containing (minWidth, minHeight, preferredWidth, preferredHeight, maxWidth, maxHeight)
+     */
+    public Matrix3x2d calculatePreferredWindowSize() {
+        Screen screen = Screen.getPrimary();
+        double screenW = screen.getBounds().getWidth();
+        double screenH = screen.getBounds().getHeight();
+
+        double windowW = screenW * 0.75;
+        double windowH = screenH * 0.75;
+
+        double minWindowW = windowW * 0.5;
+        double minWindowH = windowH * 0.5;
+
+        return new Matrix3x2d(minWindowW, minWindowH, windowW, windowH, screenW, screenH);
     }
 
     /**
@@ -128,7 +154,7 @@ public class WindowManager {
         stage.setOnCloseRequest(event -> childWindows.remove(stage));
     }
 
-    public static void toggleFullScreen(){
+    public static void toggleFullScreen() {
         Stage primaryStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
         primaryStage.setFullScreen(!primaryStage.isFullScreen());
     }

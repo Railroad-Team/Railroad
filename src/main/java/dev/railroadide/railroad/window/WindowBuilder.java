@@ -12,6 +12,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
+import org.joml.Matrix3x2d;
 
 import java.io.InputStream;
 import java.util.Objects;
@@ -212,6 +213,17 @@ public class WindowBuilder {
     public WindowBuilder maxSize(double maxWidth, double maxHeight) {
         this.maxWidth = maxWidth;
         this.maxHeight = maxHeight;
+        return this;
+    }
+
+    public WindowBuilder applyPreferredSize() {
+        Matrix3x2d matrix = Railroad.WINDOW_MANAGER.calculatePreferredWindowSize();
+        this.minWidth = matrix.m00();
+        this.minHeight = matrix.m01();
+        this.width = matrix.m10();
+        this.height = matrix.m11();
+        this.maxWidth = matrix.m20();
+        this.maxHeight = matrix.m21();
         return this;
     }
 

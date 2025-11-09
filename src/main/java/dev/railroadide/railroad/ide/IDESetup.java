@@ -4,21 +4,28 @@ import com.kodedu.terminalfx.Terminal;
 import com.kodedu.terminalfx.TerminalBuilder;
 import com.kodedu.terminalfx.config.TerminalConfig;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
+import dev.railroadide.core.localization.LocalizationService;
 import dev.railroadide.core.settings.keybinds.KeybindContexts;
 import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.core.ui.*;
-import dev.railroadide.core.ui.localized.LocalizedCheckMenuItem;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
-import dev.railroadide.core.ui.localized.LocalizedMenu;
-import dev.railroadide.core.ui.localized.LocalizedMenuItem;
+import dev.railroadide.core.ui.localized.*;
 import dev.railroadide.core.utility.OperatingSystem;
+import dev.railroadide.core.utility.ServiceLocator;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
-import dev.railroadide.railroad.ide.ui.*;
+import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
+import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationContextMenuManager;
+import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationEditorPane;
+import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationListCell;
+import dev.railroadide.railroad.ide.ui.ConsolePane;
+import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
+import dev.railroadide.railroad.ide.ui.ImageViewerPane;
+import dev.railroadide.railroad.ide.ui.StatusBarPane;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
+import dev.railroadide.railroad.window.WindowBuilder;
 import dev.railroadide.railroad.window.WindowManager;
 import dev.railroadide.railroadpluginapi.events.ProjectEvent;
 import javafx.application.Platform;
@@ -26,6 +33,7 @@ import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -33,18 +41,20 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 import org.fxmisc.richtext.CodeArea;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -60,7 +70,9 @@ public class IDESetup {
      */
     public static Scene createIDEScene(Project project) {
         var root = new RRBorderPane();
-        root.setTop(createMenuBar());
+        var topBar = new RRHBox(createMenuBar(), new Region(), createToolbar(project));
+        HBox.setHgrow(topBar.getChildren().get(1), Priority.ALWAYS);
+        root.setTop(topBar);
 
         var leftPane = new DetachableTabPane();
         leftPane.addTab("Project", new ProjectExplorerPane(project, root));
@@ -119,6 +131,176 @@ public class IDESetup {
 
         KeybindHandler.registerCapture(KeybindContexts.of("railroad:ide"), root);
         return new Scene(root);
+    }
+
+    private static Node createToolbar(Project project) {
+        var toolbar = new RRHBox(8);
+        toolbar.getStyleClass().add("toolbar");
+
+        var runConfigurationsComboBox = new LocalizedComboBox<RunConfiguration<?>>(object -> {
+            if (object == null)
+                return "railroad.ide.toolbar.edit_run_configurations";
+            return object.uuid().toString();
+        }, string -> {
+            if (string == null || string.isEmpty() || "railroad.ide.toolbar.edit_run_configurations".equalsIgnoreCase(string))
+                return null;
+
+            try {
+                var uuid = UUID.fromString(string);
+                return project.getRunConfigManager().getConfigurationByUUID(uuid);
+            } catch (IllegalArgumentException exception) {
+                Railroad.LOGGER.warn("Failed to parse UUID from string: {}", string, exception);
+                return null;
+            }
+        });
+        runConfigurationsComboBox.getItems().setAll(project.getRunConfigManager().getConfigurations());
+        runConfigurationsComboBox.getItems().add(null);
+        project.getRunConfigManager().getConfigurations().addListener(
+            (ListChangeListener<? super RunConfiguration<?>>) change -> {
+                var selected = runConfigurationsComboBox.getValue();
+                runConfigurationsComboBox.getItems().setAll(project.getRunConfigManager().getConfigurations());
+                runConfigurationsComboBox.getItems().add(null); // For "Edit Run Configurations" option
+                if (selected != null && project.getRunConfigManager().getConfigurations().contains(selected)) {
+                    runConfigurationsComboBox.setValue(selected);
+                } else {
+                    runConfigurationsComboBox.getSelectionModel().selectFirst();
+                }
+            });
+
+        if (!runConfigurationsComboBox.getItems().isEmpty()) {
+            runConfigurationsComboBox.getSelectionModel().selectFirst();
+        }
+
+        var localizationService = ServiceLocator.getService(LocalizationService.class);
+
+        runConfigurationsComboBox.getStyleClass().add("run-config-combobox");
+        runConfigurationsComboBox.setTooltip(new LocalizedTooltip("railroad.ide.toolbar.run_configurations.tooltip"));
+        runConfigurationsComboBox.setPrefWidth(200);
+        runConfigurationsComboBox.setCellFactory(
+            param -> new RunConfigurationListCell(
+                project,
+                () -> showEditRunConfigurationsWindow(project, null)));
+        runConfigurationsComboBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(RunConfiguration<?> item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setText(null);
+                    return;
+                }
+
+                if (item == null) {
+                    if (project.getRunConfigManager().getConfigurations().isEmpty()) {
+                        setText(localizationService.get("railroad.ide.toolbar.no_run_configurations"));
+                    } else {
+                        setText(localizationService.get("railroad.ide.toolbar.edit_run_configurations"));
+                    }
+
+                    return;
+                }
+
+                setText(item.data().getName());
+            }
+        });
+
+        var runButton = new RRButton("", FontAwesomeSolid.PLAY);
+        runButton.setSquare(true);
+        runButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        runButton.setVariant(RRButton.ButtonVariant.GHOST);
+        runButton.setTooltip(new LocalizedTooltip("railroad.ide.toolbar.run.tooltip"));
+        runButton.getStyleClass().addAll("toolbar-button", "run-button");
+        runButton.setFocusTraversable(false);
+        runButton.setDisable(true);
+        runButton.setOnAction(event -> {
+            RunConfiguration<?> item = runConfigurationsComboBox.getValue();
+            if (item == null) {
+                runButton.setDisable(true);
+                return;
+            }
+
+            item.run(project);
+            // TODO: Update stop button state to notify that a process is running
+        });
+
+        var debugButton = new RRButton("", FontAwesomeSolid.BUG);
+        debugButton.setSquare(true);
+        debugButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        debugButton.setVariant(RRButton.ButtonVariant.GHOST);
+        debugButton.setTooltip(new LocalizedTooltip("railroad.ide.toolbar.debug.tooltip"));
+        debugButton.getStyleClass().addAll("toolbar-button", "debug-button");
+        debugButton.setFocusTraversable(false);
+        debugButton.setDisable(true);
+        debugButton.setOnAction(event -> {
+            RunConfiguration<?> item = runConfigurationsComboBox.getValue();
+            if (item == null || !item.isDebuggingSupported(project)) {
+                debugButton.setDisable(true);
+                return;
+            }
+
+            item.debug(project);
+            // TODO: Update stop button state to notify that a process is running
+        });
+
+        var stopButton = new RRButton("", FontAwesomeSolid.STOP);
+        stopButton.setSquare(true);
+        stopButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        stopButton.setVariant(RRButton.ButtonVariant.GHOST);
+        stopButton.setTooltip(new LocalizedTooltip("railroad.ide.toolbar.stop.tooltip"));
+        stopButton.getStyleClass().addAll("toolbar-button", "stop-button");
+        stopButton.setFocusTraversable(false);
+        stopButton.setDisable(true);
+        stopButton.setVisible(false);
+        stopButton.setOnAction(event -> {
+            RunConfiguration<?> item = runConfigurationsComboBox.getValue();
+            if (item == null) {
+                stopButton.setDisable(true);
+                return;
+            }
+
+            item.stop(project);
+            // TODO: Update button state based on whether a process is running
+        });
+
+        var moreActionsButton = new RRButton("", FontAwesomeSolid.ELLIPSIS_V);
+        moreActionsButton.setSquare(true);
+        moreActionsButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        moreActionsButton.setVariant(RRButton.ButtonVariant.GHOST);
+        moreActionsButton.setTooltip(new LocalizedTooltip("railroad.ide.toolbar.run_configurations.more_actions.tooltip"));
+        moreActionsButton.getStyleClass().addAll("toolbar-button", "more-actions-button");
+        moreActionsButton.setFocusTraversable(false);
+        moreActionsButton.setOnAction(event -> {
+            RunConfiguration<?> item = runConfigurationsComboBox.getValue();
+            if (item == null) {
+                showEditRunConfigurationsWindow(project, null);
+                return;
+            }
+
+            var menu = item.createContextMenu(project);
+            RunConfigurationContextMenuManager.show(moreActionsButton, menu, Side.BOTTOM);
+        });
+
+        RunConfiguration<?> initiallySelected = runConfigurationsComboBox.getValue();
+        if (initiallySelected != null) {
+            runButton.setDisable(false);
+            debugButton.setDisable(!initiallySelected.isDebuggingSupported(project));
+        }
+
+        var runSection = new RRHBox(4, runConfigurationsComboBox, runButton, debugButton, moreActionsButton);
+        runSection.setAlignment(Pos.CENTER_LEFT);
+        toolbar.getChildren().add(runSection);
+
+        return toolbar;
+    }
+
+    public static void showEditRunConfigurationsWindow(@NotNull Project project, @Nullable RunConfiguration<?> runConfiguration) {
+        var editorPane = new RunConfigurationEditorPane(project);
+        WindowBuilder.create()
+            .owner(Railroad.WINDOW_MANAGER.getPrimaryStage())
+            .title("railroad.window.ide.toolbar.edit_run_configurations", true)
+            .applyPreferredSize()
+            .scene(new Scene(editorPane))
+            .onInit(stage -> editorPane.selectConfiguration(runConfiguration))
+            .build();
     }
 
     /**
@@ -300,7 +482,7 @@ public class IDESetup {
         toolsMenu.getStyleClass().add("rr-menu");
 
         var menuBar = new RRMenuBar(true, fileMenu, editMenu, viewMenu, runMenu, toolsMenu);
-        if(OperatingSystem.isMac()) {
+        if (OperatingSystem.isMac()) {
             menuBar.useSystemMenuBarProperty().set(true);
         }
         menuBar.getStyleClass().add("rr-menu-bar");
