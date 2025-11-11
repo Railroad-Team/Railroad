@@ -18,6 +18,7 @@ import dev.railroadide.railroad.ide.projectexplorer.task.FileCopyTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.SearchTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
 import dev.railroadide.railroad.ide.ui.*;
+import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
 import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
@@ -251,7 +252,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         Optional<DetachableTabPane> pane = IDESetup.findBestPaneForTerminal(mainPane);
         pane.ifPresent(detachableTabPane -> {
-            Terminal terminal = IDESetup.createTerminal(Files.isDirectory(path) ? path : path.getParent());
+            Terminal terminal = TerminalFactory.create(Files.isDirectory(path) ? path : path.getParent());
             if (!Files.isDirectory(path)) {
                 terminal.onTerminalFxReady(() -> terminal.command(path.getFileName().toString()));
             }

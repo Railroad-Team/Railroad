@@ -1,31 +1,31 @@
 .run-button .ikonli-font-icon {
-    -fx-icon-color: #82a157;
+    -fx-icon-color: #82a157 !important;
 }
 
 .run-button:hover .ikonli-font-icon {
-    -fx-icon-color: #a3c17f;
+    -fx-icon-color: #a3c17f !important;
 }
 
 .stop-button .ikonli-font-icon {
-    -fx-icon-color: #cd4b55;
+    -fx-icon-color: #cd4b55 !important;
 }
 
-.stop-button:hover .ikonli-font-icon {
-    -fx-icon-color: #e5737a;
+.stop-button:hover .ikonli-font-icon{
+    -fx-icon-color: #e5737a !important;
 }
 
 .debug-button .ikonli-font-icon {
-    -fx-icon-color: #cd5268;
+    -fx-icon-color: #cd5268 !important;
 }
 
 .debug-button:hover .ikonli-font-icon {
-    -fx-icon-color: #e68a9a;
+    -fx-icon-color: #e68a9a !important;
 }
 
 .more-actions-button .ikonli-font-icon {
-    -fx-icon-color: #ddc03a;
+    -fx-icon-color: #ddc03a !important;
 }
 
 .more-actions-button:hover .ikonli-font-icon {
-    -fx-icon-color: #eed76a;
+    -fx-icon-color: #eed76a !important;
 }
