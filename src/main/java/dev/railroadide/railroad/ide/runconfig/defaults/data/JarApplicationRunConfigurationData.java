@@ -40,7 +40,7 @@ public class JarApplicationRunConfigurationData extends RunConfigurationData {
                 .appendComponent(FormComponent.fileChooser("jarPath", "railroad.runconfig.jar_application.configuration.jarPath.label")
                     .required()
                     .defaultPath(this.jarPath)
-                    .validator(textField -> ProjectValidators.validateFilePath(textField, "jar")) // TODO: Confirm that it is actually a jar (?)
+                    .validator(ProjectValidators::validateJarFilePath)
                     .build())
                 .appendComponent(FormComponent.textField("vmOptions", "railroad.runconfig.jar_application.configuration.vmOptions.label")
                     .required()

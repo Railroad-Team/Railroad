@@ -2,6 +2,7 @@ package dev.railroadide.core.form.impl;
 
 import dev.railroadide.core.form.*;
 import dev.railroadide.core.form.ui.FormTextField;
+import dev.railroadide.core.ui.AutoCompleteOptions;
 import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.Property;
@@ -15,7 +16,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -44,7 +47,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
      */
     public TextFieldComponent(String dataKey, Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
         super(dataKey, data, currentData -> {
-            var formTextField = new FormTextField(currentData.label, currentData.required, currentData.promptText, currentData.editable, currentData.translate);
+            var formTextField = new FormTextField(currentData.label, currentData.required, currentData.promptText, currentData.editable, currentData.translate, currentData.getAutoCompleteOptions());
             if (currentData.text != null) {
                 new Thread(() -> {
                     String text = data.text.get();
@@ -301,6 +304,75 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
         }
 
         /**
+         * Enables auto-complete behaviour using the provided suggestion provider.
+         *
+         * @param provider function that returns suggestions given the current query
+         * @return this builder
+         */
+        public Builder autoComplete(Function<String, ? extends Collection<String>> provider) {
+            ensureAutoCompleteOptions().setSuggestionsProvider(Objects.requireNonNull(provider, "provider"));
+            return this;
+        }
+
+        /**
+         * Enables auto-complete behaviour using a static collection of suggestions.
+         *
+         * @param suggestions the suggestions to display
+         * @return this builder
+         */
+        public Builder autoCompleteSuggestions(Collection<String> suggestions) {
+            Objects.requireNonNull(suggestions, "suggestions");
+            return autoCompleteSuggestionsSupplier(() -> suggestions);
+        }
+
+        /**
+         * Enables auto-complete behaviour using a supplier of suggestions.
+         *
+         * @param suggestionsSupplier supplier that returns the current suggestions
+         * @return this builder
+         */
+        public Builder autoCompleteSuggestionsSupplier(Supplier<? extends Collection<String>> suggestionsSupplier) {
+            ensureAutoCompleteOptions().setSuggestionsSupplier(Objects.requireNonNull(suggestionsSupplier, "suggestionsSupplier"));
+            return this;
+        }
+
+        /**
+         * Sets the maximum number of suggestions to display.
+         */
+        public Builder autoCompleteMaxSuggestions(int maxSuggestions) {
+            ensureAutoCompleteOptions().setMaxSuggestions(maxSuggestions);
+            return this;
+        }
+
+        /**
+         * Sets the minimum number of characters before querying suggestions.
+         */
+        public Builder autoCompleteMinQueryLength(int minQueryLength) {
+            ensureAutoCompleteOptions().setMinQueryLength(minQueryLength);
+            return this;
+        }
+
+        /**
+         * Sets whether the auto-complete lookup should be case sensitive.
+         */
+        public Builder autoCompleteCaseSensitive(boolean caseSensitive) {
+            ensureAutoCompleteOptions().setCaseSensitive(caseSensitive);
+            return this;
+        }
+
+        /**
+         * Sets whether suggestions should be shown even when the query is empty.
+         */
+        public Builder autoCompleteShowSuggestionsOnEmpty(boolean showOnEmpty) {
+            ensureAutoCompleteOptions().setShowSuggestionsOnEmpty(showOnEmpty);
+            return this;
+        }
+
+        private AutoCompleteOptions ensureAutoCompleteOptions() {
+            return data.ensureAutoCompleteOptions();
+        }
+
+        /**
          * Sets the visibility of the text field.
          *
          * @param visible the visibility
@@ -333,6 +405,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
         private boolean editable = true;
         private boolean required = false;
         private boolean translate = true;
+        private AutoCompleteOptions autoCompleteOptions;
 
         /**
          * Constructs a new data for the text field.
@@ -401,6 +474,20 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
         public Data translate(boolean translate) {
             this.translate = translate;
             return this;
+        }
+
+        AutoCompleteOptions ensureAutoCompleteOptions() {
+            if (autoCompleteOptions == null) {
+                autoCompleteOptions = new AutoCompleteOptions();
+            }
+            return autoCompleteOptions;
+        }
+
+        public AutoCompleteOptions getAutoCompleteOptions() {
+            if (autoCompleteOptions == null || !autoCompleteOptions.isConfigured()) {
+                return null;
+            }
+            return autoCompleteOptions;
         }
     }
 }

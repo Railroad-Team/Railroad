@@ -17,12 +17,27 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.jar.JarFile;
 
+// TODO: These are not all project creation specific, so they should be moved and modified to a more general util class
 public class ProjectValidators {
     private static final String USER_AGENT = "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.1.2) Gecko/20090729 Firefox/3.5.2 (.NET CLR 3.5.30729)";
 
     public static ValidationResult validateDirectoryPath(TextField field) {
         return validatePath(field, true);
+    }
+
+    public static ValidationResult validateGradleProjectPath(TextField field) {
+        ValidationResult result = validateDirectoryPath(field);
+        if (result.status() == ValidationResult.Status.ERROR)
+            return result;
+
+        String text = field.getText();
+        Path path = Path.of(text);
+        if (Files.notExists(path.resolve("build.gradle")) && Files.notExists(path.resolve("build.gradle.kts")))
+            return ValidationResult.warning("railroad.project.creation.location.warning.not_gradle_project");
+
+        return ValidationResult.ok();
     }
 
     public static ValidationResult validateFilePath(TextField field, String extension) {
@@ -35,6 +50,23 @@ public class ProjectValidators {
             return ValidationResult.error("railroad.project.creation.location.error.invalid_extension");
 
         return ValidationResult.ok();
+    }
+
+    public static ValidationResult validateJarFilePath(TextField field) {
+        ValidationResult result = validateFilePath(field, "jar");
+        if (result.status() == ValidationResult.Status.ERROR)
+            return result;
+
+        String text = field.getText();
+        if (!text.endsWith(".jar"))
+            return result;
+
+        Path path = Path.of(text);
+        try (var ignored = new JarFile(path.toFile())) {
+            return ValidationResult.ok();
+        } catch (IOException exception) {
+            return ValidationResult.error("railroad.project.creation.location.error.invalid_jar");
+        }
     }
 
     private static ValidationResult validatePath(TextField field, boolean expectDirectory) {
@@ -156,7 +188,6 @@ public class ProjectValidators {
         return ValidationResult.ok();
     }
 
-    // TODO: Not project creation specific
     public static ValidationResult validateQualifiedMainClass(TextField field) {
         String text = field.getText();
         if (text == null || text.isBlank())

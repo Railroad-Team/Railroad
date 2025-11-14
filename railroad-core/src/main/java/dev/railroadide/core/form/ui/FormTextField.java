@@ -1,7 +1,11 @@
 package dev.railroadide.core.form.ui;
 
 import dev.railroadide.core.form.HasSetValue;
+import dev.railroadide.core.ui.AutoCompleteOptions;
+import dev.railroadide.core.ui.RRAutoCompleteTextField;
 import dev.railroadide.core.ui.RRTextField;
+import dev.railroadide.core.utility.ServiceLocator;
+import dev.railroadide.logger.Logger;
 import javafx.application.Platform;
 import javafx.scene.control.TextField;
 
@@ -14,6 +18,8 @@ import java.util.Objects;
  * a labeled text field with validation, localization, and styling support.
  */
 public class FormTextField extends InformativeLabeledHBox<TextField> implements HasSetValue {
+    private final AutoCompleteOptions autoCompleteOptions;
+
     /**
      * Constructs a new FormTextField with the specified configuration.
      *
@@ -24,7 +30,12 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
      * @param translate  whether to use localization for the prompt text
      */
     public FormTextField(String labelKey, boolean required, String promptText, boolean editable, boolean translate) {
+        this(labelKey, required, promptText, editable, translate, null);
+    }
+
+    public FormTextField(String labelKey, boolean required, String promptText, boolean editable, boolean translate, AutoCompleteOptions autoCompleteOptions) {
         super(labelKey, required, createParams(promptText, editable, translate));
+        this.autoCompleteOptions = autoCompleteOptions;
     }
 
     /**
@@ -37,8 +48,9 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
      */
     private static Map<String, Object> createParams(String promptText, boolean editable, boolean translate) {
         Map<String, Object> params = new HashMap<>();
-        if (promptText != null)
+        if (promptText != null) {
             params.put("promptText", promptText);
+        }
         params.put("editable", editable);
         params.put("translate", translate);
         return params;
@@ -56,11 +68,29 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
         boolean editable = (boolean) params.get("editable");
         boolean translate = (boolean) params.get("translate");
 
-        RRTextField textField = translate ? new RRTextField(promptText) : new RRTextField();
+        RRTextField textField;
+        boolean useAutoComplete = autoCompleteOptions != null && autoCompleteOptions.isConfigured();
+        if (useAutoComplete) {
+            ServiceLocator.getService(Logger.class).debug("FormTextField using autocomplete for label {}", promptText != null ? promptText : "null");
+        }
+
+        if (useAutoComplete) {
+            var autoCompleteTextField = translate ? new RRAutoCompleteTextField(promptText) : new RRAutoCompleteTextField();
+            if (!translate) {
+                autoCompleteTextField.setPromptText(promptText);
+            }
+
+            autoCompleteTextField.applyOptions(autoCompleteOptions);
+            textField = autoCompleteTextField;
+        } else {
+            textField = translate ? new RRTextField(promptText) : new RRTextField();
+            if (!translate) {
+                textField.setPromptText(promptText);
+            }
+        }
+
         textField.setEditable(editable);
         textField.getStyleClass().add("rr-text-field");
-        if (!translate)
-            textField.setPromptText(promptText);
 
         return textField;
     }
