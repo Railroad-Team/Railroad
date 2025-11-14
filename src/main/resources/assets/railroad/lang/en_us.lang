@@ -81,6 +81,15 @@ railroad.runconfig.compound.configuration.runMode.label=Run mode
 railroad.runconfig.compound.runMode.=Compound run mode
 railroad.runconfig.compound.runMode.parallel=Parallel
 railroad.runconfig.compound.runMode.sequential=Sequential
+railroad.runconfig.compound.configuration.configurations.label=Included configurations
+railroad.runconfig.compound.configuration.configurations.combo.prompt=Select a configuration...
+railroad.runconfig.compound.configuration.configurations.add=Add
+railroad.runconfig.compound.configuration.configurations.remove=Remove
+railroad.runconfig.compound.configuration.configurations.move_up=Move up
+railroad.runconfig.compound.configuration.configurations.move_down=Move down
+railroad.runconfig.compound.configuration.configurations.empty=No configurations selected yet.
+railroad.runconfig.compound.configuration.configurations.validation.required=Select at least one configuration.
+railroad.runconfig.compound.configuration.configurations.entry_format=%s (%s)
 
 # Gradle configurations
 railroad.runconfig.gradle.configuration.title=Gradle Settings

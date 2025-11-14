@@ -85,10 +85,10 @@ public class JarApplicationRunConfigurationData extends RunConfigurationData {
     @Override
     public void applyConfigurationFormData(FormData formData) {
         applyBaseFormData(formData);
-        this.jarPath = formData.get("jarPath", Path.class);
+        this.jarPath = Path.of(formData.get("jarPath", String.class));
         this.vmOptions = StringUtils.stringToStringArray(formData.get("vmOptions", String.class), " ");
         this.programArguments = StringUtils.stringToStringArray(formData.get("programArguments", String.class), " ");
-        this.workingDirectory = formData.get("workingDirectory", Path.class);
+        this.workingDirectory = Path.of(formData.get("workingDirectory", String.class));
         this.environmentVariables = StringUtils.stringToEnvironmentVariables(formData.get("environmentVariables", String.class));
         this.jre = formData.get("jre", JDK.class);
     }

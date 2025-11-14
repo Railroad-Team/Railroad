@@ -25,7 +25,7 @@ import java.util.function.Function;
 public class FormRadioButtonGroup<E extends Enum<E>> extends InformativeLabeledHBox<HBox> implements HasSetValue {
     private ToggleGroup toggleGroup;
     private final ObjectProperty<E> value = new SimpleObjectProperty<>();
-    private final Map<E, RadioButton> radioButtons = new LinkedHashMap<>();
+    private Map<E, RadioButton> radioButtons;
 
     public FormRadioButtonGroup(String labelKey, boolean required, List<E> values, Function<E, String> optionLabelProvider, boolean translateOptions, double spacing) {
         super(labelKey, required, Map.of(
@@ -54,7 +54,11 @@ public class FormRadioButtonGroup<E extends Enum<E>> extends InformativeLabeledH
         container.getStyleClass().add("form-radio-button-group");
 
         this.toggleGroup = new ToggleGroup();
-        radioButtons.clear();
+        if (radioButtons == null) {
+            radioButtons = new LinkedHashMap<>();
+        } else {
+            radioButtons.clear();
+        }
 
         for (E enumValue : values) {
             var radioButton = new RadioButton();

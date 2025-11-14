@@ -99,7 +99,7 @@ public class JavaApplicationRunConfigurationData extends RunConfigurationData {
         this.buildBeforeRun = formData.get("buildBeforeRun", Boolean.class);
         this.jdk = formData.get("jdk", JDK.class);
         this.mainClass = formData.get("mainClass", String.class);
-        this.workingDirectory = formData.get("workingDirectory", Path.class);
+        this.workingDirectory = Path.of(formData.get("workingDirectory", String.class));
         this.classpathEntries = StringUtils.stringToStringArray(formData.get("classpathEntries", String.class), ";");
         this.programArguments = StringUtils.stringToStringArray(formData.get("programArguments", String.class), " ");
         this.vmOptions = StringUtils.stringToStringArray(formData.get("vmOptions", String.class), " ");

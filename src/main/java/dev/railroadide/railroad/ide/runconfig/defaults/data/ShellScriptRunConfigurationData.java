@@ -112,10 +112,10 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
     public void applyConfigurationFormData(FormData formData) {
         applyBaseFormData(formData);
         this.executeMode = formData.get("executeMode", ExecuteMode.class);
-        this.scriptPath = formData.get("scriptPath", Path.class);
+        this.scriptPath = Path.of(formData.get("scriptPath", String.class));
         this.scriptText = formData.get("scriptText", String.class);
         this.scriptArgs = StringUtils.stringToStringArray(formData.get("scriptArgs", String.class), " ");
-        this.workingDirectory = formData.get("workingDirectory", Path.class);
+        this.workingDirectory = Path.of(formData.get("workingDirectory", String.class));
         this.environmentVariables = StringUtils.stringToEnvironmentVariables(formData.get("environmentVariables", String.class));
         this.interpreterPath = formData.get("interpreterPath", String.class);
         this.interpreterArgs = StringUtils.stringToStringArray(formData.get("interpreterArgs", String.class), " ");

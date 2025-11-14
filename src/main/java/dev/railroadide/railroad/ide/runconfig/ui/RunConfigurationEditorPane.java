@@ -276,5 +276,4 @@ public class RunConfigurationEditorPane extends RRVBox {
 
     private record ConfigurationFormContext(Form form, Node node) {
     }
-
 }

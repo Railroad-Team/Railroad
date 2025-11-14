@@ -29,3 +29,35 @@
 .more-actions-button:hover .ikonli-font-icon {
     -fx-icon-color: #eed76a !important;
 }
+
+.runconfig-picker-toolbar {
+    -fx-alignment: center-left;
+}
+
+.runconfig-picker-toolbar .runconfig-picker-button {
+    -fx-padding: 4;
+}
+
+.runconfig-picker-button .ikonli-font-icon {
+    -fx-icon-color: #a0aec0 !important;
+}
+
+.runconfig-picker-button:hover .ikonli-font-icon {
+    -fx-icon-color: #cbd5f5 !important;
+}
+
+.runconfig-picker-button-add .ikonli-font-icon {
+    -fx-icon-color: #82a157 !important;
+}
+
+.runconfig-picker-button-add:hover .ikonli-font-icon {
+    -fx-icon-color: #a3c17f !important;
+}
+
+.runconfig-picker-button-remove .ikonli-font-icon {
+    -fx-icon-color: #e5737a !important;
+}
+
+.runconfig-picker-button-remove:hover .ikonli-font-icon {
+    -fx-icon-color: #f59aa4 !important;
+}
