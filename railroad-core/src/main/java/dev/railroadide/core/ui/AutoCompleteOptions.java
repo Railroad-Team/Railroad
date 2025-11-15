@@ -1,5 +1,8 @@
 package dev.railroadide.core.ui;
 
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.util.Callback;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
@@ -15,6 +18,7 @@ import java.util.function.Supplier;
 public class AutoCompleteOptions {
     private Supplier<? extends Collection<String>> suggestionsSupplier;
     private Function<String, ? extends Collection<String>> suggestionsProvider;
+    private Callback<ListView<String>, ListCell<String>> suggestionCellFactory;
     @Setter
     @Getter
     private boolean caseSensitive;
@@ -22,7 +26,7 @@ public class AutoCompleteOptions {
     @Getter
     private boolean showSuggestionsOnEmpty;
     @Getter
-    private int maxSuggestions = 5;
+    private int maxSuggestions = 50;
     @Getter
     private int minQueryLength = 1;
 
@@ -44,6 +48,14 @@ public class AutoCompleteOptions {
 
     public void setSuggestionsProvider(@Nullable Function<String, ? extends Collection<String>> suggestionsProvider) {
         this.suggestionsProvider = suggestionsProvider;
+    }
+
+    public @Nullable Callback<ListView<String>, ListCell<String>> getSuggestionCellFactory() {
+        return suggestionCellFactory;
+    }
+
+    public void setSuggestionCellFactory(@Nullable Callback<ListView<String>, ListCell<String>> suggestionCellFactory) {
+        this.suggestionCellFactory = suggestionCellFactory;
     }
 
     public void setMaxSuggestions(int maxSuggestions) {

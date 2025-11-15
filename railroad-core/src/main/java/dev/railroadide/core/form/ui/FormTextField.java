@@ -18,8 +18,6 @@ import java.util.Objects;
  * a labeled text field with validation, localization, and styling support.
  */
 public class FormTextField extends InformativeLabeledHBox<TextField> implements HasSetValue {
-    private final AutoCompleteOptions autoCompleteOptions;
-
     /**
      * Constructs a new FormTextField with the specified configuration.
      *
@@ -34,8 +32,7 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
     }
 
     public FormTextField(String labelKey, boolean required, String promptText, boolean editable, boolean translate, AutoCompleteOptions autoCompleteOptions) {
-        super(labelKey, required, createParams(promptText, editable, translate));
-        this.autoCompleteOptions = autoCompleteOptions;
+        super(labelKey, required, createParams(promptText, editable, translate, autoCompleteOptions));
     }
 
     /**
@@ -46,13 +43,14 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
      * @param translate  whether to use localization
      * @return a map containing the component parameters
      */
-    private static Map<String, Object> createParams(String promptText, boolean editable, boolean translate) {
+    private static Map<String, Object> createParams(String promptText, boolean editable, boolean translate, AutoCompleteOptions autoCompleteOptions) {
         Map<String, Object> params = new HashMap<>();
         if (promptText != null) {
             params.put("promptText", promptText);
         }
         params.put("editable", editable);
         params.put("translate", translate);
+        params.put("autoCompleteOptions", autoCompleteOptions);
         return params;
     }
 
@@ -67,6 +65,7 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
         String promptText = (String) params.get("promptText");
         boolean editable = (boolean) params.get("editable");
         boolean translate = (boolean) params.get("translate");
+        AutoCompleteOptions autoCompleteOptions = (AutoCompleteOptions) params.get("autoCompleteOptions");
 
         RRTextField textField;
         boolean useAutoComplete = autoCompleteOptions != null && autoCompleteOptions.isConfigured();

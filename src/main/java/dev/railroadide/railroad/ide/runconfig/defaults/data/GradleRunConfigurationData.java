@@ -20,8 +20,12 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.util.Callback;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,6 +74,8 @@ public class GradleRunConfigurationData extends RunConfigurationData {
                     .promptText("railroad.runconfig.gradle.configuration.task.prompt")
                     .autoCompleteSuggestionsSupplier(() ->
                         buildGradleTaskSuggestions(gradleProjectPathProperty.get(), gradleTasksCache))
+                    .autoCompleteSuggestionCellFactory(createGradleTaskSuggestionCellFactory(
+                        gradleProjectPathProperty, gradleTasksCache))
                     .autoCompleteShowSuggestionsOnEmpty(true)
                     .validator(textField -> {
                         String text = textField.getText();
@@ -160,6 +166,57 @@ public class GradleRunConfigurationData extends RunConfigurationData {
         List<String> result = List.copyOf(suggestions);
         Railroad.LOGGER.debug("Providing {} suggestions for {}", result.size(), gradleProjectPath);
         return result;
+    }
+
+    private Callback<ListView<String>, ListCell<String>> createGradleTaskSuggestionCellFactory(
+        ObjectProperty<Path> gradleProjectPathProperty,
+        ObservableMap<Path, List<GradleTask>> gradleTasksCache) {
+        return listView -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    return;
+                }
+
+                String description = findGradleTaskDescription(item, gradleProjectPathProperty.get(), gradleTasksCache);
+                if (description != null) {
+                    setText(item + " - " + description);
+                } else {
+                    setText(item);
+                }
+            }
+        };
+    }
+
+    private @Nullable String findGradleTaskDescription(String taskOrOptionName, Path gradleProjectPath,
+                                                       ObservableMap<Path, List<GradleTask>> gradleTasksCache) {
+        if (taskOrOptionName == null || gradleProjectPath == null)
+            return null;
+
+        List<GradleTask> tasks = gradleTasksCache.get(gradleProjectPath);
+        if (tasks == null || tasks.isEmpty())
+            return null;
+
+        for (GradleTask task : tasks) {
+            if (task == null)
+                continue;
+
+            if (taskOrOptionName.equals(task.name())) {
+                String description = task.description();
+                return description == null || description.isBlank() ? null : description;
+            }
+
+            Map<String, String> options = task.options();
+            if (options != null && !options.isEmpty()) {
+                String optionDescription = options.get(taskOrOptionName);
+                if (optionDescription != null && !optionDescription.isBlank())
+                    return optionDescription;
+            }
+        }
+
+        return null;
     }
 
     private void loadGradleTasksAsync(Path gradleProjectPath, ObservableMap<Path, List<GradleTask>> gradleTasksCache) {

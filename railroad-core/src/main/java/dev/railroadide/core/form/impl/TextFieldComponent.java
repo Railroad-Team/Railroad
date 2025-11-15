@@ -10,8 +10,11 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
+import javafx.util.Callback;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -365,6 +368,14 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          */
         public Builder autoCompleteShowSuggestionsOnEmpty(boolean showOnEmpty) {
             ensureAutoCompleteOptions().setShowSuggestionsOnEmpty(showOnEmpty);
+            return this;
+        }
+
+        /**
+         * Sets the cell factory used to render suggestions in the popup.
+         */
+        public Builder autoCompleteSuggestionCellFactory(@Nullable Callback<ListView<String>, ListCell<String>> cellFactory) {
+            ensureAutoCompleteOptions().setSuggestionCellFactory(cellFactory);
             return this;
         }
 
