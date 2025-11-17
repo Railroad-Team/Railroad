@@ -13,6 +13,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Tests the execution of various CLI tools provided by a JDK, such as keytool and the Java launcher.
+ */
 class JDKCliToolExecutionTest {
 
     @Test

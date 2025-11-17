@@ -9,6 +9,14 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Builder for configuring {@code jinfo} invocations against a specific {@link JDK}.
+ * <p>
+ * Supports toggling JVM flags, printing system properties, and targeting particular JVM processes.
+ * </p>
+ *
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/jinfo.html">jinfo command documentation</a>
+ */
 public class JinfoCLIBuilder implements CLIBuilder<Process, JinfoCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "jinfo.exe" : "jinfo";
 
@@ -67,6 +75,13 @@ public class JinfoCLIBuilder implements CLIBuilder<Process, JinfoCLIBuilder> {
         return this;
     }
 
+    /**
+     * Sets the process ID for the `jinfo` command using a long value.
+     *
+     * @param pid the process ID; must be positive
+     * @return the current `JinfoCLIBuilder` instance
+     * @throws IllegalArgumentException if the PID is not positive
+     */
     public JinfoCLIBuilder processId(long pid) {
         if (pid <= 0)
             throw new IllegalArgumentException("PID must be positive");
@@ -75,24 +90,54 @@ public class JinfoCLIBuilder implements CLIBuilder<Process, JinfoCLIBuilder> {
         return this;
     }
 
+    /**
+     * Sets the process ID for the `jinfo` command using a string value.
+     *
+     * @param pid the process ID as a string; must not be null
+     * @return the current `JinfoCLIBuilder` instance
+     * @throws NullPointerException if the PID is null
+     */
     public JinfoCLIBuilder processId(String pid) {
         Objects.requireNonNull(pid, "PID cannot be null");
         this.processId = pid;
         return this;
     }
 
+    /**
+     * Adds a flag to the `jinfo` command.
+     *
+     * @param name the name of the flag; must not be null
+     * @return the current `JinfoCLIBuilder` instance
+     * @throws NullPointerException if the flag name is null
+     */
     public JinfoCLIBuilder flag(String name) {
         Objects.requireNonNull(name, "Flag name cannot be null");
         this.arguments.add("-flag " + name);
         return this;
     }
 
+    /**
+     * Adds a flag to the `jinfo` command with an enabled or disabled state.
+     *
+     * @param name    the name of the flag; must not be null
+     * @param enabled whether the flag is enabled (true) or disabled (false)
+     * @return the current `JinfoCLIBuilder` instance
+     * @throws NullPointerException if the flag name is null
+     */
     public JinfoCLIBuilder flag(String name, boolean enabled) {
         Objects.requireNonNull(name, "Flag name cannot be null");
         this.arguments.add("-flag " + (enabled ? "+" : "-") + name);
         return this;
     }
 
+    /**
+     * Adds a flag to the `jinfo` command with a specific value.
+     *
+     * @param name  the name of the flag; must not be null
+     * @param value the value of the flag; must not be null
+     * @return the current `JinfoCLIBuilder` instance
+     * @throws NullPointerException if the flag name or value is null
+     */
     public JinfoCLIBuilder flag(String name, String value) {
         Objects.requireNonNull(name, "Flag name cannot be null");
         Objects.requireNonNull(value, "Flag value cannot be null");
@@ -100,21 +145,43 @@ public class JinfoCLIBuilder implements CLIBuilder<Process, JinfoCLIBuilder> {
         return this;
     }
 
+    /**
+     * Adds the `-flags` option to the `jinfo` command to print all flags.
+     *
+     * @return the current `JinfoCLIBuilder` instance
+     */
     public JinfoCLIBuilder printFlags() {
         this.arguments.add("-flags");
         return this;
     }
 
+    /**
+     * Adds the `-sysprops` option to the `jinfo` command to print all system properties.
+     *
+     * @return the current `JinfoCLIBuilder` instance
+     */
     public JinfoCLIBuilder printSystemProperties() {
         this.arguments.add("-sysprops");
         return this;
     }
 
+    /**
+     * Adds the `-help` option to the `jinfo` command to display help information.
+     *
+     * @return the current `JinfoCLIBuilder` instance
+     */
     public JinfoCLIBuilder help() {
         this.arguments.add("-help");
         return this;
     }
 
+    /**
+     * Adds a Java option to the `jinfo` command.
+     *
+     * @param option the Java option; must not be null
+     * @return the current `JinfoCLIBuilder` instance
+     * @throws NullPointerException if the Java option is null
+     */
     public JinfoCLIBuilder javaOption(String option) {
         Objects.requireNonNull(option, "Java option cannot be null");
         this.arguments.add("-J" + option);

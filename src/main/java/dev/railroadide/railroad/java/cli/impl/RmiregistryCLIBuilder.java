@@ -9,6 +9,14 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Fluent builder for starting {@code rmiregistry} processes via a given {@link JDK}.
+ * <p>
+ * Supports setting ports and JVM options before launching the registry.
+ * </p>
+ *
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/rmiregistry.html">rmiregistry command documentation</a>
+ */
 public class RmiregistryCLIBuilder implements CLIBuilder<Process, RmiregistryCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "rmiregistry.exe" : "rmiregistry";
 
@@ -25,6 +33,13 @@ public class RmiregistryCLIBuilder implements CLIBuilder<Process, RmiregistryCLI
         this.jdk = Objects.requireNonNull(jdk, "JDK cannot be null");
     }
 
+    /**
+     * Creates a new {@link RmiregistryCLIBuilder} that will launch {@code rmiregistry} using the supplied {@link JDK}.
+     *
+     * @param jdk the JDK installation to use; must not be null
+     * @return a fresh {@link RmiregistryCLIBuilder}
+     * @throws NullPointerException if the JDK is null
+     */
     public static RmiregistryCLIBuilder create(JDK jdk) {
         return new RmiregistryCLIBuilder(jdk);
     }
@@ -67,12 +82,26 @@ public class RmiregistryCLIBuilder implements CLIBuilder<Process, RmiregistryCLI
         return this;
     }
 
+    /**
+     * Passes a JVM argument through the {@link JDK} launcher invoked by {@code rmiregistry}.
+     *
+     * @param option the JVM option to pass; must not be null
+     * @return the current {@link RmiregistryCLIBuilder} instance
+     * @throws NullPointerException if the option is null
+     */
     public RmiregistryCLIBuilder javaOption(String option) {
         Objects.requireNonNull(option, "Java option cannot be null");
         this.arguments.add("-J" + option);
         return this;
     }
 
+    /**
+     * Sets the port number {@code rmiregistry} should bind to.
+     *
+     * @param port the port value between 1 and 65535
+     * @return the current {@link RmiregistryCLIBuilder} instance
+     * @throws IllegalArgumentException if the port is outside the valid range
+     */
     public RmiregistryCLIBuilder port(int port) {
         if (port <= 0 || port > 65535)
             throw new IllegalArgumentException("Port must be between 1 and 65535");

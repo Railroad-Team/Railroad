@@ -10,6 +10,14 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Builder to construct {@code jlink} commands for creating custom runtime images.
+ * <p>
+ * Allows configuration of modules, compression, plugins, launchers, and other packaging flags.
+ * </p>
+ *
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/jlink.html">jlink command documentation</a>
+ */
 public class JlinkCLIBuilder implements CLIBuilder<Process, JlinkCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "jlink.exe" : "jlink";
 
@@ -67,17 +75,36 @@ public class JlinkCLIBuilder implements CLIBuilder<Process, JlinkCLIBuilder> {
         return this;
     }
 
+    /**
+     * Adds the specified modules to the `jlink` command.
+     *
+     * @param modules the modules to add; must not be null
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws NullPointerException if the modules are null
+     */
     public JlinkCLIBuilder addModules(String... modules) {
         Objects.requireNonNull(modules, "Modules cannot be null");
         this.arguments.add("--add-modules " + String.join(",", modules));
         return this;
     }
 
+    /**
+     * Adds the `--bind-services` option to the `jlink` command.
+     *
+     * @return the current `JlinkCLIBuilder` instance
+     */
     public JlinkCLIBuilder bindServices() {
         this.arguments.add("--bind-services");
         return this;
     }
 
+    /**
+     * Sets the compression level for the `jlink` command.
+     *
+     * @param level the compression level (0, 1, or 2)
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws IllegalArgumentException if the level is not 0, 1, or 2
+     */
     public JlinkCLIBuilder compressionLevel(int level) {
         if (level < 0 || level > 2)
             throw new IllegalArgumentException("Compression level must be 0, 1, or 2");
@@ -86,6 +113,15 @@ public class JlinkCLIBuilder implements CLIBuilder<Process, JlinkCLIBuilder> {
         return this;
     }
 
+    /**
+     * Sets the compression level and filter pattern for the `jlink` command.
+     *
+     * @param level         the compression level (0, 1, or 2)
+     * @param filterPattern the filter pattern; must not be null
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws IllegalArgumentException if the level is not 0, 1, or 2
+     * @throws NullPointerException     if the filter pattern is null
+     */
     public JlinkCLIBuilder compressionLevel(int level, String filterPattern) {
         if (level < 0 || level > 2)
             throw new IllegalArgumentException("Compression level must be 0, 1, or 2");
@@ -95,28 +131,60 @@ public class JlinkCLIBuilder implements CLIBuilder<Process, JlinkCLIBuilder> {
         return this;
     }
 
+    /**
+     * Disables the specified plugin in the `jlink` command.
+     *
+     * @param pluginName the name of the plugin to disable; must not be null
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws NullPointerException if the plugin name is null
+     */
     public JlinkCLIBuilder disablePlugin(String pluginName) {
         Objects.requireNonNull(pluginName, "Plugin name cannot be null");
         this.arguments.add("--disable-plugin " + pluginName);
         return this;
     }
 
+    /**
+     * Sets the endian option for the `jlink` command.
+     *
+     * @param endian the endian value; must not be null
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws NullPointerException if the endian value is null
+     */
     public JlinkCLIBuilder endian(String endian) {
         Objects.requireNonNull(endian, "Endian cannot be null");
         this.arguments.add("--endian " + endian);
         return this;
     }
 
+    /**
+     * Adds the `--help` option to the `jlink` command.
+     *
+     * @return the current `JlinkCLIBuilder` instance
+     */
     public JlinkCLIBuilder help() {
         this.arguments.add("--help");
         return this;
     }
 
+    /**
+     * Adds the `--ignore-signing-information` option to the `jlink` command.
+     *
+     * @return the current `JlinkCLIBuilder` instance
+     */
     public JlinkCLIBuilder ignoreSigningInformation() {
         this.arguments.add("--ignore-signing-information");
         return this;
     }
 
+    /**
+     * Adds a launcher definition to the `jlink` command.
+     *
+     * @param commandName  the name of the launcher command; must not be null
+     * @param moduleOrMain the module or main class definition; must not be null
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws NullPointerException if the command name or module definition is null
+     */
     public JlinkCLIBuilder launcher(String commandName, String moduleOrMain) {
         Objects.requireNonNull(commandName, "Command name cannot be null");
         Objects.requireNonNull(moduleOrMain, "Module definition cannot be null");
@@ -124,50 +192,106 @@ public class JlinkCLIBuilder implements CLIBuilder<Process, JlinkCLIBuilder> {
         return this;
     }
 
+    /**
+     * Limits the modules included in the `jlink` command.
+     *
+     * @param modules the modules to include; must not be null
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws NullPointerException if the modules are null
+     */
     public JlinkCLIBuilder limitModules(String... modules) {
         Objects.requireNonNull(modules, "Module names cannot be null");
         this.arguments.add("--limit-modules " + String.join(",", modules));
         return this;
     }
 
+    /**
+     * Adds the `--list-plugins` option to the `jlink` command.
+     *
+     * @return the current `JlinkCLIBuilder` instance
+     */
     public JlinkCLIBuilder listPlugins() {
         this.arguments.add("--list-plugins");
         return this;
     }
 
+    /**
+     * Sets the module path for the `jlink` command.
+     *
+     * @param modulePaths the module path entries; must not be null
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws NullPointerException if the module path entries are null
+     */
     public JlinkCLIBuilder modulePath(String... modulePaths) {
         Objects.requireNonNull(modulePaths, "Module path entries cannot be null");
         this.arguments.add("--module-path " + String.join(File.pathSeparator, modulePaths));
         return this;
     }
 
+    /**
+     * Sets the module path for the `jlink` command using `Path` objects.
+     *
+     * @param modulePaths the module path entries as `Path` objects; must not be null
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws NullPointerException if the module path entries are null
+     */
     public JlinkCLIBuilder modulePath(Path... modulePaths) {
         Objects.requireNonNull(modulePaths, "Module path entries cannot be null");
         return modulePath(Arrays.stream(modulePaths).map(Path::toString).toArray(String[]::new));
     }
 
+    /**
+     * Adds the `--no-header-files` option to the `jlink` command.
+     *
+     * @return the current `JlinkCLIBuilder` instance
+     */
     public JlinkCLIBuilder noHeaderFiles() {
         this.arguments.add("--no-header-files");
         return this;
     }
 
+    /**
+     * Adds the `--no-man-pages` option to the `jlink` command.
+     *
+     * @return the current `JlinkCLIBuilder` instance
+     */
     public JlinkCLIBuilder noManPages() {
         this.arguments.add("--no-man-pages");
         return this;
     }
 
+    /**
+     * Sets the output directory for the `jlink` command.
+     *
+     * @param path the output directory; must not be null
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws NullPointerException if the output path is null
+     */
     public JlinkCLIBuilder output(Path path) {
         Objects.requireNonNull(path, "Output path cannot be null");
         this.arguments.add("--output " + path);
         return this;
     }
 
+    /**
+     * Saves the options used in the `jlink` command to a file.
+     *
+     * @param file the file to save the options to; must not be null
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws NullPointerException if the file is null
+     */
     public JlinkCLIBuilder saveOptions(Path file) {
         Objects.requireNonNull(file, "Options file cannot be null");
         this.arguments.add("--save-opts " + file);
         return this;
     }
 
+    /**
+     * Suggests providers for the `jlink` command.
+     *
+     * @param serviceTypes the service types to suggest providers for; can be empty
+     * @return the current `JlinkCLIBuilder` instance
+     */
     public JlinkCLIBuilder suggestProviders(String... serviceTypes) {
         if (serviceTypes == null || serviceTypes.length == 0) {
             this.arguments.add("--suggest-providers");
@@ -178,33 +302,69 @@ public class JlinkCLIBuilder implements CLIBuilder<Process, JlinkCLIBuilder> {
         return this;
     }
 
+    /**
+     * Adds the `--version` option to the `jlink` command.
+     *
+     * @return the current `JlinkCLIBuilder` instance
+     */
     public JlinkCLIBuilder version() {
         this.arguments.add("--version");
         return this;
     }
 
+    /**
+     * Includes the specified locales in the `jlink` command.
+     *
+     * @param locales the locales to include; must not be null
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws NullPointerException if the locales are null
+     */
     public JlinkCLIBuilder includeLocales(String... locales) {
         Objects.requireNonNull(locales, "Locales cannot be null");
         this.arguments.add("--include-locales=" + String.join(",", locales));
         return this;
     }
 
+    /**
+     * Sets the resource ordering pattern for the `jlink` command.
+     *
+     * @param patternList the pattern list; must not be null
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws NullPointerException if the pattern list is null
+     */
     public JlinkCLIBuilder orderResources(String patternList) {
         Objects.requireNonNull(patternList, "Pattern list cannot be null");
         this.arguments.add("--order-resources=" + patternList);
         return this;
     }
 
+    /**
+     * Adds the `--strip-debug` option to the `jlink` command.
+     *
+     * @return the current `JlinkCLIBuilder` instance
+     */
     public JlinkCLIBuilder stripDebug() {
         this.arguments.add("--strip-debug");
         return this;
     }
 
+    /**
+     * Adds the `--generate-cds-archive` option to the `jlink` command.
+     *
+     * @return the current `JlinkCLIBuilder` instance
+     */
     public JlinkCLIBuilder generateCdsArchive() {
         this.arguments.add("--generate-cds-archive");
         return this;
     }
 
+    /**
+     * Adds an argument file to the `jlink` command.
+     *
+     * @param file the argument file; must not be null
+     * @return the current `JlinkCLIBuilder` instance
+     * @throws NullPointerException if the argument file is null
+     */
     public JlinkCLIBuilder addArgumentFile(Path file) {
         Objects.requireNonNull(file, "Argument file cannot be null");
         this.arguments.add("@" + file);

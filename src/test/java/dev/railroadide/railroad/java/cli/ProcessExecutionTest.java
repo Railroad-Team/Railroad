@@ -9,6 +9,10 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Tests for the {@link ProcessExecution} utility class, specifically focusing on its timeout
+ * and interruption handling during process execution.
+ */
 class ProcessExecutionTest {
 
     @Test

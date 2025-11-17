@@ -2,6 +2,9 @@ package dev.railroadide.railroad.java.cli;
 
 import java.lang.reflect.Field;
 
+/**
+ * Utility class for accessing private fields of CLI builder classes using reflection for testing purposes.
+ */
 final class CLIReflection {
     private CLIReflection() {
     }

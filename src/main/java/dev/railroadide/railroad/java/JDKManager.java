@@ -19,6 +19,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * for quick lookup. Provides helpers to refresh the cache and query the discovered installations.
  */
 public class JDKManager {
+    /**
+     * The name of the Java executable, platform-dependent (e.g., "java.exe" on Windows, "java" on Linux/macOS).
+     */
     public static final String JAVA_EXECUTABLE_NAME = OperatingSystem.CURRENT == OperatingSystem.WINDOWS ? "java.exe" : "java";
 
     private static final List<String> WIN_JDK_PATHS = List.of(

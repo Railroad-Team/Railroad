@@ -9,6 +9,15 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Builder for configuring and executing {@code jstack} backed by a {@link JDK}.
+ * <p>
+ * Provides helpers to point {@code jstack} at a target process, toggle verbosity,
+ * and pass through Java launcher options before running the tool.
+ * </p>
+ *
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/jstack.html">jstack command documentation</a>
+ */
 public class JstackCLIBuilder implements CLIBuilder<Process, JstackCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "jstack.exe" : "jstack";
 
@@ -25,6 +34,12 @@ public class JstackCLIBuilder implements CLIBuilder<Process, JstackCLIBuilder> {
         this.jdk = Objects.requireNonNull(jdk, "JDK cannot be null");
     }
 
+    /**
+     * Constructs a new builder that uses the supplied {@link JDK}.
+     *
+     * @param jdk the JDK to invoke {@code jstack} from
+     * @return a builder ready for configuration
+     */
     public static JstackCLIBuilder create(JDK jdk) {
         return new JstackCLIBuilder(jdk);
     }
@@ -67,6 +82,12 @@ public class JstackCLIBuilder implements CLIBuilder<Process, JstackCLIBuilder> {
         return this;
     }
 
+    /**
+     * Targets {@code jstack} at a numeric process ID.
+     *
+     * @param pid positive process identifier
+     * @return this builder
+     */
     public JstackCLIBuilder processId(long pid) {
         if (pid <= 0)
             throw new IllegalArgumentException("PID must be positive");
@@ -75,27 +96,54 @@ public class JstackCLIBuilder implements CLIBuilder<Process, JstackCLIBuilder> {
         return this;
     }
 
+    /**
+     * Targets {@code jstack} at a string-based process identifier (host:pid style).
+     *
+     * @param pid process identifier
+     * @return this builder
+     */
     public JstackCLIBuilder processId(String pid) {
         Objects.requireNonNull(pid, "PID cannot be null");
         this.processId = pid;
         return this;
     }
 
+    /**
+     * Adds {@code -l} for a long thread listing.
+     *
+     * @return this builder
+     */
     public JstackCLIBuilder longListing() {
         this.arguments.add("-l");
         return this;
     }
 
+    /**
+     * Requests the {@code -help} summary.
+     *
+     * @return this builder
+     */
     public JstackCLIBuilder help() {
         this.arguments.add("-help");
         return this;
     }
 
+    /**
+     * Requests the short {@code -h} help output.
+     *
+     * @return this builder
+     */
     public JstackCLIBuilder shortHelp() {
         this.arguments.add("-h");
         return this;
     }
 
+    /**
+     * Passes a JVM option through {@code -J}.
+     *
+     * @param option JVM argument
+     * @return this builder
+     */
     public JstackCLIBuilder javaOption(String option) {
         Objects.requireNonNull(option, "Java option cannot be null");
         this.arguments.add("-J" + option);

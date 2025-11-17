@@ -9,6 +9,14 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Builder for launching {@code rmid} daemons via a specified {@link JDK} installation.
+ * <p>
+ * Offers helpers for JVM options, policy files, logging, ports, and lifecycle controls.
+ * </p>
+ *
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/rmid.html">rmid command documentation</a>
+ */
 public class RmidCLIBuilder implements CLIBuilder<Process, RmidCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "rmid.exe" : "rmid";
 
@@ -24,6 +32,13 @@ public class RmidCLIBuilder implements CLIBuilder<Process, RmidCLIBuilder> {
         this.jdk = Objects.requireNonNull(jdk, "JDK cannot be null");
     }
 
+    /**
+     * Creates a new {@link RmidCLIBuilder} for the provided {@link JDK}.
+     *
+     * @param jdk the JDK to use when launching {@code rmid}; must not be null
+     * @return a fresh {@link RmidCLIBuilder} instance
+     * @throws NullPointerException if the JDK is null
+     */
     public static RmidCLIBuilder create(JDK jdk) {
         return new RmidCLIBuilder(jdk);
     }
@@ -66,18 +81,40 @@ public class RmidCLIBuilder implements CLIBuilder<Process, RmidCLIBuilder> {
         return this;
     }
 
+    /**
+     * Adds a child process option flag (-C) to the {@code rmid} command.
+     *
+     * @param option the option to pass; must not be null
+     * @return the current {@link RmidCLIBuilder} instance
+     * @throws NullPointerException if the option is null
+     */
     public RmidCLIBuilder childProcessOption(String option) {
         Objects.requireNonNull(option, "Child process option cannot be null");
         this.arguments.add("-C" + option);
         return this;
     }
 
+    /**
+     * Passes a JVM argument through to the {@code java} launcher.
+     *
+     * @param option the JVM argument; must not be null
+     * @return the current {@link RmidCLIBuilder} instance
+     * @throws NullPointerException if the option is null
+     */
     public RmidCLIBuilder javaOption(String option) {
         Objects.requireNonNull(option, "Java option cannot be null");
         this.arguments.add("-J" + option);
         return this;
     }
 
+    /**
+     * Sets the activation execution policy for the {@code rmid} daemon.
+     *
+     * @param policy the execution policy; must not be null or blank
+     * @return the current {@link RmidCLIBuilder} instance
+     * @throws NullPointerException     if the policy is null
+     * @throws IllegalArgumentException if the policy is blank
+     */
     public RmidCLIBuilder execPolicy(String policy) {
         Objects.requireNonNull(policy, "Execution policy cannot be null");
         if (policy.isBlank())
@@ -87,6 +124,13 @@ public class RmidCLIBuilder implements CLIBuilder<Process, RmidCLIBuilder> {
         return this;
     }
 
+    /**
+     * Logs output from {@code rmid} to the specified directory.
+     *
+     * @param directory the directory for log files; must not be null
+     * @return the current {@link RmidCLIBuilder} instance
+     * @throws NullPointerException if the directory is null
+     */
     public RmidCLIBuilder logDirectory(String directory) {
         Objects.requireNonNull(directory, "Log directory cannot be null");
         this.arguments.add("-log");
@@ -94,11 +138,25 @@ public class RmidCLIBuilder implements CLIBuilder<Process, RmidCLIBuilder> {
         return this;
     }
 
+    /**
+     * Logs output from {@code rmid} to the specified directory.
+     *
+     * @param directory the directory for log files; must not be null
+     * @return the current {@link RmidCLIBuilder} instance
+     * @throws NullPointerException if the directory is null
+     */
     public RmidCLIBuilder logDirectory(Path directory) {
         Objects.requireNonNull(directory, "Log directory cannot be null");
         return logDirectory(directory.toString());
     }
 
+    /**
+     * Sets the port number for the {@code rmid} daemon.
+     *
+     * @param port the port to listen on (1-65535)
+     * @return the current {@link RmidCLIBuilder} instance
+     * @throws IllegalArgumentException if the port is outside the valid range
+     */
     public RmidCLIBuilder port(int port) {
         if (port <= 0 || port > 65535)
             throw new IllegalArgumentException("Port must be between 1 and 65535");
@@ -107,6 +165,11 @@ public class RmidCLIBuilder implements CLIBuilder<Process, RmidCLIBuilder> {
         return this;
     }
 
+    /**
+     * Adds the {@code -stop} flag to shut down a running {@code rmid} daemon.
+     *
+     * @return the current {@link RmidCLIBuilder} instance
+     */
     public RmidCLIBuilder stop() {
         this.arguments.add("-stop");
         return this;

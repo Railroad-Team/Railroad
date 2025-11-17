@@ -9,6 +9,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Tests for the {@link JarCLIBuilder} class, ensuring correct argument construction and behavior
+ * for the `jar` command-line tool.
+ */
 class JarCLIBuilderTest {
 
     @Test

@@ -9,6 +9,15 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Fluent builder for configuring and running the {@code jstat} diagnostic utility shipped with a {@link JDK}.
+ * <p>
+ * Provides helpers for selecting general options, stat counters, VM identifiers, and sampling intervals
+ * before executing {@code jstat} via {@link ProcessExecution}.
+ * </p>
+ *
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/jstat.html">jstat command documentation</a>
+ */
 public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "jstat.exe" : "jstat";
 
@@ -30,6 +39,12 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
         this.jdk = Objects.requireNonNull(jdk, "JDK cannot be null");
     }
 
+    /**
+     * Instantiates a builder bound to the given {@link JDK}.
+     *
+     * @param jdk the JDK that provides {@code jstat}
+     * @return a new builder instance
+     */
     public static JstatCLIBuilder create(JDK jdk) {
         return new JstatCLIBuilder(jdk);
     }
@@ -73,21 +88,43 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
         return this;
     }
 
+    /**
+     * Requests {@code -help} output from {@code jstat}.
+     *
+     * @return this builder
+     */
     public JstatCLIBuilder help() {
         selectGeneralOption("-help");
         return this;
     }
 
+    /**
+     * Adds {@code -options} to list available statistics.
+     *
+     * @return this builder
+     */
     public JstatCLIBuilder listStatOptions() {
         selectGeneralOption("-options");
         return this;
     }
 
+    /**
+     * Specifies a pre-defined stat option.
+     *
+     * @param option stat option
+     * @return this builder
+     */
     public JstatCLIBuilder statOption(StatOption option) {
         Objects.requireNonNull(option, "Stat option cannot be null");
         return statOption(option.getFlag());
     }
 
+    /**
+     * Specifies a custom stat option flag.
+     *
+     * @param option stat option flag
+     * @return this builder
+     */
     public JstatCLIBuilder statOption(String option) {
         ensureGeneralOptionNotSet();
         Objects.requireNonNull(option, "Stat option cannot be null");
@@ -98,12 +135,23 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
         return this;
     }
 
+    /**
+     * Requests timestamps via {@code -t}.
+     *
+     * @return this builder
+     */
     public JstatCLIBuilder showTimestamp() {
         ensureGeneralOptionNotSet();
         this.arguments.add("-t");
         return this;
     }
 
+    /**
+     * Inserts {@code -h <lines>} to repeat headers.
+     *
+     * @param lines header frequency
+     * @return this builder
+     */
     public JstatCLIBuilder headerEvery(int lines) {
         ensureGeneralOptionNotSet();
         if (lines < 0)
@@ -114,6 +162,12 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
         return this;
     }
 
+    /**
+     * Adds a JVM argument with {@code -J}.
+     *
+     * @param option JVM option
+     * @return this builder
+     */
     public JstatCLIBuilder javaOption(String option) {
         ensureGeneralOptionNotSet();
         Objects.requireNonNull(option, "Java option cannot be null");
@@ -124,6 +178,12 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
         return this;
     }
 
+    /**
+     * Adds multiple JVM options.
+     *
+     * @param options JVM options
+     * @return this builder
+     */
     public JstatCLIBuilder javaOptions(String... options) {
         Objects.requireNonNull(options, "Java options cannot be null");
         for (String option : options) {
@@ -133,6 +193,12 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
         return this;
     }
 
+    /**
+     * Targets a VM using its numeric PID.
+     *
+     * @param pid process identifier
+     * @return this builder
+     */
     public JstatCLIBuilder vmId(long pid) {
         ensureGeneralOptionNotSet();
         if (pid <= 0)
@@ -142,6 +208,12 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
         return this;
     }
 
+    /**
+     * Targets a VM using a string identifier.
+     *
+     * @param vmIdentifier VM identifier
+     * @return this builder
+     */
     public JstatCLIBuilder vmId(String vmIdentifier) {
         ensureGeneralOptionNotSet();
         Objects.requireNonNull(vmIdentifier, "VM identifier cannot be null");
@@ -152,6 +224,13 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
         return this;
     }
 
+    /**
+     * Sets the sampling interval via {@code <value><unit>}.
+     *
+     * @param interval interval value
+     * @param unit     time unit
+     * @return this builder
+     */
     public JstatCLIBuilder samplingInterval(long interval, TimeUnit unit) {
         ensureGeneralOptionNotSet();
         if (interval <= 0)
@@ -162,6 +241,12 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
         return this;
     }
 
+    /**
+     * Configures the number of samples to collect.
+     *
+     * @param count sample count
+     * @return this builder
+     */
     public JstatCLIBuilder sampleCount(int count) {
         ensureGeneralOptionNotSet();
         if (count <= 0)

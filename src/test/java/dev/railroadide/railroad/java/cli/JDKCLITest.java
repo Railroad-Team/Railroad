@@ -9,6 +9,9 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+/**
+ * Tests for the {@link JDKCLI} class, ensuring that CLI builders correctly reference the associated JDK.
+ */
 class JDKCLITest {
     private final JDK jdk = TestJdks.create(21);
 

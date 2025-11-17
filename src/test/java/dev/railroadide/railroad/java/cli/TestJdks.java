@@ -7,6 +7,9 @@ import dev.railroadide.railroad.utility.JavaVersion;
 import java.nio.file.Path;
 import java.util.UUID;
 
+/**
+ * Utility class for creating and retrieving JDK instances for testing purposes.
+ */
 final class TestJdks {
     private TestJdks() {
     }

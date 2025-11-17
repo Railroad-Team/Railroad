@@ -9,6 +9,14 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Builder to configure {@code jstatd} daemon processes using a specific {@link JDK}.
+ * <p>
+ * Enables toggles for registry/connector ports, RMI object names, and runtime options.
+ * </p>
+ *
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/jstatd.html">jstatd command documentation</a>
+ */
 public class JstatdCLIBuilder implements CLIBuilder<Process, JstatdCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "jstatd.exe" : "jstatd";
 
@@ -24,6 +32,12 @@ public class JstatdCLIBuilder implements CLIBuilder<Process, JstatdCLIBuilder> {
         this.jdk = Objects.requireNonNull(jdk, "JDK cannot be null");
     }
 
+    /**
+     * Creates a builder tied to the provided {@link JDK}.
+     *
+     * @param jdk the JDK providing {@code jstatd}
+     * @return a new builder instance
+     */
     public static JstatdCLIBuilder create(JDK jdk) {
         return new JstatdCLIBuilder(jdk);
     }
@@ -66,11 +80,22 @@ public class JstatdCLIBuilder implements CLIBuilder<Process, JstatdCLIBuilder> {
         return this;
     }
 
+    /**
+     * Adds {@code -nr} to disable the internal registry.
+     *
+     * @return this builder
+     */
     public JstatdCLIBuilder noInternalRegistry() {
         this.arguments.add("-nr");
         return this;
     }
 
+    /**
+     * Sets a specific registry port with {@code -p}.
+     *
+     * @param port registry port
+     * @return this builder
+     */
     public JstatdCLIBuilder registryPort(int port) {
         validatePort(port, "Registry port must be between 1 and 65535");
         this.arguments.add("-p");
@@ -78,6 +103,12 @@ public class JstatdCLIBuilder implements CLIBuilder<Process, JstatdCLIBuilder> {
         return this;
     }
 
+    /**
+     * Sets a connector port via {@code -r}.
+     *
+     * @param port connector port
+     * @return this builder
+     */
     public JstatdCLIBuilder connectorPort(int port) {
         validatePort(port, "Connector port must be between 1 and 65535");
         this.arguments.add("-r");
@@ -85,6 +116,12 @@ public class JstatdCLIBuilder implements CLIBuilder<Process, JstatdCLIBuilder> {
         return this;
     }
 
+    /**
+     * Provides an RMI object name using {@code -n}.
+     *
+     * @param name object name
+     * @return this builder
+     */
     public JstatdCLIBuilder rmiObjectName(String name) {
         Objects.requireNonNull(name, "RMI object name cannot be null");
         if (name.isBlank())
@@ -95,6 +132,12 @@ public class JstatdCLIBuilder implements CLIBuilder<Process, JstatdCLIBuilder> {
         return this;
     }
 
+    /**
+     * Supplies a JVM option via {@code -J}.
+     *
+     * @param option JVM option
+     * @return this builder
+     */
     public JstatdCLIBuilder javaOption(String option) {
         Objects.requireNonNull(option, "Java option cannot be null");
         this.arguments.add("-J" + option);

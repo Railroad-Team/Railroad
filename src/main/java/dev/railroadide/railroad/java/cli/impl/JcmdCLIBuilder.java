@@ -9,6 +9,15 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * A fluent builder for constructing and executing {@code jcmd} commands.
+ * <p>
+ * This builder provides methods to interact with a running JVM, allowing for
+ * diagnostic command execution, listing JVM processes, and retrieving help information.
+ * </p>
+ *
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/jcmd.html">jcmd command documentation</a>
+ */
 public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "jcmd.exe" : "jcmd";
 
@@ -28,6 +37,12 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
         this.jdk = Objects.requireNonNull(jdk, "JDK cannot be null");
     }
 
+    /**
+     * Creates a new {@code JcmdCLIBuilder} instance.
+     *
+     * @param jdk The JDK to use for executing the {@code jcmd} command.
+     * @return A new builder instance.
+     */
     public static JcmdCLIBuilder create(JDK jdk) {
         return new JcmdCLIBuilder(jdk);
     }
@@ -70,6 +85,11 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
         return this;
     }
 
+    /**
+     * Configures the builder to list all running Java processes. Corresponds to the {@code -l} option.
+     *
+     * @return This builder instance.
+     */
     public JcmdCLIBuilder listJavaProcesses() {
         this.mode = Mode.LIST;
         this.commandFile = null;
@@ -77,6 +97,11 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
         return this;
     }
 
+    /**
+     * Configures the builder to display help information. Corresponds to the {@code -h} option.
+     *
+     * @return This builder instance.
+     */
     public JcmdCLIBuilder showHelp() {
         this.mode = Mode.HELP;
         this.commandFile = null;
@@ -84,6 +109,13 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
         return this;
     }
 
+    /**
+     * Sets the target JVM by its process ID (PID).
+     *
+     * @param pid The process ID of the target JVM.
+     * @return This builder instance.
+     * @throws IllegalArgumentException if the PID is negative.
+     */
     public JcmdCLIBuilder targetPid(long pid) {
         if (pid < 0)
             throw new IllegalArgumentException("PID cannot be negative");
@@ -93,6 +125,12 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
         return this;
     }
 
+    /**
+     * Sets the target JVM by its main class name.
+     *
+     * @param mainClass The main class name of the target JVM.
+     * @return This builder instance.
+     */
     public JcmdCLIBuilder targetMainClass(String mainClass) {
         Objects.requireNonNull(mainClass, "Main class cannot be null");
         this.target = Target.mainClass(mainClass);
@@ -100,12 +138,23 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
         return this;
     }
 
+    /**
+     * Sets the target to all running Java processes. Corresponds to using "0" as the PID.
+     *
+     * @return This builder instance.
+     */
     public JcmdCLIBuilder targetAllJavaProcesses() {
         this.target = Target.pid("0");
         this.mode = Mode.COMMAND;
         return this;
     }
 
+    /**
+     * Executes diagnostic commands from a specified file. Corresponds to the {@code -f} option.
+     *
+     * @param file The path to the command file.
+     * @return This builder instance.
+     */
     public JcmdCLIBuilder executeCommandsFromFile(Path file) {
         Objects.requireNonNull(file, "Command file cannot be null");
         this.commandFile = file;
@@ -113,6 +162,13 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
         return this;
     }
 
+    /**
+     * Adds a diagnostic command to be executed.
+     *
+     * @param command The name of the diagnostic command (e.g., "GC.heap_info").
+     * @param args    Optional arguments for the command.
+     * @return This builder instance.
+     */
     public JcmdCLIBuilder addDiagnosticCommand(String command, String... args) {
         Objects.requireNonNull(command, "Command name cannot be null");
         var commandTokens = new ArrayList<String>();
@@ -126,6 +182,11 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
         return this;
     }
 
+    /**
+     * Executes the "PerfCounter.print" diagnostic command.
+     *
+     * @return This builder instance.
+     */
     public JcmdCLIBuilder perfCounterPrint() {
         return addDiagnosticCommand("PerfCounter.print");
     }
@@ -182,12 +243,18 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
         }
     }
 
+    /**
+     * Represents the operation mode for the {@code jcmd} command.
+     */
     private enum Mode {
         COMMAND,
         LIST,
         HELP
     }
 
+    /**
+     * Represents the target JVM for the {@code jcmd} command.
+     */
     private record Target(TargetType type, String value) {
         static Target none() {
             return new Target(TargetType.NONE, null);
@@ -202,6 +269,9 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
         }
     }
 
+    /**
+     * Represents the type of target for the {@code jcmd} command.
+     */
     private enum TargetType {
         NONE,
         PID,
