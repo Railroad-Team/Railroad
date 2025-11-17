@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.java;
 
+import dev.railroadide.railroad.java.cli.JDKCLI;
 import dev.railroadide.railroad.utility.JavaVersion;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -7,8 +8,10 @@ import lombok.ToString;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Properties;
 
 @ToString
@@ -18,12 +21,14 @@ public final class JDK {
     private final String name;
     private final JavaVersion version;
     private final Brand brand;
+    private final JDKCLI cli;
 
     public JDK(Path path, String name, JavaVersion version, Brand brand) {
         this.path = path;
         this.name = name;
         this.version = version;
         this.brand = brand;
+        this.cli = new JDKCLI(this);
     }
 
     public JDK(Path path, String name, JavaVersion version) {
@@ -31,6 +36,7 @@ public final class JDK {
         this.name = name;
         this.version = version;
         this.brand = Brand.from(this);
+        this.cli = new JDKCLI(this);
     }
 
     public Path path() {
@@ -47,6 +53,26 @@ public final class JDK {
 
     public Brand brand() {
         return brand;
+    }
+
+    public JDKCLI cli() {
+        return cli;
+    }
+
+    /**
+     * Resolves the absolute path to a tool executable within this JDK installation.
+     *
+     * @param executableName filename of the CLI tool (e.g. {@code jar} or {@code keytool})
+     * @return absolute path to the executable, best-effort even when this JDK descriptor points directly to {@code bin}
+     */
+    public Path executablePath(String executableName) {
+        Objects.requireNonNull(executableName, "Executable name cannot be null");
+        Path binDirectory = path.resolve("bin");
+        Path candidate = binDirectory.resolve(executableName);
+        if (Files.exists(candidate))
+            return candidate;
+
+        return path.resolve(executableName);
     }
 
     public enum Brand {

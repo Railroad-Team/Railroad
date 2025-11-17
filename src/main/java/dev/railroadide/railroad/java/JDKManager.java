@@ -19,7 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * for quick lookup. Provides helpers to refresh the cache and query the discovered installations.
  */
 public class JDKManager {
-    public static final String JAVA_EXECUTABLE_NAME = javaExecutableName();
+    public static final String JAVA_EXECUTABLE_NAME = OperatingSystem.CURRENT == OperatingSystem.WINDOWS ? "java.exe" : "java";
 
     private static final List<String> WIN_JDK_PATHS = List.of(
         "{drive}:\\Program Files\\Java",
@@ -299,14 +299,5 @@ public class JDKManager {
         }
 
         return new ArrayList<>(candidates);
-    }
-
-    /**
-     * Resolves the platform-specific filename for a Java executable.
-     *
-     * @return {@code java.exe} on Windows; otherwise {@code java}
-     */
-    private static String javaExecutableName() {
-        return OperatingSystem.CURRENT == OperatingSystem.WINDOWS ? "java.exe" : "java";
     }
 }
