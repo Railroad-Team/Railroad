@@ -29,6 +29,127 @@ railroad.generic.browse=Обзор
 railroad.generic.enable=Включить
 railroad.generic.disable=Выключить
 railroad.generic.dismiss=Отклонить
+railroad.generic.unknown=Неизвестно
+
+# =============================================================================
+# КОНФИГУРАЦИЯ ЗАПУСКА
+# =============================================================================
+railroad.ide.toolbar.edit_run_configurations=Редактировать конфигурации запуска/отладки
+railroad.ide.toolbar.run_configurations.tooltip=Выберите конфигурацию запуска
+railroad.ide.toolbar.run.tooltip=Запустить выбранную конфигурацию
+railroad.ide.toolbar.debug.tooltip=Отладить выбранную конфигурацию
+railroad.ide.toolbar.debug.restart.tooltip=Перезапустить конфигурацию в режиме отладки
+railroad.ide.toolbar.stop.tooltip=Остановить конфигурацию
+railroad.ide.toolbar.stop.all=Остановить всё
+railroad.ide.toolbar.restart.tooltip=Перезапустить конфигурацию
+railroad.ide.toolbar.run_configurations.more_actions.tooltip=Показать дополнительные действия для выбранной конфигурации
+railroad.ide.toolbar.no_run_configurations=Нет конфигураций запуска
+railroad.window.ide.toolbar.edit_run_configurations=Редактировать конфигурации запуска/отладки
+railroad.runconfig.tree.empty=Конфигураций запуска пока нет.
+railroad.runconfig.tree.empty_filtered=Нет конфигураций, соответствующих фильтру.
+railroad.runconfig.tree.search_prompt=Поиск конфигураций запуска...
+railroad.runconfig.run.tooltip=Запустить конфигурацию
+railroad.runconfig.debug.tooltip=Отладить конфигурацию
+railroad.runconfig.moreactions.tooltip=Показать дополнительные действия для этой конфигурации
+railroad.runconfig.action.run=Запустить
+railroad.runconfig.action.debug=Отладка
+railroad.runconfig.details.empty.title=Создать конфигурацию запуска
+railroad.runconfig.details.empty.description=Используйте кнопку +, чтобы добавить первую конфигурацию.
+railroad.runconfig.gradle.configuration.task.invalid=Неверная задача Gradle.
+railroad.run_configuration.edit=Редактировать конфигурацию
+railroad.run_configuration.pin=Закрепить на панели
+railroad.run_configuration.delete=Удалить конфигурацию
+
+# Типы конфигураций запуска
+railroad.runconfig.shellscript=Shell-скрипт
+railroad.runconfig.java_application=Java-приложение
+railroad.runconfig.jar_application=JAR-приложение
+railroad.runconfig.gradle=Задача Gradle
+railroad.runconfig.compound=Составная
+
+# Общие настройки конфигурации
+railroad.runconfig.general.title=Общие настройки
+railroad.runconfig.general.name.label=Название конфигурации
+railroad.runconfig.general.name.prompt=Введите уникальное название конфигурации
+railroad.runconfig.general.name.validation.required=Название конфигурации обязательно.
+railroad.runconfig.general.name.validation.duplicate=Конфигурация с таким названием уже существует.
+railroad.runconfig.general.allowMultipleInstances.label=Разрешить несколько экземпляров
+railroad.runconfig.general.showConsoleOnRun.label=Показывать консоль при запуске
+
+# Составные конфигурации
+railroad.runconfig.compound.configurations.title=Настройки составной конфигурации
+railroad.runconfig.compound.configuration.runMode.label=Режим запуска
+railroad.runconfig.compound.runMode.=Составной режим запуска
+railroad.runconfig.compound.runMode.parallel=Параллельный
+railroad.runconfig.compound.runMode.sequential=Последовательный
+railroad.runconfig.compound.configuration.configurations.label=Включённые конфигурации
+railroad.runconfig.compound.configuration.configurations.combo.prompt=Выберите конфигурацию...
+railroad.runconfig.compound.configuration.configurations.add=Добавить
+railroad.runconfig.compound.configuration.configurations.remove=Удалить
+railroad.runconfig.compound.configuration.configurations.move_up=Переместить вверх
+railroad.runconfig.compound.configuration.configurations.move_down=Переместить вниз
+railroad.runconfig.compound.configuration.configurations.empty=Конфигурации ещё не выбраны.
+railroad.runconfig.compound.configuration.configurations.validation.required=Выберите хотя бы одну конфигурацию.
+railroad.runconfig.compound.configuration.configurations.entry_format=%s (%s)
+
+# Настройки Gradle
+railroad.runconfig.gradle.configuration.title=Настройки Gradle
+railroad.runconfig.gradle.configuration.task.label=Задача
+railroad.runconfig.gradle.configuration.task.prompt=например, build
+railroad.runconfig.gradle.configuration.projectPath.label=Директория проекта Gradle
+railroad.runconfig.gradle.configuration.envVariables.label=Переменные среды
+railroad.runconfig.gradle.configuration.envVariables.prompt=KEY=VALUE;KEY2=VALUE2
+railroad.runconfig.gradle.configuration.envVariables.invalid=Переменные среды должны быть в формате KEY=VALUE, разделённые точкой с запятой.
+railroad.runconfig.gradle.configuration.vmOptions.label=Опции VM
+railroad.runconfig.gradle.configuration.vmOptions.prompt=например, -Xmx1G
+railroad.runconfig.gradle.configuration.javaHome.label=Java home (необязательно)
+
+# Настройки JAR-приложения
+railroad.runconfig.jar_application.configuration.section.title=Настройки JAR
+railroad.runconfig.jar_application.configuration.jarPath.label=Исполняемый JAR-файл
+railroad.runconfig.jar_application.configuration.vmOptions.label=Опции VM
+railroad.runconfig.jar_application.configuration.vmOptions.prompt=например, -Xmx1G
+railroad.runconfig.jar_application.configuration.programArguments.label=Аргументы программы
+railroad.runconfig.jar_application.configuration.programArguments.prompt=Аргументы через пробел
+railroad.runconfig.jar_application.configuration.workingDirectory.label=Рабочая директория
+railroad.runconfig.jar_application.configuration.envVariables.label=Переменные среды
+railroad.runconfig.jar_application.configuration.envVariables.prompt=KEY=VALUE;KEY2=VALUE2
+railroad.runconfig.jar_application.configuration.envVariables.invalid=Переменные среды должны быть в формате KEY=VALUE, разделённые точкой с запятой.
+railroad.runconfig.jar_application.configuration.jre.label=Среда выполнения (JRE/JDK)
+
+# Настройки Java-приложения
+railroad.runconfig.java_application.configuration.section.title=Настройки Java-приложения
+railroad.runconfig.java_application.configuration.buildBeforeRun.label=Собирать перед запуском
+railroad.runconfig.java_application.configuration.jdk.label=JDK
+railroad.runconfig.java_application.configuration.mainClass.label=Главный класс
+railroad.runconfig.java_application.configuration.mainClass.prompt=com.example.Main
+railroad.runconfig.java_application.configuration.classpathEntries.label=Элементы classpath
+railroad.runconfig.java_application.configuration.classpathEntries.prompt=Path1;Path2;Path3
+railroad.runconfig.java_application.configuration.programArguments.label=Аргументы программы
+railroad.runconfig.java_application.configuration.programArguments.prompt=Аргументы через пробел
+railroad.runconfig.java_application.configuration.vmOptions.label=Опции VM
+railroad.runconfig.java_application.configuration.vmOptions.prompt=например, -Xmx1G
+railroad.runconfig.java_application.configuration.envVariables.label=Переменные среды
+railroad.runconfig.java_application.configuration.envVariables.prompt=KEY=VALUE;KEY2=VALUE2
+railroad.runconfig.java_application.configuration.envVariables.invalid=Переменные среды должны быть в формате KEY=VALUE, разделённые точкой с запятой.
+
+# Настройки Shell-скрипта
+railroad.runconfig.shell_script.configuration.section.title=Настройки Shell-скрипта
+railroad.runconfig.shell_script.configuration.executeMode.label=Режим выполнения
+railroad.runconfig.shell_script.configuration.scriptPath.label=Файл скрипта
+railroad.runconfig.shell_script.configuration.scriptText.label=Встроенный скрипт
+railroad.runconfig.shell_script.configuration.scriptText.prompt=Вставьте содержимое скрипта здесь
+railroad.runconfig.shell_script.configuration.scriptArgs.label=Аргументы скрипта
+railroad.runconfig.shell_script.configuration.scriptArgs.prompt=Аргументы через пробел
+railroad.runconfig.shell_script.configuration.workingDirectory.label=Рабочая директория
+railroad.runconfig.shell_script.configuration.envVariables.label=Переменные среды
+railroad.runconfig.shell_script.configuration.envVariables.prompt=KEY=VALUE;KEY2=VALUE2
+railroad.runconfig.shell_script.configuration.envVariables.invalid=Переменные среды должны быть в формате KEY=VALUE, разделённые точкой с запятой.
+railroad.runconfig.shell_script.configuration.interpreterPath.label=Путь к интерпретатору
+railroad.runconfig.shell_script.configuration.interpreterArgs.label=Аргументы интерпретатора
+railroad.runconfig.shell_script.configuration.interpreterArgs.prompt=Аргументы через пробел
+railroad.runconfig.shell_script.configuration.executeInTerminal.label=Запустить в терминале
+
 
 # =============================================================================
 # ЭКРАН ПРИВЕТСТВИЯ
@@ -81,6 +202,35 @@ settings.tree.keybinds=Горячие клавиши
 railroad.settings.general.language.title=Язык
 railroad.settings.general.language.description=Выберите язык для интерфейса Railroad.
 
+railroad.settings.directories.empty=Папки ещё не настроены.
+railroad.settings.directories.add.tooltip=Добавить папку в список.
+railroad.settings.directories.add.title=Выберите папку
+railroad.settings.directories.remove.tooltip=Удалить выбранную папку из списка.
+
+railroad.settings.files.empty=Файлы ещё не выбраны.
+railroad.settings.files.add.tooltip=Добавить файл в список.
+railroad.settings.files.add.title=Выберите файл
+railroad.settings.files.remove.tooltip=Удалить выбранный файл из списка.
+
+railroad.settings.ide.jdk_management.title=Управление JDK
+railroad.settings.ide.jdk_management.description=Контролируйте, как Railroad обнаруживает и управляет установленными JDK.
+railroad.settings.ide.jdk_management.additional_jdk_scan_paths.title=Дополнительные пути сканирования
+railroad.settings.ide.jdk_management.additional_jdk_scan_paths.description=Сканировать эти директории вместе с обычными при поиске JDK.
+railroad.settings.ide.jdk_management.excluded_jdk_scan_paths.title=Исключённые пути сканирования
+railroad.settings.ide.jdk_management.excluded_jdk_scan_paths.description=Никогда не сканировать эти директории при поиске JDK.
+railroad.settings.ide.jdk_management.additional_jdks.title=Дополнительные JDK
+railroad.settings.ide.jdk_management.additional_jdks.description=Всегда включать эти JDK, даже если они не найдены автоматически.
+railroad.settings.ide.jdk_management.java_version_detection_timeout_ms.title=Таймаут определения версии
+railroad.settings.ide.jdk_management.java_version_detection_timeout_ms.description=Максимальное время в миллисекундах для определения версии Java перед отменой сканирования.
+railroad.settings.ide.jdk_management.detected.title=Обнаруженные JDK
+railroad.settings.ide.jdk_management.detected.refresh.tooltip=Пересканировать систему на наличие JDK
+railroad.settings.ide.jdk_management.detected.empty=JDK ещё не обнаружены.
+railroad.settings.ide.jdk_management.detected.count=Обнаружено JDK: %d
+railroad.settings.ide.jdk_management.detected.unknown_version=Неизвестная версия
+railroad.settings.ide.jdk_management.detected.version=Java %s
+railroad.settings.ide.jdk_management.detected.name=Дистрибутив: %s
+railroad.settings.ide.jdk_management.detected.path=Путь: %s
+
 # Настройки горячих клавиш
 railroad.settings.keybinds.title=Горячие клавиши
 railroad.settings.keybinds.subtitle=Настройте сочетания клавиш под свой стиль работы.
@@ -99,6 +249,7 @@ railroad.settings.keybinds.category.general=Основное
 # Горячие клавиши
 railroad.settings.keybinds.copy=Копировать
 railroad.settings.keybinds.paste=Вставить
+railroad.settings.keybinds.fullscreen=Полноэкранный режим
 
 # Настройки плагинов
 railroad.window.plugins.title=Плагины
@@ -109,7 +260,7 @@ railroad.plugins.details.author=Автор:
 railroad.plugins.details.website=Сайт:
 railroad.plugins.details.license=Лицензия:
 railroad.plugins.details.id=ID плагина:
-railroad.plugins.details.main_class=Main Class:
+railroad.plugins.details.main_class=Главный класс:
 railroad.plugins.details.dependencies=Зависимости:
 railroad.plugins.placeholder.title=Выберите плагин чтобы просмотреть его подробную информацию
 railroad.plugins.placeholder.subtitle=Выберите плагин из списка чтобы посмотреть, что он добавляет.
@@ -124,7 +275,7 @@ railroad.plugins.details.label.identifier=Идентификатор
 railroad.plugins.details.label.version=Версия
 railroad.plugins.details.label.author=Автор
 railroad.plugins.details.label.license=Лицензия
-railroad.plugins.details.label.main_class=Main Class
+railroad.plugins.details.label.main_class=Главный класс
 railroad.plugins.details.label.dependencies=Зависимости
 
 # Настройки внешнего вида
@@ -370,7 +521,7 @@ railroad.project.creation.mod_id.info=Уникальный идентифика�
 railroad.project.creation.mod_name=Название мода
 railroad.project.creation.mod_name.prompt=My Awesome Mod
 railroad.project.creation.mod_name.info=Читаемое название, отображаемое игрокам и в метаданных мода.
-railroad.project.creation.main_class=Main Class
+railroad.project.creation.main_class=Главный класс
 railroad.project.creation.main_class.prompt=com.example.MyAwesomeMod
 railroad.project.creation.main_class.info=Класс точки входа, сгенерированный для инициализатора мода.
 
@@ -450,10 +601,14 @@ railroad.project.creation.sources_url.info=Ссылка на репозитор�
 railroad.project.creation.location.error.required=Укажите расположение проекта.
 railroad.project.creation.location.error.cannot_create=Не удалось создать папку проекта.
 railroad.project.creation.location.error.not_directory=Выбранный путь не является директорией.
+railroad.project.creation.location.error.is_directory=Выбранный путь не является файлом.
 railroad.project.creation.location.warning.not_empty=Выбранная папка не пуста.
 railroad.project.creation.location.error.not_readable=Выбранная директория недоступна для чтения.
 railroad.project.creation.location.error.invalid_path=Выбранный путь недействителен.
 railroad.project.creation.location.warning.onedrive=Использование OneDrive для проектов не рекомендуется.
+railroad.project.creation.location.error.invalid_extension=Выбранный файл имеет недопустимое расширение.
+railroad.project.creation.location.error.invalid_jar=Выбранный JAR-файл недействителен.
+railroad.project.creation.location.warning.not_gradle_project=Выбранная директория, кажется, не является Gradle-проектом.
 railroad.project.creation.name.error.required=Укажите название проекта.
 railroad.project.creation.name.error.length_long=Название проекта слишком длинное (максимум 256 символов).
 railroad.project.creation.name.error.length_short=Название проекта слишком короткое (минимум 3 символа).
@@ -467,8 +622,10 @@ railroad.project.creation.mod_id.error.invalid_characters=Mod ID содержи�
 railroad.project.creation.mod_name.error.required=Укажите название мода.
 railroad.project.creation.mod_name.error.length_long=Название мода слишком длинное (максимум 256 символов).
 railroad.project.creation.mod_name.error.length_short=Название мода слишком короткое (минимум 5 символов).
-railroad.project.creation.main_class.error.required=Укажите main class.
-railroad.project.creation.main_class.error.invalid_characters=Main class содержит недопустимые символы.
+railroad.project.creation.main_class.error.required=Укажите главный класс.
+railroad.project.creation.main_class.error.invalid_characters=Главный класс содержит недопустимые символы.
+railroad.project.creation.qualified_main_class.error.required=Требуется указать полное имя главного класса.
+railroad.project.creation.qualified_main_class.error.invalid_characters=Полное имя главного класса содержит недопустимые символы
 railroad.project.creation.author.error.length_long=Имя автора слишком длинное (максимум 256 символов).
 railroad.project.creation.author.error.length_short=Имя автора слишком короткое (минимум 3 символа).
 railroad.project.creation.credits.error.length_long=Слишком длинный список благодарностей (максимум 256 символов).
