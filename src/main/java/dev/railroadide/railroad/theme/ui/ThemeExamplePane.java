@@ -25,7 +25,6 @@ import java.util.Arrays;
  * A modernized theme preview pane that shows a live UI demonstration.
  * Features various components styled according to the selected theme.
  */
-// TODO: Translate
 public class ThemeExamplePane {
     private final Stage stage;
     private final String themeName;
@@ -98,7 +97,13 @@ public class ThemeExamplePane {
         navigation.setAlignment(Pos.CENTER_LEFT);
         navigation.setPadding(new Insets(16, 0, 16, 0));
 
-        var navItems = Arrays.asList("Home", "Projects", "Settings", "Help");
+        var navItems = Arrays.asList(
+            "railroad.home.settings.appearance.preview.navigation.0",
+            "railroad.home.settings.appearance.preview.navigation.1",
+            "railroad.home.settings.appearance.preview.navigation.2",
+            "railroad.home.settings.appearance.preview.navigation.3"
+        );
+
         for (String item : navItems) {
             var navButton = new RRButton(item);
             navButton.setOnMouseEntered(e -> navButton.getStyleClass().add("theme-example-nav-button-hover"));
@@ -118,11 +123,11 @@ public class ThemeExamplePane {
         textFieldRow.setAlignment(Pos.CENTER_LEFT);
 
         var textField = new RRTextField();
-        textField.setPromptText("Enter text here...");
+        textField.setPromptText(L18n.localize("railroad.home.settings.appearance.preview.form.text_prompt"));
         textField.setPrefWidth(200);
 
         var passwordField = new PasswordField(); // TODO: Create RRPasswordField
-        passwordField.setPromptText("Password");
+        passwordField.setPromptText(L18n.localize("railroad.home.settings.appearance.preview.form.password_prompt"));
         passwordField.setPrefWidth(200);
 
         textFieldRow.getChildren().addAll(
@@ -134,14 +139,22 @@ public class ThemeExamplePane {
         controlsRow.setAlignment(Pos.CENTER_LEFT);
 
         var comboBox = new ComboBox<>(); // TODO: Use LocalizedComboBox
-        comboBox.getItems().addAll("Option 1", "Option 2", "Option 3");
-        comboBox.setValue("Option 1");
+        comboBox.getItems().addAll(
+            L18n.localize("railroad.home.settings.appearance.preview.form.combo_box.items.0"),
+            L18n.localize("railroad.home.settings.appearance.preview.form.combo_box.items.1"),
+            L18n.localize("railroad.home.settings.appearance.preview.form.combo_box.items.2")
+        );
+        comboBox.setValue(
+            L18n.localize("railroad.home.settings.appearance.preview.form.combo_box.items.0")
+        );
         comboBox.setPrefWidth(150);
 
-        var checkBox = new CheckBox("Enable feature"); // TODO: Create RRCheckBox
+        // TODO: Create RRCheckBox
+        var checkBox = new CheckBox(L18n.localize("railroad.home.settings.appearance.preview.form.check_box.label"));
         checkBox.setSelected(true);
 
-        var radioButton = new RadioButton("Radio option"); // TODO: Create RRRadioButton
+        // TODO: Create RRRadioButton
+        var radioButton = new RadioButton(L18n.localize("railroad.home.settings.appearance.preview.form.radio_button.label"));
         radioButton.setSelected(true);
 
         controlsRow.getChildren().addAll(
@@ -159,20 +172,21 @@ public class ThemeExamplePane {
 
         var listView = new RRListView<>();
         listView.getItems().addAll(
-            "Project 1 - Minecraft Mod",
-            "Project 2 - Fabric Plugin",
-            "Project 3 - Forge Extension",
-            "Project 4 - Neoforge Addon",
-            "Project 5 - Quilt Mod",
-            "Project 6 - Bukkit Plugin",
-            "Project 7 - Spigot Extension",
-            "Project 8 - Paper Addon"
+            L18n.localize("railroad.home.settings.appearance.preview.list.items.0"),
+            L18n.localize("railroad.home.settings.appearance.preview.list.items.1"),
+            L18n.localize("railroad.home.settings.appearance.preview.list.items.2"),
+            L18n.localize("railroad.home.settings.appearance.preview.list.items.3"),
+            L18n.localize("railroad.home.settings.appearance.preview.list.items.4"),
+            L18n.localize("railroad.home.settings.appearance.preview.list.items.5"),
+            L18n.localize("railroad.home.settings.appearance.preview.list.items.6"),
+            L18n.localize("railroad.home.settings.appearance.preview.list.items.7")
         );
         listView.setPrefHeight(250);
         listView.setMinHeight(200);
         listView.getStyleClass().add("theme-example-list-view");
 
         var table = new TableView<ProjectData>();
+        // TODO: Create LocalizedTableColumn
         var nameColumn = new TableColumn<ProjectData, String>("Name");
         var typeColumn = new TableColumn<ProjectData, String>("Type");
         var statusColumn = new TableColumn<ProjectData, String>("Status");
@@ -209,16 +223,16 @@ public class ThemeExamplePane {
         var buttonRow1 = new RRHBox(12);
         buttonRow1.setAlignment(Pos.CENTER_LEFT);
 
-        var primaryButton = new RRButton("Primary Button");
+        var primaryButton = new RRButton("railroad.home.settings.appearance.preview.button.primary");
         primaryButton.setVariant(RRButton.ButtonVariant.PRIMARY);
 
-        var secondaryButton = new RRButton("Secondary Button");
+        var secondaryButton = new RRButton("railroad.home.settings.appearance.preview.button.secondary");
         secondaryButton.setVariant(RRButton.ButtonVariant.SECONDARY);
 
-        var dangerButton = new RRButton("Danger Button");
+        var dangerButton = new RRButton("railroad.home.settings.appearance.preview.button.danger");
         dangerButton.setVariant(RRButton.ButtonVariant.DANGER);
 
-        var successButton = new RRButton("Success Button");
+        var successButton = new RRButton("railroad.home.settings.appearance.preview.button.success");
         successButton.setVariant(RRButton.ButtonVariant.SUCCESS);
 
         buttonRow1.getChildren().addAll(primaryButton, secondaryButton, dangerButton, successButton);
@@ -226,13 +240,13 @@ public class ThemeExamplePane {
         var buttonRow2 = new RRHBox(12);
         buttonRow2.setAlignment(Pos.CENTER_LEFT);
 
-        var ghostButton = new RRButton("Ghost Button");
+        var ghostButton = new RRButton("railroad.home.settings.appearance.preview.button.ghost");
         ghostButton.setVariant(RRButton.ButtonVariant.GHOST);
 
-        var smallButton = new RRButton("Small Button");
+        var smallButton = new RRButton("railroad.home.settings.appearance.preview.button.small");
         smallButton.setButtonSize(RRButton.ButtonSize.SMALL);
 
-        var largeButton = new RRButton("Large Button");
+        var largeButton = new RRButton("railroad.home.settings.appearance.preview.button.large");
         largeButton.setButtonSize(RRButton.ButtonSize.LARGE);
 
         var iconButton = new RRButton();

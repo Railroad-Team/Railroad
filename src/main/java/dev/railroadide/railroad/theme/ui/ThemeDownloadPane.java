@@ -33,6 +33,7 @@ public class ThemeDownloadPane {
 
     public ThemeDownloadPane(Window owner) {
         var mainContainer = new RRFormContainer();
+        mainContainer.getStyleClass().add("theme-download-container");
         mainContainer.setLocalizedTitle("railroad.home.settings.appearance.downloadtheme");
         mainContainer.setPadding(new Insets(24));
 

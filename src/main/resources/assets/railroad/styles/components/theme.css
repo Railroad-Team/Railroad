@@ -37,6 +37,12 @@
     -fx-border-color: -color-border-subtle;
 }
 
+.theme-download-container {
+    -fx-background-radius: 0px;
+    -fx-background-color: -color-bg-default;
+    -fx-border-radius: 0px;
+}
+
 .theme-download-description {
     -fx-font-size: 14px;
     -fx-text-fill: -color-fg-muted;
@@ -58,10 +64,6 @@
     -fx-border-color: transparent;
 }
 
-.theme-download-card {
-    -fx-background-color: -color-bg-subtle;
-}
-
 .theme-download-name {
     -fx-font-size: 16px;
     -fx-font-weight: bold;
@@ -76,4 +78,8 @@
 /* Theme download cell styling */
 .theme-download-cell {
     -fx-background-color: transparent;
+
+    .card {
+        -fx-background-color: -color-bg-subtle;
+    }
 }
