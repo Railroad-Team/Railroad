@@ -45,13 +45,15 @@ public class ThemeDownloadCell extends ListCell<Theme> {
 
         card = new RRCard(12, new Insets(16));
         card.setInteractive(false);
-        card.getStyleClass().add("theme-download-card");
+        card.getStyleClass().addAll("card", "compact");
 
         content = new RRHBox(16);
         content.setAlignment(Pos.CENTER_LEFT);
+        content.getStyleClass().add("transparent-background");
 
         infoSection = new RRVBox(4);
         infoSection.setAlignment(Pos.CENTER_LEFT);
+        infoSection.getStyleClass().add("transparent-background");
         HBox.setHgrow(infoSection, Priority.ALWAYS);
 
         themeNameLabel = new Label();
@@ -64,6 +66,7 @@ public class ThemeDownloadCell extends ListCell<Theme> {
 
         actionSection = new RRHBox(8);
         actionSection.setAlignment(Pos.CENTER_RIGHT);
+        actionSection.getStyleClass().add("transparent-background");
 
         previewButton = new RRButton();
         previewButton.setIcon(FontAwesomeSolid.EYE);

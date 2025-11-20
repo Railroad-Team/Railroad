@@ -319,12 +319,46 @@ railroad.home.settings.appearance.selecttheme=Select Theme
 # Theme preview
 railroad.home.settings.appearance.preview.title=Theme Preview
 railroad.home.settings.appearance.preview.subtitle=This preview shows how various UI components will look with the selected theme.
-railroad.home.settings.appearance.preview.form.components=Form Components
-railroad.home.settings.appearance.preview.list.components=List Components
-railroad.home.settings.appearance.preview.button.components=Button Components
 railroad.home.settings.appearance.preview.close=Close Preview
 railroad.home.settings.appearance.preview.apply=Apply Theme
 railroad.home.settings.appearance.preview.tooltip=Preview theme
+
+railroad.home.settings.appearance.preview.navigation.0=Home
+railroad.home.settings.appearance.preview.navigation.1=Projects
+railroad.home.settings.appearance.preview.navigation.2=Settings
+railroad.home.settings.appearance.preview.navigation.3=Help
+
+railroad.home.settings.appearance.preview.form.components=Form Components
+railroad.home.settings.appearance.preview.form.text_prompt=Enter text here...
+railroad.home.settings.appearance.preview.form.password_prompt=Password
+railroad.home.settings.appearance.preview.form.combo_box.items.0=Option 1
+railroad.home.settings.appearance.preview.form.combo_box.items.1=Option 2
+railroad.home.settings.appearance.preview.form.combo_box.items.2=Option 3
+railroad.home.settings.appearance.preview.form.check_box.label=Enable feature
+railroad.home.settings.appearance.preview.form.radio_button.label=Radio option
+
+railroad.home.settings.appearance.preview.list.components=List Components
+railroad.home.settings.appearance.preview.list.items.0=Project 1 - Minecraft Mod
+railroad.home.settings.appearance.preview.list.items.1=Project 2 - Fabric Plugin
+railroad.home.settings.appearance.preview.list.items.2=Project 3 - Forge Extension
+railroad.home.settings.appearance.preview.list.items.3=Project 4 - Neoforge Addon
+railroad.home.settings.appearance.preview.list.items.4=Project 5 - Quilt Mod
+railroad.home.settings.appearance.preview.list.items.5=Project 6 - Bukkit Plugin
+railroad.home.settings.appearance.preview.list.items.6=Project 7 - Spigot Extension
+railroad.home.settings.appearance.preview.list.items.7=Project 8 - Paper Addon
+
+railroad.home.settings.appearance.preview.table.columns.0.label=Home
+railroad.home.settings.appearance.preview.table.columns.1.label=Type
+railroad.home.settings.appearance.preview.table.columns.2.label=Status
+
+railroad.home.settings.appearance.preview.button.components=Button Components
+railroad.home.settings.appearance.preview.button.primary=Primary Button
+railroad.home.settings.appearance.preview.button.secondary=Secondary Button
+railroad.home.settings.appearance.preview.button.danger=Danger Button
+railroad.home.settings.appearance.preview.button.success=Success Button
+railroad.home.settings.appearance.preview.button.ghost=Ghost Button
+railroad.home.settings.appearance.preview.button.small=Small Button
+railroad.home.settings.appearance.preview.button.large=Large Button
 
 # IDE settings
 railroad.settings.ide.code_style.title=Code Style
