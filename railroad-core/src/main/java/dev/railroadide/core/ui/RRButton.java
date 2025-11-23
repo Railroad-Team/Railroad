@@ -3,6 +3,8 @@ package dev.railroadide.core.ui;
 import dev.railroadide.core.localization.LocalizationService;
 import dev.railroadide.core.utility.ServiceLocator;
 import javafx.animation.ScaleTransition;
+import javafx.beans.value.WritableValue;
+import javafx.css.StyleableProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -18,6 +20,9 @@ import org.kordamp.ikonli.javafx.FontIcon;
  * Supports different sizes, styles, and icon integration.
  */
 public class RRButton extends Button {
+
+    public static final String[] DEFAULT_STYLE_CLASSES = { "rr-button", "button" };
+
     private ButtonVariant variant = ButtonVariant.PRIMARY;
     private ButtonSize size = ButtonSize.MEDIUM;
     private FontIcon icon;
@@ -118,10 +123,12 @@ public class RRButton extends Button {
         return button;
     }
 
-    private void initialize() {
-        getStyleClass().addAll("rr-button", "button");
-        setAlignment(Pos.CENTER);
-        setPadding(new Insets(8, 16, 8, 16));
+    protected void initialize() {
+        getStyleClass().addAll(RRButton.DEFAULT_STYLE_CLASSES);
+        
+        // Keeps the property overidable by CSS
+        ((StyleableProperty<Pos>)(WritableValue<Pos>)alignmentProperty()).applyStyle(null, Pos.CENTER);
+        ((StyleableProperty<Insets>)(WritableValue<Insets>)paddingProperty()).applyStyle(null, new Insets(8, 16, 8, 16));
 
         loadingSpinner = new FontIcon(FontAwesomeSolid.SYNC_ALT);
         loadingSpinner.setIconSize(16);

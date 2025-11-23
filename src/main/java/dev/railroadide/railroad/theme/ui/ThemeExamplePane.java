@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.theme.ui;
 
 import dev.railroadide.core.ui.*;
+import dev.railroadide.core.ui.localized.LocalizedComboBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.core.ui.localized.LocalizedTableColumn;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.window.WindowBuilder;
@@ -52,7 +54,8 @@ public class ThemeExamplePane {
     }
 
     private VBox createPreviewContent() {
-        var mainContainer = new RRVBox(20);
+
+        var mainContainer = new RRFormContainer();
         mainContainer.setPadding(new Insets(24));
         mainContainer.setAlignment(Pos.TOP_LEFT);
         mainContainer.getStyleClass().add("theme-example-main-container");
@@ -121,13 +124,12 @@ public class ThemeExamplePane {
 
         var textFieldRow = new RRHBox(12);
         textFieldRow.setAlignment(Pos.CENTER_LEFT);
+        textFieldRow.getStyleClass().add("transparent-background");
 
-        var textField = new RRTextField();
-        textField.setPromptText(L18n.localize("railroad.home.settings.appearance.preview.form.text_prompt"));
+        var textField = new RRTextField("railroad.home.settings.appearance.preview.form.text_prompt");
         textField.setPrefWidth(200);
 
-        var passwordField = new PasswordField(); // TODO: Create RRPasswordField
-        passwordField.setPromptText(L18n.localize("railroad.home.settings.appearance.preview.form.password_prompt"));
+        var passwordField = new RRPasswordField("railroad.home.settings.appearance.preview.form.password_prompt");
         passwordField.setPrefWidth(200);
 
         textFieldRow.getChildren().addAll(
@@ -137,9 +139,9 @@ public class ThemeExamplePane {
 
         var controlsRow = new RRHBox(12);
         controlsRow.setAlignment(Pos.CENTER_LEFT);
+        controlsRow.getStyleClass().add("transparent-background");
 
-        var comboBox = new ComboBox<>(); // TODO: Use LocalizedComboBox
-        comboBox.getItems().addAll(
+        var comboBox = LocalizedComboBox.fromLocalizationKeys(
             L18n.localize("railroad.home.settings.appearance.preview.form.combo_box.items.0"),
             L18n.localize("railroad.home.settings.appearance.preview.form.combo_box.items.1"),
             L18n.localize("railroad.home.settings.appearance.preview.form.combo_box.items.2")
@@ -149,17 +151,19 @@ public class ThemeExamplePane {
         );
         comboBox.setPrefWidth(150);
 
-        // TODO: Create RRCheckBox
-        var checkBox = new CheckBox(L18n.localize("railroad.home.settings.appearance.preview.form.check_box.label"));
+        var checkBox = new RRCheckBox("railroad.home.settings.appearance.preview.form.check_box.label");
         checkBox.setSelected(true);
 
-        // TODO: Create RRRadioButton
-        var radioButton = new RadioButton(L18n.localize("railroad.home.settings.appearance.preview.form.radio_button.label"));
+        var toggleButton = new RRToggleButton("railroad.home.settings.appearance.preview.form.toggle_button.label");
+        toggleButton.setSelected(false);
+        toggleButton.getStyleClass();
+
+        var radioButton = new RRRadioButton("railroad.home.settings.appearance.preview.form.radio_button.label");
         radioButton.setSelected(true);
 
         controlsRow.getChildren().addAll(
             new LocalizedLabel("railroad.theme.preview.dropdown"), comboBox,
-            checkBox, radioButton
+            toggleButton, checkBox, radioButton
         );
 
         formSection.addContent(textFieldRow, controlsRow);
@@ -185,11 +189,10 @@ public class ThemeExamplePane {
         listView.setMinHeight(200);
         listView.getStyleClass().add("theme-example-list-view");
 
-        var table = new TableView<ProjectData>();
-        // TODO: Create LocalizedTableColumn
-        var nameColumn = new TableColumn<ProjectData, String>("Name");
-        var typeColumn = new TableColumn<ProjectData, String>("Type");
-        var statusColumn = new TableColumn<ProjectData, String>("Status");
+        var table = new RRTableView<ProjectData>();
+        var nameColumn = new LocalizedTableColumn<ProjectData, String>("railroad.home.settings.appearance.preview.table.columns.0");
+        var typeColumn = new LocalizedTableColumn<ProjectData, String>("railroad.home.settings.appearance.preview.table.columns.1");
+        var statusColumn = new LocalizedTableColumn<ProjectData, String>("railroad.home.settings.appearance.preview.table.columns.2");
 
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
@@ -222,6 +225,7 @@ public class ThemeExamplePane {
 
         var buttonRow1 = new RRHBox(12);
         buttonRow1.setAlignment(Pos.CENTER_LEFT);
+        buttonRow1.getStyleClass().add("transparent-background");
 
         var primaryButton = new RRButton("railroad.home.settings.appearance.preview.button.primary");
         primaryButton.setVariant(RRButton.ButtonVariant.PRIMARY);
@@ -239,6 +243,7 @@ public class ThemeExamplePane {
 
         var buttonRow2 = new RRHBox(12);
         buttonRow2.setAlignment(Pos.CENTER_LEFT);
+        buttonRow2.getStyleClass().add("transparent-background");
 
         var ghostButton = new RRButton("railroad.home.settings.appearance.preview.button.ghost");
         ghostButton.setVariant(RRButton.ButtonVariant.GHOST);

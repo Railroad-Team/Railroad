@@ -1,0 +1,107 @@
+/* Modern Table View Styles */
+.rr-table-view {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 8px;
+    -fx-border-color: transparent;
+    -fx-border-radius: 8px;
+    -fx-border-insets: 0;
+}
+
+.rr-table-view.bordered {
+    -fx-border-width: 1.5px;
+    -fx-border-color: -color-border-subtle;
+    -fx-background-insets: 0;
+    -fx-border-radius: 8px;
+    -fx-border-insets: 0;
+}
+
+.rr-table-view:hover {
+    -fx-border-color: -color-border-default;
+}
+
+.rr-table-view:focused {
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 2px;
+}
+
+/* Table rows */
+.rr-list-view .list-row-cell:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.rr-list-view .list-row-cell:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-accent-emphasis;
+}
+
+.rr-list-view .list-row-cell:selected:hover {
+    -fx-background-color: -color-accent-muted;
+}
+
+/* Table cells */
+.rr-table-view > .virtual-flow > .clipped-container > .sheet .table-cell:filled:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.rr-table-view > .virtual-flow > .clipped-container > .sheet .table-cell:filled:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-fg-default;
+}
+
+.rr-table-view > .virtual-flow > .clipped-container > .sheet .table-cell:filled:selected:hover {
+    -fx-background-color: -color-accent-muted;
+}
+
+/* File type icons in table cells */
+.rr-table-view .ikonli-font-icon {
+    -fx-icon-size: 14px;
+    -fx-fill: -color-fg-default;
+    -fx-opacity: 0.8;
+}
+
+.rr-table-view > .virtual-flow > .clipped-container > .sheet .table-cell:selected .ikonli-font-icon {
+    -fx-fill: -color-fg-default;
+    -fx-opacity: 1;
+}
+
+/* Scroll bar styling for table view */
+.rr-table-view > .virtual-flow > .scroll-bar {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.rr-table-view > .virtual-flow > .scroll-bar .thumb {
+    -fx-background-color: -color-border-subtle;
+    -fx-background-radius: 4;
+    -fx-background-insets: 2;
+}
+
+.rr-table-view > .virtual-flow > .scroll-bar .thumb:hover {
+    -fx-background-color: -color-border-default;
+}
+
+.rr-table-view > .virtual-flow > .scroll-bar .track {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.rr-table-view > .virtual-flow > .scroll-bar .increment-button,
+.rr-table-view > .virtual-flow > .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+    -fx-shape: "";
+}
+
+.rr-table-view > .virtual-flow > .scroll-bar .increment-arrow,
+.rr-table-view > .virtual-flow > .scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-shape: "";
+}
+
+/* Table view variant */
+
+.rr-list-view.striped .table-cell:filled:odd {
+    -fx-background-color: -color-bg-subtle;
+}

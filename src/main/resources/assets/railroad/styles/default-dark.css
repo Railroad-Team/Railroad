@@ -59,7 +59,8 @@
     -color-bg-overlay: #2E3440;
     -color-bg-subtle: #3B4252;
     -color-bg-inset: #232730;
-    -color-border-default: rgb(94, 102, 117);
+    -color-border-emphasis: -color-base-6;
+    -color-border-default: #5e6675;
     -color-border-muted: #4C566A;
     -color-border-subtle: #3B4252;
     -color-shadow-default: #232730;

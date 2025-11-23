@@ -1,6 +1,9 @@
 package dev.railroadide.core.ui;
 
 import dev.railroadide.core.localization.LocalizationService;
+import dev.railroadide.core.ui.domain.ITextField;
+import dev.railroadide.core.ui.styling.TextFieldSize;
+import dev.railroadide.core.ui.styling.ValidationState;
 import dev.railroadide.core.utility.ServiceLocator;
 import javafx.animation.FadeTransition;
 import javafx.geometry.Insets;
@@ -17,7 +20,10 @@ import org.kordamp.ikonli.javafx.FontIcon;
  * A modern text field component with enhanced styling, icons, and validation states.
  * Supports different sizes, validation states, and icon integration.
  */
-public class RRTextField extends TextField {
+public class RRTextField extends TextField implements ITextField {
+
+    public static final String[] DEFAULT_STYLE_CLASSES = { "rr-text-field", "text-field" };
+
     private TextFieldSize size = TextFieldSize.MEDIUM;
     private ValidationState validationState = ValidationState.NONE;
     private FontIcon prefixIcon;
@@ -55,8 +61,9 @@ public class RRTextField extends TextField {
         initialize();
     }
 
-    private void initialize() {
-        getStyleClass().addAll("rr-text-field", "text-field");
+    protected void initialize() {
+        getStyleClass().addAll(RRTextField.DEFAULT_STYLE_CLASSES);
+        /// TODO: Use the same thing as in buttons to allow css overrides
         setPadding(new Insets(8, 12, 8, 12));
 
         container = new HBox();
@@ -215,13 +222,5 @@ public class RRTextField extends TextField {
             ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
                 setPromptText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args)));
         }
-    }
-
-    public enum TextFieldSize {
-        SMALL, MEDIUM, LARGE
-    }
-
-    public enum ValidationState {
-        NONE, SUCCESS, ERROR, WARNING
     }
 }

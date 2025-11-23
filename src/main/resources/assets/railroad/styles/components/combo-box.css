@@ -1,5 +1,6 @@
 /* ===== MODERN COMBO BOX ===== */
 .rr-combo-box {
+    -fx-cursor: hand;
     -fx-background-color: -color-bg-subtle;
     -fx-text-fill: -color-fg-default;
     -fx-background-radius: 8px;
@@ -46,6 +47,7 @@
 }
 
 .rr-combo-box .list-cell {
+    -fx-cursor: hand;
     -fx-background-color: transparent;
     -fx-text-fill: -color-fg-default;
     -fx-padding: 8px 12px;
