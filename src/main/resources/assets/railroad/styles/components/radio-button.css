@@ -1,0 +1,12 @@
+.rr-radio-button {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+}
+
+.rr-radio-button:disabled {
+    -fx-cursor: default;
+}
+
+.rr-radio-button.loading {
+    -fx-cursor: wait;
+}

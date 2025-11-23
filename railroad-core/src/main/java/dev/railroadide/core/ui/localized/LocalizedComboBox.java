@@ -15,6 +15,14 @@ import java.util.Locale;
  * @param <T> The type of the ComboBox items.
  */
 public class LocalizedComboBox<T> extends ComboBox<T> {
+
+    public static final String[] DEFAULT_STYLE_CLASSES = { "combo-box-base", "rr-combo-box", "combo-box" };
+
+    private LocalizedComboBox() {
+        super();
+        initialize();
+    }
+
     /**
      * Creates a new LocalizedComboBox with the given key and valueOf functions.
      *
@@ -22,6 +30,7 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
      * @param valueOfFunction The function that converts the key to the object.
      */
     public LocalizedComboBox(ToStringFunction<T> keyFunction, FromStringFunction<T> valueOfFunction) {
+        super();
         var localizationService = ServiceLocator.getService(LocalizationService.class);
 
         setConverter(new StringConverter<>() {
@@ -43,5 +52,26 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
                 return valueOfFunction.fromString(string.toUpperCase(Locale.ROOT));
             }
         });
+        initialize();
+    }
+
+    /**
+     * Creates a new LocalizedComboBox with the given list of localization keys
+     * @param localizationKeys
+     * @return
+     */
+    public static LocalizedComboBox<String> fromLocalizationKeys(final String... localizationKeys)
+    {
+        LocalizedComboBox<String> cb = new LocalizedComboBox<>();
+        var localizationService = ServiceLocator.getService(LocalizationService.class);
+
+        for (String localizationKey : localizationKeys)
+            cb.getItems().add(localizationService.get(localizationKey));
+        
+        return cb;
+    }
+
+    protected void initialize() {
+        getStyleClass().setAll(LocalizedComboBox.DEFAULT_STYLE_CLASSES);
     }
 }

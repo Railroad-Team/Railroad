@@ -1,0 +1,7 @@
+.rr-toggle-button {
+    -fx-background-color: -color-neutral-emphasis;
+}
+
+.rr-toggle-button:selected {
+    -fx-background-color: -color-accent-emphasis;
+}

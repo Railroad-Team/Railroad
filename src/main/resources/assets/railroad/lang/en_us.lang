@@ -336,6 +336,7 @@ railroad.home.settings.appearance.preview.form.combo_box.items.1=Option 2
 railroad.home.settings.appearance.preview.form.combo_box.items.2=Option 3
 railroad.home.settings.appearance.preview.form.check_box.label=Enable feature
 railroad.home.settings.appearance.preview.form.radio_button.label=Radio option
+railroad.home.settings.appearance.preview.form.toggle_button.label=Toggle things
 
 railroad.home.settings.appearance.preview.list.components=List Components
 railroad.home.settings.appearance.preview.list.items.0=Project 1 - Minecraft Mod
@@ -347,9 +348,9 @@ railroad.home.settings.appearance.preview.list.items.5=Project 6 - Bukkit Plugin
 railroad.home.settings.appearance.preview.list.items.6=Project 7 - Spigot Extension
 railroad.home.settings.appearance.preview.list.items.7=Project 8 - Paper Addon
 
-railroad.home.settings.appearance.preview.table.columns.0.label=Home
-railroad.home.settings.appearance.preview.table.columns.1.label=Type
-railroad.home.settings.appearance.preview.table.columns.2.label=Status
+railroad.home.settings.appearance.preview.table.columns.0=Name
+railroad.home.settings.appearance.preview.table.columns.1=Type
+railroad.home.settings.appearance.preview.table.columns.2=Status
 
 railroad.home.settings.appearance.preview.button.components=Button Components
 railroad.home.settings.appearance.preview.button.primary=Primary Button
