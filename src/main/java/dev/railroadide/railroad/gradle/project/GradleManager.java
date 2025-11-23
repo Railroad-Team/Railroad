@@ -223,6 +223,7 @@ public final class GradleManager {
             .orElseGet(GradleInvocationPreferences::defaults);
     }
 
+    // TODO: Support changing JDK at runtime (this would require recreating the execution service)
     private GradleExecutionService getExecutionService(JDK jdkOverride) {
         synchronized (lock) {
             if (executionService == null) {
