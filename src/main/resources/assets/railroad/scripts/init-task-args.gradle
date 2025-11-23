@@ -1,0 +1,61 @@
+import groovy.json.JsonOutput
+import org.gradle.api.internal.tasks.options.OptionReader
+
+def outputPath = System.getProperty("__TASK_ARGS_PROPERTY__")
+if (!outputPath)
+    return
+
+gradle.projectsEvaluated {
+    def reader = new OptionReader()
+    def optionsByTask = [:]
+
+    gradle.rootProject?.allprojects?.each { proj ->
+        proj.tasks.each { task ->
+            def collected = []
+            try {
+                reader.getOptions(task).values().each { opt ->
+                    def argType = opt.argumentType
+                    def type = "STRING"
+                    if (argType != null) {
+                        if (argType == Boolean.TYPE || argType == Boolean) {
+                            type = "BOOLEAN"
+                        } else if (argType.isEnum()) {
+                            type = "ENUM"
+                        } else if (argType.isPrimitive()) {
+                            type = "NUMBER"
+                        } else if (Number.isAssignableFrom(argType)) {
+                            type = "NUMBER"
+                        } else if (argType.name in ["java.io.File", "java.nio.file.Path"]) {
+                            type = "FILE"
+                        }
+                    }
+
+                    def enumValues = []
+                    try {
+                        enumValues = (opt.availableValues ?: []).collect { it.toString() }
+                    } catch (Throwable ignored) {
+                    }
+
+                    collected.add([
+                            name        : opt.name,
+                            displayName : opt.name,
+                            type        : type,
+                            defaultValue: "",
+                            description : opt.description ?: "",
+                            enumValues  : enumValues
+                    ])
+                }
+            } catch (Throwable ignored) {
+            }
+
+            optionsByTask[task.path] = collected
+        }
+    }
+
+    try {
+        def outFile = new File(outputPath)
+        outFile.parentFile?.mkdirs()
+        outFile.setText(JsonOutput.toJson(optionsByTask), "UTF-8")
+    } catch (Throwable ignored) {
+    }
+}

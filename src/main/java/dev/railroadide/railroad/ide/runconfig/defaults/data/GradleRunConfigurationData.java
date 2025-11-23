@@ -2,8 +2,11 @@ package dev.railroadide.railroad.ide.runconfig.defaults.data;
 
 import dev.railroadide.core.form.*;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.gradle.GradleHelper;
-import dev.railroadide.railroad.gradle.GradleTask;
+import dev.railroadide.railroad.gradle.model.GradleBuildModel;
+import dev.railroadide.railroad.gradle.model.GradleProjectModel;
+import dev.railroadide.railroad.gradle.model.task.GradleTaskArgument;
+import dev.railroadide.railroad.gradle.model.task.GradleTaskModel;
+import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationData;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
@@ -29,10 +32,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @EqualsAndHashCode(callSuper = true)
@@ -60,11 +60,11 @@ public class GradleRunConfigurationData extends RunConfigurationData {
             }
         });
 
-        ObservableMap<Path, List<GradleTask>> gradleTasksCache = FXCollections.observableHashMap();
+        ObservableMap<Path, List<GradleTaskModel>> gradleTasksCache = FXCollections.observableHashMap();
         ObjectProperty<Path> gradleProjectPathProperty = new SimpleObjectProperty<>(this.gradleProjectPath);
         gradleProjectPathProperty.addListener((observable, oldValue, newValue) ->
-            loadGradleTasksAsync(newValue, gradleTasksCache));
-        loadGradleTasksAsync(gradleProjectPathProperty.get(), gradleTasksCache);
+            loadGradleTasksAsync(project, newValue, gradleTasksCache));
+        loadGradleTasksAsync(project, gradleProjectPathProperty.get(), gradleTasksCache);
 
         return createBaseFormBuilder(project, configuration)
             .appendSection(FormSection.create("railroad.runconfig.gradle.configuration.title")
@@ -139,18 +139,18 @@ public class GradleRunConfigurationData extends RunConfigurationData {
             ).build();
     }
 
-    private List<String> buildGradleTaskSuggestions(Path gradleProjectPath, ObservableMap<Path, List<GradleTask>> gradleTasksCache) {
+    private List<String> buildGradleTaskSuggestions(Path gradleProjectPath, ObservableMap<Path, List<GradleTaskModel>> gradleTasksCache) {
         if (gradleProjectPath == null)
             return List.of();
 
-        List<GradleTask> cachedTasks = gradleTasksCache.get(gradleProjectPath);
+        List<GradleTaskModel> cachedTasks = gradleTasksCache.get(gradleProjectPath);
         if (cachedTasks == null || cachedTasks.isEmpty()) {
             Railroad.LOGGER.debug("No cached Gradle tasks for {} yet", gradleProjectPath);
             return List.of();
         }
 
         LinkedHashSet<String> suggestions = new LinkedHashSet<>();
-        for (GradleTask task : cachedTasks) {
+        for (GradleTaskModel task : cachedTasks) {
             if (task == null)
                 continue;
 
@@ -158,9 +158,13 @@ public class GradleRunConfigurationData extends RunConfigurationData {
             if (taskName != null && !taskName.isBlank())
                 suggestions.add(taskName);
 
-            Map<String, String> options = task.options();
-            if (options != null && !options.isEmpty())
-                suggestions.addAll(options.keySet());
+            List<GradleTaskArgument> options = task.arguments();
+            if (options != null && !options.isEmpty()) {
+                options.stream()
+                    .map(GradleTaskArgument::name)
+                    .filter(name -> name != null && !name.isBlank())
+                    .forEach(suggestions::add);
+            }
         }
 
         List<String> result = List.copyOf(suggestions);
@@ -170,7 +174,7 @@ public class GradleRunConfigurationData extends RunConfigurationData {
 
     private Callback<ListView<String>, ListCell<String>> createGradleTaskSuggestionCellFactory(
         ObjectProperty<Path> gradleProjectPathProperty,
-        ObservableMap<Path, List<GradleTask>> gradleTasksCache) {
+        ObservableMap<Path, List<GradleTaskModel>> gradleTasksCache) {
         return listView -> new ListCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -191,15 +195,15 @@ public class GradleRunConfigurationData extends RunConfigurationData {
     }
 
     private @Nullable String findGradleTaskDescription(String taskOrOptionName, Path gradleProjectPath,
-                                                       ObservableMap<Path, List<GradleTask>> gradleTasksCache) {
+                                                       ObservableMap<Path, List<GradleTaskModel>> gradleTasksCache) {
         if (taskOrOptionName == null || gradleProjectPath == null)
             return null;
 
-        List<GradleTask> tasks = gradleTasksCache.get(gradleProjectPath);
+        List<GradleTaskModel> tasks = gradleTasksCache.get(gradleProjectPath);
         if (tasks == null || tasks.isEmpty())
             return null;
 
-        for (GradleTask task : tasks) {
+        for (GradleTaskModel task : tasks) {
             if (task == null)
                 continue;
 
@@ -208,18 +212,25 @@ public class GradleRunConfigurationData extends RunConfigurationData {
                 return description == null || description.isBlank() ? null : description;
             }
 
-            Map<String, String> options = task.options();
-            if (options != null && !options.isEmpty()) {
-                String optionDescription = options.get(taskOrOptionName);
-                if (optionDescription != null && !optionDescription.isBlank())
-                    return optionDescription;
+            List<GradleTaskArgument> arguments = task.arguments();
+            if (arguments != null && !arguments.isEmpty()) {
+                for (GradleTaskArgument argument : arguments) {
+                    if (argument == null)
+                        continue;
+
+                    if (taskOrOptionName.equals(argument.name())) {
+                        String description = argument.description();
+                        if (description != null && !description.isBlank())
+                            return description;
+                    }
+                }
             }
         }
 
         return null;
     }
 
-    private void loadGradleTasksAsync(Path gradleProjectPath, ObservableMap<Path, List<GradleTask>> gradleTasksCache) {
+    private void loadGradleTasksAsync(Project project, Path gradleProjectPath, ObservableMap<Path, List<GradleTaskModel>> gradleTasksCache) {
         if (gradleProjectPath == null) {
             if (Platform.isFxApplicationThread()) {
                 gradleTasksCache.clear();
@@ -231,8 +242,7 @@ public class GradleRunConfigurationData extends RunConfigurationData {
         }
 
         Railroad.LOGGER.debug("Loading Gradle tasks for {}", gradleProjectPath);
-        CompletableFuture
-            .supplyAsync(() -> GradleHelper.loadGradleTasks(gradleProjectPath))
+        CompletableFuture.supplyAsync(() -> fetchTasksForProject(project, gradleProjectPath))
             .whenComplete((tasks, throwable) -> {
                 if (throwable != null) {
                     Railroad.LOGGER.warn("Failed to load Gradle tasks for autocomplete", throwable);
@@ -255,6 +265,32 @@ public class GradleRunConfigurationData extends RunConfigurationData {
             return Path.of(rawValue.trim()).toAbsolutePath().normalize();
         } catch (Exception exception) {
             return null;
+        }
+    }
+
+    private List<GradleTaskModel> fetchTasksForProject(Project project, Path gradleProjectPath) {
+        try {
+            GradleModelService modelService = project.getGradleManager().getGradleModelService();
+            GradleBuildModel model = modelService.refreshModel(true).get();
+            if (model == null || model.projects() == null)
+                return List.of();
+
+            for (GradleProjectModel projectModel : model.projects()) {
+                if (projectModel == null)
+                    continue;
+
+                if (gradleProjectPath.equals(projectModel.projectDir()))
+                    return projectModel.tasks() != null ? projectModel.tasks() : List.of();
+            }
+
+            return model.projects().stream()
+                .map(GradleProjectModel::tasks)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(List.of());
+        } catch (Exception exception) {
+            Railroad.LOGGER.warn("Failed to fetch Gradle tasks for {}", gradleProjectPath, exception);
+            return List.of();
         }
     }
 

@@ -10,12 +10,12 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
-import dev.railroadide.railroad.ide.runconfig.defaults.GradleRunConfigurationType;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
+import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroadpluginapi.events.ProjectAliasChangedEvent;
 import javafx.beans.property.*;
@@ -24,7 +24,6 @@ import javafx.collections.ObservableSet;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 import lombok.Getter;
-import org.gradle.tooling.*;
 import org.jetbrains.annotations.NotNull;
 
 import javax.imageio.ImageIO;
@@ -49,6 +48,8 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
     private final ProjectDataStore dataStore;
     @Getter
     private final RunConfigurationManager runConfigManager;
+    @Getter
+    private final GradleManager gradleManager;
 
     public Project(Path path) {
         this(path, path.getFileName().toString());
@@ -64,6 +65,7 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
         this.icon.set(icon == null ? createIcon(this) : icon);
         this.dataStore = new ProjectDataStore(this);
         this.runConfigManager = new RunConfigurationManager(this);
+        this.gradleManager = new GradleManager(this);
     }
 
     private static BufferedImage createIconImage(Project project) {
@@ -165,14 +167,14 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
      * Get the facet of the specified type.
      *
      * @param type The facet type to get.
-     * @param <T>  The facet type.
+     * @param <D>  The data type of the facet.
      * @return An Optional containing the facet if found, otherwise empty.
      */
     @SuppressWarnings("unchecked")
-    public <T extends Facet<?>> Optional<T> getFacet(FacetType<T> type) {
+    public <D> Optional<Facet<D>> getFacet(FacetType<D> type) {
         for (Facet<?> facet : facets) {
             if (facet.getType().equals(type))
-                return Optional.of((T) facet);
+                return Optional.of((Facet<D>) facet);
         }
 
         return Optional.empty();
@@ -202,13 +204,11 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
+        if (this == obj)
             return true;
-        }
 
-        if (obj == null || getClass() != obj.getClass()) {
+        if (obj == null || getClass() != obj.getClass())
             return false;
-        }
 
         Project project = (Project) obj;
         return path.equals(project.path);
@@ -414,46 +414,7 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
         CompletableFuture<Runnable> future = new CompletableFuture<>();
         CompletableFuture.runAsync(() -> {
             if (hasFacet(FacetManager.GRADLE)) {
-                var connector = GradleConnector.newConnector()
-                    .forProjectDirectory(getPath().toFile())
-                    .useBuildDistribution();
-
-                ProjectConnection connection = connector.connect();
-                CancellationTokenSource tokenSource = GradleConnector.newCancellationTokenSource();
-                var handle = new GradleRunConfigurationType.GradleExecutionHandle(connection, tokenSource);
-                connection.newBuild()
-                    .forTasks("build")
-                    .withCancellationToken(tokenSource.token())
-                    .setJavaHome(jdk.path().toFile())
-                    .setColorOutput(true)
-                    .setStandardOutput(System.out) // TODO: Redirect to IDE build console
-                    .setStandardError(System.err) // TODO: Redirect to IDE build console
-                    .setStandardInput(System.in) // TODO: Redirect to IDE build console
-                    .run(new ResultHandler<>() {
-                        @Override
-                        public void onComplete(Void result) {
-                            future.complete(() -> {
-                                try {
-                                    handle.close();
-                                } catch (Exception exception) {
-                                    Railroad.LOGGER.error("Failed to close Gradle connection", exception);
-                                }
-                            });
-                        }
-
-                        @Override
-                        public void onFailure(GradleConnectionException failure) {
-                            future.complete(() -> {
-                                try {
-                                    handle.close();
-                                } catch (Exception exception) {
-                                    Railroad.LOGGER.error("Failed to close Gradle connection", exception);
-                                }
-
-                                Railroad.LOGGER.error("Gradle build failed", failure);
-                            });
-                        }
-                    });
+                gradleManager.runBuildTaskAsync("build", jdk, future);
             } else if (hasFacet(FacetManager.MAVEN)) {
                 // TODO: Implement Maven build support
                 future.completeExceptionally(new UnsupportedOperationException("Maven build support is not implemented yet."));
@@ -461,6 +422,7 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
                 future.completeExceptionally(new IllegalStateException("Project does not have a build facet."));
             }
         });
+
         return future;
     }
 }
