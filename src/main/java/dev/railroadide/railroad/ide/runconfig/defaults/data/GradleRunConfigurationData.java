@@ -72,8 +72,8 @@ public class GradleRunConfigurationData extends RunConfigurationData {
                     .required()
                     .text(() -> this.task != null ? this.task : "")
                     .promptText("railroad.runconfig.gradle.configuration.task.prompt")
-                    .autoCompleteSuggestionsSupplier(() ->
-                        buildGradleTaskSuggestions(gradleProjectPathProperty.get(), gradleTasksCache))
+                    .autoComplete(query ->
+                        filterGradleTaskSuggestions(query, gradleProjectPathProperty.get(), gradleTasksCache))
                     .autoCompleteSuggestionCellFactory(createGradleTaskSuggestionCellFactory(
                         gradleProjectPathProperty, gradleTasksCache))
                     .autoCompleteShowSuggestionsOnEmpty(true)
@@ -170,6 +170,35 @@ public class GradleRunConfigurationData extends RunConfigurationData {
         List<String> result = List.copyOf(suggestions);
         Railroad.LOGGER.debug("Providing {} suggestions for {}", result.size(), gradleProjectPath);
         return result;
+    }
+
+    private Collection<String> filterGradleTaskSuggestions(String query, Path gradleProjectPath,
+                                                           ObservableMap<Path, List<GradleTaskModel>> gradleTasksCache) {
+        List<String> suggestions = buildGradleTaskSuggestions(gradleProjectPath, gradleTasksCache);
+        String token = currentToken(query);
+        if (token.isBlank()) {
+            return suggestions;
+        }
+
+        String normalized = token.toLowerCase(Locale.ROOT);
+        return suggestions.stream()
+            .filter(Objects::nonNull)
+            .filter(s -> s.toLowerCase(Locale.ROOT).contains(normalized))
+            .toList();
+    }
+
+    private String currentToken(String text) {
+        if (text == null || text.isBlank())
+            return "";
+
+        int lastSpace = Math.max(text.lastIndexOf(' '), text.lastIndexOf('\t'));
+        if (lastSpace == -1)
+            return text.trim();
+
+        if (lastSpace == text.length() - 1)
+            return "";
+
+        return text.substring(lastSpace + 1).trim();
     }
 
     private Callback<ListView<String>, ListCell<String>> createGradleTaskSuggestionCellFactory(

@@ -175,13 +175,15 @@ public class RRAutoCompleteTextField extends RRTextField {
 
     private void adjustPopupSize() {
         Platform.runLater(() -> {
-            double prefHeight = suggestionsListView.prefHeight(-1);
-            if (prefHeight <= 0 || Double.isNaN(prefHeight)) {
-                prefHeight = Math.max(MIN_SUGGESTION_HEIGHT, suggestionsListView.getItems().size() * MIN_SUGGESTION_HEIGHT);
-            }
+            double rowHeight = suggestionsListView.getFixedCellSize() > 0 ?
+                suggestionsListView.getFixedCellSize() :
+                MIN_SUGGESTION_HEIGHT;
+
+            int itemCount = Math.max(1, suggestionsListView.getItems().size());
+            double prefHeight = (itemCount * rowHeight) + suggestionsListView.snappedTopInset() + suggestionsListView.snappedBottomInset();
 
             double clampedHeight = Math.min(MAX_POPUP_HEIGHT, prefHeight);
-            suggestionsListView.setMinHeight(clampedHeight);
+            suggestionsListView.setMinHeight(Math.min(rowHeight, clampedHeight));
             suggestionsListView.setPrefHeight(clampedHeight);
             suggestionsListView.setMaxHeight(MAX_POPUP_HEIGHT);
 
