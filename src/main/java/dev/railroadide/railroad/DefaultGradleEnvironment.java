@@ -43,7 +43,9 @@ public record DefaultGradleEnvironment(Project project, Path gradleInstallationP
             return "";
 
         for (RunConfiguration<?> configuration : configurations) {
-            GradleRunConfigurationData data = (GradleRunConfigurationData) configuration.data();
+            if(!(configuration.data() instanceof GradleRunConfigurationData data))
+                continue;
+
             if (!matchesConfiguration(request, jvm, data))
                 continue;
 
