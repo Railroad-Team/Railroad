@@ -182,6 +182,7 @@ public class ToolingGradleModelService implements GradleModelService {
             environment.userHomePath().ifPresent(path -> connector.useGradleUserHomeDir(path.toFile()));
         }
 
+        // TODO: Enable setting Java home via environment.jvm() when custom JVM support is implemented.
         // environment.jvm().ifPresent(jvm -> connector.setJavaHome(jvm.javaHome().toFile()));
     }
 
