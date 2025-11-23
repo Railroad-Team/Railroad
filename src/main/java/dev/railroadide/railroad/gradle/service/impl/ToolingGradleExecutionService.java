@@ -107,7 +107,13 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
 
             environment.jvm().ifPresent(jvm -> {
                 build.setJavaHome(jvm.path().toFile());
-                build.addJvmArguments(environment.jvmArgumentsFor(request, jvm));
+                String jvmArgsStr = environment.jvmArgumentsFor(request, jvm);
+                if (jvmArgsStr != null && !jvmArgsStr.isBlank()) {
+                    List<String> jvmArgs = Arrays.stream(jvmArgsStr.split("\\s+"))
+                        .filter(arg -> !arg.isBlank())
+                        .toList();
+                    build.addJvmArguments(jvmArgs);
+                }
             });
 
             if (!request.environment().isEmpty()) {
@@ -167,7 +173,7 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
         List<String> debugJvmArgs = List.of(
             "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:" + debugPort
         );
-        build.setJvmArguments(debugJvmArgs);
+        build.addJvmArguments(debugJvmArgs);
 
         handle.setDebugPort(debugPort);
         handle.updateState(
