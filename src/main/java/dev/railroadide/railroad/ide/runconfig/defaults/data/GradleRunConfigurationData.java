@@ -300,7 +300,7 @@ public class GradleRunConfigurationData extends RunConfigurationData {
     private List<GradleTaskModel> fetchTasksForProject(Project project, Path gradleProjectPath) {
         try {
             GradleModelService modelService = project.getGradleManager().getGradleModelService();
-            GradleBuildModel model = modelService.refreshModel(true).get();
+            GradleBuildModel model = modelService.refreshModel(false).get();
             if (model == null || model.projects() == null)
                 return List.of();
 
