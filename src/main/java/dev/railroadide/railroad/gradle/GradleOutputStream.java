@@ -3,6 +3,8 @@ package dev.railroadide.railroad.gradle;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.function.Consumer;
 
 /**
@@ -23,6 +25,18 @@ public class GradleOutputStream extends ByteArrayOutputStream {
     @Override
     public void writeBytes(byte @NotNull [] bytes) {
         super.writeBytes(bytes);
+        flushOutput();
+    }
+
+    @Override
+    public synchronized void write(int b) {
+        super.write(b);
+        flushOutput();
+    }
+
+    @Override
+    public synchronized void write(byte @NotNull [] b, int off, int len) {
+        super.write(b, off, len);
         flushOutput();
     }
 
