@@ -92,14 +92,14 @@ public class ThemeDownloadCell extends ListCell<Theme> {
             Theme theme = themeProperty.get();
             if (theme != null) {
                 boolean success = ThemeDownloadManager.downloadTheme(theme);
-                updateDownloadButtonState(success);
+                updateButtonStates(success);
             }
         });
 
         previewButton.setOnAction(e -> {
             Theme theme = themeProperty.get();
             if (theme != null) {
-                new ThemeExamplePane(theme.getName());
+                new ThemeExamplePane(theme.getName().replace(".css", ""));
             }
         });
     }
@@ -131,20 +131,22 @@ public class ThemeDownloadCell extends ListCell<Theme> {
         themeProperty.addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 boolean isDownloaded = ThemeDownloadManager.isDownloaded(newValue);
-                updateDownloadButtonState(isDownloaded);
+                updateButtonStates(isDownloaded);
             }
         });
     }
 
-    private void updateDownloadButtonState(boolean isDownloaded) {
+    private void updateButtonStates(boolean isDownloaded) {
         if (isDownloaded) {
             downloadButton.setLocalizedText("railroad.home.settings.appearance.installed");
             downloadButton.setVariant(RRButton.ButtonVariant.SUCCESS);
             downloadButton.setDisable(true);
+            previewButton.setDisable(false);
         } else {
             downloadButton.setLocalizedText("railroad.home.settings.appearance.download");
             downloadButton.setVariant(RRButton.ButtonVariant.PRIMARY);
             downloadButton.setDisable(false);
+            previewButton.setDisable(true);
         }
     }
 

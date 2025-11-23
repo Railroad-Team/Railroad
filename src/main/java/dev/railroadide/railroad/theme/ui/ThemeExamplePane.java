@@ -41,16 +41,18 @@ public class ThemeExamplePane {
         scrollPane.getStyleClass().add("theme-preview-scroll-pane");
 
         var previewScene = new Scene(scrollPane, 900, 700);
-        ThemeManager.applyThemeToScene(themeName, previewScene);
 
-        this.stage = WindowBuilder.create()
+        WindowBuilder builder = WindowBuilder.create()
             .title(L18n.localize("railroad.home.settings.appearance.preview") + " - " + formatThemeName(themeName))
             .scene(previewScene)
             .modality(Modality.APPLICATION_MODAL)
             .resizable(true)
             .minWidth(890)
-            .minHeight(690)
-            .build();
+            .minHeight(690);
+
+        ThemeManager.applyThemeToScene(themeName, previewScene);
+
+        this.stage = builder.build();
     }
 
     private VBox createPreviewContent() {
