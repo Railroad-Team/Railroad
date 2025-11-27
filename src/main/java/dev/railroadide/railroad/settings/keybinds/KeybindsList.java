@@ -11,6 +11,8 @@ import dev.railroadide.core.ui.RRCard;
 import dev.railroadide.core.ui.RRTextField;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.core.ui.styling.ButtonSize;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
 import javafx.application.Platform;
@@ -225,8 +227,8 @@ public class KeybindsList extends RRVBox {
         }
 
         var addButton = new RRButton("railroad.settings.keybinds.add_binding", FontAwesomeSolid.PLUS);
-        addButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        addButton.setVariant(RRButton.ButtonVariant.SECONDARY);
+        addButton.setButtonSize(ButtonSize.SMALL);
+        addButton.setVariant(ButtonVariant.SECONDARY);
         addButton.getStyleClass().add("keybind-card-add");
         addButton.setOnAction(event -> addBlankShortcut(keybindId, bindings));
 
@@ -280,8 +282,8 @@ public class KeybindsList extends RRVBox {
         maybeStartPendingEdit(keybindId, index, comboNode);
 
         var removeButton = new RRButton("", FontAwesomeSolid.TRASH);
-        removeButton.setVariant(RRButton.ButtonVariant.DANGER);
-        removeButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        removeButton.setVariant(ButtonVariant.DANGER);
+        removeButton.setButtonSize(ButtonSize.SMALL);
         removeButton.getStyleClass().add("keybind-shortcut-remove");
         removeButton.setOnAction(event -> {
             bindings.remove(index);

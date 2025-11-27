@@ -3,6 +3,8 @@ package dev.railroadide.railroad.project.onboarding.ui;
 import dev.railroadide.core.ui.RRBorderPane;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRVBox;
+import dev.railroadide.core.ui.styling.ButtonSize;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.geometry.Insets;
@@ -23,8 +25,8 @@ public class OnboardingProjectCreationPane extends RRVBox {
         this.onStartOnboarding = onStartOnboarding;
 
         var startOnboardingButton = new RRButton("railroad.project.creation.onboarding.start_button");
-        startOnboardingButton.setButtonSize(RRButton.ButtonSize.LARGE);
-        startOnboardingButton.setVariant(RRButton.ButtonVariant.PRIMARY);
+        startOnboardingButton.setButtonSize(ButtonSize.LARGE);
+        startOnboardingButton.setVariant(ButtonVariant.PRIMARY);
         startOnboardingButton.getStyleClass().add("start-onboarding-button");
         startOnboardingButton.setOnAction(event -> startOnboarding());
 

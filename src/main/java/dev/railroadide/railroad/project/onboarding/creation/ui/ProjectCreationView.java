@@ -5,6 +5,7 @@ import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.localized.LocalizedTitledPane;
 import dev.railroadide.core.ui.localized.LocalizedTooltip;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.localization.L18n;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import javafx.animation.FadeTransition;
@@ -93,7 +94,7 @@ public class ProjectCreationView extends RRBorderPane {
         logsPane.setExpanded(false);
         logsPane.getStyleClass().add("rr-logs-pane");
 
-        cancelBtn.setVariant(RRButton.ButtonVariant.SECONDARY);
+        cancelBtn.setVariant(ButtonVariant.SECONDARY);
         cancelBtn.setTooltip(new LocalizedTooltip("railroad.project.creation.cancel.tooltip"));
         var footer = new RRHBox(12);
         footer.setAlignment(Pos.CENTER);

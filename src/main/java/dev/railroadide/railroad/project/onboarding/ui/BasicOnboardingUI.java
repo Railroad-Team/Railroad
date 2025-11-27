@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.project.onboarding.ui;
 
 import dev.railroadide.core.ui.*;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.project.onboarding.step.OnboardingStep;
 import javafx.geometry.Insets;
@@ -72,9 +73,9 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
         mainContainer.getChildren().addAll(header, contentFrame);
 
         // Buttons
-        this.backButton = createButton("railroad.generic.back", RRButton.ButtonVariant.SECONDARY, "onboarding-back-button");
-        this.nextButton = createButton("railroad.generic.next", RRButton.ButtonVariant.PRIMARY, "onboarding-next-button");
-        this.finishButton = createButton("railroad.generic.finish", RRButton.ButtonVariant.PRIMARY, "onboarding-finish-button");
+        this.backButton = createButton("railroad.generic.back", ButtonVariant.SECONDARY, "onboarding-back-button");
+        this.nextButton = createButton("railroad.generic.next", ButtonVariant.PRIMARY, "onboarding-next-button");
+        this.finishButton = createButton("railroad.generic.finish", ButtonVariant.PRIMARY, "onboarding-finish-button");
 
         this.buttonBar = new RRBorderPane();
         this.buttonBar.getStyleClass().add("onboarding-button-bar");
@@ -104,7 +105,7 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
         return overlay;
     }
 
-    private RRButton createButton(String key, RRButton.ButtonVariant variant, String... styleClasses) {
+    private RRButton createButton(String key, ButtonVariant variant, String... styleClasses) {
         var button = new RRButton(key);
         button.setVariant(variant);
         button.getStyleClass().addAll("onboarding-button");

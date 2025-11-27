@@ -3,6 +3,8 @@ package dev.railroadide.railroad.ide.runconfig.ui;
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.localized.LocalizedTooltip;
+import dev.railroadide.core.ui.styling.ButtonSize;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.Project;
@@ -36,8 +38,8 @@ public class RunConfigurationListCell extends ListCell<RunConfiguration<?>> {
 
         runButton.setTooltip(new LocalizedTooltip("railroad.runconfig.run.tooltip"));
         runButton.setSquare(true);
-        runButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        runButton.setVariant(RRButton.ButtonVariant.GHOST);
+        runButton.setButtonSize(ButtonSize.SMALL);
+        runButton.setVariant(ButtonVariant.GHOST);
         runButton.getStyleClass().add("run-button");
         runButton.setFocusTraversable(false);
         runButton.setOnAction(event -> {
@@ -49,8 +51,8 @@ public class RunConfigurationListCell extends ListCell<RunConfiguration<?>> {
 
         debugButton.setTooltip(new LocalizedTooltip("railroad.runconfig.debug.tooltip"));
         debugButton.setSquare(true);
-        debugButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        debugButton.setVariant(RRButton.ButtonVariant.GHOST);
+        debugButton.setButtonSize(ButtonSize.SMALL);
+        debugButton.setVariant(ButtonVariant.GHOST);
         debugButton.getStyleClass().add("debug-button");
         debugButton.setFocusTraversable(false);
         debugButton.setOnAction(event -> {
@@ -62,8 +64,8 @@ public class RunConfigurationListCell extends ListCell<RunConfiguration<?>> {
 
         moreActionsButton.setTooltip(new LocalizedTooltip("railroad.runconfig.moreactions.tooltip"));
         moreActionsButton.setSquare(true);
-        moreActionsButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        moreActionsButton.setVariant(RRButton.ButtonVariant.GHOST);
+        moreActionsButton.setButtonSize(ButtonSize.SMALL);
+        moreActionsButton.setVariant(ButtonVariant.GHOST);
         moreActionsButton.getStyleClass().add("more-actions-button");
         moreActionsButton.setFocusTraversable(false);
         moreActionsButton.setOnAction(event -> {

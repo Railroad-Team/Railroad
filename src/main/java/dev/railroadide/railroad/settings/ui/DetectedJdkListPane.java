@@ -6,6 +6,8 @@ import dev.railroadide.core.ui.RRListView;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.localized.LocalizedTooltip;
+import dev.railroadide.core.ui.styling.ButtonSize;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.java.JDK;
@@ -48,8 +50,8 @@ public class DetectedJdkListPane extends RRVBox {
         title.getStyleClass().add("section-label");
 
         var refreshButton = new RRButton(null, FontAwesomeSolid.SYNC);
-        refreshButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        refreshButton.setVariant(RRButton.ButtonVariant.SECONDARY);
+        refreshButton.setButtonSize(ButtonSize.SMALL);
+        refreshButton.setVariant(ButtonVariant.SECONDARY);
         refreshButton.setTooltip(new LocalizedTooltip("railroad.settings.ide.jdk_management.detected.refresh.tooltip"));
         refreshButton.setOnAction($ -> refresh());
 

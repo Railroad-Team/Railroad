@@ -5,6 +5,8 @@ import dev.railroadide.core.ui.RRCard;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedTooltip;
+import dev.railroadide.core.ui.styling.ButtonSize;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.theme.Theme;
 import dev.railroadide.railroad.theme.ThemeDownloadManager;
 import javafx.beans.property.ObjectProperty;
@@ -70,13 +72,13 @@ public class ThemeDownloadCell extends ListCell<Theme> {
 
         previewButton = new RRButton();
         previewButton.setIcon(FontAwesomeSolid.EYE);
-        previewButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        previewButton.setVariant(RRButton.ButtonVariant.GHOST);
+        previewButton.setButtonSize(ButtonSize.SMALL);
+        previewButton.setVariant(ButtonVariant.GHOST);
         previewButton.setTooltip(new LocalizedTooltip("railroad.home.settings.appearance.preview.tooltip"));
 
         downloadButton = new RRButton("railroad.home.settings.appearance.download");
-        downloadButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        downloadButton.setVariant(RRButton.ButtonVariant.PRIMARY);
+        downloadButton.setButtonSize(ButtonSize.SMALL);
+        downloadButton.setVariant(ButtonVariant.PRIMARY);
 
         actionSection.getChildren().addAll(previewButton, downloadButton);
 
@@ -139,12 +141,12 @@ public class ThemeDownloadCell extends ListCell<Theme> {
     private void updateButtonStates(boolean isDownloaded) {
         if (isDownloaded) {
             downloadButton.setLocalizedText("railroad.home.settings.appearance.installed");
-            downloadButton.setVariant(RRButton.ButtonVariant.SUCCESS);
+            downloadButton.setVariant(ButtonVariant.SUCCESS);
             downloadButton.setDisable(true);
             previewButton.setDisable(false);
         } else {
             downloadButton.setLocalizedText("railroad.home.settings.appearance.download");
-            downloadButton.setVariant(RRButton.ButtonVariant.PRIMARY);
+            downloadButton.setVariant(ButtonVariant.PRIMARY);
             downloadButton.setDisable(false);
             previewButton.setDisable(true);
         }

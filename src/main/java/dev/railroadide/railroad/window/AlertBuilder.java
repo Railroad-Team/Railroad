@@ -6,6 +6,7 @@ import dev.railroadide.core.ui.RRStackPane;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.localized.LocalizedText;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.AppResources;
 import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
 import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
@@ -137,13 +138,13 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
             case WARNING, ERROR -> "railroad.generic.dismiss";
             default -> "railroad.generic.cancel";
         });
-        secondary.setVariant(RRButton.ButtonVariant.SECONDARY);
+        secondary.setVariant(ButtonVariant.SECONDARY);
 
         var primary = new RRButton(switch (alertType) {
             case INFO, SUCCESS, ERROR -> "railroad.generic.ok";
             case WARNING -> "railroad.generic.proceed";
         });
-        primary.setVariant(RRButton.ButtonVariant.PRIMARY);
+        primary.setVariant(ButtonVariant.PRIMARY);
         primary.setDefaultButton(true);
 
         buttons.getChildren().addAll(secondary, primary);

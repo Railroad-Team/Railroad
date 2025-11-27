@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.window;
 
 import dev.railroadide.core.ui.RRButton;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import javafx.scene.Scene;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
@@ -37,9 +38,9 @@ public class DialogBuilder extends AlertBuilder<DialogBuilder> {
         buttonsBox.getChildren().clear();
 
         var confirmButton = new RRButton("railroad.generic.confirm");
-        confirmButton.setVariant(RRButton.ButtonVariant.SUCCESS);
+        confirmButton.setVariant(ButtonVariant.SUCCESS);
         var cancelButton = new RRButton("railroad.generic.cancel");
-        cancelButton.setVariant(RRButton.ButtonVariant.DANGER);
+        cancelButton.setVariant(ButtonVariant.DANGER);
         buttonsBox.getChildren().addAll(confirmButton, cancelButton);
 
         confirmButton.setOnAction(event -> {

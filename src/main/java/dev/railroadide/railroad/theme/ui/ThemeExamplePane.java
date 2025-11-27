@@ -4,6 +4,8 @@ import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedComboBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.localized.LocalizedTableColumn;
+import dev.railroadide.core.ui.styling.ButtonSize;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.window.WindowBuilder;
@@ -49,7 +51,7 @@ public class ThemeExamplePane {
             .resizable(true)
             .minWidth(890)
             .minHeight(690);
-
+                
         ThemeManager.applyThemeToScene(themeName, previewScene);
 
         this.stage = builder.build();
@@ -230,16 +232,16 @@ public class ThemeExamplePane {
         buttonRow1.getStyleClass().add("transparent-background");
 
         var primaryButton = new RRButton("railroad.home.settings.appearance.preview.button.primary");
-        primaryButton.setVariant(RRButton.ButtonVariant.PRIMARY);
+        primaryButton.setVariant(ButtonVariant.PRIMARY);
 
         var secondaryButton = new RRButton("railroad.home.settings.appearance.preview.button.secondary");
-        secondaryButton.setVariant(RRButton.ButtonVariant.SECONDARY);
+        secondaryButton.setVariant(ButtonVariant.SECONDARY);
 
         var dangerButton = new RRButton("railroad.home.settings.appearance.preview.button.danger");
-        dangerButton.setVariant(RRButton.ButtonVariant.DANGER);
+        dangerButton.setVariant(ButtonVariant.DANGER);
 
         var successButton = new RRButton("railroad.home.settings.appearance.preview.button.success");
-        successButton.setVariant(RRButton.ButtonVariant.SUCCESS);
+        successButton.setVariant(ButtonVariant.SUCCESS);
 
         buttonRow1.getChildren().addAll(primaryButton, secondaryButton, dangerButton, successButton);
 
@@ -248,17 +250,17 @@ public class ThemeExamplePane {
         buttonRow2.getStyleClass().add("transparent-background");
 
         var ghostButton = new RRButton("railroad.home.settings.appearance.preview.button.ghost");
-        ghostButton.setVariant(RRButton.ButtonVariant.GHOST);
+        ghostButton.setVariant(ButtonVariant.GHOST);
 
         var smallButton = new RRButton("railroad.home.settings.appearance.preview.button.small");
-        smallButton.setButtonSize(RRButton.ButtonSize.SMALL);
+        smallButton.setButtonSize(ButtonSize.SMALL);
 
         var largeButton = new RRButton("railroad.home.settings.appearance.preview.button.large");
-        largeButton.setButtonSize(RRButton.ButtonSize.LARGE);
+        largeButton.setButtonSize(ButtonSize.LARGE);
 
         var iconButton = new RRButton();
         iconButton.setIcon(FontAwesomeSolid.STAR);
-        iconButton.setVariant(RRButton.ButtonVariant.GHOST);
+        iconButton.setVariant(ButtonVariant.GHOST);
 
         buttonRow2.getChildren().addAll(ghostButton, smallButton, largeButton, iconButton);
 
@@ -272,11 +274,11 @@ public class ThemeExamplePane {
         footer.setPadding(new Insets(16, 0, 0, 0));
 
         var closeButton = new RRButton("railroad.home.settings.appearance.preview.close");
-        closeButton.setVariant(RRButton.ButtonVariant.SECONDARY);
+        closeButton.setVariant(ButtonVariant.SECONDARY);
         closeButton.setOnAction(e -> stage.close());
 
         var applyButton = new RRButton("railroad.home.settings.appearance.preview.apply");
-        applyButton.setVariant(RRButton.ButtonVariant.PRIMARY);
+        applyButton.setVariant(ButtonVariant.PRIMARY);
         applyButton.setOnAction($ -> {
             // Apply the theme to the main application
             ThemeManager.setTheme(themeName.replace(".css", ""));

@@ -188,6 +188,7 @@ public class RRTextField extends TextField implements ITextField {
             case SUCCESS -> getStyleClass().add("success");
             case ERROR -> getStyleClass().add("error");
             case WARNING -> getStyleClass().add("warning");
+            default -> {}
         }
     }
 

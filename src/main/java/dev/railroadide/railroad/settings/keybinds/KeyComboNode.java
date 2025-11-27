@@ -2,6 +2,8 @@ package dev.railroadide.railroad.settings.keybinds;
 
 import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.core.ui.RRButton;
+import dev.railroadide.core.ui.styling.ButtonSize;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.core.utility.OperatingSystem;
 import dev.railroadide.railroad.localization.L18n;
 import javafx.scene.Scene;

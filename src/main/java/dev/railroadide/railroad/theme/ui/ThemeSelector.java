@@ -2,6 +2,8 @@ package dev.railroadide.railroad.theme.ui;
 
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRFormSection;
+import dev.railroadide.core.ui.styling.ButtonSize;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.theme.ThemeDownloadManager;
@@ -55,8 +57,8 @@ public class ThemeSelector extends VBox {
 
         previewButton = new RRButton();
         previewButton.setIcon(FontAwesomeSolid.EYE);
-        previewButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        previewButton.setVariant(RRButton.ButtonVariant.GHOST);
+        previewButton.setButtonSize(ButtonSize.SMALL);
+        previewButton.setVariant(ButtonVariant.GHOST);
         previewButton.setOnAction(e -> previewSelectedTheme());
 
         var selectionRow = new HBox(12);
@@ -67,7 +69,7 @@ public class ThemeSelector extends VBox {
 
         downloadButton = new RRButton("railroad.home.settings.appearance.downloadtheme");
         downloadButton.setIcon(FontAwesomeSolid.DOWNLOAD);
-        downloadButton.setVariant(RRButton.ButtonVariant.PRIMARY);
+        downloadButton.setVariant(ButtonVariant.PRIMARY);
         downloadButton.setOnAction(e -> new ThemeDownloadPane(getScene().getWindow()));
 
         section.addContent(downloadButton);
@@ -101,7 +103,7 @@ public class ThemeSelector extends VBox {
     private void previewSelectedTheme() {
         String selectedTheme = themeComboBox.getValue();
         if (selectedTheme != null) {
-            new ThemeExamplePane(selectedTheme + ".css");
+            new ThemeExamplePane(selectedTheme);
         }
     }
 

@@ -4,6 +4,7 @@ import dev.railroadide.core.ui.RRCard;
 import dev.railroadide.core.ui.RRTextField;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.localized.LocalizedText;
+import dev.railroadide.core.ui.styling.TextFieldSize;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.welcome.project.ui.widget.ProjectSortComboBox;
@@ -32,7 +33,7 @@ public class WelcomeHeaderPane extends RRCard {
         getStyleClass().add("welcome-card");
 
         searchField = new RRTextField("railroad.home.welcome.projectsearch");
-        searchField.setTextFieldSize(RRTextField.TextFieldSize.LARGE);
+        searchField.setTextFieldSize(TextFieldSize.LARGE);
         searchField.getStyleClass().add("welcome-search-input");
         sortComboBox = new ProjectSortComboBox();
         var searchBar = createSearchBar();

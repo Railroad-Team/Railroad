@@ -7,6 +7,8 @@ import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRListView;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.core.ui.styling.ButtonSize;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.localization.L18n;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -56,13 +58,13 @@ public abstract class AbstractPathListPane extends RRVBox {
         var controls = new RRHBox(8);
 
         var addButton = new RRButton(null, FontAwesomeSolid.PLUS);
-        addButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        addButton.setVariant(RRButton.ButtonVariant.SUCCESS);
+        addButton.setButtonSize(ButtonSize.SMALL);
+        addButton.setVariant(ButtonVariant.SUCCESS);
         addButton.setTooltip(new Tooltip(L18n.localize(addTooltipKey)));
 
         var removeButton = new RRButton(null, FontAwesomeSolid.MINUS);
-        removeButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        removeButton.setVariant(RRButton.ButtonVariant.DANGER);
+        removeButton.setButtonSize(ButtonSize.SMALL);
+        removeButton.setVariant(ButtonVariant.DANGER);
         removeButton.setTooltip(new Tooltip(L18n.localize(removeTooltipKey)));
         removeButton.setDisable(true);
 

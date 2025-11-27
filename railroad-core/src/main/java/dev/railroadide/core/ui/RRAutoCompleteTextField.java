@@ -29,10 +29,12 @@ public class RRAutoCompleteTextField extends RRTextField {
 
     public RRAutoCompleteTextField(String localizationKey, Object... args) {
         super(localizationKey, args);
-        initialize();
     }
 
-    private void initialize() {
+    @Override
+    protected void initialize() {
+        super.initialize();
+        
         suggestionsPopup.setAutoHide(true);
         suggestionsContainer.setHideOnClick(false);
         setPrefWidth(240);

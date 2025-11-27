@@ -11,7 +11,6 @@ import dev.railroadide.core.utility.ServiceLocator;
 import javafx.animation.FadeTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.PasswordField;
 import javafx.scene.layout.HBox;
@@ -220,6 +219,7 @@ public class RRPasswordField extends PasswordField implements ITextField {
             case SUCCESS -> getStyleClass().add("success");
             case ERROR -> getStyleClass().add("error");
             case WARNING -> getStyleClass().add("warning");
+            default -> {}
         }
     }
 

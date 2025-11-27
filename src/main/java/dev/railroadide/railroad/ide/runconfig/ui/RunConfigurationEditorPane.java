@@ -6,6 +6,8 @@ import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.core.ui.styling.ButtonSize;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.localization.L18n;
@@ -172,8 +174,8 @@ public class RunConfigurationEditorPane extends RRVBox {
     private static RRButton createTopBarButton(Ikon icon) {
         var button = new RRButton("", icon);
         button.setSquare(true);
-        button.setVariant(RRButton.ButtonVariant.GHOST);
-        button.setButtonSize(RRButton.ButtonSize.SMALL);
+        button.setVariant(ButtonVariant.GHOST);
+        button.setButtonSize(ButtonSize.SMALL);
         button.getStyleClass().add("run-configuration-editor-top-bar-button");
         return button;
     }
@@ -212,7 +214,7 @@ public class RunConfigurationEditorPane extends RRVBox {
         bottomButtonBar.setPadding(new Insets(5, 10, 5, 10));
 
         var okButton = new RRButton("railroad.generic.ok", FontAwesomeSolid.CHECK);
-        okButton.setVariant(RRButton.ButtonVariant.PRIMARY);
+        okButton.setVariant(ButtonVariant.PRIMARY);
         okButton.setOnAction(event -> {
             if (!applySelectedConfigurationChanges())
                 return;
@@ -222,11 +224,11 @@ public class RunConfigurationEditorPane extends RRVBox {
         });
 
         var cancelButton = new RRButton("railroad.generic.cancel", FontAwesomeSolid.TIMES);
-        cancelButton.setVariant(RRButton.ButtonVariant.DANGER);
+        cancelButton.setVariant(ButtonVariant.DANGER);
         cancelButton.setOnAction(event -> getScene().getWindow().hide());
 
         var applyButton = new RRButton("railroad.generic.apply", FontAwesomeSolid.CHECK_DOUBLE);
-        applyButton.setVariant(RRButton.ButtonVariant.SUCCESS);
+        applyButton.setVariant(ButtonVariant.SUCCESS);
         applyButton.setOnAction(event -> {
             if (!applySelectedConfigurationChanges())
                 return;

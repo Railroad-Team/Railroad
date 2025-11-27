@@ -5,6 +5,7 @@ import dev.railroadide.core.ui.RRCard;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedText;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.core.utility.DesktopUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -139,14 +140,14 @@ public class IDEWelcomePane extends ScrollPane {
         buttonsContainer.setSpacing(12);
 
         var wikiButton = new RRButton("railroad.ide.welcome.getting_started.wiki", FontAwesomeSolid.BOOK);
-        wikiButton.setVariant(RRButton.ButtonVariant.PRIMARY);
+        wikiButton.setVariant(ButtonVariant.PRIMARY);
         wikiButton.setOnAction(event -> {
             event.consume();
             DesktopUtils.openUrl("https://railroadide.dev");
         });
 
         var tutorialsButton = new RRButton("railroad.ide.welcome.getting_started.tutorials", FontAwesomeSolid.GRADUATION_CAP);
-        tutorialsButton.setVariant(RRButton.ButtonVariant.SECONDARY);
+        tutorialsButton.setVariant(ButtonVariant.SECONDARY);
         tutorialsButton.setOnAction(event -> {
             event.consume();
             DesktopUtils.openUrl("https://railroadide.dev/tutorials");
@@ -154,7 +155,7 @@ public class IDEWelcomePane extends ScrollPane {
 
         var discordButton = new RRButton("", FontAwesomeBrands.DISCORD);
         discordButton.setText("Discord");
-        discordButton.setVariant(RRButton.ButtonVariant.GHOST);
+        discordButton.setVariant(ButtonVariant.GHOST);
         discordButton.setOnAction(event -> {
             event.consume();
             DesktopUtils.openUrl("https://discord.turtywurty.dev/");

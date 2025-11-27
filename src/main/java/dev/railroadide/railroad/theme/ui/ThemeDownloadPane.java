@@ -2,6 +2,8 @@ package dev.railroadide.railroad.theme.ui;
 
 import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.core.ui.styling.ButtonSize;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.theme.Theme;
 import dev.railroadide.railroad.theme.ThemeDownloadManager;
 import dev.railroadide.railroad.window.WindowBuilder;
@@ -83,8 +85,8 @@ public class ThemeDownloadPane {
 
         refreshButton = new RRButton();
         refreshButton.setIcon(FontAwesomeSolid.SYNC_ALT);
-        refreshButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        refreshButton.setVariant(RRButton.ButtonVariant.GHOST);
+        refreshButton.setButtonSize(ButtonSize.SMALL);
+        refreshButton.setVariant(ButtonVariant.GHOST);
         refreshButton.setOnAction($ -> loadThemes());
 
         sectionHeader.getChildren().addAll(themesLabel, refreshButton);
@@ -104,7 +106,7 @@ public class ThemeDownloadPane {
         footerSection.setPadding(new Insets(16, 0, 0, 0));
 
         var closeButton = new RRButton("railroad.generic.close");
-        closeButton.setVariant(RRButton.ButtonVariant.SECONDARY);
+        closeButton.setVariant(ButtonVariant.SECONDARY);
         closeButton.setOnAction($ -> stage.close());
 
         footerSection.getChildren().add(closeButton);

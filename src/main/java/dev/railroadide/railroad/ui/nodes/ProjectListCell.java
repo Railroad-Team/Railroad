@@ -5,6 +5,8 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRCard;
+import dev.railroadide.core.ui.styling.ButtonSize;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.project.facet.Facet;
@@ -77,8 +79,8 @@ public class ProjectListCell extends ListCell<Project> {
         var ellipsisIcon = new FontIcon(FontAwesomeSolid.ELLIPSIS_V);
         ellipsisIcon.setIconSize(16);
         ellipsisButton.setGraphic(ellipsisIcon);
-        ellipsisButton.setButtonSize(RRButton.ButtonSize.SMALL);
-        ellipsisButton.setVariant(RRButton.ButtonVariant.GHOST);
+        ellipsisButton.setButtonSize(ButtonSize.SMALL);
+        ellipsisButton.setVariant(ButtonVariant.GHOST);
         ellipsisButton.setPrefWidth(32);
         ellipsisButton.setPrefHeight(32);
         ellipsisButton.getStyleClass().add("project-list-ellipsis-button");

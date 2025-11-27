@@ -1,10 +1,10 @@
 package dev.railroadide.core.ui;
 
 import dev.railroadide.core.localization.LocalizationService;
+import dev.railroadide.core.ui.styling.ButtonSize;
+import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.core.utility.ServiceLocator;
 import javafx.animation.ScaleTransition;
-import javafx.beans.value.WritableValue;
-import javafx.css.StyleableProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -377,13 +377,5 @@ public class RRButton extends Button {
             case MEDIUM -> getStyleClass().add("medium");
             case LARGE -> getStyleClass().add("large");
         }
-    }
-
-    public enum ButtonVariant {
-        PRIMARY, SECONDARY, GHOST, DANGER, SUCCESS, WARNING
-    }
-
-    public enum ButtonSize {
-        SMALL, MEDIUM, LARGE
     }
 }
