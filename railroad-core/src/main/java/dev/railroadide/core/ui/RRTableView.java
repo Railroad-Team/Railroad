@@ -9,15 +9,15 @@ public class RRTableView<T> extends TableView<T> {
 
     public RRTableView() {
         super();
-        initialise();
+        initialize();
     }
 
     public RRTableView(ObservableList<T> items) {
         super(items);
-        initialise();
+        initialize();
     }
 
-    protected void initialise() {
+    protected void initialize() {
         getStyleClass().setAll(DEFAULT_STYLE_CLASSES);
     }
 

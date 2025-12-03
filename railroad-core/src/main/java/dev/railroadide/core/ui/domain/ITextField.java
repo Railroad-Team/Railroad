@@ -58,7 +58,7 @@ public interface ITextField {
     /**
      * Set the placeholder text using a localization key
      * @param localizationKey
-     * @param args optionla arguments to format the translation
+     * @param args optional arguments to format the translation
      */
     void setLocalizedPlaceholder(String localizationKey, Object... args);
 

@@ -35,7 +35,7 @@ public class LocalizedTableColumn<S, T> extends TableColumn<S, T> {
      * Sets the key and then updates the text of the label.
      * Adds a listener to the current language property to update the text when the language changes.
      *
-     * @param key The localization key
+     * @param translationKey The localization key
      */
     public void setKey(final String translationKey) {
         currentKey = translationKey;

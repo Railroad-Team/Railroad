@@ -10,6 +10,7 @@ import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * A form combo box component that extends InformativeLabeledHBox to provide
@@ -29,8 +30,8 @@ public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> impleme
      * @param keyFunction     the function to convert items to strings for display
      * @param valueOfFunction the function to convert strings back to items
      */
-    public FormComboBox(String labelKey, boolean required, boolean editable, boolean translate, @Nullable ToStringFunction<T> keyFunction, @Nullable FromStringFunction<T> valueOfFunction) {
-        super(labelKey, required, Map.of("editable", editable, "translate", translate, "keyFunction", keyFunction, "valueOfFunction", valueOfFunction));
+    public FormComboBox(String labelKey, boolean required, boolean editable, boolean translate, @Nullable Function<T, String> keyFunction) {
+        super(labelKey, required, Map.of("editable", editable, "translate", translate, "keyFunction", keyFunction));
     }
 
     /**
@@ -44,10 +45,9 @@ public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> impleme
     public ComboBox<T> createPrimaryComponent(Map<String, Object> params) {
         boolean editable = (boolean) params.get("editable");
         boolean translate = (boolean) params.get("translate");
-        ToStringFunction<T> keyFunction = (ToStringFunction<T>) params.get("keyFunction");
-        FromStringFunction<T> valueOfFunction = (FromStringFunction<T>) params.get("valueOfFunction");
+        Function<T, String> keyFunction = (Function<T, String>) params.get("keyFunction");
 
-        ComboBox<T> comboBox = translate ? new LocalizedComboBox<>(keyFunction, valueOfFunction) : new ComboBox<>();
+        ComboBox<T> comboBox = translate ? new LocalizedComboBox<>(keyFunction) : new ComboBox<>();
         comboBox.setEditable(editable);
         comboBox.getStyleClass().add("rr-combo-box");
         return comboBox;

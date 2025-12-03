@@ -75,18 +75,6 @@ public final class RunControlsPane extends RRHBox {
                 return "railroad.ide.toolbar.edit_run_configurations";
 
             return object.uuid().toString();
-        }, string -> {
-            if (string == null || string.isEmpty() ||
-                "railroad.ide.toolbar.edit_run_configurations".equalsIgnoreCase(string))
-                return null;
-
-            try {
-                var uuid = UUID.fromString(string);
-                return project.getRunConfigManager().getConfigurationByUUID(uuid);
-            } catch (IllegalArgumentException exception) {
-                Railroad.LOGGER.warn("Failed to parse UUID from string: {}", string, exception);
-                return null;
-            }
         });
 
         comboBox.getItems().setAll(project.getRunConfigManager().getConfigurations());

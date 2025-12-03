@@ -62,7 +62,6 @@ public class RRCheckBox extends CheckBox {
     }
 
     private void initialize() {
-        // TODO: use base style class
         getStyleClass().setAll("rr-check-box", "check-box");
         setAlignment(Pos.CENTER);
         setPadding(new Insets(8, 16, 8, 16));
@@ -155,7 +154,7 @@ public class RRCheckBox extends CheckBox {
      * <p>
      * Example usage:
      * <pre>
-     * RRCheckBox checkbox = RRCheckBox.primary("Save");
+     * RRCheckBox checkbox = new RRCheckBox();
      * checkbox.setOnAction(e -> {
      *     checkbox.setLoading(true);
      *     // Perform async operation

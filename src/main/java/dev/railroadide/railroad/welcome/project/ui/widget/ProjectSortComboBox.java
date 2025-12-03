@@ -38,7 +38,7 @@ public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {
     private final Tooltip sortTooltip = new Tooltip();
 
     public ProjectSortComboBox() {
-        super(ProjectSort::getKey, ProjectSort::valueOf);
+        super(ProjectSort::getKey);
         setItems(FXCollections.observableArrayList(ProjectSort.values()));
         getStyleClass().addAll("rr-combo-box", "project-sort-combo");
         setMinWidth(170);

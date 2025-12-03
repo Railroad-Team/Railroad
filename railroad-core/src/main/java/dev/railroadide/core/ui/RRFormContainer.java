@@ -50,7 +50,7 @@ public class RRFormContainer extends VBox {
         VBox.setVgrow(formContent, javafx.scene.layout.Priority.ALWAYS);
         updateLayout();
 
-        titleLabel.visibleProperty().addListener($ -> updateLayout());
+        titleLabel.visibleProperty().addListener(_observable -> updateLayout());
     }
 
     /**

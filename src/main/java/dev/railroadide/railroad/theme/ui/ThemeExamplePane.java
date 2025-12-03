@@ -145,14 +145,12 @@ public class ThemeExamplePane {
         controlsRow.setAlignment(Pos.CENTER_LEFT);
         controlsRow.getStyleClass().add("transparent-background");
 
-        var comboBox = LocalizedComboBox.fromLocalizationKeys(
-            L18n.localize("railroad.home.settings.appearance.preview.form.combo_box.items.0"),
-            L18n.localize("railroad.home.settings.appearance.preview.form.combo_box.items.1"),
-            L18n.localize("railroad.home.settings.appearance.preview.form.combo_box.items.2")
-        );
-        comboBox.setValue(
-            L18n.localize("railroad.home.settings.appearance.preview.form.combo_box.items.0")
-        );
+        var comboBox = LocalizedComboBox.fromLocalizationKeys(FXCollections.observableArrayList(
+            "railroad.home.settings.appearance.preview.form.combo_box.items.0",
+            "railroad.home.settings.appearance.preview.form.combo_box.items.1",
+            "railroad.home.settings.appearance.preview.form.combo_box.items.2"
+        ));
+        comboBox.setValue("railroad.home.settings.appearance.preview.form.combo_box.items.0");
         comboBox.setPrefWidth(150);
 
         var checkBox = new RRCheckBox("railroad.home.settings.appearance.preview.form.check_box.label");
@@ -160,7 +158,6 @@ public class ThemeExamplePane {
 
         var toggleButton = new RRToggleButton("railroad.home.settings.appearance.preview.form.toggle_button.label");
         toggleButton.setSelected(false);
-        toggleButton.getStyleClass();
 
         var radioButton = new RRRadioButton("railroad.home.settings.appearance.preview.form.radio_button.label");
         radioButton.setSelected(true);
