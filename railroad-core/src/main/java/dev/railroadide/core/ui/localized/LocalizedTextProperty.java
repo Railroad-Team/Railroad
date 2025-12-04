@@ -1,0 +1,145 @@
+package dev.railroadide.core.ui.localized;
+
+import dev.railroadide.core.localization.LocalizationService;
+import dev.railroadide.core.utility.ServiceLocator;
+import javafx.beans.property.ListProperty;
+import javafx.beans.property.SimpleListProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.beans.property.StringPropertyBase;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+
+/**
+ * A text property capable of localizing it's content.
+ * 
+ * Bind a pre-exiting text property to it to use it's behavior.
+ * Use a bidirectional binding if you plan on also using un-localized text.
+ * 
+ */
+public class LocalizedTextProperty extends StringPropertyBase
+{
+    // #region Properties
+
+    private static final Object DEFAULT_BEAN = null;
+    private static final String DEFAULT_NAME = "";
+
+    private final Object bean;
+    private final String name;
+
+    private final StringProperty translationKey;
+    private final ListProperty<Object> translationArgs;
+    private String translated;
+
+    // #endregion
+
+    // #region Constructor
+
+    /**
+     * The constructor of {@code LocalizedTextProperty}
+     *
+     * @param bean         the bean of this {@code StringProperty}
+     * @param name         the name of this {@code StringProperty}
+     * @param initialValue the initial value of the wrapped value
+     * @param args         optional args to format the localized string
+     */
+    public LocalizedTextProperty(Object bean, String name, String initialValue, Object... args)
+    {
+        super("");
+        this.bean = bean;
+        this.name = (name == null) ? DEFAULT_NAME : name;
+
+        this.translationKey = new SimpleStringProperty(this, "localizationKey", initialValue);
+        this.translationArgs = new SimpleListProperty<Object>(this, "localizationArgs",
+                FXCollections.observableArrayList(args));
+
+        translated = null;
+
+        initialize();
+        updateTranslation(true);
+    }
+
+    // #endregion
+
+    // #region Methods
+
+    protected void initialize() {
+        ServiceLocator.getService(LocalizationService.class)
+                .currentLanguageProperty()
+                .addListener(_0 -> updateTranslation(false));
+
+        translationKey.addListener(_0 -> updateTranslation(true));
+        translationArgs.addListener((ListChangeListener<Object>) _0 -> updateTranslation(true));
+    }
+
+    /**
+     * Indicates wether the property is activated.
+     * The property is disactivated when it's value has been directly set.
+     */
+    private boolean activated = false;
+
+    private void updateTranslation(boolean activate) {
+        
+        if (activate)
+            activated = true;
+        
+        if (!activated)
+            return;
+
+        if (translationKey.get() != null) {
+            var service = ServiceLocator.getService(LocalizationService.class);
+            this.translated = service.get(translationKey.get(), translationArgs.get());
+
+            set(this.translated);
+        } else {
+            this.translated = null;
+            set(null);
+        }
+    }
+
+    @Override
+    protected void invalidated() {
+        if (get() != translated) {
+            activated = false;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Object getBean() {
+        return bean;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * @return A property containing this property's translationKey
+     */
+    public StringProperty translationKeyProperty() { return this.translationKey; }
+    public String getTranslationKey() { return translationKey.get(); }
+    public void setTranslationKey(String translationKey)
+    {
+        if (translationKey.trim().isEmpty())
+            this.translationKey.set(null);
+        else
+            this.translationKey.set(translationKey);
+    }
+
+    /**
+     * @return A property containing this property's translation arguments
+     */
+    public ListProperty<Object> translationArgsProperty() { return this.translationArgs; }
+    public ObservableList<Object> getTranslationArgs() { return translationArgs.get(); }
+    public void setTranslationArgs(Object ... args) {  this.translationArgs.setAll(translationArgs); }
+
+    // #endregion
+}

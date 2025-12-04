@@ -1,14 +1,13 @@
 package dev.railroadide.core.ui.localized;
 
-import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.utility.ServiceLocator;
 import javafx.scene.text.Text;
 
 /**
  * An extension of the JavaFX Text that allows for the Text's text to be localised.
  */
 public class LocalizedText extends Text {
-    private String currentKey;
+    
+    private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
     /**
      * Sets the key and then the set the text to the localized key.
@@ -17,8 +16,8 @@ public class LocalizedText extends Text {
      */
     public LocalizedText(final String key) {
         super();
+        textProperty().bindBidirectional(localizedText);
         setKey(key);
-        setText(ServiceLocator.getService(LocalizationService.class).get(key));
     }
 
     /**
@@ -27,7 +26,7 @@ public class LocalizedText extends Text {
      * @return The current localization key.
      */
     public String getKey() {
-        return currentKey;
+        return localizedText.getTranslationKey();
     }
 
     /**
@@ -37,9 +36,6 @@ public class LocalizedText extends Text {
      * @param key The localization key
      */
     public void setKey(final String key) {
-        currentKey = key;
-        ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-            setText(ServiceLocator.getService(LocalizationService.class).get(key)));
-        setText(ServiceLocator.getService(LocalizationService.class).get(currentKey));
+        localizedText.setTranslationKey(key);
     }
 }

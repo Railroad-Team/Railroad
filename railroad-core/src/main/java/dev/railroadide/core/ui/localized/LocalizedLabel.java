@@ -1,9 +1,5 @@
 package dev.railroadide.core.ui.localized;
 
-import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.utility.ServiceLocator;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.scene.control.Label;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -13,9 +9,8 @@ import org.jetbrains.annotations.NotNull;
  */
 @Getter
 public class LocalizedLabel extends Label {
-    private final ObservableList<Object> args = FXCollections.observableArrayList();
-    private String key;
-
+    
+    private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
     /**
      * Creates a new LocalizedLabel and sets the key and args
      *
@@ -24,7 +19,18 @@ public class LocalizedLabel extends Label {
      */
     public LocalizedLabel(@NotNull String key, @NotNull Object... args) {
         super();
+
+        textProperty().bindBidirectional(localizedText);
         setKey(key, args);
+    }
+
+    /*public void setText(String t) {
+
+    }*/
+
+    public String getKey()
+    {
+        return localizedText.getTranslationKey();
     }
 
     /**
@@ -35,16 +41,7 @@ public class LocalizedLabel extends Label {
      * @param args The args to be applied to the localized key
      */
     public void setKey(@NotNull String key, @NotNull Object... args) {
-        this.args.setAll(args);
-        this.key = key;
-
-        if (key != null && !key.trim().isEmpty()) {
-            LocalizationService service = ServiceLocator.getService(LocalizationService.class);
-            service.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                setText(service.get(key, args)));
-            setText(service.get(this.key, args));
-        } else {
-            setText("");
-        }
+        localizedText.setTranslationArgs(args);
+        localizedText.setTranslationKey(key);
     }
 }

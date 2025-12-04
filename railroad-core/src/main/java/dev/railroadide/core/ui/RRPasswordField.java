@@ -3,15 +3,13 @@ package dev.railroadide.core.ui;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import dev.railroadide.core.localization.LocalizationService;
 import dev.railroadide.core.ui.domain.ITextField;
+import dev.railroadide.core.ui.localized.LocalizedTextProperty;
 import dev.railroadide.core.ui.styling.TextFieldSize;
 import dev.railroadide.core.ui.styling.ValidationState;
-import dev.railroadide.core.utility.ServiceLocator;
 import javafx.animation.FadeTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.AccessibleRole;
 import javafx.scene.control.PasswordField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -31,6 +29,8 @@ public class RRPasswordField extends PasswordField implements ITextField {
 
     @Getter
     private HBox container;
+
+    private final LocalizedTextProperty localizedPromptText = new LocalizedTextProperty(this, "localizedPromptText", null);
 
     //#endregion
 
@@ -62,14 +62,16 @@ public class RRPasswordField extends PasswordField implements ITextField {
      */
     public RRPasswordField(String localizationKey, Object... args) {
         super();
-        setLocalizedPlaceholder(localizationKey, args);
         initialize();
+
+        setLocalizedPlaceholder(localizationKey, args);
     }
 
     protected void initialize() {
         getStyleClass().setAll(RRPasswordField.DEFAULT_STYLE_CLASSES);
-        setAccessibleRole(AccessibleRole.PASSWORD_FIELD);
         setPadding(new Insets(8, 12, 8, 12));
+
+        promptTextProperty().bindBidirectional(localizedPromptText);
 
         container = new HBox();
         container.setAlignment(Pos.CENTER_LEFT);
@@ -163,11 +165,8 @@ public class RRPasswordField extends PasswordField implements ITextField {
 
     @Override
     public void setLocalizedPlaceholder(String localizationKey, Object... args) {
-        setPromptText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args));
-        if (localizationKey != null) {
-            ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                setPromptText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args)));
-        }
+        localizedPromptText.setTranslationArgs(args);
+        localizedPromptText.setTranslationKey(localizationKey);
     }
 
     @Override

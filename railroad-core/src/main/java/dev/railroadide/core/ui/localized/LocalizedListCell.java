@@ -1,7 +1,5 @@
 package dev.railroadide.core.ui.localized;
 
-import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.utility.ServiceLocator;
 import javafx.scene.control.ListCell;
 
 import java.util.function.Function;
@@ -12,6 +10,9 @@ import java.util.function.Function;
  * @param <T> The type of the ListCell items.
  */
 public class LocalizedListCell<T> extends ListCell<T> {
+
+    private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
+
     /**
      * Creates a LocalizedListCell with the given key function.
      * A listener is added to the List Cell to update the text when the item changes.
@@ -20,19 +21,14 @@ public class LocalizedListCell<T> extends ListCell<T> {
      * @param keyFunction The function that converts the object to a key to be localized.
      */
     public LocalizedListCell(Function<T, String> keyFunction) {
+
+        textProperty().bindBidirectional(localizedText);
+
         itemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue == null) {
-                setText(null);
+                localizedText.setTranslationKey(null);
             } else {
-                setText(ServiceLocator.getService(LocalizationService.class).get(keyFunction.apply(newValue)));
-            }
-        });
-
-        ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) -> {
-            if (getItem() == null) {
-                setText(null);
-            } else {
-                setText(ServiceLocator.getService(LocalizationService.class).get(keyFunction.apply(getItem())));
+                localizedText.setTranslationKey(keyFunction.apply(newValue));
             }
         });
     }

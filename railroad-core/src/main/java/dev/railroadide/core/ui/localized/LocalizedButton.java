@@ -1,14 +1,13 @@
 package dev.railroadide.core.ui.localized;
 
-import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.utility.ServiceLocator;
 import javafx.scene.control.Button;
 
 /**
  * An extension of the JavaFX Button that allows for the button's text to be a localized string.
  */
 public class LocalizedButton extends Button {
-    private String currentKey;
+
+    private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
     /**
      * Constructs a LocalizedButton with the specified key.
@@ -18,8 +17,8 @@ public class LocalizedButton extends Button {
      */
     public LocalizedButton(String key) {
         super();
+        textProperty().bindBidirectional(localizedText);
         setKey(key);
-        setText(ServiceLocator.getService(LocalizationService.class).get(key));
     }
 
     /**
@@ -29,7 +28,7 @@ public class LocalizedButton extends Button {
      * @return The current key
      */
     public String getKey() {
-        return currentKey;
+        return localizedText.getTranslationKey();
     }
 
     /**
@@ -39,9 +38,6 @@ public class LocalizedButton extends Button {
      * @param key The new key
      */
     public void setKey(String key) {
-        currentKey = key;
-        ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-            setText(ServiceLocator.getService(LocalizationService.class).get(key)));
-        setText(ServiceLocator.getService(LocalizationService.class).get(currentKey));
+        localizedText.setTranslationKey(key);
     }
 }

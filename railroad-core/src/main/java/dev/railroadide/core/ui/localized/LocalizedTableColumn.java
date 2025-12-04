@@ -1,14 +1,13 @@
 package dev.railroadide.core.ui.localized;
 
-import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.utility.ServiceLocator;
 import javafx.scene.control.TableColumn;
 
 /**
  * An extension of the JavaFX TableColumn that allows for the TableColumn's label to be localised.
  */
 public class LocalizedTableColumn<S, T> extends TableColumn<S, T> {
-    private String currentKey;
+    
+    private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
     /**
      * Sets the key and then the set the text to the localized key.
@@ -18,8 +17,8 @@ public class LocalizedTableColumn<S, T> extends TableColumn<S, T> {
      */
     public LocalizedTableColumn(final String translationKey, Object... args) {
         super();
+        textProperty().bindBidirectional(localizedText);
         setKey(translationKey);
-        setText(ServiceLocator.getService(LocalizationService.class).get(translationKey, args));
     }
 
     /**
@@ -28,7 +27,7 @@ public class LocalizedTableColumn<S, T> extends TableColumn<S, T> {
      * @return The current localization key.
      */
     public String getKey() {
-        return currentKey;
+        return localizedText.getTranslationKey();
     }
 
     /**
@@ -38,14 +37,6 @@ public class LocalizedTableColumn<S, T> extends TableColumn<S, T> {
      * @param translationKey The localization key
      */
     public void setKey(final String translationKey) {
-        currentKey = translationKey;
-        ServiceLocator
-            .getService(LocalizationService.class)
-            .currentLanguageProperty()
-            .addListener(
-                (observable, oldValue, newValue) -> setText(ServiceLocator.getService(LocalizationService.class).get(translationKey))
-            );
-
-        setText(ServiceLocator.getService(LocalizationService.class).get(currentKey));
+        localizedText.setTranslationKey(translationKey);
     }
 }

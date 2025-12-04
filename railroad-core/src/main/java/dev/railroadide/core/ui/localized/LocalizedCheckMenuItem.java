@@ -1,14 +1,13 @@
 package dev.railroadide.core.ui.localized;
 
-import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.utility.ServiceLocator;
 import javafx.scene.control.CheckMenuItem;
 
 /**
  * An extension of the JavaFX CheckMenuItem that allows for the CheckMenuItem's text to be localized.
  */
 public class LocalizedCheckMenuItem extends CheckMenuItem {
-    private String currentKey;
+    
+    private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
     /**
      * Creates a new LocalizedCheckMenuItem with the specified key.
@@ -18,9 +17,10 @@ public class LocalizedCheckMenuItem extends CheckMenuItem {
      */
     public LocalizedCheckMenuItem(String key, boolean selected) {
         super();
+
+        textProperty().bindBidirectional(localizedText);
         setKey(key);
         setSelected(selected);
-        setText(ServiceLocator.getService(LocalizationService.class).get(key));
     }
 
     /**
@@ -29,7 +29,7 @@ public class LocalizedCheckMenuItem extends CheckMenuItem {
      * @return the current localization key
      */
     public String getKey() {
-        return currentKey;
+        return localizedText.getTranslationKey();
     }
 
     /**
@@ -38,9 +38,6 @@ public class LocalizedCheckMenuItem extends CheckMenuItem {
      * @param key the new localization key to set
      */
     public void setKey(final String key) {
-        currentKey = key;
-        ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-            setText(ServiceLocator.getService(LocalizationService.class).get(key)));
-        setText(ServiceLocator.getService(LocalizationService.class).get(currentKey));
+        localizedText.setTranslationKey(key);
     }
 }

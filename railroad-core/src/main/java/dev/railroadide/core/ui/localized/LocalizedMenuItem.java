@@ -1,9 +1,7 @@
 package dev.railroadide.core.ui.localized;
 
-import dev.railroadide.core.localization.LocalizationService;
 import dev.railroadide.core.settings.keybinds.KeybindData;
 import dev.railroadide.core.utility.DesktopUtils;
-import dev.railroadide.core.utility.ServiceLocator;
 import javafx.scene.control.MenuItem;
 
 /**
@@ -11,7 +9,8 @@ import javafx.scene.control.MenuItem;
  * It also supports setting a url to open when the item is clicked, additionally allows for a keybind to be set to trigger the items action.
  */
 public class LocalizedMenuItem extends MenuItem {
-    private String currentKey;
+    
+    private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
     /**
      * Creates a new LocalizedMenuItem with the specified key.
@@ -20,8 +19,8 @@ public class LocalizedMenuItem extends MenuItem {
      */
     public LocalizedMenuItem(final String key) {
         super();
+        textProperty().bindBidirectional(localizedText);
         setKey(key);
-        setText(ServiceLocator.getService(LocalizationService.class).get(key));
     }
 
     /**
@@ -41,7 +40,7 @@ public class LocalizedMenuItem extends MenuItem {
      * @return The current localization key
      */
     public String getKey() {
-        return currentKey;
+        return localizedText.getTranslationKey();
     }
 
     /**
@@ -50,10 +49,7 @@ public class LocalizedMenuItem extends MenuItem {
      * @param key The new localization key to set
      */
     public void setKey(final String key) {
-        currentKey = key;
-        ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-            setText(ServiceLocator.getService(LocalizationService.class).get(key)));
-        setText(ServiceLocator.getService(LocalizationService.class).get(currentKey));
+        localizedText.setTranslationKey(key);
     }
 
     /**

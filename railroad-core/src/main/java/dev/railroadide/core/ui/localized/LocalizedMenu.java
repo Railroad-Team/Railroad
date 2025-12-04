@@ -1,14 +1,13 @@
 package dev.railroadide.core.ui.localized;
 
-import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.utility.ServiceLocator;
 import javafx.scene.control.Menu;
 
 /**
  * An extension of the JavaFX Menu that allows for the Menu's text to be localised.
  */
 public class LocalizedMenu extends Menu {
-    private String currentKey;
+    
+    private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
     /**
      * Creates a new LocalizedMenu with the specified key.
@@ -17,8 +16,8 @@ public class LocalizedMenu extends Menu {
      */
     public LocalizedMenu(final String key) {
         super();
+        textProperty().bindBidirectional(localizedText);
         setKey(key);
-        setText(ServiceLocator.getService(LocalizationService.class).get(key));
     }
 
     /**
@@ -27,7 +26,7 @@ public class LocalizedMenu extends Menu {
      * @return The current localization key
      */
     public String getKey() {
-        return currentKey;
+        return localizedText.getTranslationKey();
     }
 
     /**
@@ -36,9 +35,6 @@ public class LocalizedMenu extends Menu {
      * @param key The new localization key to set
      */
     public void setKey(final String key) {
-        currentKey = key;
-        ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-            setText(ServiceLocator.getService(LocalizationService.class).get(key)));
-        setText(ServiceLocator.getService(LocalizationService.class).get(currentKey));
+        localizedText.setTranslationKey(key);
     }
 }

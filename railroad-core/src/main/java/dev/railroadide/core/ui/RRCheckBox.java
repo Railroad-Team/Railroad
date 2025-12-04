@@ -4,74 +4,67 @@ import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.utility.ServiceLocator;
+import dev.railroadide.core.ui.localized.LocalizedTextProperty;
 import javafx.animation.ScaleTransition;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.util.Duration;
-import lombok.Getter;
 
 public class RRCheckBox extends CheckBox {
 
     private FontIcon icon;
 
-    @Getter
-    private boolean isLoading = false;
-    private String localizationKey;
-    private Object[] localizationArgs;
-
-    private String originalText;
     private Node originalGraphic;
     private FontIcon loadingSpinner;
+
+    private final BooleanProperty isLoading = new SimpleBooleanProperty(this, "isLoading", false);
+    public boolean getIsLoading() { return isLoading.get(); }
+
+    private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
     public RRCheckBox() {
         this("");
     }
 
     public RRCheckBox(String localizationKey, Ikon icon, Object... args) {
-        super((localizationKey != null && !localizationKey.isBlank()) ? ServiceLocator.getService(LocalizationService.class).get(localizationKey) : "");
+        super();
+        
+        initialize(localizationKey, args);
         setIcon(icon);
-        initialize();
-        if(localizationKey != null && !localizationKey.isBlank()) {
-            this.localizationKey = localizationKey;
-            this.localizationArgs = args;
-            addLocalizationListener();
-        }
     }
 
     public RRCheckBox(String localizationKey, Node graphic, Object... args) {
-        super((localizationKey != null && !localizationKey.isBlank()) ? ServiceLocator.getService(LocalizationService.class).get(localizationKey) : "");
+        super();
+        
+        initialize(localizationKey, args);
         setGraphic(graphic);
-        initialize();
-        if(localizationKey != null && !localizationKey.isBlank()) {
-            this.localizationKey = localizationKey;
-            this.localizationArgs = args;
-            addLocalizationListener();
-        }
     }
 
     public RRCheckBox(String localizationKey, Object... args) {
-        super(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args));
-        initialize();
-        this.localizationKey = localizationKey;
-        this.localizationArgs = args;
-        addLocalizationListener();
+        super();
+        
+        initialize(localizationKey, args);
     }
 
-    private void initialize() {
+    private void initialize(String localizationKey, Object ... args) {
         getStyleClass().setAll("rr-check-box", "check-box");
         setAlignment(Pos.CENTER);
         setPadding(new Insets(8, 16, 8, 16));
+
+        textProperty().bindBidirectional(localizedText);
+        localizedText.setTranslationArgs(args);
+        localizedText.setTranslationKey(localizationKey);
 
         loadingSpinner = new FontIcon(FontAwesomeSolid.SYNC_ALT);
         loadingSpinner.setIconSize(16);
         loadingSpinner.getStyleClass().add("loading-spinner");
 
         setOnMousePressed($ -> {
-            if (!isLoading) {
+            if (!getIsLoading()) {
                 var scale = new ScaleTransition(Duration.millis(100), this);
                 scale.setToX(0.95);
                 scale.setToY(0.95);
@@ -80,7 +73,7 @@ public class RRCheckBox extends CheckBox {
         });
 
         setOnMouseReleased($ -> {
-            if (!isLoading) {
+            if (!getIsLoading()) {
                 var scale = new ScaleTransition(Duration.millis(100), this);
                 scale.setToX(1.0);
                 scale.setToY(1.0);
@@ -88,17 +81,15 @@ public class RRCheckBox extends CheckBox {
             }
         });
 
-        updateContent();
-    }
+        isLoading.addListener(_0 -> {
+            if (getIsLoading()) {
+                onLoading();
+            } else {
+                onNotLoading();
+            }
+        });
 
-    private void addLocalizationListener() {
-        if (localizationKey != null) {
-            ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) -> {
-                if (!isLoading) {
-                    setText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, localizationArgs));
-                }
-            });
-        }
+        updateContent();
     }
 
     /**
@@ -109,13 +100,8 @@ public class RRCheckBox extends CheckBox {
      * @param args            optional formatting arguments for the localized text
      */
     public void setLocalizedText(String localizationKey, Object... args) {
-        this.localizationKey = localizationKey;
-        this.localizationArgs = args;
-        if (!isLoading) {
-            setText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args));
-        }
-
-        addLocalizationListener();
+        localizedText.setTranslationArgs(args);
+        localizedText.setTranslationKey(localizationKey);
     }
 
     /**
@@ -133,7 +119,7 @@ public class RRCheckBox extends CheckBox {
             icon = null;
         }
 
-        if (!isLoading) {
+        if (!getIsLoading()) {
             updateContent();
         }
     }
@@ -168,47 +154,52 @@ public class RRCheckBox extends CheckBox {
      * @param loading true to show loading state, false to restore normal state
      */
     public void setLoading(boolean loading) {
-        if (this.isLoading == loading)
-            return;
+        isLoading.set(loading);
+    }
 
-        this.isLoading = loading;
+    /**
+     * Called when the button has started loading
+     */
+    protected void onLoading()
+    {
+        textProperty().unbindBidirectional(localizedText);
+        originalGraphic = getGraphic();
 
-        if (loading) {
-            originalText = getText();
-            originalGraphic = getGraphic();
+        setDisable(true);
+        getStyleClass().add("loading");
 
-            setDisable(true);
-            getStyleClass().add("loading");
+        var loadingContent = new RRHBox(8);
+        loadingContent.setAlignment(Pos.CENTER);
+        loadingContent.getChildren().addAll(loadingSpinner);
 
-            var loadingContent = new RRHBox(8);
-            loadingContent.setAlignment(Pos.CENTER);
-            loadingContent.getChildren().addAll(loadingSpinner);
-
-            if (originalText != null && !originalText.isEmpty()) {
-                setText("Loading...");
-            } else {
-                setText("");
-            }
-
-            setGraphic(loadingContent);
+        if (localizedText.get() != null && !localizedText.get().isEmpty()) {
+            setText("Loading...");
         } else {
-            setDisable(false);
-            getStyleClass().remove("loading");
+            setText("");
+        }
 
-            if (originalText != null) {
-                setText(originalText);
-            }
+        setGraphic(loadingContent);
+    }
 
-            if (originalGraphic != null) {
-                setGraphic(originalGraphic);
-            } else {
-                updateContent();
-            }
+    /**
+     * Called when the button has stoped loading
+     */
+    protected void onNotLoading()
+    {
+        setDisable(false);
+        getStyleClass().remove("loading");
+
+        textProperty().bindBidirectional(localizedText);
+
+        if (originalGraphic != null) {
+            setGraphic(originalGraphic);
+        } else {
+            updateContent();
         }
     }
 
     private void updateContent() {
-        if (isLoading)
+        if (getIsLoading())
             return; // Don't update content while loading
 
         if (icon != null) {

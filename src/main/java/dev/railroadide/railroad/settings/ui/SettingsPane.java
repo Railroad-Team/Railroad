@@ -16,6 +16,7 @@ import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TreeItem;
@@ -78,7 +79,7 @@ public class SettingsPane extends RRVBox {
         rightVbox.getStyleClass().remove("background-2");
         rightVbox.getStyleClass().add("settings-right-pane");
 
-        var pathLabel = new LocalizedLabel("");
+        var pathLabel = new Label("");
         pathLabel.getStyleClass().add("settings-path-title");
         var settingsContentBox = new RRVBox();
         settingsContentBox.setSpacing(20);

@@ -1,14 +1,13 @@
 package dev.railroadide.core.ui.localized;
 
-import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.utility.ServiceLocator;
 import javafx.scene.control.TextArea;
 
 /**
  * An extension of the JavaFX TextArea that allows for the TextArea's prompt text to be localised.
  */
 public class LocalizedTextArea extends TextArea {
-    private String currentKey;
+    
+    private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
     /**
      * Sets the key and sets the prompt text to the localized key.
@@ -17,10 +16,8 @@ public class LocalizedTextArea extends TextArea {
      */
     public LocalizedTextArea(final String key) {
         super();
-        if (key != null) {
-            setKey(key);
-            setPromptText(ServiceLocator.getService(LocalizationService.class).get(key));
-        }
+        promptTextProperty().bindBidirectional(localizedText);
+        setKey(key);
     }
 
     /**
@@ -29,7 +26,7 @@ public class LocalizedTextArea extends TextArea {
      * @return The current key.
      */
     public String getKey() {
-        return currentKey;
+        return localizedText.getTranslationKey();
     }
 
     /**
@@ -39,9 +36,6 @@ public class LocalizedTextArea extends TextArea {
      * @param key The key to be localized
      */
     public void setKey(final String key) {
-        currentKey = key;
-        ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-            setPromptText(ServiceLocator.getService(LocalizationService.class).get(key)));
-        setPromptText(ServiceLocator.getService(LocalizationService.class).get(currentKey));
+        localizedText.setTranslationKey(key);
     }
 }

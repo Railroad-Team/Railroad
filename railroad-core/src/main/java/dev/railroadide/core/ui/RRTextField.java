@@ -1,10 +1,9 @@
 package dev.railroadide.core.ui;
 
-import dev.railroadide.core.localization.LocalizationService;
 import dev.railroadide.core.ui.domain.ITextField;
+import dev.railroadide.core.ui.localized.LocalizedTextProperty;
 import dev.railroadide.core.ui.styling.TextFieldSize;
 import dev.railroadide.core.ui.styling.ValidationState;
-import dev.railroadide.core.utility.ServiceLocator;
 import javafx.animation.FadeTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -30,6 +29,8 @@ public class RRTextField extends TextField implements ITextField {
     private FontIcon suffixIcon;
     @Getter
     private HBox container;
+
+    private final LocalizedTextProperty localizedPromptText = new LocalizedTextProperty(this, "localizedPromptText", null);
 
     /**
      * Constructs a new text field with empty text and default styling.
@@ -57,14 +58,16 @@ public class RRTextField extends TextField implements ITextField {
      */
     public RRTextField(String localizationKey, Object... args) {
         super();
-        setLocalizedPlaceholder(localizationKey, args);
         initialize();
+
+        setLocalizedPlaceholder(localizationKey, args);
     }
 
     protected void initialize() {
         getStyleClass().setAll(RRTextField.DEFAULT_STYLE_CLASSES);
-
         setPadding(new Insets(8, 12, 8, 12));
+
+        promptTextProperty().bindBidirectional(localizedPromptText);
 
         container = new HBox();
         container.setAlignment(Pos.CENTER_LEFT);
@@ -218,10 +221,7 @@ public class RRTextField extends TextField implements ITextField {
     }
 
     public void setLocalizedPlaceholder(String localizationKey, Object... args) {
-        setPromptText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args));
-        if (localizationKey != null) {
-            ServiceLocator.getService(LocalizationService.class).currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-                setPromptText(ServiceLocator.getService(LocalizationService.class).get(localizationKey, args)));
-        }
+        localizedPromptText.setTranslationArgs(args);
+        localizedPromptText.setTranslationKey(localizationKey);
     }
 }
