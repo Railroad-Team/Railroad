@@ -5,7 +5,7 @@ import org.kordamp.ikonli.Ikon;
 import dev.railroadide.core.ui.styling.TextFieldSize;
 import dev.railroadide.core.ui.styling.ValidationState;
 
-public interface ITextField {
+public interface TextFieldControl {
 
     /**
      * Set the size of the text field

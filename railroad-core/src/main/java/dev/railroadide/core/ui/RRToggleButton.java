@@ -16,8 +16,6 @@ import javafx.util.Duration;
 
 public class RRToggleButton extends ToggleButton {
 
-    //#region Properties
-
 	public static final String[] DEFAULT_STYLE_CLASSES = { "rr-button", "rr-toggle-button", "toggle-button" };
 
     private FontIcon icon;
@@ -26,13 +24,11 @@ public class RRToggleButton extends ToggleButton {
     private FontIcon loadingSpinner;
 
     private final BooleanProperty isLoading = new SimpleBooleanProperty(this, "isLoading", false);
-    public boolean getIsLoading() { return isLoading.get(); }
+    public boolean getIsLoading() {
+        return isLoading.get();
+    }
 
     private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
-
-    //#endregion
-
-	//#region Constructor
 
 	public RRToggleButton() {
         this("");
@@ -58,7 +54,7 @@ public class RRToggleButton extends ToggleButton {
         initialize(localizationKey, args);
     }
 
-	protected void initialize(String localizationKey, Object ... args) {
+	protected void initialize(String localizationKey, Object... args) {
 		getStyleClass().setAll(RRToggleButton.DEFAULT_STYLE_CLASSES);
 
         setPadding(new Insets(8, 16, 8, 16));
@@ -89,7 +85,7 @@ public class RRToggleButton extends ToggleButton {
             }
         });
 
-        isLoading.addListener(_0 -> {
+        isLoading.addListener($ -> {
             if (getIsLoading()) {
                 onLoading();
             } else {
@@ -99,10 +95,6 @@ public class RRToggleButton extends ToggleButton {
 
         updateContent();
 	}
-
-	//#endregion
-
-    //#region Methods
 
     /**
      * Set the button text using a localization key with optional formatting arguments.
@@ -147,8 +139,7 @@ public class RRToggleButton extends ToggleButton {
     /**
      * Called when the button has started loading
      */
-    protected void onLoading()
-    {
+    protected void onLoading() {
         textProperty().unbindBidirectional(localizedText);
         originalGraphic = getGraphic();
 
@@ -171,8 +162,7 @@ public class RRToggleButton extends ToggleButton {
     /**
      * Called when the button has stopped loading
      */
-    protected void onNotLoading()
-    {
+    protected void onNotLoading() {
         setDisable(false);
         getStyleClass().remove("loading");
 
@@ -204,5 +194,4 @@ public class RRToggleButton extends ToggleButton {
         }
     }
 
-    //#endregion
 }

@@ -22,7 +22,9 @@ public class RRCheckBox extends CheckBox {
     private FontIcon loadingSpinner;
 
     private final BooleanProperty isLoading = new SimpleBooleanProperty(this, "isLoading", false);
-    public boolean getIsLoading() { return isLoading.get(); }
+    public boolean getIsLoading() {
+        return isLoading.get();
+    }
 
     private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
@@ -50,7 +52,7 @@ public class RRCheckBox extends CheckBox {
         initialize(localizationKey, args);
     }
 
-    private void initialize(String localizationKey, Object ... args) {
+    private void initialize(String localizationKey, Object... args) {
         getStyleClass().setAll("rr-check-box", "check-box");
         setAlignment(Pos.CENTER);
         setPadding(new Insets(8, 16, 8, 16));
@@ -81,7 +83,7 @@ public class RRCheckBox extends CheckBox {
             }
         });
 
-        isLoading.addListener(_0 -> {
+        isLoading.addListener($ -> {
             if (getIsLoading()) {
                 onLoading();
             } else {
@@ -160,8 +162,7 @@ public class RRCheckBox extends CheckBox {
     /**
      * Called when the button has started loading
      */
-    protected void onLoading()
-    {
+    protected void onLoading() {
         textProperty().unbindBidirectional(localizedText);
         originalGraphic = getGraphic();
 
@@ -184,8 +185,7 @@ public class RRCheckBox extends CheckBox {
     /**
      * Called when the button has stopped loading
      */
-    protected void onNotLoading()
-    {
+    protected void onNotLoading() {
         setDisable(false);
         getStyleClass().remove("loading");
 

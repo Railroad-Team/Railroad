@@ -1,6 +1,6 @@
 package dev.railroadide.core.ui;
 
-import dev.railroadide.core.ui.domain.ITextField;
+import dev.railroadide.core.ui.domain.TextFieldControl;
 import dev.railroadide.core.ui.localized.LocalizedTextProperty;
 import dev.railroadide.core.ui.styling.TextFieldSize;
 import dev.railroadide.core.ui.styling.ValidationState;
@@ -19,7 +19,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
  * A modern text field component with enhanced styling, icons, and validation states.
  * Supports different sizes, validation states, and icon integration.
  */
-public class RRTextField extends TextField implements ITextField {
+public class RRTextField extends TextField implements TextFieldControl {
 
     public static final String[] DEFAULT_STYLE_CLASSES = { "rr-text-field", "text-field" };
 

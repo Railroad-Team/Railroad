@@ -24,8 +24,6 @@ import org.kordamp.ikonli.javafx.FontIcon;
  */
 public class RRButton extends Button {
 
-    //#region Fields
-
     public static final String[] DEFAULT_STYLE_CLASSES = { "rr-button", "button" };
 
     private FontIcon icon;
@@ -33,12 +31,10 @@ public class RRButton extends Button {
     private Node originalGraphic;
     private FontIcon loadingSpinner;
 
-    //#endregion
-
-    //#region Properties
-    
     private final BooleanProperty isLoading = new SimpleBooleanProperty(this, "isLoading", false);
-    public boolean getIsLoading() { return isLoading.get(); }
+    public boolean getIsLoading() {
+        return isLoading.get();
+    }
     
     private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
@@ -47,10 +43,6 @@ public class RRButton extends Button {
     private final BooleanProperty isFlat = new SimpleBooleanProperty(this, "isFlat", false);
     private final ObjectProperty<ButtonVariant> variant = new SimpleObjectProperty<>(this, "variant", ButtonVariant.PRIMARY);
     private final ObjectProperty<ButtonSize> size = new SimpleObjectProperty<>(this, "size", ButtonSize.MEDIUM);
-
-    //#endregion
-
-    //#region Constructor
 
     public RRButton() {
         this("");
@@ -130,7 +122,7 @@ public class RRButton extends Button {
         return button;
     }
 
-    protected void initialize(String localizationKey, Object ... args) {
+    protected void initialize(String localizationKey, Object... args) {
         getStyleClass().setAll(RRButton.DEFAULT_STYLE_CLASSES);
         
         setAlignment(Pos.CENTER);
@@ -162,7 +154,7 @@ public class RRButton extends Button {
             }
         });
 
-        isLoading.addListener(_0 -> {
+        isLoading.addListener($ -> {
             if (getIsLoading()) {
                 onLoading();
             } else {
@@ -170,17 +162,15 @@ public class RRButton extends Button {
             }
         });
 
-        variant.addListener(_0 -> updateStyle());
-        size.addListener(_0 -> updateStyle());
-        isSquare.addListener(_0 -> updateStyle());
-        isOutlined.addListener(_0 -> updateStyle());
-        isFlat.addListener(_0 -> updateStyle());
+        variant.addListener($ -> updateStyle());
+        size.addListener($ -> updateStyle());
+        isSquare.addListener($ -> updateStyle());
+        isOutlined.addListener($ -> updateStyle());
+        isFlat.addListener($ -> updateStyle());
 
         updateStyle();
         updateContent();
     }
-
-    //#endregion
 
     /**
      * Set the button text using a localization key with optional formatting arguments.
@@ -193,8 +183,6 @@ public class RRButton extends Button {
         localizedText.setTranslationArgs(args);
         localizedText.setTranslationKey(localizationKey);
     }
-
-    //#region Style Methods
 
     /**
      * Set the button variant
@@ -267,8 +255,7 @@ public class RRButton extends Button {
     /**
      * Called when the button has started loading
      */
-    protected void onLoading()
-    {
+    protected void onLoading() {
         textProperty().unbindBidirectional(localizedText);
         originalGraphic = getGraphic();
 
@@ -291,8 +278,7 @@ public class RRButton extends Button {
     /**
      * Called when the button has stopped loading
      */
-    protected void onNotLoading()
-    {
+    protected void onNotLoading() {
         setDisable(false);
         getStyleClass().remove("loading");
 
@@ -336,8 +322,6 @@ public class RRButton extends Button {
     public void setFlat(boolean flat) {
         isFlat.set(flat);
     }
-
-    //#endregion
 
     private void updateContent() {
         if (getIsLoading())

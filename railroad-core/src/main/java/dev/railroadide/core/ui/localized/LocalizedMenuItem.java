@@ -31,7 +31,7 @@ public class LocalizedMenuItem extends MenuItem {
      */
     public LocalizedMenuItem(final String key, String url) {
         this(key);
-        this.setOnAction($ -> DesktopUtils.openUrl(url));
+        setOnAction($ -> DesktopUtils.openUrl(url));
     }
 
     /**
@@ -58,6 +58,6 @@ public class LocalizedMenuItem extends MenuItem {
      * @param keybindData the keybind data to associate with this menu item
      */
     public void setKeybindData(KeybindData keybindData) {
-        this.setAccelerator(keybindData.getKeyCodeCombination());
+        setAccelerator(keybindData.getKeyCodeCombination());
     }
 }

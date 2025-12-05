@@ -13,13 +13,10 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
 
     public static final String[] DEFAULT_STYLE_CLASSES = { "combo-box-base", "rr-combo-box", "combo-box" };
 
-    //#region Constructor
-
     /**
      * Create a new ComboBox that can localize it's items with a given key function
      */
-    public LocalizedComboBox()
-    {
+    public LocalizedComboBox() {
         super();
         initialize();
     }
@@ -29,8 +26,7 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
      * 
      * @param keyFunction A function that for any value T returns a localization key
      */
-    public LocalizedComboBox(Function<T, String> keyFunction)
-    {
+    public LocalizedComboBox(Function<T, String> keyFunction) {
         super();
         initialize();
         setKeyFunction(keyFunction);
@@ -42,8 +38,7 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
      * @param localizationKeys A list of localization keys
      * @return
      */
-    public static LocalizedComboBox<String> fromLocalizationKeys(ObservableList<String> localizationKeys)
-    {
+    public static LocalizedComboBox<String> fromLocalizationKeys(ObservableList<String> localizationKeys) {
         LocalizedComboBox<String> combo = new LocalizedComboBox<>();
         combo.setKeyFunction(Function.identity());
         combo.setItems(localizationKeys);
@@ -51,12 +46,7 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
         return combo;
     }
 
-    //#endregion
-
-    //#region Methods
-
-    protected void initialize()
-    {
+    protected void initialize() {
         getStyleClass().setAll(LocalizedComboBox.DEFAULT_STYLE_CLASSES);
     }
 
@@ -65,11 +55,9 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
      * 
      * @param keyFunction A function that for any value T returns a localization key
      */
-    public void setKeyFunction(Function<T, String> keyFunction)
-    {
-        this.setCellFactory(list -> new LocalizedListCell<T>(keyFunction));
-        this.setButtonCell(new LocalizedListCell<T>(keyFunction));
+    public void setKeyFunction(Function<T, String> keyFunction) {
+        setCellFactory(list -> new LocalizedListCell<T>(keyFunction));
+        setButtonCell(new LocalizedListCell<T>(keyFunction));
     }
 
-    //#endregion
 }

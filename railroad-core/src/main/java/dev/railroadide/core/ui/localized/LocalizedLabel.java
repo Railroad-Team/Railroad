@@ -24,8 +24,7 @@ public class LocalizedLabel extends Label {
         setKey(key, args);
     }
 
-    public String getKey()
-    {
+    public String getKey() {
         return localizedText.getTranslationKey();
     }
 

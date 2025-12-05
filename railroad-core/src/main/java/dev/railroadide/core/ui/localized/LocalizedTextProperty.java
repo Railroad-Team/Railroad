@@ -18,9 +18,7 @@ import javafx.collections.ObservableList;
  * Use a bidirectional binding if you plan on also using un-localized text.
  * 
  */
-public class LocalizedTextProperty extends StringPropertyBase
-{
-    // #region Properties
+public class LocalizedTextProperty extends StringPropertyBase {
 
     private static final Object DEFAULT_BEAN = null;
     private static final String DEFAULT_NAME = "";
@@ -32,10 +30,6 @@ public class LocalizedTextProperty extends StringPropertyBase
     private final ListProperty<Object> translationArgs;
     private String translated;
 
-    // #endregion
-
-    // #region Constructor
-
     /**
      * The constructor of {@code LocalizedTextProperty}
      *
@@ -44,8 +38,7 @@ public class LocalizedTextProperty extends StringPropertyBase
      * @param initialValue the initial value of the wrapped value
      * @param args         optional args to format the localized string
      */
-    public LocalizedTextProperty(Object bean, String name, String initialValue, Object... args)
-    {
+    public LocalizedTextProperty(Object bean, String name, String initialValue, Object... args) {
         super("");
         this.bean = bean;
         this.name = (name == null) ? DEFAULT_NAME : name;
@@ -60,17 +53,13 @@ public class LocalizedTextProperty extends StringPropertyBase
         updateTranslation(true);
     }
 
-    // #endregion
-
-    // #region Methods
-
     protected void initialize() {
         ServiceLocator.getService(LocalizationService.class)
                 .currentLanguageProperty()
-                .addListener(_0 -> updateTranslation(false));
+                .addListener($ -> updateTranslation(false));
 
-        translationKey.addListener(_0 -> updateTranslation(true));
-        translationArgs.addListener((ListChangeListener<Object>) _0 -> updateTranslation(true));
+        translationKey.addListener($ -> updateTranslation(true));
+        translationArgs.addListener((ListChangeListener<Object>) $ -> updateTranslation(true));
     }
 
     /**
@@ -126,8 +115,7 @@ public class LocalizedTextProperty extends StringPropertyBase
      */
     public StringProperty translationKeyProperty() { return this.translationKey; }
     public String getTranslationKey() { return translationKey.get(); }
-    public void setTranslationKey(String translationKey)
-    {
+    public void setTranslationKey(String translationKey) {
         if (translationKey == null || translationKey.trim().isEmpty())
             this.translationKey.set(null);
         else
@@ -139,7 +127,6 @@ public class LocalizedTextProperty extends StringPropertyBase
      */
     public ListProperty<Object> translationArgsProperty() { return this.translationArgs; }
     public ObservableList<Object> getTranslationArgs() { return translationArgs.get(); }
-    public void setTranslationArgs(Object ... args) {  this.translationArgs.setAll(args); }
+    public void setTranslationArgs(Object... args) {  this.translationArgs.setAll(args); }
 
-    // #endregion
 }

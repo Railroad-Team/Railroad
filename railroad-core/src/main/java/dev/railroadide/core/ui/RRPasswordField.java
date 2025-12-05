@@ -3,7 +3,7 @@ package dev.railroadide.core.ui;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import dev.railroadide.core.ui.domain.ITextField;
+import dev.railroadide.core.ui.domain.TextFieldControl;
 import dev.railroadide.core.ui.localized.LocalizedTextProperty;
 import dev.railroadide.core.ui.styling.TextFieldSize;
 import dev.railroadide.core.ui.styling.ValidationState;
@@ -16,9 +16,7 @@ import javafx.scene.layout.Priority;
 import javafx.util.Duration;
 import lombok.Getter;
 
-public class RRPasswordField extends PasswordField implements ITextField {
-
-    //#region Properties
+public class RRPasswordField extends PasswordField implements TextFieldControl {
 
     public static final String[] DEFAULT_STYLE_CLASSES = { "rr-text-field", "rr-password-field", "text-field", "password-field" };
 
@@ -31,10 +29,6 @@ public class RRPasswordField extends PasswordField implements ITextField {
     private HBox container;
 
     private final LocalizedTextProperty localizedPromptText = new LocalizedTextProperty(this, "localizedPromptText", null);
-
-    //#endregion
-
-    //#region Constructors
 
     /**
      * Constructs a new password field with empty text and default styling.
@@ -86,10 +80,6 @@ public class RRPasswordField extends PasswordField implements ITextField {
 
         updateStyle();
     }
-
-    //#endregion
-
-    //#region ITextField
 
     @Override
     public void setTextFieldSize(TextFieldSize size) {
@@ -185,10 +175,6 @@ public class RRPasswordField extends PasswordField implements ITextField {
         fade.play();
     }
 
-    //#endregion
-
-    //#region Methods
-
     private void updateIcons() {
         container.getChildren().clear();
 
@@ -222,5 +208,4 @@ public class RRPasswordField extends PasswordField implements ITextField {
         }
     }
 
-    //#endregion
 }

@@ -69,14 +69,13 @@ public class RRFormContainer extends VBox {
         titleLabel.setVisible(localizationKey != null && !localizationKey.trim().isEmpty());
     }
 
-    private void updateLayout()
-    {
-        this.getChildren().clear();
+    private void updateLayout() {
+        getChildren().clear();
 
         if (titleLabel.isVisible()) {
-            this.getChildren().add(titleLabel);
+            getChildren().add(titleLabel);
         }
-        this.getChildren().add(formContent);
+        getChildren().add(formContent);
     }
 
     /**
