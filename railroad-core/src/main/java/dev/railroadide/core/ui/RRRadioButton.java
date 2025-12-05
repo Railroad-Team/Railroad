@@ -169,7 +169,7 @@ public class RRRadioButton extends RadioButton {
     }
 
     /**
-     * Called when the button has stoped loading
+     * Called when the button has stopped loading
      */
     protected void onNotLoading()
     {

@@ -45,7 +45,7 @@ public class RRButton extends Button {
     private final BooleanProperty isSquare = new SimpleBooleanProperty(this, "isSquare", false);
     private final BooleanProperty isOutlined = new SimpleBooleanProperty(this, "isOutlined", false);
     private final BooleanProperty isFlat = new SimpleBooleanProperty(this, "isFlat", false);
-    private final ObjectProperty<ButtonVariant> variant = new SimpleObjectProperty<>(this, "varaint", ButtonVariant.PRIMARY);
+    private final ObjectProperty<ButtonVariant> variant = new SimpleObjectProperty<>(this, "variant", ButtonVariant.PRIMARY);
     private final ObjectProperty<ButtonSize> size = new SimpleObjectProperty<>(this, "size", ButtonSize.MEDIUM);
 
     //#endregion
@@ -289,7 +289,7 @@ public class RRButton extends Button {
     }
 
     /**
-     * Called when the button has stoped loading
+     * Called when the button has stopped loading
      */
     protected void onNotLoading()
     {
@@ -361,7 +361,7 @@ public class RRButton extends Button {
     private void updateStyle() {
         ObservableList<String> styleClass = getStyleClass();
 
-        styleClass.removeAll("square", "oulined", "flat");
+        styleClass.removeAll("square", "outlined", "flat");
         styleClass.removeAll("primary", "secondary", "ghost", "danger", "success", "warning");
         styleClass.removeAll("small", "medium", "large");
 

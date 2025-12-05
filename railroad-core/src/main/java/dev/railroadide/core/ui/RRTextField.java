@@ -86,6 +86,7 @@ public class RRTextField extends TextField implements ITextField {
     /**
      * Set the text field size
      */
+    @Override
     public void setTextFieldSize(TextFieldSize size) {
         this.size = size;
         updateStyle();
@@ -94,6 +95,7 @@ public class RRTextField extends TextField implements ITextField {
     /**
      * Set the validation state
      */
+    @Override
     public void setValidationState(ValidationState state) {
         this.validationState = state;
         updateStyle();
@@ -102,6 +104,7 @@ public class RRTextField extends TextField implements ITextField {
     /**
      * Set a prefix icon
      */
+    @Override
     public void setPrefixIcon(Ikon iconCode) {
         if (iconCode != null) {
             prefixIcon = new FontIcon(iconCode);
@@ -116,6 +119,7 @@ public class RRTextField extends TextField implements ITextField {
     /**
      * Set a suffix icon
      */
+    @Override
     public void setSuffixIcon(Ikon iconCode) {
         if (iconCode != null) {
             suffixIcon = new FontIcon(iconCode);
@@ -131,6 +135,7 @@ public class RRTextField extends TextField implements ITextField {
     /**
      * Set the text field as rounded
      */
+    @Override
     public void setRounded(boolean rounded) {
         if (rounded) {
             getStyleClass().add("rounded");
@@ -142,6 +147,7 @@ public class RRTextField extends TextField implements ITextField {
     /**
      * Set the text field as outlined
      */
+    @Override
     public void setOutlined(boolean outlined) {
         if (outlined) {
             getStyleClass().add("outlined");
@@ -153,6 +159,7 @@ public class RRTextField extends TextField implements ITextField {
     /**
      * Set the text field as disabled state
      */
+    @Override
     public void setDisabledState(boolean disabled) {
         setDisable(disabled);
         if (disabled) {
@@ -198,6 +205,7 @@ public class RRTextField extends TextField implements ITextField {
     /**
      * Set placeholder text with modern styling
      */
+    @Override
     public void setPlaceholder(String placeholder) {
         setPromptText(placeholder);
     }
@@ -205,6 +213,7 @@ public class RRTextField extends TextField implements ITextField {
     /**
      * Clear the text field with animation
      */
+    @Override
     public void clearWithAnimation() {
         FadeTransition fade = new FadeTransition(Duration.millis(200), this);
         fade.setFromValue(1.0);
@@ -220,6 +229,7 @@ public class RRTextField extends TextField implements ITextField {
         fade.play();
     }
 
+    @Override
     public void setLocalizedPlaceholder(String localizationKey, Object... args) {
         localizedPromptText.setTranslationArgs(args);
         localizedPromptText.setTranslationKey(localizationKey);

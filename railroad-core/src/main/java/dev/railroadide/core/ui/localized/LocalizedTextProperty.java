@@ -12,9 +12,9 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 
 /**
- * A text property capable of localizing it's content.
+ * A text property capable of localizing its content.
  * 
- * Bind a pre-exiting text property to it to use it's behavior.
+ * Bind a pre-exiting text property to it to use its behavior.
  * Use a bidirectional binding if you plan on also using un-localized text.
  * 
  */
@@ -74,7 +74,7 @@ public class LocalizedTextProperty extends StringPropertyBase
     }
 
     /**
-     * Indicates wether the property is activated.
+     * Indicates whether the property is activated.
      * The property is disactivated when it's value has been directly set.
      */
     private boolean activated = false;
@@ -128,7 +128,7 @@ public class LocalizedTextProperty extends StringPropertyBase
     public String getTranslationKey() { return translationKey.get(); }
     public void setTranslationKey(String translationKey)
     {
-        if (translationKey.trim().isEmpty())
+        if (translationKey == null || translationKey.trim().isEmpty())
             this.translationKey.set(null);
         else
             this.translationKey.set(translationKey);
@@ -139,7 +139,7 @@ public class LocalizedTextProperty extends StringPropertyBase
      */
     public ListProperty<Object> translationArgsProperty() { return this.translationArgs; }
     public ObservableList<Object> getTranslationArgs() { return translationArgs.get(); }
-    public void setTranslationArgs(Object ... args) {  this.translationArgs.setAll(translationArgs); }
+    public void setTranslationArgs(Object ... args) {  this.translationArgs.setAll(args); }
 
     // #endregion
 }

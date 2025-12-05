@@ -182,7 +182,7 @@ public class RRCheckBox extends CheckBox {
     }
 
     /**
-     * Called when the button has stoped loading
+     * Called when the button has stopped loading
      */
     protected void onNotLoading()
     {

@@ -16,7 +16,7 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
     //#region Constructor
 
     /**
-     * Create a new ConboBox that can localize it's items with a given key function
+     * Create a new ComboBox that can localize it's items with a given key function
      */
     public LocalizedComboBox()
     {
@@ -25,7 +25,7 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
     }
 
     /**
-     * Create a new ConboBox that can localize it's items with a given key function
+     * Create a new ComboBox that can localize it's items with a given key function
      * 
      * @param keyFunction A function that for any value T returns a localization key
      */
@@ -61,7 +61,7 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
     }
 
     /**
-     * Assign a new key fucntion to the LocalizedComboBox
+     * Assign a new key function to the LocalizedComboBox
      * 
      * @param keyFunction A function that for any value T returns a localization key
      */
