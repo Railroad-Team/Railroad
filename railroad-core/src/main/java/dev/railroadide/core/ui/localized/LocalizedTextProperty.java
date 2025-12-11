@@ -68,8 +68,16 @@ public class LocalizedTextProperty extends StringPropertyBase {
      */
     private boolean activated = false;
 
+    /**
+     * Used to block update when updating more than one property at a time.
+     */
+    private boolean blockedUpdates = false;
+
     private void updateTranslation(boolean activate) {
         
+        if (blockedUpdates)
+            return;
+
         if (activate)
             activated = true;
         
@@ -78,7 +86,7 @@ public class LocalizedTextProperty extends StringPropertyBase {
 
         if (translationKey.get() != null) {
             var service = ServiceLocator.getService(LocalizationService.class);
-            this.translated = service.get(translationKey.get(), translationArgs.get());
+            this.translated = service.get(translationKey.get(), translationArgs.get().toArray());
 
             set(this.translated);
         } else {
@@ -127,6 +135,20 @@ public class LocalizedTextProperty extends StringPropertyBase {
      */
     public ListProperty<Object> translationArgsProperty() { return this.translationArgs; }
     public ObservableList<Object> getTranslationArgs() { return translationArgs.get(); }
-    public void setTranslationArgs(Object... args) {  this.translationArgs.setAll(args); }
+    public void setTranslationArgs(Object... args) {
+        if (args.length == 0 || (args.length == 1 && args[0] == null))
+            this.translationArgs.clear();
+        else
+            this.translationArgs.setAll(args);
+    }
+
+    public void setTranslation(String translationKey, Object... args) {
+        blockedUpdates = true;
+        setTranslationKey(translationKey);
+        setTranslationArgs(args);
+        blockedUpdates = false;
+
+        updateTranslation(true);
+    }
 
 }

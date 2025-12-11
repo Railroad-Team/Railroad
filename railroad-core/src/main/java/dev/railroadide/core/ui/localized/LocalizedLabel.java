@@ -36,7 +36,6 @@ public class LocalizedLabel extends Label {
      * @param args The args to be applied to the localized key
      */
     public void setKey(@NotNull String key, @NotNull Object... args) {
-        localizedText.setTranslationArgs(args);
-        localizedText.setTranslationKey(key);
+        localizedText.setTranslation(key, args);
     }
 }

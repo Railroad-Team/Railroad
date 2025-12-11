@@ -155,8 +155,7 @@ public class RRPasswordField extends PasswordField implements TextFieldControl {
 
     @Override
     public void setLocalizedPlaceholder(String localizationKey, Object... args) {
-        localizedPromptText.setTranslationArgs(args);
-        localizedPromptText.setTranslationKey(localizationKey);
+        localizedPromptText.setTranslation(localizationKey, args);
     }
 
     @Override

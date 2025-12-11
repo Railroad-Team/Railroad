@@ -58,8 +58,7 @@ public class RRCheckBox extends CheckBox {
         setPadding(new Insets(8, 16, 8, 16));
 
         textProperty().bindBidirectional(localizedText);
-        localizedText.setTranslationArgs(args);
-        localizedText.setTranslationKey(localizationKey);
+        localizedText.setTranslation(localizationKey, args);
 
         loadingSpinner = new FontIcon(FontAwesomeSolid.SYNC_ALT);
         loadingSpinner.setIconSize(16);
@@ -102,8 +101,7 @@ public class RRCheckBox extends CheckBox {
      * @param args            optional formatting arguments for the localized text
      */
     public void setLocalizedText(String localizationKey, Object... args) {
-        localizedText.setTranslationArgs(args);
-        localizedText.setTranslationKey(localizationKey);
+        localizedText.setTranslation(localizationKey, args);
     }
 
     /**
