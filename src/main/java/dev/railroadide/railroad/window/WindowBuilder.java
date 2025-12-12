@@ -273,10 +273,6 @@ public class WindowBuilder {
             Railroad.WINDOW_MANAGER.registerChildWindow(stage);
         }
 
-        if (shouldBlockOwnerWindow && (modality == Modality.APPLICATION_MODAL || modality == Modality.WINDOW_MODAL)) {
-            stage.showAndWait(); // TODO: Confirm that this is actually possible to do.
-        }
-
         return stage;
     }
 }
