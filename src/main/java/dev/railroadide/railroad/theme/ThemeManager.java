@@ -5,6 +5,8 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 
@@ -23,7 +25,9 @@ import java.util.stream.Stream;
 
 public class ThemeManager {
     private static boolean debug = false;
-    private static String currentTheme;
+    
+    private static final StringProperty currentTheme = new SimpleStringProperty();
+    
     private static String baseCss;
     private static final List<String> COMPONENTS_CSS = new ArrayList<>();
     private static String debugCss;
@@ -40,7 +44,8 @@ public class ThemeManager {
             Railroad.LOGGER.error("Failed to load component CSS files", exception);
         }
 
-        currentTheme = SettingsHandler.getValue(Settings.THEME);
+        currentTheme.addListener($ -> reloadAll());
+        currentTheme.set(SettingsHandler.getValue(Settings.THEME));
     }
 
     public static String getAsExternalForm(String path) {
@@ -51,7 +56,7 @@ public class ThemeManager {
         if (scene == null) return;
 
         TRACKED_SCENES.add(scene);
-        applyThemeToScene(currentTheme, scene);
+        applyThemeToScene(currentTheme.get(), scene);
 
         scene.setOnKeyReleased(event -> {
             if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.D) {
@@ -62,15 +67,19 @@ public class ThemeManager {
         });
     }
 
-    public static void setTheme(String theme) {
-        if (theme == null) theme = "";
+    public static StringProperty getCurrentThemeProperty() {
+        return currentTheme;
+    }
 
-        currentTheme = theme;
-        reloadAll();
+    public static void setTheme(String theme) {
+        if (theme == null)
+            theme = "";
+
+        currentTheme.set(theme);
     }
 
     public static String getTheme() {
-        return currentTheme;
+        return currentTheme.get();
     }
 
     public static void reloadAll() {
@@ -85,7 +94,7 @@ public class ThemeManager {
                 }
 
                 for (Scene scene : TRACKED_SCENES) {
-                    applyThemeToScene(currentTheme, scene);
+                    applyThemeToScene(currentTheme.get(), scene);
                 }
             }
         });

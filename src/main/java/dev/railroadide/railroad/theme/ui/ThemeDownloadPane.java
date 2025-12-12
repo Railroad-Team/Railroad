@@ -107,7 +107,11 @@ public class ThemeDownloadPane {
 
         var closeButton = new RRButton("railroad.generic.close");
         closeButton.setVariant(ButtonVariant.SECONDARY);
-        closeButton.setOnAction($ -> stage.close());
+        closeButton.setOnAction(e -> {
+            var target = (javafx.scene.Node) e.getTarget();
+            var stage = (javafx.stage.Stage) target.sceneProperty().get().getWindow();
+            stage.close();
+        });
 
         footerSection.getChildren().add(closeButton);
         return footerSection;

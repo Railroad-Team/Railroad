@@ -10,6 +10,7 @@ import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -272,14 +273,23 @@ public class ThemeExamplePane {
 
         var closeButton = new RRButton("railroad.home.settings.appearance.preview.close");
         closeButton.setVariant(ButtonVariant.SECONDARY);
-        closeButton.setOnAction(e -> stage.close());
+        closeButton.setOnAction(e -> {
+            var target = (javafx.scene.Node) e.getTarget();
+            var stage = (javafx.stage.Stage) target.sceneProperty().get().getWindow();
+            stage.close();
+        });
 
         var applyButton = new RRButton("railroad.home.settings.appearance.preview.apply");
         applyButton.setVariant(ButtonVariant.PRIMARY);
-        applyButton.setOnAction($ -> {
+        applyButton.setOnAction(e -> {
             // Apply the theme to the main application
             ThemeManager.setTheme(themeName.replace(".css", ""));
+            
+            var target = (javafx.scene.Node) e.getTarget();
+            var stage = (javafx.stage.Stage) target.sceneProperty().get().getWindow();
             stage.close();
+
+            applyButton.sceneProperty();
         });
 
         footer.getChildren().addAll(closeButton, applyButton);
@@ -294,9 +304,20 @@ public class ThemeExamplePane {
             .replace("_", " ");
     }
 
-    public record ProjectData(SimpleStringProperty name, SimpleStringProperty type, SimpleStringProperty status) {
+    public class ProjectData {
+
+        public final StringProperty name = new SimpleStringProperty(this, "name", null);
+        public final StringProperty type = new SimpleStringProperty(this, "type", null);
+        public final StringProperty status = new SimpleStringProperty(this, "status", null);
+
+        public String getName() { return name.get(); }
+        public String getType() { return type.get(); }
+        public String getStatus() { return status.get(); }
+
         public ProjectData(String name, String type, String status) {
-            this(new SimpleStringProperty(name), new SimpleStringProperty(type), new SimpleStringProperty(status));
+            this.name.set(name);
+            this.type.set(type);
+            this.status.set(status);
         }
     }
 }
