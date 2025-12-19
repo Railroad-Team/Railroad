@@ -16,6 +16,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
@@ -31,7 +32,6 @@ import java.util.Arrays;
  * Features various components styled according to the selected theme.
  */
 public class ThemeExamplePane {
-    private final Stage stage;
     private final String themeName;
 
     public ThemeExamplePane(final String themeName) {
@@ -52,10 +52,10 @@ public class ThemeExamplePane {
             .resizable(true)
             .minWidth(890)
             .minHeight(690);
-                
+
         ThemeManager.applyThemeToScene(themeName, previewScene);
 
-        this.stage = builder.build();
+        builder.build();
     }
 
     private VBox createPreviewContent() {
@@ -274,8 +274,8 @@ public class ThemeExamplePane {
         var closeButton = new RRButton("railroad.home.settings.appearance.preview.close");
         closeButton.setVariant(ButtonVariant.SECONDARY);
         closeButton.setOnAction(e -> {
-            var target = (javafx.scene.Node) e.getTarget();
-            var stage = (javafx.stage.Stage) target.sceneProperty().get().getWindow();
+            var target = (Node) e.getTarget();
+            var stage = (Stage) target.sceneProperty().get().getWindow();
             stage.close();
         });
 
@@ -284,9 +284,9 @@ public class ThemeExamplePane {
         applyButton.setOnAction(e -> {
             // Apply the theme to the main application
             ThemeManager.setTheme(themeName.replace(".css", ""));
-            
-            var target = (javafx.scene.Node) e.getTarget();
-            var stage = (javafx.stage.Stage) target.sceneProperty().get().getWindow();
+
+            var target = (Node) e.getTarget();
+            var stage = (Stage) target.sceneProperty().get().getWindow();
             stage.close();
 
             applyButton.sceneProperty();

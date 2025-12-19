@@ -50,7 +50,7 @@ public interface TextFieldControl {
     void setDisabledState(boolean disabled);
 
     /**
-     * 
+     * Set placeholder text, displayed when the text field is empty
      * @param placeholder
      */
     void setPlaceholder(String placeholder);

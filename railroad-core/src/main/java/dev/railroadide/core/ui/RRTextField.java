@@ -202,9 +202,6 @@ public class RRTextField extends TextField implements TextFieldControl {
         }
     }
 
-    /**
-     * Set placeholder text with modern styling
-     */
     @Override
     public void setPlaceholder(String placeholder) {
         setPromptText(placeholder);

@@ -10,6 +10,7 @@ import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ListView;
 import javafx.scene.layout.HBox;
@@ -28,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
  * Features a clean, card-based layout with better visual hierarchy and modern styling.
  */
 public class ThemeDownloadPane {
-    private final Stage stage;
     private ListView<Theme> themeListView;
     private LocalizedLabel statusLabel;
     private RRButton refreshButton;
@@ -50,7 +50,7 @@ public class ThemeDownloadPane {
 
         loadThemes();
 
-        stage = WindowBuilder.create()
+        WindowBuilder.create()
             .title("railroad.home.settings.appearance.downloadtheme", true)
             .minSize(690, 590)
             .owner(owner)
@@ -108,8 +108,8 @@ public class ThemeDownloadPane {
         var closeButton = new RRButton("railroad.generic.close");
         closeButton.setVariant(ButtonVariant.SECONDARY);
         closeButton.setOnAction(e -> {
-            var target = (javafx.scene.Node) e.getTarget();
-            var stage = (javafx.stage.Stage) target.sceneProperty().get().getWindow();
+            var target = (Node) e.getTarget();
+            var stage = (Stage) target.sceneProperty().get().getWindow();
             stage.close();
         });
 
