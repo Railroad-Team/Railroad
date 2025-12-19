@@ -137,6 +137,7 @@ public class KeyComboNode extends RRButton {
     private String localizeModifier(KeyCombination.Modifier modifier) {
         return switch (modifier.getKey()) {
             case SHORTCUT -> OperatingSystem.isMac() ? "⌘" : "Ctrl";
+            case META -> "⌘";
             case CONTROL -> "Ctrl";
             case ALT -> OperatingSystem.isMac() ? "⌥" : "Alt";
             case SHIFT -> "Shift";
