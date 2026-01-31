@@ -89,7 +89,7 @@ dependencies {
     implementation 'org.apache.maven:maven-repository-metadata:4.0.0-rc-4'
     implementation 'org.codehaus.plexus:plexus-container-default:2.1.1'
 
-    implementation 'dev.railroadide:RailroadGradlePlugin:1.0.0'
+    implementation 'dev.railroadide:RailroadGradlePlugin:1.0.1'
 
     implementation 'io.get-coursier:interface:1.0.29-M1'
     implementation 'org.eclipse.jgit:org.eclipse.jgit:7.4.0.202509020913-r'
