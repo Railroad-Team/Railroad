@@ -20,8 +20,9 @@ public class LocalizedText extends Text {
     }
 
     public LocalizedText(final String key, final Object... args) {
-        this(key);
-        setArgs(args);
+        super();
+        textProperty().bindBidirectional(localizedText);
+        setKeyAndArgs(key, args);
     }
 
     /**

@@ -96,13 +96,18 @@ public class WindowBuilder {
             dialogModifier.accept(dialogBuilder);
         }
 
+        return createDialog(title, dialogBuilder);
+    }
+
+    public static Stage createDialog(String title, DialogBuilder dialogBuilder) {
+        DialogBuilder builder = dialogBuilder == null ? DialogBuilder.create() : dialogBuilder;
         return WindowBuilder.create()
             .title(title, true)
             .owner(Railroad.WINDOW_MANAGER.getPrimaryStage())
             .resizable(false)
             .shouldBlockOwnerWindow(true)
             .stageStyle(StageStyle.UTILITY)
-            .scene(dialogBuilder.buildScene())
+            .scene(builder.buildScene())
             .build();
     }
 

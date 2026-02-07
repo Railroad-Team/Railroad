@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public class GitProcessRunner {
+    private static final Path DEFAULT_GIT_EXECUTABLE = Path.of("git");
+
     @Getter
     @Setter
     private Path gitExecutable;
@@ -46,7 +48,8 @@ public class GitProcessRunner {
         });
 
         try {
-            String[] cmd = buildCommand(gitExecutable, command.arguments());
+            Path executable = resolveGitExecutable();
+            String[] cmd = buildCommand(executable, command.arguments());
             Railroad.LOGGER.debug("Executing git command: {}", String.join(" ", cmd));
             var processBuilder = new ProcessBuilder(cmd);
             if (command.workingDirectory() != null) {
@@ -274,5 +277,15 @@ public class GitProcessRunner {
         }
 
         return command;
+    }
+
+    private Path resolveGitExecutable() {
+        if (gitExecutable != null) {
+            return gitExecutable;
+        }
+
+        Railroad.LOGGER.warn("Git executable path is not configured. Falling back to '{}' from PATH.", DEFAULT_GIT_EXECUTABLE);
+        gitExecutable = DEFAULT_GIT_EXECUTABLE;
+        return DEFAULT_GIT_EXECUTABLE;
     }
 }

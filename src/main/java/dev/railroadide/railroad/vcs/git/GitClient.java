@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.vcs.git;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import dev.railroadide.railroad.vcs.git.commit.GitCommitData;
 import dev.railroadide.railroad.vcs.git.commit.GitCommitPage;
 import dev.railroadide.railroad.vcs.git.commit.GitCommitParser;
@@ -19,6 +20,7 @@ import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import dev.railroadide.railroad.vcs.git.status.GitRepoStatus;
 import dev.railroadide.railroad.vcs.git.status.GitStatusParser;
+import dev.railroadide.railroad.vcs.git.util.CherryPickResult;
 import dev.railroadide.railroad.vcs.git.util.GitRepository;
 import org.jetbrains.annotations.Nullable;
 
@@ -427,5 +429,252 @@ public class GitClient {
             throw new GitExecutionException("git log failed: " + String.join("\n", result.stderr()));
 
         return result.readAllStdout();
+    }
+
+    public void stashChanges(GitRepository repo, String message, boolean includeUntracked) {
+        GitCommand cmd = GitCommands.stashSave(repo, message, includeUntracked);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git stash timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git stash was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git stash failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void checkoutCommit(GitRepository repo, String hash, String gitVersion) {
+        GitCommand cmd = supportsSwitch(gitVersion)
+            ? GitCommands.checkoutDetachedWithSwitch(repo, hash)
+            : GitCommands.checkoutDetached(repo, hash);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git checkout timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git checkout was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git checkout failed: " + String.join("\n", result.stderr()));
+    }
+
+    private static boolean supportsSwitch(String gitVersion) {
+        if (gitVersion == null || gitVersion.isEmpty())
+            return false;
+
+        String[] parts = gitVersion.split(" ");
+        if (parts.length < 3)
+            return false;
+
+        String versionStr = parts[2];
+        String[] versionParts = versionStr.split("\\.");
+        if (versionParts.length < 2)
+            return false;
+
+        try {
+            int major = Integer.parseInt(versionParts[0]);
+            int minor = Integer.parseInt(versionParts[1]);
+
+            // Assume support for versions 2.23 and above
+            return (major > 2) || (major == 2 && minor >= 23);
+        } catch (NumberFormatException exception) {
+            Railroad.LOGGER.warn("Failed to parse git version numbers from: {}", versionStr, exception);
+            return false;
+        }
+    }
+
+    public void resetHard(GitRepository repo) {
+        GitCommand cmd = GitCommands.resetHard(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git reset --hard timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git reset --hard was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git reset --hard failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void cleanUntrackedFiles(GitRepository repo) {
+        GitCommand cmd = GitCommands.cleanUntrackedFiles(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git clean timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git clean was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git clean failed: " + String.join("\n", result.stderr()));
+    }
+
+    public GitCommit getCurrentCommit(GitRepository repo) {
+        List<GitCommit> commits = getRecentCommits(repo, null, 1).commits();
+        return commits.isEmpty() ? null : commits.getFirst();
+    }
+
+    public boolean isValidBranchName(GitRepository repo, String string) {
+        GitCommand cmd = GitCommands.checkValidBranchName(repo, string);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git check-ref-format timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git check-ref-format was cancelled");
+
+        return result.exitCode() == 0;
+    }
+
+    public void createBranch(GitRepository repo, String branchName, String hash) {
+        GitCommand cmd = GitCommands.createBranch(repo, branchName, hash);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git branch timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git branch was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git branch failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void checkoutBranch(GitRepository repository, String branchName, String gitVersion) {
+        GitCommand cmd = supportsSwitch(gitVersion)
+            ? GitCommands.checkoutBranchWithSwitch(repository, branchName)
+            : GitCommands.checkoutBranch(repository, branchName);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git checkout timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git checkout was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git checkout failed: " + String.join("\n", result.stderr()));
+    }
+
+    public boolean doesTagExist(GitRepository repo, String tagName) {
+        GitCommand cmd = GitCommands.checkTagExists(repo, tagName);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git rev-parse timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git rev-parse was cancelled");
+
+        return result.exitCode() == 0;
+    }
+
+    public boolean isValidTagName(GitRepository repo, String tagName) {
+        GitCommand cmd = GitCommands.checkValidTagName(repo, tagName);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git check-ref-format timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git check-ref-format was cancelled");
+
+        return result.exitCode() == 0;
+    }
+
+    public void createTag(GitRepository repo, String tagName, String hash, @Nullable String message, boolean overwrite) {
+        GitCommand cmd = GitCommands.createTag(repo, tagName, hash, message, overwrite);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git tag timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git tag was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git tag failed: " + String.join("\n", result.stderr()));
+    }
+
+    public boolean isInCherryPickState(GitRepository repo) {
+        GitCommand cmd = GitCommands.checkCherryPickState(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git rev-parse timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git rev-parse was cancelled");
+
+        return result.exitCode() == 0;
+    }
+
+    public CherryPickResult cherryPickCommit(GitRepository repo, String commitHash) {
+        GitCommand cmd = GitCommands.cherryPickCommit(repo, commitHash);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git cherry-pick timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git cherry-pick was cancelled");
+
+        if (result.exitCode() == 0) {
+            return CherryPickResult.SUCCESS;
+        } else {
+            String stderr = String.join("\n", result.stderr());
+            if (stderr.contains("could not apply")) {
+                return CherryPickResult.CONFLICTS;
+            } else {
+                throw new GitExecutionException("git cherry-pick failed: " + stderr);
+            }
+        }
+    }
+
+    public void continueCherryPick(GitRepository repo) {
+        GitCommand cmd = GitCommands.continueCherryPick(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git cherry-pick --continue timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git cherry-pick --continue was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git cherry-pick --continue failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void abortCherryPick(GitRepository repo) {
+        GitCommand cmd = GitCommands.abortCherryPick(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git cherry-pick --abort timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git cherry-pick --abort was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git cherry-pick --abort failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void quitCherryPick(GitRepository repo) {
+        GitCommand cmd = GitCommands.quitCherryPick(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git cherry-pick --quit timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git cherry-pick --quit was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git cherry-pick --quit failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void revertCommit(GitRepository repo, String commitHash) {
+        GitCommand cmd = GitCommands.revertCommit(repo, commitHash);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git revert timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git revert was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git revert failed: " + String.join("\n", result.stderr()));
     }
 }

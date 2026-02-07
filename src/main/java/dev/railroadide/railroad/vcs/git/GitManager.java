@@ -16,9 +16,11 @@ import dev.railroadide.railroad.vcs.git.identity.GitIdentity;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
 import dev.railroadide.railroad.vcs.git.status.GitRepoStatus;
+import dev.railroadide.railroad.vcs.git.util.CherryPickResult;
 import dev.railroadide.railroad.vcs.git.util.GitRepository;
 import dev.railroadide.railroad.vcs.git.util.GitSettings;
 import javafx.beans.property.*;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -566,5 +568,169 @@ public class GitManager {
         String message = this.gitClient.getCommitMessage(repository, commit.hash());
         message = message.substring(message.indexOf('\n') + 1).strip(); // Remove the first line (summary)
         return GitCommit.withBody(commit, message);
+    }
+
+    public void stashChanges(String message, boolean includeUntracked) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.stashChanges(repository, message, includeUntracked);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void checkoutCommit(String hash) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.checkoutCommit(repository, hash, getIdentity().gitVersion());
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void resetHard() {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.resetHard(repository);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void cleanUntrackedFiles() {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.cleanUntrackedFiles(repository);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public Optional<GitCommit> getCurrentCommit() {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return Optional.empty();
+
+        return Optional.ofNullable(this.gitClient.getCurrentCommit(repository));
+    }
+
+    public boolean isValidBranchName(String string) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return false;
+
+        return this.gitClient.isValidBranchName(repository, string);
+    }
+
+    public void createBranch(String branchName, String hash, boolean checkoutAfter) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.createBranch(repository, branchName, hash);
+                if (checkoutAfter) {
+                    checkoutBranch(branchName);
+                } else {
+                    refreshStatusInternal();
+                }
+            }
+        });
+    }
+
+    public void checkoutBranch(String branchName) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.checkoutBranch(repository, branchName, getIdentity().gitVersion());
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public boolean doesTagExist(String tagName) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return false;
+
+        return this.gitClient.doesTagExist(repository, tagName);
+    }
+
+    public boolean isValidTagName(String tagName) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return false;
+
+        return this.gitClient.isValidTagName(repository, tagName);
+    }
+
+    public void createTag(String tagName, String hash, @Nullable String message, boolean overwrite) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.createTag(repository, tagName, hash, message, overwrite);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public boolean isInCherryPickState() {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return false;
+
+        return this.gitClient.isInCherryPickState(repository);
+    }
+
+    public CompletableFuture<CherryPickResult> cherryPickCommit(String commitHash) {
+        return CompletableFuture.supplyAsync(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository == null)
+                return CherryPickResult.FAILED;
+
+            return this.gitClient.cherryPickCommit(repository, commitHash);
+        }, executorService);
+    }
+
+    public void continueCherryPick() {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.continueCherryPick(repository);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void abortCherryPick() {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.abortCherryPick(repository);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void quitCherryPick() {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.quitCherryPick(repository);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void revertCommit(String commitHash) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.revertCommit(repository, commitHash);
+                refreshStatusInternal();
+            }
+        });
     }
 }

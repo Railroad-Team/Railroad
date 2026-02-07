@@ -41,6 +41,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class Project implements JsonSerializable<JsonObject>, dev.railroadide.railroadpluginapi.dto.Project {
+    private static final Path DEFAULT_GIT_EXECUTABLE = Path.of("git");
+
     private final ObjectProperty<Path> path = new ReadOnlyObjectWrapper<>();
     private final StringProperty alias = new SimpleStringProperty();
     private final ObjectProperty<Image> icon = new SimpleObjectProperty<>();
@@ -72,9 +74,10 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
         this.dataStore = new ProjectDataStore(this);
         this.runConfigManager = new RunConfigurationManager(this);
         this.gradleManager = new GradleManager(this);
-        this.gitManager = new GitManager(this, new GitClient(new GitProcessRunner(Settings.GIT_EXECUTABLE_PATH.getValue())));
+        Path gitExecutable = Optional.ofNullable(Settings.GIT_EXECUTABLE_PATH.getValue()).orElse(DEFAULT_GIT_EXECUTABLE);
+        this.gitManager = new GitManager(this, new GitClient(new GitProcessRunner(gitExecutable)));
         Settings.GIT_EXECUTABLE_PATH.addListener((oldPath, newPath) ->
-            this.gitManager.setGitExecutablePath(newPath));
+            this.gitManager.setGitExecutablePath(newPath != null ? newPath : DEFAULT_GIT_EXECUTABLE));
     }
 
     private static BufferedImage createIconImage(Project project) {

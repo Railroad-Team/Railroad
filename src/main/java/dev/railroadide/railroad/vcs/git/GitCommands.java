@@ -317,4 +317,232 @@ public final class GitCommands {
             )
             .build();
     }
+
+    public static GitCommand stashSave(GitRepository repo, String message, boolean includeUntracked) {
+        GitCommand.Builder builder = GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "stash",
+                "push",
+                "-m", message
+            );
+
+        if (includeUntracked) {
+            builder.addArgs("-u");
+        }
+
+        return builder.build();
+    }
+
+    public static GitCommand checkoutDetachedWithSwitch(GitRepository repo, String hash) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "switch",
+                "--detach",
+                hash
+            )
+            .build();
+    }
+
+    public static GitCommand checkoutDetached(GitRepository repo, String hash) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "checkout",
+                "--detach",
+                hash
+            )
+            .build();
+    }
+
+    public static GitCommand resetHard(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "reset",
+                "--hard"
+            )
+            .build();
+    }
+
+    public static GitCommand cleanUntrackedFiles(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "clean",
+                "-fd"
+            )
+            .build();
+    }
+
+    public static GitCommand checkValidBranchName(GitRepository repo, String string) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "check-ref-format",
+                "--branch",
+                string
+            )
+            .build();
+    }
+
+    public static GitCommand createBranch(GitRepository repo, String branchName, String hash) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "branch",
+                branchName,
+                hash
+            )
+            .build();
+    }
+
+    public static GitCommand checkoutBranchWithSwitch(GitRepository repo, String branchName) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "switch",
+                branchName
+            )
+            .build();
+    }
+
+    public static GitCommand checkoutBranch(GitRepository repo, String branchName) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "checkout",
+                branchName
+            )
+            .build();
+    }
+
+    public static GitCommand checkTagExists(GitRepository repo, String tagName) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "rev-parse",
+                "-q",
+                "--verify",
+                "refs/tags/" + tagName
+            )
+            .build();
+    }
+
+    public static GitCommand checkValidTagName(GitRepository repo, String tagName) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "check-ref-format",
+                "refs/tags/" + tagName
+            )
+            .build();
+    }
+
+    public static GitCommand createTag(GitRepository repo, String tagName, String hash, @Nullable String message, boolean overwrite) {
+        GitCommand.Builder builder = GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "tag"
+            );
+
+        if (overwrite) {
+            builder.addArgs("-f");
+        }
+
+        if (message != null && !message.isBlank()) {
+            builder.addArgs("-a", tagName, "-m", message);
+        } else {
+            builder.addArgs(tagName);
+        }
+
+        builder.addArgs(hash);
+
+        return builder.build();
+    }
+
+    public static GitCommand checkCherryPickState(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "rev-parse",
+                "-q",
+                "--verify",
+                "CHERRY_PICK_HEAD"
+            )
+            .build();
+    }
+
+    public static GitCommand cherryPickCommit(GitRepository repo, String commitHash) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(15, TimeUnit.SECONDS)
+            .addArgs(
+                "cherry-pick",
+                "-x",
+                "--no-edit",
+                commitHash
+            )
+            .build();
+    }
+
+    public static GitCommand continueCherryPick(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(15, TimeUnit.SECONDS)
+            .addArgs(
+                "cherry-pick",
+                "--continue"
+            )
+            .build();
+    }
+
+    public static GitCommand abortCherryPick(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(15, TimeUnit.SECONDS)
+            .addArgs(
+                "cherry-pick",
+                "--abort"
+            )
+            .build();
+    }
+
+    public static GitCommand quitCherryPick(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(15, TimeUnit.SECONDS)
+            .addArgs(
+                "cherry-pick",
+                "--quit"
+            )
+            .build();
+    }
+
+    public static GitCommand revertCommit(GitRepository repo, String commitHash) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(15, TimeUnit.SECONDS)
+            .addArgs(
+                "revert",
+                "-x",
+                "--no-edit",
+                commitHash
+            )
+            .build();
+    }
 }
