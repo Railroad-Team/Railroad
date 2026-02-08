@@ -60,7 +60,6 @@ public class LocalizedText extends Text {
      * @param args The arguments to be used for localization.
      */
     public void setKeyAndArgs(final String key, final Object... args) {
-        localizedText.setTranslationKey(key);
-        localizedText.setTranslationArgs(args);
+        localizedText.setTranslation(key, args);
     }
 }
