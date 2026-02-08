@@ -10,8 +10,9 @@ import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import dev.railroadide.railroad.window.DialogBuilder;
 import dev.railroadide.railroad.window.WindowBuilder;
-import javafx.stage.Stage;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
+
+import java.util.Objects;
 
 public class GitCommitNewBranchButton extends RRButton {
     public GitCommitNewBranchButton(Project project, GitCommit commit) {
@@ -44,22 +45,72 @@ public class GitCommitNewBranchButton extends RRButton {
                 .onConfirm(() -> {
                     String branchName = branchNameField.getText().trim();
                     if (!branchName.isEmpty() && project.getGitManager().isValidBranchName(branchName)) {
+                        if (checkoutCheckbox.isSelected()) {
+                            String currentBranch = project.getGitManager().getCurrentBranch();
+                            if (Objects.equals(currentBranch, branchName)) {
+                                // If the user tries to checkout a branch with the same name as the current branch, we just return early without doing anything
+                                return;
+                            }
+
+                            // We need to see if the user wants to stash their changes before checking out the new branch
+                            if (project.getGitManager().hasUncommittedChanges()) {
+                                var stashAndContinueButton = new RRButton("railroad.git.commit.details.new_branch_dialog.stash_and_continue");
+                                var bringChangesButton = new RRButton("railroad.git.commit.details.new_branch_dialog.bring_changes");
+                                var cancelButton = new RRButton("railroad.git.commit.details.new_branch_dialog.cancel");
+
+                                DialogBuilder stashDialogBuilder = DialogBuilder.create()
+                                    .title("railroad.git.commit.details.new_branch_dialog.uncommitted_changes_title")
+                                    .buttons(stashAndContinueButton, bringChangesButton, cancelButton);
+
+                                var dialog = WindowBuilder.createDialog("railroad.git.commit.details.new_branch_dialog.uncommitted_changes_title", stashDialogBuilder);
+
+                                stashAndContinueButton.setOnAction($ -> {
+                                    project.getGitManager().stashChanges("Railroad: Stash before creating branch " + branchName, true);
+                                    project.getGitManager().createBranch(branchName, commit.hash(), false);
+                                    project.getGitManager().checkoutBranch(branchName);
+                                    project.getGitManager().stashPop();
+                                    dialog.close();
+                                });
+
+                                bringChangesButton.setOnAction($ -> {
+                                    project.getGitManager().createBranch(branchName, commit.hash(), true);
+                                    dialog.close();
+                                });
+
+                                cancelButton.setOnAction($ -> dialog.close());
+                                return;
+                            }
+                        }
+
                         project.getGitManager().createBranch(branchName, commit.hash(), checkoutCheckbox.isSelected());
+                    } else {
+                        // This should never happen since the confirm button is disabled when the branch name is invalid, but we check just in case
+                        var errorDialogBuilder = DialogBuilder.create()
+                            .title("railroad.git.commit.details.new_branch_dialog.error_invalid_branch_name")
+                            .content("railroad.git.commit.details.new_branch_dialog.error_invalid_branch_name_message");
+
+                        WindowBuilder.createDialog("railroad.git.commit.details.new_branch_dialog.error_invalid_branch_name", errorDialogBuilder);
                     }
                 });
 
-            Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.new_branch_dialog.title", dialogBuilder);
-            var confirmButton = (RRButton) dialogBuilder.buildScene().lookup(".rr-button.success");
-            confirmButton.setDisable(true);
+            var dialog = WindowBuilder.createDialog("railroad.git.commit.details.new_branch_dialog.title", dialogBuilder);
+            var confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
+            if (confirmButton != null) {
+                confirmButton.setDisable(true);
+            }
+
             branchNameField.textProperty().addListener((obs, oldText, newText) -> {
                 if (newText.strip().isBlank()) {
                     errorText.setKeyAndArgs("");
-                    confirmButton.setDisable(true);
+                    if (confirmButton != null) {
+                        confirmButton.setDisable(true);
+                    }
                 } else {
-                    validateBranchName(project, newText, errorText, confirmButton);
+                    if (confirmButton != null) {
+                        validateBranchName(project, newText, errorText, confirmButton);
+                    }
                 }
             });
-            dialog.showAndWait();
         });
     }
 

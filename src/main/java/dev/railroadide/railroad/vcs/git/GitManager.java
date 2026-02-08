@@ -41,6 +41,7 @@ public class GitManager {
     private final ObjectProperty<GitRepository> gitRepository = new SimpleObjectProperty<>();
     private final LongProperty lastFetchTimestamp = new SimpleLongProperty(0L);
     private final ObjectProperty<GitIdentity> gitIdentity = new SimpleObjectProperty<>();
+    private final LongProperty commitMetadataRevision = new SimpleLongProperty(0L);
 
     private volatile ScheduledFuture<?> autoRefreshFuture;
 
@@ -274,6 +275,10 @@ public class GitManager {
 
     public GitIdentity getIdentity() {
         return gitIdentityProperty().get();
+    }
+
+    public LongProperty commitMetadataRevisionProperty() {
+        return commitMetadataRevision;
     }
 
     public void loadIdentity() {
@@ -580,6 +585,16 @@ public class GitManager {
         });
     }
 
+    public void stashPop() {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.stashPop(repository);
+                refreshStatusInternal();
+            }
+        });
+    }
+
     public void checkoutCommit(String hash) {
         this.executorService.submit(() -> {
             GitRepository repository = this.gitRepository.get();
@@ -671,6 +686,7 @@ public class GitManager {
             GitRepository repository = this.gitRepository.get();
             if (repository != null) {
                 this.gitClient.createTag(repository, tagName, hash, message, overwrite);
+                this.commitMetadataRevision.set(this.commitMetadataRevision.get() + 1L);
                 refreshStatusInternal();
             }
         });
@@ -732,5 +748,16 @@ public class GitManager {
                 refreshStatusInternal();
             }
         });
+    }
+
+    public boolean hasUncommittedChanges() {
+        GitRepoStatus status = this.repoStatus.get();
+        return status != null && !status.changes().isEmpty();
+    }
+
+    public String getCurrentBranch() {
+        return Optional.ofNullable(getRepoStatus())
+            .map(GitRepoStatus::branch)
+            .orElse(null);
     }
 }

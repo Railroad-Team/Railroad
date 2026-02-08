@@ -99,17 +99,17 @@ public class WelcomePane extends HBox {
             if (selectedDirectory != null) {
                 Path projectPath = selectedDirectory.toPath();
 
-                if (isValidProjectDirectory(projectPath)) {
+//                if (isValidProjectDirectory(projectPath)) {
                     var project = new Project(projectPath);
                     project.open();
-                } else {
-                    WindowBuilder.createAlert(
-                        AlertType.ERROR,
-                        "railroad.dialog.open_project.error.invalid_directory",
-                        "railroad.dialog.open_project.error.invalid_directory",
-                        "railroad.dialog.open_project.error.invalid_directory.message"
-                    ).build();
-                }
+//                } else {
+//                    WindowBuilder.createAlert(
+//                        AlertType.ERROR,
+//                        "railroad.dialog.open_project.error.invalid_directory",
+//                        "railroad.dialog.open_project.error.invalid_directory",
+//                        "railroad.dialog.open_project.error.invalid_directory.message"
+//                    ).build();
+//                }
             }
         });
     }

@@ -34,10 +34,8 @@ public class GitCommitDetailsPane extends RRVBox {
 
         commit.addListener((obs, oldCommit, newCommit) -> updateCommitDetails(newCommit));
 
-        project.getGitManager().getCommitListMetadata().thenAccept(metadata -> Platform.runLater(() -> {
-            headCommitHash = metadata.headCommitHash();
-            tagsByCommit = metadata.tagsByCommit();
-        }));
+        reloadCommitMetadata();
+        project.getGitManager().commitMetadataRevisionProperty().addListener((obs, oldRevision, newRevision) -> reloadCommitMetadata());
     }
 
     private LocalizedText createEmptyState() {
@@ -59,6 +57,18 @@ public class GitCommitDetailsPane extends RRVBox {
         getChildren().add(new GitCommitDetailsView(project, newCommit, headCommitHash, tagsByCommit));
         setAlignment(Pos.TOP_CENTER);
         title.set("Commit: " + newCommit.shortHash());
+    }
+
+    private void reloadCommitMetadata() {
+        project.getGitManager().getCommitListMetadata().thenAccept(metadata -> Platform.runLater(() -> {
+            headCommitHash = metadata.headCommitHash();
+            tagsByCommit = metadata.tagsByCommit();
+
+            GitCommit currentCommit = commit.get();
+            if (currentCommit != null) {
+                updateCommitDetails(currentCommit);
+            }
+        }));
     }
 
     public StringProperty titleProperty() {

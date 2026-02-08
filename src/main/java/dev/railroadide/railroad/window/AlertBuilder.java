@@ -43,6 +43,7 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
     protected Runnable onClose = () -> {
     };
     protected AlertType alertType = AlertType.INFO;
+    protected boolean submitOnEnter = true;
 
     public static AlertBuilder<?> create() {
         return new AlertBuilder<>();
@@ -86,6 +87,11 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
 
     public T alertType(AlertType alertType) {
         this.alertType = alertType;
+        return (T) this;
+    }
+
+    public T submitOnEnter(boolean submitOnEnter) {
+        this.submitOnEnter = submitOnEnter;
         return (T) this;
     }
 
@@ -145,7 +151,7 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
             case WARNING -> "railroad.generic.proceed";
         });
         primary.setVariant(ButtonVariant.PRIMARY);
-        primary.setDefaultButton(true);
+        primary.setDefaultButton(submitOnEnter);
 
         buttons.getChildren().addAll(secondary, primary);
 
@@ -182,7 +188,7 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
             if (event.getCode() == KeyCode.ESCAPE) {
                 event.consume();
                 close.run();
-            } else if (event.getCode() == KeyCode.ENTER) {
+            } else if (submitOnEnter && event.getCode() == KeyCode.ENTER) {
                 event.consume();
                 primary.fire();
             }

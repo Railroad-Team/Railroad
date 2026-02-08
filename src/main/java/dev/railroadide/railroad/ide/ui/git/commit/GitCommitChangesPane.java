@@ -98,6 +98,7 @@ public class GitCommitChangesPane extends RRBorderPane {
         changesRoot.collapseSingleChildDirectories();
         changesRoot.setExpanded(true);
         treeView.setRoot(root);
+        setCenter(treeView);
         lastChanges = safeChanges;
         lastRepoRoot = repository.root();
     }

@@ -40,8 +40,6 @@ public class GitCommitRevertButton extends RRButton {
                 project.getGitManager().revertCommit(commit.hash());
                 dialog.close();
             });
-
-            dialog.showAndWait();
         });
     }
 }

@@ -11,7 +11,6 @@ import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import dev.railroadide.railroad.window.DialogBuilder;
 import dev.railroadide.railroad.window.WindowBuilder;
-import javafx.stage.Stage;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 public class GitCommitCreateTagButton extends RRButton {
@@ -60,40 +59,51 @@ public class GitCommitCreateTagButton extends RRButton {
                         project.getGitManager().createTag(tagName, commit.hash(), messageArea.getText().strip(), overwriteCheckbox.isSelected());
                     }
                 });
-            Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.new_tag_dialog.title", dialogBuilder);
+            var dialog = WindowBuilder.createDialog("railroad.git.commit.details.new_tag_dialog.title", dialogBuilder);
 
-            var confirmButton = (RRButton) dialogBuilder.buildScene().lookup(".rr-button.success");
-            confirmButton.setDisable(true);
+            var confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
+            if (confirmButton != null) {
+                confirmButton.setDisable(true);
+            }
 
             tagNameField.textProperty().addListener((obs, oldText, newText) -> {
                 if (newText.strip().isBlank()) {
                     errorText.setKeyAndArgs("");
-                    confirmButton.setDisable(true);
+                    if (confirmButton != null) {
+                        confirmButton.setDisable(true);
+                    }
                 } else {
                     if (newText.contains(" ")) {
                         errorText.setKeyAndArgs("railroad.git.commit.details.new_tag_dialog.error_no_spaces");
-                        confirmButton.setDisable(true);
+                        if (confirmButton != null) {
+                            confirmButton.setDisable(true);
+                        }
                         return;
                     }
 
                     if (!overwriteCheckbox.isSelected() && project.getGitManager().doesTagExist(newText)) {
                         errorText.setKeyAndArgs("railroad.git.commit.details.new_tag_dialog.error_tag_exists");
-                        confirmButton.setDisable(true);
+                        if (confirmButton != null) {
+                            confirmButton.setDisable(true);
+                        }
                         return;
                     }
 
                     if (!project.getGitManager().isValidTagName(newText)) {
                         errorText.setKeyAndArgs("railroad.git.commit.details.new_tag_dialog.error_invalid_tag_name");
-                        confirmButton.setDisable(true);
+                        if (confirmButton != null) {
+                            confirmButton.setDisable(true);
+                        }
                         return;
                     }
 
                     errorText.setKeyAndArgs("");
-                    confirmButton.setDisable(false);
+                    if (confirmButton != null) {
+                        confirmButton.setDisable(false);
+                    }
                 }
             });
 
-            dialog.showAndWait();
         });
     }
 }

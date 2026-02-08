@@ -130,13 +130,12 @@ public class GitCommitCheckoutButton extends RRButton {
             );
             forceDialogRef.set(forceDialog);
 
-            var confirmButton = (RRButton) forceDialogBuilder.buildScene().lookup(".rr-button.primary");
-            confirmButton.setDisable(true);
-            discardTextField.textProperty().addListener((obs, oldText, newText) -> confirmButton.setDisable(!newText.equals("FORCE")));
+            var confirmButton = (RRButton) forceDialog.getScene().lookup(".rr-button.primary");
+            if (confirmButton != null) {
+                confirmButton.setDisable(true);
+                discardTextField.textProperty().addListener((obs, oldText, newText) -> confirmButton.setDisable(!newText.equals("FORCE")));
+            }
 
-            forceDialog.showAndWait();
         });
-
-        dialog.showAndWait();
     }
 }

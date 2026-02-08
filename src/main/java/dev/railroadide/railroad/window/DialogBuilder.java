@@ -21,6 +21,10 @@ public class DialogBuilder extends AlertBuilder<DialogBuilder> {
     private List<Node> customButtons;
     private boolean buttonsOverridden;
 
+    public DialogBuilder() {
+        submitOnEnter(false);
+    }
+
     public static DialogBuilder create() {
         return new DialogBuilder();
     }

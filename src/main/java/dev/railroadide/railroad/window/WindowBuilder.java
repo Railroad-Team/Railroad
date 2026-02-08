@@ -262,6 +262,11 @@ public class WindowBuilder {
         if (maxWidth >= 0) stage.setMaxWidth(maxWidth);
         if (maxHeight >= 0) stage.setMaxHeight(maxHeight);
 
+        // If caller did not specify an explicit size, use the scene's preferred size.
+        if (scene != null && width < 0 && height < 0) {
+            stage.sizeToScene();
+        }
+
         if (onInit != null) {
             onInit.accept(stage);
         }

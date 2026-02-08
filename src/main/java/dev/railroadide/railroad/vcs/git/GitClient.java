@@ -445,6 +445,20 @@ public class GitClient {
             throw new GitExecutionException("git stash failed: " + String.join("\n", result.stderr()));
     }
 
+    public void stashPop(GitRepository repo) {
+        GitCommand cmd = GitCommands.stashPop(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git stash pop timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git stash pop was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git stash pop failed: " + String.join("\n", result.stderr()));
+    }
+
     public void checkoutCommit(GitRepository repo, String hash, String gitVersion) {
         GitCommand cmd = supportsSwitch(gitVersion)
             ? GitCommands.checkoutDetachedWithSwitch(repo, hash)

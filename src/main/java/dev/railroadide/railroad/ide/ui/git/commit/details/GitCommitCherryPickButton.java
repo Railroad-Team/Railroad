@@ -27,21 +27,23 @@ public class GitCommitCherryPickButton extends RRButton {
         setOnAction(event -> {
             GitManager gitManager = project.getGitManager();
             if (!gitManager.getRepoStatus().changes().isEmpty()) {
-                CompletableFuture<Boolean> canContinue = confirmCherryPickWithUncommittedChanges(gitManager, gitManager.getCurrentCommit(), commit);
+                CompletableFuture<boolean[]> canContinue = confirmCherryPickWithUncommittedChanges(gitManager, gitManager.getCurrentCommit(), commit);
                 canContinue.thenAccept(canContinueResult -> {
-                    if (canContinueResult) {
-                        continueCherryPick(gitManager, commit);
+                    boolean canContinueCherryPick = canContinueResult[0];
+                    boolean shouldStash = canContinueResult[1];
+                    if (canContinueCherryPick) {
+                        continueCherryPick(gitManager, commit, shouldStash);
                     }
                 });
 
                 return;
             }
 
-            continueCherryPick(gitManager, commit);
+            continueCherryPick(gitManager, commit, false);
         });
     }
 
-    private static void continueCherryPick(GitManager gitManager, GitCommit commit) {
+    private static void continueCherryPick(GitManager gitManager, GitCommit commit, boolean stashedChanges) {
         if (gitManager.isInCherryPickState()) {
             var content = new LocalizedText("railroad.git.commit.details.cherry_pick.error.already_cherry_picking");
             content.getStyleClass().add("git-commit-cherry-pick-already-cherry-picking-content");
@@ -74,12 +76,15 @@ public class GitCommitCherryPickButton extends RRButton {
 
             abortButton.setOnAction($ -> {
                 gitManager.abortCherryPick();
+                if(stashedChanges) {
+                    gitManager.stashPop();
+                }
+
                 dialog.close();
             });
 
             cancelButton.setOnAction($ -> dialog.close());
 
-            dialog.showAndWait();
             return;
         }
 
@@ -97,8 +102,7 @@ public class GitCommitCherryPickButton extends RRButton {
                         "railroad.git.commit.details.cherry_pick.error.subtitle",
                         "railroad.git.commit.details.cherry_pick.error.content"
                     )
-                    .build()
-                    .showAndWait());
+                    .build());
                 return;
             }
 
@@ -143,7 +147,6 @@ public class GitCommitCherryPickButton extends RRButton {
 
         cancelButton.setOnAction($ -> dialog.close());
 
-        dialog.showAndWait();
     }
 
     private static boolean canContinueCherryPick(GitManager gitManager) {
@@ -161,17 +164,16 @@ public class GitCommitCherryPickButton extends RRButton {
                 "railroad.git.commit.details.cherry_pick.unresolved.subtitle",
                 "railroad.git.commit.details.cherry_pick.unresolved.content"
             )
-            .build()
-            .showAndWait();
+            .build();
         return false;
     }
 
-    private static CompletableFuture<Boolean> confirmCherryPickWithUncommittedChanges(
+    private static CompletableFuture<boolean[]> confirmCherryPickWithUncommittedChanges(
         GitManager gitManager,
         Optional<GitCommit> currentCommit,
         GitCommit commit
     ) {
-        CompletableFuture<Boolean> canContinueRef = new CompletableFuture<>();
+        CompletableFuture<boolean[]> canContinueRef = new CompletableFuture<>();
         GitRepoStatus repoStatus = gitManager.getRepoStatus();
 
         Platform.runLater(() -> {
@@ -218,17 +220,16 @@ public class GitCommitCherryPickButton extends RRButton {
             Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.cherry_pick_dialog.title", dialogBuilder);
 
             cancelButton.setOnAction($ -> {
-                canContinueRef.complete(false);
+                canContinueRef.complete(new boolean[] {false, false});
                 dialog.close();
             });
 
             stashAndContinueButton.setOnAction($ -> {
                 gitManager.stashChanges("Railroad: before cherry-pick " + currentCommit.map(GitCommit::shortHash).orElse("HEAD"), true);
-                canContinueRef.complete(true);
+                canContinueRef.complete(new boolean[] {true, true});
                 dialog.close();
             });
 
-            dialog.showAndWait();
         });
 
         return canContinueRef;

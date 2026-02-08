@@ -73,12 +73,17 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
                 openDetailsForCommit(scene, project, commit);
             }
         }));
+        reloadCommitMetadata(project);
+        project.getGitManager().commitMetadataRevisionProperty().addListener((obs, oldRevision, newRevision) -> reloadCommitMetadata(project));
+        project.getGitManager().getAllCommits(this::handleCommitsPage, () -> Platform.runLater(this::handleCommitsDone), 200);
+    }
+
+    private void reloadCommitMetadata(Project project) {
         project.getGitManager().getCommitListMetadata().thenAccept(metadata -> Platform.runLater(() -> {
             headCommitHash = metadata.headCommitHash();
             tagsByCommit = metadata.tagsByCommit();
             refresh();
         }));
-        project.getGitManager().getAllCommits(this::handleCommitsPage, () -> Platform.runLater(this::handleCommitsDone), 200);
     }
 
     private static <T extends Node> T traverseToParentOfType(Node node, Class<T> parentType) {

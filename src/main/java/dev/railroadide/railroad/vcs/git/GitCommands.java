@@ -335,6 +335,17 @@ public final class GitCommands {
         return builder.build();
     }
 
+    public static GitCommand stashPop(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "stash",
+                "pop"
+            )
+            .build();
+    }
+
     public static GitCommand checkoutDetachedWithSwitch(GitRepository repo, String hash) {
         return GitCommand.builder()
             .workingDirectory(repo)
