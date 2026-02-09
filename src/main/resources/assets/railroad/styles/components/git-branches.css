@@ -1,0 +1,390 @@
+.git-branches-pane {
+    -fx-background-color: -color-bg-default;
+    -fx-spacing: 10px;
+    -fx-padding: 6px;
+}
+
+.git-branches-search-bar {
+    -fx-max-width: Infinity;
+}
+
+.git-branches-section-header {
+    -fx-alignment: center-left;
+    -fx-padding: 2px 2px 0 2px;
+}
+
+.git-branches-section-title {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.git-branches-section-count {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospaced";
+}
+
+.git-local-branches-list-view,
+.git-remote-branches-list-view {
+    -fx-background-color: -color-bg-default;
+    -fx-background-insets: 0;
+    -fx-padding: 6px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.git-local-branches-list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.git-remote-branches-list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.git-local-branches-list-view .list-cell:filled {
+    -fx-padding: 6px 4px;
+}
+
+.git-remote-branches-list-view .list-cell:filled {
+    -fx-padding: 6px 4px;
+}
+
+.git-local-branch-cell {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-padding: 10px 12px;
+    -fx-spacing: 12px;
+}
+
+.git-local-branch-cell .background-2,
+.git-local-branch-cell .Railroad,
+.git-local-branch-cell .git-local-branch-details,
+.git-local-branch-cell .git-local-branch-title-row,
+.git-local-branch-cell .git-local-branch-metadata-row {
+    -fx-background-color: transparent;
+}
+
+.git-local-branches-list-view .list-cell:filled:selected .git-local-branch-cell {
+    -fx-background-color: -color-bg-emphasis;
+    -fx-border-color: -color-border-default;
+}
+
+.git-local-branches-list-view .list-cell:filled:hover .git-local-branch-cell {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-muted;
+}
+
+.git-remote-branch-cell {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-padding: 10px 12px;
+    -fx-spacing: 12px;
+}
+
+.git-remote-branch-cell .background-2,
+.git-remote-branch-cell .Railroad,
+.git-remote-branch-cell .git-remote-branch-details,
+.git-remote-branch-cell .git-remote-branch-title-row,
+.git-remote-branch-cell .git-remote-branch-metadata-row {
+    -fx-background-color: transparent;
+}
+
+.git-remote-branches-list-view .list-cell:filled:selected .git-remote-branch-cell {
+    -fx-background-color: -color-bg-emphasis;
+    -fx-border-color: -color-border-default;
+}
+
+.git-remote-branches-list-view .list-cell:filled:hover .git-remote-branch-cell {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-muted;
+}
+
+.git-local-branch-details {
+    -fx-spacing: 2px;
+}
+
+.git-remote-branch-details {
+    -fx-spacing: 2px;
+}
+
+.git-local-branch-title-row,
+.git-local-branch-metadata-row {
+    -fx-alignment: center-left;
+    -fx-spacing: 6px;
+}
+
+.git-remote-branch-title-row,
+.git-remote-branch-metadata-row {
+    -fx-alignment: center-left;
+    -fx-spacing: 6px;
+}
+
+.git-local-branch-name {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.git-remote-branch-name {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.git-local-branch-current-badge {
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-background-color: -color-accent-muted;
+    -fx-border-color: -color-accent-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 9px;
+    -fx-background-radius: 9px;
+    -fx-padding: 1px 7px;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+.git-remote-branch-remote-badge {
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-background-color: -color-accent-muted;
+    -fx-border-color: -color-accent-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 9px;
+    -fx-background-radius: 9px;
+    -fx-padding: 1px 7px;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+.git-local-branch-upstream-chip {
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-background-color: -color-accent-muted;
+    -fx-border-color: -color-accent-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 9px;
+    -fx-background-radius: 9px;
+    -fx-padding: 1px 7px;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+}
+
+.git-local-branch-last-summary {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospaced";
+}
+
+.git-remote-branch-last-summary {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospaced";
+}
+
+.git-local-branch-chip {
+    -fx-alignment: center-left;
+    -fx-spacing: 4px;
+    -fx-padding: 1px 7px;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+}
+
+.git-local-branch-chip-label {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+}
+
+.git-local-branch-chip-dot-zero {
+    -fx-fill: -color-success-emphasis;
+}
+
+.git-local-branch-chip-dot-nonzero {
+    -fx-fill: -color-warning-emphasis;
+}
+
+.git-local-branch-status {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-padding: 2px 8px;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.git-remote-branch-status {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-padding: 2px 8px;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.git-local-branch-status-dirty {
+    -fx-text-fill: -color-warning-emphasis;
+    -fx-background-color: -color-warning-muted;
+    -fx-border-color: -color-warning-subtle;
+}
+
+.git-remote-branch-status-dirty {
+    -fx-text-fill: -color-warning-emphasis;
+    -fx-background-color: -color-warning-muted;
+    -fx-border-color: -color-warning-subtle;
+}
+
+.git-local-branch-status-local {
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-background-color: -color-accent-muted;
+    -fx-border-color: -color-accent-subtle;
+}
+
+.git-remote-branch-status-local {
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-background-color: -color-accent-muted;
+    -fx-border-color: -color-accent-subtle;
+}
+
+.git-local-branch-status-remote {
+    -fx-text-fill: -color-danger-emphasis;
+    -fx-background-color: -color-danger-muted;
+    -fx-border-color: -color-danger-subtle;
+}
+
+.git-remote-branch-status-remote {
+    -fx-text-fill: -color-danger-emphasis;
+    -fx-background-color: -color-danger-muted;
+    -fx-border-color: -color-danger-subtle;
+}
+
+.git-local-branch-status-clean {
+    -fx-text-fill: -color-success-emphasis;
+    -fx-background-color: -color-success-muted;
+    -fx-border-color: -color-success-subtle;
+}
+
+.git-remote-branch-status-clean {
+    -fx-text-fill: -color-success-emphasis;
+    -fx-background-color: -color-success-muted;
+    -fx-border-color: -color-success-subtle;
+}
+
+.git-local-branch-status-unknown {
+    -fx-text-fill: -color-fg-muted;
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+}
+
+.git-remote-branch-status-unknown {
+    -fx-text-fill: -color-fg-muted;
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+}
+
+.git-branch-details-popup {
+    -fx-background-color: -color-bg-overlay;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-padding: 10px 16px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.25), 14, 0.2, 0, 4);
+}
+
+.git-branch-details-node {
+    -fx-min-width: 560px;
+    -fx-max-width: 560px;
+    -fx-spacing: 8px;
+}
+
+.git-branch-details-header {
+    -fx-alignment: center-left;
+    -fx-spacing: 8px;
+}
+
+.git-branch-details-name {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.git-branch-details-status {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+    -fx-padding: 2px 8px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-background-color: -color-bg-subtle;
+}
+
+.git-branch-details-body {
+    -fx-spacing: 6px;
+}
+
+.git-branch-details-actions {
+    -fx-alignment: center-left;
+    -fx-spacing: 6px;
+}
+
+.git-branch-details-action-button {
+    -fx-background-color: -color-bg-subtle;
+    -fx-text-fill: -color-fg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-padding: 4px 10px;
+    -fx-cursor: hand;
+}
+
+.git-branch-details-action-button:hover {
+    -fx-background-color: -color-bg-emphasis;
+    -fx-border-color: -color-border-default;
+}
+
+.git-branch-details-action-button:pressed {
+    -fx-background-color: -color-bg-default;
+}
+
+.git-branch-details-action-delete {
+    -fx-text-fill: -color-danger-emphasis;
+    -fx-border-color: -color-danger-subtle;
+    -fx-background-color: -color-danger-muted;
+}
+
+.git-branch-details-action-delete:hover {
+    -fx-text-fill: -color-danger-emphasis;
+    -fx-border-color: -color-danger-default;
+    -fx-background-color: -color-danger-subtle;
+}
+
+.git-branch-details-row {
+    -fx-alignment: center-left;
+    -fx-spacing: 8px;
+}
+
+.git-branch-details-label {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+}
+
+.git-branch-details-value {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 11px;
+    -fx-wrap-text: true;
+}

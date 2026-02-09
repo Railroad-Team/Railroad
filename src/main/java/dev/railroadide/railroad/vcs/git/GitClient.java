@@ -12,6 +12,7 @@ import dev.railroadide.railroad.vcs.git.execution.GitProcessRunner;
 import dev.railroadide.railroad.vcs.git.execution.GitResult;
 import dev.railroadide.railroad.vcs.git.execution.progress.GitProgressEvent;
 import dev.railroadide.railroad.vcs.git.execution.progress.GitResultCaptureMode;
+import dev.railroadide.railroad.vcs.git.identity.GitAuthor;
 import dev.railroadide.railroad.vcs.git.identity.GitIdentity;
 import dev.railroadide.railroad.vcs.git.identity.GitSigningStatus;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
@@ -25,8 +26,7 @@ import dev.railroadide.railroad.vcs.git.util.GitRepository;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 
 // TODO: Add small FS cache for detected repositories to avoid repeated git calls
@@ -36,6 +36,10 @@ public class GitClient {
 
     public GitClient(GitProcessRunner runner) {
         this.runner = runner;
+    }
+
+    public void setGitExecutable(Path path) {
+        this.runner.setGitExecutable(path);
     }
 
     public GitRepoStatus getStatus(GitRepository repo) {
@@ -399,6 +403,250 @@ public class GitClient {
         return DiffParser.parseDiff(diffText);
     }
 
+    public Optional<String> getUnstagedDiffText(GitRepository repo, Path filePath) {
+        GitCommand cmd = GitCommands.getUnstagedDiff(repo, filePath);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut()) {
+            Railroad.LOGGER.warn("git diff timed out for path: {}", filePath);
+            return Optional.empty();
+        }
+
+        if (result.cancelled()) {
+            Railroad.LOGGER.warn("git diff was cancelled for path: {}", filePath);
+            return Optional.empty();
+        }
+
+        if (result.exitCode() != 0) {
+            Railroad.LOGGER.warn("git diff failed for path {}: {}", filePath, String.join("\n", result.stderr()));
+            return Optional.empty();
+        }
+
+        return Optional.of(result.readAllStdout());
+    }
+
+    public String getHeadCommitHash(GitRepository repo) {
+        GitCommand cmd = GitCommands.getHeadCommitHash(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut()) {
+            Railroad.LOGGER.warn("git rev-parse timed out for repository at: {}", repo.root());
+            return null;
+        }
+
+        if (result.cancelled()) {
+            Railroad.LOGGER.warn("git rev-parse was cancelled for repository at: {}", repo.root());
+            return null;
+        }
+
+        if (result.exitCode() != 0) {
+            Railroad.LOGGER.warn("git rev-parse failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            return null;
+        }
+
+        String commitHash = result.readAllStdout().trim();
+        return commitHash.isEmpty() ? null : commitHash;
+    }
+
+    public List<String> getTagsPointingToCommit(GitRepository repo, String hash) {
+        GitCommand cmd = GitCommands.getTagsPointingToCommit(repo, hash);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut()) {
+            Railroad.LOGGER.warn("git tag timed out for repository at: {}", repo.root());
+            return List.of();
+        }
+
+        if (result.cancelled()) {
+            Railroad.LOGGER.warn("git tag was cancelled for repository at: {}", repo.root());
+            return List.of();
+        }
+
+        if (result.exitCode() != 0) {
+            Railroad.LOGGER.warn("git tag failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            return List.of();
+        }
+
+        String stdout = result.readAllStdout().trim();
+        if (stdout.isEmpty()) {
+            return List.of();
+        } else {
+            return List.of(stdout.split("\n"));
+        }
+    }
+
+    public Map<String, List<String>> getTagsByCommit(GitRepository repo) {
+        GitCommand cmd = GitCommands.getAllTagsWithCommits(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut()) {
+            Railroad.LOGGER.warn("git show-ref timed out for repository at: {}", repo.root());
+            return Map.of();
+        }
+
+        if (result.cancelled()) {
+            Railroad.LOGGER.warn("git show-ref was cancelled for repository at: {}", repo.root());
+            return Map.of();
+        }
+
+        if (result.exitCode() != 0) {
+            Railroad.LOGGER.warn("git show-ref failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            return Map.of();
+        }
+
+        String stdout = result.readAllStdout().trim();
+        if (stdout.isEmpty())
+            return Map.of();
+
+        Map<String, String> tagToCommit = GitCommit.parseTagsToCommit(stdout);
+
+        Map<String, List<String>> tagsByCommit = new HashMap<>();
+        for (Map.Entry<String, String> entry : tagToCommit.entrySet()) {
+            tagsByCommit.computeIfAbsent(entry.getValue(), key -> new ArrayList<>()).add(entry.getKey());
+        }
+
+        return tagsByCommit;
+    }
+
+    public List<String> getAllBranches(GitRepository repo) {
+        GitCommand cmd = GitCommands.getAllBranches(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut()) {
+            Railroad.LOGGER.warn("git branch timed out for repository at: {}", repo.root());
+            return List.of();
+        }
+
+        if (result.cancelled()) {
+            Railroad.LOGGER.warn("git branch was cancelled for repository at: {}", repo.root());
+            return List.of();
+        }
+
+        if (result.exitCode() != 0) {
+            Railroad.LOGGER.warn("git branch failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            return List.of();
+        }
+
+        String stdout = result.readAllStdout().trim();
+        if (stdout.isEmpty()) {
+            return List.of();
+        } else {
+            return List.of(stdout.split("\n"));
+        }
+    }
+
+    public List<String> getAllLocalBranches(GitRepository repo) {
+        GitCommand cmd = GitCommands.getAllLocalBranches(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut()) {
+            Railroad.LOGGER.warn("git branch --list timed out for repository at: {}", repo.root());
+            return List.of();
+        }
+
+        if (result.cancelled()) {
+            Railroad.LOGGER.warn("git branch --list was cancelled for repository at: {}", repo.root());
+            return List.of();
+        }
+
+        if (result.exitCode() != 0) {
+            Railroad.LOGGER.warn("git branch --list failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            return List.of();
+        }
+
+        String stdout = result.readAllStdout().trim();
+        if (stdout.isEmpty()) {
+            return List.of();
+        } else {
+            return List.of(stdout.split("\n"));
+        }
+    }
+
+    public List<String> getAllRemoteBranches(GitRepository repo) {
+        GitCommand cmd = GitCommands.getAllRemoteBranches(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut()) {
+            Railroad.LOGGER.warn("git branch -r timed out for repository at: {}", repo.root());
+            return List.of();
+        }
+
+        if (result.cancelled()) {
+            Railroad.LOGGER.warn("git branch -r was cancelled for repository at: {}", repo.root());
+            return List.of();
+        }
+
+        if (result.exitCode() != 0) {
+            Railroad.LOGGER.warn("git branch -r failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            return List.of();
+        }
+
+        String stdout = result.readAllStdout().trim();
+        if (stdout.isEmpty()) {
+            return List.of();
+        } else {
+            return List.of(stdout.split("\n"));
+        }
+    }
+
+    public List<GitAuthor> getAllAuthors(GitRepository repo, boolean includeEmail) {
+        GitCommand cmd = GitCommands.getAllAuthors(repo, includeEmail);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut()) {
+            Railroad.LOGGER.warn("git shortlog timed out for repository at: {}", repo.root());
+            return List.of();
+        }
+
+        if (result.cancelled()) {
+            Railroad.LOGGER.warn("git shortlog was cancelled for repository at: {}", repo.root());
+            return List.of();
+        }
+
+        if (result.exitCode() != 0) {
+            Railroad.LOGGER.warn("git shortlog failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            return List.of();
+        }
+
+        String stdout = result.readAllStdout().trim();
+        if (stdout.isEmpty()) {
+            return List.of();
+        } else {
+            String[] lines = stdout.split("\n");
+            return GitAuthor.parseAuthorsFromShortlogLines(lines, includeEmail);
+        }
+    }
+
+    public long getRepositoryCreationDate(GitRepository repo) {
+        GitCommand cmd = GitCommands.getRepositoryCreationDate(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut()) {
+            Railroad.LOGGER.warn("git rev-list timed out for repository at: {}", repo.root());
+            return 0L;
+        }
+
+        if (result.cancelled()) {
+            Railroad.LOGGER.warn("git rev-list was cancelled for repository at: {}", repo.root());
+            return 0L;
+        }
+
+        if (result.exitCode() != 0) {
+            Railroad.LOGGER.warn("git rev-list failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            return 0L;
+        }
+
+        String stdout = result.readAllStdout().trim();
+        try {
+            return Long.parseLong(stdout);
+        } catch (NumberFormatException exception) {
+            Railroad.LOGGER.warn("Failed to parse repository creation date '{}' for repository at {}",
+                stdout,
+                repo.root());
+            return 0L;
+        }
+    }
+
     public List<GitAdditionsDeletions> getAdditionsDeletions(GitRepository repo, String hash) {
         GitCommand cmd = GitCommands.getAdditionsDeletions(repo, hash);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -690,5 +938,183 @@ public class GitClient {
 
         if (result.exitCode() != 0)
             throw new GitExecutionException("git revert failed: " + String.join("\n", result.stderr()));
+    }
+
+    public String getRemoteTrackingBranch(GitRepository repo, String branchName) {
+        GitCommand cmd = GitCommands.getRemoteTrackingBranch(repo, branchName);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git rev-parse timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git rev-parse was cancelled");
+
+        if (result.exitCode() != 0)
+            return null;
+
+        String upstreamRef = result.readAllStdout().trim();
+        return upstreamRef.isEmpty() ? null : upstreamRef;
+    }
+
+    public int[] getAheadBehindCounts(GitRepository repo, String branchName, String upstreamBranch) {
+        GitCommand cmd = GitCommands.getAheadBehindCount(repo, branchName, upstreamBranch);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git rev-list timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git rev-list was cancelled");
+
+        if (result.exitCode() != 0)
+            return new int[]{0, 0};
+
+        String stdout = result.readAllStdout().strip();
+        try {
+            String[] parts = stdout.split("\\s+");
+            if (parts.length != 2) {
+                Railroad.LOGGER.warn("Unexpected ahead-behind output '{}' for branch {} in repository at {}",
+                    stdout, branchName, repo.root());
+                return new int[]{0, 0};
+            }
+
+            int aheadCount = Integer.parseInt(parts[0]);
+            int behindCount = Integer.parseInt(parts[1]);
+            return new int[]{aheadCount, behindCount};
+        } catch (NumberFormatException exception) {
+            Railroad.LOGGER.warn("Failed to parse ahead-behind count '{}' for branch {} in repository at {}",
+                stdout, branchName, repo.root(), exception);
+            return new int[]{0, 0};
+        }
+    }
+
+    public String getLastCommitHash(GitRepository repo, String branchName) {
+        GitCommand cmd = GitCommands.getLastCommitHash(repo, branchName);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git rev-parse timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git rev-parse was cancelled");
+
+        if (result.exitCode() != 0)
+            return null;
+
+        String commitHash = result.readAllStdout().trim();
+        return commitHash.isEmpty() ? null : commitHash;
+    }
+
+    public Long getLastCommitTimestamp(GitRepository repo, String branchName) {
+        GitCommand cmd = GitCommands.getLastCommitTimestamp(repo, branchName);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git log timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git log was cancelled");
+
+        if (result.exitCode() != 0)
+            return null;
+
+        String timestamp = result.readAllStdout().trim();
+        if (timestamp.isEmpty())
+            return null;
+
+        try {
+            return Long.parseLong(timestamp);
+        } catch (NumberFormatException exception) {
+            Railroad.LOGGER.warn("Failed to parse last commit timestamp '{}' for branch {} in repository at {}",
+                timestamp, branchName, repo.root(), exception);
+            return null;
+        }
+    }
+
+    public GitAuthor getCommitAuthor(GitRepository repo, String hash) {
+        GitCommand cmd = GitCommands.getCommitAuthor(repo, hash);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git log timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git log was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git log failed: " + String.join("\n", result.stderr()));
+
+        String stdout = result.readAllStdout();
+        if (stdout == null || stdout.isBlank())
+            return null;
+
+        String[] parts = stdout.split("\u0000", -1);
+        String authorName = parts.length > 0 ? parts[0].trim() : null;
+        String authorEmail = parts.length > 1 ? parts[1].trim() : null;
+        if (authorName != null && authorName.isBlank()) {
+            authorName = null;
+        }
+        if (authorEmail != null && authorEmail.isBlank()) {
+            authorEmail = null;
+        }
+
+        return authorName == null ? null : new GitAuthor(0, authorName, authorEmail);
+    }
+
+    public boolean hasUncommittedChanges(GitRepository repo, String branchName) {
+        return false;
+    }
+
+    public void setBranchUpstream(GitRepository repo, String branchName, String upstreamBranch) {
+        GitCommand cmd = GitCommands.setBranchUpstream(repo, branchName, upstreamBranch);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git branch --set-upstream-to timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git branch --set-upstream-to was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git branch --set-upstream-to failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void unsetBranchUpstream(GitRepository repo, String branchName) {
+        GitCommand cmd = GitCommands.unsetBranchUpstream(repo, branchName);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git branch --unset-upstream timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git branch --unset-upstream was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git branch --unset-upstream failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void deleteBranch(GitRepository repo, String branchName, boolean force) {
+        GitCommand cmd = GitCommands.deleteBranch(repo, branchName, force);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git branch -d timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git branch -d was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git branch -d failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void renameBranch(GitRepository repo, String oldBranchName, String newBranchName, boolean force) {
+        GitCommand cmd = GitCommands.renameBranch(repo, oldBranchName, newBranchName, force);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        if (result.timedOut())
+            throw new GitExecutionException("git branch -m timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git branch -m was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git branch -m failed: " + String.join("\n", result.stderr()));
     }
 }

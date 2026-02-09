@@ -3,15 +3,17 @@ package dev.railroadide.railroad.vcs.git;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
+import dev.railroadide.railroad.vcs.git.branch.GitBranch;
+import dev.railroadide.railroad.vcs.git.branch.GitBranchLastCommit;
+import dev.railroadide.railroad.vcs.git.branch.GitBranchStatus;
 import dev.railroadide.railroad.vcs.git.commit.CommitListMetadata;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import dev.railroadide.railroad.vcs.git.commit.GitCommitData;
 import dev.railroadide.railroad.vcs.git.commit.GitCommitPage;
 import dev.railroadide.railroad.vcs.git.diff.GitAdditionsDeletions;
 import dev.railroadide.railroad.vcs.git.execution.GitOutputListener;
-import dev.railroadide.railroad.vcs.git.execution.GitResult;
 import dev.railroadide.railroad.vcs.git.execution.progress.GitProgressEvent;
-import dev.railroadide.railroad.vcs.git.execution.progress.GitResultCaptureMode;
+import dev.railroadide.railroad.vcs.git.identity.GitAuthor;
 import dev.railroadide.railroad.vcs.git.identity.GitIdentity;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
@@ -23,7 +25,10 @@ import javafx.beans.property.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
@@ -153,7 +158,7 @@ public class GitManager {
     }
 
     public void setGitExecutablePath(Path path) {
-        this.gitClient.runner.setGitExecutable(path);
+        this.gitClient.setGitExecutable(path);
     }
 
     public void commitChanges(GitCommitData commit, boolean pushAfterCommit) {
@@ -320,21 +325,7 @@ public class GitManager {
             return Optional.empty();
 
         Path relativePath = repoRoot.relativize(absoluteFile);
-        GitCommand cmd = GitCommands.getUnstagedDiff(repository, relativePath);
-        GitResult result = gitClient.runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
-
-        if (result.timedOut() || result.cancelled()) {
-            Railroad.LOGGER.warn("git diff was {} for path: {}", result.timedOut() ? "timed out" : "cancelled", filePath);
-            return Optional.empty();
-        }
-
-        if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git diff failed for path {}: {}", filePath, String.join("\n", result.stderr()));
-            return Optional.empty();
-        }
-
-        String diffText = result.readAllStdout();
-        return Optional.of(diffText);
+        return this.gitClient.getUnstagedDiffText(repository, relativePath);
     }
 
     public String getHeadCommitHash() {
@@ -342,25 +333,7 @@ public class GitManager {
         if (repository == null)
             return null;
 
-        GitCommand cmd = GitCommands.getHeadCommitHash(repository);
-        GitResult result = gitClient.runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
-
-        if (result.timedOut() || result.cancelled()) {
-            Railroad.LOGGER.warn("git rev-parse was {} for repository at: {}",
-                result.timedOut() ? "timed out" : "cancelled",
-                repository.root());
-            return null;
-        }
-
-        if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git rev-parse failed for repository at {}: {}",
-                repository.root(),
-                String.join("\n", result.stderr()));
-            return null;
-        }
-
-        String commitHash = result.readAllStdout().trim();
-        return commitHash.isEmpty() ? null : commitHash;
+        return this.gitClient.getHeadCommitHash(repository);
     }
 
     public List<String> getTagsPointingToCommit(String hash) {
@@ -368,30 +341,7 @@ public class GitManager {
         if (repository == null)
             return List.of();
 
-        GitCommand cmd = GitCommands.getTagsPointingToCommit(repository, hash);
-        GitResult result = gitClient.runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
-
-        if (result.timedOut() || result.cancelled()) {
-            Railroad.LOGGER.warn("git tag was {} for repository at: {}",
-                result.timedOut() ? "timed out" : "cancelled",
-                repository.root());
-            return List.of();
-        }
-
-        if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git tag failed for repository at {}: {}",
-                repository.root(),
-                String.join("\n", result.stderr()));
-            return List.of();
-        }
-
-        String stdout = result.readAllStdout().trim();
-        if (stdout.isEmpty()) {
-            return List.of();
-        } else {
-            String[] tags = stdout.split("\n");
-            return List.of(tags);
-        }
+        return this.gitClient.getTagsPointingToCommit(repository, hash);
     }
 
     public Map<String, List<String>> getTagsByCommit() {
@@ -399,66 +349,31 @@ public class GitManager {
         if (repository == null)
             return Map.of();
 
-        GitCommand cmd = GitCommands.getAllTagsWithCommits(repository);
-        GitResult result = gitClient.runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
-
-        if (result.timedOut() || result.cancelled()) {
-            Railroad.LOGGER.warn("git show-ref was {} for repository at: {}",
-                result.timedOut() ? "timed out" : "cancelled",
-                repository.root());
-            return Map.of();
-        }
-
-        if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git show-ref failed for repository at {}: {}",
-                repository.root(),
-                String.join("\n", result.stderr()));
-            return Map.of();
-        }
-
-        String stdout = result.readAllStdout().trim();
-        if (stdout.isEmpty())
-            return Map.of();
-
-        Map<String, String> tagToCommit = GitCommit.parseTagsToCommit(stdout);
-
-        Map<String, List<String>> tagsByCommit = new HashMap<>();
-        for (Map.Entry<String, String> entry : tagToCommit.entrySet()) {
-            tagsByCommit.computeIfAbsent(entry.getValue(), key -> new ArrayList<>()).add(entry.getKey());
-        }
-
-        return tagsByCommit;
+        return this.gitClient.getTagsByCommit(repository);
     }
 
-    public List<String> getAllBranches() {
+    public List<String> getAllBranchNames() {
         GitRepository repository = this.gitRepository.get();
         if (repository == null)
             return List.of();
 
-        GitCommand cmd = GitCommands.getAllBranches(repository);
-        GitResult result = gitClient.runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+        return this.gitClient.getAllBranches(repository);
+    }
 
-        if (result.timedOut() || result.cancelled()) {
-            Railroad.LOGGER.warn("git branch was {} for repository at: {}",
-                result.timedOut() ? "timed out" : "cancelled",
-                repository.root());
+    public List<String> getAllLocalBranchNames() {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
             return List.of();
-        }
 
-        if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git branch failed for repository at {}: {}",
-                repository.root(),
-                String.join("\n", result.stderr()));
-            return List.of();
-        }
+        return this.gitClient.getAllLocalBranches(repository);
+    }
 
-        String stdout = result.readAllStdout().trim();
-        if (stdout.isEmpty()) {
+    public List<String> getAllRemoteBranchNames() {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
             return List.of();
-        } else {
-            String[] branches = stdout.split("\n");
-            return List.of(branches);
-        }
+
+        return this.gitClient.getAllRemoteBranches(repository);
     }
 
     public List<GitAuthor> getAllAuthors(boolean includeEmail) {
@@ -466,30 +381,7 @@ public class GitManager {
         if (repository == null)
             return List.of();
 
-        GitCommand cmd = GitCommands.getAllAuthors(repository, includeEmail);
-        GitResult result = gitClient.runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
-
-        if (result.timedOut() || result.cancelled()) {
-            Railroad.LOGGER.warn("git shortlog was {} for repository at: {}",
-                result.timedOut() ? "timed out" : "cancelled",
-                repository.root());
-            return List.of();
-        }
-
-        if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git shortlog failed for repository at {}: {}",
-                repository.root(),
-                String.join("\n", result.stderr()));
-            return List.of();
-        }
-
-        String stdout = result.readAllStdout().trim();
-        if (stdout.isEmpty()) {
-            return List.of();
-        } else {
-            String[] lines = stdout.split("\n");
-            return GitAuthor.parseAuthorsFromShortlogLines(lines, includeEmail);
-        }
+        return this.gitClient.getAllAuthors(repository, includeEmail);
     }
 
     public void getAllCommits(Consumer<List<GitCommit>> onPage, Runnable onDone, int pageSize) {
@@ -526,32 +418,7 @@ public class GitManager {
         if (repository == null)
             return 0L;
 
-        GitCommand cmd = GitCommands.getRepositoryCreationDate(repository);
-        GitResult result = gitClient.runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
-
-        if (result.timedOut() || result.cancelled()) {
-            Railroad.LOGGER.warn("git rev-list was {} for repository at: {}",
-                result.timedOut() ? "timed out" : "cancelled",
-                repository.root());
-            return 0L;
-        }
-
-        if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git rev-list failed for repository at {}: {}",
-                repository.root(),
-                String.join("\n", result.stderr()));
-            return 0L;
-        }
-
-        String stdout = result.readAllStdout().trim();
-        try {
-            return Long.parseLong(stdout);
-        } catch (NumberFormatException exception) {
-            Railroad.LOGGER.warn("Failed to parse repository creation date '{}' for repository at {}",
-                stdout,
-                repository.root());
-            return 0L;
-        }
+        return this.gitClient.getRepositoryCreationDate(repository);
     }
 
     public List<GitAdditionsDeletions> getAdditionsDeletions(String commitHash) {
@@ -755,9 +622,204 @@ public class GitManager {
         return status != null && !status.changes().isEmpty();
     }
 
+    public boolean hasUncommittedChanges(String branchName) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return false;
+
+        return this.gitClient.hasUncommittedChanges(repository, branchName);
+    }
+
     public String getCurrentBranch() {
         return Optional.ofNullable(getRepoStatus())
             .map(GitRepoStatus::branch)
             .orElse(null);
+    }
+
+    public List<GitBranch.LocalGitBranch> getAllLocalBranches() {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return List.of();
+
+        List<String> localBranchNames = getAllLocalBranchNames();
+        List<GitBranch.LocalGitBranch> localBranches = new ArrayList<>();
+        for (String branchName : localBranchNames) {
+            @Nullable String remoteName = getRemoteTrackingBranch(branchName);
+            boolean isCurrent = branchName.equals(getCurrentBranch());
+            int[] aheadBehind = remoteName != null ? getAheadBehindCounts(branchName, remoteName) : new int[]{0, 0};
+            int aheadCount = aheadBehind[0];
+            int behindCount = aheadBehind[1];
+            String lastCommitHash = getLastCommitHash(branchName);
+            Long lastCommitTimestampEpochSeconds = getLastCommitTimestamp(branchName);
+            String lastCommitMessage = getCommitMessage(lastCommitHash);
+            GitAuthor lastCommitAuthor = getCommitAuthor(lastCommitHash);
+            var lastCommit = new GitBranchLastCommit(
+                lastCommitHash,
+                lastCommitTimestampEpochSeconds,
+                lastCommitMessage,
+                lastCommitAuthor
+            );
+
+            GitBranchStatus status = determineBranchStatus(branchName, true);
+            localBranches.add(new GitBranch.LocalGitBranch(
+                branchName,
+                remoteName,
+                isCurrent,
+                aheadCount,
+                behindCount,
+                lastCommit,
+                status
+            ));
+        }
+
+        return localBranches;
+    }
+
+    public List<GitBranch.RemoteGitBranch> getAllRemoteBranches() {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return List.of();
+
+        List<String> remoteBranchNames = getAllRemoteBranchNames();
+        List<GitBranch.RemoteGitBranch> remoteBranches = new ArrayList<>();
+        for (String branchName : remoteBranchNames) {
+            if (branchName.endsWith("/HEAD"))
+                continue;
+
+            int slashIndex = branchName.indexOf('/');
+            String remoteName = slashIndex > 0 ? branchName.substring(0, slashIndex) : "remote";
+            String lastCommitHash = getLastCommitHash(branchName);
+            String lastCommitMessage = getCommitMessage(lastCommitHash);
+            GitAuthor lastCommitAuthor = getCommitAuthor(lastCommitHash);
+            var lastCommit = new GitBranchLastCommit(
+                lastCommitHash,
+                null,
+                lastCommitMessage,
+                lastCommitAuthor
+            );
+            GitBranchStatus status = determineBranchStatus(branchName, false);
+            remoteBranches.add(new GitBranch.RemoteGitBranch(
+                branchName,
+                remoteName,
+                lastCommit,
+                status
+            ));
+        }
+
+        return remoteBranches;
+    }
+
+    public GitBranchStatus determineBranchStatus(String branchName, boolean local) {
+        boolean hasUncommittedChanges = hasUncommittedChanges(branchName);
+        if (local) {
+            if (hasUncommittedChanges) {
+                return GitBranchStatus.DIRTY;
+            } else {
+                String remoteName = getRemoteTrackingBranch(branchName);
+                if (remoteName != null) {
+                    int[] aheadBehind = getAheadBehindCounts(branchName, remoteName);
+                    int aheadCount = aheadBehind[0];
+                    int behindCount = aheadBehind[1];
+                    if (aheadCount > 0 && behindCount > 0) {
+                        return GitBranchStatus.DIRTY;
+                    } else if (aheadCount > 0) {
+                        return GitBranchStatus.LOCAL;
+                    } else if (behindCount > 0) {
+                        return GitBranchStatus.REMOTE;
+                    }
+                }
+                return GitBranchStatus.CLEAN;
+            }
+        } else {
+            return hasUncommittedChanges ? GitBranchStatus.DIRTY : GitBranchStatus.CLEAN;
+        }
+    }
+
+    public String getRemoteTrackingBranch(String localBranchName) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return null;
+
+        return this.gitClient.getRemoteTrackingBranch(repository, localBranchName);
+    }
+
+    public int[] getAheadBehindCounts(String localBranchName, String remoteBranchName) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return new int[]{0, 0};
+
+        return this.gitClient.getAheadBehindCounts(repository, localBranchName, remoteBranchName);
+    }
+
+    public String getLastCommitHash(String branchName) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return null;
+
+        return this.gitClient.getLastCommitHash(repository, branchName);
+    }
+
+    public Long getLastCommitTimestamp(String branchName) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return null;
+
+        return this.gitClient.getLastCommitTimestamp(repository, branchName);
+    }
+
+    public String getCommitMessage(String hash) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null || hash == null || hash.isBlank())
+            return null;
+
+        return this.gitClient.getCommitMessage(repository, hash).lines().findFirst().orElse(null);
+    }
+
+    public GitAuthor getCommitAuthor(String hash) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null || hash == null || hash.isBlank())
+            return null;
+
+        return this.gitClient.getCommitAuthor(repository, hash);
+    }
+
+    public void setBranchUpstream(String localBranchName, String remoteBranchName) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.setBranchUpstream(repository, localBranchName, remoteBranchName);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void unsetBranchUpstream(String localBranchName) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.unsetBranchUpstream(repository, localBranchName);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void deleteBranch(String branchName, boolean force) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.deleteBranch(repository, branchName, force);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void renameBranch(String oldName, String newName, boolean force) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.renameBranch(repository, oldName, newName, force);
+                refreshStatusInternal();
+            }
+        });
     }
 }

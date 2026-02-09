@@ -273,6 +273,10 @@ public class GitProcessRunner {
         command[0] = gitExecutable.toString();
         int index = 1;
         for (String arg : args) {
+            if (arg == null) {
+                arg = "";
+            }
+
             command[index++] = arg;
         }
 

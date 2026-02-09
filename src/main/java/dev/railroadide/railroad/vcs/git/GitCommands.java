@@ -258,6 +258,22 @@ public final class GitCommands {
             .build();
     }
 
+    public static GitCommand getAllLocalBranches(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs("branch", "--no-color", "--format=%(refname:short)")
+            .build();
+    }
+
+    public static GitCommand getAllRemoteBranches(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs("branch", "--remotes", "--no-color", "--format=%(refname:short)")
+            .build();
+    }
+
     public static GitCommand getAllAuthors(GitRepository repo, boolean includeEmails) {
         GitCommand.Builder builder = GitCommand.builder()
             .workingDirectory(repo)
@@ -553,6 +569,121 @@ public final class GitCommands {
                 "-x",
                 "--no-edit",
                 commitHash
+            )
+            .build();
+    }
+
+    public static GitCommand getRemoteTrackingBranch(GitRepository repo, String branchName) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "rev-parse",
+                "--abbrev-ref",
+                "--symbolic-full-name",
+                "\"" + branchName + "@{u}\""
+            )
+            .build();
+    }
+
+    public static GitCommand getAheadBehindCount(GitRepository repo, String branchName, String upstreamBranch) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "rev-list",
+                "--left-right",
+                "--count",
+                branchName + "..." + upstreamBranch
+            )
+            .build();
+    }
+
+    public static GitCommand getLastCommitHash(GitRepository repo, String branchName) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "rev-parse",
+                branchName
+            )
+            .build();
+    }
+
+    public static GitCommand getLastCommitTimestamp(GitRepository repo, String branchName) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "log",
+                "-1",
+                "--format=%ct",
+                branchName
+            )
+            .build();
+    }
+
+    public static GitCommand getCommitAuthor(GitRepository repo, String hash) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "--no-pager",
+                "log",
+                "-n", "1",
+                "--format=%an%x00%ae",
+                hash
+            )
+            .build();
+    }
+
+    public static GitCommand setBranchUpstream(GitRepository repo, String branchName, String upstreamBranch) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "branch",
+                "--set-upstream-to=" + upstreamBranch,
+                branchName
+            )
+            .build();
+    }
+
+    public static GitCommand unsetBranchUpstream(GitRepository repo, String branchName) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "branch",
+                "--unset-upstream",
+                branchName
+            )
+            .build();
+    }
+
+    public static GitCommand deleteBranch(GitRepository repo, String branchName, boolean force) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "branch",
+                "--delete",
+                force ? "--force" : null,
+                branchName
+            )
+            .build();
+    }
+
+    public static GitCommand renameBranch(GitRepository repo, String oldName, String newName, boolean force) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "branch",
+                "--move",
+                force ? "--force" : null,
+                oldName,
+                newName
             )
             .build();
     }

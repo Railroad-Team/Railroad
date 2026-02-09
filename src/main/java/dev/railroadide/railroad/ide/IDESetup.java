@@ -16,6 +16,7 @@ import dev.railroadide.railroad.ide.ui.ConsolePane;
 import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
 import dev.railroadide.railroad.ide.ui.ImageViewerPane;
 import dev.railroadide.railroad.ide.ui.StatusBarPane;
+import dev.railroadide.railroad.ide.ui.git.branches.GitBranchesPane;
 import dev.railroadide.railroad.ide.ui.git.commit.GitCommitPane;
 import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
 import dev.railroadide.railroad.ide.ui.git.commit.list.GitCommitListPane;
@@ -74,6 +75,7 @@ public class IDESetup {
         leftPane.addTab("Git Commit", new GitCommitPane(project));
         leftPane.addTab("Git Overview", new GitOverviewPane(project));
         leftPane.addTab("Git Commit List", new GitCommitListPane(project));
+        leftPane.addTab("Git Branches", new GitBranchesPane(project));
 
         var rightPane = new DetachableTabPane();
 

@@ -1,6 +1,5 @@
 package dev.railroadide.core.ui;
 
-import dev.railroadide.core.ui.localized.LocalizedButton;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.TextField;
@@ -17,7 +16,7 @@ import java.util.List;
  * A button that opens a file or directory browser dialog.
  * It allows users to select files, directories, or images and updates a TextField with the selected path(s).
  */
-public class BrowseButton extends LocalizedButton {
+public class BrowseButton extends RRButton {
     private final ObjectProperty<Window> parentWindow = new SimpleObjectProperty<>();
     private final ObjectProperty<TextField> textField = new SimpleObjectProperty<>();
     private final ObjectProperty<BrowseType> browseType = new SimpleObjectProperty<>(BrowseType.FILE);

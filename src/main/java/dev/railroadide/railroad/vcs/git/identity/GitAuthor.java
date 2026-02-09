@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.vcs.git;
+package dev.railroadide.railroad.vcs.git.identity;
 
 import dev.railroadide.railroad.Railroad;
 import org.jetbrains.annotations.Nullable;
