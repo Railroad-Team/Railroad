@@ -5,6 +5,7 @@ import dev.railroadide.core.ui.RRButton;
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRTextField;
 import dev.railroadide.core.ui.styling.ButtonVariant;
+import dev.railroadide.core.utility.DesktopUtils;
 import dev.railroadide.core.utility.OperatingSystem;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.vcs.git.util.GitLocator;
@@ -66,7 +67,7 @@ public class GitExecutablePathPane extends RRHBox {
             };
 
             String url = "https://git-scm.com/install/" + postfix;
-            Railroad.getHostServicess().showDocument(url);
+            DesktopUtils.openUrl(url);
         });
         downloadButton.setVisible("" == null);
 

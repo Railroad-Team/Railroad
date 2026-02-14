@@ -22,6 +22,8 @@ import dev.railroadide.railroad.vcs.git.util.CherryPickResult;
 import dev.railroadide.railroad.vcs.git.util.GitRepository;
 import dev.railroadide.railroad.vcs.git.util.GitSettings;
 import javafx.beans.property.*;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
@@ -44,9 +46,9 @@ public class GitManager {
     private final ObjectProperty<GitRepoStatus> repoStatus = new SimpleObjectProperty<>();
     private final BooleanProperty active = new SimpleBooleanProperty(false);
     private final ObjectProperty<GitRepository> gitRepository = new SimpleObjectProperty<>();
-    private final LongProperty lastFetchTimestamp = new SimpleLongProperty(0L);
     private final ObjectProperty<GitIdentity> gitIdentity = new SimpleObjectProperty<>();
     private final LongProperty commitMetadataRevision = new SimpleLongProperty(0L);
+    private final MapProperty<String, Long> remoteFetchTimestamps = new SimpleMapProperty<>(FXCollections.observableHashMap());
 
     private volatile ScheduledFuture<?> autoRefreshFuture;
 
@@ -197,18 +199,22 @@ public class GitManager {
                         Railroad.LOGGER.debug("Git Fetch Message - {}", message);
                     }
                 });
-                this.lastFetchTimestamp.set(System.currentTimeMillis());
+                this.remoteFetchTimestamps.put(getUpstream().map(GitUpstream::remoteName).orElse(""), System.currentTimeMillis());
                 refreshStatusInternal();
             }
         });
     }
 
-    public LongProperty lastFetchTimestampProperty() {
-        return lastFetchTimestamp;
+    public ObservableValue<Long> lastFetchTimestampProperty() {
+        return remoteFetchTimestamps.map(map -> map.values().stream().max(Long::compareTo).orElse(0L));
     }
 
     public long getLastFetchTimestamp() {
-        return lastFetchTimestamp.get();
+        return lastFetchTimestampProperty().getValue();
+    }
+
+    public long getLastFetchTimestamp(GitRemote remote) {
+        return this.remoteFetchTimestamps.getOrDefault(remote.name(), 0L);
     }
 
     private void refreshStatusInternal() {
@@ -237,9 +243,11 @@ public class GitManager {
     }
 
     private void writeAutoRefreshIntervalMillis(long intervalMillis) {
-        var settings = new GitSettings();
+        ProjectDataStore dataStore = project.getDataStore();
+        GitSettings settings = dataStore.readJson(SETTINGS_PATH, GitSettings.class)
+            .orElseGet(GitSettings::new);
         settings.setAutoRefreshIntervalMillis(intervalMillis);
-        project.getDataStore().writeJson(SETTINGS_PATH, settings);
+        dataStore.writeJson(SETTINGS_PATH, settings);
     }
 
     public void push() {
@@ -438,8 +446,18 @@ public class GitManager {
             return commit;
 
         String message = this.gitClient.getCommitMessage(repository, commit.hash());
-        message = message.substring(message.indexOf('\n') + 1).strip(); // Remove the first line (summary)
-        return GitCommit.withBody(commit, message);
+        if (message == null || message.isEmpty())
+            return commit;
+
+        int newlineIndex = message.indexOf('\n');
+        String body;
+        if (newlineIndex >= 0 && newlineIndex + 1 < message.length()) {
+            body = message.substring(newlineIndex + 1).strip(); // Remove the first line (summary)
+        } else {
+            body = "";
+        }
+
+        return GitCommit.withBody(commit, body);
     }
 
     public void stashChanges(String message, boolean includeUntracked) {
@@ -818,6 +836,103 @@ public class GitManager {
             GitRepository repository = this.gitRepository.get();
             if (repository != null) {
                 this.gitClient.renameBranch(repository, oldName, newName, force);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public List<String> getRemoteUrls(GitRemote remote) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null || remote == null)
+            return List.of();
+
+        return this.gitClient.getRemoteUrls(repository, remote);
+    }
+
+    public boolean isPruningEnabled(GitRemote remote) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null || remote == null)
+            return false;
+
+        return this.gitClient.isPruningEnabled(repository, remote);
+    }
+
+    public void fetchAllRemotes() {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.fetchAllRemotes(repository, GitOutputListener.NO_OP, event -> {
+                    if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
+                        Railroad.LOGGER.debug("Git Fetch All Remotes Progress - {}: {}%", phase, percent);
+                    } else if (event instanceof GitProgressEvent.Message(String message)) {
+                        Railroad.LOGGER.debug("Git Fetch All Remotes Message - {}", message);
+                    }
+                });
+                refreshStatusInternal();
+                for (GitRemote remote : getRemotes()) {
+                    this.remoteFetchTimestamps.put(remote.name(), System.currentTimeMillis());
+                }
+            }
+        });
+    }
+
+    public void pruneAllRemotes() {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.pruneAllRemotes(repository, GitOutputListener.NO_OP, event -> {
+                    if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
+                        Railroad.LOGGER.debug("Git Prune All Remotes Progress - {}: {}%", phase, percent);
+                    } else if (event instanceof GitProgressEvent.Message(String message)) {
+                        Railroad.LOGGER.debug("Git Prune All Remotes Message - {}", message);
+                    }
+                });
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void gc() {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.gc(repository, GitOutputListener.NO_OP, event -> {
+                    if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
+                        Railroad.LOGGER.debug("Git Prune Progress - {}: {}%", phase, percent);
+                    } else if (event instanceof GitProgressEvent.Message(String message)) {
+                        Railroad.LOGGER.debug("Git Prune Message - {}", message);
+                    }
+                });
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void addRemote(String name, String fetchUrl, String pushUrl) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.addRemote(repository, name, fetchUrl, pushUrl);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void updateRemote(String oldName, String newName, String fetchUrl, String pushUrl) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.updateRemote(repository, oldName, newName, fetchUrl, pushUrl);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void removeRemote(String name) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.removeRemote(repository, name);
                 refreshStatusInternal();
             }
         });

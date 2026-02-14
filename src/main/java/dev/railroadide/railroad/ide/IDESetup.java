@@ -22,6 +22,7 @@ import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
 import dev.railroadide.railroad.ide.ui.git.commit.list.GitCommitListPane;
 import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
 import dev.railroadide.railroad.ide.ui.git.overview.GitOverviewPane;
+import dev.railroadide.railroad.ide.ui.git.remote.GitRemotesPane;
 import dev.railroadide.railroad.ide.ui.setup.IDEMenuBarFactory;
 import dev.railroadide.railroad.ide.ui.setup.PaneIconBarFactory;
 import dev.railroadide.railroad.ide.ui.setup.RunControlsPane;
@@ -76,6 +77,7 @@ public class IDESetup {
         leftPane.addTab("Git Overview", new GitOverviewPane(project));
         leftPane.addTab("Git Commit List", new GitCommitListPane(project));
         leftPane.addTab("Git Branches", new GitBranchesPane(project));
+        leftPane.addTab("Git Remotes", new GitRemotesPane(project));
 
         var rightPane = new DetachableTabPane();
 
@@ -122,7 +124,9 @@ public class IDESetup {
             Map.of("Project", FontAwesomeSolid.FOLDER.getDescription(),
                 "Git Commit", FontAwesomeSolid.CODE_BRANCH.getDescription(),
                 "Git Overview", FontAwesomeSolid.HOME.getDescription(),
-                "Git Commit List", FontAwesomeSolid.LIST.getDescription()
+                "Git Commit List", FontAwesomeSolid.LIST.getDescription(),
+                "Git Branches", FontAwesomeSolid.CODE_BRANCH.getDescription(),
+                "Git Remotes", FontAwesomeSolid.GLOBE.getDescription()
             )));
 
         var bottomBar = new RRVBox();

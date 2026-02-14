@@ -2,6 +2,7 @@ package dev.railroadide.railroad.vcs.git;
 
 import dev.railroadide.railroad.vcs.git.commit.GitCommitData;
 import dev.railroadide.railroad.vcs.git.diff.GitDiffMode;
+import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import dev.railroadide.railroad.vcs.git.util.GitRepository;
 import org.jetbrains.annotations.Nullable;
@@ -684,6 +685,131 @@ public final class GitCommands {
                 force ? "--force" : null,
                 oldName,
                 newName
+            )
+            .build();
+    }
+
+    public static GitCommand getRemoteUrls(GitRepository repo, GitRemote remote) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "remote",
+                "get-url",
+                "--all",
+                remote.name()
+            )
+            .build();
+    }
+
+    public static GitCommand addRemote(GitRepository repo, String name, String fetchUrl) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "remote",
+                "add",
+                name,
+                fetchUrl
+            )
+            .build();
+    }
+
+    public static GitCommand renameRemote(GitRepository repo, String oldName, String newName) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "remote",
+                "rename",
+                oldName,
+                newName
+            )
+            .build();
+    }
+
+    public static GitCommand setRemoteFetchUrl(GitRepository repo, String name, String fetchUrl) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "remote",
+                "set-url",
+                name,
+                fetchUrl
+            )
+            .build();
+    }
+
+    public static GitCommand setRemotePushUrl(GitRepository repo, String name, String pushUrl) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "remote",
+                "set-url",
+                "--push",
+                name,
+                pushUrl
+            )
+            .build();
+    }
+
+    public static GitCommand removeRemote(GitRepository repo, String name) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "remote",
+                "remove",
+                name
+            )
+            .build();
+    }
+
+    public static GitCommand isPruningEnabled(GitRepository repo, GitRemote remote) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "config",
+                "--get",
+                "remote." + remote.name() + ".prune"
+            )
+            .build();
+    }
+
+    public static GitCommand fetchAllRemotes(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(1, TimeUnit.MINUTES)
+            .addArgs(
+                "fetch",
+                "--all",
+                "--prune",
+                "--progress"
+            )
+            .build();
+    }
+
+    public static GitCommand pruneAllRemotes(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(1, TimeUnit.MINUTES)
+            .addArgs(
+                "remote",
+                "prune",
+                "--all"
+            )
+            .build();
+    }
+
+    public static GitCommand gc(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(30, TimeUnit.SECONDS)
+            .addArgs(
+                "gc"
             )
             .build();
     }

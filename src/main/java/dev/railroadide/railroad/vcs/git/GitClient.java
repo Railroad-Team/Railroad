@@ -1046,7 +1046,7 @@ public class GitClient {
             throw new GitExecutionException("git log failed: " + String.join("\n", result.stderr()));
 
         String stdout = result.readAllStdout();
-        if (stdout == null || stdout.isBlank())
+        if (stdout.isBlank())
             return null;
 
         String[] parts = stdout.split("\u0000", -1);
@@ -1116,5 +1116,173 @@ public class GitClient {
 
         if (result.exitCode() != 0)
             throw new GitExecutionException("git branch -m failed: " + String.join("\n", result.stderr()));
+    }
+
+    public List<String> getRemoteUrls(GitRepository repo, GitRemote remote) {
+        GitCommand cmd = GitCommands.getRemoteUrls(repo, remote);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git remote get-url timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git remote get-url was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git remote get-url failed: " + String.join("\n", result.stderr()));
+
+        String stdout = result.readAllStdout().trim();
+        if (stdout.isEmpty()) {
+            return List.of();
+        } else {
+            return List.of(stdout.split("\n"));
+        }
+    }
+
+    public void addRemote(GitRepository repo, String name, String fetchUrl, String pushUrl) {
+        GitCommand addRemote = GitCommands.addRemote(repo, name, fetchUrl);
+        GitResult addRemoteResult = runner.run(addRemote, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (addRemoteResult.timedOut())
+            throw new GitExecutionException("git remote add timed out");
+
+        if (addRemoteResult.cancelled())
+            throw new GitExecutionException("git remote add was cancelled");
+
+        if (addRemoteResult.exitCode() != 0)
+            throw new GitExecutionException("git remote add failed: " + String.join("\n", addRemoteResult.stderr()));
+
+        if (!fetchUrl.equals(pushUrl)) {
+            setRemotePushUrl(repo, name, pushUrl);
+        }
+    }
+
+    public void updateRemote(GitRepository repo, String oldName, String newName, String fetchUrl, String pushUrl) {
+        String effectiveName = oldName;
+        if (!oldName.equals(newName)) {
+            GitCommand renameRemote = GitCommands.renameRemote(repo, oldName, newName);
+            GitResult renameRemoteResult = runner.run(renameRemote, null, null, GitResultCaptureMode.TEXT_LINES);
+
+            if (renameRemoteResult.timedOut())
+                throw new GitExecutionException("git remote rename timed out");
+
+            if (renameRemoteResult.cancelled())
+                throw new GitExecutionException("git remote rename was cancelled");
+
+            if (renameRemoteResult.exitCode() != 0)
+                throw new GitExecutionException("git remote rename failed: " + String.join("\n", renameRemoteResult.stderr()));
+
+            effectiveName = newName;
+        }
+
+        setRemoteFetchUrl(repo, effectiveName, fetchUrl);
+        setRemotePushUrl(repo, effectiveName, pushUrl);
+    }
+
+    public void removeRemote(GitRepository repo, String name) {
+        GitCommand removeRemote = GitCommands.removeRemote(repo, name);
+        GitResult removeRemoteResult = runner.run(removeRemote, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (removeRemoteResult.timedOut())
+            throw new GitExecutionException("git remote remove timed out");
+
+        if (removeRemoteResult.cancelled())
+            throw new GitExecutionException("git remote remove was cancelled");
+
+        if (removeRemoteResult.exitCode() != 0)
+            throw new GitExecutionException("git remote remove failed: " + String.join("\n", removeRemoteResult.stderr()));
+    }
+
+    private void setRemoteFetchUrl(GitRepository repo, String name, String fetchUrl) {
+        GitCommand setFetchUrl = GitCommands.setRemoteFetchUrl(repo, name, fetchUrl);
+        GitResult setFetchUrlResult = runner.run(setFetchUrl, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (setFetchUrlResult.timedOut())
+            throw new GitExecutionException("git remote set-url timed out");
+
+        if (setFetchUrlResult.cancelled())
+            throw new GitExecutionException("git remote set-url was cancelled");
+
+        if (setFetchUrlResult.exitCode() != 0)
+            throw new GitExecutionException("git remote set-url failed: " + String.join("\n", setFetchUrlResult.stderr()));
+    }
+
+    private void setRemotePushUrl(GitRepository repo, String name, String pushUrl) {
+        GitCommand setPushUrl = GitCommands.setRemotePushUrl(repo, name, pushUrl);
+        GitResult setPushUrlResult = runner.run(setPushUrl, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (setPushUrlResult.timedOut())
+            throw new GitExecutionException("git remote set-url --push timed out");
+
+        if (setPushUrlResult.cancelled())
+            throw new GitExecutionException("git remote set-url --push was cancelled");
+
+        if (setPushUrlResult.exitCode() != 0)
+            throw new GitExecutionException("git remote set-url --push failed: " + String.join("\n", setPushUrlResult.stderr()));
+    }
+
+    public boolean isPruningEnabled(GitRepository repo, GitRemote remote) {
+        GitCommand cmd = GitCommands.isPruningEnabled(repo, remote);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git config timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git config was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git config failed: " + String.join("\n", result.stderr()));
+
+        String stdout = result.readAllStdout().trim();
+        return stdout.equalsIgnoreCase("true");
+    }
+
+    public void fetchAllRemotes(GitRepository repo, GitOutputListener rawListener, Consumer<GitProgressEvent> progressListener) {
+        GitCommand cmd = GitCommands.fetchAllRemotes(repo);
+
+        GitOutputListener listener = GitListeners.withProgress(rawListener, progressListener, "Fetch");
+        GitResult result = runner.run(cmd, listener, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git fetch timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git fetch was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git fetch failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void pruneAllRemotes(GitRepository repo, GitOutputListener rawListener, Consumer<GitProgressEvent> progressListener) {
+        GitCommand cmd = GitCommands.pruneAllRemotes(repo);
+
+        GitOutputListener listener = GitListeners.withProgress(rawListener, progressListener, "Prune");
+        GitResult result = runner.run(cmd, listener, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git remote prune timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git remote prune was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git remote prune failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void gc(GitRepository repo, GitOutputListener rawListener, Consumer<GitProgressEvent> progressListener) {
+        GitCommand cmd = GitCommands.gc(repo);
+
+        GitOutputListener listener = GitListeners.withProgress(rawListener, progressListener, "Prune");
+        GitResult result = runner.run(cmd, listener, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git gc timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git gc was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git gc failed: " + String.join("\n", result.stderr()));
     }
 }
