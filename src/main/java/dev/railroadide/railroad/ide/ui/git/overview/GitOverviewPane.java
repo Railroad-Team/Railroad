@@ -12,20 +12,18 @@ public class GitOverviewPane extends RRVBox {
 
     public GitOverviewPane(Project project) {
         getStyleClass().add("git-overview-pane-root");
-        setSpacing(8); // Add some spacing between the components
+        setSpacing(8);
 
         this.headerPane = new GitOverviewHeaderPane(project);
         this.identityPane = new GitOverviewIdentityPane(project);
         this.recentCommitsPane = new GitOverviewRecentCommitsPane(project);
 
-        // Add children directly to the VBox
         getChildren().addAll(
             headerPane,
             identityPane,
             recentCommitsPane
         );
-        
-        // Give the recentCommitsPane vertical grow priority so it expands to fill available space
+
         VBox.setVgrow(recentCommitsPane, Priority.ALWAYS);
     }
 }

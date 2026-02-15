@@ -21,8 +21,7 @@ import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import dev.railroadide.railroad.vcs.git.status.GitRepoStatus;
 import dev.railroadide.railroad.vcs.git.status.GitStatusParser;
-import dev.railroadide.railroad.vcs.git.util.CherryPickResult;
-import dev.railroadide.railroad.vcs.git.util.GitRepository;
+import dev.railroadide.railroad.vcs.git.util.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
@@ -1284,5 +1283,172 @@ public class GitClient {
 
         if (result.exitCode() != 0)
             throw new GitExecutionException("git gc failed: " + String.join("\n", result.stderr()));
+    }
+
+    public boolean isPullFastForwardOnly(GitRepository repo) {
+        GitCommand cmd = GitCommands.isPullFastForwardOnly(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git config timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git config was cancelled");
+
+        if (result.exitCode() != 0)
+            return false;
+
+        String stdout = result.readAllStdout().trim();
+        return stdout.equalsIgnoreCase("true") || stdout.equalsIgnoreCase("only");
+    }
+
+    public GitPullStrategy getPullStrategy(GitRepository repo, String currentBranch) {
+        boolean isPullFastForwardOnly = isPullFastForwardOnly(repo);
+        if (isPullFastForwardOnly)
+            return GitPullStrategy.FAST_FORWARD_ONLY;
+
+        GitRebaseSetting rebaseSetting = getBranchRebaseSetting(repo, currentBranch);
+        if (rebaseSetting != GitRebaseSetting.UNSET)
+            return rebaseSetting == GitRebaseSetting.REBASE
+                ? GitPullStrategy.REBASE
+                : GitPullStrategy.MERGE;
+
+        GitRebaseSetting globalRebaseSetting = getGlobalRebaseSetting(repo);
+        if (globalRebaseSetting != GitRebaseSetting.UNSET)
+            return globalRebaseSetting == GitRebaseSetting.REBASE
+                ? GitPullStrategy.REBASE
+                : GitPullStrategy.MERGE;
+
+        return GitPullStrategy.MERGE;
+    }
+
+    private GitRebaseSetting getGlobalRebaseSetting(GitRepository repo) {
+        GitCommand cmd = GitCommands.getGlobalRebaseSetting(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git config timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git config was cancelled");
+
+        if (result.exitCode() != 0)
+            return GitRebaseSetting.UNSET;
+
+        String stdout = result.readAllStdout().trim();
+        return switch (stdout) {
+            case "true", "rebase" -> GitRebaseSetting.REBASE;
+            case "false", "merge" -> GitRebaseSetting.MERGE;
+            case "merges" -> GitRebaseSetting.MERGES;
+            default -> GitRebaseSetting.UNSET;
+        };
+    }
+
+    private GitRebaseSetting getBranchRebaseSetting(GitRepository repo, String currentBranch) {
+        GitCommand cmd = GitCommands.getBranchRebaseSetting(repo, currentBranch);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git config timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git config was cancelled");
+
+        if (result.exitCode() != 0)
+            return GitRebaseSetting.UNSET;
+
+        String stdout = result.readAllStdout().trim();
+        return switch (stdout) {
+            case "true", "rebase" -> GitRebaseSetting.REBASE;
+            case "false", "merge" -> GitRebaseSetting.MERGE;
+            case "merges" -> GitRebaseSetting.MERGES;
+            default -> GitRebaseSetting.UNSET;
+        };
+    }
+
+    public GitPushStrategy getPushStrategy(GitRepository repo) {
+        GitCommand cmd = GitCommands.getPushDefault(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git config timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git config was cancelled");
+
+        if (result.exitCode() != 0)
+            return GitPushStrategy.SIMPLE; // Default push strategy in Git
+
+        String stdout = result.readAllStdout().trim();
+        return switch (stdout) {
+            case "simple" -> GitPushStrategy.SIMPLE;
+            case "current" -> GitPushStrategy.CURRENT;
+            case "upstream" -> GitPushStrategy.UPSTREAM;
+            case "matching" -> GitPushStrategy.MATCHING;
+            case "nothing" -> GitPushStrategy.NOTHING;
+            default -> GitPushStrategy.SIMPLE; // Fallback to simple if unknown value
+        };
+    }
+
+    public void setPushStrategy(GitRepository repo, GitPushStrategy strategy, String branchName) {
+        GitCommand cmd;
+        if (strategy == GitPushStrategy.SIMPLE) {
+            // Unset push.default to revert to Git's default behavior
+            cmd = GitCommands.unsetPushDefault(repo);
+        } else {
+            cmd = GitCommands.setPushDefault(repo, strategy);
+        }
+
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git config timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git config was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git config failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void setPullStrategy(GitRepository repository, GitPullStrategy strategy) {
+        GitCommand cmd;
+        if (strategy == GitPullStrategy.MERGE) {
+            // Unset rebase and pull.ff to revert to Git's default behavior
+            cmd = GitCommands.unsetPullRebase(repository);
+        } else if (strategy == GitPullStrategy.REBASE) {
+            cmd = GitCommands.setPullRebase(repository, true);
+        } else if (strategy == GitPullStrategy.FAST_FORWARD_ONLY) {
+            cmd = GitCommands.setPullFastForwardOnly(repository, true);
+        } else {
+            throw new IllegalArgumentException("Unsupported pull strategy: " + strategy);
+        }
+
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git config timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git config was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git config failed: " + String.join("\n", result.stderr()));
+    }
+
+    public List<GitCommit> getCommitsBetween(GitRepository repo, String branchA, String branchB) {
+        GitCommand cmd = GitCommands.getCommitsBetween(repo, branchA, branchB);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git log timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git log was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git log failed: " + String.join("\n", result.stderr()));
+
+        return GitCommitParser.parseCommits(result.readAllStdout(), Integer.MAX_VALUE).commits();
     }
 }

@@ -4,6 +4,7 @@ import dev.railroadide.railroad.vcs.git.commit.GitCommitData;
 import dev.railroadide.railroad.vcs.git.diff.GitDiffMode;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
+import dev.railroadide.railroad.vcs.git.util.GitPushStrategy;
 import dev.railroadide.railroad.vcs.git.util.GitRepository;
 import org.jetbrains.annotations.Nullable;
 
@@ -810,6 +811,129 @@ public final class GitCommands {
             .timeout(30, TimeUnit.SECONDS)
             .addArgs(
                 "gc"
+            )
+            .build();
+    }
+
+    public static GitCommand isPullFastForwardOnly(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "config",
+                "--get",
+                "pull.ff"
+            )
+            .build();
+    }
+
+    public static GitCommand getBranchRebaseSetting(GitRepository repo, String branchName) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "config",
+                "--get",
+                "branch." + branchName + ".rebase"
+            )
+            .build();
+    }
+
+    public static GitCommand getGlobalRebaseSetting(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "config",
+                "--get",
+                "pull.rebase"
+            )
+            .build();
+    }
+
+    public static GitCommand getPushDefault(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "config",
+                "--get",
+                "push.default"
+            )
+            .build();
+    }
+
+    public static GitCommand unsetPushDefault(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "config",
+                "--unset",
+                "push.default"
+            )
+            .build();
+    }
+
+    public static GitCommand setPushDefault(GitRepository repo, GitPushStrategy strategy) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "config",
+                "push.default",
+                strategy.name().toLowerCase()
+            )
+            .build();
+    }
+
+    public static GitCommand unsetPullRebase(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "config",
+                "--unset",
+                "pull.rebase"
+            )
+            .build();
+    }
+
+    public static GitCommand setPullRebase(GitRepository repository, boolean shouldRebase) {
+        return GitCommand.builder()
+            .workingDirectory(repository)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "config",
+                "pull.rebase",
+                shouldRebase ? "true" : "false"
+            )
+            .build();
+    }
+
+    public static GitCommand setPullFastForwardOnly(GitRepository repository, boolean ffOnly) {
+        return GitCommand.builder()
+            .workingDirectory(repository)
+            .timeout(5, TimeUnit.SECONDS)
+            .addArgs(
+                "config",
+                "pull.ff",
+                ffOnly ? "only" : "false"
+            )
+            .build();
+    }
+
+    public static GitCommand getCommitsBetween(GitRepository repo, String branchA, String branchB) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "--no-pager",
+                "log",
+                "--first-parent",
+                "--date=unix",
+                "--pretty=format:%H%x00%h%x00%s%x00%an%x00%ae%x00%at%x00%cn%x00%ce%x00%ct%x00%P%x1e",
+                branchA + ".." + branchB
             )
             .build();
     }

@@ -18,9 +18,7 @@ import dev.railroadide.railroad.vcs.git.identity.GitIdentity;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
 import dev.railroadide.railroad.vcs.git.status.GitRepoStatus;
-import dev.railroadide.railroad.vcs.git.util.CherryPickResult;
-import dev.railroadide.railroad.vcs.git.util.GitRepository;
-import dev.railroadide.railroad.vcs.git.util.GitSettings;
+import dev.railroadide.railroad.vcs.git.util.*;
 import javafx.beans.property.*;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -936,5 +934,132 @@ public class GitManager {
                 refreshStatusInternal();
             }
         });
+    }
+
+    public GitPullStrategy getPullStrategy() {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return null;
+
+        return this.gitClient.getPullStrategy(repository, getCurrentBranch());
+    }
+
+    public GitPushStrategy getPushStrategy() {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return null;
+
+        return this.gitClient.getPushStrategy(repository);
+    }
+
+    public void setPushStrategy(GitPushStrategy strategy) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.setPushStrategy(repository, strategy, getCurrentBranch());
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void setPullStrategy(GitPullStrategy strategy) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                String currentBranch = getCurrentBranch();
+                if (currentBranch != null) {
+                    this.gitClient.setPullStrategy(repository, strategy);
+                    refreshStatusInternal();
+                }
+            }
+        });
+    }
+
+    public @Nullable GitRemote getCurrentRemote() {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return null;
+
+        String currentBranch = getCurrentBranch();
+        List<GitRemote> remotes = getRemotes();
+        if (currentBranch != null) {
+            String remoteTrackingBranch = getRemoteTrackingBranch(currentBranch);
+            if (remoteTrackingBranch != null) {
+                for (GitRemote remote : remotes) {
+                    if (remoteTrackingBranch.startsWith(remote.name() + "/"))
+                        return remote;
+                }
+            }
+        }
+
+        Optional<GitRemote> origin = remotes.stream().filter(remote -> remote.name().equals("origin")).findAny();
+        if (origin.isPresent())
+            return origin.get();
+
+        if (remotes.size() == 1)
+            return remotes.getFirst();
+
+        return null;
+    }
+
+    public void setCurrentRemote(GitRemote remote) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                String currentBranch = getCurrentBranch();
+                if (currentBranch != null) {
+                    String newRemoteBranch = remote.name() + "/" + currentBranch;
+                    if (getAllRemoteBranchNames().contains(newRemoteBranch)) {
+                        setBranchUpstream(currentBranch, newRemoteBranch);
+                    } else {
+                        setBranchUpstream(currentBranch, remote.name() + "/HEAD");
+                    }
+                }
+            }
+        });
+    }
+
+    public void setCurrentUpstreamBranch(String branch) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                String currentBranch = getCurrentBranch();
+                if (currentBranch != null) {
+                    setBranchUpstream(currentBranch, branch);
+                }
+            }
+        });
+    }
+
+    public List<GitCommit> getIncomingCommits() {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return List.of();
+
+        String currentBranch = getCurrentBranch();
+        if (currentBranch == null)
+            return List.of();
+
+        String remoteTrackingBranch = getRemoteTrackingBranch(currentBranch);
+        if (remoteTrackingBranch == null)
+            return List.of();
+
+        return this.gitClient.getCommitsBetween(repository, currentBranch, remoteTrackingBranch);
+    }
+
+    public List<GitCommit> getOutgoingCommits() {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return List.of();
+
+        String currentBranch = getCurrentBranch();
+        if (currentBranch == null)
+            return List.of();
+
+        String remoteTrackingBranch = getRemoteTrackingBranch(currentBranch);
+        if (remoteTrackingBranch == null)
+            return List.of();
+
+        return this.gitClient.getCommitsBetween(repository, remoteTrackingBranch, currentBranch);
     }
 }

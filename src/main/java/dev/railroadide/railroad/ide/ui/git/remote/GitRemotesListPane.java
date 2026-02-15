@@ -10,6 +10,7 @@ import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;
@@ -18,6 +19,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 
@@ -27,8 +29,10 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
 
         setCellFactory(ignored -> new GitRemoteListCell(gitManager));
         setItems(FXCollections.observableArrayList(gitManager.getRemotes()));
-        gitManager.repoStatusProperty().addListener((observable, oldValue, newValue) ->
-            getItems().setAll(gitManager.getRemotes()));
+        gitManager.repoStatusProperty().addListener((observable, oldValue, newValue) -> {
+            List<GitRemote> remotes = gitManager.getRemotes();
+            Platform.runLater(() -> getItems().setAll(remotes));
+        });
     }
 
     public void setOnRemoteSelected(Consumer<GitRemote> handler) {
