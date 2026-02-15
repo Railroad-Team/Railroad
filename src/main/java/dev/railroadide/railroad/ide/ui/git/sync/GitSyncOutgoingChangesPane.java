@@ -16,6 +16,8 @@ public class GitSyncOutgoingChangesPane extends RRVBox {
         var commitsList = new GitSyncCommitsList();
         commitsList.setNoCommitsText("railroad.git.sync.outgoing_changes.no_commits");
         commitsList.setCommits(gitManager.getOutgoingCommits());
+        gitManager.repoStatusProperty().addListener((observable, oldValue, newValue) ->
+            commitsList.setCommits(gitManager.getOutgoingCommits()));
 
         getChildren().addAll(title, commitsList);
         VBox.setVgrow(commitsList, Priority.ALWAYS);

@@ -10,6 +10,8 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.ListCell;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
 
@@ -82,10 +84,11 @@ public class GitSyncCommitsList extends RRListView<GitCommit> {
             timeline.setCycleCount(Timeline.INDEFINITE);
             timeline.play();
 
-            var rightBox = new RRVBox(2, author, separator, date);
+            var rightBox = new RRHBox(2, author, separator, date);
             rightBox.getStyleClass().add("git-sync-commit-right-box");
 
             getChildren().addAll(message, rightBox);
+            HBox.setHgrow(message, Priority.ALWAYS);
         }
     }
 }
