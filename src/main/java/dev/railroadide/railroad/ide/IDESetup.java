@@ -50,6 +50,7 @@ import javafx.stage.Stage;
 import org.fxmisc.richtext.CodeArea;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.Map;
@@ -124,7 +125,7 @@ public class IDESetup {
             Orientation.VERTICAL,
             0,
             Map.of("Project", FontAwesomeSolid.FOLDER.getDescription(),
-                "Git Commit", FontAwesomeSolid.CODE_BRANCH.getDescription(),
+                "Git Commit", FontAwesomeBrands.USB.getDescription(),
                 "Git Overview", FontAwesomeSolid.HOME.getDescription(),
                 "Git Commit List", FontAwesomeSolid.LIST.getDescription(),
                 "Git Branches", FontAwesomeSolid.CODE_BRANCH.getDescription(),
