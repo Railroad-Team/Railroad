@@ -2,7 +2,6 @@ package dev.railroadide.railroad.ide.ui.git.sync;
 
 import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRListView;
-import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedText;
 import dev.railroadide.railroad.utility.TimeFormatter;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
@@ -12,6 +11,7 @@ import javafx.collections.ListChangeListener;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
 
@@ -66,10 +66,10 @@ public class GitSyncCommitsList extends RRListView<GitCommit> {
         public GitSyncCommitCellPane(GitCommit commit) {
             getStyleClass().add("git-sync-commit-cell-pane");
 
-            var message = new LocalizedText(commit.subject());
+            var message = new Text(commit.subject());
             message.getStyleClass().add("git-sync-commit-message");
 
-            var author = new LocalizedText(commit.authorName());
+            var author = new Text(commit.authorName());
             author.getStyleClass().add("git-sync-commit-author");
 
             var separator = new Text("•");
@@ -87,8 +87,9 @@ public class GitSyncCommitsList extends RRListView<GitCommit> {
             var rightBox = new RRHBox(2, author, separator, date);
             rightBox.getStyleClass().add("git-sync-commit-right-box");
 
-            getChildren().addAll(message, rightBox);
-            HBox.setHgrow(message, Priority.ALWAYS);
+            var spacer = new Region();
+            getChildren().addAll(message, spacer, rightBox);
+            HBox.setHgrow(spacer, Priority.ALWAYS);
         }
     }
 }

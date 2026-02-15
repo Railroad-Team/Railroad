@@ -5,6 +5,7 @@ import dev.railroadide.core.ui.localized.LocalizedText;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import javafx.application.Platform;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
