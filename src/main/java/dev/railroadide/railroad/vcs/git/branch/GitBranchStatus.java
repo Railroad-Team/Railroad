@@ -2,6 +2,9 @@ package dev.railroadide.railroad.vcs.git.branch;
 
 import lombok.Getter;
 
+/**
+ * Status classification used for branch health and sync state.
+ */
 @Getter
 public enum GitBranchStatus {
     DIRTY("railroad.git.branch.status.dirty"),

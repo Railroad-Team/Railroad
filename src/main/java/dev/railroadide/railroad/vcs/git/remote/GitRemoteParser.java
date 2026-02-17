@@ -7,7 +7,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Parses `git remote -v` output into structured {@link GitRemote} records.
+ */
 public class GitRemoteParser {
+    /**
+     * Parses `git remote -v` lines into remote records.
+     *
+     * @param lines command output lines
+     * @return parsed remotes
+     */
     public static List<GitRemote> parseRemoteUrls(List<String> lines) {
         List<String> mutableLines = (lines == null || lines.isEmpty()) ? Collections.emptyList() : new ArrayList<>(lines);
         return parseRemoteUrlsInternal(mutableLines);

@@ -4,6 +4,9 @@ import dev.railroadide.railroad.vcs.git.execution.GitOutputListener;
 
 import java.util.function.Consumer;
 
+/**
+ * Decorates raw git output callbacks with parsed progress events.
+ */
 public final class GitProgressListener implements GitOutputListener {
     public static final GitProgressListener NO_OP = new GitProgressListener(GitOutputListener.NO_OP, $ -> {}, null);
 
@@ -12,12 +15,24 @@ public final class GitProgressListener implements GitOutputListener {
 
     private volatile String currentPhase;
 
+    /**
+     * Creates a listener that forwards raw output and emits parsed progress events.
+     *
+     * @param raw raw output listener to forward lines to
+     * @param sink consumer receiving parsed progress events
+     * @param initialPhase default phase name used before the first parsed phase
+     */
     public GitProgressListener(GitOutputListener raw, Consumer<GitProgressEvent> sink, String initialPhase) {
         this.raw = raw;
         this.sink = sink;
         this.currentPhase = initialPhase == null ? "(working)" : initialPhase;
     }
 
+    /**
+     * Receives stdout text and attempts to emit progress events.
+     *
+     * @param line stdout line text
+     */
     @Override
     public void onStdout(String line) {
         if (raw != null) {
@@ -27,6 +42,11 @@ public final class GitProgressListener implements GitOutputListener {
         emitIfProgress(line);
     }
 
+    /**
+     * Receives stderr text and attempts to emit progress events.
+     *
+     * @param line stderr line text
+     */
     @Override
     public void onStderr(String line) {
         if (raw != null) {
@@ -36,6 +56,11 @@ public final class GitProgressListener implements GitOutputListener {
         emitIfProgress(line);
     }
 
+    /**
+     * Receives null-delimited stdout records and forwards them to the raw listener.
+     *
+     * @param record stdout record text
+     */
     @Override
     public void onStdoutRecord(String record) {
         if (raw != null) {

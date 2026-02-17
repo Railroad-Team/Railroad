@@ -7,10 +7,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Parser for structured commit output produced by git log commands.
+ */
 public final class GitCommitParser {
     private GitCommitParser() {
     }
 
+    /**
+     * Parses delimited commit output into a commit page.
+     *
+     * @param content delimited commit payload
+     * @param limit requested page size
+     * @return parsed commit page with optional next cursor
+     */
     public static GitCommitPage parseCommits(String content, int limit) {
         if (content == null || content.isBlank())
             return new GitCommitPage(Collections.emptyList(), null);

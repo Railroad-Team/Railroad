@@ -2,6 +2,9 @@ package dev.railroadide.railroad.vcs.git.util;
 
 import lombok.Getter;
 
+/**
+ * Pull strategy values exposed by the application.
+ */
 @Getter
 public enum GitPullStrategy {
     MERGE("railroad.git.pull.strategy.merge"),

@@ -33,19 +33,39 @@ import java.util.function.Consumer;
 
 // TODO: Add small FS cache for detected repositories to avoid repeated git calls
 // TODO: Integrate the use of IDE tasks
+/**
+ * High-level client that executes git operations through a {@link GitProcessRunner}.
+ */
 public class GitClient {
     private static final Pattern STASH_SUBJECT_PATTERN = Pattern.compile("^(?:WIP on|On)\\s+(.+?):\\s*(.*)$");
 
     protected final GitProcessRunner runner;
 
+    /**
+     * Creates a git client backed by a process runner.
+     *
+     * @param runner process runner used to execute commands
+     */
     public GitClient(GitProcessRunner runner) {
         this.runner = runner;
     }
 
+    /**
+     * Updates the git executable used by the runner.
+     *
+     * @param path git executable path
+     */
     public void setGitExecutable(Path path) {
         this.runner.setGitExecutable(path);
     }
 
+    /**
+     * Reads repository status from porcelain output.
+     *
+     * @param repo repository to inspect
+     * @return parsed repository status
+     * @throws GitExecutionException when command execution fails
+     */
     public GitRepoStatus getStatus(GitRepository repo) {
         GitCommand cmd = GitCommands.statusPorcelainV1Z(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.NULL_RECORDS);
@@ -62,6 +82,12 @@ public class GitClient {
         return GitStatusParser.parsePorcelainV1Z(repo, result.stdout());
     }
 
+    /**
+     * Detects repository root for a given path.
+     *
+     * @param path file or directory path
+     * @return detected repository, or empty when not inside a repository
+     */
     public Optional<GitRepository> detectRepository(Path path) {
         GitCommand isInsideCmd = GitCommands.revParseIsInsideWorkTree(path);
         GitResult isInsideResult = runner.run(isInsideCmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -103,6 +129,14 @@ public class GitClient {
         }
     }
 
+    /**
+     * Commits selected changes and optionally pushes after commit.
+     *
+     * @param repo repository to commit in
+     * @param commit commit details
+     * @param pushAfterCommit whether to run push after successful commit
+     * @throws GitExecutionException when command execution fails
+     */
     public void commitChanges(GitRepository repo, GitCommitData commit, boolean pushAfterCommit) {
         GitCommand commitCmd = GitCommands.commit(repo, commit);
         GitResult commitResult = runner.run(commitCmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -128,6 +162,13 @@ public class GitClient {
         }
     }
 
+    /**
+     * Lists configured remotes.
+     *
+     * @param repo repository to inspect
+     * @return parsed remote entries
+     * @throws GitExecutionException when command execution fails
+     */
     public List<GitRemote> getRemotes(GitRepository repo) {
         GitCommand cmd = GitCommands.remoteGetUrls(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -144,6 +185,13 @@ public class GitClient {
         return GitRemoteParser.parseRemoteUrls(result.stdout());
     }
 
+    /**
+     * Reads upstream for the current branch.
+     *
+     * @param repo repository to inspect
+     * @return upstream reference, or empty when unset
+     * @throws GitExecutionException when command execution fails
+     */
     public Optional<GitUpstream> getUpstream(GitRepository repo) {
         GitCommand cmd = GitCommands.getUpstream(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -175,6 +223,14 @@ public class GitClient {
         return Optional.of(new GitUpstream(remoteName, branchName));
     }
 
+    /**
+     * Performs fetch with optional raw output and parsed progress callbacks.
+     *
+     * @param repo repository to fetch
+     * @param rawListener listener for raw output lines
+     * @param progressListener consumer for parsed progress events
+     * @throws GitExecutionException when command execution fails
+     */
     public void fetch(GitRepository repo, GitOutputListener rawListener, Consumer<GitProgressEvent> progressListener) {
         GitCommand cmd = GitCommands.fetch(repo);
 
@@ -191,6 +247,14 @@ public class GitClient {
             throw new GitExecutionException("git fetch failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Performs push with optional raw output and parsed progress callbacks.
+     *
+     * @param repo repository to push
+     * @param outputListener listener for raw output lines
+     * @param progressListener consumer for parsed progress events
+     * @throws GitExecutionException when command execution fails
+     */
     public void push(GitRepository repo, GitOutputListener outputListener, Consumer<GitProgressEvent> progressListener) {
         GitCommand cmd = GitCommands.push(repo);
 
@@ -207,6 +271,14 @@ public class GitClient {
             throw new GitExecutionException("git push failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Performs pull with optional raw output and parsed progress callbacks.
+     *
+     * @param repo repository to pull
+     * @param outputListener listener for raw output lines
+     * @param progressListener consumer for parsed progress events
+     * @throws GitExecutionException when command execution fails
+     */
     public void pull(GitRepository repo, GitOutputListener outputListener, Consumer<GitProgressEvent> progressListener) {
         GitCommand cmd = GitCommands.pull(repo);
 
@@ -223,6 +295,12 @@ public class GitClient {
             throw new GitExecutionException("git pull failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Reads configured git user name.
+     *
+     * @return user name, or {@code null} when unset
+     * @throws GitExecutionException when command execution fails
+     */
     public String getUserName() {
         GitCommand cmd = GitCommands.getUserName();
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -240,6 +318,12 @@ public class GitClient {
         return userName.isEmpty() ? null : userName;
     }
 
+    /**
+     * Reads configured git user email.
+     *
+     * @return user email, or {@code null} when unset
+     * @throws GitExecutionException when command execution fails
+     */
     public String getUserEmail() {
         GitCommand cmd = GitCommands.getUserEmail();
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -257,6 +341,12 @@ public class GitClient {
         return userEmail.isEmpty() ? null : userEmail;
     }
 
+    /**
+     * Reads the `commit.gpgsign` setting.
+     *
+     * @return setting value, or {@code null} when unset
+     * @throws GitExecutionException when command execution fails
+     */
     public String getCommitGpgSignSetting() {
         GitCommand cmd = GitCommands.getCommitGpgSign();
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -274,6 +364,12 @@ public class GitClient {
         return gpgSign.isEmpty() ? null : gpgSign;
     }
 
+    /**
+     * Reads the `gpg.format` setting.
+     *
+     * @return setting value, or {@code null} when unset
+     * @throws GitExecutionException when command execution fails
+     */
     public String getGpgFormatSetting() {
         GitCommand cmd = GitCommands.getGpgFormat();
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -291,6 +387,12 @@ public class GitClient {
         return gpgFormat.isEmpty() ? null : gpgFormat;
     }
 
+    /**
+     * Reads configured signing key.
+     *
+     * @return signing key, or {@code null} when unset
+     * @throws GitExecutionException when command execution fails
+     */
     public String getUserSigningKey() {
         GitCommand cmd = GitCommands.getUserSigningKey();
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -308,6 +410,12 @@ public class GitClient {
         return signingKey.isEmpty() ? null : signingKey;
     }
 
+    /**
+     * Reads configured gpg program.
+     *
+     * @return program value, or {@code null} when unset
+     * @throws GitExecutionException when command execution fails
+     */
     public String getGpgProgramSetting() {
         GitCommand cmd = GitCommands.getGpgProgram();
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -325,6 +433,12 @@ public class GitClient {
         return gpgProgram.isEmpty() ? null : gpgProgram;
     }
 
+    /**
+     * Reads installed git version output.
+     *
+     * @return git version line, or {@code null} when unavailable
+     * @throws GitExecutionException when command execution fails
+     */
     public String getGitVersion() {
         GitCommand cmd = GitCommands.getGitVersion();
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -342,6 +456,11 @@ public class GitClient {
         return versionLine.isEmpty() ? null : versionLine;
     }
 
+    /**
+     * Builds effective identity information from git config.
+     *
+     * @return identity snapshot
+     */
     public GitIdentity getIdentity() {
         String userName = getUserName();
         String userEmail = getUserEmail();
@@ -357,6 +476,15 @@ public class GitClient {
         return new GitIdentity(userName, userEmail, signingStatus, gitVersion);
     }
 
+    /**
+     * Retrieves a page of recent commits.
+     *
+     * @param repo repository to query
+     * @param cursor optional page cursor
+     * @param limit max number of commits
+     * @return parsed commit page
+     * @throws GitExecutionException when command execution fails
+     */
     public GitCommitPage getRecentCommits(GitRepository repo, @Nullable String cursor, int limit) {
         GitCommand cmd = GitCommands.getRecentCommits(repo, cursor, limit);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -373,6 +501,15 @@ public class GitClient {
         return GitCommitParser.parseCommits(result.readAllStdout(), limit);
     }
 
+    /**
+     * Retrieves parsed diff for a file change.
+     *
+     * @param repo repository to query
+     * @param change file change descriptor
+     * @param mode diff mode
+     * @return parsed diff blob
+     * @throws GitExecutionException when command execution fails
+     */
     public DiffBlob getDiff(GitRepository repo, GitFileChange change, GitDiffMode mode) {
         GitCommand cmd = GitCommands.getDiff(repo, change, mode);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -390,6 +527,14 @@ public class GitClient {
         return DiffParser.parseDiff(diffText);
     }
 
+    /**
+     * Retrieves parsed unstaged diff for a path.
+     *
+     * @param repo repository to query
+     * @param filePath path to diff
+     * @return parsed diff blob
+     * @throws GitExecutionException when command execution fails
+     */
     public DiffBlob getUnstagedDiff(GitRepository repo, Path filePath) {
         GitCommand cmd = GitCommands.getUnstagedDiff(repo, filePath);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -407,6 +552,13 @@ public class GitClient {
         return DiffParser.parseDiff(diffText);
     }
 
+    /**
+     * Retrieves unstaged diff text for a path.
+     *
+     * @param repo repository to query
+     * @param filePath path to diff
+     * @return diff text when available
+     */
     public Optional<String> getUnstagedDiffText(GitRepository repo, Path filePath) {
         GitCommand cmd = GitCommands.getUnstagedDiff(repo, filePath);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -429,6 +581,12 @@ public class GitClient {
         return Optional.of(result.readAllStdout());
     }
 
+    /**
+     * Resolves current HEAD commit hash.
+     *
+     * @param repo repository to query
+     * @return HEAD hash, or {@code null} on failure
+     */
     public String getHeadCommitHash(GitRepository repo) {
         GitCommand cmd = GitCommands.getHeadCommitHash(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -452,6 +610,13 @@ public class GitClient {
         return commitHash.isEmpty() ? null : commitHash;
     }
 
+    /**
+     * Lists tags pointing at a commit.
+     *
+     * @param repo repository to query
+     * @param hash commit hash
+     * @return matching tag names
+     */
     public List<String> getTagsPointingToCommit(GitRepository repo, String hash) {
         GitCommand cmd = GitCommands.getTagsPointingToCommit(repo, hash);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -479,6 +644,12 @@ public class GitClient {
         }
     }
 
+    /**
+     * Maps commit hashes to tags that reference them.
+     *
+     * @param repo repository to query
+     * @return map of commit hash to tag names
+     */
     public Map<String, List<String>> getTagsByCommit(GitRepository repo) {
         GitCommand cmd = GitCommands.getAllTagsWithCommits(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -512,6 +683,12 @@ public class GitClient {
         return tagsByCommit;
     }
 
+    /**
+     * Lists all local and remote branch names.
+     *
+     * @param repo repository to query
+     * @return branch names
+     */
     public List<String> getAllBranches(GitRepository repo) {
         GitCommand cmd = GitCommands.getAllBranches(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -539,6 +716,12 @@ public class GitClient {
         }
     }
 
+    /**
+     * Lists local branch names.
+     *
+     * @param repo repository to query
+     * @return local branch names
+     */
     public List<String> getAllLocalBranches(GitRepository repo) {
         GitCommand cmd = GitCommands.getAllLocalBranches(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -566,6 +749,12 @@ public class GitClient {
         }
     }
 
+    /**
+     * Lists remote branch names.
+     *
+     * @param repo repository to query
+     * @return remote branch names
+     */
     public List<String> getAllRemoteBranches(GitRepository repo) {
         GitCommand cmd = GitCommands.getAllRemoteBranches(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -593,6 +782,13 @@ public class GitClient {
         }
     }
 
+    /**
+     * Lists authors for commits in the repository.
+     *
+     * @param repo repository to query
+     * @param includeEmail whether emails should be included
+     * @return parsed author entries
+     */
     public List<GitAuthor> getAllAuthors(GitRepository repo, boolean includeEmail) {
         GitCommand cmd = GitCommands.getAllAuthors(repo, includeEmail);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -621,6 +817,12 @@ public class GitClient {
         }
     }
 
+    /**
+     * Gets repository creation timestamp from the first commit.
+     *
+     * @param repo repository to query
+     * @return epoch-second timestamp, or {@code 0} when unavailable
+     */
     public long getRepositoryCreationDate(GitRepository repo) {
         GitCommand cmd = GitCommands.getRepositoryCreationDate(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -651,6 +853,14 @@ public class GitClient {
         }
     }
 
+    /**
+     * Gets additions/deletions stats for a commit.
+     *
+     * @param repo repository to query
+     * @param hash commit hash
+     * @return parsed per-file stats
+     * @throws GitExecutionException when command execution fails
+     */
     public List<GitAdditionsDeletions> getAdditionsDeletions(GitRepository repo, String hash) {
         GitCommand cmd = GitCommands.getAdditionsDeletions(repo, hash);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -667,6 +877,14 @@ public class GitClient {
         return GitAdditionsDeletionsParser.parseAdditionsDeletions(result.stdout());
     }
 
+    /**
+     * Gets full commit message text for a commit.
+     *
+     * @param repo repository to query
+     * @param hash commit hash
+     * @return commit message text
+     * @throws GitExecutionException when command execution fails
+     */
     public String getCommitMessage(GitRepository repo, String hash) {
         GitCommand cmd = GitCommands.getCommitMessage(repo, hash);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -683,6 +901,14 @@ public class GitClient {
         return result.readAllStdout();
     }
 
+    /**
+     * Creates a stash entry.
+     *
+     * @param repo repository to modify
+     * @param message stash message
+     * @param includeUntracked whether untracked files are included
+     * @throws GitExecutionException when command execution fails
+     */
     public void stashChanges(GitRepository repo, String message, boolean includeUntracked) {
         GitCommand cmd = GitCommands.stashSave(repo, message, includeUntracked);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -697,6 +923,12 @@ public class GitClient {
             throw new GitExecutionException("git stash failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Pops the latest stash.
+     *
+     * @param repo repository to modify
+     * @throws GitExecutionException when command execution fails
+     */
     public void stashPop(GitRepository repo) {
         GitCommand cmd = GitCommands.stashPop(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -711,6 +943,13 @@ public class GitClient {
             throw new GitExecutionException("git stash pop failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Pops a specific stash reference.
+     *
+     * @param repo repository to modify
+     * @param stashRef stash reference
+     * @throws GitExecutionException when command execution fails
+     */
     public void stashPop(GitRepository repo, String stashRef) {
         GitCommand cmd = GitCommands.stashPop(repo, stashRef);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -725,6 +964,13 @@ public class GitClient {
             throw new GitExecutionException("git stash pop failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Lists parsed stash entries with derived metadata.
+     *
+     * @param repo repository to query
+     * @return stash entries
+     * @throws GitExecutionException when command execution fails
+     */
     public List<GitStashEntry> getStashes(GitRepository repo) {
         GitCommand cmd = GitCommands.getStashes(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -780,6 +1026,13 @@ public class GitClient {
         return stashes;
     }
 
+    /**
+     * Applies a stash without dropping it.
+     *
+     * @param repo repository to modify
+     * @param stashRef stash reference
+     * @throws GitExecutionException when command execution fails
+     */
     public void stashApply(GitRepository repo, String stashRef) {
         GitCommand cmd = GitCommands.stashApply(repo, stashRef);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -794,6 +1047,13 @@ public class GitClient {
             throw new GitExecutionException("git stash apply failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Drops a stash entry.
+     *
+     * @param repo repository to modify
+     * @param stashRef stash reference
+     * @throws GitExecutionException when command execution fails
+     */
     public void stashDrop(GitRepository repo, String stashRef) {
         GitCommand cmd = GitCommands.stashDrop(repo, stashRef);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -808,6 +1068,14 @@ public class GitClient {
             throw new GitExecutionException("git stash drop failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Lists file changes represented by a stash entry.
+     *
+     * @param repo repository to query
+     * @param stashRef stash reference
+     * @return parsed file changes
+     * @throws GitExecutionException when command execution fails
+     */
     public List<GitFileChange> getStashChanges(GitRepository repo, String stashRef) {
         GitCommand cmd = GitCommands.getStashChanges(repo, stashRef);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.NULL_RECORDS);
@@ -864,6 +1132,14 @@ public class GitClient {
         return changes;
     }
 
+    /**
+     * Gets stash diff text for a file path.
+     *
+     * @param repo repository to query
+     * @param stashRef stash reference
+     * @param filePath file path to diff
+     * @return diff text when available
+     */
     public Optional<String> getStashDiffText(GitRepository repo, String stashRef, Path filePath) {
         GitCommand cmd = GitCommands.getStashDiff(repo, stashRef, filePath);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -886,6 +1162,14 @@ public class GitClient {
         return Optional.ofNullable(result.readAllStdout());
     }
 
+    /**
+     * Checks out a commit in detached mode.
+     *
+     * @param repo repository to modify
+     * @param hash commit hash
+     * @param gitVersion git version string used to select command variant
+     * @throws GitExecutionException when command execution fails
+     */
     public void checkoutCommit(GitRepository repo, String hash, String gitVersion) {
         GitCommand cmd = supportsSwitch(gitVersion)
             ? GitCommands.checkoutDetachedWithSwitch(repo, hash)
@@ -926,6 +1210,12 @@ public class GitClient {
         }
     }
 
+    /**
+     * Performs `git reset --hard`.
+     *
+     * @param repo repository to modify
+     * @throws GitExecutionException when command execution fails
+     */
     public void resetHard(GitRepository repo) {
         GitCommand cmd = GitCommands.resetHard(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -939,6 +1229,12 @@ public class GitClient {
             throw new GitExecutionException("git reset --hard failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Removes untracked files and directories.
+     *
+     * @param repo repository to modify
+     * @throws GitExecutionException when command execution fails
+     */
     public void cleanUntrackedFiles(GitRepository repo) {
         GitCommand cmd = GitCommands.cleanUntrackedFiles(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -952,11 +1248,25 @@ public class GitClient {
             throw new GitExecutionException("git clean failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Gets the current commit.
+     *
+     * @param repo repository to query
+     * @return latest commit, or {@code null} when unavailable
+     */
     public GitCommit getCurrentCommit(GitRepository repo) {
         List<GitCommit> commits = getRecentCommits(repo, null, 1).commits();
         return commits.isEmpty() ? null : commits.getFirst();
     }
 
+    /**
+     * Validates a branch name.
+     *
+     * @param repo repository to query
+     * @param string branch name candidate
+     * @return {@code true} when the name is valid
+     * @throws GitExecutionException when command execution fails
+     */
     public boolean isValidBranchName(GitRepository repo, String string) {
         GitCommand cmd = GitCommands.checkValidBranchName(repo, string);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -969,6 +1279,14 @@ public class GitClient {
         return result.exitCode() == 0;
     }
 
+    /**
+     * Creates a branch at the given hash.
+     *
+     * @param repo repository to modify
+     * @param branchName branch name
+     * @param hash start-point hash
+     * @throws GitExecutionException when command execution fails
+     */
     public void createBranch(GitRepository repo, String branchName, String hash) {
         GitCommand cmd = GitCommands.createBranch(repo, branchName, hash);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -982,6 +1300,14 @@ public class GitClient {
             throw new GitExecutionException("git branch failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Checks out a branch using command variant supported by git version.
+     *
+     * @param repository repository to modify
+     * @param branchName branch name
+     * @param gitVersion git version string
+     * @throws GitExecutionException when command execution fails
+     */
     public void checkoutBranch(GitRepository repository, String branchName, String gitVersion) {
         GitCommand cmd = supportsSwitch(gitVersion)
             ? GitCommands.checkoutBranchWithSwitch(repository, branchName)
@@ -997,6 +1323,14 @@ public class GitClient {
             throw new GitExecutionException("git checkout failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Checks whether a tag exists.
+     *
+     * @param repo repository to query
+     * @param tagName tag name
+     * @return {@code true} when the tag exists
+     * @throws GitExecutionException when command execution fails
+     */
     public boolean doesTagExist(GitRepository repo, String tagName) {
         GitCommand cmd = GitCommands.checkTagExists(repo, tagName);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1009,6 +1343,14 @@ public class GitClient {
         return result.exitCode() == 0;
     }
 
+    /**
+     * Validates a tag name.
+     *
+     * @param repo repository to query
+     * @param tagName tag name candidate
+     * @return {@code true} when the name is valid
+     * @throws GitExecutionException when command execution fails
+     */
     public boolean isValidTagName(GitRepository repo, String tagName) {
         GitCommand cmd = GitCommands.checkValidTagName(repo, tagName);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1021,6 +1363,16 @@ public class GitClient {
         return result.exitCode() == 0;
     }
 
+    /**
+     * Creates or updates a tag.
+     *
+     * @param repo repository to modify
+     * @param tagName tag name
+     * @param hash target hash
+     * @param message optional annotation message
+     * @param overwrite whether overwrite is allowed
+     * @throws GitExecutionException when command execution fails
+     */
     public void createTag(GitRepository repo, String tagName, String hash, @Nullable String message, boolean overwrite) {
         GitCommand cmd = GitCommands.createTag(repo, tagName, hash, message, overwrite);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1034,6 +1386,13 @@ public class GitClient {
             throw new GitExecutionException("git tag failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Checks whether repository is currently in cherry-pick state.
+     *
+     * @param repo repository to query
+     * @return {@code true} when cherry-pick metadata is present
+     * @throws GitExecutionException when command execution fails
+     */
     public boolean isInCherryPickState(GitRepository repo) {
         GitCommand cmd = GitCommands.checkCherryPickState(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1046,6 +1405,14 @@ public class GitClient {
         return result.exitCode() == 0;
     }
 
+    /**
+     * Cherry-picks a commit and classifies result.
+     *
+     * @param repo repository to modify
+     * @param commitHash commit hash to cherry-pick
+     * @return cherry-pick result classification
+     * @throws GitExecutionException when command execution fails unexpectedly
+     */
     public CherryPickResult cherryPickCommit(GitRepository repo, String commitHash) {
         GitCommand cmd = GitCommands.cherryPickCommit(repo, commitHash);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1067,6 +1434,12 @@ public class GitClient {
         }
     }
 
+    /**
+     * Continues a paused cherry-pick operation.
+     *
+     * @param repo repository to modify
+     * @throws GitExecutionException when command execution fails
+     */
     public void continueCherryPick(GitRepository repo) {
         GitCommand cmd = GitCommands.continueCherryPick(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1080,6 +1453,12 @@ public class GitClient {
             throw new GitExecutionException("git cherry-pick --continue failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Aborts a cherry-pick operation.
+     *
+     * @param repo repository to modify
+     * @throws GitExecutionException when command execution fails
+     */
     public void abortCherryPick(GitRepository repo) {
         GitCommand cmd = GitCommands.abortCherryPick(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1093,6 +1472,12 @@ public class GitClient {
             throw new GitExecutionException("git cherry-pick --abort failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Quits cherry-pick state.
+     *
+     * @param repo repository to modify
+     * @throws GitExecutionException when command execution fails
+     */
     public void quitCherryPick(GitRepository repo) {
         GitCommand cmd = GitCommands.quitCherryPick(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1106,6 +1491,13 @@ public class GitClient {
             throw new GitExecutionException("git cherry-pick --quit failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Reverts a commit.
+     *
+     * @param repo repository to modify
+     * @param commitHash commit hash to revert
+     * @throws GitExecutionException when command execution fails
+     */
     public void revertCommit(GitRepository repo, String commitHash) {
         GitCommand cmd = GitCommands.revertCommit(repo, commitHash);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1119,6 +1511,14 @@ public class GitClient {
             throw new GitExecutionException("git revert failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Resolves upstream branch reference for a local branch.
+     *
+     * @param repo repository to query
+     * @param branchName local branch name
+     * @return upstream reference, or {@code null} when none is configured
+     * @throws GitExecutionException when command execution fails
+     */
     public String getRemoteTrackingBranch(GitRepository repo, String branchName) {
         GitCommand cmd = GitCommands.getRemoteTrackingBranch(repo, branchName);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -1136,6 +1536,15 @@ public class GitClient {
         return upstreamRef.isEmpty() ? null : upstreamRef;
     }
 
+    /**
+     * Computes ahead/behind counts between two branches.
+     *
+     * @param repo repository to query
+     * @param branchName local branch
+     * @param upstreamBranch upstream branch
+     * @return two-element array: `[ahead, behind]`
+     * @throws GitExecutionException when command execution fails
+     */
     public int[] getAheadBehindCounts(GitRepository repo, String branchName, String upstreamBranch) {
         GitCommand cmd = GitCommands.getAheadBehindCount(repo, branchName, upstreamBranch);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -1168,6 +1577,14 @@ public class GitClient {
         }
     }
 
+    /**
+     * Resolves latest commit hash for a branch.
+     *
+     * @param repo repository to query
+     * @param branchName branch name
+     * @return commit hash, or {@code null} when unavailable
+     * @throws GitExecutionException when command execution fails
+     */
     public String getLastCommitHash(GitRepository repo, String branchName) {
         GitCommand cmd = GitCommands.getLastCommitHash(repo, branchName);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -1185,6 +1602,14 @@ public class GitClient {
         return commitHash.isEmpty() ? null : commitHash;
     }
 
+    /**
+     * Resolves latest commit timestamp for a branch.
+     *
+     * @param repo repository to query
+     * @param branchName branch name
+     * @return epoch-second timestamp, or {@code null} when unavailable
+     * @throws GitExecutionException when command execution fails
+     */
     public Long getLastCommitTimestamp(GitRepository repo, String branchName) {
         GitCommand cmd = GitCommands.getLastCommitTimestamp(repo, branchName);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -1211,6 +1636,14 @@ public class GitClient {
         }
     }
 
+    /**
+     * Reads commit author name/email for a commit hash.
+     *
+     * @param repo repository to query
+     * @param hash commit hash
+     * @return author record, or {@code null} when unavailable
+     * @throws GitExecutionException when command execution fails
+     */
     public GitAuthor getCommitAuthor(GitRepository repo, String hash) {
         GitCommand cmd = GitCommands.getCommitAuthor(repo, hash);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -1241,10 +1674,25 @@ public class GitClient {
         return authorName == null ? null : new GitAuthor(0, authorName, authorEmail);
     }
 
+    /**
+     * Indicates whether a branch has uncommitted changes.
+     *
+     * @param repo repository to query
+     * @param branchName branch name
+     * @return currently always {@code false}
+     */
     public boolean hasUncommittedChanges(GitRepository repo, String branchName) {
         return false;
     }
 
+    /**
+     * Sets upstream branch for a local branch.
+     *
+     * @param repo repository to modify
+     * @param branchName local branch name
+     * @param upstreamBranch upstream branch name
+     * @throws GitExecutionException when command execution fails
+     */
     public void setBranchUpstream(GitRepository repo, String branchName, String upstreamBranch) {
         GitCommand cmd = GitCommands.setBranchUpstream(repo, branchName, upstreamBranch);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1258,6 +1706,13 @@ public class GitClient {
             throw new GitExecutionException("git branch --set-upstream-to failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Unsets upstream branch for a local branch.
+     *
+     * @param repo repository to modify
+     * @param branchName local branch name
+     * @throws GitExecutionException when command execution fails
+     */
     public void unsetBranchUpstream(GitRepository repo, String branchName) {
         GitCommand cmd = GitCommands.unsetBranchUpstream(repo, branchName);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1271,6 +1726,14 @@ public class GitClient {
             throw new GitExecutionException("git branch --unset-upstream failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Deletes a branch.
+     *
+     * @param repo repository to modify
+     * @param branchName branch name
+     * @param force whether deletion should be forced
+     * @throws GitExecutionException when command execution fails
+     */
     public void deleteBranch(GitRepository repo, String branchName, boolean force) {
         GitCommand cmd = GitCommands.deleteBranch(repo, branchName, force);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1284,6 +1747,15 @@ public class GitClient {
             throw new GitExecutionException("git branch -d failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Renames a branch.
+     *
+     * @param repo repository to modify
+     * @param oldBranchName existing branch name
+     * @param newBranchName new branch name
+     * @param force whether rename should be forced
+     * @throws GitExecutionException when command execution fails
+     */
     public void renameBranch(GitRepository repo, String oldBranchName, String newBranchName, boolean force) {
         GitCommand cmd = GitCommands.renameBranch(repo, oldBranchName, newBranchName, force);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1297,6 +1769,14 @@ public class GitClient {
             throw new GitExecutionException("git branch -m failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Lists URLs configured for a remote.
+     *
+     * @param repo repository to query
+     * @param remote remote descriptor
+     * @return configured remote URLs
+     * @throws GitExecutionException when command execution fails
+     */
     public List<String> getRemoteUrls(GitRepository repo, GitRemote remote) {
         GitCommand cmd = GitCommands.getRemoteUrls(repo, remote);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1318,6 +1798,15 @@ public class GitClient {
         }
     }
 
+    /**
+     * Adds a remote and optionally sets a distinct push URL.
+     *
+     * @param repo repository to modify
+     * @param name remote name
+     * @param fetchUrl fetch URL
+     * @param pushUrl push URL
+     * @throws GitExecutionException when command execution fails
+     */
     public void addRemote(GitRepository repo, String name, String fetchUrl, String pushUrl) {
         GitCommand addRemote = GitCommands.addRemote(repo, name, fetchUrl);
         GitResult addRemoteResult = runner.run(addRemote, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1336,6 +1825,16 @@ public class GitClient {
         }
     }
 
+    /**
+     * Updates remote name and URLs.
+     *
+     * @param repo repository to modify
+     * @param oldName existing remote name
+     * @param newName new remote name
+     * @param fetchUrl fetch URL
+     * @param pushUrl push URL
+     * @throws GitExecutionException when command execution fails
+     */
     public void updateRemote(GitRepository repo, String oldName, String newName, String fetchUrl, String pushUrl) {
         String effectiveName = oldName;
         if (!oldName.equals(newName)) {
@@ -1358,6 +1857,13 @@ public class GitClient {
         setRemotePushUrl(repo, effectiveName, pushUrl);
     }
 
+    /**
+     * Removes a remote.
+     *
+     * @param repo repository to modify
+     * @param name remote name
+     * @throws GitExecutionException when command execution fails
+     */
     public void removeRemote(GitRepository repo, String name) {
         GitCommand removeRemote = GitCommands.removeRemote(repo, name);
         GitResult removeRemoteResult = runner.run(removeRemote, null, null, GitResultCaptureMode.TEXT_LINES);
@@ -1400,6 +1906,14 @@ public class GitClient {
             throw new GitExecutionException("git remote set-url --push failed: " + String.join("\n", setPushUrlResult.stderr()));
     }
 
+    /**
+     * Reads whether prune is enabled for a remote.
+     *
+     * @param repo repository to query
+     * @param remote remote descriptor
+     * @return {@code true} when prune is enabled
+     * @throws GitExecutionException when command execution fails
+     */
     public boolean isPruningEnabled(GitRepository repo, GitRemote remote) {
         GitCommand cmd = GitCommands.isPruningEnabled(repo, remote);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -1417,6 +1931,14 @@ public class GitClient {
         return stdout.equalsIgnoreCase("true");
     }
 
+    /**
+     * Fetches all remotes with progress callbacks.
+     *
+     * @param repo repository to modify
+     * @param rawListener raw output listener
+     * @param progressListener parsed progress listener
+     * @throws GitExecutionException when command execution fails
+     */
     public void fetchAllRemotes(GitRepository repo, GitOutputListener rawListener, Consumer<GitProgressEvent> progressListener) {
         GitCommand cmd = GitCommands.fetchAllRemotes(repo);
 
@@ -1433,6 +1955,14 @@ public class GitClient {
             throw new GitExecutionException("git fetch failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Prunes all remotes with progress callbacks.
+     *
+     * @param repo repository to modify
+     * @param rawListener raw output listener
+     * @param progressListener parsed progress listener
+     * @throws GitExecutionException when command execution fails
+     */
     public void pruneAllRemotes(GitRepository repo, GitOutputListener rawListener, Consumer<GitProgressEvent> progressListener) {
         GitCommand cmd = GitCommands.pruneAllRemotes(repo);
 
@@ -1449,6 +1979,14 @@ public class GitClient {
             throw new GitExecutionException("git remote prune failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Runs git garbage collection with progress callbacks.
+     *
+     * @param repo repository to modify
+     * @param rawListener raw output listener
+     * @param progressListener parsed progress listener
+     * @throws GitExecutionException when command execution fails
+     */
     public void gc(GitRepository repo, GitOutputListener rawListener, Consumer<GitProgressEvent> progressListener) {
         GitCommand cmd = GitCommands.gc(repo);
 
@@ -1465,6 +2003,13 @@ public class GitClient {
             throw new GitExecutionException("git gc failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Reads whether pull is configured as fast-forward only.
+     *
+     * @param repo repository to query
+     * @return {@code true} when fast-forward only is enabled
+     * @throws GitExecutionException when command execution fails
+     */
     public boolean isPullFastForwardOnly(GitRepository repo) {
         GitCommand cmd = GitCommands.isPullFastForwardOnly(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -1482,6 +2027,14 @@ public class GitClient {
         return stdout.equalsIgnoreCase("true") || stdout.equalsIgnoreCase("only");
     }
 
+    /**
+     * Resolves effective pull strategy for a branch.
+     *
+     * @param repo repository to query
+     * @param currentBranch current branch name
+     * @return effective pull strategy
+     * @throws GitExecutionException when command execution fails
+     */
     public GitPullStrategy getPullStrategy(GitRepository repo, String currentBranch) {
         boolean isPullFastForwardOnly = isPullFastForwardOnly(repo);
         if (isPullFastForwardOnly)
@@ -1546,6 +2099,13 @@ public class GitClient {
         };
     }
 
+    /**
+     * Reads configured push strategy.
+     *
+     * @param repo repository to query
+     * @return configured push strategy, defaulting to {@link GitPushStrategy#SIMPLE}
+     * @throws GitExecutionException when command execution fails
+     */
     public GitPushStrategy getPushStrategy(GitRepository repo) {
         GitCommand cmd = GitCommands.getPushDefault(repo);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
@@ -1570,6 +2130,14 @@ public class GitClient {
         };
     }
 
+    /**
+     * Updates push strategy configuration.
+     *
+     * @param repo repository to modify
+     * @param strategy push strategy
+     * @param branchName branch name associated with caller context
+     * @throws GitExecutionException when command execution fails
+     */
     public void setPushStrategy(GitRepository repo, GitPushStrategy strategy, String branchName) {
         GitCommand cmd;
         if (strategy == GitPushStrategy.SIMPLE) {
@@ -1591,6 +2159,13 @@ public class GitClient {
             throw new GitExecutionException("git config failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Updates pull strategy configuration.
+     *
+     * @param repository repository to modify
+     * @param strategy pull strategy
+     * @throws GitExecutionException when command execution fails
+     */
     public void setPullStrategy(GitRepository repository, GitPullStrategy strategy) {
         GitCommand cmd;
         if (strategy == GitPullStrategy.MERGE) {
@@ -1616,6 +2191,15 @@ public class GitClient {
             throw new GitExecutionException("git config failed: " + String.join("\n", result.stderr()));
     }
 
+    /**
+     * Lists commits reachable from {@code branchB} and not from {@code branchA}.
+     *
+     * @param repo repository to query
+     * @param branchA left-side reference
+     * @param branchB right-side reference
+     * @return parsed commits in range
+     * @throws GitExecutionException when command execution fails
+     */
     public List<GitCommit> getCommitsBetween(GitRepository repo, String branchA, String branchB) {
         GitCommand cmd = GitCommands.getCommitsBetween(repo, branchA, branchB);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);

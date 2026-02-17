@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Persisted git-related project settings.
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data

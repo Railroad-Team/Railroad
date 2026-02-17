@@ -6,10 +6,19 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Converts raw unified diff text into a structured {@link DiffBlob}.
+ */
 public final class DiffParser {
     private DiffParser() {
     }
 
+    /**
+     * Parses a raw unified diff string.
+     *
+     * @param rawDiff raw diff text from git
+     * @return parsed diff structure
+     */
     public static DiffBlob parseDiff(String rawDiff) {
         List<DiffFile> files = new ArrayList<>();
 

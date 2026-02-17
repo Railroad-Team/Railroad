@@ -8,9 +8,23 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Author summary entry produced from git shortlog output.
+ *
+ * @param commitCount number of commits by the author
+ * @param name author name
+ * @param email author email, when available
+ */
 public record GitAuthor(int commitCount, String name, @Nullable String email) {
     private static final Pattern AUTHOR_LINE_PATTERN = Pattern.compile("^\\s*(?<count>\\d+)\\s+(?<name>.*?)\\s+(<(?<email>.*)?>)\\s*$");
 
+    /**
+     * Parses shortlog lines into author summaries.
+     *
+     * @param lines lines from `git shortlog -sne`
+     * @param includeEmail whether parsed records should include email addresses
+     * @return parsed author records
+     */
     public static List<GitAuthor> parseAuthorsFromShortlogLines(String[] lines, boolean includeEmail) {
         List<GitAuthor> authors = new ArrayList<>();
         for (String line : lines) {

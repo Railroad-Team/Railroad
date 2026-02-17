@@ -4,6 +4,9 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Parses git stdout/stderr lines into typed progress events.
+ */
 public final class GitProgressParser {
     private GitProgressParser() {
     }
@@ -28,6 +31,13 @@ public final class GitProgressParser {
     // "remote: Total 123 (delta 45), reused 0 (delta 0), pack-reused 0"
     private static final Pattern REMOTE_PREFIX = Pattern.compile("^remote:\\s*(?<msg>.*)$");
 
+    /**
+     * Attempts to parse a single git output line into a progress event.
+     *
+     * @param line output line text
+     * @param currentPhase currently known phase name
+     * @return parsed event when recognized, otherwise an empty optional
+     */
     public static Optional<GitProgressEvent> tryParse(String line, String currentPhase) {
         if (line == null)
             return Optional.empty();

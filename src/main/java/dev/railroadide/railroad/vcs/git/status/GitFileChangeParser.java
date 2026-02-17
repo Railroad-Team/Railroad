@@ -4,10 +4,21 @@ import dev.railroadide.railroad.vcs.git.util.GitRepository;
 
 import java.nio.file.Path;
 
+/**
+ * Parses porcelain status records into {@link GitFileChange} instances.
+ */
 public final class GitFileChangeParser {
     private GitFileChangeParser() {
     }
 
+    /**
+     * Parses one porcelain-v1-z file record.
+     *
+     * @param repo repository owning the paths
+     * @param record current status record
+     * @param nextRecord optional next record used for rename/copy source path
+     * @return parsed file change, or {@code null} when the record is invalid
+     */
     public static GitFileChange parsePorcelainV1ZRecord(GitRepository repo, String record, String nextRecord) {
         if (record == null || record.isEmpty())
             return null;

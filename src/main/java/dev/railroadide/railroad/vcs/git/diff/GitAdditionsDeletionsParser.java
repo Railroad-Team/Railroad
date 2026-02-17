@@ -2,10 +2,20 @@ package dev.railroadide.railroad.vcs.git.diff;
 
 import java.util.List;
 
+/**
+ * Parses numstat-style additions and deletions summaries from git output.
+ */
 public final class GitAdditionsDeletionsParser {
     private GitAdditionsDeletionsParser() {
     }
 
+    /**
+     * Parses a single numstat line into path and counts.
+     *
+     * @param line single numstat line
+     * @return parsed additions/deletions entry
+     * @throws IllegalArgumentException when the line cannot be parsed
+     */
     public static GitAdditionsDeletions parseAdditionsDeletions(String line) {
         if (line == null || line.isEmpty())
             throw new IllegalArgumentException("Input line cannot be null or empty");
@@ -20,6 +30,12 @@ public final class GitAdditionsDeletionsParser {
         return new GitAdditionsDeletions(path, additions, deletions);
     }
 
+    /**
+     * Parses multiple numstat lines.
+     *
+     * @param lines numstat lines
+     * @return parsed additions/deletions entries
+     */
     public static List<GitAdditionsDeletions> parseAdditionsDeletions(List<String> lines) {
         if (lines == null || lines.isEmpty())
             return List.of();

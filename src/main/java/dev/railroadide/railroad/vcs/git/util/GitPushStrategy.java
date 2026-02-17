@@ -2,6 +2,9 @@ package dev.railroadide.railroad.vcs.git.util;
 
 import lombok.Getter;
 
+/**
+ * Push strategy values supported by git.
+ */
 @Getter
 public enum GitPushStrategy {
     SIMPLE("railroad.git.push.strategy.simple"),

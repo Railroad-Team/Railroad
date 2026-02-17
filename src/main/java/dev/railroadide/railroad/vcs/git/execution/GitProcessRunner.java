@@ -23,6 +23,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+/**
+ * Executes git commands and captures process output and status.
+ */
 public class GitProcessRunner {
     private static final Path DEFAULT_GIT_EXECUTABLE = Path.of("git");
 
@@ -30,10 +33,25 @@ public class GitProcessRunner {
     @Setter
     private Path gitExecutable;
 
+    /**
+     * Creates a runner using the supplied git executable path.
+     *
+     * @param gitExecutable path to the git binary
+     */
     public GitProcessRunner(Path gitExecutable) {
         this.gitExecutable = gitExecutable;
     }
 
+    /**
+     * Executes a git command and returns captured process output.
+     *
+     * @param command command definition to execute
+     * @param listener optional output listener
+     * @param token optional cancellation token
+     * @param captureMode stdout capture mode
+     * @return execution result containing exit status and captured output
+     * @throws GitExecutionException when process startup or IO handling fails
+     */
     public GitResult run(GitCommand command, GitOutputListener listener, GitCancellationToken token, GitResultCaptureMode captureMode) throws GitExecutionException {
         List<String> stdoutChunks = Collections.synchronizedList(new ArrayList<>());
         List<String> stderrChunks = Collections.synchronizedList(new ArrayList<>());

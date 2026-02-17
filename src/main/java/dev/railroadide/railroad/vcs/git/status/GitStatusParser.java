@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Parser for `git status --porcelain=v1 -b -z` output records.
+ */
 public final class GitStatusParser {
     private GitStatusParser() {
     }
@@ -17,6 +20,13 @@ public final class GitStatusParser {
         "\\[.*?(?:ahead\\s+(\\d+))?.*?\\s*(?:behind\\s+(\\d+))?.*?\\]"
     );
 
+    /**
+     * Parses porcelain-v1-z status output into a repository status snapshot.
+     *
+     * @param repo repository owning the records
+     * @param records status records from git
+     * @return parsed repository status
+     */
     public static GitRepoStatus parsePorcelainV1Z(GitRepository repo, List<String> records) {
         if (records == null || records.isEmpty())
             return new GitRepoStatus("(unknown)", 0, 0, Collections.emptyList());

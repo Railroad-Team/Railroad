@@ -12,7 +12,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Locates a usable git executable from PATH or common install locations.
+ */
 public class GitLocator {
+    /**
+     * Finds a usable git executable path.
+     *
+     * @return executable path when found
+     */
     public static Optional<Path> findGitExecutable() {
         Long timeoutMs = Settings.GIT_BINARY_SEARCH_COMMAND_TIMEOUT_MS.getValue();
         if (timeoutMs == null) {
