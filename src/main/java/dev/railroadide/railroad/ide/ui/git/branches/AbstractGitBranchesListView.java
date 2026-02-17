@@ -17,6 +17,8 @@ import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import dev.railroadide.railroad.vcs.git.status.GitRepoStatus;
 import dev.railroadide.railroad.window.DialogBuilder;
 import dev.railroadide.railroad.window.WindowBuilder;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -37,17 +39,14 @@ import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Callback;
+import javafx.util.Duration;
 import org.jetbrains.annotations.Nullable;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListView<T> {
     private final Project project;
@@ -714,13 +713,32 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         }
 
         String formattedDateTime = TimeFormatter.formatDateTime(timestampSeconds * 1000L);
-        String elapsed = TimeFormatter.formatElapsed(timestampSeconds * 1000L);
-        rows.add(createLocalizedDetailsRow(
-            "railroad.git.branches.details.last_commit_time",
+        rows.add(createElapsedDetailsRow(timestampSeconds * 1000L, formattedDateTime));
+    }
+
+    private HBox createElapsedDetailsRow(long timestampMillis, String formattedDateTime) {
+        var value = new LocalizedLabel("");
+        value.getStyleClass().add("git-branch-details-value");
+
+        Runnable refresh = () -> value.setKey(
             "railroad.git.branches.details.last_commit_time_value",
             formattedDateTime,
-            elapsed
-        ));
+            TimeFormatter.formatElapsed(timestampMillis)
+        );
+        refresh.run();
+
+        var elapsedTimeline = new Timeline(new KeyFrame(Duration.seconds(1), $ -> refresh.run()));
+        elapsedTimeline.setCycleCount(Timeline.INDEFINITE);
+        value.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                elapsedTimeline.stop();
+            } else {
+                refresh.run();
+                elapsedTimeline.play();
+            }
+        });
+
+        return createDetailsRow("railroad.git.branches.details.last_commit_time", value);
     }
 
     private static void setStatus(LocalizedLabel statusLabel, @Nullable GitBranchStatus status) {

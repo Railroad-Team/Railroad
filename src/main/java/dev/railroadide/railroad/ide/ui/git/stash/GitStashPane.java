@@ -17,6 +17,11 @@ import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
+import javafx.beans.WeakInvalidationListener;
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.ReadOnlyLongProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -47,6 +52,10 @@ public class GitStashPane extends RRVBox {
     private final RRButton popButton;
     private final RRButton dropButton;
     private final RRButton refreshButton;
+    private final LongProperty elapsedTick = new SimpleLongProperty();
+    private final Timeline elapsedTimeline = new Timeline(
+        new KeyFrame(Duration.seconds(1), $ -> elapsedTick.set(elapsedTick.get() + 1))
+    );
     private String selectedStashRef;
 
     public GitStashPane(Project project) {
@@ -80,7 +89,7 @@ public class GitStashPane extends RRVBox {
 
         stashesList = new RRListView<>();
         stashesList.getStyleClass().add("git-stash-list");
-        stashesList.setCellFactory(ignored -> new GitStashEntryCell());
+        stashesList.setCellFactory(ignored -> new GitStashEntryCell(elapsedTick));
         stashesList.setItems(FXCollections.observableArrayList());
         stashesList.setPlaceholder(new LocalizedText("railroad.git.stash.list.empty"));
         VBox.setVgrow(stashesList, Priority.ALWAYS);
@@ -126,6 +135,16 @@ public class GitStashPane extends RRVBox {
         popButton.setOnAction($ -> onPopStash());
         dropButton.setOnAction($ -> onDropStash());
         gitManager.repoStatusProperty().addListener((obs, oldValue, newValue) -> refreshStashes());
+
+        elapsedTimeline.setCycleCount(Timeline.INDEFINITE);
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                elapsedTimeline.stop();
+            } else {
+                elapsedTick.set(0);
+                elapsedTimeline.play();
+            }
+        });
 
         updateActionState();
         refreshStashes();
@@ -314,10 +333,10 @@ public class GitStashPane extends RRVBox {
         private final Tooltip hashTooltip = new Tooltip();
         private final Tooltip timestampTooltip = new Tooltip();
         private final HBox itemRoot;
-        private final Timeline elapsedTimeline;
+        private final InvalidationListener elapsedTickListener = $ -> refreshTimestampText();
         private long timestampMillis;
 
-        private GitStashEntryCell() {
+        private GitStashEntryCell(ReadOnlyLongProperty elapsedTick) {
             nameText.getStyleClass().add("git-stash-item-name");
             branchText.getStyleClass().add("git-stash-item-branch");
             hashText.getStyleClass().add("git-stash-item-hash");
@@ -354,19 +373,18 @@ public class GitStashPane extends RRVBox {
             setGraphic(itemRoot);
             itemRoot.prefWidthProperty().bind(widthProperty().subtract(12));
 
-            elapsedTimeline = new Timeline(new KeyFrame(Duration.seconds(1), $ -> refreshTimestampText()));
-            elapsedTimeline.setCycleCount(Timeline.INDEFINITE);
+            elapsedTick.addListener(new WeakInvalidationListener(elapsedTickListener));
         }
 
         @Override
         protected void updateItem(GitStashEntry stashEntry, boolean empty) {
             super.updateItem(stashEntry, empty);
-            elapsedTimeline.stop();
             if (empty || stashEntry == null) {
                 setGraphic(null);
                 setText(null);
                 hashTooltip.setText(null);
                 timestampTooltip.setText(null);
+                timestampMillis = -1L;
                 return;
             }
 
@@ -384,10 +402,15 @@ public class GitStashPane extends RRVBox {
 
             setGraphic(itemRoot);
             setText(null);
-            elapsedTimeline.playFromStart();
         }
 
         private void refreshTimestampText() {
+            if (timestampMillis < 0) {
+                timestampText.setText(null);
+                timestampTooltip.setText(null);
+                return;
+            }
+
             timestampText.setText(TimeFormatter.formatElapsed(timestampMillis));
             timestampTooltip.setText(TimeFormatter.formatDateTime(timestampMillis));
         }

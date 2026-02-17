@@ -5,6 +5,7 @@ import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.styling.ButtonVariant;
+import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import javafx.collections.FXCollections;
@@ -26,6 +27,9 @@ public class GitSyncControlsPane extends RRVBox {
         remoteComboBox.setConverter(new StringConverter<>() {
             @Override
             public String toString(GitRemote remote) {
+                if(remote == null)
+                    return L18n.localize("railroad.git.sync.controls.remote.none");
+
                 return remote.name();
             }
 

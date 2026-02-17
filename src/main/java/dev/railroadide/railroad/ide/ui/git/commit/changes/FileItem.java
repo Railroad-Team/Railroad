@@ -5,7 +5,6 @@ import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
-import javafx.event.EventTarget;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;

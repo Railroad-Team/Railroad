@@ -9,6 +9,12 @@ import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.utility.TimeFormatter;
 import io.github.palexdev.mfxcore.builders.InsetsBuilder;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.beans.InvalidationListener;
+import javafx.beans.WeakInvalidationListener;
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
@@ -19,8 +25,11 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.util.Duration;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A modern list cell component for displaying project items in project lists.
@@ -28,6 +37,16 @@ import org.kordamp.ikonli.javafx.FontIcon;
  * Supports open and remove project functionality through a context menu.
  */
 public class ProjectListCell extends ListCell<Project> {
+    private static final LongProperty ELAPSED_TICK = new SimpleLongProperty();
+    private static final Timeline ELAPSED_TIMELINE = new Timeline(
+        new KeyFrame(Duration.seconds(1), $ -> ELAPSED_TICK.set(ELAPSED_TICK.get() + 1))
+    );
+    private static final AtomicInteger ATTACHED_CELLS = new AtomicInteger();
+
+    static {
+        ELAPSED_TIMELINE.setCycleCount(Timeline.INDEFINITE);
+    }
+
     private final RRCard card = new RRCard(14, new Insets(8, 32, 8, 32));
     private final HBox root = new HBox(16);
     private final ImageView icon = new ImageView();
@@ -37,6 +56,7 @@ public class ProjectListCell extends ListCell<Project> {
     private final Label lastOpenedLabel = new Label();
     private final RRButton ellipsisButton = new RRButton();
     private final HBox facetTagsBox = new HBox(5);
+    private final InvalidationListener elapsedTickListener = $ -> refreshElapsedText();
 
     /**
      * Constructs a new ProjectListCell with modern styling and context menu functionality.
@@ -104,6 +124,20 @@ public class ProjectListCell extends ListCell<Project> {
 
         dropdown.getItems().addAll(openItem, removeItem);
         ellipsisButton.setOnAction($ -> dropdown.show(ellipsisButton, Side.BOTTOM, 0, 0));
+
+        ELAPSED_TICK.addListener(new WeakInvalidationListener(elapsedTickListener));
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (oldScene == null && newScene != null) {
+                if (ATTACHED_CELLS.incrementAndGet() == 1) {
+                    ELAPSED_TIMELINE.play();
+                }
+            } else if (oldScene != null && newScene == null) {
+                if (ATTACHED_CELLS.decrementAndGet() <= 0) {
+                    ATTACHED_CELLS.set(0);
+                    ELAPSED_TIMELINE.stop();
+                }
+            }
+        });
     }
 
     @Override
@@ -117,11 +151,12 @@ public class ProjectListCell extends ListCell<Project> {
             setText(null);
             setGraphic(null);
             setPadding(Insets.EMPTY);
+            lastOpenedLabel.setText(null);
         } else {
             icon.setImage(project.getIcon());
             nameLabel.setText(project.getAlias());
             pathLabel.setText(project.getPathString());
-            lastOpenedLabel.setText(TimeFormatter.formatElapsed(project.getLastOpened()));
+            refreshElapsedText();
 
             // Populate Facet Tags
             for (Facet<?> facet : project.getFacets()) {
@@ -139,6 +174,16 @@ public class ProjectListCell extends ListCell<Project> {
             }
             setGraphic(card);
         }
+    }
+
+    private void refreshElapsedText() {
+        Project project = getItem();
+        if (project == null || isEmpty()) {
+            lastOpenedLabel.setText(null);
+            return;
+        }
+
+        lastOpenedLabel.setText(TimeFormatter.formatElapsed(project.getLastOpened()));
     }
 
 }

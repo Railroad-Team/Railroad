@@ -6,11 +6,16 @@ import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.core.ui.localized.LocalizedText;
 import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.utility.ShutdownHooks;
-import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroad.utility.TimeFormatter;
-import dev.railroadide.railroad.vcs.git.commit.GitCommitPage;
-import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import dev.railroadide.railroad.vcs.git.GitManager;
+import dev.railroadide.railroad.vcs.git.commit.GitCommit;
+import dev.railroadide.railroad.vcs.git.commit.GitCommitPage;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.beans.InvalidationListener;
+import javafx.beans.WeakInvalidationListener;
+import javafx.beans.property.ReadOnlyLongProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.ListCell;
@@ -18,6 +23,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Text;
+import javafx.util.Duration;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -29,6 +35,10 @@ import java.util.concurrent.atomic.AtomicReference;
 public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
     private static final int FALLBACK_COMMIT_COUNT = 5;
     private final AtomicInteger requestedCount = new AtomicInteger(0);
+    private final SimpleLongProperty elapsedTick = new SimpleLongProperty();
+    private final Timeline elapsedTimeline = new Timeline(
+        new KeyFrame(Duration.seconds(1), $ -> elapsedTick.set(elapsedTick.get() + 1))
+    );
 
     public GitOverviewRecentCommitsPane(Project project) {
         getStyleClass().add("git-overview-recent-commits-pane");
@@ -36,7 +46,17 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
 
         GitManager gitManager = project.getGitManager();
         requestCommits(gitManager, FALLBACK_COMMIT_COUNT);
-        setCellFactory(listView -> new GitOverviewRecentCommitCell());
+        setCellFactory(listView -> new GitOverviewRecentCommitCell(elapsedTick));
+
+        elapsedTimeline.setCycleCount(Timeline.INDEFINITE);
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                elapsedTimeline.stop();
+            } else {
+                elapsedTick.set(0);
+                elapsedTimeline.play();
+            }
+        });
 
         heightProperty().addListener((obs, oldHeight, newHeight) ->
             updateCommitLimitFromHeight(gitManager));
@@ -114,71 +134,93 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
     }
 
     private static class GitOverviewRecentCommitCell extends ListCell<GitCommit> {
+        private final GitOverviewRecentCommitCellPane pane;
+
+        private GitOverviewRecentCommitCell(ReadOnlyLongProperty elapsedTick) {
+            this.pane = new GitOverviewRecentCommitCellPane(elapsedTick);
+        }
+
         @Override
         protected void updateItem(GitCommit item, boolean empty) {
             super.updateItem(item, empty);
             if (empty || item == null) {
                 setText(null);
                 setGraphic(null);
+                pane.clear();
             } else {
-                setGraphic(new GitOverviewRecentCommitCellPane(item));
+                pane.setCommit(item);
+                setGraphic(pane);
             }
         }
     }
 
     private static class GitOverviewRecentCommitCellPane extends RRHBox {
-        public GitOverviewRecentCommitCellPane(GitCommit commit) {
+        private final Text messageLabel = new Text();
+        private final Text authorLabel = new Text();
+        private final Text shortHashLabel = new Text();
+        private final Text timestampLabel = new Text();
+        private final Tooltip authorTooltip = new Tooltip();
+        private final Tooltip shortHashTooltip = new Tooltip();
+        private final Tooltip timestampTooltip = new Tooltip();
+        private long timestampEpochMillis = -1L;
+        private final InvalidationListener elapsedTickListener = obs -> refreshTimestamp();
+
+        public GitOverviewRecentCommitCellPane(ReadOnlyLongProperty elapsedTick) {
             getStyleClass().add("git-overview-recent-commit-cell-pane");
 
             var leftVBox = new RRVBox(2);
-            var messageLabel = new Text(commit.subject());
             messageLabel.getStyleClass().add("commit-message-label");
             leftVBox.getChildren().add(messageLabel);
 
             var leftHBox = new RRHBox(5);
-            var authorLabel = new Text(commit.authorName());
             authorLabel.getStyleClass().add("commit-author-label");
-            Tooltip.install(authorLabel, new Tooltip(commit.authorEmail()));
+            Tooltip.install(authorLabel, authorTooltip);
             leftHBox.getChildren().add(authorLabel);
 
-            var shortHashLabel = new Text(commit.shortHash());
             shortHashLabel.getStyleClass().add("commit-short-hash-label");
-            Tooltip.install(shortHashLabel, new Tooltip(commit.hash()));
+            Tooltip.install(shortHashLabel, shortHashTooltip);
             leftHBox.getChildren().add(shortHashLabel);
 
-            long timestampEpochSeconds = commit.authorTimestampEpochSeconds();
-            long timestampEpochMillis = timestampEpochSeconds * 1000L;
-            var timestampLabel = new Text(TimeFormatter.formatElapsed(timestampEpochMillis));
             timestampLabel.getStyleClass().add("commit-timestamp-label");
-            Tooltip.install(timestampLabel, new Tooltip(TimeFormatter.formatDateTime(timestampEpochMillis)));
+            Tooltip.install(timestampLabel, timestampTooltip);
 
             leftVBox.getChildren().add(leftHBox);
             getChildren().add(leftVBox);
             getChildren().add(timestampLabel);
             HBox.setHgrow(leftVBox, Priority.ALWAYS);
 
-            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(runnable -> {
-                var thread = new Thread(runnable, "GitOverviewRecentCommitCellPane-Timestamp-Updater");
-                thread.setDaemon(true);
-                return thread;
-            });
+            elapsedTick.addListener(new WeakInvalidationListener(elapsedTickListener));
+        }
 
-            AtomicReference<ScheduledFuture<?>> futureRef = new AtomicReference<>();
-            sceneProperty().addListener((obs, oldScene, newScene) -> {
-                ScheduledFuture<?> previousFuture = futureRef.getAndSet(null);
-                if (previousFuture != null) {
-                    previousFuture.cancel(false);
-                }
+        public void setCommit(GitCommit commit) {
+            messageLabel.setText(commit.subject());
+            authorLabel.setText(commit.authorName());
+            authorTooltip.setText(commit.authorEmail());
+            shortHashLabel.setText(commit.shortHash());
+            shortHashTooltip.setText(commit.hash());
+            timestampEpochMillis = commit.authorTimestampEpochSeconds() * 1000L;
+            timestampTooltip.setText(TimeFormatter.formatDateTime(timestampEpochMillis));
+            refreshTimestamp();
+        }
 
-                if (newScene != null) {
-                    ScheduledFuture<?> future = executor.scheduleAtFixedRate(() -> {
-                        Platform.runLater(() -> timestampLabel.setText(TimeFormatter.formatElapsed(timestampEpochMillis)));
-                    }, 1, 1, TimeUnit.SECONDS);
-                    futureRef.set(future);
-                }
-            });
+        public void clear() {
+            timestampEpochMillis = -1L;
+            messageLabel.setText(null);
+            authorLabel.setText(null);
+            authorTooltip.setText(null);
+            shortHashLabel.setText(null);
+            shortHashTooltip.setText(null);
+            timestampLabel.setText(null);
+            timestampTooltip.setText(null);
+        }
 
-            ShutdownHooks.addHook(executor::shutdownNow);
+        private void refreshTimestamp() {
+            if (timestampEpochMillis < 0L) {
+                timestampLabel.setText(null);
+                return;
+            }
+
+            timestampLabel.setText(TimeFormatter.formatElapsed(timestampEpochMillis));
         }
     }
 }

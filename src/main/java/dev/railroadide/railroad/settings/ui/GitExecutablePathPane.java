@@ -7,7 +7,6 @@ import dev.railroadide.core.ui.RRTextField;
 import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.core.utility.DesktopUtils;
 import dev.railroadide.core.utility.OperatingSystem;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.vcs.git.util.GitLocator;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -69,7 +68,7 @@ public class GitExecutablePathPane extends RRHBox {
             String url = "https://git-scm.com/install/" + postfix;
             DesktopUtils.openUrl(url);
         });
-        downloadButton.setVisible("" == null);
+        downloadButton.setVisible(OperatingSystem.CURRENT != OperatingSystem.UNKNOWN);
 
         getChildren().addAll(pathField, browseButton, downloadButton);
         setSpacing(10);

@@ -12,6 +12,8 @@ import javafx.scene.text.Text;
 import javafx.util.Duration;
 
 public class GitCommitHeaderCard extends RRVBox {
+    private final Timeline committedAnimation;
+
     public GitCommitHeaderCard(GitCommit commit) {
         super(6);
         getStyleClass().add("git-commit-header-card");
@@ -29,17 +31,23 @@ public class GitCommitHeaderCard extends RRVBox {
 
         var committedText = new LocalizedText(
             "railroad.git.commit.details.committed",
-            TimeFormatter.formatDateTime(commit.authorTimestampEpochSeconds() * 1000L)
+            TimeFormatter.formatElapsed(commit.authorTimestampEpochSeconds() * 1000L)
         );
-        var committedAnimation = new Timeline(new KeyFrame(
+        committedAnimation = new Timeline(new KeyFrame(
             Duration.seconds(1),
             event -> committedText.setKeyAndArgs(
                 "railroad.git.commit.details.committed",
-                TimeFormatter.formatDateTime(commit.authorTimestampEpochSeconds() * 1000L)
+                TimeFormatter.formatElapsed(commit.authorTimestampEpochSeconds() * 1000L)
             )
         ));
         committedAnimation.setCycleCount(Timeline.INDEFINITE);
-        committedAnimation.play();
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                committedAnimation.stop();
+            } else {
+                committedAnimation.play();
+            }
+        });
         committedText.getStyleClass().addAll("git-commit-details-committed-time", "git-commit-details-meta-text");
         detailsHBox.getChildren().add(committedText);
 

@@ -88,7 +88,9 @@ public class GitCommitDetailsInfoCard extends RRVBox {
     }
 
     private RRHBox createChip(String text, String styleClass) {
-        var valueText = new Text(text);
+        var valueText = (text == null || text.isBlank())
+            ? new LocalizedText("railroad.git.commit.details.unknown")
+            : new Text(text);
         valueText.getStyleClass().add(styleClass);
 
         var chip = new RRHBox(4);

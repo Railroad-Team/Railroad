@@ -4,28 +4,23 @@ import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedText;
 import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.project.Project;
-import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.TimeFormatter;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import dev.railroadide.railroad.vcs.git.status.GitRepoStatus;
-import javafx.application.Platform;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
-import javafx.scene.Scene;
 import javafx.scene.layout.*;
 import javafx.scene.text.Text;
+import javafx.util.Duration;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class GitOverviewHeaderPane extends RRVBox {
     private final RRHBox actionsBox = new RRHBox(8);
@@ -50,6 +45,8 @@ public class GitOverviewHeaderPane extends RRVBox {
     private final Text upstreamFetchText = new Text();
     private final Text remoteNameText = new Text();
     private final Text remoteUrlText = new Text();
+    private final Timeline upstreamElapsedTimeline;
+    private final GitManager gitManager;
 
     public GitOverviewHeaderPane(Project project) {
         getStyleClass().add("git-overview-header-pane");
@@ -81,36 +78,20 @@ public class GitOverviewHeaderPane extends RRVBox {
         configureChangeChips();
         getChildren().add(changesRow);
 
-        GitManager gitManager = project.getGitManager();
+        gitManager = project.getGitManager();
         updateHeaderInfo(gitManager);
         listenForUpdates(gitManager);
 
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(runnable -> {
-            var thread = new Thread(runnable, "GitOverviewHeaderPane-Fetch-Thread");
-            thread.setDaemon(true);
-            return thread;
-        });
-
-        AtomicReference<ScheduledFuture<?>> future = new AtomicReference<>();
-        sceneProperty().addListener((obs, oldScene, newScene) ->
-            onSceneChanged(newScene, future, executor, gitManager));
-
-        ShutdownHooks.addHook(executor::shutdownNow);
-    }
-
-    private void onSceneChanged(Scene newScene, AtomicReference<ScheduledFuture<?>> future, ScheduledExecutorService executor, GitManager gitManager) {
-        if (newScene == null && future.get() != null) {
-            future.get().cancel(true);
-        } else if (newScene != null) {
-            future.set(executor.scheduleAtFixedRate(() ->
-                    Platform.runLater(() ->
-                        updateUpstreamRow(gitManager)),
-                1, 1, TimeUnit.SECONDS));
-        } else {
-            if (future.get() != null) {
-                future.get().cancel(true);
+        upstreamElapsedTimeline = new Timeline(new KeyFrame(Duration.seconds(1), $ -> updateUpstreamRow(this.gitManager)));
+        upstreamElapsedTimeline.setCycleCount(Timeline.INDEFINITE);
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                upstreamElapsedTimeline.stop();
+            } else {
+                updateUpstreamRow(this.gitManager);
+                upstreamElapsedTimeline.play();
             }
-        }
+        });
     }
 
     private void configureInfoGrid() {

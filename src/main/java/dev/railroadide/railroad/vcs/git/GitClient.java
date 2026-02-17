@@ -27,9 +27,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.function.Consumer;
 
 // TODO: Add small FS cache for detected repositories to avoid repeated git calls
 // TODO: Integrate the use of IDE tasks

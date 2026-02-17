@@ -6,8 +6,6 @@ import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
 import dev.railroadide.railroad.welcome.imports.WelcomeImportProjectsPane;
 import dev.railroadide.railroad.welcome.project.ui.NewProjectPane;
-import dev.railroadide.railroad.window.AlertType;
-import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -99,9 +97,11 @@ public class WelcomePane extends HBox {
             if (selectedDirectory != null) {
                 Path projectPath = selectedDirectory.toPath();
 
+                // For now, we will allow opening any directory and let the Project class handle validation
+                // TODO: Re-add validation here in the future
 //                if (isValidProjectDirectory(projectPath)) {
-                    var project = new Project(projectPath);
-                    project.open();
+                var project = new Project(projectPath);
+                project.open();
 //                } else {
 //                    WindowBuilder.createAlert(
 //                        AlertType.ERROR,

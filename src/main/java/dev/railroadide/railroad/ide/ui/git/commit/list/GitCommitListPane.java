@@ -2,7 +2,6 @@ package dev.railroadide.railroad.ide.ui.git.commit.list;
 
 import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.railroad.project.Project;
-import dev.railroadide.railroad.vcs.git.GitManager;
 import javafx.scene.layout.Priority;
 
 public class GitCommitListPane extends RRVBox {

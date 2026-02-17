@@ -987,3 +987,5 @@ railroad.git.push.strategy.current=Current
 railroad.git.push.strategy.upstream=Upstream
 railroad.git.push.strategy.matching=Matching
 railroad.git.push.strategy.nothing=Nothing
+railroad.git.sync.controls.remote.none=No remotes
+railroad.git.commit.details.unknown=Unknown

@@ -1,10 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.RRCheckBox;
-import dev.railroadide.core.ui.RRTextArea;
-import dev.railroadide.core.ui.RRTextField;
-import dev.railroadide.core.ui.RRVBox;
+import dev.railroadide.core.ui.*;
 import dev.railroadide.core.ui.localized.LocalizedText;
 import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.project.Project;

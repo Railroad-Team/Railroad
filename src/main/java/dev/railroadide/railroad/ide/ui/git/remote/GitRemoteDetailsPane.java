@@ -49,7 +49,14 @@ public class GitRemoteDetailsPane extends RRVBox {
 
         fetchElapsedAnimation = new Timeline(new KeyFrame(Duration.seconds(1), $ -> refreshLastFetchedText()));
         fetchElapsedAnimation.setCycleCount(Timeline.INDEFINITE);
-        fetchElapsedAnimation.play();
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                fetchElapsedAnimation.stop();
+            } else {
+                refreshLastFetchedText();
+                fetchElapsedAnimation.play();
+            }
+        });
 
         if (this.gitManager != null) {
             this.gitManager.repoStatusProperty().addListener((obs, oldStatus, newStatus) -> updateContent(this.remote.get()));

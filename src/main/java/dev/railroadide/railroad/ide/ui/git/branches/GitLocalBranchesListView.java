@@ -8,6 +8,8 @@ import dev.railroadide.railroad.utility.TimeFormatter;
 import dev.railroadide.railroad.vcs.git.branch.GitBranch;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchLastCommit;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchStatus;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -17,11 +19,14 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
+import javafx.util.Duration;
 
 import java.util.ArrayList;
 import java.util.Locale;
 
 public class GitLocalBranchesListView extends AbstractGitBranchesListView<GitBranch.LocalGitBranch> {
+    private final Timeline elapsedRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(1), $ -> refresh()));
+
     public GitLocalBranchesListView(Project project) {
         super(
             project,
@@ -29,6 +34,16 @@ public class GitLocalBranchesListView extends AbstractGitBranchesListView<GitBra
             value -> value.getGitManager().getAllLocalBranches(),
             listView -> new GitLocalBranchCell()
         );
+
+        elapsedRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                elapsedRefreshTimeline.stop();
+            } else {
+                refresh();
+                elapsedRefreshTimeline.play();
+            }
+        });
     }
 
     @Override

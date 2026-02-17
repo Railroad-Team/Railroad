@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.ide.ui.git.branches;
 
 import dev.railroadide.core.ui.RRTextField;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.core.ui.RRVBox;
+import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.project.Project;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;

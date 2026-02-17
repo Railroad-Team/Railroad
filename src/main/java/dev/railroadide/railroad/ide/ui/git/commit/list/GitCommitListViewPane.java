@@ -9,6 +9,8 @@ import dev.railroadide.railroad.project.Project;
 import dev.railroadide.railroad.utility.TimeFormatter;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -28,13 +30,13 @@ import javafx.scene.layout.Region;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
 import javafx.scene.text.Text;
+import javafx.util.Duration;
 
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 public class GitCommitListViewPane extends RRListView<GitCommit> {
@@ -435,7 +437,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
     private class GitCommitTimestampPane extends RRVBox {
         private final Text timestampText = new Text();
         private final Tooltip tooltip = new Tooltip();
-        private ScheduledFuture<?> updateTask;
+        private Timeline updateTimeline;
 
         public GitCommitTimestampPane() {
             super();
@@ -445,27 +447,39 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
             Tooltip.install(timestampText, tooltip);
 
             getChildren().add(timestampText);
+
+            sceneProperty().addListener((obs, oldScene, newScene) -> {
+                if (updateTimeline == null) {
+                    return;
+                }
+
+                if (newScene == null) {
+                    updateTimeline.stop();
+                } else {
+                    updateTimeline.play();
+                }
+            });
         }
 
         public void setCommit(GitCommit commit) {
             clear();
-            var millis = new AtomicLong(getCommitTimestampEpochSeconds(commit) * 1000L);
-            timestampText.setText(TimeFormatter.formatElapsed(millis.get()));
-            tooltip.setText(TimeFormatter.formatDateTime(millis.get()));
-            updateTask = executorService.scheduleAtFixedRate(() -> {
-                millis.set(getCommitTimestampEpochSeconds(commit) * 1000L);
-                var formattedTime = TimeFormatter.formatElapsed(millis.get());
-                Platform.runLater(() -> {
-                    timestampText.setText(formattedTime);
-                    tooltip.setText(TimeFormatter.formatDateTime(millis.get()));
-                });
-            }, 1, 1, TimeUnit.SECONDS);
+            long timestampMillis = getCommitTimestampEpochSeconds(commit) * 1000L;
+            timestampText.setText(TimeFormatter.formatElapsed(timestampMillis));
+            tooltip.setText(TimeFormatter.formatDateTime(timestampMillis));
+            updateTimeline = new Timeline(new KeyFrame(Duration.seconds(1), $ -> {
+                timestampText.setText(TimeFormatter.formatElapsed(timestampMillis));
+                tooltip.setText(TimeFormatter.formatDateTime(timestampMillis));
+            }));
+            updateTimeline.setCycleCount(Timeline.INDEFINITE);
+            if (getScene() != null) {
+                updateTimeline.play();
+            }
         }
 
         public void clear() {
-            if (updateTask != null) {
-                updateTask.cancel(false);
-                updateTask = null;
+            if (updateTimeline != null) {
+                updateTimeline.stop();
+                updateTimeline = null;
             }
         }
     }

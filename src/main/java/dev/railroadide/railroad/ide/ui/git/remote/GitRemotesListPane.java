@@ -11,6 +11,11 @@ import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
+import javafx.beans.WeakInvalidationListener;
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.ReadOnlyLongProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;
@@ -24,10 +29,25 @@ import java.util.Locale;
 import java.util.function.Consumer;
 
 public class GitRemotesListPane extends RRListView<GitRemote> {
+    private final LongProperty elapsedTick = new SimpleLongProperty();
+    private final Timeline elapsedTimeline = new Timeline(
+        new KeyFrame(Duration.seconds(1), $ -> elapsedTick.set(elapsedTick.get() + 1))
+    );
+
     public GitRemotesListPane(GitManager gitManager) {
         getStyleClass().add("git-remotes-list");
 
-        setCellFactory(ignored -> new GitRemoteListCell(gitManager));
+        elapsedTimeline.setCycleCount(Timeline.INDEFINITE);
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                elapsedTimeline.stop();
+            } else {
+                elapsedTick.set(0);
+                elapsedTimeline.play();
+            }
+        });
+
+        setCellFactory(ignored -> new GitRemoteListCell(gitManager, elapsedTick));
         setItems(FXCollections.observableArrayList(gitManager.getRemotes()));
         gitManager.repoStatusProperty().addListener((observable, oldValue, newValue) -> {
             List<GitRemote> remotes = gitManager.getRemotes();
@@ -44,10 +64,10 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
     }
 
     public static class GitRemoteListCell extends ListCell<GitRemote> {
-        private final GitManager gitManager;
+        private final GitRemoteListItemPane pane;
 
-        public GitRemoteListCell(GitManager gitManager) {
-            this.gitManager = gitManager;
+        public GitRemoteListCell(GitManager gitManager, ReadOnlyLongProperty elapsedTick) {
+            this.pane = new GitRemoteListItemPane(gitManager, elapsedTick);
         }
 
         @Override
@@ -56,45 +76,41 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
             if (empty || remote == null) {
                 setGraphic(null);
                 setText(null);
+                pane.clear();
             } else {
-                setGraphic(new GitRemoteListItemPane(this.gitManager, remote));
+                pane.setRemote(remote);
+                setGraphic(pane);
                 setText(null);
             }
         }
     }
 
     public static class GitRemoteListItemPane extends RRHBox {
-        public GitRemoteListItemPane(GitManager gitManager, GitRemote remote) {
+        private final GitManager gitManager;
+        private final Text remoteNameText = new Text();
+        private final LocalizedText lastFetchTimeText = new LocalizedText("railroad.git.remotes.list.fetched_time", "");
+        private final Text protocolText = new Text();
+        private final LocalizedText urlsCountText = new LocalizedText("railroad.git.remotes.list.urls_count", 0);
+        private final RRHBox topInfoBox;
+        private final Text upstreamText = new LocalizedText("railroad.git.remotes.list.upstream");
+        private GitRemote remote;
+        private final InvalidationListener elapsedTickListener = obs -> refreshLastFetchText();
+
+        public GitRemoteListItemPane(GitManager gitManager, ReadOnlyLongProperty elapsedTick) {
+            this.gitManager = gitManager;
             getStyleClass().add("git-remote-list-item");
 
-            var remoteNameText = new Text(remote.name());
             remoteNameText.getStyleClass().add("git-remote-name");
 
-            var lastFetchTimeText = new LocalizedText("railroad.git.remotes.list.fetched_time", TimeFormatter.formatElapsed(gitManager.getLastFetchTimestamp(remote)));
             lastFetchTimeText.getStyleClass().add("git-remote-last-fetch");
-            var fetchElapsedAnimation = new Timeline(
-                new KeyFrame(Duration.seconds(1), $ ->
-                    lastFetchTimeText.setKeyAndArgs("railroad.git.remotes.list.fetched_time", TimeFormatter.formatElapsed(gitManager.getLastFetchTimestamp(remote))))
-            );
-            fetchElapsedAnimation.setCycleCount(Timeline.INDEFINITE);
-            fetchElapsedAnimation.play();
 
-            var protocolText = new Text(remote.protocol().name().toLowerCase(Locale.ROOT));
             protocolText.getStyleClass().add("git-remote-protocol");
 
-            var urlsCountText = new LocalizedText("railroad.git.remotes.list.urls_count", gitManager.getRemoteUrls(remote).size());
             urlsCountText.getStyleClass().add("git-remote-urls-count");
-            gitManager.repoStatusProperty().addListener((observable, oldValue, newValue) -> {
-                urlsCountText.setKeyAndArgs("railroad.git.remotes.list.urls_count", gitManager.getRemoteUrls(remote).size());
-            });
 
-            var topInfoBox = new RRHBox(2, remoteNameText);
+            topInfoBox = new RRHBox(2, remoteNameText);
             topInfoBox.getStyleClass().add("git-remote-top-info-box");
-            if (gitManager.getUpstream().map(GitUpstream::remoteName).orElse("").equals(remote.name())) {
-                var upstreamText = new LocalizedText("railroad.git.remotes.list.upstream");
-                upstreamText.getStyleClass().add("git-remote-upstream");
-                topInfoBox.getChildren().add(upstreamText);
-            }
+            upstreamText.getStyleClass().add("git-remote-upstream");
             topInfoBox.setAlignment(Pos.CENTER_LEFT);
 
             var bottomInfoBox = new RRHBox(2, lastFetchTimeText, protocolText);
@@ -108,6 +124,46 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
             getChildren().addAll(infoBox, urlsCountText);
             HBox.setHgrow(infoBox, Priority.ALWAYS);
             setAlignment(Pos.CENTER_LEFT);
+
+            elapsedTick.addListener(new WeakInvalidationListener(elapsedTickListener));
+        }
+
+        public void setRemote(GitRemote remote) {
+            this.remote = remote;
+            remoteNameText.setText(remote.name());
+            protocolText.setText(remote.protocol().name().toLowerCase(Locale.ROOT));
+            urlsCountText.setKeyAndArgs("railroad.git.remotes.list.urls_count", gitManager.getRemoteUrls(remote).size());
+
+            boolean isUpstream = gitManager.getUpstream().map(GitUpstream::remoteName).orElse("").equals(remote.name());
+            if (isUpstream) {
+                if (!topInfoBox.getChildren().contains(upstreamText)) {
+                    topInfoBox.getChildren().add(upstreamText);
+                }
+            } else {
+                topInfoBox.getChildren().remove(upstreamText);
+            }
+
+            refreshLastFetchText();
+        }
+
+        public void clear() {
+            this.remote = null;
+            remoteNameText.setText(null);
+            protocolText.setText(null);
+            urlsCountText.setKeyAndArgs("railroad.git.remotes.list.urls_count", 0);
+            topInfoBox.getChildren().remove(upstreamText);
+            lastFetchTimeText.setKeyAndArgs("railroad.git.remotes.list.fetched_time", "");
+        }
+
+        private void refreshLastFetchText() {
+            if (remote == null) {
+                return;
+            }
+
+            lastFetchTimeText.setKeyAndArgs(
+                "railroad.git.remotes.list.fetched_time",
+                TimeFormatter.formatElapsed(gitManager.getLastFetchTimestamp(remote))
+            );
         }
     }
 }
