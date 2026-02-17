@@ -26,9 +26,10 @@ import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
 import dev.railroadide.railroad.theme.ThemeManager;
-import dev.railroadide.railroad.utility.json.LocalDateTimeTypeAdapter;
 import dev.railroadide.railroad.utility.ShutdownHooks;
+import dev.railroadide.railroad.utility.json.LocalDateTimeTypeAdapter;
 import dev.railroadide.railroad.utility.json.PathTypeAdapter;
+import dev.railroadide.railroad.vcs.git.util.GitUtils;
 import dev.railroadide.railroad.vcs.RepositoryManager;
 import dev.railroadide.railroad.welcome.WelcomePane;
 import dev.railroadide.railroad.window.WindowBuilder;
@@ -120,6 +121,7 @@ public class Railroad extends Application {
             new InitializationStep("Enabling plugins", PluginManager::enableEnabledPlugins),
             new InitializationStep("Activating ready plugins", PluginManager::loadReadyPlugins),
             new InitializationStep("Restoring settings", SettingsHandler::loadSettings),
+            new InitializationStep("Locating git executable", GitUtils::loadGitExecutableIntoSettings),
             new InitializationStep("Registering shutdown hooks", () -> ShutdownHooks.addHook(() -> {
                 try (ExecutorService executorService = HTTP_CLIENT.dispatcher().executorService()) {
                     executorService.shutdown();

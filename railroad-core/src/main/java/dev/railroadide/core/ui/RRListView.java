@@ -2,10 +2,14 @@ package dev.railroadide.core.ui;
 
 import javafx.animation.FadeTransition;
 import javafx.animation.TranslateTransition;
+import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.skin.VirtualFlow;
+import javafx.scene.input.ScrollEvent;
 import javafx.util.Duration;
 
 /**
@@ -16,6 +20,7 @@ public class RRListView<T> extends ListView<T> {
     private ListViewSize size = ListViewSize.MEDIUM;
     private boolean enableAnimations = true;
     private TranslateTransition selectionTransition;
+    private boolean smoothScrollingEnabled = false;
 
     /**
      * Constructs an empty modern list view with default styling and animations.
@@ -60,10 +65,8 @@ public class RRListView<T> extends ListView<T> {
         if (!getStyleClass().contains("rr-list-view")) {
             getStyleClass().add("rr-list-view");
         }
-        setPadding(new Insets(8));
 
-        // Enable smooth scrolling
-        setFixedCellSize(-1);
+        setPadding(new Insets(8));
 
         // Add selection animation
         getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
@@ -226,5 +229,33 @@ public class RRListView<T> extends ListView<T> {
 
     public enum ListViewSize {
         SMALL, MEDIUM, LARGE
+    }
+
+    public void enableSmoothScrolling() {
+        if (smoothScrollingEnabled)
+            return;
+
+        smoothScrollingEnabled = true;
+        setFixedCellSize(-1);
+
+        skinProperty().addListener((obs, oldSkin, newSkin) -> {
+            if (newSkin == null)
+                return;
+
+            // Defer lookup until skin is fully applied.
+            Platform.runLater(() -> {
+                Node flowNode = lookup(".virtual-flow");
+                if (!(flowNode instanceof VirtualFlow<?> virtualFlow))
+                    return;
+
+                addEventFilter(ScrollEvent.SCROLL, event -> {
+                    if (event.isConsumed() || event.getDeltaY() == 0)
+                        return;
+
+                    virtualFlow.scrollPixels(-event.getDeltaY());
+                    event.consume();
+                });
+            });
+        });
     }
 }

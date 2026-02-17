@@ -16,6 +16,15 @@ import dev.railroadide.railroad.ide.ui.ConsolePane;
 import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
 import dev.railroadide.railroad.ide.ui.ImageViewerPane;
 import dev.railroadide.railroad.ide.ui.StatusBarPane;
+import dev.railroadide.railroad.ide.ui.git.branches.GitBranchesPane;
+import dev.railroadide.railroad.ide.ui.git.commit.GitCommitPane;
+import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
+import dev.railroadide.railroad.ide.ui.git.commit.list.GitCommitListPane;
+import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
+import dev.railroadide.railroad.ide.ui.git.overview.GitOverviewPane;
+import dev.railroadide.railroad.ide.ui.git.stash.GitStashPane;
+import dev.railroadide.railroad.ide.ui.git.sync.GitSyncPane;
+import dev.railroadide.railroad.ide.ui.git.remote.GitRemotesPane;
 import dev.railroadide.railroad.ide.ui.setup.IDEMenuBarFactory;
 import dev.railroadide.railroad.ide.ui.setup.PaneIconBarFactory;
 import dev.railroadide.railroad.ide.ui.setup.RunControlsPane;
@@ -42,6 +51,7 @@ import javafx.stage.Stage;
 import org.fxmisc.richtext.CodeArea;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.Map;
@@ -66,11 +76,26 @@ public class IDESetup {
 
         var leftPane = new DetachableTabPane();
         leftPane.addTab("Project", new ProjectExplorerPane(project, root));
+        leftPane.addTab("Git Commit", new GitCommitPane(project));
+        leftPane.addTab("Git Overview", new GitOverviewPane(project));
+        leftPane.addTab("Git Commit List", new GitCommitListPane(project));
+        leftPane.addTab("Git Branches", new GitBranchesPane(project));
+        leftPane.addTab("Git Remotes", new GitRemotesPane(project));
+        leftPane.addTab("Git Sync", new GitSyncPane(project));
+        leftPane.addTab("Git Stash", new GitStashPane(project));
 
         var rightPane = new DetachableTabPane();
 
         var editorPane = new DetachableTabPane();
         editorPane.addTab("Welcome", new IDEWelcomePane());
+
+        var gitDiffPane = new GitDiffPane(project);
+        var gitDiffTab = editorPane.addTab("Git Diff", gitDiffPane);
+        gitDiffTab.textProperty().bind(gitDiffPane.titleProperty());
+
+        var gitCommitDetailsPane = new GitCommitDetailsPane(project);
+        var gitCommitDetailsTab = editorPane.addTab("Git Commit Details", gitCommitDetailsPane);
+        gitCommitDetailsTab.textProperty().bind(gitCommitDetailsPane.titleProperty());
 
         var consolePane = new DetachableTabPane();
         consolePane.addTab("Console", new ConsolePane());
@@ -101,8 +126,15 @@ public class IDESetup {
             mainSplit,
             Orientation.VERTICAL,
             0,
-            Map.of("Project", FontAwesomeSolid.FOLDER.getDescription())
-        ));
+            Map.of("Project", FontAwesomeSolid.FOLDER.getDescription(),
+                "Git Commit", FontAwesomeBrands.USB.getDescription(),
+                "Git Overview", FontAwesomeSolid.HOME.getDescription(),
+                "Git Commit List", FontAwesomeSolid.LIST.getDescription(),
+                "Git Branches", FontAwesomeSolid.CODE_BRANCH.getDescription(),
+                "Git Remotes", FontAwesomeSolid.GLOBE.getDescription(),
+                "Git Sync", FontAwesomeSolid.SYNC.getDescription(),
+                "Git Stash", FontAwesomeSolid.BOX.getDescription()
+            )));
 
         var bottomBar = new RRVBox();
         var bottomIcons = PaneIconBarFactory.create(
@@ -282,5 +314,4 @@ public class IDESetup {
 
         return Optional.empty();
     }
-
 }

@@ -1,6 +1,5 @@
 package dev.railroadide.core.ui;
 
-import dev.railroadide.core.ui.localized.LocalizedButton;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.TextField;
@@ -11,12 +10,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * A button that opens a file or directory browser dialog.
  * It allows users to select files, directories, or images and updates a TextField with the selected path(s).
  */
-public class BrowseButton extends LocalizedButton {
+public class BrowseButton extends RRButton {
     private final ObjectProperty<Window> parentWindow = new SimpleObjectProperty<>();
     private final ObjectProperty<TextField> textField = new SimpleObjectProperty<>();
     private final ObjectProperty<BrowseType> browseType = new SimpleObjectProperty<>(BrowseType.FILE);
@@ -42,9 +42,17 @@ public class BrowseButton extends LocalizedButton {
                 case FILE -> {
                     var fileChooser = fileBrowser(defaultLocation.toFile(), "Select File", null);
                     if (selectionMode == BrowseSelectionMode.SINGLE) {
-                        textField.setText(fileChooser.showOpenDialog(parentWindow.get()).getAbsolutePath());
+                        File file = fileChooser.showOpenDialog(parentWindow.get());
+                        if (file == null)
+                            return;
+
+                        textField.setText(file.getAbsolutePath());
                     } else {
-                        textField.setText(fileChooser.showOpenMultipleDialog(parentWindow.get()).stream()
+                        List<File> files = fileChooser.showOpenMultipleDialog(parentWindow.get());
+                        if (files == null)
+                            return;
+
+                        textField.setText(files.stream()
                             .map(File::getAbsolutePath)
                             .reduce((a, b) -> a + ", " + b)
                             .orElse(""));
@@ -52,14 +60,26 @@ public class BrowseButton extends LocalizedButton {
                 }
                 case DIRECTORY -> {
                     var folderBrowser = folderBrowser(defaultLocation.toFile(), "Select Directory");
-                    textField.setText(folderBrowser.showDialog(parentWindow.get()).getAbsolutePath());
+                    File file = folderBrowser.showDialog(parentWindow.get());
+                    if (file == null)
+                        return;
+
+                    textField.setText(file.getAbsolutePath());
                 }
                 case IMAGE -> {
                     var imageChooser = imageBrowser(defaultLocation.toFile(), "Select Image");
                     if (selectionMode == BrowseSelectionMode.SINGLE) {
-                        textField.setText(imageChooser.showOpenDialog(parentWindow.get()).getAbsolutePath());
+                        File file = imageChooser.showOpenDialog(parentWindow.get());
+                        if (file == null)
+                            return;
+
+                        textField.setText(file.getAbsolutePath());
                     } else {
-                        textField.setText(imageChooser.showOpenMultipleDialog(parentWindow.get()).stream()
+                        List<File> files = imageChooser.showOpenMultipleDialog(parentWindow.get());
+                        if (files == null)
+                            return;
+
+                        textField.setText(files.stream()
                             .map(File::getAbsolutePath)
                             .reduce((a, b) -> a + ", " + b)
                             .orElse(""));

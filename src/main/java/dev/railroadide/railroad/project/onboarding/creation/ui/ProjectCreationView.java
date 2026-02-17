@@ -126,6 +126,14 @@ public class ProjectCreationView extends RRBorderPane {
                 logsPane.setExpanded(!logsPane.isExpanded());
             }
         });
+
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                stopTicker();
+            } else if (elapsedTicker != null && startInstant.get() != null) {
+                elapsedTicker.play();
+            }
+        });
     }
 
     public void bindToService(Service<?> service,
@@ -176,7 +184,9 @@ public class ProjectCreationView extends RRBorderPane {
             timeChip.setText(txt);
         }));
         elapsedTicker.setCycleCount(Timeline.INDEFINITE);
-        elapsedTicker.playFromStart();
+        if (getScene() != null) {
+            elapsedTicker.playFromStart();
+        }
     }
 
     private void stopTicker() {

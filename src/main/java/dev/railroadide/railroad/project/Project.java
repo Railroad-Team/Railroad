@@ -8,6 +8,7 @@ import dev.railroadide.core.utility.JsonSerializable;
 import dev.railroadide.core.vcs.Repository;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.config.ConfigHandler;
+import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
 import dev.railroadide.railroad.java.JDK;
@@ -15,8 +16,11 @@ import dev.railroadide.railroad.project.data.ProjectDataStore;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
-import dev.railroadide.railroad.gradle.project.GradleManager;
+import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.utility.StringUtils;
+import dev.railroadide.railroad.vcs.git.GitClient;
+import dev.railroadide.railroad.vcs.git.GitManager;
+import dev.railroadide.railroad.vcs.git.execution.GitProcessRunner;
 import dev.railroadide.railroadpluginapi.events.ProjectAliasChangedEvent;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
@@ -37,6 +41,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class Project implements JsonSerializable<JsonObject>, dev.railroadide.railroadpluginapi.dto.Project {
+    private static final Path DEFAULT_GIT_EXECUTABLE = Path.of("git");
+
     private final ObjectProperty<Path> path = new ReadOnlyObjectWrapper<>();
     private final StringProperty alias = new SimpleStringProperty();
     private final ObjectProperty<Image> icon = new SimpleObjectProperty<>();
@@ -50,6 +56,8 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
     private final RunConfigurationManager runConfigManager;
     @Getter
     private final GradleManager gradleManager;
+    @Getter
+    private final GitManager gitManager;
 
     public Project(Path path) {
         this(path, path.getFileName().toString());
@@ -66,6 +74,10 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
         this.dataStore = new ProjectDataStore(this);
         this.runConfigManager = new RunConfigurationManager(this);
         this.gradleManager = new GradleManager(this);
+        Path gitExecutable = Optional.ofNullable(Settings.GIT_EXECUTABLE_PATH.getValue()).orElse(DEFAULT_GIT_EXECUTABLE);
+        this.gitManager = new GitManager(this, new GitClient(new GitProcessRunner(gitExecutable)));
+        Settings.GIT_EXECUTABLE_PATH.addListener((oldPath, newPath) ->
+            this.gitManager.setGitExecutablePath(newPath != null ? newPath : DEFAULT_GIT_EXECUTABLE));
     }
 
     private static BufferedImage createIconImage(Project project) {
@@ -196,6 +208,7 @@ public class Project implements JsonSerializable<JsonObject>, dev.railroadide.ra
         Railroad.PROJECT_MANAGER.updateProjectInfo(this);
         IDESetup.switchToIDE(this);
         discoverFacets();
+        this.gitManager.detectRepository();
     }
 
     @Override

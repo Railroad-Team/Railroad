@@ -7,6 +7,7 @@ import dev.railroadide.core.ui.styling.ValidationState;
 import javafx.animation.FadeTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -48,6 +49,7 @@ public class RRTextField extends TextField implements TextFieldControl {
     public RRTextField(String localizationKey, Ikon prefixIcon) {
         this(localizationKey);
         setPrefixIcon(prefixIcon);
+        setCursor(Cursor.TEXT);
     }
 
     /**

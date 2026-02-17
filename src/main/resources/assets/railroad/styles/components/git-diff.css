@@ -1,0 +1,71 @@
+/* Git diff pane styles */
+.git-diff-pane-root {
+    -fx-background-color: -color-bg-default;
+}
+
+.git-diff-code-area {
+    -fx-background-color: -color-bg-overlay;
+}
+
+.git-diff-placeholder {
+    -fx-fill: -color-fg-muted;
+}
+
+.git-diff-line-header {
+    -fx-fill: -color-fg-emphasis;
+    -fx-font-weight: bold;
+}
+
+.git-diff-line-hunk {
+    -fx-fill: -color-accent-emphasis;
+    -fx-font-weight: bold;
+}
+
+.git-diff-line-meta {
+    -fx-fill: -color-fg-subtle;
+}
+
+.git-diff-line-addition {
+    -rtfx-background-color: -color-success-muted;
+}
+
+.git-diff-line-deletion {
+    -rtfx-background-color: -color-danger-muted;
+}
+
+.git-diff-line-context {
+}
+
+.git-diff-line-prefix {
+    -fx-font-weight: bold;
+}
+
+.git-diff-line-prefix.git-diff-line-addition {
+    -fx-fill: -color-success-emphasis;
+}
+
+.git-diff-line-prefix.git-diff-line-deletion {
+    -fx-fill: -color-danger-emphasis;
+}
+
+.git-diff-gutter {
+    -fx-background-color: -color-bg-inset;
+    -fx-padding: 0 8 0 8;
+}
+
+.git-diff-gutter.git-diff-line-addition {
+    -fx-background-color: -color-success-muted;
+}
+
+.git-diff-gutter.git-diff-line-deletion {
+    -fx-background-color: -color-danger-muted;
+}
+
+.git-diff-gutter-number {
+    -fx-text-fill: -color-fg-subtle;
+    -fx-font-family: "Fira Code";
+}
+
+.git-diff-gutter-empty {
+    -fx-text-fill: -color-fg-muted;
+}
