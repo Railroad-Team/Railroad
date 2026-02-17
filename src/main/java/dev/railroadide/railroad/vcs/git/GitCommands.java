@@ -364,6 +364,86 @@ public final class GitCommands {
             .build();
     }
 
+    public static GitCommand stashPop(GitRepository repo, String stashRef) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "stash",
+                "pop",
+                stashRef
+            )
+            .build();
+    }
+
+    public static GitCommand getStashes(GitRepository repo) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "--no-pager",
+                "stash",
+                "list",
+                "--pretty=format:%gd%x1f%H%x1f%ct%x1f%gs"
+            )
+            .build();
+    }
+
+    public static GitCommand stashApply(GitRepository repo, String stashRef) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "stash",
+                "apply",
+                stashRef
+            )
+            .build();
+    }
+
+    public static GitCommand stashDrop(GitRepository repo, String stashRef) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "stash",
+                "drop",
+                stashRef
+            )
+            .build();
+    }
+
+    public static GitCommand getStashChanges(GitRepository repo, String stashRef) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "--no-pager",
+                "diff",
+                "--name-status",
+                "-z",
+                stashRef + "^1",
+                stashRef
+            )
+            .build();
+    }
+
+    public static GitCommand getStashDiff(GitRepository repo, String stashRef, Path filePath) {
+        return GitCommand.builder()
+            .workingDirectory(repo)
+            .timeout(10, TimeUnit.SECONDS)
+            .addArgs(
+                "--no-pager",
+                "diff",
+                "--no-color",
+                stashRef + "^1",
+                stashRef,
+                "--",
+                filePath.toString()
+            )
+            .build();
+    }
+
     public static GitCommand checkoutDetachedWithSwitch(GitRepository repo, String hash) {
         return GitCommand.builder()
             .workingDirectory(repo)

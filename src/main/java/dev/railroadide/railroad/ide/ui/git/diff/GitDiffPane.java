@@ -93,6 +93,24 @@ public class GitDiffPane extends RRBorderPane {
         this.filePath.set(filePath);
     }
 
+    public void setExternalDiff(String displayTitle, String diffText) {
+        int requestId = generation.incrementAndGet();
+        if (displayTitle != null && !displayTitle.isBlank()) {
+            title.set(displayTitle);
+        }
+
+        DiffResult result;
+        if (diffText == null) {
+            result = DiffResult.placeholder(PLACEHOLDER_FAILED_KEY);
+        } else if (diffText.isBlank()) {
+            result = DiffResult.placeholder(PLACEHOLDER_NO_CHANGES_KEY);
+        } else {
+            result = renderDiff(diffText);
+        }
+
+        applyDiffResult(requestId, result);
+    }
+
     public StringProperty titleProperty() {
         return title;
     }

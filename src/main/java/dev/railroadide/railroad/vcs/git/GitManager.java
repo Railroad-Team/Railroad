@@ -17,6 +17,8 @@ import dev.railroadide.railroad.vcs.git.identity.GitAuthor;
 import dev.railroadide.railroad.vcs.git.identity.GitIdentity;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
+import dev.railroadide.railroad.vcs.git.stash.GitStashEntry;
+import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import dev.railroadide.railroad.vcs.git.status.GitRepoStatus;
 import dev.railroadide.railroad.vcs.git.util.*;
 import javafx.beans.property.*;
@@ -476,6 +478,67 @@ public class GitManager {
                 refreshStatusInternal();
             }
         });
+    }
+
+    public void stashPop(String stashRef) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.stashPop(repository, stashRef);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public List<GitStashEntry> getStashes() {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null)
+            return List.of();
+
+        return this.gitClient.getStashes(repository);
+    }
+
+    public void stashApply(String stashRef) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.stashApply(repository, stashRef);
+                this.gitClient.stashDrop(repository, stashRef);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public void stashDrop(String stashRef) {
+        this.executorService.submit(() -> {
+            GitRepository repository = this.gitRepository.get();
+            if (repository != null) {
+                this.gitClient.stashDrop(repository, stashRef);
+                refreshStatusInternal();
+            }
+        });
+    }
+
+    public List<GitFileChange> getStashChanges(String stashRef) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null || stashRef == null || stashRef.isBlank())
+            return List.of();
+
+        return this.gitClient.getStashChanges(repository, stashRef);
+    }
+
+    public Optional<String> getStashDiff(String stashRef, Path filePath) {
+        GitRepository repository = this.gitRepository.get();
+        if (repository == null || stashRef == null || stashRef.isBlank() || filePath == null)
+            return Optional.empty();
+
+        Path repoRoot = repository.root().toAbsolutePath().normalize();
+        Path absoluteFile = filePath.toAbsolutePath().normalize();
+        if (!absoluteFile.startsWith(repoRoot))
+            return Optional.empty();
+
+        Path relativePath = repoRoot.relativize(absoluteFile);
+        return this.gitClient.getStashDiffText(repository, stashRef, relativePath);
     }
 
     public void checkoutCommit(String hash) {

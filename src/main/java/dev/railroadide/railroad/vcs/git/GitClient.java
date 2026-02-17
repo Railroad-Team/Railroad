@@ -18,6 +18,7 @@ import dev.railroadide.railroad.vcs.git.identity.GitSigningStatus;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitRemoteParser;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
+import dev.railroadide.railroad.vcs.git.stash.GitStashEntry;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import dev.railroadide.railroad.vcs.git.status.GitRepoStatus;
 import dev.railroadide.railroad.vcs.git.status.GitStatusParser;
@@ -26,11 +27,15 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.function.Consumer;
 
 // TODO: Add small FS cache for detected repositories to avoid repeated git calls
 // TODO: Integrate the use of IDE tasks
 public class GitClient {
+    private static final Pattern STASH_SUBJECT_PATTERN = Pattern.compile("^(?:WIP on|On)\\s+(.+?):\\s*(.*)$");
+
     protected final GitProcessRunner runner;
 
     public GitClient(GitProcessRunner runner) {
@@ -704,6 +709,181 @@ public class GitClient {
 
         if (result.exitCode() != 0)
             throw new GitExecutionException("git stash pop failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void stashPop(GitRepository repo, String stashRef) {
+        GitCommand cmd = GitCommands.stashPop(repo, stashRef);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git stash pop timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git stash pop was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git stash pop failed: " + String.join("\n", result.stderr()));
+    }
+
+    public List<GitStashEntry> getStashes(GitRepository repo) {
+        GitCommand cmd = GitCommands.getStashes(repo);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git stash list timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git stash list was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git stash list failed: " + String.join("\n", result.stderr()));
+
+        List<GitStashEntry> stashes = new ArrayList<>();
+        for (String line : result.stdout()) {
+            if (line == null || line.isBlank())
+                continue;
+
+            String[] parts = line.split("\u001F", 4);
+            if (parts.length < 4)
+                continue;
+
+            long createdAtEpochSeconds = 0L;
+            try {
+                createdAtEpochSeconds = Long.parseLong(parts[2]);
+            } catch (NumberFormatException ignored) {
+            }
+
+            String branch = "";
+            String message = parts[3];
+            Matcher matcher = STASH_SUBJECT_PATTERN.matcher(parts[3]);
+            if (matcher.matches()) {
+                branch = matcher.group(1).trim();
+                message = matcher.group(2).trim();
+            }
+            if (message.isBlank()) {
+                message = parts[3];
+            }
+
+            int additions = 0;
+            int deletions = 0;
+            try {
+                List<GitAdditionsDeletions> additionsDeletions = getAdditionsDeletions(repo, parts[0]);
+                additions = additionsDeletions.stream().mapToInt(GitAdditionsDeletions::additions).sum();
+                deletions = additionsDeletions.stream().mapToInt(GitAdditionsDeletions::deletions).sum();
+            } catch (RuntimeException exception) {
+                Railroad.LOGGER.debug("Failed to load stash additions/deletions for {}", parts[0], exception);
+            }
+
+            stashes.add(new GitStashEntry(parts[0], branch, parts[1], createdAtEpochSeconds, message, additions, deletions));
+        }
+
+        return stashes;
+    }
+
+    public void stashApply(GitRepository repo, String stashRef) {
+        GitCommand cmd = GitCommands.stashApply(repo, stashRef);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git stash apply timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git stash apply was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git stash apply failed: " + String.join("\n", result.stderr()));
+    }
+
+    public void stashDrop(GitRepository repo, String stashRef) {
+        GitCommand cmd = GitCommands.stashDrop(repo, stashRef);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git stash drop timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git stash drop was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git stash drop failed: " + String.join("\n", result.stderr()));
+    }
+
+    public List<GitFileChange> getStashChanges(GitRepository repo, String stashRef) {
+        GitCommand cmd = GitCommands.getStashChanges(repo, stashRef);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.NULL_RECORDS);
+
+        if (result.timedOut())
+            throw new GitExecutionException("git diff --name-status timed out");
+
+        if (result.cancelled())
+            throw new GitExecutionException("git diff --name-status was cancelled");
+
+        if (result.exitCode() != 0)
+            throw new GitExecutionException("git diff --name-status failed: " + String.join("\n", result.stderr()));
+
+        List<String> records = result.stdout();
+        List<GitFileChange> changes = new ArrayList<>();
+        for (int i = 0; i < records.size(); ) {
+            String statusToken = records.get(i++);
+            if (statusToken == null || statusToken.isBlank())
+                continue;
+
+            char status = statusToken.charAt(0);
+            if (status == 'R' || status == 'C') {
+                if (i + 1 >= records.size())
+                    break;
+
+                String oldPath = records.get(i++);
+                String newPath = records.get(i++);
+                if (newPath == null || newPath.isBlank())
+                    continue;
+
+                changes.add(new GitFileChange(
+                    repo.root().resolve(newPath).normalize(),
+                    oldPath == null || oldPath.isBlank() ? null : repo.root().resolve(oldPath).normalize(),
+                    status,
+                    ' '
+                ));
+                continue;
+            }
+
+            if (i >= records.size())
+                break;
+
+            String path = records.get(i++);
+            if (path == null || path.isBlank())
+                continue;
+
+            changes.add(new GitFileChange(
+                repo.root().resolve(path).normalize(),
+                status,
+                ' '
+            ));
+        }
+
+        return changes;
+    }
+
+    public Optional<String> getStashDiffText(GitRepository repo, String stashRef, Path filePath) {
+        GitCommand cmd = GitCommands.getStashDiff(repo, stashRef, filePath);
+        GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
+
+        if (result.timedOut()) {
+            Railroad.LOGGER.warn("git stash diff timed out for {} in {}", filePath, stashRef);
+            return Optional.empty();
+        }
+
+        if (result.cancelled()) {
+            Railroad.LOGGER.warn("git stash diff was cancelled for {} in {}", filePath, stashRef);
+            return Optional.empty();
+        }
+
+        if (result.exitCode() != 0) {
+            Railroad.LOGGER.warn("git stash diff failed for {} in {}: {}", filePath, stashRef, String.join("\n", result.stderr()));
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(result.readAllStdout());
     }
 
     public void checkoutCommit(GitRepository repo, String hash, String gitVersion) {
