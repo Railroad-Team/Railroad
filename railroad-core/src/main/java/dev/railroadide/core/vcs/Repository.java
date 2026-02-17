@@ -18,11 +18,6 @@ import java.util.concurrent.CompletableFuture;
 @Getter
 public class Repository {
     /**
-     * The type of the repository (e.g., Git, SVN).
-     */
-    private RepositoryTypes repositoryType;
-
-    /**
      * The URL of the repository.
      */
     private String repositoryURL;
@@ -46,15 +41,6 @@ public class Repository {
      * The connection associated with this repository.
      */
     private AbstractConnection connection;
-
-    /**
-     * Constructs a new Repository with the specified repository type.
-     *
-     * @param repositoryType The type of the repository.
-     */
-    public Repository(RepositoryTypes repositoryType) {
-        setRepositoryType(repositoryType);
-    }
 
     /**
      * Clones the repository to the specified local path.

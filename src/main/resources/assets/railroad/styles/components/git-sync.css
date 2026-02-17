@@ -1,0 +1,205 @@
+.git-sync-pane-root {
+    -fx-padding: 6px;
+    -fx-spacing: 8px;
+    -fx-background-color: -color-bg-default;
+}
+
+.git-sync-info-pane {
+    -fx-padding: 10px 12px;
+    -fx-spacing: 10px;
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.git-sync-info-pane .background-2,
+.git-sync-info-pane .Railroad,
+.git-sync-info-pane .git-sync-tracking-info-pane,
+.git-sync-info-pane .git-sync-ahead-behind-info-pane,
+.git-sync-info-pane .git-sync-strategy-pane,
+.git-sync-info-pane .git-sync-tracking-info-box,
+.git-sync-info-pane .git-sync-ahead-behind-info-box,
+.git-sync-info-pane .git-sync-strategy-pull-box,
+.git-sync-info-pane .git-sync-strategy-push-box {
+    -fx-background-color: transparent;
+}
+
+.git-sync-tracking-info-pane,
+.git-sync-ahead-behind-info-pane,
+.git-sync-strategy-pane {
+    -fx-spacing: 6px;
+}
+
+.git-sync-tracking-info-title,
+.git-sync-ahead-behind-info-title,
+.git-sync-strategy-title,
+.git-sync-incoming-changes-title,
+.git-sync-outgoing-changes-title,
+.git-sync-controls-remote-label,
+.git-sync-controls-upstream-branch-label {
+    -fx-fill: -color-fg-muted;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+.git-sync-tracking-info-box {
+    -fx-spacing: 8px;
+    -fx-alignment: center-left;
+}
+
+.git-sync-tracking-info-label {
+    -fx-fill: -color-fg-subtle;
+}
+
+.git-sync-tracking-info-chip {
+    -fx-text-fill: -color-accent-emphasis;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospaced";
+    -fx-background-color: -color-accent-muted;
+    -fx-border-color: -color-accent-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 9px;
+    -fx-background-radius: 9px;
+    -fx-padding: 1px 7px;
+}
+
+.git-sync-ahead-behind-info-box {
+    -fx-spacing: 8px;
+    -fx-alignment: center-left;
+}
+
+.git-sync-ahead-behind-info-ahead {
+    -fx-fill: -color-success-fg;
+}
+
+.git-sync-ahead-behind-info-behind {
+    -fx-fill: -color-warning-fg;
+}
+
+.git-sync-ahead-behind-info-up-to-date {
+    -fx-fill: -color-fg-default;
+}
+
+.git-sync-strategy-pull-box,
+.git-sync-strategy-push-box {
+    -fx-spacing: 8px;
+    -fx-alignment: center-left;
+}
+
+.git-sync-strategy-label {
+    -fx-fill: -color-fg-subtle;
+}
+
+.git-sync-strategy-combobox {
+    -fx-pref-width: 220px;
+}
+
+.git-sync-controls-pane-root {
+    -fx-padding: 10px 12px;
+    -fx-spacing: 8px;
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.git-sync-controls-pane-root .background-2,
+.git-sync-controls-pane-root .Railroad,
+.git-sync-controls-pane-root .git-sync-controls-remote-vbox,
+.git-sync-controls-pane-root .git-sync-controls-upstream-branch-vbox,
+.git-sync-controls-pane-root .git-sync-controls-buttons-hbox {
+    -fx-background-color: transparent;
+}
+
+.git-sync-controls-remote-vbox,
+.git-sync-controls-upstream-branch-vbox {
+    -fx-spacing: 4px;
+}
+
+.git-sync-controls-remote-combobox,
+.git-sync-controls-upstream-branch-combobox {
+    -fx-pref-width: 280px;
+}
+
+.git-sync-controls-buttons-hbox {
+    -fx-spacing: 6px;
+    -fx-alignment: center-left;
+}
+
+.git-sync-controls-fetch-button,
+.git-sync-controls-pull-button,
+.git-sync-controls-push-button {
+    -fx-min-width: 92px;
+}
+
+.git-sync-incoming-changes-pane,
+.git-sync-outgoing-changes-pane {
+    -fx-padding: 10px 12px;
+    -fx-spacing: 8px;
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.git-sync-incoming-changes-pane .background-2,
+.git-sync-incoming-changes-pane .Railroad,
+.git-sync-outgoing-changes-pane .background-2,
+.git-sync-outgoing-changes-pane .Railroad {
+    -fx-background-color: transparent;
+}
+
+.git-sync-commits-list {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.git-sync-commits-list .placeholder .text {
+    -fx-fill: -color-fg-muted;
+}
+
+.git-sync-commit-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.git-sync-commit-cell:filled {
+    -fx-padding: 0 0 6px 0;
+}
+
+.git-sync-commit-cell-pane {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px 10px;
+    -fx-spacing: 10px;
+    -fx-alignment: center-left;
+}
+
+.git-sync-commit-cell:filled:selected .git-sync-commit-cell-pane {
+    -fx-border-color: -color-border-default;
+    -fx-background-color: -color-bg-subtle;
+}
+
+.git-sync-commit-message {
+    -fx-fill: -color-fg-default;
+    -fx-font-size: 13px;
+}
+
+.git-sync-commit-right-box {
+    -fx-alignment: center-right;
+}
+
+.git-sync-commit-author,
+.git-sync-commit-date,
+.git-sync-commit-separator {
+    -fx-fill: -color-fg-muted;
+    -fx-font-size: 11px;
+}

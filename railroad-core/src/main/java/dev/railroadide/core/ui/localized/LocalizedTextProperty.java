@@ -11,16 +11,15 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 
+import java.util.Objects;
+
 /**
  * A text property capable of localizing its content.
- * 
+ * <p>
  * Bind a pre-exiting text property to it to use its behavior.
  * Use a bidirectional binding if you plan on also using un-localized text.
- * 
  */
 public class LocalizedTextProperty extends StringPropertyBase {
-
-    private static final Object DEFAULT_BEAN = null;
     private static final String DEFAULT_NAME = "";
 
     private final Object bean;
@@ -74,13 +73,13 @@ public class LocalizedTextProperty extends StringPropertyBase {
     private boolean blockedUpdates = false;
 
     private void updateTranslation(boolean activate) {
-        
+
         if (blockedUpdates)
             return;
 
         if (activate)
             activated = true;
-        
+
         if (!activated)
             return;
 
@@ -97,7 +96,7 @@ public class LocalizedTextProperty extends StringPropertyBase {
 
     @Override
     protected void invalidated() {
-        if (get() != translated) {
+        if (!Objects.equals(get(), translated)) {
             activated = false;
         }
     }

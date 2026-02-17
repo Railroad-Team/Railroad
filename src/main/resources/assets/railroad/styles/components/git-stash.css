@@ -1,0 +1,107 @@
+.git-stash-pane {
+    -fx-background-color: transparent;
+}
+
+.git-stash-controls,
+.git-stash-actions {
+    -fx-alignment: center-left;
+}
+
+.git-stash-message-field {
+    -fx-pref-width: 320;
+}
+
+.git-stash-list {
+    -fx-padding: 4;
+}
+
+.git-stash-list .list-cell {
+    -fx-padding: 4;
+}
+
+.git-stash-list .list-cell:filled {
+    -fx-background-color: transparent;
+    -fx-padding: 2 4;
+}
+
+.git-stash-list .list-cell:filled:selected .git-stash-item {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-muted;
+}
+
+.git-stash-list .list-cell:filled:hover .git-stash-item {
+    -fx-background-color: -color-neutral-subtle;
+}
+
+.git-stash-item {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 10 12;
+}
+
+.git-stash-item-left {
+    -fx-background-color: transparent;
+}
+
+.git-stash-item-name {
+    -fx-font-weight: bold;
+    -fx-fill: -color-fg-default;
+}
+
+.git-stash-item-metadata-column {
+    -fx-alignment: center-left;
+}
+
+.git-stash-item-branch,
+.git-stash-item-hash,
+.git-stash-item-timestamp {
+    -fx-fill: -color-fg-subtle;
+}
+
+.git-stash-item-right {
+    -fx-alignment: center-right;
+}
+
+.git-stash-item-reference {
+    -fx-font-family: monospace;
+    -fx-fill: -color-fg-subtle;
+    -fx-font-weight: bold;
+}
+
+.git-stash-item-stats {
+    -fx-alignment: center-right;
+}
+
+.git-stash-item-additions {
+    -fx-fill: -color-success-emphasis;
+    -fx-font-family: monospace;
+}
+
+.git-stash-item-deletions {
+    -fx-fill: -color-danger-emphasis;
+    -fx-font-family: monospace;
+}
+
+.git-stash-list .list-cell:empty {
+    -fx-background-color: transparent;
+}
+
+.git-stash-changes-tree {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-background-insets: 0;
+    -fx-padding: 2 4 0 4;
+}
+
+.git-stash-changes-tree > .virtual-flow,
+.git-stash-changes-tree > .virtual-flow > .clipped-container,
+.git-stash-changes-tree > .virtual-flow > .clipped-container > .sheet {
+    -fx-background-color: transparent;
+}
+
+.git-stash-changes-tree .tree-cell {
+    -fx-background-color: transparent;
+}

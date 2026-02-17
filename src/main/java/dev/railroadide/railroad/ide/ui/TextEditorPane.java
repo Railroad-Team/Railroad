@@ -79,20 +79,22 @@ public class TextEditorPane extends CodeArea {
             scrollToPixel(0, 0);
         });
 
-        ShutdownHooks.addHook(() -> {
-            watcherExecutor.shutdownNow();
-            if (watchService != null) {
-                try {
-                    watchService.close();
-                } catch (IOException ignored) {
-                    // Nothing to do here
-                }
-            }
+        ShutdownHooks.addHook(this::close);
+    }
 
-            if (changeSubscription != null) {
-                changeSubscription.unsubscribe();
+    public void close() {
+        watcherExecutor.shutdownNow();
+        if (watchService != null) {
+            try {
+                watchService.close();
+            } catch (IOException ignored) {
+                // Nothing to do here
             }
-        });
+        }
+
+        if (changeSubscription != null) {
+            changeSubscription.unsubscribe();
+        }
     }
 
     public static ThreadFactory namedThreadFactory(String prefix) {

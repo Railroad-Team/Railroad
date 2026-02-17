@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.settings;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonPrimitive;
 import dev.railroadide.core.localization.Language;
 import dev.railroadide.core.settings.SettingCodec;
@@ -13,6 +14,7 @@ import dev.railroadide.railroad.settings.keybinds.KeybindsList;
 import dev.railroadide.railroad.settings.ui.AbstractPathListPane;
 import dev.railroadide.railroad.settings.ui.DirectoryListPane;
 import dev.railroadide.railroad.settings.ui.FileListPane;
+import dev.railroadide.railroad.settings.ui.GitExecutablePathPane;
 import dev.railroadide.railroad.theme.ui.ThemeSettingsSection;
 import dev.railroadide.railroadpluginapi.PluginDescriptor;
 import javafx.scene.control.ComboBox;
@@ -86,5 +88,14 @@ public class SettingCodecs {
             .valueToNode((files, pane) -> pane.setFiles(files))
             .jsonEncoder(AbstractPathListPane::toJson)
             .jsonDecoder(AbstractPathListPane::fromJson)
+            .build();
+
+    public static final SettingCodec<Path, GitExecutablePathPane> GIT_EXECUTABLE_PATH =
+        SettingCodec.<Path, GitExecutablePathPane>builder("railroad:git_executable_path")
+            .createNode(GitExecutablePathPane::new)
+            .nodeToValue(GitExecutablePathPane::getGitExecutablePath)
+            .valueToNode((path, pane) -> pane.setGitExecutablePath(path))
+            .jsonEncoder(path -> path == null ? JsonNull.INSTANCE : new JsonPrimitive(path.toString()))
+            .jsonDecoder(json -> (json == null || json.isJsonNull()) ? null : Path.of(json.getAsString()))
             .build();
 }

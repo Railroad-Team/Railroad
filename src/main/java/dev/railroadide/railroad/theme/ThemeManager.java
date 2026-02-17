@@ -25,9 +25,9 @@ import java.util.stream.Stream;
 
 public class ThemeManager {
     private static boolean debug = false;
-    
+
     private static final StringProperty currentTheme = new SimpleStringProperty();
-    
+
     private static String baseCss;
     private static final List<String> COMPONENTS_CSS = new ArrayList<>();
     private static String debugCss;
@@ -82,6 +82,7 @@ public class ThemeManager {
         return currentTheme.get();
     }
 
+    // TODO: This doesn't work, everything explodes
     public static void reloadAll() {
         Platform.runLater(() -> {
             synchronized (TRACKED_SCENES) {
