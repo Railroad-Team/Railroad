@@ -2,7 +2,7 @@ package dev.railroadide.railroad.ide.projectexplorer.dialog;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
-import dev.railroadide.railroad.plugin.spi.events.FileEvent;
+import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.window.WindowBuilder;
 
@@ -24,7 +24,7 @@ public class DeleteDialog {
                         Files.deleteIfExists(path);
                     }
 
-                    Railroad.EVENT_BUS.publish(new FileEvent(new FileSystemDocument(path.getFileName().toString(), path), FileEvent.EventType.DELETED));
+                    Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(path.getFileName().toString(), path), DocumentEvent.EventType.DELETED));
                 } catch (IOException exception) {
                     Railroad.LOGGER.error("Failed to delete file or directory: {}", path, exception);
                 }

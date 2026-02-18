@@ -3,7 +3,7 @@ package dev.railroadide.railroad.ide;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
-import dev.railroadide.railroad.plugin.spi.events.FileEvent;
+import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.plugin.spi.services.IDEStateService;
 import lombok.Getter;
@@ -32,7 +32,7 @@ public class DefaultIDEStateService implements IDEStateService {
             }
         });
 
-        Railroad.EVENT_BUS.subscribe(FileEvent.class, event -> {
+        Railroad.EVENT_BUS.subscribe(DocumentEvent.class, event -> {
             Document document = event.file();
             if (event.isOpenedEvent()) {
                 openDocument_internal(document);

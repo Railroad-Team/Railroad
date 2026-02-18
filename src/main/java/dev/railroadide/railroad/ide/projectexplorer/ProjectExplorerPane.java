@@ -14,7 +14,7 @@ import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
 import dev.railroadide.railroad.ide.ui.*;
 import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
-import dev.railroadide.railroad.plugin.spi.events.FileEvent;
+import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
@@ -301,21 +301,21 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                     detachableTabPane.getSelectionModel().select(tab);
 
                     var document = new FileSystemDocument(fileName, path);
-                    Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.OPENED));
-                    Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.ACTIVATED));
+                    Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.OPENED));
+                    Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.ACTIVATED));
 
                     tab.setOnClosed(event -> {
-                        Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.CLOSED));
+                        Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.CLOSED));
                         if (tab.isSelected()) {
-                            Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.DEACTIVATED));
+                            Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.DEACTIVATED));
                         }
                     });
 
                     tab.setOnSelectionChanged(event -> {
                         if (tab.isSelected()) {
-                            Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.ACTIVATED));
+                            Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.ACTIVATED));
                         } else {
-                            Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.DEACTIVATED));
+                            Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.DEACTIVATED));
                             Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(null);
                         }
                     });
@@ -345,26 +345,26 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 detachableTabPane.getSelectionModel().select(tab);
 
                 var document = new FileSystemDocument(fileName, path);
-                Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.OPENED));
-                Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.ACTIVATED));
+                Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.OPENED));
+                Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.ACTIVATED));
 
                 tab.setOnClosed(event -> {
-                    Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.CLOSED));
+                    Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.CLOSED));
                     if (tab.isSelected()) {
-                        Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.DEACTIVATED));
+                        Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.DEACTIVATED));
                     }
                 });
 
                 tab.setOnSelectionChanged(event -> {
                     if (tab.isSelected()) {
-                        Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.ACTIVATED));
+                        Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.ACTIVATED));
                         if (tab.getContent() instanceof TextEditorPane textEditorPane) {
                             Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(textEditorPane);
                         } else {
                             Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(null);
                         }
                     } else {
-                        Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.DEACTIVATED));
+                        Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.DEACTIVATED));
                         Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(null);
                     }
                 });
@@ -389,12 +389,12 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                         detachableTabPane.addTab(fileName, new ImageViewerPane(path));
                     }
 
-                    Railroad.EVENT_BUS.publish(new FileEvent(new FileSystemDocument(fileName, path), FileEvent.EventType.OPENED));
+                    Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(fileName, path), DocumentEvent.EventType.OPENED));
                 });
             } else {
                 FileUtils.openInDefaultApplication(path);
 
-                Railroad.EVENT_BUS.publish(new FileEvent(new FileSystemDocument(path.getFileName().toString(), path), FileEvent.EventType.OPENED));
+                Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(path.getFileName().toString(), path), DocumentEvent.EventType.OPENED));
             }
         }
     }

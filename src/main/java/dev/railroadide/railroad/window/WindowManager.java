@@ -13,9 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix3x2d;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Centralized manager for all application windows and popups.
@@ -28,6 +26,7 @@ public class WindowManager {
     private Scene primaryScene;
 
     private final List<Stage> childWindows = new ArrayList<>();
+    private final Map<Stage, WindowEvents> windowEventMap = new HashMap<>();
 
     /**
      * Initialize the WindowManager with the primary application stage.
@@ -42,11 +41,16 @@ public class WindowManager {
     }
 
     public void setPrimaryStage(@NotNull Stage primaryStage) {
+        if (this.primaryStage != null) {
+            untrackWindowEvents(this.primaryStage);
+        }
+
         Objects.requireNonNull(primaryStage, "Primary stage cannot be null");
         this.primaryStage = primaryStage;
         this.primaryScene = primaryStage.getScene();
         ThemeManager.apply(this.primaryScene);
         this.primaryStage.getIcons().add(AppResources.icon());
+        trackWindowEvents(this.primaryStage);
     }
 
     /**
@@ -150,7 +154,27 @@ public class WindowManager {
 
     public void registerChildWindow(Stage stage) {
         childWindows.add(stage);
-        stage.setOnCloseRequest(event -> childWindows.remove(stage));
+        trackWindowEvents(stage);
+        stage.setOnCloseRequest(event -> {
+            childWindows.remove(stage);
+            untrackWindowEvents(stage);
+        });
+    }
+
+    public WindowEvents trackWindowEvents(Stage stage) {
+        var events = new WindowEvents(stage);
+        windowEventMap.put(stage, events);
+        events.beginTracking();
+        return events;
+    }
+
+    public WindowEvents untrackWindowEvents(Stage stage) {
+        WindowEvents events = windowEventMap.remove(stage);
+        if (events != null) {
+            events.stopTracking();
+        }
+
+        return events;
     }
 
     public static void toggleFullScreen() {

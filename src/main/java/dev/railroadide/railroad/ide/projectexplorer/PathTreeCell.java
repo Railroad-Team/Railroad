@@ -4,7 +4,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
-import dev.railroadide.railroad.plugin.spi.events.FileRenamedEvent;
+import dev.railroadide.railroad.plugin.spi.events.DocumentRenamedEvent;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.ui.RRBorderPane;
 import dev.railroadide.railroad.ui.RRHBox;
@@ -211,7 +211,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
 
                 Files.move(editingPath, newValue.getPath());
                 getItem().setPath(newValue.getPath());
-                Railroad.EVENT_BUS.publish(new FileRenamedEvent(new FileSystemDocument(newName, newValue.getPath()), oldName, newName));
+                Railroad.EVENT_BUS.publish(new DocumentRenamedEvent(new FileSystemDocument(newName, newValue.getPath()), oldName, newName));
             } catch (IOException exception) {
                 cancelEdit();
                 messageProperty.setValue("Renaming %s failed".formatted(editingPath.getFileName()));
