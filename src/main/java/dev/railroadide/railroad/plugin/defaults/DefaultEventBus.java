@@ -31,4 +31,15 @@ public class DefaultEventBus implements EventBus {
     public <T extends Event> void subscribe(Class<T> eventType, EventListener<T> listener) {
         subscribers.computeIfAbsent(eventType, k -> new CopyOnWriteArrayList<>()).add(listener);
     }
+
+    @Override
+    public <T extends Event> void unsubscribe(Class<T> eventType, EventListener<T> listener) {
+        CopyOnWriteArrayList<EventListener<? extends Event>> listeners = subscribers.get(eventType);
+        if (listeners != null) {
+            listeners.remove(listener);
+            if (listeners.isEmpty()) {
+                subscribers.remove(eventType);
+            }
+        }
+    }
 }
