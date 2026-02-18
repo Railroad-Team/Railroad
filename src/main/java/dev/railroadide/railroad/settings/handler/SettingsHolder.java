@@ -2,11 +2,12 @@ package dev.railroadide.railroad.settings.handler;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import dev.railroadide.railroad.utility.json.JsonSerializable;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.settings.Setting;
+import dev.railroadide.railroad.utility.json.JsonSerializable;
 import lombok.Getter;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,8 @@ import java.util.Map;
  */
 @Getter
 public class SettingsHolder implements JsonSerializable<JsonObject> {
+    private final Map<String, JsonElement> pendingSettings = new HashMap<>();
+
     public void updateAll() {
         for (Map.Entry<String, Setting<?>> entry : SettingsHandler.SETTINGS_REGISTRY.entries().entrySet()) {
             String id = entry.getKey();
@@ -46,6 +49,12 @@ public class SettingsHolder implements JsonSerializable<JsonObject> {
             } else Railroad.LOGGER.error("Setting with ID '{}' is null.", key);
         }
 
+        for (Map.Entry<String, JsonElement> entry : pendingSettings.entrySet()) {
+            if (!json.has(entry.getKey())) {
+                json.add(entry.getKey(), entry.getValue());
+            }
+        }
+
         return json;
     }
 
@@ -53,6 +62,8 @@ public class SettingsHolder implements JsonSerializable<JsonObject> {
     public void fromJson(JsonObject json) throws IllegalStateException {
         if (json == null)
             throw new IllegalArgumentException("JSON object cannot be null");
+
+        pendingSettings.clear();
 
         for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
             String key = entry.getKey();
@@ -62,8 +73,19 @@ public class SettingsHolder implements JsonSerializable<JsonObject> {
             if (setting != null) {
                 setting.fromJson(value);
             } else {
-                Railroad.LOGGER.error("Setting with ID '{}' does not exist in the settings collection.", key);
+                pendingSettings.put(key, value);
+                Railroad.LOGGER.debug("Setting with ID '{}' is not registered yet, deferring value load.", key);
             }
+        }
+    }
+
+    public void tryHydratePendingSetting(String key, Setting<?> setting) {
+        if (key == null || key.isBlank() || setting == null)
+            return;
+
+        JsonElement pendingValue = pendingSettings.remove(key);
+        if (pendingValue != null) {
+            setting.fromJson(pendingValue);
         }
     }
 

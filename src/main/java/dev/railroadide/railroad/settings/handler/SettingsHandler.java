@@ -10,15 +10,66 @@ import dev.railroadide.railroad.registry.RegistryManager;
 import dev.railroadide.railroad.settings.Setting;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
+import java.util.Map;
 
 public class SettingsHandler {
-    public static final Registry<Setting<?>> SETTINGS_REGISTRY = RegistryManager.createRegistry("settings", new TypeToken<>() {
-    });
     private static final SettingsHolder SETTINGS_HOLDER = new SettingsHolder();
+    private static final Registry<Setting<?>> SETTINGS_REGISTRY_DELEGATE = RegistryManager.createRegistry("settings", new TypeToken<>() {
+    });
+    public static final Registry<Setting<?>> SETTINGS_REGISTRY = new Registry<>() {
+        @Override
+        public String getId() {
+            return SETTINGS_REGISTRY_DELEGATE.getId();
+        }
+
+        @Override
+        public Type getType() {
+            return SETTINGS_REGISTRY_DELEGATE.getType();
+        }
+
+        @Override
+        public Setting<?> register(String id, Setting<?> item) {
+            Setting<?> registered = SETTINGS_REGISTRY_DELEGATE.register(id, item);
+            SETTINGS_HOLDER.tryHydratePendingSetting(id, registered);
+            return registered;
+        }
+
+        @Override
+        public Setting<?> unregister(String id) {
+            return SETTINGS_REGISTRY_DELEGATE.unregister(id);
+        }
+
+        @Override
+        public Setting<?> get(String id) {
+            return SETTINGS_REGISTRY_DELEGATE.get(id);
+        }
+
+        @Override
+        public boolean contains(String id) {
+            return SETTINGS_REGISTRY_DELEGATE.contains(id);
+        }
+
+        @Override
+        public List<Setting<?>> values() {
+            return SETTINGS_REGISTRY_DELEGATE.values();
+        }
+
+        @Override
+        public List<String> keys() {
+            return SETTINGS_REGISTRY_DELEGATE.keys();
+        }
+
+        @Override
+        public Map<String, Setting<?>> entries() {
+            return SETTINGS_REGISTRY_DELEGATE.entries();
+        }
+    };
     private static final Path SETTINGS_PATH = ConfigHandler.getConfigDirectory().resolve("settings.json");
 
     public static void init() {
