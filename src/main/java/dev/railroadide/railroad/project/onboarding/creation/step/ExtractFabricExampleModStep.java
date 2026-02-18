@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.project.onboarding.creation.step;
 
-import dev.railroadide.core.project.ProjectContext;
-import dev.railroadide.core.project.creation.CreationStep;
-import dev.railroadide.core.project.creation.ProgressReporter;
-import dev.railroadide.core.project.creation.service.FilesService;
-import dev.railroadide.core.project.creation.service.ZipService;
+import dev.railroadide.railroad.project.ProjectContext;
+import dev.railroadide.railroad.project.creation.CreationStep;
+import dev.railroadide.railroad.project.creation.ProgressReporter;
+import dev.railroadide.railroad.project.creation.service.FilesService;
+import dev.railroadide.railroad.project.creation.service.ZipService;
 import dev.railroadide.railroad.project.onboarding.creation.ProjectContextKeys;
 
 import java.nio.file.Path;

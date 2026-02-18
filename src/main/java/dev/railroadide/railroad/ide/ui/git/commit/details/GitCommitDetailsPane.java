@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedText;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
@@ -19,12 +19,12 @@ public class GitCommitDetailsPane extends RRVBox {
 
     private final StringProperty title = new SimpleStringProperty(DEFAULT_TITLE);
     private final ObjectProperty<GitCommit> commit = new SimpleObjectProperty<>();
-    private final Project project;
+    private final RailroadProject project;
 
     private String headCommitHash = "";
     private Map<String, List<String>> tagsByCommit = Map.of();
 
-    public GitCommitDetailsPane(Project project) {
+    public GitCommitDetailsPane(RailroadProject project) {
         super();
         this.project = project;
         getStyleClass().add("git-commit-details-root");

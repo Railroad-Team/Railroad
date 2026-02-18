@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui;
 
-import dev.railroadide.core.ui.RRVBox;
+import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.ImageUtils;
 import javafx.geometry.Insets;

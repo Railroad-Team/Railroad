@@ -1,13 +1,13 @@
 package dev.railroadide.railroad.project.onboarding.creation;
 
-import dev.railroadide.core.project.ProjectCreationPipeline;
-import dev.railroadide.core.project.ProjectType;
-import dev.railroadide.core.project.creation.CreationStepProvider;
-import dev.railroadide.core.project.creation.CreationStepRegistry;
-import dev.railroadide.core.project.creation.ProjectCreationPipelineService;
-import dev.railroadide.core.project.creation.ProjectServiceRegistry;
-import dev.railroadide.core.project.creation.service.*;
+import dev.railroadide.railroad.project.ProjectCreationPipeline;
+import dev.railroadide.railroad.project.ProjectType;
 import dev.railroadide.railroad.project.ProjectTypeRegistry;
+import dev.railroadide.railroad.project.creation.CreationStepProvider;
+import dev.railroadide.railroad.project.creation.CreationStepRegistry;
+import dev.railroadide.railroad.project.creation.ProjectCreationPipelineService;
+import dev.railroadide.railroad.project.creation.ProjectServiceRegistry;
+import dev.railroadide.railroad.project.creation.service.*;
 import dev.railroadide.railroad.project.onboarding.creation.step.*;
 import org.jetbrains.annotations.NotNull;
 

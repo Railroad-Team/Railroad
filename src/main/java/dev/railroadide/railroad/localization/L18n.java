@@ -1,11 +1,10 @@
 package dev.railroadide.railroad.localization;
 
-import dev.railroadide.core.localization.Language;
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.plugin.PluginManager;
+import dev.railroadide.railroad.plugin.spi.PluginDescriptor;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
-import dev.railroadide.railroadpluginapi.PluginDescriptor;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 

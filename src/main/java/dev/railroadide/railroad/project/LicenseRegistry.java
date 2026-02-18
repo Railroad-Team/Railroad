@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.project;
 
-import dev.railroadide.core.project.License;
 import lombok.Getter;
 
 @Getter

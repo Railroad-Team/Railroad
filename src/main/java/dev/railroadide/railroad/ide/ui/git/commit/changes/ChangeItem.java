@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.commit.changes;
 
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import javafx.scene.Node;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.input.MouseEvent;
@@ -14,7 +14,7 @@ public interface ChangeItem {
 
     String getSubtitle();
 
-    ContextMenu getContextMenu(Project project);
+    ContextMenu getContextMenu(RailroadProject project);
 
     Consumer<Boolean> getSelectionHandler();
 

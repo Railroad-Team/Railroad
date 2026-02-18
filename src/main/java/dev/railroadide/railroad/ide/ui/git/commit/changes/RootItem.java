@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.commit.changes;
 
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import javafx.scene.Node;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.input.MouseEvent;
@@ -26,7 +26,7 @@ public class RootItem implements ChangeItem {
     }
 
     @Override
-    public ContextMenu getContextMenu(Project project) {
+    public ContextMenu getContextMenu(RailroadProject project) {
         return null;
     }
 

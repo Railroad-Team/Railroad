@@ -3,9 +3,9 @@ package dev.railroadide.railroad.config;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import dev.railroadide.core.utility.JsonSerializable;
+import dev.railroadide.railroad.utility.json.JsonSerializable;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 
 import java.util.Optional;
 
@@ -15,7 +15,7 @@ public class Config implements JsonSerializable<JsonObject> {
         var json = new JsonObject();
 
         var projects = new JsonArray();
-        for (Project project : Railroad.PROJECT_MANAGER.getProjects()) {
+        for (RailroadProject project : Railroad.PROJECT_MANAGER.getProjects()) {
             projects.add(project.toJson());
         }
 
@@ -34,7 +34,7 @@ public class Config implements JsonSerializable<JsonObject> {
                     if (!project.isJsonObject())
                         continue;
 
-                    Optional<Project> optProject = Project.createFromJson(project.getAsJsonObject());
+                    Optional<RailroadProject> optProject = RailroadProject.createFromJson(project.getAsJsonObject());
                     optProject.ifPresent(Railroad.PROJECT_MANAGER::newProject);
                 }
             }

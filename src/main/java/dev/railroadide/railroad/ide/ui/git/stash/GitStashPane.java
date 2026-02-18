@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.ide.ui.git.stash;
 
-import dev.railroadide.core.ui.*;
-import dev.railroadide.core.ui.localized.LocalizedText;
-import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.ui.git.commit.changes.*;
 import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.utility.TimeFormatter;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.stash.GitStashEntry;
@@ -41,7 +41,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 public class GitStashPane extends RRVBox {
-    private final Project project;
+    private final RailroadProject project;
     private final GitManager gitManager;
     private final RRListView<GitStashEntry> stashesList;
     private final RRCheckBoxTreeView<ChangeItem> stashChangesTree;
@@ -58,7 +58,7 @@ public class GitStashPane extends RRVBox {
     );
     private String selectedStashRef;
 
-    public GitStashPane(Project project) {
+    public GitStashPane(RailroadProject project) {
         this.project = project;
         this.gitManager = project.getGitManager();
         getStyleClass().add("git-stash-pane");

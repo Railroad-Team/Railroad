@@ -1,13 +1,5 @@
 package dev.railroadide.railroad.gradle.ui;
 
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.RRToggleButton;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedTab;
-import dev.railroadide.core.ui.localized.LocalizedTooltip;
-import dev.railroadide.core.ui.styling.ButtonSize;
-import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.gradle.GradleSettings;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
@@ -15,7 +7,15 @@ import dev.railroadide.railroad.gradle.model.GradleModelListener;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.gradle.ui.deps.GradleDependenciesPane;
 import dev.railroadide.railroad.gradle.ui.task.GradleTasksPane;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.RRToggleButton;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedTab;
+import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
+import dev.railroadide.railroad.ui.styling.ButtonSize;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
@@ -34,7 +34,7 @@ public class GradleToolsPane extends RRVBox {
     private final Tab tasksTab;
     private final Tab dependenciesTab;
 
-    public GradleToolsPane(Project project) {
+    public GradleToolsPane(RailroadProject project) {
         super();
         getStyleClass().add("gradle-tools-pane");
 

@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
+import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
+import dev.railroadide.railroad.plugin.spi.events.FileEvent;
+import dev.railroadide.railroad.plugin.spi.events.FileModifiedEvent;
 import dev.railroadide.railroad.utility.ShutdownHooks;
-import dev.railroadide.railroadpluginapi.events.FileEvent;
-import dev.railroadide.railroadpluginapi.events.FileModifiedEvent;
 import javafx.application.Platform;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -194,8 +194,8 @@ public class TextEditorPane extends CodeArea {
         Railroad.EVENT_BUS.publish(new FileModifiedEvent(document(), changes));
     }
 
-    private DefaultDocument document() {
-        return new DefaultDocument(filePath.getFileName().toString(), filePath);
+    private FileSystemDocument document() {
+        return new FileSystemDocument(filePath.getFileName().toString(), filePath);
     }
 
     private void startExternalWatcher() {

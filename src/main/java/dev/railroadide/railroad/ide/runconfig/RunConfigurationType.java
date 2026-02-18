@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.ide.runconfig;
 
-import dev.railroadide.core.registry.Registry;
-import dev.railroadide.core.registry.RegistryManager;
-import dev.railroadide.core.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.ide.IDESetup;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.registry.Registry;
+import dev.railroadide.railroad.registry.RegistryManager;
+import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.paint.Paint;
 import org.kordamp.ikonli.Ikon;
@@ -45,19 +45,19 @@ public abstract class RunConfigurationType<D extends RunConfigurationData> {
     /**
      * Run this configuration using the provided project and configuration options.
      */
-    public abstract CompletableFuture<Void> run(Project project, RunConfiguration<D> configuration);
+    public abstract CompletableFuture<Void> run(RailroadProject project, RunConfiguration<D> configuration);
 
     /**
      * Debug this configuration.
      */
-    public abstract CompletableFuture<Void> debug(Project project, RunConfiguration<D> configuration);
+    public abstract CompletableFuture<Void> debug(RailroadProject project, RunConfiguration<D> configuration);
 
     /**
      * Stop execution for this configuration.
      */
-    public abstract CompletableFuture<Void> stop(Project project, RunConfiguration<D> configuration);
+    public abstract CompletableFuture<Void> stop(RailroadProject project, RunConfiguration<D> configuration);
 
-    public boolean isDebuggingSupported(Project project, RunConfiguration<D> configuration) {
+    public boolean isDebuggingSupported(RailroadProject project, RunConfiguration<D> configuration) {
         return false;
     }
 
@@ -69,7 +69,7 @@ public abstract class RunConfigurationType<D extends RunConfigurationData> {
         return value;
     }
 
-    public ContextMenu createContextMenu(Project project, RunConfiguration<D> runConfiguration) {
+    public ContextMenu createContextMenu(RailroadProject project, RunConfiguration<D> runConfiguration) {
         var menu = new ContextMenu();
 
         var editItem = new LocalizedMenuItem("railroad.run_configuration.edit");
@@ -91,11 +91,11 @@ public abstract class RunConfigurationType<D extends RunConfigurationData> {
         return new RunConfiguration<>(this, data);
     }
 
-    public abstract D createDataInstance(Project project);
+    public abstract D createDataInstance(RailroadProject project);
 
     public abstract Class<D> getDataClass();
 
-    public RunConfiguration<D> createDefaultConfiguration(Project project) {
+    public RunConfiguration<D> createDefaultConfiguration(RailroadProject project) {
         D data = createDataInstance(project);
         return createConfigurationInstance(data);
     }

@@ -1,9 +1,8 @@
 package dev.railroadide.railroad.vcs;
 
-import dev.railroadide.core.vcs.Repository;
-import dev.railroadide.core.vcs.connections.AbstractConnection;
-import dev.railroadide.core.vcs.connections.VCSProfile;
-import dev.railroadide.railroadpluginapi.services.VCSService;
+import dev.railroadide.railroad.plugin.spi.services.VCSService;
+import dev.railroadide.railroad.vcs.connections.AbstractConnection;
+import dev.railroadide.railroad.vcs.connections.VCSProfile;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.Getter;

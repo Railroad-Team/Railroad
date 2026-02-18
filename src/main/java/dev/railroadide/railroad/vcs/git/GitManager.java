@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.vcs.git;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
 import dev.railroadide.railroad.vcs.git.branch.GitBranch;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchLastCommit;
@@ -41,7 +41,7 @@ public class GitManager {
     private static final String SETTINGS_PATH = "vcs/git.json";
     private static final long DEFAULT_AUTO_REFRESH_INTERVAL_MILLIS = 5000L;
 
-    private final Project project;
+    private final RailroadProject project;
     private final GitClient gitClient;
 
     private final ScheduledExecutorService executorService;
@@ -62,7 +62,7 @@ public class GitManager {
      * @param gitClient git client backend
      * @param executorService executor used for async operations
      */
-    public GitManager(Project project, GitClient gitClient, ScheduledExecutorService executorService) {
+    public GitManager(RailroadProject project, GitClient gitClient, ScheduledExecutorService executorService) {
         this.project = project;
         this.gitClient = gitClient;
         this.executorService = executorService;
@@ -74,7 +74,7 @@ public class GitManager {
      * @param project owning project
      * @param gitClient git client backend
      */
-    public GitManager(Project project, GitClient gitClient) {
+    public GitManager(RailroadProject project, GitClient gitClient) {
         this(project, gitClient, Executors.newSingleThreadScheduledExecutor());
     }
 

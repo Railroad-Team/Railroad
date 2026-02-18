@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.welcome;
 
-import dev.railroadide.core.ui.RRListView;
-import dev.railroadide.core.ui.RRTextField;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRListView;
+import dev.railroadide.railroad.ui.RRTextField;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.ui.nodes.ProjectListCell;
 import dev.railroadide.railroad.welcome.project.ProjectSort;
 import javafx.beans.value.ObservableValue;
@@ -28,7 +28,7 @@ import java.util.Locale;
  */
 public class WelcomeProjectsPane extends ScrollPane {
     private static volatile boolean isProcessingClick = false;
-    private final RRListView<Project> projectsList = new RRListView<>();
+    private final RRListView<RailroadProject> projectsList = new RRListView<>();
     private ObservableValue<ProjectSort> sortProperty;
 
     public WelcomeProjectsPane(RRTextField searchField) {
@@ -58,7 +58,7 @@ public class WelcomeProjectsPane extends ScrollPane {
             isProcessingClick = true;
 
             try {
-                Project project = projectsList.getSelectionModel().getSelectedItem();
+                RailroadProject project = projectsList.getSelectionModel().getSelectedItem();
                 if (project != null) {
                     project.open();
                 }
@@ -84,7 +84,7 @@ public class WelcomeProjectsPane extends ScrollPane {
                 isProcessingClick = true;
 
                 try {
-                    Project project = projectsList.getSelectionModel().getSelectedItem();
+                    RailroadProject project = projectsList.getSelectionModel().getSelectedItem();
                     if (project != null) {
                         project.open();
                     }
@@ -103,7 +103,7 @@ public class WelcomeProjectsPane extends ScrollPane {
 
                 event.consume();
             } else if (event.getCode() == KeyCode.DELETE) {
-                Project project = projectsList.getSelectionModel().getSelectedItem();
+                RailroadProject project = projectsList.getSelectionModel().getSelectedItem();
                 if (project != null) {
                     Railroad.PROJECT_MANAGER.removeProject(project);
                     filterProjects("");
@@ -114,7 +114,7 @@ public class WelcomeProjectsPane extends ScrollPane {
         });
 
         this.projectsList.getItems().addAll(Railroad.PROJECT_MANAGER.getProjects());
-        Railroad.PROJECT_MANAGER.getProjects().addListener((ListChangeListener<Project>) c -> {
+        Railroad.PROJECT_MANAGER.getProjects().addListener((ListChangeListener<RailroadProject>) c -> {
             while (c.next()) {
                 if (c.wasAdded()) {
                     projectsList.getItems().addAll(c.getAddedSubList());
@@ -150,7 +150,7 @@ public class WelcomeProjectsPane extends ScrollPane {
      *
      * @param project the project to remove
      */
-    public void removeProject(Project project) {
+    public void removeProject(RailroadProject project) {
         projectsList.getItems().remove(project);
     }
 
@@ -169,8 +169,8 @@ public class WelcomeProjectsPane extends ScrollPane {
             return;
         }
 
-        List<Project> filteredProjects = new ArrayList<>();
-        for (Project project : Railroad.PROJECT_MANAGER.getProjects()) {
+        List<RailroadProject> filteredProjects = new ArrayList<>();
+        for (RailroadProject project : Railroad.PROJECT_MANAGER.getProjects()) {
             if (project.getAlias().toLowerCase(Locale.ROOT).contains(value.toLowerCase(Locale.ROOT))) {
                 filteredProjects.add(project);
             }
@@ -190,12 +190,12 @@ public class WelcomeProjectsPane extends ScrollPane {
         this.sortProperty = observable;
 
         this.sortProperty.addListener((observableValue, oldValue, newValue) -> sortProjects(newValue));
-        projectsList.getItems().addListener((ListChangeListener<Project>) c -> sortProjects(this.sortProperty.getValue()));
+        projectsList.getItems().addListener((ListChangeListener<RailroadProject>) c -> sortProjects(this.sortProperty.getValue()));
         sortProjects(this.sortProperty.getValue());
     }
 
     private void sortProjects(ProjectSort sort) {
-        List<Project> copy = new ArrayList<>(projectsList.getItems());
+        List<RailroadProject> copy = new ArrayList<>(projectsList.getItems());
         if (sort == null) return;
         copy.sort(sort.getComparator());
 

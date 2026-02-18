@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.project.data;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -19,7 +19,7 @@ import java.util.concurrent.Executors;
  * work with bytes, text, or JSON-serialized DTOs.
  */
 public final class ProjectDataStore {
-    private final Project project;
+    private final RailroadProject project;
 
     private final CopyOnWriteArrayList<FileChangeListener> fileChangeListeners = new CopyOnWriteArrayList<>();
     private final Object watcherLock = new Object();
@@ -27,7 +27,7 @@ public final class ProjectDataStore {
     private volatile ExecutorService watchExecutor;
     private volatile Path watchRoot;
 
-    public ProjectDataStore(Project project) {
+    public ProjectDataStore(RailroadProject project) {
         this.project = Objects.requireNonNull(project, "project");
     }
 

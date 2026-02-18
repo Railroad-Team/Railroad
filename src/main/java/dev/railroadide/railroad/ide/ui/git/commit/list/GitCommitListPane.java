@@ -1,14 +1,14 @@
 package dev.railroadide.railroad.ide.ui.git.commit.list;
 
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRVBox;
 import javafx.scene.layout.Priority;
 
 public class GitCommitListPane extends RRVBox {
     private final GitCommitListHeaderPane header;
     private final GitCommitListViewPane commitListView;
 
-    public GitCommitListPane(Project project) {
+    public GitCommitListPane(RailroadProject project) {
         super();
         getStyleClass().add("git-commit-list-pane");
 

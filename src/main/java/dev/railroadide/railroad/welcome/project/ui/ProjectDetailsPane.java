@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.welcome.project.ui;
 
-import dev.railroadide.core.project.ProjectType;
-import dev.railroadide.core.ui.RRVBox;
+import dev.railroadide.railroad.project.ProjectType;
 import dev.railroadide.railroad.project.ProjectTypeRegistry;
+import dev.railroadide.railroad.ui.RRVBox;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;

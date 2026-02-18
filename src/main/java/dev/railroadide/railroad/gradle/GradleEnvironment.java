@@ -2,7 +2,7 @@ package dev.railroadide.railroad.gradle;
 
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionRequest;
 import dev.railroadide.railroad.java.JDK;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 
 import java.nio.file.Path;
 import java.util.Optional;
@@ -17,7 +17,7 @@ public interface GradleEnvironment {
      *
      * @return the project instance.
      */
-    Project project();
+    RailroadProject project();
 
     /**
      * Determines whether the Gradle wrapper should be used.

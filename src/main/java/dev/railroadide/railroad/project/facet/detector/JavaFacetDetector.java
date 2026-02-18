@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.project.facet.detector;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
 import dev.railroadide.railroad.project.facet.FacetManager;
@@ -37,7 +37,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
      * @param project the project
      * @return the detected JavaVersion, or an invalid version if not found
      */
-    private static JavaVersion findMostReliableJavaVersion(@NotNull Project project) {
+    private static JavaVersion findMostReliableJavaVersion(@NotNull RailroadProject project) {
         JavaVersion gradleVersion = getJavaVersionFromGradle(project);
         if (gradleVersion.major() != -1)
             return gradleVersion;
@@ -126,7 +126,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
      * @param project the project
      * @return the JavaVersion specified in the Gradle build, or an invalid version if not found
      */
-    private static JavaVersion getJavaVersionFromGradle(@NotNull Project project) {
+    private static JavaVersion getJavaVersionFromGradle(@NotNull RailroadProject project) {
         if (!project.getGradleManager().isGradleProject())
             return JavaVersion.fromMajor(-1);
 
@@ -211,7 +211,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
      * @return an Optional containing the Java facet if detected, or empty if not found
      */
     @Override
-    public Optional<Facet<JavaFacetData>> detect(Project project) {
+    public Optional<Facet<JavaFacetData>> detect(RailroadProject project) {
         long javaFileCount = 0;
         try {
             try (Stream<Path> javaFiles = Files.find(project.getPath(), 10,

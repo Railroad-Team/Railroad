@@ -11,15 +11,15 @@ import java.util.Collection;
 
 @Getter
 public final class ProjectManager {
-    private final ObservableList<Project> projects = FXCollections.observableArrayList();
+    private final ObservableList<RailroadProject> projects = FXCollections.observableArrayList();
     @Getter
-    private Project openProject;
+    private RailroadProject openProject;
 
-    public void updateProjectInfo(Project project) {
+    public void updateProjectInfo(RailroadProject project) {
         updateProjectInfo(project, false);
     }
 
-    public void updateProjectInfo(Project project, boolean removeProject) {
+    public void updateProjectInfo(RailroadProject project, boolean removeProject) {
         Railroad.LOGGER.info("Starting project update: {}", project.getId());
         boolean found = false;
         if (removeProject) {
@@ -29,7 +29,7 @@ public final class ProjectManager {
             return;
         }
 
-        for (Project projectObj : projects) {
+        for (RailroadProject projectObj : projects) {
             if (projectObj.getId().equals(project.getId())) {
                 found = true;
                 projectObj.setLastOpened(project.getLastOpened());
@@ -45,20 +45,20 @@ public final class ProjectManager {
         ConfigHandler.saveConfig();
     }
 
-    public void setProjects(Collection<? extends Project> projectCollection) {
+    public void setProjects(Collection<? extends RailroadProject> projectCollection) {
         this.projects.setAll(projectCollection);
     }
 
-    public Project newProject(Project project) {
+    public RailroadProject newProject(RailroadProject project) {
         updateProjectInfo(project);
         return project;
     }
 
-    public void removeProject(Project project) {
+    public void removeProject(RailroadProject project) {
         updateProjectInfo(project, true);
     }
 
-    public void setCurrentProject(@Nullable Project project) {
+    public void setCurrentProject(@Nullable RailroadProject project) {
         this.openProject = project;
     }
 }

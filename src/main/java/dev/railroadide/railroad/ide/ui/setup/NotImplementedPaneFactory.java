@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ide.ui.setup;
 
-import dev.railroadide.core.ui.RRCard;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.ui.RRCard;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;

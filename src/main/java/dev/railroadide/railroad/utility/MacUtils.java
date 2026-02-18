@@ -1,12 +1,11 @@
 package dev.railroadide.railroad.utility;
 
-import dev.railroadide.core.ui.RRMenuBar;
-import dev.railroadide.core.utility.OperatingSystem;
 import dev.railroadide.nsmenufx.MenuToolkit;
 import dev.railroadide.nsmenufx.dialogs.about.AboutStageBuilder;
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
+import dev.railroadide.railroad.ui.RRMenuBar;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.stage.Stage;

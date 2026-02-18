@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ide.runconfig;
 
-import dev.railroadide.core.form.*;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.form.*;
+import dev.railroadide.railroad.project.RailroadProject;
 import lombok.Data;
 
 @Data
@@ -12,7 +12,7 @@ public abstract class RunConfigurationData {
 
     public abstract RunConfigurationType<?> getType();
 
-    public abstract Form createConfigurationForm(Project project, RunConfiguration<?> configuration);
+    public abstract Form createConfigurationForm(RailroadProject project, RunConfiguration<?> configuration);
 
     public abstract void applyConfigurationFormData(FormData formData);
 
@@ -22,7 +22,7 @@ public abstract class RunConfigurationData {
         this.showConsoleOnRun = formData.getBoolean("showConsoleOnRun");
     }
 
-    protected Form.Builder createBaseFormBuilder(Project project, RunConfiguration<?> configuration) {
+    protected Form.Builder createBaseFormBuilder(RailroadProject project, RunConfiguration<?> configuration) {
         return Form.create()
             .disableSubmitButton()
             .disableResetButton()

@@ -5,7 +5,7 @@ import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.JarApplicationRunConfigurationData;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.utility.icon.RailroadIcon;
 import javafx.scene.paint.Color;
 
@@ -24,7 +24,7 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
     }
 
     @Override
-    public CompletableFuture<Void> run(Project project, RunConfiguration<JarApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> run(RailroadProject project, RunConfiguration<JarApplicationRunConfigurationData> configuration) {
         return CompletableFuture.runAsync(() -> {
             JarApplicationRunConfigurationData data = configuration.data();
             JDK jre = requireJre(data);
@@ -74,13 +74,13 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
     }
 
     @Override
-    public CompletableFuture<Void> debug(Project project, RunConfiguration<JarApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> debug(RailroadProject project, RunConfiguration<JarApplicationRunConfigurationData> configuration) {
         return CompletableFuture.failedFuture(
             new UnsupportedOperationException("Debugging is not supported for Jar Application run configurations."));
     }
 
     @Override
-    public CompletableFuture<Void> stop(Project project, RunConfiguration<JarApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> stop(RailroadProject project, RunConfiguration<JarApplicationRunConfigurationData> configuration) {
         Process process = runningProcesses.get(configuration);
         if (process != null && process.isAlive()) {
             process.destroy();
@@ -91,7 +91,7 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
     }
 
     @Override
-    public JarApplicationRunConfigurationData createDataInstance(Project project) {
+    public JarApplicationRunConfigurationData createDataInstance(RailroadProject project) {
         var data = new JarApplicationRunConfigurationData();
         data.setName("New Jar Application");
         data.setWorkingDirectory(project.getPath());
@@ -124,7 +124,7 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
         return jarPath;
     }
 
-    private static Path resolveWorkingDirectory(Project project, JarApplicationRunConfigurationData data) {
+    private static Path resolveWorkingDirectory(RailroadProject project, JarApplicationRunConfigurationData data) {
         Path workingDirectory = data.getWorkingDirectory();
         if (workingDirectory == null) {
             workingDirectory = project.getPath();

@@ -1,22 +1,22 @@
 package dev.railroadide.railroad;
 
 import com.google.gson.Gson;
-import dev.railroadide.core.localization.Language;
-import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.project.creation.ProjectCreationPipelineService;
-import dev.railroadide.core.project.creation.ProjectServiceRegistry;
-import dev.railroadide.core.project.creation.service.*;
 import dev.railroadide.logger.Logger;
 import dev.railroadide.railroad.ide.DefaultDocumentEditorStateService;
 import dev.railroadide.railroad.ide.DefaultIDEStateService;
 import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.localization.Language;
+import dev.railroadide.railroad.localization.LocalizationService;
+import dev.railroadide.railroad.plugin.spi.services.ApplicationInfoService;
+import dev.railroadide.railroad.plugin.spi.services.DocumentEditorStateService;
+import dev.railroadide.railroad.plugin.spi.services.IDEStateService;
+import dev.railroadide.railroad.plugin.spi.services.VCSService;
+import dev.railroadide.railroad.project.creation.ProjectCreationPipelineService;
+import dev.railroadide.railroad.project.creation.ProjectServiceRegistry;
+import dev.railroadide.railroad.project.creation.service.*;
 import dev.railroadide.railroad.project.onboarding.creation.DefaultProjectCreationPipelineService;
 import dev.railroadide.railroad.project.onboarding.creation.service.*;
 import dev.railroadide.railroad.utility.DiscardingOutputStream;
-import dev.railroadide.railroadpluginapi.services.ApplicationInfoService;
-import dev.railroadide.railroadpluginapi.services.DocumentEditorStateService;
-import dev.railroadide.railroadpluginapi.services.IDEStateService;
-import dev.railroadide.railroadpluginapi.services.VCSService;
 import javafx.application.HostServices;
 import javafx.beans.property.ObjectProperty;
 

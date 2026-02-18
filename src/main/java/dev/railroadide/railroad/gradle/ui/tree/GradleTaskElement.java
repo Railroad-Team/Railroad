@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.gradle.ui.tree;
 
 import dev.railroadide.railroad.gradle.ui.task.GradleTaskContextMenu;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroadplugin.dto.RailroadGradleTask;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Tooltip;
@@ -11,10 +11,10 @@ import org.kordamp.ikonli.devicons.Devicons;
 
 @Getter
 public class GradleTaskElement extends GradleTreeElement {
-    private final Project project;
+    private final RailroadProject project;
     private final RailroadGradleTask task;
 
-    public GradleTaskElement(Project project, RailroadGradleTask task) {
+    public GradleTaskElement(RailroadProject project, RailroadGradleTask task) {
         super(task != null ? task.getName() : "Unknown Task");
         if (project == null)
             throw new IllegalArgumentException("Project cannot be null");

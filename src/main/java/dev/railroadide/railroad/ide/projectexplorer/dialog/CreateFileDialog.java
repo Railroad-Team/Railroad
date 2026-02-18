@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.ide.projectexplorer.dialog;
 
-import dev.railroadide.core.ui.RRGridPane;
-import dev.railroadide.core.ui.RRListView;
-import dev.railroadide.core.ui.localized.LocalizedButton;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.RRGridPane;
+import dev.railroadide.railroad.ui.RRListView;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.ListCell;
@@ -76,7 +76,7 @@ public class CreateFileDialog {
 
         listView.getSelectionModel().selectFirst();
 
-        var okButton = new LocalizedButton("railroad.generic.ok");
+        var okButton = new RRButton("railroad.generic.ok");
         okButton.setOnAction(event -> {
             dialog.hide();
 
@@ -111,7 +111,7 @@ public class CreateFileDialog {
             }
         });
 
-        var cancelButton = new LocalizedButton("railroad.generic.cancel");
+        var cancelButton = new RRButton("railroad.generic.cancel");
         cancelButton.setOnAction(event -> dialog.hide());
 
         root.add(title, 0, 0, 2, 1);

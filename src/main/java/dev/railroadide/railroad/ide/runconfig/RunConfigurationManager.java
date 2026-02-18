@@ -3,7 +3,7 @@ package dev.railroadide.railroad.ide.runconfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -26,9 +26,9 @@ public class RunConfigurationManager {
     @Getter
     private final ObjectProperty<RunConfiguration<?>> selectedConfiguration = new SimpleObjectProperty<>();
 
-    private final Project project;
+    private final RailroadProject project;
 
-    public RunConfigurationManager(Project project) {
+    public RunConfigurationManager(RailroadProject project) {
         this.project = project;
         readConfigurations();
 

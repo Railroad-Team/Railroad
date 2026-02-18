@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.branches;
 
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.vcs.git.branch.GitBranch;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchLastCommit;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchStatus;
@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 public class GitRemoteBranchesListView extends AbstractGitBranchesListView<GitBranch.RemoteGitBranch> {
-    public GitRemoteBranchesListView(Project project) {
+    public GitRemoteBranchesListView(RailroadProject project) {
         super(
             project,
             "git-remote-branches-list-view",

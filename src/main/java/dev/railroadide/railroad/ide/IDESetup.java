@@ -2,10 +2,6 @@ package dev.railroadide.railroad.ide;
 
 import com.kodedu.terminalfx.Terminal;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
-import dev.railroadide.core.settings.keybinds.KeybindContexts;
-import dev.railroadide.core.ui.RRBorderPane;
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.gradle.ui.GradleToolsPane;
@@ -22,21 +18,25 @@ import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
 import dev.railroadide.railroad.ide.ui.git.commit.list.GitCommitListPane;
 import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
 import dev.railroadide.railroad.ide.ui.git.overview.GitOverviewPane;
+import dev.railroadide.railroad.ide.ui.git.remote.GitRemotesPane;
 import dev.railroadide.railroad.ide.ui.git.stash.GitStashPane;
 import dev.railroadide.railroad.ide.ui.git.sync.GitSyncPane;
-import dev.railroadide.railroad.ide.ui.git.remote.GitRemotesPane;
 import dev.railroadide.railroad.ide.ui.setup.IDEMenuBarFactory;
 import dev.railroadide.railroad.ide.ui.setup.PaneIconBarFactory;
 import dev.railroadide.railroad.ide.ui.setup.RunControlsPane;
 import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
+import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.project.FacetDetectedEvent;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
+import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
+import dev.railroadide.railroad.ui.RRBorderPane;
+import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.utility.icon.RailroadBrandsIcon;
 import dev.railroadide.railroad.window.WindowBuilder;
-import dev.railroadide.railroadpluginapi.events.ProjectEvent;
 import javafx.application.Platform;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
@@ -68,7 +68,7 @@ public class IDESetup {
      * @param project The project to create the IDE window for
      * @return The created IDE window
      */
-    public static Scene createIDEScene(Project project) {
+    public static Scene createIDEScene(RailroadProject project) {
         var root = new RRBorderPane();
         var topBar = new RRHBox(IDEMenuBarFactory.create(), new Region(), RunControlsPane.create(project));
         HBox.setHgrow(topBar.getChildren().get(1), Priority.ALWAYS);
@@ -157,7 +157,7 @@ public class IDESetup {
         return new Scene(root);
     }
 
-    private static void openGradleTab(Project project, Facet<?> facet, DetachableTabPane rightPane, RRBorderPane root, SplitPane mainSplit) {
+    private static void openGradleTab(RailroadProject project, Facet<?> facet, DetachableTabPane rightPane, RRBorderPane root, SplitPane mainSplit) {
         Platform.runLater(() -> {
             if (facet.getType() == FacetManager.GRADLE) {
                 if (rightPane.getTabs().stream().noneMatch(tab -> tab.getContent() instanceof GradleToolsPane)) {
@@ -175,7 +175,7 @@ public class IDESetup {
         });
     }
 
-    public static void showEditRunConfigurationsWindow(@NotNull Project project, @Nullable RunConfiguration<?> runConfiguration) {
+    public static void showEditRunConfigurationsWindow(@NotNull RailroadProject project, @Nullable RunConfiguration<?> runConfiguration) {
         var editorPane = new RunConfigurationEditorPane(project);
         WindowBuilder.create()
             .owner(Railroad.WINDOW_MANAGER.getPrimaryStage())
@@ -195,7 +195,7 @@ public class IDESetup {
      *
      * @param project The project to switch to
      */
-    public static void switchToIDE(Project project) {
+    public static void switchToIDE(RailroadProject project) {
         if (isSwitchingToIDE)
             return; // Prevent multiple simultaneous IDE window creations
 

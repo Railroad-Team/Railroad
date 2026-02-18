@@ -11,7 +11,6 @@ import javafx.stage.Stage;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix3x2d;
-import org.joml.Vector4d;
 
 import java.io.InputStream;
 import java.util.ArrayList;

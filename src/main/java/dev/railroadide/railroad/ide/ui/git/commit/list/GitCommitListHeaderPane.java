@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.ide.ui.git.commit.list;
 
-import dev.railroadide.core.ui.RRTextField;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedText;
+import dev.railroadide.railroad.ui.RRTextField;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.vcs.git.GitManager;
 
 public class GitCommitListHeaderPane extends RRVBox {

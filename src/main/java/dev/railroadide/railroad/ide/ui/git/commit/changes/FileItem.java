@@ -3,7 +3,7 @@ package dev.railroadide.railroad.ide.ui.git.commit.changes;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -21,7 +21,7 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 
-public record FileItem(Project project, GitFileChange change) implements ChangeItem {
+public record FileItem(RailroadProject project, GitFileChange change) implements ChangeItem {
     @Override
     public Node getIcon() {
         // TODO: Replace with some icon manager lookup
@@ -42,7 +42,7 @@ public record FileItem(Project project, GitFileChange change) implements ChangeI
     }
 
     @Override
-    public ContextMenu getContextMenu(Project project) {
+    public ContextMenu getContextMenu(RailroadProject project) {
         return null; // TODO: Implement context menu
     }
 

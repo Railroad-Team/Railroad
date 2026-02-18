@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.welcome.imports;
 
-import dev.railroadide.core.ui.RRCard;
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.vcs.Repository;
+import dev.railroadide.railroad.ui.RRCard;
+import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.vcs.Repository;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -80,4 +80,4 @@ public class ImportProjectListCell extends ListCell<Repository> {
             }
         }
     }
-} 
+}

@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.localized.LocalizedText;
-import dev.railroadide.core.ui.styling.ButtonVariant;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import dev.railroadide.railroad.window.DialogBuilder;
 import dev.railroadide.railroad.window.WindowBuilder;
@@ -11,7 +11,7 @@ import javafx.stage.Stage;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 public class GitCommitRevertButton extends RRButton {
-    public GitCommitRevertButton(Project project, GitCommit commit) {
+    public GitCommitRevertButton(RailroadProject project, GitCommit commit) {
         super("railroad.git.commit.details.button.revert_commit", FontAwesomeSolid.UNDO);
         setVariant(ButtonVariant.DANGER);
         setOnAction(event -> {

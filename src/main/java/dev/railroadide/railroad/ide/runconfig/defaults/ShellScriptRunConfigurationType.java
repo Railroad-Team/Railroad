@@ -5,7 +5,7 @@ import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.ShellScriptRunConfigurationData;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.ShellScriptRunConfigurationData.ExecuteMode;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
@@ -31,7 +31,7 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
     }
 
     @Override
-    public CompletableFuture<Void> run(Project project, RunConfiguration<ShellScriptRunConfigurationData> configuration) {
+    public CompletableFuture<Void> run(RailroadProject project, RunConfiguration<ShellScriptRunConfigurationData> configuration) {
         return execute(project, configuration).whenComplete((unused, throwable) -> {
             if (throwable != null) {
                 Railroad.LOGGER.error("Failed to start shell script for configuration: {}", configuration.data().getName(), throwable);
@@ -40,13 +40,13 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
     }
 
     @Override
-    public CompletableFuture<Void> debug(Project project, RunConfiguration<ShellScriptRunConfigurationData> configuration) {
+    public CompletableFuture<Void> debug(RailroadProject project, RunConfiguration<ShellScriptRunConfigurationData> configuration) {
         return CompletableFuture.failedFuture(
             new UnsupportedOperationException("Debugging shell script run configurations is not supported."));
     }
 
     @Override
-    public CompletableFuture<Void> stop(Project project, RunConfiguration<ShellScriptRunConfigurationData> configuration) {
+    public CompletableFuture<Void> stop(RailroadProject project, RunConfiguration<ShellScriptRunConfigurationData> configuration) {
         Process process = runningProcesses.get(configuration);
         if (process != null && process.isAlive()) {
             process.destroy();
@@ -62,7 +62,7 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
     }
 
     @Override
-    public ShellScriptRunConfigurationData createDataInstance(Project project) {
+    public ShellScriptRunConfigurationData createDataInstance(RailroadProject project) {
         var data = new ShellScriptRunConfigurationData();
         data.setName("New Shell Script");
         data.setWorkingDirectory(project.getPath());
@@ -75,7 +75,7 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
         return ShellScriptRunConfigurationData.class;
     }
 
-    private CompletableFuture<Void> execute(Project project, RunConfiguration<ShellScriptRunConfigurationData> configuration) {
+    private CompletableFuture<Void> execute(RailroadProject project, RunConfiguration<ShellScriptRunConfigurationData> configuration) {
         return CompletableFuture.runAsync(() -> {
             ShellScriptRunConfigurationData data = configuration.data();
             Path workingDirectory = resolveWorkingDirectory(project, data);
@@ -123,7 +123,7 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
         });
     }
 
-    private static Path resolveWorkingDirectory(Project project, ShellScriptRunConfigurationData data) {
+    private static Path resolveWorkingDirectory(RailroadProject project, ShellScriptRunConfigurationData data) {
         Path workingDirectory = data.getWorkingDirectory();
         if (workingDirectory == null) {
             workingDirectory = project.getPath();

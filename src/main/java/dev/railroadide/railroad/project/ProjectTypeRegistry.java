@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.project;
 
-import dev.railroadide.core.project.ProjectType;
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.project.onboarding.impl.FabricProjectOnboarding;
 import dev.railroadide.railroad.project.onboarding.impl.ForgeProjectOnboarding;

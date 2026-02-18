@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.ui.nodes;
 
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.RRCard;
-import dev.railroadide.core.ui.styling.ButtonSize;
-import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.project.facet.Facet;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.RRCard;
+import dev.railroadide.railroad.ui.styling.ButtonSize;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.utility.TimeFormatter;
 import io.github.palexdev.mfxcore.builders.InsetsBuilder;
 import javafx.animation.KeyFrame;
@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Features a card-based design with project icon, name, path, last opened date, and context menu actions.
  * Supports open and remove project functionality through a context menu.
  */
-public class ProjectListCell extends ListCell<Project> {
+public class ProjectListCell extends ListCell<RailroadProject> {
     private static final LongProperty ELAPSED_TICK = new SimpleLongProperty();
     private static final Timeline ELAPSED_TIMELINE = new Timeline(
         new KeyFrame(Duration.seconds(1), $ -> ELAPSED_TICK.set(ELAPSED_TICK.get() + 1))
@@ -108,7 +108,7 @@ public class ProjectListCell extends ListCell<Project> {
         var dropdown = new ContextMenu();
         var openItem = new MenuItem("Open");
         openItem.setOnAction($ -> {
-            Project project = getItem();
+            RailroadProject project = getItem();
             if (project != null) {
                 project.open();
             }
@@ -116,7 +116,7 @@ public class ProjectListCell extends ListCell<Project> {
 
         var removeItem = new MenuItem("Remove");
         removeItem.setOnAction($ -> {
-            Project project = getItem();
+            RailroadProject project = getItem();
             if (project != null) {
                 Railroad.PROJECT_MANAGER.removeProject(project);
             }
@@ -141,7 +141,7 @@ public class ProjectListCell extends ListCell<Project> {
     }
 
     @Override
-    protected void updateItem(Project project, boolean empty) {
+    protected void updateItem(RailroadProject project, boolean empty) {
         super.updateItem(project, empty);
 
         // Always clear old tags, as cells are reused
@@ -177,7 +177,7 @@ public class ProjectListCell extends ListCell<Project> {
     }
 
     private void refreshElapsedText() {
-        Project project = getItem();
+        RailroadProject project = getItem();
         if (project == null || isEmpty()) {
             lastOpenedLabel.setText(null);
             return;

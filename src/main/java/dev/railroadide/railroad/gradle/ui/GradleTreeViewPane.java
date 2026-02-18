@@ -1,13 +1,13 @@
 package dev.railroadide.railroad.gradle.ui;
 
-import dev.railroadide.core.ui.RRVBox;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.model.GradleModelListener;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.gradle.ui.tree.GradleTreeCell;
 import dev.railroadide.railroad.gradle.ui.tree.GradleTreeElement;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRVBox;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -29,7 +29,7 @@ public abstract class GradleTreeViewPane<T> extends RRVBox {
     private final StackPane loadingContainer = new StackPane(loadingSpinner);
     private final AtomicBoolean isLoading = new AtomicBoolean(true);
 
-    public GradleTreeViewPane(Project project) {
+    public GradleTreeViewPane(RailroadProject project) {
         super();
         getStyleClass().add("gradle-tool-content-pane");
 

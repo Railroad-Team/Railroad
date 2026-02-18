@@ -2,14 +2,6 @@ package dev.railroadide.railroad.ide.projectexplorer;
 
 import com.kodedu.terminalfx.Terminal;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
-import dev.railroadide.core.settings.keybinds.KeybindContexts;
-import dev.railroadide.core.ui.RRBorderPane;
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedTextField;
-import dev.railroadide.core.ui.localized.LocalizedTooltip;
-import dev.railroadide.core.ui.styling.ButtonSize;
-import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.IDESetup;
@@ -21,12 +13,20 @@ import dev.railroadide.railroad.ide.projectexplorer.task.SearchTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
 import dev.railroadide.railroad.ide.ui.*;
 import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
-import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
+import dev.railroadide.railroad.plugin.spi.events.FileEvent;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
+import dev.railroadide.railroad.ui.RRBorderPane;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedTextField;
+import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
+import dev.railroadide.railroad.ui.styling.ButtonSize;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.ShutdownHooks;
-import dev.railroadide.railroadpluginapi.events.FileEvent;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -66,7 +66,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private final StringProperty searchProperty = new SimpleStringProperty();
     private final List<String> searchList = new ArrayList<>();
 
-    public ProjectExplorerPane(Project project, RRBorderPane mainPane) {
+    public ProjectExplorerPane(RailroadProject project, RRBorderPane mainPane) {
         Path rootPath = Path.of(project.getPathString());
         setPadding(new Insets(0));
         setSpacing(0);
@@ -270,7 +270,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         });
     }
 
-    public static void openFile(Project project, PathItem item, RRBorderPane mainPane) {
+    public static void openFile(RailroadProject project, PathItem item, RRBorderPane mainPane) {
         Path path = item.getPath();
         if (Files.isDirectory(path))
             return;
@@ -300,7 +300,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
                     detachableTabPane.getSelectionModel().select(tab);
 
-                    var document = new DefaultDocument(fileName, path);
+                    var document = new FileSystemDocument(fileName, path);
                     Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.OPENED));
                     Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.ACTIVATED));
 
@@ -344,7 +344,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
                 detachableTabPane.getSelectionModel().select(tab);
 
-                var document = new DefaultDocument(fileName, path);
+                var document = new FileSystemDocument(fileName, path);
                 Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.OPENED));
                 Railroad.EVENT_BUS.publish(new FileEvent(document, FileEvent.EventType.ACTIVATED));
 
@@ -389,12 +389,12 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                         detachableTabPane.addTab(fileName, new ImageViewerPane(path));
                     }
 
-                    Railroad.EVENT_BUS.publish(new FileEvent(new DefaultDocument(fileName, path), FileEvent.EventType.OPENED));
+                    Railroad.EVENT_BUS.publish(new FileEvent(new FileSystemDocument(fileName, path), FileEvent.EventType.OPENED));
                 });
             } else {
                 FileUtils.openInDefaultApplication(path);
 
-                Railroad.EVENT_BUS.publish(new FileEvent(new DefaultDocument(path.getFileName().toString(), path), FileEvent.EventType.OPENED));
+                Railroad.EVENT_BUS.publish(new FileEvent(new FileSystemDocument(path.getFileName().toString(), path), FileEvent.EventType.OPENED));
             }
         }
     }
@@ -413,7 +413,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         }
     }
 
-    private Node createModernHeader(Project project) {
+    private Node createModernHeader(RailroadProject project) {
         var header = new HBox(8);
         header.getStyleClass().add("project-explorer-header");
         header.setPadding(new Insets(12, 16, 8, 16));

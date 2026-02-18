@@ -1,13 +1,13 @@
 package dev.railroadide.railroad.theme.ui;
 
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.RRFormSection;
-import dev.railroadide.core.ui.styling.ButtonSize;
-import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.theme.ThemeDownloadManager;
 import dev.railroadide.railroad.theme.ThemeManager;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.RRFormSection;
+import dev.railroadide.railroad.ui.styling.ButtonSize;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Pos;
@@ -95,7 +95,7 @@ public class ThemeSelector extends VBox {
         ThemeManager.getCurrentThemeProperty().addListener((observable, oldValue, newValue) -> {
             themeComboBox.setValue(newValue);
         });
-        
+
         themeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             selectedThemeProperty.set(newValue);
         });

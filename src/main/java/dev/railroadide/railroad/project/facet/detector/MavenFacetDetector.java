@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.project.facet.detector;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
 import dev.railroadide.railroad.project.facet.FacetManager;
@@ -27,7 +27,7 @@ public class MavenFacetDetector implements FacetDetector<MavenFacetData> {
      * @return an Optional containing the Maven facet if detected, or empty if not found
      */
     @Override
-    public Optional<Facet<MavenFacetData>> detect(Project project) {
+    public Optional<Facet<MavenFacetData>> detect(RailroadProject project) {
         Path pomFile = project.getPath().resolve("pom.xml");
         if (Files.notExists(pomFile) || !Files.isRegularFile(pomFile) || !Files.isReadable(pomFile))
             return Optional.empty();

@@ -3,11 +3,11 @@ package dev.railroadide.railroad.settings.handler;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-import dev.railroadide.core.registry.Registry;
-import dev.railroadide.core.registry.RegistryManager;
-import dev.railroadide.core.settings.Setting;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.config.ConfigHandler;
+import dev.railroadide.railroad.registry.Registry;
+import dev.railroadide.railroad.registry.RegistryManager;
+import dev.railroadide.railroad.settings.Setting;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

@@ -2,7 +2,7 @@ package dev.railroadide.railroad.ide.runconfig;
 
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import javafx.scene.control.ContextMenu;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -101,7 +101,7 @@ public final class RunConfiguration<D extends RunConfigurationData> {
      * @param project the project to run the configuration in
      * @return a completable future that completes when the run action is finished
      */
-    public CompletableFuture<Void> run(Project project) {
+    public CompletableFuture<Void> run(RailroadProject project) {
         Objects.requireNonNull(project, "project");
         return type.run(project, this);
     }
@@ -112,7 +112,7 @@ public final class RunConfiguration<D extends RunConfigurationData> {
      * @param project the project to run the configuration in
      * @return a completable future that completes when the run action is finished
      */
-    public CompletableFuture<Void> debug(Project project) {
+    public CompletableFuture<Void> debug(RailroadProject project) {
         Objects.requireNonNull(project, "project");
         return type.debug(project, this);
     }
@@ -123,7 +123,7 @@ public final class RunConfiguration<D extends RunConfigurationData> {
      * @param project the project to stop the configuration in
      * @return a completable future that completes when the stop action is finished
      */
-    public CompletableFuture<Void> stop(Project project) {
+    public CompletableFuture<Void> stop(RailroadProject project) {
         Objects.requireNonNull(project, "project");
         return type.stop(project, this);
     }
@@ -134,7 +134,7 @@ public final class RunConfiguration<D extends RunConfigurationData> {
      * @param project the project to check
      * @return true if running is supported, false otherwise
      */
-    public boolean isDebuggingSupported(Project project) {
+    public boolean isDebuggingSupported(RailroadProject project) {
         Objects.requireNonNull(project, "project");
         return type.isDebuggingSupported(project, this);
     }
@@ -145,7 +145,7 @@ public final class RunConfiguration<D extends RunConfigurationData> {
      * @param project the project to create the context menu for
      * @return the context menu
      */
-    public ContextMenu createContextMenu(Project project) {
+    public ContextMenu createContextMenu(RailroadProject project) {
         Objects.requireNonNull(project, "project");
         return type.createContextMenu(project, this);
     }

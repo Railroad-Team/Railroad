@@ -6,14 +6,14 @@ import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionRequest;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.GradleRunConfigurationData;
 import dev.railroadide.railroad.java.JDK;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public record DefaultGradleEnvironment(Project project, Path gradleInstallationPath,
+public record DefaultGradleEnvironment(RailroadProject project, Path gradleInstallationPath,
                                        GradleSettings settings) implements GradleEnvironment {
     @Override
     public boolean useWrapper() {

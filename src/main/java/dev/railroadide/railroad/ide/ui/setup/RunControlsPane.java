@@ -1,19 +1,18 @@
 package dev.railroadide.railroad.ide.ui.setup;
 
-import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.localized.LocalizedComboBox;
-import dev.railroadide.core.ui.localized.LocalizedTooltip;
-import dev.railroadide.core.ui.styling.ButtonSize;
-import dev.railroadide.core.ui.styling.ButtonVariant;
-import dev.railroadide.core.utility.ServiceLocator;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationContextMenuManager;
 import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationListCell;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.localized.LocalizedComboBox;
+import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
+import dev.railroadide.railroad.ui.styling.ButtonSize;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
@@ -35,7 +34,7 @@ import java.util.concurrent.CompletableFuture;
  * manages tracking of currently running configurations to support multiple instances.
  */
 public final class RunControlsPane extends RRHBox {
-    private final Project project;
+    private final RailroadProject project;
     private final LocalizedComboBox<RunConfiguration<?>> runConfigurationsComboBox;
     private final RRButton runButton = new RRButton("", FontAwesomeSolid.PLAY);
     private final RRButton debugButton = new RRButton("", FontAwesomeSolid.BUG);
@@ -48,11 +47,11 @@ public final class RunControlsPane extends RRHBox {
     private final LocalizedTooltip debugButtonTooltip = new LocalizedTooltip("railroad.ide.toolbar.debug.tooltip");
     private final LocalizedTooltip debugRestartTooltip = new LocalizedTooltip("railroad.ide.toolbar.debug.restart.tooltip");
 
-    public static Node create(Project project) {
+    public static Node create(RailroadProject project) {
         return new RunControlsPane(project);
     }
 
-    private RunControlsPane(Project project) {
+    private RunControlsPane(RailroadProject project) {
         super(4);
         this.project = project;
         setAlignment(Pos.CENTER_LEFT);
@@ -100,7 +99,6 @@ public final class RunControlsPane extends RRHBox {
                 comboBox.getSelectionModel().selectFirst();
             });
 
-        var localizationService = ServiceLocator.getService(LocalizationService.class);
         comboBox.getStyleClass().add("run-config-combobox");
         comboBox.setTooltip(new LocalizedTooltip("railroad.ide.toolbar.run_configurations.tooltip"));
         comboBox.setPrefWidth(200);
@@ -116,9 +114,9 @@ public final class RunControlsPane extends RRHBox {
 
                 if (item == null) {
                     if (project.getRunConfigManager().getConfigurations().isEmpty()) {
-                        setText(localizationService.get("railroad.ide.toolbar.no_run_configurations"));
+                        setText(L18n.localize("railroad.ide.toolbar.no_run_configurations"));
                     } else {
-                        setText(localizationService.get("railroad.ide.toolbar.edit_run_configurations"));
+                        setText(L18n.localize("railroad.ide.toolbar.edit_run_configurations"));
                     }
 
                     return;
@@ -368,7 +366,6 @@ public final class RunControlsPane extends RRHBox {
     }
 
     private void showStopMenu(List<RunConfiguration<?>> runningConfigs) {
-        var localizationService = ServiceLocator.getService(LocalizationService.class);
         var menu = new ContextMenu();
 
         for (RunConfiguration<?> configuration : runningConfigs) {
@@ -390,7 +387,7 @@ public final class RunControlsPane extends RRHBox {
             menu.getItems().add(new SeparatorMenuItem());
         }
 
-        var stopAllItem = new MenuItem(localizationService.get("railroad.ide.toolbar.stop.all"));
+        var stopAllItem = new MenuItem(L18n.localize("railroad.ide.toolbar.stop.all"));
         stopAllItem.setOnAction(event -> {
             for (RunConfiguration<?> configuration : runningConfigs) {
                 stopConfiguration(configuration);

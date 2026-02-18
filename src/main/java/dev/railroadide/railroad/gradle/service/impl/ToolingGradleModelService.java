@@ -6,10 +6,9 @@ import dev.railroadide.railroad.gradle.GradleEnvironment;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.model.GradleModelListener;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.utility.function.ThrowingSupplier;
 import dev.railroadide.railroadplugin.dto.FabricDataModel;
-import dev.railroadide.railroadplugin.dto.RailroadProject;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.UnknownModelException;
@@ -32,7 +31,7 @@ import java.util.function.Supplier;
  * the Gradle build model.
  */
 public class ToolingGradleModelService implements GradleModelService {
-    private final Project project;
+    private final RailroadProject project;
     private final GradleEnvironment environment;
     private final Executor executor;
 
@@ -49,13 +48,13 @@ public class ToolingGradleModelService implements GradleModelService {
      * @param environment the Gradle environment configuration
      * @param executor    the executor to use for asynchronous operations
      */
-    public ToolingGradleModelService(Project project, GradleEnvironment environment, Executor executor) {
+    public ToolingGradleModelService(RailroadProject project, GradleEnvironment environment, Executor executor) {
         this.project = Objects.requireNonNull(project);
         this.environment = Objects.requireNonNull(environment);
         this.executor = Objects.requireNonNull(executor);
     }
 
-    public static GradleBuildModel loadModel(Project project, GradleEnvironment environment) {
+    public static GradleBuildModel loadModel(RailroadProject project, GradleEnvironment environment) {
         GradleConnector connector = GradleConnector.newConnector()
             .forProjectDirectory(project.getPath().toFile());
         configureConnector(connector, environment);
@@ -72,7 +71,7 @@ public class ToolingGradleModelService implements GradleModelService {
             GradleBuild gradleBuild = connection.model(GradleBuild.class)
                 .withArguments(initScriptArgs)
                 .get();
-            RailroadProject railroadProject = requestOptionalModel(connection, RailroadProject.class, initScriptArgs);
+            dev.railroadide.railroadplugin.dto.RailroadProject railroadProject = requestOptionalModel(connection, dev.railroadide.railroadplugin.dto.RailroadProject.class, initScriptArgs);
             FabricDataModel fabricDataModel = requestOptionalModel(connection, FabricDataModel.class, initScriptArgs);
 
             String gradleVersion = buildEnvironment.getGradle().getGradleVersion();

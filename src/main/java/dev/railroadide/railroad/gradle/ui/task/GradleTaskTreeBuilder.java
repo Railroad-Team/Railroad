@@ -5,7 +5,7 @@ import dev.railroadide.railroad.gradle.ui.tree.GradleProjectElement;
 import dev.railroadide.railroad.gradle.ui.tree.GradleTaskElement;
 import dev.railroadide.railroad.gradle.ui.tree.GradleTaskGroupElement;
 import dev.railroadide.railroad.gradle.ui.tree.GradleTreeElement;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroadplugin.dto.RailroadGradleTask;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTask> {
     @Override
-    public TreeItem<GradleTreeElement> buildTree(Project project, ObservableList<RailroadGradleTask> elements) {
+    public TreeItem<GradleTreeElement> buildTree(RailroadProject project, ObservableList<RailroadGradleTask> elements) {
         TreeItem<GradleTreeElement> root = new TreeItem<>();
 
         Map<RailroadModule, List<RailroadGradleTask>> tasksByProject = elements.stream()
@@ -51,7 +51,7 @@ public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTa
     }
 
     private TreeItem<GradleTreeElement> ensureProjectNode(
-        Project project,
+        RailroadProject project,
         RailroadModule module,
         Map<String, RailroadModule> projectsByPath,
         Map<String, TreeItem<GradleTreeElement>> projectNodes,
@@ -74,7 +74,7 @@ public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTa
         });
     }
 
-    private void addTasksToProjectNode(Project project, TreeItem<GradleTreeElement> projectNode,
+    private void addTasksToProjectNode(RailroadProject project, TreeItem<GradleTreeElement> projectNode,
                                        List<RailroadGradleTask> projectTasks) {
         Map<String, List<RailroadGradleTask>> tasksByGroup = projectTasks.stream()
             .collect(Collectors.groupingBy(task -> {

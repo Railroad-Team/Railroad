@@ -1,16 +1,16 @@
 package dev.railroadide.railroad.plugin.ui;
 
-import dev.railroadide.core.ui.RRListView;
-import dev.railroadide.core.ui.RRTextField;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.PluginLoadResult;
 import dev.railroadide.railroad.plugin.PluginManager;
-import dev.railroadide.railroadpluginapi.PluginDescriptor;
-import dev.railroadide.railroadpluginapi.deps.MavenDeps;
+import dev.railroadide.railroad.plugin.spi.PluginDescriptor;
+import dev.railroadide.railroad.plugin.spi.deps.MavenDeps;
+import dev.railroadide.railroad.ui.RRListView;
+import dev.railroadide.railroad.ui.RRTextField;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import javafx.application.HostServices;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;

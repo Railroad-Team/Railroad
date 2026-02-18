@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.ide;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroadpluginapi.dto.Document;
-import dev.railroadide.railroadpluginapi.dto.Project;
-import dev.railroadide.railroadpluginapi.events.FileEvent;
-import dev.railroadide.railroadpluginapi.events.ProjectEvent;
-import dev.railroadide.railroadpluginapi.services.IDEStateService;
+import dev.railroadide.railroad.plugin.spi.dto.Document;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.plugin.spi.events.FileEvent;
+import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
+import dev.railroadide.railroad.plugin.spi.services.IDEStateService;
 import lombok.Getter;
 
 import java.nio.file.Path;

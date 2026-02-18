@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.welcome;
 
-import dev.railroadide.core.ui.RRListView;
-import dev.railroadide.core.ui.RRNavigationItem;
-import dev.railroadide.core.ui.RRSidebar;
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ui.RRListView;
+import dev.railroadide.railroad.ui.RRNavigationItem;
+import dev.railroadide.railroad.ui.RRSidebar;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;

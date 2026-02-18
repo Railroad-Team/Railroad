@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ide.ui.git.commit.changes;
 
-import dev.railroadide.core.ui.RRCheckBoxTreeItem;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRCheckBoxTreeItem;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import javafx.scene.control.TreeItem;
 
@@ -39,7 +39,7 @@ public class CommitTreeItem extends RRCheckBoxTreeItem<ChangeItem> {
                 return;
 
             if (!(commitChild.getValue() instanceof DirectoryItem(
-                Project project, Path path, List<GitFileChange> changes, String displayTitle
+                    RailroadProject project, Path path, List<GitFileChange> changes, String displayTitle
             )))
                 return;
 

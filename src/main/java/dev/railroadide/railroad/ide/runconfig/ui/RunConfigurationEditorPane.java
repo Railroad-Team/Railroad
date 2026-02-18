@@ -1,17 +1,17 @@
 package dev.railroadide.railroad.ide.runconfig.ui;
 
-import dev.railroadide.core.form.Form;
-import dev.railroadide.core.form.FormData;
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
-import dev.railroadide.core.ui.styling.ButtonSize;
-import dev.railroadide.core.ui.styling.ButtonVariant;
+import dev.railroadide.railroad.form.Form;
+import dev.railroadide.railroad.form.FormData;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.localization.L18n;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.ui.styling.ButtonSize;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
@@ -40,7 +40,7 @@ import java.util.UUID;
 public class RunConfigurationEditorPane extends RRVBox {
     private final ObservableList<RunConfiguration<?>> configurations = FXCollections.observableArrayList();
     private final ObjectProperty<RunConfiguration<?>> selectedConfiguration = new SimpleObjectProperty<>();
-    private final Project project;
+    private final RailroadProject project;
     private final RunConfigurationTreeView configurationTreeView;
     private final SplitPane editorSplitPane;
     private final StackPane detailContentContainer;
@@ -49,7 +49,7 @@ public class RunConfigurationEditorPane extends RRVBox {
     private final Node detailsEmptyStatePane;
     private final Map<UUID, ConfigurationFormContext> configurationFormContexts = new HashMap<>();
 
-    public RunConfigurationEditorPane(Project project) {
+    public RunConfigurationEditorPane(RailroadProject project) {
         this.project = project;
         this.configurations.addAll(project.getRunConfigManager().getConfigurations());
         this.noConfigurationsPane = createEmptyStatePane();
@@ -138,7 +138,7 @@ public class RunConfigurationEditorPane extends RRVBox {
         return splitPane;
     }
 
-    private HBox createTopButtonBar(Project project) {
+    private HBox createTopButtonBar(RailroadProject project) {
         var topButtonBar = new RRHBox(5);
         topButtonBar.setAlignment(Pos.CENTER_LEFT);
         topButtonBar.setPadding(new Insets(5));
@@ -181,7 +181,7 @@ public class RunConfigurationEditorPane extends RRVBox {
         return button;
     }
 
-    private ContextMenu createAddContextMenu(Project project) {
+    private ContextMenu createAddContextMenu(RailroadProject project) {
         var contextMenu = new ContextMenu();
         for (RunConfigurationType<?> runConfigurationType : RunConfigurationType.REGISTRY.values()) {
             var graphic = new FontIcon(runConfigurationType.getIcon());
@@ -202,13 +202,13 @@ public class RunConfigurationEditorPane extends RRVBox {
         return contextMenu;
     }
 
-    private void createRunConfiguration(Project project, RunConfigurationType<?> runConfigurationType) {
+    private void createRunConfiguration(RailroadProject project, RunConfigurationType<?> runConfigurationType) {
         RunConfiguration<?> newConfiguration = runConfigurationType.createDefaultConfiguration(project);
         configurations.add(newConfiguration);
         selectedConfiguration.set(newConfiguration);
     }
 
-    private HBox createBottomButtonBar(Project project) {
+    private HBox createBottomButtonBar(RailroadProject project) {
         var bottomButtonBar = new RRHBox(5);
         bottomButtonBar.setAlignment(Pos.CENTER_RIGHT);
         bottomButtonBar.setPrefHeight(HBox.USE_COMPUTED_SIZE);

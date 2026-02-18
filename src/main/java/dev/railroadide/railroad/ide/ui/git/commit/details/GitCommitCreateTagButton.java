@@ -1,16 +1,16 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
-import dev.railroadide.core.ui.*;
-import dev.railroadide.core.ui.localized.LocalizedText;
-import dev.railroadide.core.ui.styling.ButtonVariant;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import dev.railroadide.railroad.window.DialogBuilder;
 import dev.railroadide.railroad.window.WindowBuilder;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 public class GitCommitCreateTagButton extends RRButton {
-    public GitCommitCreateTagButton(Project project, GitCommit commit) {
+    public GitCommitCreateTagButton(RailroadProject project, GitCommit commit) {
         super("railroad.git.commit.details.button.create_tag", FontAwesomeSolid.TAG);
         setVariant(ButtonVariant.PRIMARY);
         setOnAction(event -> {

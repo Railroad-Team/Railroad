@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.plugin.defaults;
 
-import dev.railroadide.railroadpluginapi.event.Event;
-import dev.railroadide.railroadpluginapi.event.EventBus;
-import dev.railroadide.railroadpluginapi.event.EventListener;
+import dev.railroadide.railroad.plugin.spi.event.Event;
+import dev.railroadide.railroad.plugin.spi.event.EventBus;
+import dev.railroadide.railroad.plugin.spi.event.EventListener;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

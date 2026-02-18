@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.project.onboarding.creation;
 
-import dev.railroadide.core.project.ProjectContext;
-import dev.railroadide.core.project.creation.modjson.FabricModJson;
-import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
+import dev.railroadide.railroad.project.ProjectContext;
+import dev.railroadide.railroad.project.creation.modjson.FabricModJson;
+import dev.railroadide.railroad.switchboard.pojo.MinecraftVersion;
 
 public class ProjectContextKeys {
     public static final ProjectContext.Key<MinecraftVersion> MDK_VERSION = new ProjectContext.Key<>("mdk_version");

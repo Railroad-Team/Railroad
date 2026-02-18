@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.java;
 
-import dev.railroadide.core.utility.OperatingSystem;
+import dev.railroadide.railroad.utility.OperatingSystem;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.utility.JavaVersion;

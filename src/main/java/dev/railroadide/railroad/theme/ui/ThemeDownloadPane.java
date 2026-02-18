@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.theme.ui;
 
-import dev.railroadide.core.ui.*;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
-import dev.railroadide.core.ui.styling.ButtonSize;
-import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.theme.Theme;
 import dev.railroadide.railroad.theme.ThemeDownloadManager;
+import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.ui.styling.ButtonSize;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
 import javafx.geometry.Insets;

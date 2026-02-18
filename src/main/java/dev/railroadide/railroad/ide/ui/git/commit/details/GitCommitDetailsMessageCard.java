@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.RRTextArea;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedText;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.RRTextArea;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import dev.railroadide.railroad.vcs.git.diff.GitAdditionsDeletions;
 import javafx.geometry.Pos;
@@ -15,7 +15,7 @@ import javafx.scene.text.Text;
 import java.util.List;
 
 public class GitCommitDetailsMessageCard extends RRVBox {
-    public GitCommitDetailsMessageCard(Project project, GitCommit commit) {
+    public GitCommitDetailsMessageCard(RailroadProject project, GitCommit commit) {
         super();
         getStyleClass().addAll("git-commit-details-message-vbox", "git-commit-details-message-card");
 

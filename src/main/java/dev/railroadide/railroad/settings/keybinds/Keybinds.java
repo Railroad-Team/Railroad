@@ -1,16 +1,11 @@
 package dev.railroadide.railroad.settings.keybinds;
 
-import dev.railroadide.core.settings.keybinds.Keybind;
-import dev.railroadide.core.settings.keybinds.KeybindCategory;
-import dev.railroadide.core.settings.keybinds.KeybindContexts;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.projectexplorer.PathItem;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.window.WindowManager;
 import javafx.scene.control.TreeView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
-import javafx.stage.Stage;
 
 public class Keybinds {
     public static final Keybind COPY = KeybindHandler.registerKeybind(Keybind.builder()

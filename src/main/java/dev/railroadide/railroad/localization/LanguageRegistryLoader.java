@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.localization;
 
-import dev.railroadide.core.localization.Language;
 import dev.railroadide.railroad.Railroad;
 
 import java.net.URI;
@@ -13,6 +12,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class LanguageRegistryLoader {
+    // TODO: This needs to load from any plugin identifier (or railroad) rather than only railroad.
     private static final String FOLDER = "assets/railroad/lang";
     private static final Pattern FILE_PATTERN = Pattern.compile("^([a-z]{2})_([a-z]{2})\\.lang$");
 
@@ -21,15 +21,15 @@ public final class LanguageRegistryLoader {
 
     public static void load() {
         try {
-            ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            Enumeration<URL> resources = cl.getResources(FOLDER);
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            Enumeration<URL> resources = classLoader.getResources(FOLDER);
 
             while (resources.hasMoreElements()) {
                 URL url = resources.nextElement();
                 discoverFromFileSystem(url);
             }
-        } catch (Exception e) {
-            Railroad.LOGGER.debug("Language load failed", e);
+        } catch (Exception exception) {
+            Railroad.LOGGER.debug("Language load failed", exception);
         }
     }
 

@@ -16,7 +16,7 @@ import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,13 +33,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Encapsulates all Gradle-related state for a {@link Project}, including cached environments and models.
+ * Encapsulates all Gradle-related state for a {@link RailroadProject}, including cached environments and models.
  */
 public final class GradleManager {
     private static final String DOWNLOAD_SOURCES_TASK = "railroadDownloadAllSources";
     private static final String DOWNLOAD_SOURCES_INIT_RESOURCE = "scripts/init-download-sources.gradle";
 
-    private final Project project;
+    private final RailroadProject project;
     private final Object lock = new Object();
 
     private ExecutorService modelExecutor;
@@ -54,7 +54,7 @@ public final class GradleManager {
      *
      * @param project the project
      */
-    public GradleManager(Project project) {
+    public GradleManager(RailroadProject project) {
         this.project = Objects.requireNonNull(project);
     }
 

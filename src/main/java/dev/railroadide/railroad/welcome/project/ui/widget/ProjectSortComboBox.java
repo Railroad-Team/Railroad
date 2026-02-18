@@ -1,9 +1,8 @@
 package dev.railroadide.railroad.welcome.project.ui.widget;
 
-import dev.railroadide.core.localization.LocalizationService;
-import dev.railroadide.core.ui.localized.LocalizedComboBox;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
-import dev.railroadide.core.utility.ServiceLocator;
+import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.ui.localized.LocalizedComboBox;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.welcome.project.ProjectSort;
 import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
@@ -34,7 +33,6 @@ public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {
         DESCRIPTION_KEYS.put(ProjectSort.DATE, "railroad.home.welcome.sort.date.description");
     }
 
-    private final LocalizationService localizationService = ServiceLocator.getService(LocalizationService.class);
     private final Tooltip sortTooltip = new Tooltip();
 
     public ProjectSortComboBox() {
@@ -65,8 +63,8 @@ public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {
 
     private void updateTooltip(ProjectSort sort) {
         ProjectSort targetSort = sort != null ? sort : ProjectSort.NONE;
-        String sortName = localizationService.get(targetSort.getKey());
-        sortTooltip.setText(localizationService.get("railroad.home.welcome.sort.tooltip", sortName));
+        String sortName = L18n.localize(targetSort.getKey());
+        sortTooltip.setText(L18n.localize("railroad.home.welcome.sort.tooltip", sortName));
     }
 
     private static class ProjectSortListCell extends ListCell<ProjectSort> {

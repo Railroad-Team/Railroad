@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.project.onboarding.creation.ui;
 
-import dev.railroadide.core.project.ProjectData;
-import dev.railroadide.core.ui.*;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
-import dev.railroadide.core.ui.localized.LocalizedTitledPane;
-import dev.railroadide.core.ui.localized.LocalizedTooltip;
-import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.project.ProjectData;
+import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.ui.localized.LocalizedTitledPane;
+import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import javafx.animation.FadeTransition;
 import javafx.animation.Interpolator;

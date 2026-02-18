@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.project.onboarding.creation.service;
 
-import dev.railroadide.core.project.creation.service.ChecksumService;
+import dev.railroadide.railroad.project.creation.service.ChecksumService;
 
 import java.io.InputStream;
 import java.io.OutputStream;

@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.ide.ui.git.commit.changes;
 
-import dev.railroadide.core.ui.RRCheckBoxTreeCell;
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.RRStackPane;
+import dev.railroadide.railroad.ui.RRCheckBoxTreeCell;
+import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.RRStackPane;
 import javafx.scene.Node;
 import javafx.scene.text.Text;
 

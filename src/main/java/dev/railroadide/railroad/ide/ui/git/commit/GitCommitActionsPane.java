@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.ide.ui.git.commit;
 
-import dev.railroadide.core.ui.*;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.*;
 import dev.railroadide.railroad.vcs.git.commit.GitCommitData;
 
 public class GitCommitActionsPane extends RRVBox {
-    private final Project project;
+    private final RailroadProject project;
     private final GitCommitChangesPane gitCommitChanges;
 
     private final RRCheckBox amendCheckbox;
@@ -13,7 +13,7 @@ public class GitCommitActionsPane extends RRVBox {
     private final RRTextField commitMessageField;
     private final RRTextArea commitDescriptionArea;
 
-    public GitCommitActionsPane(Project project, GitCommitChangesPane gitCommitChanges) {
+    public GitCommitActionsPane(RailroadProject project, GitCommitChangesPane gitCommitChanges) {
         this.project = project;
         this.gitCommitChanges = gitCommitChanges;
 

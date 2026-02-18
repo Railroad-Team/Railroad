@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ide.ui.git.commit.changes;
 
 import dev.railroadide.railroad.localization.L18n;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import javafx.scene.Node;
 import javafx.scene.control.ContextMenu;
@@ -14,9 +14,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
 
-public record DirectoryItem(Project project, Path path, List<GitFileChange> changes,
+public record DirectoryItem(RailroadProject project, Path path, List<GitFileChange> changes,
                             String displayTitle) implements ChangeItem {
-    public DirectoryItem(Project project, Path path, List<GitFileChange> changes) {
+    public DirectoryItem(RailroadProject project, Path path, List<GitFileChange> changes) {
         this(project, path, changes, path.getFileName().toString());
     }
 
@@ -40,7 +40,7 @@ public record DirectoryItem(Project project, Path path, List<GitFileChange> chan
     }
 
     @Override
-    public ContextMenu getContextMenu(Project project) {
+    public ContextMenu getContextMenu(RailroadProject project) {
         return null; // TODO: Implement context menu
     }
 

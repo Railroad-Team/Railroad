@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.project.onboarding;
 
-import dev.railroadide.core.ui.RRBorderPane;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.project.onboarding.flow.OnboardingFlow;
 import dev.railroadide.railroad.project.onboarding.flow.OnboardingTransition;
 import dev.railroadide.railroad.project.onboarding.step.OnboardingStep;
 import dev.railroadide.railroad.project.onboarding.ui.BasicOnboardingUI;
 import dev.railroadide.railroad.project.onboarding.ui.OnboardingUI;
+import dev.railroadide.railroad.ui.RRBorderPane;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;

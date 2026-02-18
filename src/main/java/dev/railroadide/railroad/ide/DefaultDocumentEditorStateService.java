@@ -3,9 +3,9 @@ package dev.railroadide.railroad.ide;
 import dev.railroadide.railroad.ide.ui.JavaCodeEditorPane;
 import dev.railroadide.railroad.ide.ui.JsonCodeEditorPane;
 import dev.railroadide.railroad.ide.ui.TextEditorPane;
-import dev.railroadide.railroadpluginapi.services.DocumentEditorStateService;
-import dev.railroadide.railroadpluginapi.state.Cursor;
-import dev.railroadide.railroadpluginapi.state.Selection;
+import dev.railroadide.railroad.plugin.spi.services.DocumentEditorStateService;
+import dev.railroadide.railroad.plugin.spi.state.Cursor;
+import dev.railroadide.railroad.plugin.spi.state.Selection;
 
 import java.util.List;
 

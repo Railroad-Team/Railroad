@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.plugin;
 
-import dev.railroadide.railroadpluginapi.Plugin;
-import dev.railroadide.railroadpluginapi.PluginDescriptor;
+import dev.railroadide.railroad.plugin.spi.Plugin;
+import dev.railroadide.railroad.plugin.spi.PluginDescriptor;
 
 import java.nio.file.Path;
 import java.util.Objects;

@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ui.layout;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.utility.Tree;
 import dev.railroadide.railroad.utility.Tree.Node;
 import javafx.util.Pair;
@@ -358,7 +358,7 @@ public class LayoutParser {
         return -1;
     }
 
-    public static Layout loadLayout(Project project) {
+    public static Layout loadLayout(RailroadProject project) {
         Path projectPath = project.getPath();
         Path layoutPath = projectPath.resolve(".railroad").resolve(".railayout");
 

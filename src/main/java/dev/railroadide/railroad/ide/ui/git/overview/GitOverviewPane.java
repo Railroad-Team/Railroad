@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ide.ui.git.overview;
 
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRVBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -10,7 +10,7 @@ public class GitOverviewPane extends RRVBox {
     private final GitOverviewIdentityPane identityPane;
     private final GitOverviewRecentCommitsPane recentCommitsPane;
 
-    public GitOverviewPane(Project project) {
+    public GitOverviewPane(RailroadProject project) {
         getStyleClass().add("git-overview-pane-root");
         setSpacing(8);
 

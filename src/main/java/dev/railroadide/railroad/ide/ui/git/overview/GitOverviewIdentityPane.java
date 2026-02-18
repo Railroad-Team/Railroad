@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.overview;
 
-import dev.railroadide.core.ui.RRGridPane;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedText;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRGridPane;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.identity.GitIdentity;
 import dev.railroadide.railroad.vcs.git.identity.GitSigningStatus;
@@ -21,7 +21,7 @@ public class GitOverviewIdentityPane extends RRVBox {
     private final Text signedText = new Text();
     private final Text gitVersionText = new Text();
 
-    public GitOverviewIdentityPane(Project project) {
+    public GitOverviewIdentityPane(RailroadProject project) {
         getStyleClass().add("git-overview-identity-pane");
 
         configureGrid();

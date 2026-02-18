@@ -1,16 +1,17 @@
 package dev.railroadide.railroad.window;
 
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.styling.ButtonVariant;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 public class DialogBuilder extends AlertBuilder<DialogBuilder> {
     private Runnable onConfirm = () -> {

@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.settings.ui;
 
-import dev.railroadide.core.ui.BrowseButton;
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.RRTextField;
-import dev.railroadide.core.ui.styling.ButtonVariant;
-import dev.railroadide.core.utility.DesktopUtils;
-import dev.railroadide.core.utility.OperatingSystem;
+import dev.railroadide.railroad.utility.DesktopUtils;
+import dev.railroadide.railroad.utility.OperatingSystem;
+import dev.railroadide.railroad.ui.BrowseButton;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.RRTextField;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.vcs.git.util.GitLocator;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;

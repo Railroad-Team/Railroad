@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.gradle.ui.task;
 
-import dev.railroadide.core.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.GradleRunConfigurationData;
 import dev.railroadide.railroad.java.JDKManager;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroadplugin.dto.RailroadGradleTask;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
 import javafx.scene.control.ContextMenu;
@@ -17,7 +17,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.util.Optional;
 
 public class GradleTaskContextMenu extends ContextMenu {
-    public GradleTaskContextMenu(Project project, RailroadGradleTask task) {
+    public GradleTaskContextMenu(RailroadProject project, RailroadGradleTask task) {
         super();
 
         var runIcon = new FontIcon(FontAwesomeSolid.PLAY);
@@ -49,7 +49,7 @@ public class GradleTaskContextMenu extends ContextMenu {
      * @param task    the Gradle task
      * @return the run configuration
      */
-    public static @NotNull RunConfiguration<GradleRunConfigurationData> getOrCreateRunConfig(Project project, RailroadGradleTask task) {
+    public static @NotNull RunConfiguration<GradleRunConfigurationData> getOrCreateRunConfig(RailroadProject project, RailroadGradleTask task) {
         RunConfigurationManager runConfigManager = project.getRunConfigManager();
         @SuppressWarnings("unchecked")
         Optional<RunConfiguration<GradleRunConfigurationData>> existingRunConfig = runConfigManager.getConfigurations().stream()

@@ -5,7 +5,7 @@ import dev.railroadide.railroad.gradle.ui.tree.GradleConfigurationElement;
 import dev.railroadide.railroad.gradle.ui.tree.GradleDependencyElement;
 import dev.railroadide.railroad.gradle.ui.tree.GradleProjectElement;
 import dev.railroadide.railroad.gradle.ui.tree.GradleTreeElement;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroadplugin.dto.RailroadConfiguration;
 import dev.railroadide.railroadplugin.dto.RailroadDependency;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
@@ -18,7 +18,7 @@ import java.util.*;
 
 public class GradleDependencyTreeBuilder implements GradleTreeBuilder<RailroadConfiguration> {
     @Override
-    public TreeItem<GradleTreeElement> buildTree(Project project, ObservableList<RailroadConfiguration> elements) {
+    public TreeItem<GradleTreeElement> buildTree(RailroadProject project, ObservableList<RailroadConfiguration> elements) {
         TreeItem<GradleTreeElement> root = new TreeItem<>();
 
         List<RailroadConfiguration> rootConfigs = elements.stream()

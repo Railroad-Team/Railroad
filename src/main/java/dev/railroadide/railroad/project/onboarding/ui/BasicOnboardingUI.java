@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.project.onboarding.ui;
 
-import dev.railroadide.core.ui.*;
-import dev.railroadide.core.ui.styling.ButtonVariant;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.project.onboarding.step.OnboardingStep;
+import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;

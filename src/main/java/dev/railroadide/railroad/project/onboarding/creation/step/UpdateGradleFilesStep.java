@@ -1,21 +1,17 @@
 package dev.railroadide.railroad.project.onboarding.creation.step;
 
-import dev.railroadide.core.project.ProjectContext;
-import dev.railroadide.core.project.ProjectData;
-import dev.railroadide.core.project.ProjectType;
-import dev.railroadide.core.project.creation.CreationStep;
-import dev.railroadide.core.project.creation.ProgressReporter;
-import dev.railroadide.core.project.creation.service.FilesService;
-import dev.railroadide.core.project.creation.service.HttpService;
-import dev.railroadide.core.project.creation.service.TemplateEngineService;
-import dev.railroadide.core.project.minecraft.MappingChannel;
-import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
-import dev.railroadide.railroad.project.MappingChannelRegistry;
-import dev.railroadide.railroad.project.ProjectTypeRegistry;
+import dev.railroadide.railroad.project.*;
+import dev.railroadide.railroad.project.creation.CreationStep;
+import dev.railroadide.railroad.project.creation.ProgressReporter;
+import dev.railroadide.railroad.project.creation.service.FilesService;
+import dev.railroadide.railroad.project.creation.service.HttpService;
+import dev.railroadide.railroad.project.creation.service.TemplateEngineService;
+import dev.railroadide.railroad.project.minecraft.MappingChannel;
 import dev.railroadide.railroad.project.onboarding.creation.ProjectContextKeys;
 import dev.railroadide.railroad.project.onboarding.keys.FabricProjectKeys;
 import dev.railroadide.railroad.project.onboarding.keys.ForgeProjectKeys;
 import dev.railroadide.railroad.project.onboarding.keys.MinecraftProjectKeys;
+import dev.railroadide.railroad.switchboard.pojo.MinecraftVersion;
 import groovy.lang.Binding;
 
 import java.net.URI;

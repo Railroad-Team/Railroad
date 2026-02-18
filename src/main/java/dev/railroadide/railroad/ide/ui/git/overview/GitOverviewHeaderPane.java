@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.overview;
 
-import dev.railroadide.core.ui.*;
-import dev.railroadide.core.ui.localized.LocalizedText;
-import dev.railroadide.core.ui.styling.ButtonVariant;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.utility.TimeFormatter;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
@@ -48,7 +48,7 @@ public class GitOverviewHeaderPane extends RRVBox {
     private final Timeline upstreamElapsedTimeline;
     private final GitManager gitManager;
 
-    public GitOverviewHeaderPane(Project project) {
+    public GitOverviewHeaderPane(RailroadProject project) {
         getStyleClass().add("git-overview-header-pane");
         setSpacing(8);
 

@@ -1,14 +1,14 @@
 package dev.railroadide.railroad.ide.projectexplorer;
 
-import dev.railroadide.core.ui.RRBorderPane;
-import dev.railroadide.core.ui.RRHBox;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
-import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
+import dev.railroadide.railroad.plugin.spi.events.FileRenamedEvent;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRBorderPane;
+import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.utility.FileUtils;
-import dev.railroadide.railroadpluginapi.events.FileRenamedEvent;
 import javafx.application.Platform;
 import javafx.beans.property.StringProperty;
 import javafx.scene.Node;
@@ -31,9 +31,9 @@ public class PathTreeCell extends TreeCell<PathItem> {
     private TextField textField;
     private Path editingPath;
     private boolean allowEdit = false;
-    private final Project project;
+    private final RailroadProject project;
 
-    public PathTreeCell(Project project, StringProperty messageProperty, RRBorderPane mainPane) {
+    public PathTreeCell(RailroadProject project, StringProperty messageProperty, RRBorderPane mainPane) {
         super();
 
         this.project = project;
@@ -211,7 +211,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
 
                 Files.move(editingPath, newValue.getPath());
                 getItem().setPath(newValue.getPath());
-                Railroad.EVENT_BUS.publish(new FileRenamedEvent(new DefaultDocument(newName, newValue.getPath()), oldName, newName));
+                Railroad.EVENT_BUS.publish(new FileRenamedEvent(new FileSystemDocument(newName, newValue.getPath()), oldName, newName));
             } catch (IOException exception) {
                 cancelEdit();
                 messageProperty.setValue("Renaming %s failed".formatted(editingPath.getFileName()));

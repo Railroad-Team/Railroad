@@ -2,9 +2,8 @@ package dev.railroadide.railroad.project.facet.detector;
 
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
 import dev.railroadide.railroad.project.facet.FacetManager;
@@ -30,7 +29,7 @@ public class FabricFacetDetector implements FacetDetector<FabricFacetData> {
      * @return an Optional containing the Fabric facet if detected, or empty if not found
      */
     @Override
-    public Optional<Facet<FabricFacetData>> detect(Project project) {
+    public Optional<Facet<FabricFacetData>> detect(RailroadProject project) {
         Path path = project.getPath();
         Path fabricModJson = path.resolve("src").resolve("main").resolve("resources").resolve("fabric.mod.json");
         if (Files.notExists(fabricModJson) || !Files.isRegularFile(fabricModJson) || !Files.isReadable(fabricModJson))

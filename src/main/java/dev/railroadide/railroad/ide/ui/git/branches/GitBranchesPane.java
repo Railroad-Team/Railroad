@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.branches;
 
-import dev.railroadide.core.ui.RRTextField;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.ui.RRTextField;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -18,7 +18,7 @@ public class GitBranchesPane extends RRVBox {
     private final GitLocalBranchesListView localBranchesListView;
     private final GitRemoteBranchesListView remoteBranchesListView;
 
-    public GitBranchesPane(Project project) {
+    public GitBranchesPane(RailroadProject project) {
         searchBar = new RRTextField("railroad.git.branches.search.placeholder");
         searchBar.getStyleClass().add("git-branches-search-bar");
 
