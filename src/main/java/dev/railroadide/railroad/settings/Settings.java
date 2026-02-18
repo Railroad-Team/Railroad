@@ -103,6 +103,7 @@ public final class Settings {
         .codec(SettingCodecs.ENABLED_PLUGINS)
         .noTitle()
         .noDescription()
+        .persisted(false)
         .addListener((oldValue, newValue) -> {
             if (newValue == null) {
                 newValue = new HashMap<>();

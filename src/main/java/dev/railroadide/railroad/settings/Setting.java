@@ -103,6 +103,13 @@ public class Setting<T> {
     private final boolean hasDescription;
 
     /**
+     * Indicates whether this setting should be persisted to settings.json.
+     * Non-persisted settings may still appear in UI and notify listeners.
+     */
+    @Getter
+    private final boolean persisted;
+
+    /**
      * List of listeners that are notified when the setting's value changes.
      * This allows other parts of the application to react to changes in the setting.
      */
@@ -169,7 +176,7 @@ public class Setting<T> {
      * @param defaultValue The default value for the setting, can be null if allowed.
      */
     public Setting(String id, String treePath, SettingCodec<T, ?> codec, Class<T> type, boolean canBeNull, @Nullable T defaultValue, SettingCategory category,
-                   @Nullable String title, @Nullable String description, boolean hasTitle, boolean hasDescription) {
+                   @Nullable String title, @Nullable String description, boolean hasTitle, boolean hasDescription, boolean persisted) {
         this.id = id;
         this.treePath = treePath;
         this.codec = codec;
@@ -182,6 +189,7 @@ public class Setting<T> {
         this.description = description;
         this.hasTitle = hasTitle;
         this.hasDescription = hasDescription;
+        this.persisted = persisted;
     }
 
     /**
@@ -390,6 +398,7 @@ public class Setting<T> {
         private String description;
         private boolean hasTitle = true;
         private boolean hasDescription = true;
+        private boolean persisted = true;
         private final List<BiConsumer<T, T>> listeners = new ArrayList<>();
 
         /**
@@ -519,6 +528,17 @@ public class Setting<T> {
         }
 
         /**
+         * Sets whether this setting should be persisted to settings.json.
+         *
+         * @param persisted True to persist the setting, false for runtime/UI-only settings.
+         * @return This builder instance for method chaining.
+         */
+        public Builder<T> persisted(boolean persisted) {
+            this.persisted = persisted;
+            return this;
+        }
+
+        /**
          * Sets that the setting does not have a title.
          *
          * @return This builder instance for method chaining.
@@ -585,7 +605,7 @@ public class Setting<T> {
             }
 
             var setting = new Setting<>(id, treePath, codec, type, canBeNull, defaultValue, category,
-                title, description, hasTitle, hasDescription);
+                title, description, hasTitle, hasDescription, persisted);
             for (BiConsumer<T, T> listener : listeners) {
                 setting.addListener(listener);
             }

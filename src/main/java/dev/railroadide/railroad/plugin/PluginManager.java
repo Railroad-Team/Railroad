@@ -3,12 +3,11 @@ package dev.railroadide.railroad.plugin;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.defaults.DefaultPluginContext;
 import dev.railroadide.railroad.plugin.spi.Plugin;
 import dev.railroadide.railroad.plugin.spi.PluginDescriptor;
-import dev.railroadide.railroad.settings.Settings;
-import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -78,7 +77,7 @@ public class PluginManager {
                     if (firstLoad) {
                         readyToLoad.add(descriptor);
                     } else {
-                        addPluginToSettings(descriptor);
+                        addPluginToConfig(descriptor);
                     }
                 } catch (Exception exception) {
                     Railroad.LOGGER.error("Failed to load plugin from {}", entry.toAbsolutePath(), exception);
@@ -90,7 +89,7 @@ public class PluginManager {
     }
 
     /**
-     * Enables all plugins that are currently marked as enabled in the settings.
+     * Enables all plugins that are currently marked as enabled in config.
      * This method iterates through the enabled plugins and calls enablePlugin for each one.
      * It logs any errors encountered during the enabling process.
      */
@@ -128,9 +127,9 @@ public class PluginManager {
 
         for (PluginDescriptor descriptor : readyToLoad) {
             try {
-                addPluginToSettings(descriptor);
+                addPluginToConfig(descriptor);
             } catch (Exception exception) {
-                Railroad.LOGGER.error("Failed to add plugin to settings: {}", descriptor.getName(), exception);
+                Railroad.LOGGER.error("Failed to add plugin to config: {}", descriptor.getName(), exception);
             }
         }
 
@@ -138,17 +137,20 @@ public class PluginManager {
     }
 
     /**
-     * Adds a plugin descriptor to the settings for tracking enabled plugins.
-     * This method ensures that the plugin is registered in the settings even if it is not enabled.
+     * Adds a plugin descriptor to config for tracking enabled plugins.
+     * This ensures every discovered plugin has a persisted enabled/disabled flag.
      *
      * @param descriptor The PluginDescriptor of the plugin to add.
      */
-    private static void addPluginToSettings(PluginDescriptor descriptor) {
-        Map<PluginDescriptor, Boolean> enabledPlugins = getEnabledPlugins();
-        if (!enabledPlugins.containsKey(descriptor)) {
-            enabledPlugins.put(descriptor, false);
-            SettingsHandler.setValue(Settings.ENABLED_PLUGINS, enabledPlugins);
-            SettingsHandler.saveSettings();
+    private static void addPluginToConfig(PluginDescriptor descriptor) {
+        if (descriptor == null || descriptor.getId() == null || descriptor.getId().isBlank())
+            return;
+
+        Map<String, Boolean> enabledPluginsById = ConfigHandler.getConfig().getEnabledPlugins();
+        if (!enabledPluginsById.containsKey(descriptor.getId())) {
+            enabledPluginsById.put(descriptor.getId(), false);
+            ConfigHandler.getConfig().setEnabledPlugins(enabledPluginsById);
+            ConfigHandler.saveConfig();
         }
     }
 
@@ -199,10 +201,10 @@ public class PluginManager {
                 }
             });
 
-            Map<PluginDescriptor, Boolean> enabledPlugins = getEnabledPlugins();
-            enabledPlugins.put(descriptor, true);
-            SettingsHandler.setValue(Settings.ENABLED_PLUGINS, enabledPlugins);
-            SettingsHandler.saveSettings();
+            Map<String, Boolean> enabledPluginsById = ConfigHandler.getConfig().getEnabledPlugins();
+            enabledPluginsById.put(descriptor.getId(), true);
+            ConfigHandler.getConfig().setEnabledPlugins(enabledPluginsById);
+            ConfigHandler.saveConfig();
 
             L18n.onPluginEnabled(descriptor);
 
@@ -245,10 +247,10 @@ public class PluginManager {
                 Railroad.LOGGER.warn("Plugin instance for {} is null, skipping onDisable", descriptor.getName());
             }
 
-            Map<PluginDescriptor, Boolean> enabledPlugins = getEnabledPlugins();
-            enabledPlugins.put(descriptor, false);
-            SettingsHandler.setValue(Settings.ENABLED_PLUGINS, enabledPlugins);
-            SettingsHandler.saveSettings();
+            Map<String, Boolean> enabledPluginsById = ConfigHandler.getConfig().getEnabledPlugins();
+            enabledPluginsById.put(descriptor.getId(), false);
+            ConfigHandler.getConfig().setEnabledPlugins(enabledPluginsById);
+            ConfigHandler.saveConfig();
 
             Railroad.LOGGER.info("Disabled plugin: {}", descriptor.getName());
         } catch (Exception exception) {
@@ -257,8 +259,7 @@ public class PluginManager {
     }
 
     /**
-     * Checks if a plugin is enabled based on the settings.
-     * This method retrieves the enabled plugins from the settings and checks if the specified plugin is enabled.
+     * Checks if a plugin is enabled based on persisted config.
      *
      * @param descriptor The PluginDescriptor of the plugin to check.
      * @return true if the plugin is enabled, false otherwise.
@@ -268,16 +269,13 @@ public class PluginManager {
         if (descriptor == null)
             throw new IllegalArgumentException("PluginDescriptor cannot be null");
 
-        Map<PluginDescriptor, Boolean> enabledPlugins = SettingsHandler.getValue(Settings.ENABLED_PLUGINS);
-        if (enabledPlugins == null)
-            return false;
-
-        return enabledPlugins.getOrDefault(descriptor, false);
+        Map<String, Boolean> enabledPluginsById = ConfigHandler.getConfig().getEnabledPlugins();
+        return enabledPluginsById.getOrDefault(descriptor.getId(), false);
     }
 
     /**
      * Checks if a plugin is enabled, forcing the check against the loaded plugins list.
-     * This method does not rely on the settings and checks directly against the loaded plugins.
+     * This method does not rely on persisted config and checks directly against loaded plugin instances.
      *
      * @param descriptor The PluginDescriptor of the plugin to check.
      * @return true if the plugin is enabled, false otherwise.
@@ -295,15 +293,20 @@ public class PluginManager {
     }
 
     /**
-     * Retrieves the currently enabled plugins from the settings.
-     * If no plugins are enabled, it returns an empty map.
+     * Retrieves the enabled state for all loaded plugins from config.
      *
      * @return A map of PluginDescriptor to their enabled status (true for enabled, false for disabled).
      */
     public static Map<PluginDescriptor, Boolean> getEnabledPlugins() {
-        Map<PluginDescriptor, Boolean> enabledPlugins = SettingsHandler.getValue(Settings.ENABLED_PLUGINS);
-        if (enabledPlugins == null) {
-            enabledPlugins = new HashMap<>();
+        Map<String, Boolean> enabledPluginsById = ConfigHandler.getConfig().getEnabledPlugins();
+        Map<PluginDescriptor, Boolean> enabledPlugins = new HashMap<>();
+
+        for (PluginLoadResult loadResult : LOADED_PLUGINS) {
+            PluginDescriptor descriptor = loadResult.descriptor();
+            if (descriptor == null || descriptor.getId() == null || descriptor.getId().isBlank())
+                continue;
+
+            enabledPlugins.put(descriptor, enabledPluginsById.getOrDefault(descriptor.getId(), false));
         }
 
         return enabledPlugins;
@@ -311,7 +314,7 @@ public class PluginManager {
 
     /**
      * Sets the enabled status of multiple plugins.
-     * This method updates the settings with the provided map of PluginDescriptor to their enabled status.
+     * This method updates plugin runtime/config state with the provided map of PluginDescriptor to enabled status.
      *
      * @param enabledPlugins A map of PluginDescriptor to their enabled status (true for enabled, false for disabled).
      * @throws IllegalArgumentException if the enabledPlugins map is null.

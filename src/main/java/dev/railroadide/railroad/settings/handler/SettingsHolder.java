@@ -42,6 +42,9 @@ public class SettingsHolder implements JsonSerializable<JsonObject> {
             Setting<?> value = entry.getValue();
 
             if (value != null) {
+                if (!value.isPersisted())
+                    continue;
+
                 JsonElement element = value.toJson();
                 if (element != null) {
                     json.add(key, element);
@@ -71,7 +74,11 @@ public class SettingsHolder implements JsonSerializable<JsonObject> {
 
             Setting<?> setting = SettingsHandler.SETTINGS_REGISTRY.get(key);
             if (setting != null) {
-                setting.fromJson(value);
+                if (setting.isPersisted()) {
+                    setting.fromJson(value);
+                } else {
+                    Railroad.LOGGER.debug("Setting with ID '{}' is non-persisted; ignoring stored value.", key);
+                }
             } else {
                 pendingSettings.put(key, value);
                 Railroad.LOGGER.debug("Setting with ID '{}' is not registered yet, deferring value load.", key);
