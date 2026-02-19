@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ui.layout;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.Tree;
 import dev.railroadide.railroad.utility.Tree.Node;
 import javafx.util.Pair;
@@ -73,9 +73,8 @@ public class LayoutParser {
                 case OPEN_BRACE -> parent = stack.peek();
                 case CLOSE_BRACE -> {
                     stack.pop();
-                    if (stack.isEmpty()) {
+                    if (stack.isEmpty())
                         return tree;
-                    }
                 }
                 case COMMA -> {
                     if (parent.getChildren().isEmpty() && parent.getValue().getProperties().isEmpty()) {
@@ -187,7 +186,7 @@ public class LayoutParser {
                 column++;
                 content = content.substring(1);
             } else if (Character.isLetter(content.charAt(0))) {
-                // first check to see if its a property
+                // first check to see if it's a property
                 int colonIndex = content.indexOf(":");
                 int definitiveEnd = indexOfAny(content, "{},%");
 
@@ -268,9 +267,8 @@ public class LayoutParser {
                 return new Pair<>(
                     new Token(Token.Type.PROPERTY_OBJECT, property + ":" + subContent, line, column, line, column + colonIndex + endIndex),
                     value.substring(endIndex + 1).trim());
-            } else {
+            } else
                 throw new LayoutParseException("Invalid property value: '" + value + "' at line " + line + " column " + column);
-            }
         } else if (value.startsWith("[")) {
             int endIndex = findClosingBracketIndex(value);
             if (endIndex != -1) {
@@ -278,9 +276,8 @@ public class LayoutParser {
                 return new Pair<>(
                     new Token(Token.Type.PROPERTY_ARRAY, property + ":" + subContent, line, column, line, column + colonIndex + endIndex),
                     value.substring(endIndex + 1).trim());
-            } else {
+            } else
                 throw new LayoutParseException("Invalid property value: '" + value + "' at line " + line + " column " + column);
-            }
         } else if (Character.isDigit(value.charAt(0))) {
             String number = extractNumber(value);
             return new Pair<>(
@@ -293,9 +290,8 @@ public class LayoutParser {
                 return new Pair<>(
                     new Token(Token.Type.PROPERTY_STRING, property + ":" + subContent, line, column, line, column + colonIndex + endIndex),
                     value.substring(endIndex + 1).trim());
-            } else {
+            } else
                 throw new LayoutParseException("Invalid property value: '" + value + "' at line " + line + " column " + column);
-            }
         } else if (value.startsWith("true") || value.startsWith("false")) {
             int beginIndex = value.contains(" ") ? value.indexOf(" ") : value.length();
             return new Pair<>(
@@ -314,10 +310,11 @@ public class LayoutParser {
             } else if (content.charAt(i) == '}') {
                 count--;
             }
-            if (count == 0) {
+
+            if (count == 0)
                 return i;
-            }
         }
+
         return -1;
     }
 
@@ -329,10 +326,11 @@ public class LayoutParser {
             } else if (content.charAt(i) == ']') {
                 count--;
             }
-            if (count == 0) {
+
+            if (count == 0)
                 return i;
-            }
         }
+
         return -1;
     }
 
@@ -341,31 +339,30 @@ public class LayoutParser {
         for (char c : content.toCharArray()) {
             if (Character.isDigit(c) || c == '.' || c == '-' || c == '+') {
                 sb.append(c);
-            } else {
+            } else
                 break;
-            }
         }
+
         return sb.toString();
     }
 
     private static int indexOfAny(String content, String chars) {
         for (int i = 0; i < content.length(); i++) {
-            if (chars.indexOf(content.charAt(i)) != -1) {
+            if (chars.indexOf(content.charAt(i)) != -1)
                 return i;
-            }
         }
 
         return -1;
     }
 
-    public static Layout loadLayout(RailroadProject project) {
+    public static Layout loadLayout(Project project) {
         Path projectPath = project.getPath();
         Path layoutPath = projectPath.resolve(".railroad").resolve(".railayout");
 
         try {
             return parse(layoutPath);
         } catch (LayoutParseException exception) {
-            Railroad.LOGGER.error("Failed to load layout for project: {}", project.getPathString(), exception);
+            Railroad.LOGGER.error("Failed to load layout for project: {}", project.getPath(), exception);
             return new Layout(new Tree<>(new Node<>(new LayoutItem("error"))));
         }
     }

@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRCheckBox;
 import dev.railroadide.railroad.ui.RRTextField;
@@ -15,7 +15,7 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import java.util.Objects;
 
 public class GitCommitNewBranchButton extends RRButton {
-    public GitCommitNewBranchButton(RailroadProject project, GitCommit commit) {
+    public GitCommitNewBranchButton(Project project, GitCommit commit) {
         super("railroad.git.commit.details.button.create_branch", FontAwesomeSolid.CODE_BRANCH);
         setVariant(ButtonVariant.PRIMARY);
         setOnAction(event -> {
@@ -114,7 +114,7 @@ public class GitCommitNewBranchButton extends RRButton {
         });
     }
 
-    private static void validateBranchName(RailroadProject project, String string, LocalizedText errorText, RRButton confirmButton) {
+    private static void validateBranchName(Project project, String string, LocalizedText errorText, RRButton confirmButton) {
         boolean hasControlChars = string.chars().anyMatch(c -> c < 32 || c == 127);
         if (hasControlChars) {
             errorText.setKeyAndArgs("railroad.git.commit.details.new_branch_dialog.error_invalid_characters");

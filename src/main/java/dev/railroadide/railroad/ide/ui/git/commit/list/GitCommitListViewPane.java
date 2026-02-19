@@ -3,7 +3,7 @@ package dev.railroadide.railroad.ide.ui.git.commit.list;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.utility.TimeFormatter;
@@ -55,7 +55,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
     private volatile String searchFilter = "";
     private volatile boolean loadingCommits = true;
 
-    public GitCommitListViewPane(RailroadProject project) {
+    public GitCommitListViewPane(Project project) {
         super();
 
         getStyleClass().add("git-commit-list-view-pane");
@@ -80,7 +80,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
         project.getGitManager().getAllCommits(this::handleCommitsPage, () -> Platform.runLater(this::handleCommitsDone), 200);
     }
 
-    private void reloadCommitMetadata(RailroadProject project) {
+    private void reloadCommitMetadata(Project project) {
         project.getGitManager().getCommitListMetadata().thenAccept(metadata -> Platform.runLater(() -> {
             headCommitHash = metadata.headCommitHash();
             tagsByCommit = metadata.tagsByCommit();
@@ -174,7 +174,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
         return committerSeconds > 0L ? committerSeconds : commit.authorTimestampEpochSeconds();
     }
 
-    private void openDetailsForCommit(Scene scene, RailroadProject project, GitCommit commit) {
+    private void openDetailsForCommit(Scene scene, Project project, GitCommit commit) {
         if (scene == null || scene.getRoot() == null)
             return;
 

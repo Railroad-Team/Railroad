@@ -16,7 +16,7 @@ import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,13 +33,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Encapsulates all Gradle-related state for a {@link RailroadProject}, including cached environments and models.
+ * Encapsulates all Gradle-related state for a {@link Project}, including cached environments and models.
  */
 public final class GradleManager {
     private static final String DOWNLOAD_SOURCES_TASK = "railroadDownloadAllSources";
     private static final String DOWNLOAD_SOURCES_INIT_RESOURCE = "scripts/init-download-sources.gradle";
 
-    private final RailroadProject project;
+    private final Project project;
     private final Object lock = new Object();
 
     private ExecutorService modelExecutor;
@@ -54,7 +54,7 @@ public final class GradleManager {
      *
      * @param project the project
      */
-    public GradleManager(RailroadProject project) {
+    public GradleManager(Project project) {
         this.project = Objects.requireNonNull(project);
     }
 
@@ -71,7 +71,7 @@ public final class GradleManager {
             if (modelService == null) {
                 if (modelExecutor == null || modelExecutor.isShutdown()) {
                     modelExecutor = Executors.newSingleThreadExecutor(runnable -> {
-                        var thread = new Thread(runnable, "railroad-gradle-model-" + project.getPathString());
+                        var thread = new Thread(runnable, "railroad-gradle-model-" + project.getPath());
                         thread.setDaemon(true);
                         return thread;
                     });
@@ -392,7 +392,7 @@ public final class GradleManager {
             if (executionService == null) {
                 if (executionExecutor == null || executionExecutor.isShutdown()) {
                     executionExecutor = Executors.newCachedThreadPool(r -> {
-                        var thread = new Thread(r, "railroad-gradle-exec-" + project.getPathString());
+                        var thread = new Thread(r, "railroad-gradle-exec-" + project.getPath());
                         thread.setDaemon(true);
                         return thread;
                     });

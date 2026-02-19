@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.gradle.ui;
 
 import dev.railroadide.railroad.gradle.ui.tree.GradleTreeElement;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TreeItem;
 
 public interface GradleTreeBuilder<T> {
-    TreeItem<GradleTreeElement> buildTree(RailroadProject project, ObservableList<T> elements);
+    TreeItem<GradleTreeElement> buildTree(Project project, ObservableList<T> elements);
 
     default String getParentProjectPath(String projectPath) {
         if (projectPath == null || ":".equals(projectPath))

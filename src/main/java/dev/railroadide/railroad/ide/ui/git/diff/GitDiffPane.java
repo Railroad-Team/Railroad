@@ -3,7 +3,7 @@ package dev.railroadide.railroad.ide.ui.git.diff;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.syntaxhighlighting.JsonSyntaxHighlighting;
 import dev.railroadide.railroad.ide.syntaxhighlighting.TreeSitterJavaSyntaxHighlighting;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRBorderPane;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
@@ -52,7 +52,7 @@ public class GitDiffPane extends RRBorderPane {
     private int oldNumberDigits = 1;
     private int newNumberDigits = 1;
 
-    public GitDiffPane(RailroadProject project, Path filePath) {
+    public GitDiffPane(Project project, Path filePath) {
         this.gitManager = project.getGitManager();
 
         getStyleClass().add("git-diff-pane-root");
@@ -77,7 +77,7 @@ public class GitDiffPane extends RRBorderPane {
         ShutdownHooks.addHook(executor::shutdownNow);
     }
 
-    public GitDiffPane(RailroadProject project) {
+    public GitDiffPane(Project project) {
         this(project, null);
     }
 

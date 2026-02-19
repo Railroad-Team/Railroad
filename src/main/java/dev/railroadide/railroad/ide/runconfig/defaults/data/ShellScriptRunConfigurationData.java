@@ -1,13 +1,13 @@
 package dev.railroadide.railroad.ide.runconfig.defaults.data;
 
-import dev.railroadide.railroad.utility.OperatingSystem;
 import dev.railroadide.railroad.form.*;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationData;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.onboarding.ProjectValidators;
+import dev.railroadide.railroad.utility.OperatingSystem;
 import dev.railroadide.railroad.utility.StringUtils;
 import javafx.beans.binding.Bindings;
 import lombok.Data;
@@ -44,7 +44,7 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
     }
 
     @Override
-    public Form createConfigurationForm(RailroadProject project, RunConfiguration<?> configuration) {
+    public Form createConfigurationForm(Project project, RunConfiguration<?> configuration) {
         var executeModeComponent = FormComponent.radioButtonGroup("executeMode", "railroad.runconfig.shell_script.configuration.executeMode.label", ExecuteMode.class)
             .required()
             .selected(() -> this.executeMode)

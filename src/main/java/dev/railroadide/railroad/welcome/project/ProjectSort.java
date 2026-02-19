@@ -1,20 +1,20 @@
 package dev.railroadide.railroad.welcome.project;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import lombok.Getter;
 
 import java.util.Comparator;
 
 @Getter
 public enum ProjectSort {
-    NAME("railroad.home.welcome.sort.name", Comparator.comparing(RailroadProject::getAlias)),
-    DATE("railroad.home.welcome.sort.date", Comparator.comparing(RailroadProject::getLastOpened).reversed()),
-    NONE("railroad.home.welcome.sort.none", Comparator.comparing(RailroadProject::hashCode));
+    NAME("railroad.home.welcome.sort.name", Comparator.comparing(Project::getAlias)),
+    DATE("railroad.home.welcome.sort.date", Comparator.comparing(Project::getLastOpened).reversed()),
+    NONE("railroad.home.welcome.sort.none", Comparator.comparing(Project::hashCode));
 
     private final String key;
-    private final Comparator<? super RailroadProject> comparator;
+    private final Comparator<? super Project> comparator;
 
-    ProjectSort(String key, Comparator<? super RailroadProject> comparator) {
+    ProjectSort(String key, Comparator<? super Project> comparator) {
         this.key = key;
         this.comparator = comparator;
     }

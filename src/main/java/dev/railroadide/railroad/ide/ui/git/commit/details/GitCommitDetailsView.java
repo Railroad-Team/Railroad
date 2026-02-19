@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import javafx.geometry.Pos;
@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 public class GitCommitDetailsView extends RRVBox {
-    public GitCommitDetailsView(RailroadProject project, GitCommit commit, String headCommitHash, Map<String, List<String>> tagsByCommit) {
+    public GitCommitDetailsView(Project project, GitCommit commit, String headCommitHash, Map<String, List<String>> tagsByCommit) {
         super();
         getStyleClass().add("git-commit-details-view");
         setSpacing(14);

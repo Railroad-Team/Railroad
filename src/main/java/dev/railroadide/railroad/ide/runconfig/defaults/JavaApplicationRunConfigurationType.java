@@ -6,8 +6,9 @@ import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.JavaApplicationRunConfigurationData;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import javafx.scene.paint.Color;
+import org.jetbrains.annotations.UnknownNullability;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.io.BufferedReader;
@@ -31,7 +32,7 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
     }
 
     @Override
-    public CompletableFuture<Void> run(RailroadProject project, RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> run(Project project, RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
         return execute(project, configuration, false).whenComplete((unused, throwable) -> {
             if (throwable != null) {
                 Railroad.LOGGER.error("Failed to start run session for configuration: {}", configuration.data().getName(), throwable);
@@ -40,7 +41,7 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
     }
 
     @Override
-    public CompletableFuture<Void> debug(RailroadProject project, RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> debug(Project project, RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
         return execute(project, configuration, true).whenComplete((unused, throwable) -> {
             if (throwable != null) {
                 Railroad.LOGGER.error("Failed to start debug session for configuration: {}", configuration.data().getName(), throwable);
@@ -49,7 +50,7 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
     }
 
     @Override
-    public CompletableFuture<Void> stop(RailroadProject project, RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> stop(Project project, RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
         Process process = runningProcesses.get(configuration);
         if (process != null && process.isAlive()) {
             process.destroy();
@@ -60,7 +61,13 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
     }
 
     @Override
-    public JavaApplicationRunConfigurationData createDataInstance(RailroadProject project) {
+    public boolean isRunning(Project project, RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
+        Process process = runningProcesses.get(configuration);
+        return process != null && process.isAlive();
+    }
+
+    @Override
+    public JavaApplicationRunConfigurationData createDataInstance(@UnknownNullability Project project) {
         var data = new JavaApplicationRunConfigurationData();
         data.setName("New Java Application");
         data.setJdk(/*project.getJDKManager().getDefaultJDK()*/ JDKManager.getDefaultJDK()); // TODO
@@ -73,7 +80,7 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         return JavaApplicationRunConfigurationData.class;
     }
 
-    private CompletableFuture<Void> execute(RailroadProject project, RunConfiguration<JavaApplicationRunConfigurationData> configuration, boolean debug) {
+    private CompletableFuture<Void> execute(Project project, RunConfiguration<JavaApplicationRunConfigurationData> configuration, boolean debug) {
         JavaApplicationRunConfigurationData data = configuration.data();
         final JDK jdk = data.getJdk();
         final String mainClass = data.getMainClass();

@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
@@ -10,7 +10,7 @@ import dev.railroadide.railroad.window.WindowBuilder;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 public class GitCommitCreateTagButton extends RRButton {
-    public GitCommitCreateTagButton(RailroadProject project, GitCommit commit) {
+    public GitCommitCreateTagButton(Project project, GitCommit commit) {
         super("railroad.git.commit.details.button.create_tag", FontAwesomeSolid.TAG);
         setVariant(ButtonVariant.PRIMARY);
         setOnAction(event -> {

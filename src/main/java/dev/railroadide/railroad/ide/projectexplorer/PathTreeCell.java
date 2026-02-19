@@ -4,8 +4,8 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.DocumentRenamedEvent;
-import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.ui.RRBorderPane;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.utility.FileUtils;
@@ -31,9 +31,9 @@ public class PathTreeCell extends TreeCell<PathItem> {
     private TextField textField;
     private Path editingPath;
     private boolean allowEdit = false;
-    private final RailroadProject project;
+    private final Project project;
 
-    public PathTreeCell(RailroadProject project, StringProperty messageProperty, RRBorderPane mainPane) {
+    public PathTreeCell(Project project, StringProperty messageProperty, RRBorderPane mainPane) {
         super();
 
         this.project = project;

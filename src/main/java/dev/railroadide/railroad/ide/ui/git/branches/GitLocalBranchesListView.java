@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.branches;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
@@ -27,7 +27,7 @@ import java.util.Locale;
 public class GitLocalBranchesListView extends AbstractGitBranchesListView<GitBranch.LocalGitBranch> {
     private final Timeline elapsedRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(1), $ -> refresh()));
 
-    public GitLocalBranchesListView(RailroadProject project) {
+    public GitLocalBranchesListView(Project project) {
         super(
             project,
             "git-local-branches-list-view",

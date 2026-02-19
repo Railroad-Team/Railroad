@@ -3,7 +3,7 @@ package dev.railroadide.railroad.gradle.project;
 import dev.railroadide.railroad.gradle.GradleEnvironment;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionRequest;
 import dev.railroadide.railroad.java.JDK;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import java.nio.file.Path;
 import java.util.Optional;
@@ -16,7 +16,7 @@ import java.util.Optional;
  */
 record JdkOverridingEnvironment(GradleEnvironment delegate, JDK overrideJvm) implements GradleEnvironment {
     @Override
-    public RailroadProject project() {
+    public Project project() {
         return delegate.project();
     }
 

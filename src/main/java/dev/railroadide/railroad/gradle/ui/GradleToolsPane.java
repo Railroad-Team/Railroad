@@ -7,7 +7,7 @@ import dev.railroadide.railroad.gradle.model.GradleModelListener;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.gradle.ui.deps.GradleDependenciesPane;
 import dev.railroadide.railroad.gradle.ui.task.GradleTasksPane;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRToggleButton;
@@ -34,7 +34,7 @@ public class GradleToolsPane extends RRVBox {
     private final Tab tasksTab;
     private final Tab dependenciesTab;
 
-    public GradleToolsPane(RailroadProject project) {
+    public GradleToolsPane(Project project) {
         super();
         getStyleClass().add("gradle-tools-pane");
 

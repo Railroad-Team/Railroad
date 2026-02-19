@@ -1,13 +1,13 @@
 package dev.railroadide.railroad.ide.runconfig.ui;
 
+import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
+import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
-import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
-import dev.railroadide.railroad.localization.L18n;
-import dev.railroadide.railroad.project.RailroadProject;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.control.Label;
@@ -25,9 +25,9 @@ public class RunConfigurationListCell extends ListCell<RunConfiguration<?>> {
     private final RRButton debugButton = new RRButton("", FontAwesomeSolid.BUG);
     private final RRButton moreActionsButton = new RRButton("", FontAwesomeSolid.ELLIPSIS_V);
 
-    private final RailroadProject project;
+    private final Project project;
 
-    public RunConfigurationListCell(RailroadProject project) {
+    public RunConfigurationListCell(Project project) {
         this.project = project;
 
         container.setAlignment(Pos.CENTER_LEFT);

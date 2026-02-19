@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.ide.runconfig;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 @FunctionalInterface
 public interface RunExecutor {
     RunExecutor NO_OP = (project, configuration) -> {
     };
 
-    void execute(RailroadProject project, RunConfiguration configuration);
+    void execute(Project project, RunConfiguration<?> configuration);
 }

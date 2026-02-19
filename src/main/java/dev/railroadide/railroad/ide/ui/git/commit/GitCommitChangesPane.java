@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ide.ui.git.commit;
 
 import dev.railroadide.railroad.ide.ui.git.commit.changes.*;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRBorderPane;
 import dev.railroadide.railroad.ui.RRCheckBoxTreeItem;
 import dev.railroadide.railroad.ui.RRCheckBoxTreeView;
@@ -21,7 +21,7 @@ public class GitCommitChangesPane extends RRBorderPane {
     private List<GitFileChange> lastChanges = Collections.emptyList();
     private Path lastRepoRoot;
 
-    public GitCommitChangesPane(RailroadProject project) {
+    public GitCommitChangesPane(Project project) {
         getStyleClass().add("git-commit-changes-pane-root");
 
         treeView.setShowRoot(false);
@@ -44,7 +44,7 @@ public class GitCommitChangesPane extends RRBorderPane {
         treeView.prefHeightProperty().bind(heightProperty());
     }
 
-    private void setProjectChanges(RailroadProject project, List<GitFileChange> changes) {
+    private void setProjectChanges(Project project, List<GitFileChange> changes) {
         GitRepository repository = project.getGitManager().getGitRepository();
         Path repoRoot = repository == null ? null : repository.root();
         List<GitFileChange> safeChanges = changes == null ? Collections.emptyList() : List.copyOf(changes);

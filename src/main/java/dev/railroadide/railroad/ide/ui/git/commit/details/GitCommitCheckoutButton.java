@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRTextField;
 import dev.railroadide.railroad.ui.RRVBox;
@@ -19,7 +19,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class GitCommitCheckoutButton extends RRButton {
-    public GitCommitCheckoutButton(RailroadProject project, GitCommit commit) {
+    public GitCommitCheckoutButton(Project project, GitCommit commit) {
         super("railroad.git.commit.details.button.checkout_commit", FontAwesomeSolid.CHECK);
         setVariant(ButtonVariant.PRIMARY);
         setOnAction(event -> {

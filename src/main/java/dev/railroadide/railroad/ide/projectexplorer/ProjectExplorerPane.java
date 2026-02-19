@@ -14,8 +14,8 @@ import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
 import dev.railroadide.railroad.ide.ui.*;
 import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
-import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.ui.RRBorderPane;
@@ -66,8 +66,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private final StringProperty searchProperty = new SimpleStringProperty();
     private final List<String> searchList = new ArrayList<>();
 
-    public ProjectExplorerPane(RailroadProject project, RRBorderPane mainPane) {
-        Path rootPath = Path.of(project.getPathString());
+    public ProjectExplorerPane(Project project, RRBorderPane mainPane) {
+        Path rootPath = project.getPath();
         setPadding(new Insets(0));
         setSpacing(0);
         getStyleClass().add("rr-project-explorer");
@@ -270,7 +270,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         });
     }
 
-    public static void openFile(RailroadProject project, PathItem item, RRBorderPane mainPane) {
+    public static void openFile(Project project, PathItem item, RRBorderPane mainPane) {
         Path path = item.getPath();
         if (Files.isDirectory(path))
             return;
@@ -413,7 +413,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         }
     }
 
-    private Node createModernHeader(RailroadProject project) {
+    private Node createModernHeader(Project project) {
         var header = new HBox(8);
         header.getStyleClass().add("project-explorer-header");
         header.setPadding(new Insets(12, 16, 8, 16));

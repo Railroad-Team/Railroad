@@ -2,7 +2,7 @@ package dev.railroadide.railroad.welcome;
 
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.ui.RRTextField;
 import dev.railroadide.railroad.ui.RRVBox;
@@ -28,7 +28,7 @@ import java.util.Locale;
  */
 public class WelcomeProjectsPane extends ScrollPane {
     private static volatile boolean isProcessingClick = false;
-    private final RRListView<RailroadProject> projectsList = new RRListView<>();
+    private final RRListView<Project> projectsList = new RRListView<>();
     private ObservableValue<ProjectSort> sortProperty;
 
     public WelcomeProjectsPane(RRTextField searchField) {
@@ -58,7 +58,7 @@ public class WelcomeProjectsPane extends ScrollPane {
             isProcessingClick = true;
 
             try {
-                RailroadProject project = projectsList.getSelectionModel().getSelectedItem();
+                Project project = projectsList.getSelectionModel().getSelectedItem();
                 if (project != null) {
                     project.open();
                 }
@@ -84,7 +84,7 @@ public class WelcomeProjectsPane extends ScrollPane {
                 isProcessingClick = true;
 
                 try {
-                    RailroadProject project = projectsList.getSelectionModel().getSelectedItem();
+                    Project project = projectsList.getSelectionModel().getSelectedItem();
                     if (project != null) {
                         project.open();
                     }
@@ -103,7 +103,7 @@ public class WelcomeProjectsPane extends ScrollPane {
 
                 event.consume();
             } else if (event.getCode() == KeyCode.DELETE) {
-                RailroadProject project = projectsList.getSelectionModel().getSelectedItem();
+                Project project = projectsList.getSelectionModel().getSelectedItem();
                 if (project != null) {
                     Railroad.PROJECT_MANAGER.removeProject(project);
                     filterProjects("");
@@ -114,7 +114,7 @@ public class WelcomeProjectsPane extends ScrollPane {
         });
 
         this.projectsList.getItems().addAll(Railroad.PROJECT_MANAGER.getProjects());
-        Railroad.PROJECT_MANAGER.getProjects().addListener((ListChangeListener<RailroadProject>) c -> {
+        Railroad.PROJECT_MANAGER.getProjects().addListener((ListChangeListener<Project>) c -> {
             while (c.next()) {
                 if (c.wasAdded()) {
                     projectsList.getItems().addAll(c.getAddedSubList());
@@ -146,15 +146,6 @@ public class WelcomeProjectsPane extends ScrollPane {
     }
 
     /**
-     * Removes a project from the projects list.
-     *
-     * @param project the project to remove
-     */
-    public void removeProject(RailroadProject project) {
-        projectsList.getItems().remove(project);
-    }
-
-    /**
      * Filters the projects list based on the provided search value.
      * Projects whose alias contains the search value (case-insensitive) will be displayed.
      *
@@ -169,8 +160,8 @@ public class WelcomeProjectsPane extends ScrollPane {
             return;
         }
 
-        List<RailroadProject> filteredProjects = new ArrayList<>();
-        for (RailroadProject project : Railroad.PROJECT_MANAGER.getProjects()) {
+        List<Project> filteredProjects = new ArrayList<>();
+        for (Project project : Railroad.PROJECT_MANAGER.getProjects()) {
             if (project.getAlias().toLowerCase(Locale.ROOT).contains(value.toLowerCase(Locale.ROOT))) {
                 filteredProjects.add(project);
             }
@@ -190,12 +181,12 @@ public class WelcomeProjectsPane extends ScrollPane {
         this.sortProperty = observable;
 
         this.sortProperty.addListener((observableValue, oldValue, newValue) -> sortProjects(newValue));
-        projectsList.getItems().addListener((ListChangeListener<RailroadProject>) c -> sortProjects(this.sortProperty.getValue()));
+        projectsList.getItems().addListener((ListChangeListener<Project>) c -> sortProjects(this.sortProperty.getValue()));
         sortProjects(this.sortProperty.getValue());
     }
 
     private void sortProjects(ProjectSort sort) {
-        List<RailroadProject> copy = new ArrayList<>(projectsList.getItems());
+        List<Project> copy = new ArrayList<>(projectsList.getItems());
         if (sort == null) return;
         copy.sort(sort.getComparator());
 

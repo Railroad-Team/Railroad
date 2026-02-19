@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.branches;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 public class GitRemoteBranchesListView extends AbstractGitBranchesListView<GitBranch.RemoteGitBranch> {
-    public GitRemoteBranchesListView(RailroadProject project) {
+    public GitRemoteBranchesListView(Project project) {
         super(
             project,
             "git-remote-branches-list-view",

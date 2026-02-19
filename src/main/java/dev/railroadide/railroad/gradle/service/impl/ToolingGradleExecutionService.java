@@ -7,7 +7,7 @@ import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionHandle;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionRequest;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionResult;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskState;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import org.gradle.tooling.*;
 import org.gradle.tooling.events.ProgressListener;
 
@@ -20,7 +20,7 @@ import java.util.concurrent.*;
  * Implementation of {@link GradleExecutionService} using the Gradle Tooling API.
  */
 public class ToolingGradleExecutionService implements GradleExecutionService {
-    private final RailroadProject project;
+    private final Project project;
     private final GradleEnvironment environment;
     private final Executor executor;
 
@@ -34,7 +34,7 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
      * @param environment the Gradle environment configuration
      * @param executor    the executor for running tasks asynchronously
      */
-    public ToolingGradleExecutionService(RailroadProject project, GradleEnvironment environment, Executor executor) {
+    public ToolingGradleExecutionService(Project project, GradleEnvironment environment, Executor executor) {
         this.project = Objects.requireNonNull(project);
         this.environment = Objects.requireNonNull(environment);
         this.executor = Objects.requireNonNull(executor);

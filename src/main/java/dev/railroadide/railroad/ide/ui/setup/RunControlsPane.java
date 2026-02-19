@@ -6,7 +6,7 @@ import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationContextMenuManager;
 import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationListCell;
 import dev.railroadide.railroad.localization.L18n;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.localized.LocalizedComboBox;
@@ -34,7 +34,7 @@ import java.util.concurrent.CompletableFuture;
  * manages tracking of currently running configurations to support multiple instances.
  */
 public final class RunControlsPane extends RRHBox {
-    private final RailroadProject project;
+    private final Project project;
     private final LocalizedComboBox<RunConfiguration<?>> runConfigurationsComboBox;
     private final RRButton runButton = new RRButton("", FontAwesomeSolid.PLAY);
     private final RRButton debugButton = new RRButton("", FontAwesomeSolid.BUG);
@@ -47,11 +47,11 @@ public final class RunControlsPane extends RRHBox {
     private final LocalizedTooltip debugButtonTooltip = new LocalizedTooltip("railroad.ide.toolbar.debug.tooltip");
     private final LocalizedTooltip debugRestartTooltip = new LocalizedTooltip("railroad.ide.toolbar.debug.restart.tooltip");
 
-    public static Node create(RailroadProject project) {
+    public static Node create(Project project) {
         return new RunControlsPane(project);
     }
 
-    private RunControlsPane(RailroadProject project) {
+    private RunControlsPane(Project project) {
         super(4);
         this.project = project;
         setAlignment(Pos.CENTER_LEFT);

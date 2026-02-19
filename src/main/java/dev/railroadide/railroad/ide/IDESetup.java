@@ -25,9 +25,9 @@ import dev.railroadide.railroad.ide.ui.setup.IDEMenuBarFactory;
 import dev.railroadide.railroad.ide.ui.setup.PaneIconBarFactory;
 import dev.railroadide.railroad.ide.ui.setup.RunControlsPane;
 import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.project.FacetDetectedEvent;
-import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
@@ -68,7 +68,7 @@ public class IDESetup {
      * @param project The project to create the IDE window for
      * @return The created IDE window
      */
-    public static Scene createIDEScene(RailroadProject project) {
+    public static Scene createIDEScene(Project project) {
         var root = new RRBorderPane();
         var topBar = new RRHBox(IDEMenuBarFactory.create(), new Region(), RunControlsPane.create(project));
         HBox.setHgrow(topBar.getChildren().get(1), Priority.ALWAYS);
@@ -157,7 +157,7 @@ public class IDESetup {
         return new Scene(root);
     }
 
-    private static void openGradleTab(RailroadProject project, Facet<?> facet, DetachableTabPane rightPane, RRBorderPane root, SplitPane mainSplit) {
+    private static void openGradleTab(Project project, Facet<?> facet, DetachableTabPane rightPane, RRBorderPane root, SplitPane mainSplit) {
         Platform.runLater(() -> {
             if (facet.getType() == FacetManager.GRADLE) {
                 if (rightPane.getTabs().stream().noneMatch(tab -> tab.getContent() instanceof GradleToolsPane)) {
@@ -175,7 +175,7 @@ public class IDESetup {
         });
     }
 
-    public static void showEditRunConfigurationsWindow(@NotNull RailroadProject project, @Nullable RunConfiguration<?> runConfiguration) {
+    public static void showEditRunConfigurationsWindow(@NotNull Project project, @Nullable RunConfiguration<?> runConfiguration) {
         var editorPane = new RunConfigurationEditorPane(project);
         WindowBuilder.create()
             .owner(Railroad.WINDOW_MANAGER.getPrimaryStage())
@@ -195,7 +195,7 @@ public class IDESetup {
      *
      * @param project The project to switch to
      */
-    public static void switchToIDE(RailroadProject project) {
+    public static void switchToIDE(Project project) {
         if (isSwitchingToIDE)
             return; // Prevent multiple simultaneous IDE window creations
 

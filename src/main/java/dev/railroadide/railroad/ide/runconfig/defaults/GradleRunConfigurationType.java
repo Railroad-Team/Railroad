@@ -6,10 +6,11 @@ import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.GradleRunConfigurationData;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.icon.RailroadBrandsIcon;
 import javafx.scene.paint.Color;
 import org.gradle.tooling.*;
+import org.jetbrains.annotations.UnknownNullability;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,7 +35,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
     }
 
     @Override
-    public CompletableFuture<Void> run(RailroadProject project, RunConfiguration<GradleRunConfigurationData> configuration) {
+    public CompletableFuture<Void> run(Project project, RunConfiguration<GradleRunConfigurationData> configuration) {
         var result = new CompletableFuture<Void>();
         CompletableFuture.runAsync(() -> {
             try {
@@ -47,24 +48,29 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
     }
 
     @Override
-    public CompletableFuture<Void> debug(RailroadProject project, RunConfiguration<GradleRunConfigurationData> configuration) {
+    public CompletableFuture<Void> debug(Project project, RunConfiguration<GradleRunConfigurationData> configuration) {
         return CompletableFuture.failedFuture(new UnsupportedOperationException(
             "Debugging Gradle run configurations is not supported yet."));
     }
 
     @Override
-    public CompletableFuture<Void> stop(RailroadProject project, RunConfiguration<GradleRunConfigurationData> configuration) {
+    public CompletableFuture<Void> stop(Project project, RunConfiguration<GradleRunConfigurationData> configuration) {
         closeHandle(executions.remove(configuration));
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public boolean isDebuggingSupported(RailroadProject project, RunConfiguration<GradleRunConfigurationData> configuration) {
+    public boolean isRunning(Project project, RunConfiguration<GradleRunConfigurationData> configuration) {
+        return executions.containsKey(configuration);
+    }
+
+    @Override
+    public boolean isDebuggingSupported(Project project, RunConfiguration<GradleRunConfigurationData> configuration) {
         return false; // TODO: Implement debugging support (?)
     }
 
     @Override
-    public GradleRunConfigurationData createDataInstance(RailroadProject project) {
+    public GradleRunConfigurationData createDataInstance(@UnknownNullability Project project) {
         var data = new GradleRunConfigurationData();
         data.setName("New Gradle Configuration");
         data.setGradleProjectPath(project.getPath());

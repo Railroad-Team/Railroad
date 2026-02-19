@@ -3,9 +3,9 @@ package dev.railroadide.railroad.gradle.ui.deps;
 import dev.railroadide.railroad.gradle.ui.GradleTreeBuilder;
 import dev.railroadide.railroad.gradle.ui.tree.GradleConfigurationElement;
 import dev.railroadide.railroad.gradle.ui.tree.GradleDependencyElement;
-import dev.railroadide.railroad.gradle.ui.tree.GradleProjectElement;
+import dev.railroadide.railroad.gradle.ui.tree.GradleModuleElement;
 import dev.railroadide.railroad.gradle.ui.tree.GradleTreeElement;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroadplugin.dto.RailroadConfiguration;
 import dev.railroadide.railroadplugin.dto.RailroadDependency;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
@@ -18,7 +18,7 @@ import java.util.*;
 
 public class GradleDependencyTreeBuilder implements GradleTreeBuilder<RailroadConfiguration> {
     @Override
-    public TreeItem<GradleTreeElement> buildTree(RailroadProject project, ObservableList<RailroadConfiguration> elements) {
+    public TreeItem<GradleTreeElement> buildTree(Project project, ObservableList<RailroadConfiguration> elements) {
         TreeItem<GradleTreeElement> root = new TreeItem<>();
 
         List<RailroadConfiguration> rootConfigs = elements.stream()
@@ -44,7 +44,7 @@ public class GradleDependencyTreeBuilder implements GradleTreeBuilder<RailroadCo
             List<RailroadConfiguration> configs = entry.getValue();
 
             TreeItem<GradleTreeElement> moduleNode = module != null
-                ? new TreeItem<>(new GradleProjectElement(project, module))
+                ? new TreeItem<>(new GradleModuleElement(project, module))
                 : root;
 
             if (module != null) {

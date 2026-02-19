@@ -2,6 +2,7 @@ package dev.railroadide.railroad.project;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.config.ConfigHandler;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.Getter;
@@ -11,15 +12,15 @@ import java.util.Collection;
 
 @Getter
 public final class ProjectManager {
-    private final ObservableList<RailroadProject> projects = FXCollections.observableArrayList();
+    private final ObservableList<Project> projects = FXCollections.observableArrayList();
     @Getter
-    private RailroadProject openProject;
+    private Project openProject;
 
-    public void updateProjectInfo(RailroadProject project) {
+    public void updateProjectInfo(Project project) {
         updateProjectInfo(project, false);
     }
 
-    public void updateProjectInfo(RailroadProject project, boolean removeProject) {
+    public void updateProjectInfo(Project project, boolean removeProject) {
         Railroad.LOGGER.info("Starting project update: {}", project.getId());
         boolean found = false;
         if (removeProject) {
@@ -29,7 +30,7 @@ public final class ProjectManager {
             return;
         }
 
-        for (RailroadProject projectObj : projects) {
+        for (Project projectObj : projects) {
             if (projectObj.getId().equals(project.getId())) {
                 found = true;
                 projectObj.setLastOpened(project.getLastOpened());
@@ -45,20 +46,20 @@ public final class ProjectManager {
         ConfigHandler.saveConfig();
     }
 
-    public void setProjects(Collection<? extends RailroadProject> projectCollection) {
+    public void setProjects(Collection<? extends Project> projectCollection) {
         this.projects.setAll(projectCollection);
     }
 
-    public RailroadProject newProject(RailroadProject project) {
+    public Project newProject(Project project) {
         updateProjectInfo(project);
         return project;
     }
 
-    public void removeProject(RailroadProject project) {
+    public void removeProject(Project project) {
         updateProjectInfo(project, true);
     }
 
-    public void setCurrentProject(@Nullable RailroadProject project) {
+    public void setCurrentProject(@Nullable Project project) {
         this.openProject = project;
     }
 }

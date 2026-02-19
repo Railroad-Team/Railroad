@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRTextArea;
 import dev.railroadide.railroad.ui.RRVBox;
@@ -15,7 +15,7 @@ import javafx.scene.text.Text;
 import java.util.List;
 
 public class GitCommitDetailsMessageCard extends RRVBox {
-    public GitCommitDetailsMessageCard(RailroadProject project, GitCommit commit) {
+    public GitCommitDetailsMessageCard(Project project, GitCommit commit) {
         super();
         getStyleClass().addAll("git-commit-details-message-vbox", "git-commit-details-message-card");
 

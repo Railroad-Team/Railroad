@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.project.facet;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.facet.data.FabricFacetData;
 import dev.railroadide.railroad.project.facet.data.GradleFacetData;
 import dev.railroadide.railroad.project.facet.data.JavaFacetData;
@@ -145,7 +145,7 @@ public class FacetManager {
         return registered;
     }
 
-    public static CompletableFuture<Collection<Facet<?>>> scan(@NotNull RailroadProject project) {
+    public static CompletableFuture<Collection<Facet<?>>> scan(@NotNull Project project) {
         return CompletableFuture.supplyAsync(() -> {
             Set<Facet<?>> facets = DETECTORS.stream()
                 .map(detector -> detector.detect(project))

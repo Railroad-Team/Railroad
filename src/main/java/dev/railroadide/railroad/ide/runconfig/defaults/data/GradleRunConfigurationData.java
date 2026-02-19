@@ -10,7 +10,7 @@ import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.onboarding.ProjectValidators;
 import dev.railroadide.railroad.settings.ui.DetectedJdkListPane;
 import dev.railroadide.railroad.utility.StringUtils;
@@ -51,7 +51,7 @@ public class GradleRunConfigurationData extends RunConfigurationData {
     }
 
     @Override
-    public Form createConfigurationForm(RailroadProject project, RunConfiguration<?> configuration) {
+    public Form createConfigurationForm(Project project, RunConfiguration<?> configuration) {
         ObjectProperty<ComboBox<JDK>> javaHomeComboBoxProperty = new SimpleObjectProperty<>();
         javaHomeComboBoxProperty.addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
@@ -260,7 +260,7 @@ public class GradleRunConfigurationData extends RunConfigurationData {
         return null;
     }
 
-    private void loadGradleTasksAsync(RailroadProject project, Path gradleProjectPath, ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
+    private void loadGradleTasksAsync(Project project, Path gradleProjectPath, ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
         if (gradleProjectPath == null) {
             if (Platform.isFxApplicationThread()) {
                 gradleTasksCache.clear();
@@ -298,7 +298,7 @@ public class GradleRunConfigurationData extends RunConfigurationData {
         }
     }
 
-    private List<? extends RailroadGradleTask> fetchTasksForProject(RailroadProject project, Path gradleProjectPath) {
+    private List<? extends RailroadGradleTask> fetchTasksForProject(Project project, Path gradleProjectPath) {
         try {
             GradleModelService modelService = project.getGradleManager().getGradleModelService();
             GradleBuildModel model = modelService.refreshModel(false).get();

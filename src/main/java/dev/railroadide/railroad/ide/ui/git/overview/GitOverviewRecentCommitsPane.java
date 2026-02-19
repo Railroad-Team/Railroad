@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.overview;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.ui.RRVBox;
@@ -40,7 +40,7 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
         new KeyFrame(Duration.seconds(1), $ -> elapsedTick.set(elapsedTick.get() + 1))
     );
 
-    public GitOverviewRecentCommitsPane(RailroadProject project) {
+    public GitOverviewRecentCommitsPane(Project project) {
         getStyleClass().add("git-overview-recent-commits-pane");
         setPlaceholder(new LocalizedText("railroad.git.overview.recent_commits.placeholder"));
 

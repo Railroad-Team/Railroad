@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.remote;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
@@ -14,7 +14,7 @@ public class GitRemotesPane extends RRVBox {
     private final GitRemotesListPane remotesList;
     private final GitRemoteDetailsPane detailsPane;
 
-    public GitRemotesPane(RailroadProject project) {
+    public GitRemotesPane(Project project) {
         GitManager gitManager = project.getGitManager();
 
         actionsPane = new GitRemoteActionsPane(gitManager);

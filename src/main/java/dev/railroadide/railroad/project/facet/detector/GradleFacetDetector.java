@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.project.facet.detector;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
 import dev.railroadide.railroad.project.facet.FacetManager;
@@ -25,7 +25,7 @@ public class GradleFacetDetector implements FacetDetector<GradleFacetData> {
      * @return an Optional containing the Gradle facet if detected, or empty if not found
      */
     @Override
-    public Optional<Facet<GradleFacetData>> detect(RailroadProject project) {
+    public Optional<Facet<GradleFacetData>> detect(Project project) {
         for (String buildFile : BUILD_FILES) {
             Path buildFilePath = project.getPath().resolve(buildFile);
             if (Files.exists(buildFilePath)) {

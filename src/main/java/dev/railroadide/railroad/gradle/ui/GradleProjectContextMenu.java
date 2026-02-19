@@ -2,7 +2,7 @@ package dev.railroadide.railroad.gradle.ui;
 
 import dev.railroadide.railroad.ide.projectexplorer.PathItem;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRBorderPane;
 import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.utility.FileUtils;
@@ -19,7 +19,7 @@ import java.io.File;
 import java.nio.file.Path;
 
 public class GradleProjectContextMenu extends ContextMenu {
-    public GradleProjectContextMenu(RailroadProject project, RailroadModule module) {
+    public GradleProjectContextMenu(Project project, RailroadModule module) {
         super();
 
         var openGradleConfig = new LocalizedMenuItem("railroad.gradle.tools.ctx_menu.open_gradle_config", new FontIcon(RailroadBrandsIcon.GRADLE));

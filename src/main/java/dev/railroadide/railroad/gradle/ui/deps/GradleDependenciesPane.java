@@ -4,15 +4,16 @@ import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.gradle.ui.GradleTreeBuilder;
 import dev.railroadide.railroad.gradle.ui.GradleTreeViewPane;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroadplugin.dto.RailroadConfiguration;
+import dev.railroadide.railroadplugin.dto.RailroadProject;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
 public class GradleDependenciesPane extends GradleTreeViewPane<RailroadConfiguration> {
-    public GradleDependenciesPane(RailroadProject project) {
+    public GradleDependenciesPane(Project project) {
         super(project);
     }
 
@@ -25,7 +26,7 @@ public class GradleDependenciesPane extends GradleTreeViewPane<RailroadConfigura
     protected Collection<RailroadConfiguration> getElementsFromModel(GradleModelService modelService, GradleBuildModel model) {
         return List.copyOf(modelService.getCachedModel()
             .map(GradleBuildModel::project)
-            .map(dev.railroadide.railroadplugin.dto.RailroadProject::getModules)
+            .map(RailroadProject::getModules)
             .map(Collection::stream)
             .orElseGet(Stream::empty)
             .flatMap(module -> module.getConfigurations().stream())

@@ -9,7 +9,7 @@ import dev.railroadide.railroad.ide.runconfig.RunConfigurationData;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.ide.runconfig.ui.form.RunConfigurationPickerComponent;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -64,7 +64,7 @@ public class CompoundRunConfigurationData extends RunConfigurationData {
     }
 
     @Override
-    public Form createConfigurationForm(RailroadProject project, RunConfiguration<?> configuration) {
+    public Form createConfigurationForm(Project project, RunConfiguration<?> configuration) {
         return createBaseFormBuilder(project, configuration)
             .appendSection(FormSection.create("railroad.runconfig.compound.configurations.title")
                 .appendComponent(FormComponent.radioButtonGroup("runMode", "railroad.runconfig.compound.configuration.runMode.label", RunMode.class)

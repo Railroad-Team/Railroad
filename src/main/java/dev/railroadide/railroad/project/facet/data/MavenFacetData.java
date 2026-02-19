@@ -7,7 +7,7 @@ import lombok.Data;
  * Used by the Maven facet to describe the POM file and Maven coordinates.
  */
 @Data
-public class MavenFacetData {
+public class MavenFacetData implements BuildToolFacet {
     /**
      * The path to the Maven POM file (pom.xml).
      */

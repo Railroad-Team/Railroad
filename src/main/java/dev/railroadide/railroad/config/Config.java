@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.utility.json.JsonSerializable;
 
@@ -31,7 +32,7 @@ public class Config implements JsonSerializable<JsonObject> {
         var json = new JsonObject();
 
         var projects = new JsonArray();
-        for (RailroadProject project : Railroad.PROJECT_MANAGER.getProjects()) {
+        for (Project project : Railroad.PROJECT_MANAGER.getProjects()) {
             projects.add(project.toJson());
         }
 

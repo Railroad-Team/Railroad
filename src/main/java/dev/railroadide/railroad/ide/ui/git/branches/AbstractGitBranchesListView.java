@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.branches;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
@@ -49,15 +49,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListView<T> {
-    private final RailroadProject project;
+    private final Project project;
     private final ObservableList<T> branches = FXCollections.observableArrayList();
     private final StringProperty filterText = new SimpleStringProperty("");
     private Popup activeDetailsPopup;
 
     protected AbstractGitBranchesListView(
-        RailroadProject project,
+        Project project,
         String styleClass,
-        Function<RailroadProject, List<T>> branchProvider,
+        Function<Project, List<T>> branchProvider,
         Callback<ListView<T>, ListCell<T>> cellFactory
     ) {
         this.project = project;
@@ -749,7 +749,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         }
     }
 
-    private void updateBranches(RailroadProject project, Function<RailroadProject, List<T>> branchProvider) {
+    private void updateBranches(Project project, Function<Project, List<T>> branchProvider) {
         branches.setAll(branchProvider.apply(project));
         setItems(new FilteredList<>(branches, branch -> branch.name().toLowerCase(Locale.ROOT).contains(filterText.get().toLowerCase(Locale.ROOT))));
     }

@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.welcome;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRCard;
 import dev.railroadide.railroad.ui.RRTextField;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
@@ -137,7 +137,7 @@ public class WelcomeHeaderPane extends RRCard {
 
     private void initializeProjectStats() {
         updateProjectStats();
-        Railroad.PROJECT_MANAGER.getProjects().addListener((ListChangeListener<RailroadProject>) change -> updateProjectStats());
+        Railroad.PROJECT_MANAGER.getProjects().addListener((ListChangeListener<Project>) change -> updateProjectStats());
     }
 
     private void updateProjectStats() {

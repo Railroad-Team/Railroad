@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.project.facet;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import java.util.Optional;
 
@@ -18,5 +18,5 @@ public interface FacetDetector<D> {
      * @param project the project context for detection
      * @return an {@link Optional} containing the detected facet if found, or an {@link Optional#empty} if no facet is detected
      */
-    Optional<Facet<D>> detect(RailroadProject project);
+    Optional<Facet<D>> detect(Project project);
 }

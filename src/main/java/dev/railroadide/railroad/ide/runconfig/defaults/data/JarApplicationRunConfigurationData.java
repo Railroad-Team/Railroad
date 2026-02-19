@@ -7,7 +7,7 @@ import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.onboarding.ProjectValidators;
 import dev.railroadide.railroad.settings.ui.DetectedJdkListPane;
 import dev.railroadide.railroad.utility.StringUtils;
@@ -34,7 +34,7 @@ public class JarApplicationRunConfigurationData extends RunConfigurationData {
     }
 
     @Override
-    public Form createConfigurationForm(RailroadProject project, RunConfiguration<?> configuration) {
+    public Form createConfigurationForm(Project project, RunConfiguration<?> configuration) {
         return createBaseFormBuilder(project, configuration)
             .appendSection(FormSection.create("railroad.runconfig.jar_application.configuration.section.title")
                 .appendComponent(FormComponent.fileChooser("jarPath", "railroad.runconfig.jar_application.configuration.jarPath.label")

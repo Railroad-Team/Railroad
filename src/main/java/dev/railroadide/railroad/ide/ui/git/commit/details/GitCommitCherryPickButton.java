@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
@@ -21,7 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class GitCommitCherryPickButton extends RRButton {
-    public GitCommitCherryPickButton(RailroadProject project, GitCommit commit) {
+    public GitCommitCherryPickButton(Project project, GitCommit commit) {
         super("railroad.git.commit.details.button.cherry_pick", FontAwesomeSolid.MAGNET);
         setVariant(ButtonVariant.PRIMARY);
         setOnAction(event -> {

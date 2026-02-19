@@ -13,7 +13,7 @@ import dev.railroadide.railroad.ide.signature.SignatureHelp;
 import dev.railroadide.railroad.ide.signature.SignatureHelp.ParameterInfo;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 import dev.railroadide.railroad.ide.syntaxhighlighting.TreeSitterJavaSyntaxHighlighting;
-import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
@@ -69,7 +69,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
         Math.max(2, Runtime.getRuntime().availableProcessors() / 2),
         namedThreadFactory("railroad-java-editor-"));
 
-    private final RailroadProject project;
+    private final Project project;
 
     private final AtomicInteger highlightGeneration = new AtomicInteger();
     private final AtomicInteger diagnosticsGeneration = new AtomicInteger();
@@ -97,7 +97,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
     private int[] bracketHighlightRange;
 
-    public JavaCodeEditorPane(RailroadProject project, Path item) {
+    public JavaCodeEditorPane(Project project, Path item) {
         super(item);
         this.project = Objects.requireNonNull(project, "project");
         this.completionProvider = new JdtCompletionProvider(filePath, SYSTEM_MODULE_PATHS);
