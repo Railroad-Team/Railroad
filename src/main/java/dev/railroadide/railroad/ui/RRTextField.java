@@ -49,7 +49,6 @@ public class RRTextField extends TextField implements TextFieldControl {
     public RRTextField(String localizationKey, Ikon prefixIcon) {
         this(localizationKey);
         setPrefixIcon(prefixIcon);
-        setCursor(Cursor.TEXT);
     }
 
     /**
@@ -68,6 +67,7 @@ public class RRTextField extends TextField implements TextFieldControl {
     protected void initialize() {
         getStyleClass().setAll(RRTextField.DEFAULT_STYLE_CLASSES);
         setPadding(new Insets(8, 12, 8, 12));
+        setCursor(Cursor.TEXT);
 
         promptTextProperty().bindBidirectional(localizedPromptText);
 

@@ -7,6 +7,7 @@ import dev.railroadide.railroad.ui.styling.ValidationState;
 import javafx.animation.FadeTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.control.PasswordField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -62,6 +63,7 @@ public class RRPasswordField extends PasswordField implements TextFieldControl {
     protected void initialize() {
         getStyleClass().setAll(RRPasswordField.DEFAULT_STYLE_CLASSES);
         setPadding(new Insets(8, 12, 8, 12));
+        setCursor(Cursor.TEXT);
 
         promptTextProperty().bindBidirectional(localizedPromptText);
 

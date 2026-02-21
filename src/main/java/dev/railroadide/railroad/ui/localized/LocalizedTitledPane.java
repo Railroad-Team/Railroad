@@ -5,7 +5,6 @@ import javafx.scene.control.TitledPane;
 import org.jetbrains.annotations.NotNull;
 
 public class LocalizedTitledPane extends TitledPane {
-
     private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
     public LocalizedTitledPane() {

@@ -20,8 +20,8 @@ import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.ui.RRBorderPane;
 import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.RRTextField;
 import dev.railroadide.railroad.ui.RRVBox;
-import dev.railroadide.railroad.ui.localized.LocalizedTextField;
 import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
@@ -72,7 +72,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         setSpacing(0);
         getStyleClass().add("rr-project-explorer");
 
-        this.searchField = new LocalizedTextField("railroad.ide.project_explorer.search_field");
+        this.searchField = new RRTextField("railroad.ide.project_explorer.search_field");
         this.searchField.getStyleClass().add("rr-search-field");
 
         var header = createModernHeader(project);

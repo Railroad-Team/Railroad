@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.form.ui;
 
 import dev.railroadide.railroad.form.HasSetValue;
-import dev.railroadide.railroad.ui.localized.LocalizedTextArea;
+import dev.railroadide.railroad.ui.RRTextArea;
 import javafx.application.Platform;
 import javafx.scene.control.TextArea;
 
@@ -70,7 +70,7 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> implements Ha
         boolean wrapText = (boolean) params.get("wrapText");
         boolean translate = (boolean) params.get("translate");
 
-        TextArea textArea = translate ? new LocalizedTextArea(promptText) : new TextArea();
+        TextArea textArea = translate ? new RRTextArea(promptText) : new TextArea();
         textArea.setText(text);
         textArea.setEditable(editable);
         textArea.getStyleClass().add("rr-text-area");
