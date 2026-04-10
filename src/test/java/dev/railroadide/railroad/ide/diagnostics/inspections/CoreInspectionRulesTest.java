@@ -60,6 +60,7 @@ class CoreInspectionRulesTest {
         assertRuleIds(new CoreInitializationInspection(), Set.of(
                 "SEM_OVERRIDABLE_METHOD_DURING_CONSTRUCTION",
                 "SEM_OVERRIDDEN_METHOD_DURING_CONSTRUCTION"));
+        assertRuleIds(new CoreFieldCanBeLocalVariableInspection(), Set.of("SEM_FIELD_CAN_BE_LOCAL_VARIABLE"));
     }
 
     @Test
@@ -1869,6 +1870,62 @@ class CoreInspectionRulesTest {
 
         assertFalse(diagnostics.stream().anyMatch(d -> "SEM_OVERRIDDEN_METHOD_DURING_CONSTRUCTION".equals(d.code())));
     }
+
+
+    @Test
+    void coreFieldCanBeLocalVariableRuleEmitsDiagnosticForPrivateFieldUsedOnlyInOneMethod() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
+            class Example {
+                private int field = 1;
+
+                void method() {
+                    System.out.println(field);
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FIELD_CAN_BE_LOCAL_VARIABLE".equals(d.code())));
+    }
+
+    @Test
+    void coreFieldCanBeLocalVariableRuleDoesNotEmitDiagnosticForFieldUsedInConstructor() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
+            class Example {
+                private int field = 1;
+
+                Example() {
+                    field = 2;
+                }
+
+                void method() {
+                    System.out.println(field);
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_FIELD_CAN_BE_LOCAL_VARIABLE".equals(d.code())));
+    }
+
+    @Test
+    void coreFieldCanBeLocalVariableRuleDoesNotEmitDiagnosticForFieldUsedInMultipleMethods() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
+            class Example {
+                private int field = 1;
+
+                void method1() {
+                    System.out.println(field);
+                }
+
+                void method2() {
+                    field = 2;
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_FIELD_CAN_BE_LOCAL_VARIABLE".equals(d.code())));
+    }
+
+
 
     private static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, String document) {
         return runProvider(provider, Path.of("Example.java"), document);

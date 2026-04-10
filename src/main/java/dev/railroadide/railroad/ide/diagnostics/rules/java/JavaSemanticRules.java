@@ -241,6 +241,11 @@ public final class JavaSemanticRules {
         SemanticDiagnostic.Severity.WARNING,
         "Constructor calls overridden method '%s'."
     );
+    public static final JavaSemanticRule FIELD_CAN_BE_LOCAL_VARIABLE = new JavaSemanticRule(
+        "SEM_FIELD_CAN_BE_LOCAL_VARIABLE",
+        SemanticDiagnostic.Severity.WARNING,
+        "Field '%s' can be converted to a local variable"
+    );
 
     private JavaSemanticRules() {
     }

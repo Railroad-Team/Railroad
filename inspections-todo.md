@@ -133,7 +133,7 @@ Inspectopedia label in the sections below.
 - [ ] [easy] `Constant declared in 'abstract' class` - Detect public constants living in abstract classes.
 - [ ] [easy] `Constant declared in interface` - Flag interface constants as a structure smell.
 - [ ] [starter] `Empty class` - Detect empty type declarations and empty Java files.
-- [ ] [hard] `Field can be local variable` - Find fields whose lifetime can be reduced to a local variable.
+- [-] [hard] `Field can be local variable` - Find fields whose lifetime can be reduced to a local variable.
 - [ ] [starter] `Inner class of interface` - Detect nested classes declared inside interfaces.
 - [ ] [medium] `Interface may be annotated as '@FunctionalInterface'` - Find SAM interfaces that should declare intent
   explicitly.
