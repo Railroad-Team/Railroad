@@ -39,10 +39,10 @@ public record SemanticDiagnosticsProvider(Project project, Path filePath) implem
         SemanticModel semanticModel;
         if (project != null) {
             ProjectSemanticService semanticService = Services.PROJECT_SEMANTIC_SERVICE;
-            semanticService.index(project);
-            semanticService.updateFile(project, filePath);
-            ProjectSemanticIndex projectIndex = semanticService.index(project);
-            semanticModel = JavaSemanticAnalyzer.analyzeFacts(document, projectIndex);
+            ProjectSemanticIndex projectIndex = semanticService.current(project);
+            semanticModel = projectIndex == null
+                    ? JavaSemanticAnalyzer.analyzeFacts(document)
+                    : JavaSemanticAnalyzer.analyzeFacts(document, projectIndex);
         } else {
             semanticModel = JavaSemanticAnalyzer.analyzeFacts(document);
         }

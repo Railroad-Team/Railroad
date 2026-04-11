@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.sst.project;
 
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.FileUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -37,6 +38,11 @@ public final class ProjectSemanticService {
         return index(project.getPath());
     }
 
+    public @Nullable ProjectSemanticIndex current(Project project) {
+        Objects.requireNonNull(project, "project");
+        return current(project.getPath());
+    }
+
     public ProjectSemanticIndex index(Path projectRoot) {
         Path normalizedRoot = normalizeRoot(projectRoot);
         return indexesByProjectRoot.computeIfAbsent(normalizedRoot, root -> {
@@ -48,6 +54,21 @@ public final class ProjectSemanticService {
             persistence.save(root, rebuilt);
             return rebuilt;
         });
+    }
+
+    public @Nullable ProjectSemanticIndex current(Path projectRoot) {
+        Path normalizedRoot = normalizeRoot(projectRoot);
+        ProjectSemanticIndex current = indexesByProjectRoot.get(normalizedRoot);
+        if (current != null)
+            return current;
+
+        ProjectSemanticIndex persisted = persistence.loadIfCurrent(normalizedRoot);
+        if (persisted != null) {
+            indexesByProjectRoot.put(normalizedRoot, persisted);
+            return persisted;
+        }
+
+        return null;
     }
 
     public ProjectSemanticIndex rebuild(Project project) {

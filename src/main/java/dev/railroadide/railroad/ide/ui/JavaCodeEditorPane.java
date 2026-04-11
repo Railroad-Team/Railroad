@@ -4,7 +4,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.completion.CompletionItem;
 import dev.railroadide.railroad.ide.completion.CompletionProvider;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
-import dev.railroadide.railroad.ide.completion.JdtCompletionProvider;
+import dev.railroadide.railroad.ide.completion.SstCompletionProvider;
 import dev.railroadide.railroad.ide.diagnostics.DiagnosticsProvider;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic;
 import dev.railroadide.railroad.ide.diagnostics.SemanticDiagnosticsProvider;
@@ -40,7 +40,9 @@ import javafx.scene.text.TextFlow;
 import javafx.stage.Popup;
 import org.fxmisc.richtext.event.MouseOverTextEvent;
 import org.fxmisc.richtext.model.PlainTextChange;
+import org.fxmisc.richtext.model.StyleSpan;
 import org.fxmisc.richtext.model.StyleSpans;
+import org.fxmisc.richtext.model.StyleSpansBuilder;
 
 import javax.tools.Diagnostic;
 import java.nio.file.Files;
@@ -59,9 +61,20 @@ import java.util.stream.Stream;
 public class JavaCodeEditorPane extends TextEditorPane {
     private static final Duration HIGHLIGHT_DEBOUNCE = Duration.ofMillis(120);
     private static final Duration DIAGNOSTIC_DEBOUNCE = Duration.ofMillis(300);
+    private static final int SIGNATURE_SCAN_WINDOW = 2048;
 
     private static final Map<Character, Character> OPENING_BRACKETS = Map.of('(', ')', '{', '}', '[', ']');
     private static final Map<Character, Character> CLOSING_BRACKETS = Map.of(')', '(', '}', '{', ']', '[');
+    private static final Set<String> NON_CALLABLE_PREFIX_KEYWORDS = Set.of(
+        "if",
+        "for",
+        "while",
+        "switch",
+        "catch",
+        "synchronized",
+        "try",
+        "do"
+    );
 
     private static final String[] SYSTEM_MODULE_PATHS = resolveSystemModules();
 
@@ -77,8 +90,10 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
     private volatile StyleSpans<Collection<String>> lastHighlight =
         TreeSitterJavaSyntaxHighlighting.computeHighlighting("");
+    private volatile StyleSpans<Collection<String>> lastAppliedStyles;
     private volatile List<EditorDiagnostic> visibleDiagnostics = List.of();
     private final Map<Integer, Diagnostic.Kind> lineSeverity = new ConcurrentHashMap<>();
+    private final Map<Integer, String> lineDiagnosticMessages = new ConcurrentHashMap<>();
 
     private final Popup diagnosticPopup = new Popup();
     private final AtomicReference<Popup> activeCompletionPopup = new AtomicReference<>(null);
@@ -100,7 +115,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
     public JavaCodeEditorPane(Project project, Path item) {
         super(item);
         this.project = Objects.requireNonNull(project, "project");
-        this.completionProvider = new JdtCompletionProvider(filePath, SYSTEM_MODULE_PATHS);
+        this.completionProvider = new SstCompletionProvider(project, filePath);
         this.diagnosticsProvider = new SemanticDiagnosticsProvider(project, filePath);
         this.signatureHelpProvider = new JdtSignatureHelpProvider(filePath, SYSTEM_MODULE_PATHS);
 
@@ -126,11 +141,11 @@ public class JavaCodeEditorPane extends TextEditorPane {
     }
 
     private void installSignatureHelp() {
-        caretPositionProperty().addListener((obs, oldPos, newPos) -> requestSignatureHelp());
+        caretPositionProperty().addListener((obs, oldPos, newPos) -> requestSignatureHelp(false));
 
         plainTextChanges()
             .successionEnds(Duration.ofMillis(120))
-            .subscribe(change -> requestSignatureHelp());
+            .subscribe(change -> requestSignatureHelp(true));
 
         focusedProperty().addListener((obs, oldValue, newValue) -> {
             if (!newValue) {
@@ -139,9 +154,14 @@ public class JavaCodeEditorPane extends TextEditorPane {
         });
     }
 
-    private void requestSignatureHelp() {
+    private void requestSignatureHelp(boolean textChanged) {
         String snapshot = getText();
         int caret = getCaretPosition();
+        if (!shouldRequestSignatureHelp(snapshot, caret, textChanged)) {
+            hideSignatureHelp();
+            return;
+        }
+
         int generation = signatureGeneration.incrementAndGet();
 
         CompletableFuture.supplyAsync(() -> signatureHelpProvider.compute(snapshot, caret), worker)
@@ -308,11 +328,10 @@ public class JavaCodeEditorPane extends TextEditorPane {
             var icon = new MFXFontIcon(iconType, 12, color);
             grid.add(icon, 1, 0);
 
-            String tooltipText = visibleDiagnostics.stream()
-                .filter(diagnostic -> diagnostic.getLineNumber() == line + 1)
-                .map(diagnostic -> diagnostic.getMessage(Locale.getDefault()))
-                .findFirst()
-                .orElse(severity == Diagnostic.Kind.ERROR ? "Error" : "Warning");
+            String tooltipText = lineDiagnosticMessages.getOrDefault(
+                line + 1,
+                severity == Diagnostic.Kind.ERROR ? "Error" : "Warning"
+            );
             Tooltip.install(icon, new Tooltip(tooltipText));
         }
 
@@ -341,8 +360,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
             return;
 
         lastHighlight = spans;
-        setStyleSpans(0, spans);
-        overlayDiagnostics();
+        applyEditorStyles();
         restoreBracketHighlight();
     }
 
@@ -370,45 +388,159 @@ public class JavaCodeEditorPane extends TextEditorPane {
         diagnosticPopup.hide();
 
         visibleDiagnostics = diagnostics;
-        recomputeLineSeverity();
-
-        if (lastHighlight != null) {
-            setStyleSpans(0, lastHighlight);
-        }
-
-        overlayDiagnostics();
+        boolean lineDecorationsChanged = recomputeLineDecorations();
+        applyEditorStyles();
         restoreBracketHighlight();
-        requestLayout();
+        if (lineDecorationsChanged)
+            requestLayout();
     }
 
-    private void recomputeLineSeverity() {
-        lineSeverity.clear();
+    private boolean recomputeLineDecorations() {
+        Map<Integer, Diagnostic.Kind> updatedSeverity = new LinkedHashMap<>();
+        Map<Integer, String> updatedMessages = new LinkedHashMap<>();
         for (EditorDiagnostic diagnostic : visibleDiagnostics) {
             int line = (int) diagnostic.getLineNumber();
             if (line <= 0)
                 continue;
 
             Diagnostic.Kind kind = diagnostic.getKind();
-            if (kind == Diagnostic.Kind.ERROR) {
-                lineSeverity.put(line, Diagnostic.Kind.ERROR);
-            } else if (!lineSeverity.containsKey(line) || lineSeverity.get(line) == Diagnostic.Kind.WARNING) {
-                lineSeverity.put(line, Diagnostic.Kind.WARNING);
+            Diagnostic.Kind effectiveKind = kind == Diagnostic.Kind.ERROR ? Diagnostic.Kind.ERROR : Diagnostic.Kind.WARNING;
+            Diagnostic.Kind existing = updatedSeverity.get(line);
+            if (existing == null || existing != Diagnostic.Kind.ERROR) {
+                updatedSeverity.put(line, effectiveKind);
             }
+
+            updatedMessages.putIfAbsent(line, diagnostic.getMessage(Locale.getDefault()));
+        }
+
+        boolean changed = !lineSeverity.equals(updatedSeverity) || !lineDiagnosticMessages.equals(updatedMessages);
+        if (changed) {
+            lineSeverity.clear();
+            lineSeverity.putAll(updatedSeverity);
+            lineDiagnosticMessages.clear();
+            lineDiagnosticMessages.putAll(updatedMessages);
+        }
+
+        return changed;
+    }
+
+    private void applyEditorStyles() {
+        if (lastHighlight == null)
+            return;
+
+        StyleSpans<Collection<String>> styledSpans = mergeDiagnosticStyles(lastHighlight, visibleDiagnostics);
+        if (styleSpansEqual(lastAppliedStyles, styledSpans))
+            return;
+
+        setStyleSpans(0, styledSpans);
+        lastAppliedStyles = styledSpans;
+    }
+
+    private static StyleSpans<Collection<String>> mergeDiagnosticStyles(
+        StyleSpans<Collection<String>> baseSpans,
+        List<EditorDiagnostic> diagnostics
+    ) {
+        if (baseSpans == null || diagnostics == null || diagnostics.isEmpty())
+            return baseSpans;
+
+        int documentLength = 0;
+        for (StyleSpan<Collection<String>> span : baseSpans) {
+            documentLength += span.getLength();
+        }
+
+        TreeMap<Integer, int[]> events = new TreeMap<>();
+        for (EditorDiagnostic diagnostic : diagnostics) {
+            int start = Math.max(0, Math.min(documentLength, (int) diagnostic.getStartPosition()));
+            int end = Math.max(start, Math.min(documentLength, (int) diagnostic.getEndPosition()));
+            if (end <= start)
+                continue;
+
+            boolean error = diagnostic.getKind() == Diagnostic.Kind.ERROR;
+            registerDiagnosticEvent(events, start, error, 1);
+            registerDiagnosticEvent(events, end, error, -1);
+        }
+
+        if (events.isEmpty())
+            return baseSpans;
+
+        StyleSpansBuilder<Collection<String>> builder = new StyleSpansBuilder<>(baseSpans.getSpanCount() + events.size());
+        Iterator<Map.Entry<Integer, int[]>> iterator = events.entrySet().iterator();
+        Map.Entry<Integer, int[]> nextEvent = iterator.hasNext() ? iterator.next() : null;
+        int currentPosition = 0;
+        int activeErrors = 0;
+        int activeWarnings = 0;
+
+        for (StyleSpan<Collection<String>> span : baseSpans) {
+            Collection<String> style = span.getStyle();
+            int remaining = span.getLength();
+
+            while (remaining > 0) {
+                while (nextEvent != null && nextEvent.getKey() == currentPosition) {
+                    int[] deltas = nextEvent.getValue();
+                    activeErrors += deltas[0];
+                    activeWarnings += deltas[1];
+                    nextEvent = iterator.hasNext() ? iterator.next() : null;
+                }
+
+                int nextBoundary = nextEvent == null ? Integer.MAX_VALUE : nextEvent.getKey();
+                int chunk = Math.min(remaining, nextBoundary - currentPosition);
+                if (chunk <= 0)
+                    continue;
+
+                builder.add(mergeStyles(style, activeErrors, activeWarnings), chunk);
+                currentPosition += chunk;
+                remaining -= chunk;
+            }
+        }
+
+        return builder.create();
+    }
+
+    private static void registerDiagnosticEvent(TreeMap<Integer, int[]> events, int offset, boolean error, int delta) {
+        int[] deltas = events.computeIfAbsent(offset, ignored -> new int[2]);
+        if (error) {
+            deltas[0] += delta;
+        } else {
+            deltas[1] += delta;
         }
     }
 
-    private void overlayDiagnostics() {
-        for (EditorDiagnostic diagnostic : visibleDiagnostics) {
-            String style = diagnostic.getKind() == Diagnostic.Kind.ERROR ? "error" : "warning";
-            int start = (int) diagnostic.getStartPosition();
-            int end = (int) diagnostic.getEndPosition();
-            try {
-                if (start >= 0 && end >= start)
-                    setStyleClass(start, end, style);
-            } catch (IndexOutOfBoundsException ignored) {
-                // Ignore invalid ranges caused by parser desync
-            }
+    private static Collection<String> mergeStyles(Collection<String> baseStyles, int activeErrors, int activeWarnings) {
+        if (activeErrors <= 0 && activeWarnings <= 0)
+            return baseStyles;
+
+        LinkedHashSet<String> merged = new LinkedHashSet<>(baseStyles);
+        if (activeErrors > 0) {
+            merged.add("error");
+        } else if (activeWarnings > 0) {
+            merged.add("warning");
         }
+        return List.copyOf(merged);
+    }
+
+    private static boolean styleSpansEqual(
+        StyleSpans<Collection<String>> left,
+        StyleSpans<Collection<String>> right
+    ) {
+        if (left == right)
+            return true;
+        if (left == null || right == null)
+            return false;
+        if (left.getSpanCount() != right.getSpanCount())
+            return false;
+
+        Iterator<StyleSpan<Collection<String>>> leftIterator = left.iterator();
+        Iterator<StyleSpan<Collection<String>>> rightIterator = right.iterator();
+        while (leftIterator.hasNext() && rightIterator.hasNext()) {
+            StyleSpan<Collection<String>> leftSpan = leftIterator.next();
+            StyleSpan<Collection<String>> rightSpan = rightIterator.next();
+            if (leftSpan.getLength() != rightSpan.getLength())
+                return false;
+            if (!Objects.equals(leftSpan.getStyle(), rightSpan.getStyle()))
+                return false;
+        }
+
+        return !leftIterator.hasNext() && !rightIterator.hasNext();
     }
 
     private void installDiagnosticPopupHandlers() {
@@ -742,6 +874,141 @@ public class JavaCodeEditorPane extends TextEditorPane {
             int dotIndex = change.getPosition() + inserted.length() - 1;
             triggerCompletion(dotIndex);
         }
+    }
+
+    private boolean shouldRequestSignatureHelp(String text, int caret, boolean textChanged) {
+        if (text == null || text.isEmpty() || caret < 0 || caret > text.length())
+            return false;
+
+        int openParen = findRelevantCallOpenParen(text, caret);
+        if (openParen < 0)
+            return false;
+
+        if (textChanged)
+            return true;
+
+        if (activeSignatureHelp.get() != null)
+            return true;
+
+        if (caret == 0)
+            return false;
+
+        char previous = text.charAt(caret - 1);
+        return previous == '(' || previous == ',' || Character.isJavaIdentifierPart(previous);
+    }
+
+    private static int findRelevantCallOpenParen(String text, int caret) {
+        int start = Math.max(0, caret - SIGNATURE_SCAN_WINDOW);
+        ArrayDeque<Integer> openParentheses = new ArrayDeque<>();
+        boolean inLineComment = false;
+        boolean inBlockComment = false;
+        boolean inString = false;
+        boolean inChar = false;
+        boolean escaped = false;
+
+        for (int index = start; index < caret; index++) {
+            char current = text.charAt(index);
+            char next = index + 1 < caret ? text.charAt(index + 1) : '\0';
+
+            if (inLineComment) {
+                if (current == '\n' || current == '\r')
+                    inLineComment = false;
+                continue;
+            }
+
+            if (inBlockComment) {
+                if (current == '*' && next == '/') {
+                    inBlockComment = false;
+                    index++;
+                }
+                continue;
+            }
+
+            if (inString) {
+                if (escaped) {
+                    escaped = false;
+                } else if (current == '\\') {
+                    escaped = true;
+                } else if (current == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+
+            if (inChar) {
+                if (escaped) {
+                    escaped = false;
+                } else if (current == '\\') {
+                    escaped = true;
+                } else if (current == '\'') {
+                    inChar = false;
+                }
+                continue;
+            }
+
+            if (current == '/' && next == '/') {
+                inLineComment = true;
+                index++;
+                continue;
+            }
+
+            if (current == '/' && next == '*') {
+                inBlockComment = true;
+                index++;
+                continue;
+            }
+
+            if (current == '"') {
+                inString = true;
+                escaped = false;
+                continue;
+            }
+
+            if (current == '\'') {
+                inChar = true;
+                escaped = false;
+                continue;
+            }
+
+            if (current == '(') {
+                openParentheses.addLast(index);
+            } else if (current == ')' && !openParentheses.isEmpty()) {
+                openParentheses.removeLast();
+            }
+        }
+
+        while (!openParentheses.isEmpty()) {
+            int candidate = openParentheses.removeLast();
+            if (isCallablePrefix(text, candidate))
+                return candidate;
+        }
+
+        return -1;
+    }
+
+    private static boolean isCallablePrefix(String text, int openParen) {
+        int index = openParen - 1;
+        while (index >= 0 && Character.isWhitespace(text.charAt(index))) {
+            index--;
+        }
+
+        if (index < 0)
+            return false;
+
+        char current = text.charAt(index);
+        if (current == ')' || current == ']' || current == '>')
+            return true;
+
+        if (!Character.isJavaIdentifierPart(current))
+            return false;
+
+        int start = index;
+        while (start > 0 && Character.isJavaIdentifierPart(text.charAt(start - 1))) {
+            start--;
+        }
+
+        String word = text.substring(start, index + 1);
+        return !NON_CALLABLE_PREFIX_KEYWORDS.contains(word);
     }
 
     private static final class CompletionItemListCell extends ListCell<CompletionItem> {

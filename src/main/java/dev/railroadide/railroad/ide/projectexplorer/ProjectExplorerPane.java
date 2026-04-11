@@ -162,6 +162,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         handleSearchEvents(rootPath);
 
+        warmProjectSemanticIndex();
+
         var watchTask = new WatchTask(rootPath, this);
         this.executorService.submit(watchTask);
 
@@ -170,6 +172,17 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         KeybindHandler.registerCapture(KeybindContexts.of("railroad:project_explorer"), this.treeView);
 
         ShutdownHooks.addHook(this.executorService::shutdownNow);
+    }
+
+    private void warmProjectSemanticIndex() {
+        executorService.submit(() -> {
+            ProjectSemanticService semanticService = Services.PROJECT_SEMANTIC_SERVICE;
+            try {
+                semanticService.index(project);
+            } catch (RuntimeException exception) {
+                Railroad.LOGGER.warn("Failed to warm project semantic index for {}", project.getPath(), exception);
+            }
+        });
     }
 
     public static void disableFileChangeListener() {
