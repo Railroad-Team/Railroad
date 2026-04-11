@@ -246,6 +246,11 @@ public final class JavaSemanticRules {
         SemanticDiagnostic.Severity.WARNING,
         "Field '%s' can be converted to a local variable"
     );
+    public static final JavaSemanticRule INTERFACE_SHOULD_BE_FUNCTIONAL = new JavaSemanticRule(
+        "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL",
+        SemanticDiagnostic.Severity.INFO,
+        "Interface '%s' may be annotated as '@FunctionalInterface'"
+    );
 
     private JavaSemanticRules() {
     }

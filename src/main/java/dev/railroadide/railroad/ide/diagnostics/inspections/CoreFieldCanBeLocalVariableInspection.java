@@ -69,11 +69,18 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
 
             if (isReferencedOutsideMethod.get() || methodContainingReferences.size() != 1) continue;
 
-            SyntaxNode methodWithReference = methodContainingReferences.getFirst();
-
-            if (methodWithReference.kind().id().equals(JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id())) continue;
-
             reporter.report(node, declaredSymbol.simpleName());
+        }
+    }
+
+    public static class Test {
+
+
+        public Test() {
+            int testVar = 1;
+            System.out.println(testVar);
+            testVar = 2;
+            System.out.println(testVar);
         }
     }
 }

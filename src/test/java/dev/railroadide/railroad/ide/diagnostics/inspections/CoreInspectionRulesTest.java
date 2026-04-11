@@ -61,6 +61,7 @@ class CoreInspectionRulesTest {
                 "SEM_OVERRIDABLE_METHOD_DURING_CONSTRUCTION",
                 "SEM_OVERRIDDEN_METHOD_DURING_CONSTRUCTION"));
         assertRuleIds(new CoreFieldCanBeLocalVariableInspection(), Set.of("SEM_FIELD_CAN_BE_LOCAL_VARIABLE"));
+        assertRuleIds(new CoreFunctionalInterfaceInspection(), Set.of("SEM_INTERFACE_SHOULD_BE_FUNCTIONAL"));
     }
 
     @Test
@@ -1925,7 +1926,110 @@ class CoreInspectionRulesTest {
         assertFalse(diagnostics.stream().anyMatch(d -> "SEM_FIELD_CAN_BE_LOCAL_VARIABLE".equals(d.code())));
     }
 
+    @Test
+    void coreFunctionalInterfaceRuleEmitsDiagnosticForSingleAbstractMethod() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
+            interface Worker {
+                void run();
+            }
+            """);
 
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())));
+    }
+
+    @Test
+    void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticWhenAnnotationPresent() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
+            @FunctionalInterface
+            interface Worker {
+                void run();
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())));
+    }
+
+    @Test
+    void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticForZeroAbstractMethods() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
+            interface Marker {
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())));
+    }
+
+    @Test
+    void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticForTwoAbstractMethods() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
+            interface Worker {
+                void run();
+                void stop();
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())));
+    }
+
+    @Test
+    void coreFunctionalInterfaceRuleDoesNotCountDefaultMethodsAsAbstract() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
+            interface Worker {
+                void run();
+                default void stop() {
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())));
+    }
+
+    @Test
+    void coreFunctionalInterfaceRuleDoesNotCountObjectMethodsAsAbstract() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
+            interface Worker {
+                void run();
+                boolean equals(Object other);
+                int hashCode();
+                String toString();
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())));
+    }
+
+    @Test
+    void coreFunctionalInterfaceRuleEmitsDiagnosticForInterfaceInheritingOnlyAbstractMethod() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
+            interface Base {
+                void run();
+            }
+
+            interface Child extends Base {
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+                "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
+                        && d.message().contains("Child")));
+    }
+
+    @Test
+    void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticWhenInheritedPlusOwnExceedsOne() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
+            interface Base {
+                void run();
+            }
+
+            interface Child extends Base {
+                void extra();
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d ->
+                "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
+                        && d.message().contains("Child")));
+    }
 
     private static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, String document) {
         return runProvider(provider, Path.of("Example.java"), document);

@@ -44,6 +44,7 @@ public final class JavaInspectionRegistries {
     public static final CoreFeatureEnvyInspection CORE_FEATURE_ENVY_INSPECTION = new CoreFeatureEnvyInspection();
     public static final CoreInitializationInspection CORE_INITIALIZATION_INSPECTION = new CoreInitializationInspection();
     public static final CoreFieldCanBeLocalVariableInspection CORE_FIELD_CAN_BE_LOCAL_VARIABLE_INSPECTION = new CoreFieldCanBeLocalVariableInspection();
+    public static final CoreFunctionalInterfaceInspection CORE_FUNCTIONAL_INTERFACE_INSPECTION = new CoreFunctionalInterfaceInspection();
 
     public static final Registry<JavaInspection> JAVA_INSPECTION_REGISTRY =
         RegistryManager.createRegistry("railroad:java_inspection", JavaInspection.class);
@@ -83,6 +84,7 @@ public final class JavaInspectionRegistries {
         JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreFeatureEnvyInspection.ID, CORE_FEATURE_ENVY_INSPECTION);
         JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreInitializationInspection.ID, CORE_INITIALIZATION_INSPECTION);
         JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreFieldCanBeLocalVariableInspection.ID, CORE_FIELD_CAN_BE_LOCAL_VARIABLE_INSPECTION);
+        JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreFunctionalInterfaceInspection.ID, CORE_FUNCTIONAL_INTERFACE_INSPECTION);
     }
 
     private JavaInspectionRegistries() {
@@ -121,7 +123,8 @@ public final class JavaInspectionRegistries {
             CORE_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT_INSPECTION,
             CORE_FEATURE_ENVY_INSPECTION,
             CORE_INITIALIZATION_INSPECTION,
-            CORE_FIELD_CAN_BE_LOCAL_VARIABLE_INSPECTION
+            CORE_FIELD_CAN_BE_LOCAL_VARIABLE_INSPECTION,
+            CORE_FUNCTIONAL_INTERFACE_INSPECTION
         );
     }
 }
