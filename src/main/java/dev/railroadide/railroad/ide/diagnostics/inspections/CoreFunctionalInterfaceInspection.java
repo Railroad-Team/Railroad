@@ -48,8 +48,9 @@ public final class CoreFunctionalInterfaceInspection implements JavaInspectionRu
                 if (abstractMethodCount > 1) break;
             }
 
-            for(JavaRuleContext.MethodDescriptor descriptor : context.inheritedMethodDescriptors(qualifiedName)) {
-                if(!descriptor.isAbstract() || isObjectMethod(descriptor) || seenMethods.contains(descriptor.signatureKey())) continue;
+            for (JavaRuleContext.MethodDescriptor descriptor : context.inheritedMethodDescriptors(qualifiedName)) {
+                if (!descriptor.isAbstract() || isObjectMethod(descriptor) || seenMethods.contains(descriptor.signatureKey()))
+                    continue;
                 abstractMethodCount++;
                 if (abstractMethodCount > 1) break;
             }
@@ -76,13 +77,5 @@ public final class CoreFunctionalInterfaceInspection implements JavaInspectionRu
                 parameters.size() == 1 && "boolean".equals(descriptor.returnType().displayName()) && "java.lang.Object".equals(parameters.getFirst().displayName());
             default -> false;
         };
-    }
-
-    @FunctionalInterface
-    public interface Test {
-        void run();
-    }
-
-    interface AnotherInterface extends Test {
     }
 }
