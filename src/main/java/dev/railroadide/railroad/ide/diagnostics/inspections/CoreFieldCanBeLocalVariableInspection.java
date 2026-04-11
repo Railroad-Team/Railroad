@@ -10,7 +10,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,7 +47,7 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
             if (declaredSymbol == null) continue;
 
             AtomicBoolean isReferencedOutsideMethod = new AtomicBoolean(false);
-            LinkedHashSet<SyntaxNode> methodContainingReferences = new LinkedHashSet<>();
+            Set<SyntaxNode> methodContainingReferences = new HashSet<>();
             context.traverse(descendant -> {
                 if (!descendant.kind().id().equals(JavaSyntaxKinds.NAME_EXPRESSION.id())) return;
 
@@ -70,17 +70,6 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
             if (isReferencedOutsideMethod.get() || methodContainingReferences.size() != 1) continue;
 
             reporter.report(node, declaredSymbol.simpleName());
-        }
-    }
-
-    public static class Test {
-
-
-        public Test() {
-            int testVar = 1;
-            System.out.println(testVar);
-            testVar = 2;
-            System.out.println(testVar);
         }
     }
 }
