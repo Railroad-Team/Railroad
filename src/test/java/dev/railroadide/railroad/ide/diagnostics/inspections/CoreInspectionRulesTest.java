@@ -2366,6 +2366,25 @@ class CoreInspectionRulesTest {
                         && d.message().contains("Child")));
     }
 
+    @Test
+    void coreFunctionalInterfaceRuleEmitsDiagnosticForInterfaceInheritingSameAbstractMethodFromMultipleParents() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
+            interface A {
+                void run();
+            }
+
+            interface B {
+                void run();
+            }
+
+            interface Child extends A, B {
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+                "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
+                        && d.message().contains("Child")));
+    }
     private static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, String document) {
         return runProvider(provider, Path.of("Example.java"), document);
     }
