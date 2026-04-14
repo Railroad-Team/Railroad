@@ -37,9 +37,14 @@ class CoreInspectionRulesTest {
                 "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE"));
         assertRuleIds(new CoreModifierInspection(), Set.of("SEM_ILLEGAL_MODIFIER"));
         assertRuleIds(new CoreControlFlowInspection(), Set.of("SEM_INVALID_CONTROL_FLOW", "SEM_MISSING_RETURN"));
-        assertRuleIds(new CoreExceptionInspection(), Set.of("SEM_UNCAUGHT_CHECKED_EXCEPTION", "SEM_UNREACHABLE_CATCH", "SEM_INVALID_EXCEPTION_TYPE"));
+        assertRuleIds(new CoreExceptionInspection(), Set.of(
+                "SEM_UNCAUGHT_CHECKED_EXCEPTION",
+                "SEM_UNREACHABLE_CATCH",
+                "SEM_INVALID_EXCEPTION_TYPE",
+                "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE"));
         assertRuleIds(new CoreDefiniteAssignmentInspection(), Set.of("SEM_UNASSIGNED_VARIABLE", "SEM_ILLEGAL_FINAL_ASSIGNMENT", "SEM_UNINITIALIZED_FINAL_FIELD"));
         assertRuleIds(new CoreAssignmentInspection(), Set.of("SEM_INCOMPATIBLE_ASSIGNMENT"));
+        assertRuleIds(new CoreNegativeHexIntInLongContextInspection(), Set.of("SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT"));
         assertRuleIds(new CoreOverlyStrongTypeCastInspection(), Set.of("SEM_OVERLY_STRONG_TYPE_CAST"));
         assertRuleIds(new CoreCastConflictingWithInstanceofInspection(), Set.of("SEM_CAST_CONFLICTING_WITH_INSTANCEOF"));
         assertRuleIds(new CoreWildcardImportInspection(), Set.of("SEM_WILDCARD_IMPORT"));
@@ -56,10 +61,12 @@ class CoreInspectionRulesTest {
         assertRuleIds(new CoreParameterNamedUnderscoreInspection(), Set.of("SEM_PARAMETER_NAME_UNDERSCORE"));
         assertRuleIds(new CoreUnreachableCodeInspection(), Set.of("SEM_UNREACHABLE_CODE"));
         assertRuleIds(new CoreAssertionCanBeReplacedWithIfStatementInspection(), Set.of("SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT"));
+        assertRuleIds(new CoreAssertionWithSideEffectsInspection(), Set.of("SEM_ASSERTION_WITH_SIDE_EFFECTS"));
         assertRuleIds(new CoreFeatureEnvyInspection(), Set.of("SEM_FEATURE_ENVY_MANIPULATE", "SEM_FEATURE_ENVY_TIGHTLY_COUPLED"));
         assertRuleIds(new CoreInitializationInspection(), Set.of(
                 "SEM_OVERRIDABLE_METHOD_DURING_CONSTRUCTION",
                 "SEM_OVERRIDDEN_METHOD_DURING_CONSTRUCTION"));
+        assertRuleIds(new CoreThisReferenceEscapedObjectConstructionInspection(), Set.of("SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION"));
         assertRuleIds(new CoreFieldCanBeLocalVariableInspection(), Set.of("SEM_FIELD_CAN_BE_LOCAL_VARIABLE"));
         assertRuleIds(new CoreFunctionalInterfaceInspection(), Set.of("SEM_INTERFACE_SHOULD_BE_FUNCTIONAL"));
     }
@@ -460,6 +467,40 @@ class CoreInspectionRulesTest {
     }
 
     @Test
+    void coreAssertionSideEffectRuleEmitsDiagnosticForAssignmentInCondition() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionWithSideEffectsInspection(), """
+            class Example {
+                void run() {
+                    int value = 0;
+                    assert (value = 1) > 0;
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_WITH_SIDE_EFFECTS".equals(d.code())));
+    }
+
+    @Test
+    void coreAssertionSideEffectRuleEmitsDiagnosticForMutatingMethodCall() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionWithSideEffectsInspection(), """
+            class Example {
+                private int counter;
+
+                private boolean mutate() {
+                    counter++;
+                    return true;
+                }
+
+                void run() {
+                    assert mutate();
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_WITH_SIDE_EFFECTS".equals(d.code())));
+    }
+
+    @Test
     void coreCallRuleEmitsUnresolvedCallDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCallResolutionInspection(), """
             class Example {
@@ -470,6 +511,127 @@ class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_UNRESOLVED_CALL".equals(d.code())));
+    }
+
+    @Test
+    void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForParenthesizedAndNestedLongContexts() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
+            class Example {
+                long parenthesized = (0x8000_0000);
+
+                long nested = 1 + (0x8000_0000);
+            }
+            """);
+
+        long count = diagnostics.stream()
+            .filter(d -> "SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT".equals(d.code()))
+            .count();
+        assertEquals(2L, count);
+    }
+
+    @Test
+    void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForJdkMethodInvocationArgument() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
+            class Example {
+                long run() {
+                    return Long.max(0x8000_0000, 1L);
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT".equals(d.code())));
+    }
+
+    @Test
+    void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForFieldInitializer() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
+            class Example {
+                long field = 0x8000_0000;
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT".equals(d.code())));
+    }
+
+    @Test
+    void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForArrayInitializer() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
+            class Example {
+                long[] values = { 0x8000_0000 };
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT".equals(d.code())));
+    }
+
+    @Test
+    void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForConditionalArm() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
+            class Example {
+                long conditional(boolean flag) {
+                    return flag ? 0x8000_0000 : 1L;
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT".equals(d.code())));
+    }
+
+    @Test
+    void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForCastContext() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
+            class Example {
+                long casted() {
+                    return (long) 0x8000_0000;
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT".equals(d.code())));
+    }
+
+    @Test
+    void coreNegativeHexIntInLongContextRuleDoesNotEmitForDecimalLongLiteral() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
+            class Example {
+                long value = 2147483648L;
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT".equals(d.code())));
+    }
+
+    @Test
+    void coreNegativeHexIntInLongContextRuleDoesNotEmitForHexLiteralWithLongSuffix() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
+            class Example {
+                long value = 0x8000_0000L;
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT".equals(d.code())));
+    }
+
+    @Test
+    void coreNegativeHexIntInLongContextRuleDoesNotEmitForNonNegativeHexInt() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
+            class Example {
+                long value = 0x7FFF_FFFF;
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT".equals(d.code())));
+    }
+
+    @Test
+    void coreNegativeHexIntInLongContextRuleDoesNotEmitForOutOfRangeHexLiteral() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
+            class Example {
+                long value = 0x1_0000_0000;
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT".equals(d.code())));
     }
 
     @Test
@@ -1441,6 +1603,44 @@ class CoreInspectionRulesTest {
     }
 
     @Test
+    void coreExceptionRuleEmitsDisallowedExceptionDeclarationDiagnostic() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
+            class Example {
+                void banned() throws Exception {
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
+        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("declares disallowed exception 'java.lang.Exception'")));
+    }
+
+    @Test
+    void coreExceptionRuleEmitsDisallowedExceptionDeclarationDiagnosticForConstructor() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
+            class Example {
+                Example() throws RuntimeException {
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
+        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("declares disallowed exception 'java.lang.RuntimeException'")));
+    }
+
+    @Test
+    void coreExceptionRuleDoesNotEmitDisallowedExceptionDiagnosticForAllowedCheckedException() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
+            class Example {
+                void allowed() throws java.io.IOException {
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
+    }
+
+    @Test
     void coreDefiniteAssignmentRuleEmitsUnassignedAndIllegalFinalAssignmentDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
@@ -1870,6 +2070,141 @@ class CoreInspectionRulesTest {
             """);
 
         assertFalse(diagnostics.stream().anyMatch(d -> "SEM_OVERRIDDEN_METHOD_DURING_CONSTRUCTION".equals(d.code())));
+    }
+
+    @Test
+    void coreThisReferenceEscapedRuleEmitsDiagnosticForPassingThisToCollectionPublisher() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
+            import java.util.ArrayList;
+            import java.util.List;
+
+            class Example {
+                private final List<Object> items = new ArrayList<>();
+
+                Example() {
+                    items.add(this);
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+    }
+
+    @Test
+    void coreThisReferenceEscapedRuleEmitsDiagnosticForPassingThisToPublishingMethod() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
+            class Example {
+                void register(Object value) {
+                }
+
+                Example() {
+                    register(this);
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+    }
+
+    @Test
+    void coreThisReferenceEscapedRuleEmitsDiagnosticForLambdaPassedToPublishingMethod() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
+            class Example {
+                void execute(Runnable runnable) {
+                }
+
+                Example() {
+                    execute(() -> System.out.println(this));
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+    }
+
+    @Test
+    void coreThisReferenceEscapedRuleEmitsDiagnosticForLambdaPassedToThreadConstructor() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
+            class Example {
+                Example() {
+                    new Thread(() -> System.out.println(this));
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+    }
+
+    @Test
+    void coreThisReferenceEscapedRuleEmitsDiagnosticForThisAssignedToField() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
+            class Example {
+                private static Example leaked;
+
+                Example() {
+                    leaked = this;
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+    }
+
+    @Test
+    void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForPlainThisUse() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
+            class Example {
+                Example() {
+                    this.hashCode();
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+    }
+
+    @Test
+    void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForLocalVariableInitialization() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
+            class Example {
+                Example() {
+                    Object local = this;
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+    }
+
+    @Test
+    void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForLocalMethodCall() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
+            class Example {
+                void use(Object value) {
+                }
+
+                Example() {
+                    use(this);
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+    }
+
+    @Test
+    void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForNestedLambdaThatDoesNotEscape() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
+            class Example {
+                Example() {
+                    Runnable outer = () -> {
+                        Runnable inner = () -> System.out.println(this);
+                    };
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
     }
 
 

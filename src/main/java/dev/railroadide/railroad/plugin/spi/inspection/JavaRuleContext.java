@@ -445,6 +445,17 @@ public final class JavaRuleContext {
         return List.copyOf(nodes);
     }
 
+    /**
+     * Returns all nodes whose {@code kind().id()} is contained in the supplied array of parser kind ids.
+     *
+     * @param kindIds array of parser kind ids to match
+     * @return immutable list of matching nodes
+     * @throws NullPointerException if {@code kindIds} is {@code null}
+     */
+    public List<SyntaxNode> nodesOfKinds(String... kindIds) {
+        return nodesOfKinds(Set.of(kindIds));
+    }
+
     public @Nullable SyntaxNode firstDirectExpressionChild(SyntaxNode node) {
         for (SyntaxNode child : node.children()) {
             if (isExpressionNode(child))
@@ -955,6 +966,95 @@ public final class JavaRuleContext {
         return List.of();
     }
 
+    /**
+     * Returns parameter types for a callable symbol.
+     * <p>
+     * For source declarations, this reads the declaration tree. For synthetic or external
+     * members, this falls back to parsing the callable signature from the qualified name
+     * when available.
+     *
+     * @param symbol callable symbol
+     * @return parameter types, or an empty list when unavailable
+     */
+    public List<Type> callableParameterTypes(Symbol symbol) {
+        Objects.requireNonNull(symbol, "symbol");
+
+        SyntaxNode declaration = symbol.declaration().orElse(null);
+        if (declaration != null) {
+            String kindId = declaration.kind().id();
+            if (JAVA_METHOD_DECLARATION.equals(kindId) || JAVA_CONSTRUCTOR_DECLARATION.equals(kindId)) {
+                SyntaxNode parameterList = directChild(declaration, JAVA_PARAMETER_LIST);
+                if (parameterList == null)
+                    return List.of();
+
+                List<Type> parameterTypes = new ArrayList<>();
+                for (SyntaxNode child : parameterList.children()) {
+                    if (!JAVA_PARAMETER.equals(child.kind().id()))
+                        continue;
+
+                    SyntaxNode typeRef = directChild(child, JAVA_TYPE_REFERENCE);
+                    if (typeRef == null) {
+                        parameterTypes.add(new UnknownType("<unknown>"));
+                        continue;
+                    }
+
+                    parameterTypes.add(inferredType(typeRef).orElse(new UnknownType("<unknown>")));
+                }
+
+                return List.copyOf(parameterTypes);
+            }
+        }
+
+        String qualifiedName = symbol.qualifiedName().orElse(null);
+        if (qualifiedName == null || qualifiedName.isBlank())
+            return List.of();
+
+        int open = qualifiedName.indexOf('(');
+        int close = qualifiedName.lastIndexOf(')');
+        if (open < 0 || close < open)
+            return List.of();
+
+        String params = qualifiedName.substring(open + 1, close).trim();
+        if (params.isEmpty())
+            return List.of();
+
+        List<Type> parameterTypes = new ArrayList<>();
+        for (String token : params.split(",")) {
+            String typeName = token.trim();
+            if (typeName.isEmpty()) {
+                parameterTypes.add(new UnknownType("<unknown>"));
+                continue;
+            }
+
+            parameterTypes.add(parseCallableParameterType(typeName));
+        }
+
+        return List.copyOf(parameterTypes);
+    }
+
+    private static Type parseCallableParameterType(String typeName) {
+        String text = typeName.trim();
+        if (text.isEmpty())
+            return new UnknownType("<unknown>");
+
+        int arrayDimensions = 0;
+        while (text.endsWith("[]")) {
+            arrayDimensions++;
+            text = text.substring(0, text.length() - 2).trim();
+        }
+
+        Type result = switch (text) {
+            case "boolean", "byte", "short", "char", "int", "long", "float", "double", "void" ->
+                new Type.PrimitiveType(text);
+            default -> new DeclaredType(text, List.of());
+        };
+        for (int index = 0; index < arrayDimensions; index++) {
+            result = new Type.ArrayType(result);
+        }
+
+        return result;
+    }
+
     public boolean isThrowableType(String qualifiedTypeName) {
         Objects.requireNonNull(qualifiedTypeName, "qualifiedTypeName");
         return "java.lang.Throwable".equals(qualifiedTypeName) || isSubtype(qualifiedTypeName, "java.lang.Throwable");
@@ -1031,6 +1131,7 @@ public final class JavaRuleContext {
             }
             return current;
         }
+
         return null;
     }
 
@@ -1052,10 +1153,13 @@ public final class JavaRuleContext {
         traverse(node -> declaredSymbol(node).ifPresent(symbol -> {
             if (!isTypeSymbol(symbol.kind()))
                 return;
+
             String qualifiedName = symbol.qualifiedName().orElse(null);
-            if (qualifiedName != null && !qualifiedName.isBlank())
+            if (qualifiedName != null && !qualifiedName.isBlank()) {
                 collected.putIfAbsent(qualifiedName, symbol);
+            }
         }));
+
         Map<String, Symbol> copy = Map.copyOf(collected);
         cachedLocalTypeSymbolsByQualifiedName = copy;
         return copy;

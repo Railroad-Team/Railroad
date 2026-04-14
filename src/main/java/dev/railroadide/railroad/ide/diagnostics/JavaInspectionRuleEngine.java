@@ -5,9 +5,9 @@ import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.plugin.spi.inspection.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.ArrayList;
 
 /**
  * Executes Java inspection rules and applies rule settings.
@@ -64,7 +64,9 @@ public final class JavaInspectionRuleEngine {
             String message;
             try {
                 message = String.format(rule.messageTemplate(), messageArgs);
-            } catch (Exception ignored) {
+            } catch (Exception exception) {
+                Railroad.LOGGER.error("Failed to format message for Java inspection rule '{}:{}' with args {}: {}",
+                        rule.id(), rule.messageTemplate(), messageArgs, exception);
                 message = rule.messageTemplate();
             }
             reportMessage(node, message);

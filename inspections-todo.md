@@ -315,7 +315,7 @@ Inspectopedia label in the sections below.
 - [ ] [medium] `Overly broad 'throws' clause` - Narrow overly generic declared exceptions.
 - [ ] [medium] `Prohibited 'Exception' caught` - Detect disallowed catch targets like generic `Exception` in configured
   contexts.
-- [ ] [medium] `Prohibited exception declared` - Flag disallowed exceptions in method signatures.
+- [x] [medium] `Prohibited exception declared` - Flag disallowed exceptions in method signatures.
 - [ ] [medium] `Prohibited exception thrown` - Flag disallowed exception types in `throw`.
 - [ ] [easy] `Throwable supplier never returns a value` - Detect `orElseThrow` suppliers that throw instead of returning
   the throwable.
@@ -371,7 +371,7 @@ Inspectopedia label in the sections below.
 
 ## Initialization
 
-- [ ] [hard] `'this' reference escaped in object construction` - Detect `this` escaping before construction completes.
+- [x] [hard] `'this' reference escaped in object construction` - Detect `this` escaping before construction completes.
 - [ ] [hard] `Abstract method called during object construction` - Flag constructor-time calls to abstract methods.
 - [ ] [easy] `Double brace initialization` - Detect double-brace initialisation and its hidden class/allocation costs.
 - [-] [hard] `Instance field may not be initialized` - Partially covered through definite-assignment checks for final
@@ -414,7 +414,7 @@ Inspectopedia label in the sections below.
 - [ ] [easy] `Floating-point equality comparison` - Flag direct `==`/`!=` on floating-point values.
 - [ ] [medium] `Implicit numeric conversion` - Detect silent widening/narrowing conversions.
 - [ ] [easy] `Integer division in floating-point context` - Flag truncated integer division feeding float/double usage.
-- [ ] [medium] `Negative int hexadecimal constant in long context` - Detect surprising sign behaviour with hex literals.
+- [x] [medium] `Negative int hexadecimal constant in long context` - Detect surprising sign behaviour with hex literals.
 - [ ] [medium] `Non-reproducible call to 'Math'` - Flag math calls whose results are not guaranteed bit-for-bit
   reproducible.
 - [ ] [easy] `Number constructor call with primitive argument` - Replace boxed-number constructors with
@@ -566,7 +566,7 @@ Inspectopedia label in the sections below.
 
 ## High-priority probable bugs
 
-- [ ] [hard] `'assert' statement with side effects` - Detect asserts whose condition mutates state.
+- [x] [hard] `'assert' statement with side effects` - Detect asserts whose condition mutates state.
 - [ ] [medium] `'Comparable' implemented but 'equals()' not overridden` - Enforce consistency between ordering and
   equality contracts.
 - [ ] [easy] `'equals()' and 'hashCode()' not paired` - Require both methods to be implemented together.

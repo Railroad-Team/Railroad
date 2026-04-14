@@ -241,6 +241,26 @@ public final class JavaSemanticRules {
         SemanticDiagnostic.Severity.WARNING,
         "Constructor calls overridden method '%s'."
     );
+    public static final JavaSemanticRule ASSERTION_WITH_SIDE_EFFECTS = new JavaSemanticRule(
+        "SEM_ASSERTION_WITH_SIDE_EFFECTS",
+        SemanticDiagnostic.Severity.WARNING,
+        "Assertion contains side effects, which may not be executed if assertions are disabled"
+    );
+    public static final JavaSemanticRule DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE = new JavaSemanticRule(
+        "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE",
+        SemanticDiagnostic.Severity.ERROR,
+        "Method '%s' declares disallowed exception '%s' in its signature"
+    );
+    public static final JavaSemanticRule THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION = new JavaSemanticRule(
+        "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION",
+        SemanticDiagnostic.Severity.WARNING,
+        "Constructor leaks 'this' reference via '%s' before the object is fully constructed"
+    );
+    public static final JavaSemanticRule NEGATIVE_HEX_INT_IN_LONG_CONTEXT = new JavaSemanticRule(
+        "SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT",
+        SemanticDiagnostic.Severity.WARNING,
+        "Negative hexadecimal integer literal '%s' in long context may be misinterpreted as a negative integer literal"
+    );
     public static final JavaSemanticRule FIELD_CAN_BE_LOCAL_VARIABLE = new JavaSemanticRule(
         "SEM_FIELD_CAN_BE_LOCAL_VARIABLE",
         SemanticDiagnostic.Severity.WARNING,

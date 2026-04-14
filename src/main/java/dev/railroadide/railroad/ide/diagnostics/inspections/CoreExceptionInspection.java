@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
@@ -33,39 +34,52 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
     private static final String JAVA_UNION_TYPE_REFERENCE = "JAVA_UNION_TYPE_REFERENCE";
     private static final String JAVA_BLOCK = "JAVA_BLOCK";
     private static final Set<String> EXCEPTION_ANALYSIS_BARRIERS = Set.of(
-            JAVA_METHOD_DECLARATION,
-            JAVA_CONSTRUCTOR_DECLARATION,
-            JAVA_RECORD_COMPACT_CONSTRUCTOR,
-            "JAVA_CLASS_DECLARATION",
-            "JAVA_INTERFACE_DECLARATION",
-            "JAVA_ENUM_DECLARATION",
-            "JAVA_ANNOTATION_TYPE_DECLARATION",
-            "JAVA_RECORD_DECLARATION",
-            "JAVA_LAMBDA_EXPRESSION"
+        JAVA_METHOD_DECLARATION,
+        JAVA_CONSTRUCTOR_DECLARATION,
+        JAVA_RECORD_COMPACT_CONSTRUCTOR,
+        "JAVA_CLASS_DECLARATION",
+        "JAVA_INTERFACE_DECLARATION",
+        "JAVA_ENUM_DECLARATION",
+        "JAVA_ANNOTATION_TYPE_DECLARATION",
+        "JAVA_RECORD_DECLARATION",
+        "JAVA_LAMBDA_EXPRESSION"
+    );
+    private static final Set<String> BANNED_EXCEPTION_TYPES_IN_METHOD_SIGNATURES = Set.of(
+        "java.lang.Throwable",
+        "java.lang.Exception",
+        "java.lang.RuntimeException",
+        "java.lang.Error"
     );
 
     private static final List<JavaInspectionRule> RULES = List.of(
-            new SimpleJavaInspectionRule(
-                    JavaSemanticRules.UNCAUGHT_CHECKED_EXCEPTION.id(),
-                    JavaSemanticRules.UNCAUGHT_CHECKED_EXCEPTION.defaultSeverity(),
-                    JavaSemanticRules.UNCAUGHT_CHECKED_EXCEPTION.messageTemplate(),
-                    Set.of("core", "exceptions"),
-                    CoreExceptionInspection::reportUnhandledCheckedExceptions
-            ),
-            new SimpleJavaInspectionRule(
-                    JavaSemanticRules.UNREACHABLE_CATCH.id(),
-                    JavaSemanticRules.UNREACHABLE_CATCH.defaultSeverity(),
-                    JavaSemanticRules.UNREACHABLE_CATCH.messageTemplate(),
-                    Set.of("core", "exceptions"),
-                    CoreExceptionInspection::reportUnreachableCatches
-            ),
-            new SimpleJavaInspectionRule(
-                    JavaSemanticRules.INVALID_EXCEPTION_TYPE.id(),
-                    JavaSemanticRules.INVALID_EXCEPTION_TYPE.defaultSeverity(),
-                    JavaSemanticRules.INVALID_EXCEPTION_TYPE.messageTemplate(),
-                    Set.of("core", "exceptions"),
-                    CoreExceptionInspection::reportInvalidExceptionTypes
-            )
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.UNCAUGHT_CHECKED_EXCEPTION.id(),
+            JavaSemanticRules.UNCAUGHT_CHECKED_EXCEPTION.defaultSeverity(),
+            JavaSemanticRules.UNCAUGHT_CHECKED_EXCEPTION.messageTemplate(),
+            Set.of("core", "exceptions"),
+            CoreExceptionInspection::reportUnhandledCheckedExceptions
+        ),
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.UNREACHABLE_CATCH.id(),
+            JavaSemanticRules.UNREACHABLE_CATCH.defaultSeverity(),
+            JavaSemanticRules.UNREACHABLE_CATCH.messageTemplate(),
+            Set.of("core", "exceptions"),
+            CoreExceptionInspection::reportUnreachableCatches
+        ),
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.INVALID_EXCEPTION_TYPE.id(),
+            JavaSemanticRules.INVALID_EXCEPTION_TYPE.defaultSeverity(),
+            JavaSemanticRules.INVALID_EXCEPTION_TYPE.messageTemplate(),
+            Set.of("core", "exceptions"),
+            CoreExceptionInspection::reportInvalidExceptionTypes
+        ),
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE.id(),
+            JavaSemanticRules.DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE.defaultSeverity(),
+            JavaSemanticRules.DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE.messageTemplate(),
+            Set.of("core", "api-design"),
+            CoreExceptionInspection::reportDisallowedExceptionInMethodSignature
+        )
     );
 
     @Override
@@ -82,8 +96,8 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         context.traverse(node -> {
             String kindId = node.kind().id();
             if (!JAVA_METHOD_DECLARATION.equals(kindId)
-                    && !JAVA_CONSTRUCTOR_DECLARATION.equals(kindId)
-                    && !JAVA_RECORD_COMPACT_CONSTRUCTOR.equals(kindId)) {
+                && !JAVA_CONSTRUCTOR_DECLARATION.equals(kindId)
+                && !JAVA_RECORD_COMPACT_CONSTRUCTOR.equals(kindId)) {
                 return;
             }
 
@@ -125,8 +139,8 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         context.traverse(node -> {
             String kindId = node.kind().id();
             if (JAVA_METHOD_DECLARATION.equals(kindId)
-                    || JAVA_CONSTRUCTOR_DECLARATION.equals(kindId)
-                    || JAVA_RECORD_COMPACT_CONSTRUCTOR.equals(kindId)) {
+                || JAVA_CONSTRUCTOR_DECLARATION.equals(kindId)
+                || JAVA_RECORD_COMPACT_CONSTRUCTOR.equals(kindId)) {
                 SyntaxNode throwsClause = context.directChild(node, JAVA_THROWS_CLAUSE);
                 if (throwsClause != null)
                     reportInvalidTypeReferences(context, reporter, throwsClause, "declared thrown type");
@@ -157,6 +171,29 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         });
     }
 
+    // TODO: We need to make these exceptions a user-defined policy decision rather than hardcoding them in the inspection
+    private static void reportDisallowedExceptionInMethodSignature(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+        for (SyntaxNode syntaxNode : context.nodesOfKinds(JavaSyntaxKinds.METHOD_DECLARATION.id(), JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id(), JavaSyntaxKinds.RECORD_COMPACT_CONSTRUCTOR.id())) {
+            Symbol methodSymbol = context.declaredSymbol(syntaxNode).orElse(null);
+            if (methodSymbol == null)
+                continue;
+
+            SyntaxNode throwsClauseNode = context.directChild(syntaxNode, JavaSyntaxKinds.THROWS_CLAUSE.id());
+            if (throwsClauseNode == null)
+                continue;
+
+            for (SyntaxNode typeNode : directTypeNodes(throwsClauseNode)) {
+                String qualifiedTypeName = context.resolveQualifiedTypeName(typeNode);
+                if (qualifiedTypeName == null)
+                    continue;
+
+                if (BANNED_EXCEPTION_TYPES_IN_METHOD_SIGNATURES.contains(qualifiedTypeName)) {
+                    reporter.report(typeNode, methodSymbol.simpleName(), qualifiedTypeName);
+                }
+            }
+        }
+    }
+
     private static List<ThrownException> collectUnhandledCheckedExceptions(JavaRuleContext context, SyntaxNode node, Set<String> allowed) {
         String kindId = node.kind().id();
         if (EXCEPTION_ANALYSIS_BARRIERS.contains(kindId))
@@ -175,7 +212,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         switch (kindId) {
             case JAVA_THROW_STATEMENT -> addThrownExpressionException(context, node, exceptions);
             case JAVA_METHOD_INVOCATION_EXPRESSION, JAVA_CLASS_INSTANCE_CREATION_EXPRESSION ->
-                    addCallableThrownExceptions(context, node, exceptions);
+                addCallableThrownExceptions(context, node, exceptions);
             default -> {
             }
         }
@@ -193,8 +230,8 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
 
         SyntaxNode tryBlock = context.directChild(tryStatement, JAVA_BLOCK);
         List<ThrownException> tryExceptions = tryBlock == null
-                ? List.of()
-                : collectUnhandledCheckedExceptions(context, tryBlock, allowed);
+            ? List.of()
+            : collectUnhandledCheckedExceptions(context, tryBlock, allowed);
 
         List<SyntaxNode> catchClauses = directChildrenOfKind(tryStatement, JAVA_CATCH_CLAUSE);
         for (ThrownException exception : tryExceptions) {
@@ -287,10 +324,10 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
     }
 
     private static void reportInvalidTypeReferences(
-            JavaRuleContext context,
-            JavaInspectionRuleReporter reporter,
-            SyntaxNode root,
-            String role
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode root,
+        String role
     ) {
         for (SyntaxNode typeNode : directTypeNodes(root)) {
             String qualifiedTypeName = context.resolveQualifiedTypeName(typeNode);
@@ -312,6 +349,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
             out.add(node);
             return;
         }
+
         if (JAVA_UNION_TYPE_REFERENCE.equals(kindId)) {
             for (SyntaxNode child : node.children()) {
                 if (JAVA_TYPE_REFERENCE.equals(child.kind().id()))

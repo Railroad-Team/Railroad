@@ -43,6 +43,9 @@ public final class JavaInspectionRegistries {
     public static final CoreAssertionCanBeReplacedWithIfStatementInspection CORE_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT_INSPECTION = new CoreAssertionCanBeReplacedWithIfStatementInspection();
     public static final CoreFeatureEnvyInspection CORE_FEATURE_ENVY_INSPECTION = new CoreFeatureEnvyInspection();
     public static final CoreInitializationInspection CORE_INITIALIZATION_INSPECTION = new CoreInitializationInspection();
+    public static final CoreAssertionWithSideEffectsInspection CORE_ASSERTION_WITH_SIDE_EFFECTS_INSPECTION = new CoreAssertionWithSideEffectsInspection();
+    public static final CoreThisReferenceEscapedObjectConstructionInspection CORE_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION_INSPECTION = new CoreThisReferenceEscapedObjectConstructionInspection();
+    public static final CoreNegativeHexIntInLongContextInspection CORE_NEGATIVE_HEX_INT_IN_LONG_CONTEXT_INSPECTION = new CoreNegativeHexIntInLongContextInspection();
     public static final CoreFieldCanBeLocalVariableInspection CORE_FIELD_CAN_BE_LOCAL_VARIABLE_INSPECTION = new CoreFieldCanBeLocalVariableInspection();
     public static final CoreFunctionalInterfaceInspection CORE_FUNCTIONAL_INTERFACE_INSPECTION = new CoreFunctionalInterfaceInspection();
 
@@ -83,6 +86,9 @@ public final class JavaInspectionRegistries {
         JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreAssertionCanBeReplacedWithIfStatementInspection.ID, CORE_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT_INSPECTION);
         JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreFeatureEnvyInspection.ID, CORE_FEATURE_ENVY_INSPECTION);
         JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreInitializationInspection.ID, CORE_INITIALIZATION_INSPECTION);
+        JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreAssertionWithSideEffectsInspection.ID, CORE_ASSERTION_WITH_SIDE_EFFECTS_INSPECTION);
+        JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreThisReferenceEscapedObjectConstructionInspection.ID, CORE_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION_INSPECTION);
+        JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreNegativeHexIntInLongContextInspection.ID, CORE_NEGATIVE_HEX_INT_IN_LONG_CONTEXT_INSPECTION);
         JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreFieldCanBeLocalVariableInspection.ID, CORE_FIELD_CAN_BE_LOCAL_VARIABLE_INSPECTION);
         JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreFunctionalInterfaceInspection.ID, CORE_FUNCTIONAL_INTERFACE_INSPECTION);
     }
@@ -122,6 +128,10 @@ public final class JavaInspectionRegistries {
             CORE_CAST_CONFLICTING_WITH_INSTANCEOF_INSPECTION,
             CORE_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT_INSPECTION,
             CORE_FEATURE_ENVY_INSPECTION,
+            CORE_INITIALIZATION_INSPECTION,
+            CORE_ASSERTION_WITH_SIDE_EFFECTS_INSPECTION,
+            CORE_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION_INSPECTION,
+            CORE_NEGATIVE_HEX_INT_IN_LONG_CONTEXT_INSPECTION,
             CORE_INITIALIZATION_INSPECTION,
             CORE_FIELD_CAN_BE_LOCAL_VARIABLE_INSPECTION,
             CORE_FUNCTIONAL_INTERFACE_INSPECTION
