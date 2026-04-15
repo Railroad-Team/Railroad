@@ -2285,6 +2285,18 @@ class CoreInspectionRulesTest {
     }
 
     @Test
+    void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticWhenFullyQualifiedAnnotationPresent() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
+            @java.lang.FunctionalInterface
+            interface Worker {
+                void run();
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())));
+    }
+
+    @Test
     void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticForZeroAbstractMethods() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
             interface Marker {

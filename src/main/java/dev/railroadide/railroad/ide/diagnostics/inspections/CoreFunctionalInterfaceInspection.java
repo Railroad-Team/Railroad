@@ -37,7 +37,7 @@ public final class CoreFunctionalInterfaceInspection implements JavaInspectionRu
             String qualifiedName = declaredName.qualifiedName().orElse(null);
             if (qualifiedName == null) continue;
 
-            if (hasAnnotation(context, node, "FunctionalInterface")) continue;
+            if (hasAnnotation(context, node, "java.lang.FunctionalInterface")) continue;
 
             int abstractMethodCount = 0;
             Set<String> seenMethods = new HashSet<>();
@@ -61,10 +61,19 @@ public final class CoreFunctionalInterfaceInspection implements JavaInspectionRu
         }
     }
 
-    private static boolean hasAnnotation(JavaRuleContext context, SyntaxNode node, String annotationName) {
+    private static boolean hasAnnotation(JavaRuleContext context, SyntaxNode node, String qualifiedAnnotationName) {
+        String simpleName = qualifiedAnnotationName.contains(".")
+                ? qualifiedAnnotationName.substring(qualifiedAnnotationName.lastIndexOf('.') + 1)
+                : qualifiedAnnotationName;
+
         for (SyntaxNode child : node.children()) {
             if (!JavaSyntaxKinds.ANNOTATION.id().equals(child.kind().id())) continue;
-            if (annotationName.equals(context.firstIdentifierLikeTokenText(child))) return true;
+
+            SyntaxNode qualifiedNameNode = context.directChild(child, JavaSyntaxKinds.QUALIFIED_NAME.id());
+            if (qualifiedNameNode == null) continue;
+
+            String name = context.canonicalQualifiedName(qualifiedNameNode);
+            if (qualifiedAnnotationName.equals(name) || simpleName.equals(name)) return true;
         }
         return false;
     }
