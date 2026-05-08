@@ -10,10 +10,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.*;
 
 public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-field-can-be-local-variable";
@@ -31,6 +28,24 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
     }
 
     private static void reportFieldCanBeLocalVariable(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+        Map<Symbol, Set<SyntaxNode>> callablesBySymbol = new HashMap<>();
+        Set<Symbol> referencesOutsideCallable = new HashSet<>();
+
+        context.traverse(node -> {
+            if (!node.kind().id().equals(JavaSyntaxKinds.NAME_EXPRESSION.id())) return;
+
+            Symbol symbol = context.resolvedSymbol(node).orElse(null);
+            if (symbol == null) return;
+
+            SyntaxNode callable = context.nearestEnclosingCallableOrLambda(node);
+            if (callable == null) {
+                referencesOutsideCallable.add(symbol);
+                return;
+            }
+
+            callablesBySymbol.computeIfAbsent(symbol, k -> new HashSet<>()).add(callable);
+        });
+
         for (SyntaxNode node : context.nodesOfKind(JavaSyntaxKinds.VARIABLE_DECLARATOR.id())) {
             SyntaxNode parent = node.parent().orElse(null);
 
@@ -46,28 +61,8 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
 
             if (declaredSymbol == null) continue;
 
-            AtomicBoolean isReferencedOutsideMethod = new AtomicBoolean(false);
-            Set<SyntaxNode> methodContainingReferences = new HashSet<>();
-            context.traverse(descendant -> {
-                if (!descendant.kind().id().equals(JavaSyntaxKinds.NAME_EXPRESSION.id())) return;
-
-                Symbol resolvedSymbol = context.resolvedSymbol(descendant).orElse(null);
-
-                if (resolvedSymbol == null) return;
-
-                if (!resolvedSymbol.equals(declaredSymbol)) return;
-
-                SyntaxNode methodNode = context.nearestEnclosingCallableOrLambda(descendant);
-
-                if (methodNode == null) {
-                    isReferencedOutsideMethod.set(true);
-                    return;
-                }
-
-                methodContainingReferences.add(methodNode);
-            });
-
-            if (isReferencedOutsideMethod.get() || methodContainingReferences.size() != 1) continue;
+            Set<SyntaxNode> callables = callablesBySymbol.getOrDefault(declaredSymbol, Set.of());
+            if (referencesOutsideCallable.contains(declaredSymbol) || callables.size() != 1) continue;
 
             reporter.report(node, declaredSymbol.simpleName());
         }
