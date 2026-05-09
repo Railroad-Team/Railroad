@@ -2262,6 +2262,54 @@ class CoreInspectionRulesTest {
     }
 
     @Test
+    void coreFieldCanBeLocalVariableRuleEmitsDiagnosticForFieldOnlyReadInsideLambda() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
+            class Example {
+                private int field = 1;
+
+                void method() {
+                    Runnable task = () -> System.out.println(field);
+                    task.run();
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FIELD_CAN_BE_LOCAL_VARIABLE".equals(d.code())));
+    }
+
+    @Test
+    void coreFieldCanBeLocalVariableRuleDoesNotEmitDiagnosticForFieldAssignedInsideLambda() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
+            class Example {
+                private int field = 1;
+
+                void method() {
+                    Runnable task = () -> field = 2;
+                    task.run();
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_FIELD_CAN_BE_LOCAL_VARIABLE".equals(d.code())));
+    }
+
+    @Test
+    void coreFieldCanBeLocalVariableRuleDoesNotEmitDiagnosticForFieldIncrementedInsideLambda() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
+            class Example {
+                private int field = 1;
+
+                void method() {
+                    Runnable task = () -> this.field++;
+                    task.run();
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_FIELD_CAN_BE_LOCAL_VARIABLE".equals(d.code())));
+    }
+
+    @Test
     void coreFunctionalInterfaceRuleEmitsDiagnosticForSingleAbstractMethod() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
             interface Worker {
