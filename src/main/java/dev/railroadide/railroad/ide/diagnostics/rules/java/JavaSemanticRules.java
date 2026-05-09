@@ -270,6 +270,45 @@ public final class JavaSemanticRules {
         "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL",
         SemanticDiagnostic.Severity.INFO,
         "Interface '%s' may be annotated as '@FunctionalInterface'"
+    public static final JavaSemanticRule CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL = new JavaSemanticRule(
+        "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL",
+        SemanticDiagnostic.Severity.WARNING,
+        "'%s' condition is always '%s' due to hardcoded literal"
+    );
+    public static final JavaSemanticRule CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT = new JavaSemanticRule(
+        "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT",
+        SemanticDiagnostic.Severity.WARNING,
+        "'%s' condition is always '%s' due to compile-time constant evaluation"
+    );
+    public static final JavaSemanticRule CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT = new JavaSemanticRule(
+        "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT",
+        SemanticDiagnostic.Severity.WARNING,
+        "'%s' is known to be '%s' due to data flow analysis, making the condition always '%s'"
+    );
+    public static final JavaSemanticRule OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK = new JavaSemanticRule(
+        "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK",
+        SemanticDiagnostic.Severity.WARNING,
+        "Call to 'Optional.get()' without preceding 'isPresent()' check may throw 'NoSuchElementException'"
+    );
+    public static final JavaSemanticRule INFINITE_RECURSION = new JavaSemanticRule(
+        "SEM_INFINITE_RECURSION",
+        SemanticDiagnostic.Severity.WARNING,
+        "Method '%s' is recursively called without a base case, leading to infinite recursion"
+    );
+    public static final JavaSemanticRule AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES = new JavaSemanticRule(
+        "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES",
+        SemanticDiagnostic.Severity.WARNING,
+        "'%s' implements 'AutoCloseable' but is not used in a try-with-resources statement"
+    );
+    public static final JavaSemanticRule FALLTHROUGH_CASE_IN_SWITCH = new JavaSemanticRule(
+        "SEM_FALLTHROUGH_CASE_IN_SWITCH",
+        SemanticDiagnostic.Severity.WARNING,
+        "Case '%s' in 'switch' statement falls through to the next case without a break or return statement"
+    );
+    public static final JavaSemanticRule INTEGER_DIVISION_IN_FLOATING_POINT_CONTEXT = new JavaSemanticRule(
+        "SEM_INTEGER_DIVISION_IN_FLOATING_POINT_CONTEXT",
+        SemanticDiagnostic.Severity.WARNING,
+        "Integer division in floating-point context may lead to loss of precision"
     );
 
     private JavaSemanticRules() {

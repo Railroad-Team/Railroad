@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.plugin.spi.inspection;
 
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
@@ -209,6 +210,118 @@ class JavaRuleContextTest {
         assertFalse(context.isCheckedExceptionType("java.lang.RuntimeException"));
         assertEquals("java.io.FileInputStream", context.tryResourceTypeName(tryResource));
         assertTrue(context.closeThrownTypeNames("java.io.FileInputStream").contains("java.io.IOException"));
+    }
+
+    @Test
+    void exposesInvocationHelpers() {
+        String source = """
+                class Example {
+                    void run(java.util.Optional<String> opt) {
+                        opt.isPresent();
+                        opt.get();
+                        ping(1);
+                    }
+
+                    void ping(int value) {
+                    }
+                }
+                """;
+
+        JavaRuleContext context = contextFor(source);
+        List<SyntaxNode> invocations = context.nodesOfKind("JAVA_METHOD_INVOCATION_EXPRESSION");
+        SyntaxNode isPresentInvocation = invocations.stream()
+                .filter(node -> syntaxText(node).contains("opt.isPresent()"))
+                .findFirst()
+                .orElse(null);
+        SyntaxNode getInvocation = invocations.stream()
+                .filter(node -> syntaxText(node).contains("opt.get()"))
+                .findFirst()
+                .orElse(null);
+        SyntaxNode pingInvocation = invocations.stream()
+                .filter(node -> syntaxText(node).contains("ping(1)"))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(isPresentInvocation);
+        assertNotNull(getInvocation);
+        assertNotNull(pingInvocation);
+        assertTrue(context.isMethodInvocationNamed(isPresentInvocation, "isPresent"));
+        assertTrue(context.isMethodInvocationNamed(getInvocation, "get"));
+        assertFalse(context.isMethodInvocationNamed(getInvocation, "isPresent"));
+        assertTrue(context.hasNoArguments(isPresentInvocation));
+        assertTrue(context.hasNoArguments(getInvocation));
+        assertFalse(context.hasNoArguments(pingInvocation));
+        assertEquals("opt", context.simpleReceiverName(isPresentInvocation));
+        assertEquals("opt", context.simpleReceiverName(getInvocation));
+        assertNull(context.simpleReceiverName(pingInvocation));
+    }
+
+    @Test
+    void exposesConditionAndOperatorHelpers() {
+        String source = """
+                class Example {
+                    void run(boolean flag) {
+                        if (flag && true) {
+                        } else {
+                        }
+
+                        while (flag) {
+                        }
+
+                        do {
+                        } while (flag);
+
+                        for (; flag; ) {
+                        }
+                    }
+                }
+                """;
+
+        JavaRuleContext context = contextFor(source);
+        SyntaxNode ifStatement = context.nodesOfKind("JAVA_IF_STATEMENT").getFirst();
+        SyntaxNode whileStatement = context.nodesOfKind("JAVA_WHILE_STATEMENT").getFirst();
+        SyntaxNode doWhileStatement = context.nodesOfKind("JAVA_DO_WHILE_STATEMENT").getFirst();
+        SyntaxNode forStatement = context.nodesOfKind("JAVA_FOR_STATEMENT").getFirst();
+        SyntaxNode ifCondition = context.conditionOf(ifStatement);
+        SyntaxNode whileCondition = context.conditionOf(whileStatement);
+        SyntaxNode doWhileCondition = context.conditionOf(doWhileStatement);
+        SyntaxNode forCondition = context.conditionOf(forStatement);
+
+        assertNotNull(ifCondition);
+        assertNotNull(whileCondition);
+        assertNotNull(doWhileCondition);
+        assertNotNull(forCondition);
+        assertTrue(context.hasOperatorToken(context.unwrapTransparentExpression(ifCondition), JavaTokenType.AND));
+        assertFalse(context.hasOperatorToken(whileCondition, JavaTokenType.AND));
+        assertEquals("flag", context.simpleExpressionKey(whileCondition));
+        assertEquals("flag", context.simpleExpressionKey(doWhileCondition));
+        assertEquals("flag", context.simpleExpressionKey(forCondition));
+    }
+
+    @Test
+    void exposesOptionalGetInvocationTypingHelpers() {
+        String source = """
+                class Example {
+                    String run(java.util.Optional<String> opt) {
+                        return opt.get();
+                    }
+                }
+                """;
+
+        JavaRuleContext context = contextFor(source);
+        SyntaxNode invocation = context.nodesOfKind("JAVA_METHOD_INVOCATION_EXPRESSION").getFirst();
+        SyntaxNode receiver = context.unwrapTransparentExpression(context.invocationReceiver(invocation));
+
+        assertTrue(context.isMethodInvocationNamed(invocation, "get"));
+        assertTrue(context.hasNoArguments(invocation));
+        assertEquals("opt", context.simpleReceiverName(invocation));
+        assertNotNull(receiver);
+        Symbol receiverSymbol = context.resolvedSymbol(receiver).orElseThrow();
+        SyntaxNode declaration = receiverSymbol.declaration().orElseThrow();
+        SyntaxNode typeReference = context.directChild(declaration, JavaSyntaxKinds.TYPE_REFERENCE.id());
+
+        assertNotNull(typeReference);
+        assertTrue(context.resolveQualifiedTypeName(typeReference).startsWith("java.util.Optional"));
     }
 
     private static JavaRuleContext contextFor(String source) {

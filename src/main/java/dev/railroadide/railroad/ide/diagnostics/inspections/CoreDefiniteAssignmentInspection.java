@@ -885,11 +885,12 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         return false;
     }
 
-    private static boolean isArrowSwitchRule(SyntaxNode rule) {
+    public static boolean isArrowSwitchRule(SyntaxNode rule) {
         for (SyntaxNode child : rule.children()) {
             if (child instanceof SyntaxToken token && "->".equals(token.text()))
                 return true;
         }
+
         return false;
     }
 

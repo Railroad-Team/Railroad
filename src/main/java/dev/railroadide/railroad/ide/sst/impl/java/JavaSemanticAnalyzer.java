@@ -2682,7 +2682,7 @@ public final class JavaSemanticAnalyzer {
         return kindId.startsWith("JAVA_MISSING_");
     }
 
-    private static boolean isTriviaToken(SyntaxToken token) {
+    public static boolean isTriviaToken(SyntaxToken token) {
         return TRIVIA_TOKEN_KIND_IDS.contains(token.kind().id());
     }
 

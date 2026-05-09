@@ -7,6 +7,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +58,10 @@ public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider
         boolean reachable = true;
         for (SyntaxNode statement : directExecutableChildren(block)) {
             if (!reachable) {
-                reporter.report(statement);
+                if(reporter != null) {
+                    reporter.report(statement);
+                }
+
                 continue;
             }
 
@@ -67,7 +71,7 @@ public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider
         return reachable;
     }
 
-    private static boolean completesNormally(JavaRuleContext context, JavaInspectionRuleReporter reporter, SyntaxNode statement) {
+    public static boolean completesNormally(JavaRuleContext context, @Nullable JavaInspectionRuleReporter reporter, SyntaxNode statement) {
         String kindId = statement.kind().id();
         return switch (kindId) {
             case "JAVA_RETURN_STATEMENT",
@@ -130,11 +134,15 @@ public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider
         for (SyntaxNode child : switchRule.children()) {
             if (child instanceof SyntaxToken)
                 continue;
+
             if ("JAVA_SWITCH_LABEL".equals(child.kind().id()))
                 continue;
 
             if (!reachable) {
-                reporter.report(child);
+                if(reporter != null) {
+                    reporter.report(child);
+                }
+
                 continue;
             }
 

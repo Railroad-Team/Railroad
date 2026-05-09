@@ -51,11 +51,11 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
             if (condition == null)
                 continue;
 
-            analyzeGuardedBody(context, reporter, condition, thenBranchOf(context, ifNode));
+            analyzeGuardedBody(context, reporter, condition, context.thenBranchOf(ifNode));
 
             InstanceofFact negatedFact = extractNegatedInstanceofFact(context, condition);
             if (negatedFact != null) {
-                SyntaxNode elseBranch = elseBranchOf(context, ifNode);
+                SyntaxNode elseBranch = context.elseBranchOf(ifNode);
                 if (elseBranch != null)
                     analyzeGuardedBody(context, reporter, negatedFact, elseBranch);
             }
@@ -75,7 +75,7 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
     private static void reportCastConflictingWithInstanceofForStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
         for (SyntaxNode forNode : context.nodesOfKind(JavaSyntaxKinds.FOR_STATEMENT.id())) {
             SyntaxNode condition = basicForConditionOf(forNode);
-            SyntaxNode body = forBodyOf(forNode);
+            SyntaxNode body = context.forBodyOf(forNode);
             analyzeGuardedBody(context, reporter, condition, body);
         }
     }
@@ -212,44 +212,6 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         return null;
     }
 
-    private static @Nullable SyntaxNode thenBranchOf(JavaRuleContext context, SyntaxNode ifNode) {
-        List<SyntaxNode> children = ifNode.children();
-        boolean seenCondition = false;
-
-        for (SyntaxNode child : children) {
-            if (!seenCondition && context.isExpressionNode(child)) {
-                seenCondition = true;
-                continue;
-            }
-
-            if (seenCondition)
-                return child;
-        }
-
-        return null;
-    }
-
-    private static @Nullable SyntaxNode elseBranchOf(JavaRuleContext context, SyntaxNode ifNode) {
-        boolean sawElse = false;
-        for (SyntaxNode child : ifNode.children()) {
-            if (!sawElse) {
-                if (isElseToken(child))
-                    sawElse = true;
-                continue;
-            }
-
-            if (!(child instanceof SyntaxToken))
-                return child;
-        }
-
-        return null;
-    }
-
-    private static boolean isElseToken(SyntaxNode node) {
-        return node instanceof SyntaxToken token
-            && JavaSyntaxKinds.tokenKind(JavaTokenType.ELSE_KEYWORD).id().equals(token.kind().id());
-    }
-
     private static List<SyntaxNode> findDescendantCastExpressions(SyntaxNode node) {
         List<SyntaxNode> casts = new ArrayList<>();
         collectDescendantCastExpressions(node, casts);
@@ -320,24 +282,6 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
             }
 
             if (semicolonCount == 1 && JavaSemanticAnalyzer.isExpressionNode(child))
-                return child;
-        }
-
-        return null;
-    }
-
-    private static @Nullable SyntaxNode forBodyOf(SyntaxNode forNode) {
-        boolean seenHeader = false;
-        for (SyntaxNode child : forNode.children()) {
-            String kindId = child.kind().id();
-            if (!seenHeader && (
-                JavaSyntaxKinds.BASIC_FOR_STATEMENT.id().equals(kindId)
-                    || JavaSyntaxKinds.ENHANCED_FOR_STATEMENT.id().equals(kindId))) {
-                seenHeader = true;
-                continue;
-            }
-
-            if (seenHeader)
                 return child;
         }
 

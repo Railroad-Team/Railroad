@@ -56,6 +56,7 @@ class CoreInspectionRulesTest {
         assertRuleIds(new CoreEmptySynchronizedInspection(), Set.of("SEM_EMPTY_SYNCHRONIZED"));
         assertRuleIds(new CoreEmptySwitchInspection(), Set.of("SEM_EMPTY_SWITCH"));
         assertRuleIds(new CoreUselessDefaultInSwitchInspection(), Set.of("SEM_USELESS_DEFAULT_IN_SWITCH"));
+        assertRuleIds(new CoreFallthroughCaseInSwitchInspection(), Set.of("SEM_FALLTHROUGH_CASE_IN_SWITCH"));
         assertRuleIds(new CoreSingleLetterFieldNameInspection(), Set.of("SEM_SINGLE_LETTER_FIELD_NAME"));
         assertRuleIds(new CoreFieldNameSameAsClassInspection(), Set.of("SEM_FIELD_NAME_SAME_AS_CLASS_NAME"));
         assertRuleIds(new CoreParameterNamedUnderscoreInspection(), Set.of("SEM_PARAMETER_NAME_UNDERSCORE"));
@@ -69,6 +70,9 @@ class CoreInspectionRulesTest {
         assertRuleIds(new CoreThisReferenceEscapedObjectConstructionInspection(), Set.of("SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION"));
         assertRuleIds(new CoreFieldCanBeLocalVariableInspection(), Set.of("SEM_FIELD_CAN_BE_LOCAL_VARIABLE"));
         assertRuleIds(new CoreFunctionalInterfaceInspection(), Set.of("SEM_INTERFACE_SHOULD_BE_FUNCTIONAL"));
+        assertRuleIds(new CoreOptionalGetWithoutIsPresentCheckInspection(), Set.of("SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK"));
+        assertRuleIds(new CoreAutoCloseableWithoutTryWithResourcesInspection(), Set.of("SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES"));
+        assertRuleIds(new CoreInfiniteRecursionInspection(), Set.of("SEM_INFINITE_RECURSION"));
     }
 
     @Test
@@ -207,6 +211,177 @@ class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_USELESS_DEFAULT_IN_SWITCH".equals(d.code())));
+    }
+
+    @Test
+    void coreFallthroughCaseInSwitchRuleEmitsDiagnosticForPlainFallthrough() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
+            class Example {
+                void run(int value) {
+                    switch (value) {
+                        case 1:
+                            System.out.println("one");
+                        case 2:
+                            System.out.println("two");
+                            break;
+                    }
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FALLTHROUGH_CASE_IN_SWITCH".equals(d.code())));
+    }
+
+    @Test
+    void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticForStackedLabels() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
+            class Example {
+                void run(int value) {
+                    switch (value) {
+                        case 1:
+                        case 2:
+                            System.out.println("grouped");
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_FALLTHROUGH_CASE_IN_SWITCH".equals(d.code())));
+    }
+
+    @Test
+    void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticWhenCaseBreaks() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
+            class Example {
+                void run(int value) {
+                    switch (value) {
+                        case 1:
+                            System.out.println("one");
+                            break;
+                        case 2:
+                            System.out.println("two");
+                            break;
+                    }
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_FALLTHROUGH_CASE_IN_SWITCH".equals(d.code())));
+    }
+
+    @Test
+    void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticWhenCaseReturns() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
+            class Example {
+                int run(int value) {
+                    switch (value) {
+                        case 1:
+                            return 1;
+                        case 2:
+                            return 2;
+                        default:
+                            return 0;
+                    }
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_FALLTHROUGH_CASE_IN_SWITCH".equals(d.code())));
+    }
+
+    @Test
+    void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticWhenCaseThrows() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
+            class Example {
+                void run(int value) {
+                    switch (value) {
+                        case 1:
+                            throw new RuntimeException();
+                        case 2:
+                            System.out.println("two");
+                            break;
+                    }
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_FALLTHROUGH_CASE_IN_SWITCH".equals(d.code())));
+    }
+
+    @Test
+    void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticForArrowSwitchRules() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
+            class Example {
+                void run(int value) {
+                    switch (value) {
+                        case 1 -> System.out.println("one");
+                        case 2 -> System.out.println("two");
+                        default -> System.out.println("default");
+                    }
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_FALLTHROUGH_CASE_IN_SWITCH".equals(d.code())));
+    }
+
+    @Test
+    void coreFallthroughCaseInSwitchRuleEmitsDiagnosticWhenOnlySomePathsBreak() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
+            class Example {
+                void run(int value, boolean stop) {
+                    switch (value) {
+                        case 1:
+                            if (stop) {
+                                break;
+                            }
+                            System.out.println("falls through");
+                        case 2:
+                            System.out.println("two");
+                            break;
+                    }
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FALLTHROUGH_CASE_IN_SWITCH".equals(d.code())));
+    }
+
+    @Test
+    void coreFallthroughCaseInSwitchRuleEmitsDiagnosticForFallthroughIntoDefault() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
+            class Example {
+                void run(int value) {
+                    switch (value) {
+                        case 1:
+                            System.out.println("one");
+                        default:
+                            System.out.println("default");
+                    }
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FALLTHROUGH_CASE_IN_SWITCH".equals(d.code())));
+    }
+
+    @Test
+    void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticForLastCaseWithoutFollowingRule() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
+            class Example {
+                void run(int value) {
+                    switch (value) {
+                        case 1:
+                            System.out.println("one");
+                    }
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_FALLTHROUGH_CASE_IN_SWITCH".equals(d.code())));
     }
 
     @Test
@@ -2445,6 +2620,908 @@ class CoreInspectionRulesTest {
                 "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
                         && d.message().contains("Child")));
     }
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsHardcodedIfLiteral() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    if (true) {}
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsHardcodedWhileLiteral() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    while (false) {}
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsHardcodedDoWhileLiteral() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    do {} while (false);
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsHardcodedForLiteral() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    for (; false; ) {}
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsHardcodedTernaryLiteral() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    boolean x = true ? false : true;
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsUnaryCompileTimeConstant() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    if (!true) {}
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsBinaryCompileTimeConstant() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    if (true && false) {}
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsNamedCompileTimeConstant() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                static final boolean DEBUG = false;
+
+                void m() {
+                    if (DEBUG) {}
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsLocalDataFlowConstant() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    boolean b = true;
+                    if (b) {}
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsBranchNarrowedThenCondition() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m(boolean p) {
+                    if (p) {
+                        if (p) {}
+                    }
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsBranchNarrowedElseCondition() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m(boolean p) {
+                    if (p) {
+                    } else {
+                        if (p) {}
+                    }
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsAssignmentDrivenDataFlowConstant() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    boolean b = false;
+                    b = true;
+                    if (b) {}
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleDoesNotLeakShadowedFactsAcrossScopes() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    boolean b = true;
+                    {
+                        boolean b = false;
+                    }
+                }
+            }
+            """);
+
+        long flowReports = diagnostics.stream()
+            .filter(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code()))
+            .count();
+        assertEquals(0, flowReports);
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsSingleStatementBranchNarrowing() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m(boolean p) {
+                    if (p)
+                        if (p) {}
+                    else
+                        if (p) {}
+                }
+            }
+            """);
+
+        long flowReports = diagnostics.stream()
+            .filter(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code()))
+            .count();
+        assertEquals(2, flowReports);
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleFlagsLoopConditionFromKnownFact() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    boolean b = false;
+                    while (b) {}
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleDoesNotPreserveLoopFactWhenVariableIsUpdated() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    boolean b = true;
+                    for (; b; b = false) {
+                        if (b) {}
+                    }
+                }
+            }
+            """);
+
+        long flowReports = diagnostics.stream()
+            .filter(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code()))
+            .count();
+        assertEquals(1, flowReports);
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleDoesNotTreatNonFinalNamedValueAsCompileTimeConstant() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                static boolean DEBUG = false;
+
+                void m() {
+                    if (DEBUG) {}
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleProducesExpectedMessagesForEachRuleKind() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                static final boolean DEBUG = false;
+
+                void m(boolean p) {
+                    if (true) {}
+                    if (DEBUG) {}
+                    if (p) {
+                        if (p) {}
+                    }
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())
+                && d.message().contains("'if' condition is always 'true'")));
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())
+                && d.message().contains("'if' condition is always 'false'")));
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())
+                && d.message().contains("'p' is known to be 'true'")
+                && d.message().contains("always 'true'")));
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleDoesNotDuplicateHardcodedAndCompileTimeReports() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    if (true) {}
+                }
+            }
+            """);
+
+        long reports = diagnostics.stream()
+            .filter(d -> d.code().startsWith("SEM_CONSTANT_CONDITIONAL_EXPRESSION"))
+            .count();
+        assertEquals(1, reports);
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleIgnoresWhileTrueIdiom() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                void m() {
+                    while (true) {
+                        if (System.currentTimeMillis() > 0) break;
+                    }
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().noneMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())),
+            "while(true) should be ignored as an intentional infinite loop idiom");
+    }
+
+    @Test
+    void coreConstantConditionalExpressionRuleDoesNotFlagDynamicExpressions() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
+            class Example {
+                boolean get() { return true; }
+                void m(boolean p) {
+                    if (p) {}
+                    if (get()) {}
+
+                    boolean changing = true;
+                    changing = get();
+                    if (changing) {}
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.isEmpty(), "Dynamic conditions should not be flagged as constant");
+    }
+
+    @Test
+    void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticForPlainOptionalGet() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
+            class Example {
+                String run(java.util.Optional<String> opt) {
+                    return opt.get();
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
+    }
+
+    @Test
+    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideIfPresentGuard() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
+            class Example {
+                String run(java.util.Optional<String> opt) {
+                    if (opt.isPresent()) {
+                        return opt.get();
+                    }
+                    return "fallback";
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
+    }
+
+    @Test
+    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideNegatedElseGuard() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
+            class Example {
+                String run(java.util.Optional<String> opt) {
+                    if (!opt.isPresent()) {
+                        return "fallback";
+                    } else {
+                        return opt.get();
+                    }
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
+    }
+
+    @Test
+    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideDoubleNegationGuard() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
+            class Example {
+                String run(java.util.Optional<String> opt) {
+                    if (!!opt.isPresent()) {
+                        return opt.get();
+                    }
+                    return "fallback";
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
+    }
+
+    @Test
+    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideTripleNegationElseGuard() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
+            class Example {
+                String run(java.util.Optional<String> opt) {
+                    if (!!!opt.isPresent()) {
+                        return "fallback";
+                    } else {
+                        return opt.get();
+                    }
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
+    }
+
+    @Test
+    void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticWhenDifferentOptionalIsGuarded() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
+            class Example {
+                String run(java.util.Optional<String> left, java.util.Optional<String> right) {
+                    if (left.isPresent()) {
+                        return right.get();
+                    }
+                    return "fallback";
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
+    }
+
+    @Test
+    void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticOutsideIfPresentGuard() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
+            class Example {
+                String run(java.util.Optional<String> opt) {
+                    if (opt.isPresent()) {
+                        System.out.println("present");
+                    }
+                    return opt.get();
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
+    }
+
+    @Test
+    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideWhilePresentGuard() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
+            class Example {
+                void run(java.util.Optional<String> opt) {
+                    while (opt.isPresent()) {
+                        System.out.println(opt.get());
+                        break;
+                    }
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
+    }
+
+    @Test
+    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideForPresentGuard() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
+            class Example {
+                void run(java.util.Optional<String> opt) {
+                    for (; opt.isPresent(); ) {
+                        System.out.println(opt.get());
+                        break;
+                    }
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
+    }
+
+    @Test
+    void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticInDoWhileBody() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
+            class Example {
+                void run(java.util.Optional<String> opt) {
+                    do {
+                        System.out.println(opt.get());
+                    } while (opt.isPresent());
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
+    }
+
+    @Test
+    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideIfPresentCallback() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
+            class Example {
+                void run(java.util.Optional<String> opt) {
+                    opt.ifPresent(value -> {
+                        System.out.println(opt.get());
+                    });
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
+    }
+
+    @Test
+    void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticForDifferentOptionalInsideIfPresentCallback() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
+            class Example {
+                void run(java.util.Optional<String> left, java.util.Optional<String> right) {
+                    left.ifPresent(value -> {
+                        System.out.println(right.get());
+                    });
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
+    }
+
+    @Test
+    void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticOutsideIfPresentCallback() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
+            class Example {
+                void run(java.util.Optional<String> opt) {
+                    opt.ifPresent(value -> {
+                        System.out.println(value);
+                    });
+                    System.out.println(opt.get());
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
+    }
+
+    @Test
+    void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForDirectConstructorAcquisition() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
+            class Example {
+                static final class Resource implements AutoCloseable {
+                    public void close() {
+                    }
+                }
+
+                void run() {
+                    Resource resource = new Resource();
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+    }
+
+    @Test
+    void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForVarConstructorAcquisition() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
+            class Example {
+                static final class Resource implements AutoCloseable {
+                    public void close() {
+                    }
+                }
+
+                void run() {
+                    var resource = new Resource();
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+    }
+
+    @Test
+    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticInsideTryWithResources() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
+            class Example {
+                static final class Resource implements AutoCloseable {
+                    public void close() {
+                    }
+                }
+
+                void run() {
+                    try (Resource resource = new Resource()) {
+                        System.out.println(resource);
+                    }
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+    }
+
+    @Test
+    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForDeclarationWithoutInitializer() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
+            class Example {
+                static final class Resource implements AutoCloseable {
+                    public void close() {
+                    }
+                }
+
+                void run() {
+                    Resource resource;
+                    resource = new Resource();
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+    }
+
+    @Test
+    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForFieldDeclaration() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
+            class Example {
+                static final class Resource implements AutoCloseable {
+                    public void close() {
+                    }
+                }
+
+                private final Resource resource = new Resource();
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+    }
+
+    @Test
+    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForAliasInitializer() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
+            class Example {
+                static final class Resource implements AutoCloseable {
+                    public void close() {
+                    }
+                }
+
+                void run(Resource existing) {
+                    Resource alias = existing;
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+    }
+
+    @Test
+    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForFieldAccessInitializer() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
+            class Example {
+                static final class Resource implements AutoCloseable {
+                    public void close() {
+                    }
+                }
+
+                private final Resource shared = null;
+
+                void run() {
+                    Resource alias = this.shared;
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+    }
+
+    @Test
+    void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForOpenMethodFactory() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
+            class Example {
+                static final class Resource implements AutoCloseable {
+                    public void close() {
+                    }
+                }
+
+                Resource openResource() {
+                    return new Resource();
+                }
+
+                void run() {
+                    Resource resource = openResource();
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+    }
+
+    @Test
+    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForMethodFactoryOutsideHeuristic() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
+            class Example {
+                static final class Resource implements AutoCloseable {
+                    public void close() {
+                    }
+                }
+
+                Resource buildResource() {
+                    return new Resource();
+                }
+
+                void run() {
+                    Resource resource = buildResource();
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+    }
+
+    @Test
+    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForOpenMethodReturningNonCloseable() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
+            class Example {
+                Object openValue() {
+                    return new Object();
+                }
+
+                void run() {
+                    Object value = openValue();
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+    }
+
+    @Test
+    void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForConditionalFactoryBranch() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
+            class Example {
+                static final class Resource implements AutoCloseable {
+                    public void close() {
+                    }
+                }
+
+                Resource openResource() {
+                    return new Resource();
+                }
+
+                void run(boolean flag, Resource existing) {
+                    Resource resource = flag ? existing : openResource();
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+    }
+
+    @Test
+    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForConditionalAliases() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
+            class Example {
+                static final class Resource implements AutoCloseable {
+                    public void close() {
+                    }
+                }
+
+                void run(boolean flag, Resource left, Resource right) {
+                    Resource resource = flag ? left : right;
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+    }
+
+    @Test
+    void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForCastWrappedConstructorAcquisition() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
+            class Example {
+                static final class Resource implements AutoCloseable {
+                    public void close() {
+                    }
+                }
+
+                void run() {
+                    Resource resource = (Resource) new Resource();
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+    }
+
+    @Test
+    void coreInfiniteRecursionRuleEmitsDiagnosticForDirectRecursiveReturn() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
+            class Example {
+                int run() {
+                    return run();
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INFINITE_RECURSION".equals(d.code())));
+    }
+
+    @Test
+    void coreInfiniteRecursionRuleEmitsDiagnosticForDirectRecursiveExpressionStatement() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
+            class Example {
+                void run() {
+                    run();
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INFINITE_RECURSION".equals(d.code())));
+    }
+
+    @Test
+    void coreInfiniteRecursionRuleEmitsDiagnosticWhenBothIfBranchesRecurse() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
+            class Example {
+                int run(boolean flag) {
+                    if (flag) {
+                        return run(flag);
+                    } else {
+                        return run(flag);
+                    }
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INFINITE_RECURSION".equals(d.code())));
+    }
+
+    @Test
+    void coreInfiniteRecursionRuleDoesNotEmitDiagnosticWhenBaseCaseReturns() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
+            class Example {
+                int run(int n) {
+                    if (n == 0) {
+                        return 0;
+                    }
+                    return run(n - 1);
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INFINITE_RECURSION".equals(d.code())));
+    }
+
+    @Test
+    void coreInfiniteRecursionRuleDoesNotEmitDiagnosticForLambdaContainedSelfCall() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
+            class Example {
+                void run() {
+                    Runnable action = () -> run();
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INFINITE_RECURSION".equals(d.code())));
+    }
+
+    @Test
+    void coreInfiniteRecursionRuleDoesNotEmitDiagnosticForConditionalSingleBranchRecursion() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
+            class Example {
+                void run(boolean flag) {
+                    if (flag) {
+                        run(flag);
+                    }
+                    System.out.println("done");
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INFINITE_RECURSION".equals(d.code())));
+    }
+
+    @Test
+    void coreInfiniteRecursionRuleDoesNotEmitDiagnosticForDifferentOverloadCall() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
+            class Example {
+                int run() {
+                    return run(1);
+                }
+
+                int run(int value) {
+                    return value;
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INFINITE_RECURSION".equals(d.code())));
+    }
+
     private static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, String document) {
         return runProvider(provider, Path.of("Example.java"), document);
     }
