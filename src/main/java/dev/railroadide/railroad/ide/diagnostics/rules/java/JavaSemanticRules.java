@@ -270,6 +270,8 @@ public final class JavaSemanticRules {
         "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL",
         SemanticDiagnostic.Severity.INFO,
         "Interface '%s' may be annotated as '@FunctionalInterface'"
+    );
+
     public static final JavaSemanticRule CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL = new JavaSemanticRule(
         "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL",
         SemanticDiagnostic.Severity.WARNING,
