@@ -14,6 +14,8 @@ import com.techsenger.ceffx.core.handler.CefLoadHandlerAdapter;
 import dev.railroadide.railroad.browser.EmbeddedBrowser;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.geometry.Insets;
+import javafx.scene.control.Label;
 import javafx.scene.Node;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.StackPane;
@@ -33,18 +35,26 @@ public final class CeffxBrowser implements EmbeddedBrowser {
 
     public CeffxBrowser(String url) {
         this.root.setFocusTraversable(true);
+        this.root.setMinSize(0, 0);
+        this.root.setStyle("-fx-background-color: -rr-background-color, -fx-control-inner-background;");
+        showStatus("Starting embedded browser...");
 
         CefApp.runLater(() -> {
-            this.client = CeffxManager.getCefApp().createClient();
-            installHandlers(this.client);
+            try {
+                this.client = CeffxManager.getCefApp().createClient();
+                installHandlers(this.client);
 
-            CefBrowserSettings browserSettings = new CefBrowserSettings();
-            CefBrowser createdBrowser = CefBrowserFactory.create(this.client, url, true, false,
-                null, browserSettings);
-            createdBrowser.setWindowlessFrameRate(60);
-            this.browser = createdBrowser;
+                CefBrowserSettings browserSettings = new CefBrowserSettings();
+                CefBrowser createdBrowser = CefBrowserFactory.create(this.client, url, true, false,
+                    null, browserSettings);
+                createdBrowser.setWindowlessFrameRate(60);
+                this.browser = createdBrowser;
 
-            Platform.runLater(() -> this.root.getChildren().setAll(createdBrowser.getPane()));
+                Platform.runLater(() -> this.root.getChildren().setAll(createdBrowser.getPane()));
+            } catch (Throwable throwable) {
+                LOGGER.error("Failed to initialize CEFFX browser", throwable);
+                showStatus("Embedded browser failed to start: " + throwable.getMessage());
+            }
         });
     }
 
@@ -202,5 +212,14 @@ public final class CeffxBrowser implements EmbeddedBrowser {
         if (current != null) {
             CefApp.runLater(() -> action.accept(current));
         }
+    }
+
+    private void showStatus(String message) {
+        Platform.runLater(() -> {
+            Label label = new Label(message);
+            label.setWrapText(true);
+            label.setPadding(new Insets(12));
+            this.root.getChildren().setAll(label);
+        });
     }
 }
