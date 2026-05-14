@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.gradle.ui.task;
 
 import dev.railroadide.railroad.gradle.ui.GradleTreeBuilder;
-import dev.railroadide.railroad.gradle.ui.tree.GradleProjectElement;
+import dev.railroadide.railroad.gradle.ui.tree.GradleModuleElement;
 import dev.railroadide.railroad.gradle.ui.tree.GradleTaskElement;
 import dev.railroadide.railroad.gradle.ui.tree.GradleTaskGroupElement;
 import dev.railroadide.railroad.gradle.ui.tree.GradleTreeElement;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroadplugin.dto.RailroadGradleTask;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
@@ -68,7 +68,7 @@ public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTa
             }
 
             TreeItem<GradleTreeElement> node =
-                new TreeItem<>(new GradleProjectElement(project, module));
+                new TreeItem<>(new GradleModuleElement(project, module));
             parentNode.getChildren().add(node);
             return node;
         });
@@ -123,7 +123,7 @@ public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTa
         if (element instanceof GradleTaskGroupElement)
             return 1;
 
-        if (element instanceof GradleProjectElement)
+        if (element instanceof GradleModuleElement)
             return 2;
 
         return Integer.MAX_VALUE;

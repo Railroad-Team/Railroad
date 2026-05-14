@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.project.onboarding.creation.step;
 
-import dev.railroadide.core.project.ProjectContext;
-import dev.railroadide.core.project.creation.CreationStep;
-import dev.railroadide.core.project.creation.ProgressReporter;
-import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
+import dev.railroadide.railroad.project.ProjectContext;
+import dev.railroadide.railroad.project.creation.CreationStep;
+import dev.railroadide.railroad.project.creation.ProgressReporter;
 import dev.railroadide.railroad.project.onboarding.creation.ProjectContextKeys;
 import dev.railroadide.railroad.project.onboarding.keys.MinecraftProjectKeys;
 import dev.railroadide.railroad.switchboard.SwitchboardRepositories;
+import dev.railroadide.railroad.switchboard.pojo.MinecraftVersion;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.ZoneOffset;

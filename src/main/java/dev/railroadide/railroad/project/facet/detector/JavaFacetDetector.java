@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.project.facet.detector;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
 import dev.railroadide.railroad.project.facet.FacetManager;
@@ -15,6 +15,7 @@ import org.codehaus.plexus.configuration.PlexusConfigurationException;
 import org.codehaus.plexus.configuration.xml.XmlPlexusConfiguration;
 import org.gradle.tooling.model.java.InstalledJdk;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.UnknownNullability;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -211,7 +212,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
      * @return an Optional containing the Java facet if detected, or empty if not found
      */
     @Override
-    public Optional<Facet<JavaFacetData>> detect(Project project) {
+    public Optional<Facet<JavaFacetData>> detect(@UnknownNullability Project project) {
         long javaFileCount = 0;
         try {
             try (Stream<Path> javaFiles = Files.find(project.getPath(), 10,

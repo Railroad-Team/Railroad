@@ -6,8 +6,9 @@ import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.JavaApplicationRunConfigurationData;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import javafx.scene.paint.Color;
+import org.jetbrains.annotations.UnknownNullability;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.io.BufferedReader;
@@ -60,7 +61,13 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
     }
 
     @Override
-    public JavaApplicationRunConfigurationData createDataInstance(Project project) {
+    public boolean isRunning(Project project, RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
+        Process process = runningProcesses.get(configuration);
+        return process != null && process.isAlive();
+    }
+
+    @Override
+    public JavaApplicationRunConfigurationData createDataInstance(@UnknownNullability Project project) {
         var data = new JavaApplicationRunConfigurationData();
         data.setName("New Java Application");
         data.setJdk(/*project.getJDKManager().getDefaultJDK()*/ JDKManager.getDefaultJDK()); // TODO

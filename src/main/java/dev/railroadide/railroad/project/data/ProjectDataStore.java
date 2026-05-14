@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.project.data;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

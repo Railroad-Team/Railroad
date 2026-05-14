@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.project.onboarding.step;
 
-import dev.railroadide.core.form.*;
+import dev.railroadide.railroad.form.*;
 import dev.railroadide.railroad.project.onboarding.OnboardingContext;
 import dev.railroadide.railroad.project.onboarding.ui.FormOnboardingSection;
 import dev.railroadide.railroad.project.onboarding.ui.OnboardingSection;

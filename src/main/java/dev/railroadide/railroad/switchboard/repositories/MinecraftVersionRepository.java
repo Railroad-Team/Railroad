@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.switchboard.repositories;
 
 import com.google.gson.reflect.TypeToken;
-import dev.railroadide.core.switchboard.SwitchboardRepository;
-import dev.railroadide.core.switchboard.cache.CacheManager;
-import dev.railroadide.core.switchboard.pojo.MinecraftVersion;
 import dev.railroadide.railroad.switchboard.SwitchboardClient;
+import dev.railroadide.railroad.switchboard.SwitchboardRepository;
+import dev.railroadide.railroad.switchboard.cache.CacheManager;
+import dev.railroadide.railroad.switchboard.pojo.MinecraftVersion;
 
 import java.time.Duration;
 import java.util.List;

@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.welcome.project;
 
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import lombok.Getter;
 
 import java.util.Comparator;

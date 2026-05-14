@@ -16,7 +16,7 @@ import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -71,7 +71,7 @@ public final class GradleManager {
             if (modelService == null) {
                 if (modelExecutor == null || modelExecutor.isShutdown()) {
                     modelExecutor = Executors.newSingleThreadExecutor(runnable -> {
-                        var thread = new Thread(runnable, "railroad-gradle-model-" + project.getPathString());
+                        var thread = new Thread(runnable, "railroad-gradle-model-" + project.getPath());
                         thread.setDaemon(true);
                         return thread;
                     });
@@ -392,7 +392,7 @@ public final class GradleManager {
             if (executionService == null) {
                 if (executionExecutor == null || executionExecutor.isShutdown()) {
                     executionExecutor = Executors.newCachedThreadPool(r -> {
-                        var thread = new Thread(r, "railroad-gradle-exec-" + project.getPathString());
+                        var thread = new Thread(r, "railroad-gradle-exec-" + project.getPath());
                         thread.setDaemon(true);
                         return thread;
                     });

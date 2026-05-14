@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.gradle.ui.tree;
 
 import dev.railroadide.railroad.gradle.ui.task.GradleTaskContextMenu;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroadplugin.dto.RailroadGradleTask;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Tooltip;

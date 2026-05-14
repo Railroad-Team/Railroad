@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.config;
 
 import com.google.gson.JsonObject;
-import dev.railroadide.core.utility.OperatingSystem;
+import dev.railroadide.railroad.utility.OperatingSystem;
 import dev.railroadide.railroad.Railroad;
 
 import java.io.IOException;

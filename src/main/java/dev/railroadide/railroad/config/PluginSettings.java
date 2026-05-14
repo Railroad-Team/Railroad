@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.config;
 
 import com.google.gson.JsonObject;
-import dev.railroadide.core.utility.JsonSerializable;
+import dev.railroadide.railroad.utility.json.JsonSerializable;
 
 /**
  * An interface that allows for the settings of a plugin to be saved and loaded.

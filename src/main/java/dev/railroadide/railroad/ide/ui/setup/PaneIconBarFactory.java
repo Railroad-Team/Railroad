@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.ide.ui.setup;
 
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.RRVBox;
+import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.RRVBox;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;

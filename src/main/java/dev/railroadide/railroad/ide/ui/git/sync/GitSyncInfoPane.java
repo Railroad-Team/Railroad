@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.ide.ui.git.sync;
 
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedComboBox;
-import dev.railroadide.core.ui.localized.LocalizedText;
 import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedComboBox;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
 import dev.railroadide.railroad.vcs.git.util.GitPullStrategy;

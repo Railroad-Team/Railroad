@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.ide.ui.git.diff;
 
-import dev.railroadide.core.ui.RRBorderPane;
-import dev.railroadide.core.ui.RRHBox;
-import dev.railroadide.core.ui.localized.LocalizedText;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.syntaxhighlighting.JsonSyntaxHighlighting;
 import dev.railroadide.railroad.ide.syntaxhighlighting.TreeSitterJavaSyntaxHighlighting;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.RRBorderPane;
+import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.diff.*;

@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.switchboard.repositories;
 
-import dev.railroadide.core.switchboard.SwitchboardRepository;
-import dev.railroadide.core.switchboard.cache.CacheManager;
 import dev.railroadide.railroad.switchboard.SwitchboardClient;
+import dev.railroadide.railroad.switchboard.SwitchboardRepository;
+import dev.railroadide.railroad.switchboard.cache.CacheManager;
 
 import java.time.Duration;
 import java.util.List;

@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.runconfig.ui.form;
 
-import dev.railroadide.core.form.*;
+import dev.railroadide.railroad.form.*;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.value.ChangeListener;

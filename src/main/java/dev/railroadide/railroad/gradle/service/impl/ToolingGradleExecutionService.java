@@ -7,7 +7,7 @@ import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionHandle;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionRequest;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionResult;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskState;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import org.gradle.tooling.*;
 import org.gradle.tooling.events.ProgressListener;
 

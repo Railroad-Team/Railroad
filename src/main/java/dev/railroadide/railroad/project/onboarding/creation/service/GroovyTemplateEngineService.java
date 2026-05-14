@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.project.onboarding.creation.service;
 
-import dev.railroadide.core.project.creation.service.TemplateEngineService;
+import dev.railroadide.railroad.project.creation.service.TemplateEngineService;
 import groovy.text.StreamingTemplateEngine;
 import groovy.text.Template;
 

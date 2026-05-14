@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.project.facet;
 
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import java.util.Optional;
 

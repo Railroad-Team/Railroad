@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.gradle.ui;
 
-import dev.railroadide.core.ui.RRBorderPane;
-import dev.railroadide.core.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.ide.projectexplorer.PathItem;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.RRBorderPane;
+import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.icon.RailroadBrandsIcon;
 import dev.railroadide.railroadplugin.dto.RailroadModule;

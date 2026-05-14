@@ -3,7 +3,7 @@ package dev.railroadide.railroad.ide.ui.git.commit.changes;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import javafx.scene.Node;
 import javafx.scene.Parent;

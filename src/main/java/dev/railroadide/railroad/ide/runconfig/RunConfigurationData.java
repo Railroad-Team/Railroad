@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ide.runconfig;
 
-import dev.railroadide.core.form.*;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.form.*;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import lombok.Data;
 
 @Data

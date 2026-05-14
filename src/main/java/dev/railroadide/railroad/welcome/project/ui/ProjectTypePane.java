@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.welcome.project.ui;
 
-import dev.railroadide.core.project.ProjectType;
-import dev.railroadide.core.ui.RRListView;
-import dev.railroadide.core.ui.RRVBox;
+import dev.railroadide.railroad.project.ProjectType;
+import dev.railroadide.railroad.ui.RRListView;
+import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.welcome.project.ui.widget.ProjectTypeCell;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

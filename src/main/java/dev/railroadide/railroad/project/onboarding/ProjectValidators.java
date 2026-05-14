@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.project.onboarding;
 
-import dev.railroadide.core.form.ValidationResult;
-import dev.railroadide.core.utility.StringUtils;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.form.ValidationResult;
+import dev.railroadide.railroad.utility.StringUtils;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
@@ -237,7 +237,7 @@ public class ProjectValidators {
             return ValidationResult.error("railroad.project.creation.issues.error.length_long");
 
         if (!text.isBlank()) {
-            if (!text.matches(StringUtils.URL_REGEX))
+            if (!text.matches(dev.railroadide.railroad.utility.StringUtils.URL_REGEX))
                 return ValidationResult.warning("railroad.project.creation.issues.error.invalid_url");
 
             if (text.contains("github.com") && !text.contains("/issues"))
@@ -264,7 +264,7 @@ public class ProjectValidators {
             return ValidationResult.error("railroad.project.creation.update_json.error.length_long");
 
         if (!text.isBlank()) {
-            if (!text.matches(StringUtils.URL_REGEX))
+            if (!text.matches(dev.railroadide.railroad.utility.StringUtils.URL_REGEX))
                 return ValidationResult.warning("railroad.project.creation.update_json.error.invalid_url");
 
             try (Response response = Railroad.HTTP_CLIENT_NO_FOLLOW.newCall(new Request.Builder()

@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.welcome.project.ui;
 
-import dev.railroadide.core.ui.RRCard;
-import dev.railroadide.core.ui.RRHBox;
+import dev.railroadide.railroad.ui.RRCard;
+import dev.railroadide.railroad.ui.RRHBox;
 import javafx.geometry.Insets;
 import javafx.scene.layout.Priority;
 

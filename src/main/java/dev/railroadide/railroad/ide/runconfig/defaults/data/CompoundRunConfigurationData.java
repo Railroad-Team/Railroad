@@ -1,15 +1,15 @@
 package dev.railroadide.railroad.ide.runconfig.defaults.data;
 
-import dev.railroadide.core.form.Form;
-import dev.railroadide.core.form.FormComponent;
-import dev.railroadide.core.form.FormData;
-import dev.railroadide.core.form.FormSection;
+import dev.railroadide.railroad.form.Form;
+import dev.railroadide.railroad.form.FormComponent;
+import dev.railroadide.railroad.form.FormData;
+import dev.railroadide.railroad.form.FormSection;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationData;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.ide.runconfig.ui.form.RunConfigurationPickerComponent;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

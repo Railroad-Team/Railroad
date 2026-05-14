@@ -1,13 +1,13 @@
 package dev.railroadide.railroad.ide.runconfig.defaults.data;
 
-import dev.railroadide.core.form.*;
+import dev.railroadide.railroad.form.*;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationData;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.onboarding.ProjectValidators;
 import dev.railroadide.railroad.settings.ui.DetectedJdkListPane;
 import dev.railroadide.railroad.utility.StringUtils;

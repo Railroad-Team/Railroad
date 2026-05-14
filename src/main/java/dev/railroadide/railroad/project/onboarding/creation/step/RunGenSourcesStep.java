@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.project.onboarding.creation.step;
 
-import dev.railroadide.core.project.ProjectContext;
-import dev.railroadide.core.project.creation.CreationStep;
-import dev.railroadide.core.project.creation.ProgressReporter;
-import dev.railroadide.core.project.creation.service.GradleService;
+import dev.railroadide.railroad.project.ProjectContext;
+import dev.railroadide.railroad.project.creation.CreationStep;
+import dev.railroadide.railroad.project.creation.ProgressReporter;
+import dev.railroadide.railroad.project.creation.service.GradleService;
 
 public record RunGenSourcesStep(GradleService gradle) implements CreationStep {
     @Override

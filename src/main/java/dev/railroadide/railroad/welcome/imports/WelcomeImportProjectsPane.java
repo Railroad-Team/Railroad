@@ -1,18 +1,18 @@
 package dev.railroadide.railroad.welcome.imports;
 
-import dev.railroadide.core.ui.*;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
-import dev.railroadide.core.vcs.Repository;
-import dev.railroadide.core.vcs.connections.AbstractConnection;
-import dev.railroadide.core.vcs.connections.VCSProfile;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.localization.L18n;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
+import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.GitUtils;
+import dev.railroadide.railroad.vcs.Repository;
+import dev.railroadide.railroad.vcs.connections.AbstractConnection;
+import dev.railroadide.railroad.vcs.connections.VCSProfile;
 import dev.railroadide.railroad.window.AlertType;
 import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
@@ -110,7 +110,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
         future.thenAcceptAsync(success -> {
             Platform.runLater(stage::close);
 
-            var project = Railroad.PROJECT_MANAGER.newProject(new Project(projectDir));
+            var project = Railroad.PROJECT_MANAGER.newProject(new RailroadProject(projectDir));
             if (SettingsHandler.getValue(Settings.SWITCH_TO_IDE_AFTER_IMPORT)) {
                 Platform.runLater(() -> IDESetup.switchToIDE(project));
             }

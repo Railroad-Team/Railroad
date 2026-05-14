@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.welcome;
 
-import dev.railroadide.core.ui.RRCard;
-import dev.railroadide.core.ui.RRTextField;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
-import dev.railroadide.core.ui.localized.LocalizedText;
-import dev.railroadide.core.ui.styling.TextFieldSize;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.RRCard;
+import dev.railroadide.railroad.ui.RRTextField;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
+import dev.railroadide.railroad.ui.styling.TextFieldSize;
 import dev.railroadide.railroad.welcome.project.ui.widget.ProjectSortComboBox;
 import javafx.collections.ListChangeListener;
 import javafx.css.PseudoClass;

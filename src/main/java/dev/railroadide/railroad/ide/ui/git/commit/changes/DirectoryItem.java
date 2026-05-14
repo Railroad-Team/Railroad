@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ide.ui.git.commit.changes;
 
 import dev.railroadide.railroad.localization.L18n;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import javafx.scene.Node;
 import javafx.scene.control.ContextMenu;

@@ -2,6 +2,7 @@ package dev.railroadide.railroad.project;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.config.ConfigHandler;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.Getter;

@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.project.onboarding.ui;
 
-import dev.railroadide.core.ui.RRBorderPane;
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.styling.ButtonSize;
-import dev.railroadide.core.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ui.RRBorderPane;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.styling.ButtonSize;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

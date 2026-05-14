@@ -1,0 +1,43 @@
+package dev.railroadide.railroad.ui.localized;
+
+import javafx.scene.control.CheckMenuItem;
+
+/**
+ * An extension of the JavaFX CheckMenuItem that allows for the CheckMenuItem's text to be localized.
+ */
+public class LocalizedCheckMenuItem extends CheckMenuItem {
+
+    private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
+
+    /**
+     * Creates a new LocalizedCheckMenuItem with the specified key.
+     *
+     * @param key      The localization key
+     * @param selected Whether the item should be selected by default
+     */
+    public LocalizedCheckMenuItem(String key, boolean selected) {
+        super();
+
+        textProperty().bindBidirectional(localizedText);
+        setKey(key);
+        setSelected(selected);
+    }
+
+    /**
+     * Returns the current localization key.
+     *
+     * @return the current localization key
+     */
+    public String getKey() {
+        return localizedText.getTranslationKey();
+    }
+
+    /**
+     * Sets the localization key and updates the text accordingly.
+     *
+     * @param key the new localization key to set
+     */
+    public void setKey(final String key) {
+        localizedText.setTranslationKey(key);
+    }
+}

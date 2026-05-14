@@ -88,8 +88,8 @@ dependencies {
     implementation 'org.apache.maven:maven-settings-builder:4.0.0-rc-4' // TODO: deprecated - look into this
     implementation 'org.apache.maven:maven-repository-metadata:4.0.0-rc-4'
     implementation 'org.codehaus.plexus:plexus-container-default:2.1.1'
-
-    implementation 'dev.railroadide:RailroadGradlePlugin:1.0.1'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.0'
+    implementation 'com.github.javakeyring:java-keyring:1.0.4'
 
     implementation 'io.get-coursier:interface:1.0.29-M1'
     implementation 'org.eclipse.jgit:org.eclipse.jgit:7.4.0.202509020913-r'
@@ -98,9 +98,8 @@ dependencies {
         exclude group: 'net.java.dev.jna', module: 'jna'
     }
 
+    implementation 'dev.railroadide:RailroadGradlePlugin:1.0.1'
     implementation 'dev.railroadide:RailroadLogger:1.0.4'
-    implementation 'dev.railroadide:RailroadPluginAPI:1.0.3'
-    implementation project(':railroad-core')
 
     annotationProcessor 'org.projectlombok:lombok:1.18.42'
     compileOnly 'org.projectlombok:lombok:1.18.42'

@@ -4,7 +4,7 @@ import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.gradle.ui.GradleTreeBuilder;
 import dev.railroadide.railroad.gradle.ui.GradleTreeViewPane;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroadplugin.dto.RailroadGradleTask;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
 import dev.railroadide.railroadplugin.dto.RailroadProject;
@@ -30,9 +30,9 @@ public class GradleTasksPane extends GradleTreeViewPane<RailroadGradleTask> {
         if (cachedModel.isEmpty())
             return List.of();
 
-        RailroadProject railroadProject = cachedModel.get().project();
+        RailroadProject gradleProject = cachedModel.get().project();
         List<RailroadGradleTask> tasks = new ArrayList<>();
-        for (RailroadModule module : railroadProject.getModules()) {
+        for (RailroadModule module : gradleProject.getModules()) {
             tasks.addAll(module.getTasks());
         }
 

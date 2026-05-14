@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.java.cli.impl;
 
-import dev.railroadide.core.utility.OperatingSystem;
+import dev.railroadide.railroad.utility.OperatingSystem;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.cli.CLIBuilder;
 import dev.railroadide.railroad.java.cli.ProcessExecution;

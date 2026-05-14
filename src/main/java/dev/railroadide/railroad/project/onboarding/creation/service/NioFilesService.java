@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.project.onboarding.creation.service;
 
-import dev.railroadide.core.project.creation.service.FilesService;
+import dev.railroadide.railroad.project.creation.service.FilesService;
 import dev.railroadide.railroad.utility.FileUtils;
 
 import java.io.IOException;

@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.overview;
 
-import dev.railroadide.core.ui.*;
-import dev.railroadide.core.ui.localized.LocalizedText;
-import dev.railroadide.core.ui.styling.ButtonVariant;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.utility.TimeFormatter;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
@@ -115,9 +115,9 @@ public class GitOverviewHeaderPane extends RRVBox {
         repoStatusText.getStyleClass().add("git-overview-table-value-text");
         repoStatusTag.getChildren().addAll(createDot(), repoStatusText);
         infoGrid.add(new LocalizedText("railroad.git.overview.header.repository.label"), 0, row);
-        GridPane.setValignment(infoGrid.getChildren().get(infoGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(infoGrid.getChildren().getLast(), VPos.CENTER);
         infoGrid.add(new RRFlowPane(6, 6, repoNameText, repoStatusTag), 1, row);
-        GridPane.setValignment(infoGrid.getChildren().get(infoGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(infoGrid.getChildren().getLast(), VPos.CENTER);
         row++;
         Region separator0 = new Region();
         separator0.getStyleClass().add("git-overview-grid-row-separator");
@@ -133,9 +133,9 @@ public class GitOverviewHeaderPane extends RRVBox {
         headUpstreamText.getStyleClass().addAll("git-overview-table-value-text", "git-overview-mono");
         headUpstreamTag.getChildren().addAll(headUpstreamLabel, headUpstreamText);
         infoGrid.add(new LocalizedText("railroad.git.overview.header.head.label"), 0, row);
-        GridPane.setValignment(infoGrid.getChildren().get(infoGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(infoGrid.getChildren().getLast(), VPos.CENTER);
         infoGrid.add(new RRFlowPane(6, 6, headBranchText, headUpstreamTag), 1, row);
-        GridPane.setValignment(infoGrid.getChildren().get(infoGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(infoGrid.getChildren().getLast(), VPos.CENTER);
         row++;
         Region separator1 = new Region();
         separator1.getStyleClass().add("git-overview-grid-row-separator");
@@ -160,9 +160,9 @@ public class GitOverviewHeaderPane extends RRVBox {
         upstreamFetchLabel.getStyleClass().add("git-overview-table-value-text");
         upstreamFetchTag.getChildren().addAll(upstreamFetchLabel, upstreamFetchText);
         infoGrid.add(new LocalizedText("railroad.git.overview.header.upstream.label"), 0, row);
-        GridPane.setValignment(infoGrid.getChildren().get(infoGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(infoGrid.getChildren().getLast(), VPos.CENTER);
         infoGrid.add(new RRFlowPane(6, 6, upstreamBehindTag, upstreamAheadTag, upstreamFetchTag), 1, row);
-        GridPane.setValignment(infoGrid.getChildren().get(infoGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(infoGrid.getChildren().getLast(), VPos.CENTER);
         row++;
         Region separator2 = new Region();
         separator2.getStyleClass().add("git-overview-grid-row-separator");
@@ -177,9 +177,9 @@ public class GitOverviewHeaderPane extends RRVBox {
         remoteSeparatorText.getStyleClass().add("git-overview-separator");
         remoteUrlText.getStyleClass().addAll("git-overview-table-value-text", "git-overview-code");
         infoGrid.add(new LocalizedText("railroad.git.overview.header.remote.label"), 0, row);
-        GridPane.setValignment(infoGrid.getChildren().get(infoGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(infoGrid.getChildren().getLast(), VPos.CENTER);
         infoGrid.add(new RRFlowPane(6, 6, remoteNameText, remoteSeparatorText, remoteUrlText), 1, row);
-        GridPane.setValignment(infoGrid.getChildren().get(infoGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(infoGrid.getChildren().getLast(), VPos.CENTER);
     }
 
     private void updateHeaderInfo(GitManager gitManager) {

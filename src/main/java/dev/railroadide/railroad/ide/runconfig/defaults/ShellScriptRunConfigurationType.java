@@ -5,8 +5,9 @@ import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.ShellScriptRunConfigurationData;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.ShellScriptRunConfigurationData.ExecuteMode;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import javafx.scene.paint.Color;
+import org.jetbrains.annotations.UnknownNullability;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.io.BufferedReader;
@@ -62,7 +63,13 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
     }
 
     @Override
-    public ShellScriptRunConfigurationData createDataInstance(Project project) {
+    public boolean isRunning(Project project, RunConfiguration<ShellScriptRunConfigurationData> configuration) {
+        Process process = runningProcesses.get(configuration);
+        return process != null && process.isAlive();
+    }
+
+    @Override
+    public ShellScriptRunConfigurationData createDataInstance(@UnknownNullability Project project) {
         var data = new ShellScriptRunConfigurationData();
         data.setName("New Shell Script");
         data.setWorkingDirectory(project.getPath());

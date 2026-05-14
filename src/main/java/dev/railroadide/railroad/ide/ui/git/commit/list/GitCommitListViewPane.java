@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.ide.ui.git.commit.list;
 
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
-import dev.railroadide.core.ui.*;
-import dev.railroadide.core.ui.localized.LocalizedText;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.utility.TimeFormatter;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;

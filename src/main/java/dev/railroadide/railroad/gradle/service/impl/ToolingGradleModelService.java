@@ -6,7 +6,7 @@ import dev.railroadide.railroad.gradle.GradleEnvironment;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.model.GradleModelListener;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.function.ThrowingSupplier;
 import dev.railroadide.railroadplugin.dto.FabricDataModel;
 import dev.railroadide.railroadplugin.dto.RailroadProject;
@@ -72,13 +72,13 @@ public class ToolingGradleModelService implements GradleModelService {
             GradleBuild gradleBuild = connection.model(GradleBuild.class)
                 .withArguments(initScriptArgs)
                 .get();
-            RailroadProject railroadProject = requestOptionalModel(connection, RailroadProject.class, initScriptArgs);
+            RailroadProject gradleProject = requestOptionalModel(connection, RailroadProject.class, initScriptArgs);
             FabricDataModel fabricDataModel = requestOptionalModel(connection, FabricDataModel.class, initScriptArgs);
 
             String gradleVersion = buildEnvironment.getGradle().getGradleVersion();
             Path rootDir = gradleBuild.getRootProject().getProjectDirectory().toPath();
 
-            return new GradleBuildModel(gradleVersion, rootDir, fabricDataModel, railroadProject);
+            return new GradleBuildModel(gradleVersion, rootDir, fabricDataModel, gradleProject);
         } catch (Exception exception) {
             throw new RuntimeException("Failed to load Gradle model", exception);
         } finally {

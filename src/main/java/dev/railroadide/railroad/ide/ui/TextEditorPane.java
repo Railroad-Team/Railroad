@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.plugin.defaults.DefaultDocument;
+import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
+import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
+import dev.railroadide.railroad.plugin.spi.events.DocumentModifiedEvent;
 import dev.railroadide.railroad.utility.ShutdownHooks;
-import dev.railroadide.railroadpluginapi.events.FileEvent;
-import dev.railroadide.railroadpluginapi.events.FileModifiedEvent;
 import javafx.application.Platform;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -144,7 +144,7 @@ public class TextEditorPane extends CodeArea {
                 String snapshot = getText();
                 pendingSnapshot.set(snapshot);
 
-                List<FileModifiedEvent.Change> diff = changes.stream()
+                List<DocumentModifiedEvent.Change> diff = changes.stream()
                     .map(change -> buildChange(snapshot, change))
                     .toList();
                 publishFileModifiedEvent(diff);
@@ -184,18 +184,18 @@ public class TextEditorPane extends CodeArea {
             lastSavedText.set(snapshot);
             dirty = false;
             lastLocalWrite.set(System.nanoTime());
-            Railroad.EVENT_BUS.publish(new FileEvent(document(), FileEvent.EventType.SAVED));
+            Railroad.EVENT_BUS.publish(new DocumentEvent(document(), DocumentEvent.EventType.SAVED));
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to write file {}", filePath, exception);
         }
     }
 
-    private void publishFileModifiedEvent(List<FileModifiedEvent.Change> changes) {
-        Railroad.EVENT_BUS.publish(new FileModifiedEvent(document(), changes));
+    private void publishFileModifiedEvent(List<DocumentModifiedEvent.Change> changes) {
+        Railroad.EVENT_BUS.publish(new DocumentModifiedEvent(document(), changes));
     }
 
-    private DefaultDocument document() {
-        return new DefaultDocument(filePath.getFileName().toString(), filePath);
+    private FileSystemDocument document() {
+        return new FileSystemDocument(filePath.getFileName().toString(), filePath);
     }
 
     private void startExternalWatcher() {
@@ -287,7 +287,7 @@ public class TextEditorPane extends CodeArea {
         }
     }
 
-    private static FileModifiedEvent.Change buildChange(String text, PlainTextChange change) {
+    private static DocumentModifiedEvent.Change buildChange(String text, PlainTextChange change) {
         String inserted = change.getInserted();
         String removed = change.getRemoved();
         int position = change.getPosition();
@@ -296,21 +296,21 @@ public class TextEditorPane extends CodeArea {
         Pair<Integer, Integer> start = getLineAndColumn(text, position);
         Pair<Integer, Integer> end = getLineAndColumn(text, position + netLength);
 
-        return new FileModifiedEvent.Change(
+        return new DocumentModifiedEvent.Change(
             detectChangeType(inserted, removed),
             removed,
             inserted,
-            new FileModifiedEvent.Range(start.getKey(), start.getValue(), end.getKey(), end.getValue())
+            new DocumentModifiedEvent.Range(start.getKey(), start.getValue(), end.getKey(), end.getValue())
         );
     }
 
-    private static FileModifiedEvent.Change.Type detectChangeType(String inserted, String removed) {
+    private static DocumentModifiedEvent.Change.Type detectChangeType(String inserted, String removed) {
         if (!inserted.isEmpty() && removed.isEmpty())
-            return FileModifiedEvent.Change.Type.ADDED;
+            return DocumentModifiedEvent.Change.Type.ADDED;
         else if (inserted.isEmpty() && !removed.isEmpty())
-            return FileModifiedEvent.Change.Type.REMOVED;
+            return DocumentModifiedEvent.Change.Type.REMOVED;
         else
-            return FileModifiedEvent.Change.Type.MODIFIED;
+            return DocumentModifiedEvent.Change.Type.MODIFIED;
     }
 
     private static Pair<Integer, Integer> getLineAndColumn(String text, int position) {

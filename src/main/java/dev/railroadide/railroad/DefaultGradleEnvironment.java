@@ -6,7 +6,7 @@ import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionRequest;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.GradleRunConfigurationData;
 import dev.railroadide.railroad.java.JDK;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -42,7 +42,7 @@ public record DefaultGradleEnvironment(Project project, Path gradleInstallationP
             return "";
 
         for (RunConfiguration<?> configuration : configurations) {
-            if(!(configuration.data() instanceof GradleRunConfigurationData data))
+            if (!(configuration.data() instanceof GradleRunConfigurationData data))
                 continue;
 
             if (!matchesConfiguration(request, jvm, data))

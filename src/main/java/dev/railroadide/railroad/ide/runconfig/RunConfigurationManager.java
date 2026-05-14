@@ -3,7 +3,7 @@ package dev.railroadide.railroad.ide.runconfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -34,6 +34,17 @@ public class RunConfigurationManager {
 
         this.configurations.addListener(
             (ListChangeListener<? super RunConfiguration<?>>) change -> writeRunConfigurations());
+    }
+
+    /**
+     * Get a list of currently running configurations for this project.
+     *
+     * @return A list of running run configurations.
+     */
+    public List<RunConfiguration<?>> getRunningConfigurations() {
+        return this.configurations.stream()
+            .filter(configuration -> configuration.isRunning(this.project))
+            .toList();
     }
 
     /**
@@ -153,7 +164,7 @@ public class RunConfigurationManager {
                     RunConfiguration<?> config = RunConfiguration.fromJson(element.getAsJsonObject());
                     runConfigurations.add(config);
                 } catch (Exception exception) {
-                    Railroad.LOGGER.error("Failed to load run configuration for project: {}", this.project.getPathString(), exception);
+                    Railroad.LOGGER.error("Failed to load run configuration for project: {}", this.project.getPath(), exception);
                 }
             }
 

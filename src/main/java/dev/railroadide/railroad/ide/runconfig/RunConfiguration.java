@@ -2,7 +2,7 @@ package dev.railroadide.railroad.ide.runconfig;
 
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import javafx.scene.control.ContextMenu;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -126,6 +126,17 @@ public final class RunConfiguration<D extends RunConfigurationData> {
     public CompletableFuture<Void> stop(Project project) {
         Objects.requireNonNull(project, "project");
         return type.stop(project, this);
+    }
+
+    /**
+     * Checks if the configuration is currently running in the given project.
+     *
+     * @param project the project to check
+     * @return true if the configuration is running, false otherwise
+     */
+    public boolean isRunning(Project project) {
+        Objects.requireNonNull(project, "project");
+        return type.isRunning(project, this);
     }
 
     /**

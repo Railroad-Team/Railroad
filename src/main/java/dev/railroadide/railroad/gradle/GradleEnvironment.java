@@ -2,7 +2,7 @@ package dev.railroadide.railroad.gradle;
 
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionRequest;
 import dev.railroadide.railroad.java.JDK;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import java.nio.file.Path;
 import java.util.Optional;

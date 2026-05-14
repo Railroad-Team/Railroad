@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.ide.runconfig;
 
-import dev.railroadide.core.registry.Registry;
-import dev.railroadide.core.registry.RegistryManager;
-import dev.railroadide.core.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.ide.IDESetup;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.registry.Registry;
+import dev.railroadide.railroad.registry.RegistryManager;
+import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.paint.Paint;
 import org.kordamp.ikonli.Ikon;
@@ -56,6 +56,8 @@ public abstract class RunConfigurationType<D extends RunConfigurationData> {
      * Stop execution for this configuration.
      */
     public abstract CompletableFuture<Void> stop(Project project, RunConfiguration<D> configuration);
+
+    public abstract boolean isRunning(Project project, RunConfiguration<D> configuration);
 
     public boolean isDebuggingSupported(Project project, RunConfiguration<D> configuration) {
         return false;

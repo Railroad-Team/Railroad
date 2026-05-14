@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.gradle.ui;
 
 import dev.railroadide.railroad.gradle.ui.tree.GradleTreeElement;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TreeItem;
 

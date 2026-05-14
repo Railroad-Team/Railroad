@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.project.onboarding.creation.step;
 
-import dev.railroadide.core.project.ProjectContext;
-import dev.railroadide.core.project.creation.CreationStep;
-import dev.railroadide.core.project.creation.ProgressReporter;
-import dev.railroadide.core.project.creation.service.ChecksumService;
-import dev.railroadide.core.project.creation.service.FilesService;
-import dev.railroadide.core.project.creation.service.HttpService;
-import dev.railroadide.core.project.creation.service.ZipService;
+import dev.railroadide.railroad.project.ProjectContext;
+import dev.railroadide.railroad.project.creation.CreationStep;
+import dev.railroadide.railroad.project.creation.ProgressReporter;
+import dev.railroadide.railroad.project.creation.service.ChecksumService;
+import dev.railroadide.railroad.project.creation.service.FilesService;
+import dev.railroadide.railroad.project.creation.service.HttpService;
+import dev.railroadide.railroad.project.creation.service.ZipService;
 import dev.railroadide.railroad.project.onboarding.keys.ForgeProjectKeys;
 
 import java.net.URI;

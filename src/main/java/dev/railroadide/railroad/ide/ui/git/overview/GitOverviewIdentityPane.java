@@ -1,9 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.overview;
 
-import dev.railroadide.core.ui.RRGridPane;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedText;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.RRGridPane;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.identity.GitIdentity;
 import dev.railroadide.railroad.vcs.git.identity.GitSigningStatus;
@@ -55,9 +55,9 @@ public class GitOverviewIdentityPane extends RRVBox {
         gitVersionText.getStyleClass().add("git-overview-identity-value-text");
 
         identityGrid.add(new LocalizedText("railroad.git.overview.identity.user.label"), 0, row);
-        GridPane.setValignment(identityGrid.getChildren().get(identityGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(identityGrid.getChildren().getLast(), VPos.CENTER);
         identityGrid.add(new TextFlow(userNameText), 1, row);
-        GridPane.setValignment(identityGrid.getChildren().get(identityGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(identityGrid.getChildren().getLast(), VPos.CENTER);
         row++;
         Region separator0 = new Region();
         separator0.getStyleClass().add("git-overview-grid-row-separator");
@@ -67,9 +67,9 @@ public class GitOverviewIdentityPane extends RRVBox {
         row++;
 
         identityGrid.add(new LocalizedText("railroad.git.overview.identity.email.label"), 0, row);
-        GridPane.setValignment(identityGrid.getChildren().get(identityGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(identityGrid.getChildren().getLast(), VPos.CENTER);
         identityGrid.add(new TextFlow(userEmailText), 1, row);
-        GridPane.setValignment(identityGrid.getChildren().get(identityGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(identityGrid.getChildren().getLast(), VPos.CENTER);
         row++;
         Region separator1 = new Region();
         separator1.getStyleClass().add("git-overview-grid-row-separator");
@@ -79,9 +79,9 @@ public class GitOverviewIdentityPane extends RRVBox {
         row++;
 
         identityGrid.add(new LocalizedText("railroad.git.overview.identity.signing.label"), 0, row);
-        GridPane.setValignment(identityGrid.getChildren().get(identityGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(identityGrid.getChildren().getLast(), VPos.CENTER);
         identityGrid.add(new TextFlow(signedText), 1, row);
-        GridPane.setValignment(identityGrid.getChildren().get(identityGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(identityGrid.getChildren().getLast(), VPos.CENTER);
         row++;
         Region separator2 = new Region();
         separator2.getStyleClass().add("git-overview-grid-row-separator");
@@ -91,9 +91,9 @@ public class GitOverviewIdentityPane extends RRVBox {
         row++;
 
         identityGrid.add(new LocalizedText("railroad.git.overview.identity.git_version.label"), 0, row);
-        GridPane.setValignment(identityGrid.getChildren().get(identityGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(identityGrid.getChildren().getLast(), VPos.CENTER);
         identityGrid.add(new TextFlow(gitVersionText), 1, row);
-        GridPane.setValignment(identityGrid.getChildren().get(identityGrid.getChildren().size() - 1), VPos.CENTER);
+        GridPane.setValignment(identityGrid.getChildren().getLast(), VPos.CENTER);
         // No separator after the last row
     }
 

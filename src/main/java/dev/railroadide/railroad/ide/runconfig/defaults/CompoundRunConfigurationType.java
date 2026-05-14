@@ -4,7 +4,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.CompoundRunConfigurationData;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
@@ -43,6 +43,12 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
         }
 
         return CompletableFuture.allOf(stopFutures.toArray(new CompletableFuture[0]));
+    }
+
+    @Override
+    public boolean isRunning(Project project, RunConfiguration<CompoundRunConfigurationData> configuration) {
+        return getResolvedChildren(project, configuration).stream()
+            .anyMatch(rc -> rc.isRunning(project));
     }
 
     @Override

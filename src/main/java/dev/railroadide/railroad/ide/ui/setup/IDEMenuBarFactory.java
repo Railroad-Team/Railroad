@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.ide.ui.setup;
 
-import dev.railroadide.core.settings.keybinds.KeybindData;
-import dev.railroadide.core.ui.RRMenuBar;
-import dev.railroadide.core.ui.localized.LocalizedCheckMenuItem;
-import dev.railroadide.core.ui.localized.LocalizedMenu;
-import dev.railroadide.core.ui.localized.LocalizedMenuItem;
-import dev.railroadide.core.utility.OperatingSystem;
+import dev.railroadide.railroad.utility.OperatingSystem;
+import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
+import dev.railroadide.railroad.ui.RRMenuBar;
+import dev.railroadide.railroad.ui.localized.LocalizedCheckMenuItem;
+import dev.railroadide.railroad.ui.localized.LocalizedMenu;
+import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.window.WindowManager;
 import javafx.application.Platform;
 import javafx.scene.control.MenuBar;

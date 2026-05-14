@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ide.ui.git.remote;
 
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
 import javafx.scene.layout.Priority;

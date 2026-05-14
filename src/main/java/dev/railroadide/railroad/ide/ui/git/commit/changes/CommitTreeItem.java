@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ide.ui.git.commit.changes;
 
-import dev.railroadide.core.ui.RRCheckBoxTreeItem;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.RRCheckBoxTreeItem;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import javafx.scene.control.TreeItem;
 

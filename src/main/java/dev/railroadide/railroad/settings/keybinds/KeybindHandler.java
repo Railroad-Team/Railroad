@@ -1,10 +1,7 @@
 package dev.railroadide.railroad.settings.keybinds;
 
-import dev.railroadide.core.registry.Registry;
-import dev.railroadide.core.registry.RegistryManager;
-import dev.railroadide.core.settings.keybinds.Keybind;
-import dev.railroadide.core.settings.keybinds.KeybindContexts;
-import dev.railroadide.core.settings.keybinds.KeybindData;
+import dev.railroadide.railroad.registry.Registry;
+import dev.railroadide.railroad.registry.RegistryManager;
 import javafx.scene.Node;
 import javafx.scene.input.KeyEvent;
 

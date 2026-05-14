@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.welcome;
 
-import dev.railroadide.core.ui.RRListView;
-import dev.railroadide.core.ui.RRTextField;
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.core.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.RRListView;
+import dev.railroadide.railroad.ui.RRTextField;
+import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.ui.nodes.ProjectListCell;
 import dev.railroadide.railroad.welcome.project.ProjectSort;
 import javafx.beans.value.ObservableValue;
@@ -143,15 +143,6 @@ public class WelcomeProjectsPane extends ScrollPane {
         } else {
             setContent(projectsList);
         }
-    }
-
-    /**
-     * Removes a project from the projects list.
-     *
-     * @param project the project to remove
-     */
-    public void removeProject(Project project) {
-        projectsList.getItems().remove(project);
     }
 
     /**

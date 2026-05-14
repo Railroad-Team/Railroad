@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.project.onboarding.creation.service;
 
-import dev.railroadide.core.project.creation.service.GradleService;
+import dev.railroadide.railroad.project.creation.service.GradleService;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.project.onboarding.creation.service;
 
-import dev.railroadide.core.project.creation.service.GitService;
+import dev.railroadide.railroad.project.creation.service.GitService;
 import org.eclipse.jgit.api.Git;
 
 import java.nio.file.Path;

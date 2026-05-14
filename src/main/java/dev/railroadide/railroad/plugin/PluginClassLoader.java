@@ -5,7 +5,7 @@ import coursierapi.Fetch;
 import coursierapi.MavenRepository;
 import coursierapi.Repository;
 import coursierapi.error.CoursierError;
-import dev.railroadide.railroadpluginapi.deps.MavenDeps;
+import dev.railroadide.railroad.plugin.spi.deps.MavenDeps;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;

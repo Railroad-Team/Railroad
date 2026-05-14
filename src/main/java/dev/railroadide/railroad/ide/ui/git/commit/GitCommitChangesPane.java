@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.ide.ui.git.commit;
 
-import dev.railroadide.core.ui.RRBorderPane;
-import dev.railroadide.core.ui.RRCheckBoxTreeItem;
-import dev.railroadide.core.ui.RRCheckBoxTreeView;
-import dev.railroadide.core.ui.localized.LocalizedText;
 import dev.railroadide.railroad.ide.ui.git.commit.changes.*;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.RRBorderPane;
+import dev.railroadide.railroad.ui.RRCheckBoxTreeItem;
+import dev.railroadide.railroad.ui.RRCheckBoxTreeView;
+import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import dev.railroadide.railroad.vcs.git.util.GitRepository;
 import javafx.application.Platform;

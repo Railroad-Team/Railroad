@@ -5,9 +5,10 @@ import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.JarApplicationRunConfigurationData;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.icon.RailroadIcon;
 import javafx.scene.paint.Color;
+import org.jetbrains.annotations.UnknownNullability;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -91,7 +92,13 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
     }
 
     @Override
-    public JarApplicationRunConfigurationData createDataInstance(Project project) {
+    public boolean isRunning(Project project, RunConfiguration<JarApplicationRunConfigurationData> configuration) {
+        Process process = runningProcesses.get(configuration);
+        return process != null && process.isAlive();
+    }
+
+    @Override
+    public JarApplicationRunConfigurationData createDataInstance(@UnknownNullability Project project) {
         var data = new JarApplicationRunConfigurationData();
         data.setName("New Jar Application");
         data.setWorkingDirectory(project.getPath());

@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
-import dev.railroadide.core.ui.RRButton;
-import dev.railroadide.core.ui.styling.ButtonVariant;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;

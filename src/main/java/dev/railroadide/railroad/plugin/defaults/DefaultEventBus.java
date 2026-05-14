@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.plugin.defaults;
 
-import dev.railroadide.railroadpluginapi.event.Event;
-import dev.railroadide.railroadpluginapi.event.EventBus;
-import dev.railroadide.railroadpluginapi.event.EventListener;
+import dev.railroadide.railroad.plugin.spi.event.Event;
+import dev.railroadide.railroad.plugin.spi.event.EventBus;
+import dev.railroadide.railroad.plugin.spi.event.EventListener;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,5 +30,16 @@ public class DefaultEventBus implements EventBus {
     @Override
     public <T extends Event> void subscribe(Class<T> eventType, EventListener<T> listener) {
         subscribers.computeIfAbsent(eventType, k -> new CopyOnWriteArrayList<>()).add(listener);
+    }
+
+    @Override
+    public <T extends Event> void unsubscribe(Class<T> eventType, EventListener<T> listener) {
+        CopyOnWriteArrayList<EventListener<? extends Event>> listeners = subscribers.get(eventType);
+        if (listeners != null) {
+            listeners.remove(listener);
+            if (listeners.isEmpty()) {
+                subscribers.remove(eventType);
+            }
+        }
     }
 }

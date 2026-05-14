@@ -1,18 +1,12 @@
 package dev.railroadide.railroad.ide.ui.git.commit;
 
-import dev.railroadide.core.ui.RRVBox;
-import dev.railroadide.railroad.project.Project;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.RRVBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import lombok.Getter;
 
 public class GitCommitPane extends RRVBox {
-    @Getter
-    private final Project project;
-
     public GitCommitPane(Project project) {
-        this.project = project;
-
         getStyleClass().add("git-commit-pane-root");
 
         var gitCommitChanges = new GitCommitChangesPane(project);

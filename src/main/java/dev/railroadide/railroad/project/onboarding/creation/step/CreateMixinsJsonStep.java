@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.project.onboarding.creation.step;
 
-import dev.railroadide.core.project.ProjectContext;
-import dev.railroadide.core.project.creation.CreationStep;
-import dev.railroadide.core.project.creation.ProgressReporter;
-import dev.railroadide.core.project.creation.mixin.MixinConfig;
-import dev.railroadide.core.project.creation.service.FilesService;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.project.ProjectContext;
+import dev.railroadide.railroad.project.creation.CreationStep;
+import dev.railroadide.railroad.project.creation.ProgressReporter;
+import dev.railroadide.railroad.project.creation.mixin.MixinConfig;
+import dev.railroadide.railroad.project.creation.service.FilesService;
 import dev.railroadide.railroad.project.onboarding.keys.ForgeProjectKeys;
 import dev.railroadide.railroad.project.onboarding.keys.MavenProjectKeys;
 import dev.railroadide.railroad.project.onboarding.keys.MinecraftProjectKeys;
