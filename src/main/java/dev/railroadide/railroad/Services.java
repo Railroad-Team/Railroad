@@ -2,6 +2,8 @@ package dev.railroadide.railroad;
 
 import com.google.gson.Gson;
 import dev.railroadide.logger.Logger;
+import dev.railroadide.railroad.browser.BrowserService;
+import dev.railroadide.railroad.browser.impl.CeffxBrowserService;
 import dev.railroadide.railroad.ide.DefaultDocumentEditorStateService;
 import dev.railroadide.railroad.ide.DefaultIDEStateService;
 import dev.railroadide.railroad.ide.diagnostics.LanguageInspectionRegistries;
@@ -105,6 +107,8 @@ public class Services {
     public static final Registry<LanguageInspectionProvider> LANGUAGE_INSPECTION_PROVIDER_REGISTRY =
             LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY;
 
+    public static final BrowserService BROWSER_SERVICE = new CeffxBrowserService();
+
     /**
      * Retrieves a service instance by its class type.
      *
@@ -139,6 +143,8 @@ public class Services {
             return (T) PROJECT_CREATION_PIPELINE;
         } else if (serviceClass == ProjectLanguageIndexService.class) {
             return (T) PROJECT_LANGUAGE_INDEX_SERVICE;
+        } else if (serviceClass == BrowserService.class) {
+            return (T) BROWSER_SERVICE;
         }
 
         throw new IllegalArgumentException("Service " + serviceClass.getName() + " is not available.");

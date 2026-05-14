@@ -108,6 +108,9 @@ dependencies {
     implementation 'org.codehaus.plexus:plexus-container-default:2.1.1'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.0'
     implementation 'com.github.javakeyring:java-keyring:1.0.4'
+    implementation('com.techsenger.ceffx:ceffx-core:1.0.0-railroad-SNAPSHOT') {
+        transitive = false
+    }
 
     implementation 'io.get-coursier:interface:1.0.29-M1'
     implementation 'org.eclipse.jgit:org.eclipse.jgit:7.4.0.202509020913-r'

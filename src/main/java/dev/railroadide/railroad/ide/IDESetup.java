@@ -87,6 +87,7 @@ public class IDESetup {
 
         var editorPane = new DetachableTabPane();
         editorPane.addTab("Welcome", new IDEWelcomePane());
+        editorPane.addTab("BlockBench", Services.BROWSER_SERVICE.createBrowser("https://web.blockbench.net/").node());
 
         var gitDiffPane = new GitDiffPane(project);
         var gitDiffTab = editorPane.addTab("Git Diff", gitDiffPane);

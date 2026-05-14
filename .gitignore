@@ -49,6 +49,7 @@ bin/
 *-parchment.xml
 *.class
 .codex
+jcef-bundle/
 
 ### Logs ###
 hs_err_pid*.log
