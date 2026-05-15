@@ -8,6 +8,20 @@ LocalizedText {
     -fx-fill: -color-fg-default;
 }
 
+.tab-pane > .tab-header-area > .headers-region > .tab {
+    -fx-padding: 0 0.6em 0 0.6em;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container {
+    -fx-alignment: CENTER;
+    -fx-padding: 0.35em 0 0.35em 0;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label {
+    -fx-alignment: CENTER;
+    -fx-padding: 0 0.4em 0 0.4em;
+}
+
 .error {
     -fx-border-color: -color-danger-emphasis;
 }
