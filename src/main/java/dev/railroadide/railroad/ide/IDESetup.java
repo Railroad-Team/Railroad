@@ -32,6 +32,7 @@ import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
+import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.ui.RRBorderPane;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
@@ -205,6 +206,7 @@ public class IDESetup {
             try {
                 Scene ideScene = IDESetup.createIDEScene(project);
                 Stage ideStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
+                ThemeManager.prepareSceneTransition(ideStage.getScene(), ideScene);
                 ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion() + " - " + project.getAlias());
                 ideStage.setScene(ideScene);
                 ideStage.setResizable(true);
