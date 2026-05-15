@@ -241,6 +241,18 @@ railroad.settings.ide.jdk_management.detected.unknown_version=Unknown Version
 railroad.settings.ide.jdk_management.detected.version=Java %s
 railroad.settings.ide.jdk_management.detected.name=Distribution: %s
 railroad.settings.ide.jdk_management.detected.path=Path: %s
+railroad.settings.appearance.terminal.title=Terminal
+railroad.settings.appearance.terminal.description=Configure how Railroad discovers and styles embedded terminal sessions.
+railroad.settings.appearance.terminal.windows_terminal_settings_path.title=Windows Terminal Settings Path
+railroad.settings.appearance.terminal.windows_terminal_settings_path.description=Optional path to a Windows Terminal settings.json file. Leave blank to auto-detect stable, preview, dev, or unpackaged installs.
+railroad.settings.appearance.terminal.windows_terminal_settings_path.placeholder=Path to Windows Terminal settings.json
+railroad.settings.appearance.terminal.terminal_font_mode.title=Terminal Font Mode
+railroad.settings.appearance.terminal.terminal_font_mode.description=Choose whether Railroad should auto-detect a terminal font, use an installed system font, or use a custom CSS font-family string.
+railroad.settings.appearance.terminal.terminal_installed_font.title=Installed Terminal Font
+railroad.settings.appearance.terminal.terminal_installed_font.description=Select a font family from the fonts installed on this machine. This is used when Terminal Font Mode is set to Installed Font.
+railroad.settings.appearance.terminal.terminal_custom_font_family.title=Custom Terminal Font Family
+railroad.settings.appearance.terminal.terminal_custom_font_family.description=Enter a CSS font-family value such as "FiraCode Nerd Font" or "\"FiraCode Nerd Font\", \"Cascadia Mono\", monospace". This is used when Terminal Font Mode is set to Custom Family.
+railroad.settings.appearance.terminal.terminal_custom_font_family.placeholder=Example: "FiraCode Nerd Font", "Cascadia Mono", monospace
 
 # Keybind settings
 railroad.settings.keybinds.title=Keybinds

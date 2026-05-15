@@ -153,6 +153,38 @@ public final class Settings {
         .defaultValue(3000L)
         .build());
 
+    public static final Setting<Path> WINDOWS_TERMINAL_SETTINGS_PATH = registerSetting(Setting.builder(Path.class, "railroad:windows_terminal_settings_path")
+        .treePath("appearance")
+        .category(SettingCategory.simple("railroad:appearance.terminal"))
+        .codec(SettingCodecs.WINDOWS_TERMINAL_SETTINGS_PATH)
+        .defaultValue(null)
+        .canBeNull(true)
+        .build());
+
+    public static final Setting<TerminalFontMode> TERMINAL_FONT_MODE = registerSetting(Setting.builder(TerminalFontMode.class, "railroad:terminal_font_mode")
+        .treePath("appearance")
+        .category(SettingCategory.simple("railroad:appearance.terminal"))
+        .codec(SettingCodecs.TERMINAL_FONT_MODE)
+        .defaultValue(TerminalFontMode.AUTO)
+        .canBeNull(false)
+        .build());
+
+    public static final Setting<String> TERMINAL_INSTALLED_FONT = registerSetting(Setting.builder(String.class, "railroad:terminal_installed_font")
+        .treePath("appearance")
+        .category(SettingCategory.simple("railroad:appearance.terminal"))
+        .codec(SettingCodecs.TERMINAL_INSTALLED_FONT)
+        .defaultValue(null)
+        .canBeNull(true)
+        .build());
+
+    public static final Setting<String> TERMINAL_CUSTOM_FONT_FAMILY = registerSetting(Setting.builder(String.class, "railroad:terminal_custom_font_family")
+        .treePath("appearance")
+        .category(SettingCategory.simple("railroad:appearance.terminal"))
+        .codec(SettingCodecs.TERMINAL_CUSTOM_FONT_FAMILY)
+        .defaultValue("")
+        .canBeNull(true)
+        .build());
+
     public static final Setting<Long> GIT_BINARY_SEARCH_COMMAND_TIMEOUT_MS = registerSetting(Setting.builder(Long.class, "railroad:git_binary_command_search_timeout_ms")
         .treePath("vcs")
         .category(SettingCategory.simple("railroad:vcs"))
