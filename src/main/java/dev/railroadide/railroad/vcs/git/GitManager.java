@@ -3,6 +3,7 @@ package dev.railroadide.railroad.vcs.git;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
+import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.vcs.git.branch.GitBranch;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchLastCommit;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchStatus;
@@ -72,6 +73,10 @@ public class GitManager {
         this.project = project;
         this.gitClient = gitClient;
         this.executorService = executorService;
+        ShutdownHooks.addHook(() -> {
+            stopAutoRefresh();
+            this.executorService.shutdownNow();
+        });
     }
 
     /**
@@ -81,7 +86,11 @@ public class GitManager {
      * @param gitClient git client backend
      */
     public GitManager(Project project, GitClient gitClient) {
-        this(project, gitClient, Executors.newSingleThreadScheduledExecutor());
+        this(project, gitClient, Executors.newSingleThreadScheduledExecutor(runnable -> {
+            var thread = new Thread(runnable, "railroad-git-manager-" + project.getPath());
+            thread.setDaemon(true);
+            return thread;
+        }));
     }
 
     /**

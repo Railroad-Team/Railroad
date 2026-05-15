@@ -7,6 +7,7 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import javafx.animation.KeyFrame;
@@ -42,7 +43,11 @@ import java.util.function.Consumer;
 public class GitCommitListViewPane extends RRListView<GitCommit> {
     private static final String PLACEHOLDER_EMPTY_KEY = "railroad.git.commit.list.placeholder.empty";
 
-    private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(runnable -> {
+        var thread = new Thread(runnable, "railroad-git-commit-list-filter");
+        thread.setDaemon(true);
+        return thread;
+    });
     private final ObservableList<GitCommit> allCommits = FXCollections.observableArrayList();
     private final LocalizedText placeholderText = new LocalizedText(PLACEHOLDER_EMPTY_KEY);
     private final MFXProgressSpinner loadingSpinner = new MFXProgressSpinner();
@@ -78,6 +83,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
         reloadCommitMetadata(project);
         project.getGitManager().commitMetadataRevisionProperty().addListener((obs, oldRevision, newRevision) -> reloadCommitMetadata(project));
         project.getGitManager().getAllCommits(this::handleCommitsPage, () -> Platform.runLater(this::handleCommitsDone), 200);
+        ShutdownHooks.addHook(executorService::shutdownNow);
     }
 
     private void reloadCommitMetadata(Project project) {

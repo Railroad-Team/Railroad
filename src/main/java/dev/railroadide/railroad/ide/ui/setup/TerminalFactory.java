@@ -4,10 +4,12 @@ import com.google.gson.JsonObject;
 import com.kodedu.terminalfx.Terminal;
 import com.kodedu.terminalfx.TerminalBuilder;
 import com.kodedu.terminalfx.config.TerminalConfig;
+import com.kodedu.terminalfx.helper.ThreadHelper;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.TerminalFontMode;
 import dev.railroadide.railroad.utility.OperatingSystem;
+import dev.railroadide.railroad.utility.ShutdownHooks;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -18,6 +20,7 @@ import javafx.stage.Window;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.*;
 
 /**
@@ -25,6 +28,7 @@ import java.util.*;
  */
 public final class TerminalFactory {
     private static final String DEFAULT_FONT_STACK = "\"Cascadia Mono\", \"JetBrains Mono\", \"Consolas\", monospace";
+    private static final Set<Terminal> OPEN_TERMINALS = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private static final List<String> WINDOWS_TERMINAL_PACKAGE_NAMES = List.of(
         "Microsoft.WindowsTerminal_8wekyb3d8bbwe",
         "Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe",
@@ -40,13 +44,16 @@ public final class TerminalFactory {
         Settings.TERMINAL_INSTALLED_FONT.addListener((oldValue, newValue) -> refreshOpenTerminals());
         Settings.TERMINAL_CUSTOM_FONT_FAMILY.addListener((oldValue, newValue) -> refreshOpenTerminals());
         Settings.WINDOWS_TERMINAL_SETTINGS_PATH.addListener((oldValue, newValue) -> refreshOpenTerminals());
+        ShutdownHooks.addHook(TerminalFactory::shutdownOpenTerminals);
     }
 
     public static Terminal create(Path path) {
         var terminalConfig = createTerminalConfig();
         var terminalBuilder = new TerminalBuilder(terminalConfig);
         terminalBuilder.setTerminalPath(path);
-        return terminalBuilder.newTerminal().getTerminal();
+        Terminal terminal = terminalBuilder.newTerminal().getTerminal();
+        registerTerminal(terminal);
+        return terminal;
     }
 
     public static TerminalConfig createTerminalConfig() {
@@ -98,6 +105,91 @@ public final class TerminalFactory {
             for (Node child : parent.getChildrenUnmodifiable()) {
                 collectTerminals(child, terminals);
             }
+        }
+    }
+
+    private static void shutdownOpenTerminals() {
+        Set<Terminal> terminals = new LinkedHashSet<>(OPEN_TERMINALS);
+        collectVisibleTerminals(terminals);
+
+        for (Terminal terminal : terminals) {
+            try {
+                if (terminal.getProcess() != null) {
+                    terminal.getProcess().destroy();
+                }
+            } catch (Exception exception) {
+                Railroad.LOGGER.debug("Failed to destroy terminal process cleanly", exception);
+            }
+
+            closeQuietly(terminal.getInputReader());
+            closeQuietly(terminal.getErrorReader());
+            closeQuietly(terminal.getOutputWriter());
+        }
+
+        OPEN_TERMINALS.clear();
+        ThreadHelper.stopExecutorService();
+    }
+
+    private static void registerTerminal(Terminal terminal) {
+        OPEN_TERMINALS.add(terminal);
+
+        terminal.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null)
+                return;
+
+            registerWindowListener(terminal, newScene.getWindow());
+            newScene.windowProperty().addListener((sceneObs, oldWindow, newWindow) ->
+                registerWindowListener(terminal, newWindow));
+        });
+    }
+
+    private static void registerWindowListener(Terminal terminal, Window window) {
+        if (window == null)
+            return;
+
+        window.showingProperty().addListener((windowObs, wasShowing, isShowing) -> {
+            if (!isShowing) {
+                closeTerminal(terminal);
+            }
+        });
+    }
+
+    private static void collectVisibleTerminals(Set<Terminal> terminals) {
+        for (Window window : Window.getWindows()) {
+            Scene scene = window.getScene();
+            if (scene == null || scene.getRoot() == null)
+                continue;
+
+            collectTerminals(scene.getRoot(), terminals);
+        }
+    }
+
+    private static void closeTerminal(Terminal terminal) {
+        if (terminal == null)
+            return;
+
+        try {
+            if (terminal.getProcess() != null) {
+                terminal.getProcess().destroy();
+            }
+        } catch (Exception exception) {
+            Railroad.LOGGER.debug("Failed to destroy terminal process cleanly", exception);
+        }
+
+        closeQuietly(terminal.getInputReader());
+        closeQuietly(terminal.getErrorReader());
+        closeQuietly(terminal.getOutputWriter());
+        OPEN_TERMINALS.remove(terminal);
+    }
+
+    private static void closeQuietly(AutoCloseable closeable) {
+        if (closeable == null)
+            return;
+
+        try {
+            closeable.close();
+        } catch (Exception exception) {
+            Railroad.LOGGER.debug("Failed to close terminal resource cleanly", exception);
         }
     }
 
