@@ -21,6 +21,7 @@ import dev.railroadide.railroad.vcs.git.stash.GitStashEntry;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import dev.railroadide.railroad.vcs.git.status.GitRepoStatus;
 import dev.railroadide.railroad.vcs.git.util.*;
+import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -30,6 +31,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -50,6 +52,10 @@ public class GitManager {
     private final BooleanProperty active = new SimpleBooleanProperty(false);
     private final ObjectProperty<GitRepository> gitRepository = new SimpleObjectProperty<>();
     private final ObjectProperty<GitIdentity> gitIdentity = new SimpleObjectProperty<>();
+    private final ObjectProperty<List<GitRemote>> remotes = new SimpleObjectProperty<>(List.of());
+    private final ObjectProperty<GitUpstream> upstream = new SimpleObjectProperty<>();
+    private final ObjectProperty<GitPullStrategy> pullStrategy = new SimpleObjectProperty<>();
+    private final ObjectProperty<GitPushStrategy> pushStrategy = new SimpleObjectProperty<>();
     private final LongProperty commitMetadataRevision = new SimpleLongProperty(0L);
     private final MapProperty<String, Long> remoteFetchTimestamps = new SimpleMapProperty<>(FXCollections.observableHashMap());
 
@@ -82,17 +88,27 @@ public class GitManager {
      * Detects repository for the current project path and updates manager state.
      */
     public void detectRepository() {
-        this.gitClient.detectRepository(this.project.getPath()).ifPresentOrElse(repository -> {
-            this.gitRepository.set(repository);
-            this.active.set(true);
+        this.executorService.submit(() -> this.gitClient.detectRepository(this.project.getPath()).ifPresentOrElse(repository -> {
+            runOnFxThread(() -> {
+                this.gitRepository.set(repository);
+                this.active.set(true);
+            });
+            refreshStatusInternal();
             startAutoRefresh();
             loadIdentity();
             fetch();
-        }, () -> {
+        }, () -> runOnFxThread(() -> {
             this.gitRepository.set(null);
             this.active.set(false);
+            this.repoStatus.set(null);
+            this.gitIdentity.set(null);
+            this.remotes.set(List.of());
+            this.upstream.set(null);
+            this.pullStrategy.set(null);
+            this.pushStrategy.set(null);
+            this.remoteFetchTimestamps.clear();
             stopAutoRefresh();
-        });
+        })));
     }
 
     /**
@@ -266,12 +282,8 @@ public class GitManager {
      * @return remotes, or empty list when no repository is active
      */
     public List<GitRemote> getRemotes() {
-        GitRepository repository = this.gitRepository.get();
-        if (repository != null) {
-            return this.gitClient.getRemotes(repository);
-        } else {
-            return List.of();
-        }
+        List<GitRemote> cachedRemotes = this.remotes.get();
+        return cachedRemotes != null ? List.copyOf(cachedRemotes) : List.of();
     }
 
     /**
@@ -280,12 +292,7 @@ public class GitManager {
      * @return upstream, or empty when unavailable
      */
     public Optional<GitUpstream> getUpstream() {
-        GitRepository repository = this.gitRepository.get();
-        if (repository != null) {
-            return this.gitClient.getUpstream(repository);
-        } else {
-            return Optional.empty();
-        }
+        return Optional.ofNullable(this.upstream.get());
     }
 
     /**
@@ -302,7 +309,8 @@ public class GitManager {
                         Railroad.LOGGER.debug("Git Fetch Message - {}", message);
                     }
                 });
-                this.remoteFetchTimestamps.put(getUpstream().map(GitUpstream::remoteName).orElse(""), System.currentTimeMillis());
+                String remoteName = this.gitClient.getUpstream(repository).map(GitUpstream::remoteName).orElse("");
+                runOnFxThread(() -> this.remoteFetchTimestamps.put(remoteName, System.currentTimeMillis()));
                 refreshStatusInternal();
             }
         });
@@ -340,12 +348,30 @@ public class GitManager {
         GitRepository repository = this.gitRepository.get();
         if (repository != null) {
             GitRepoStatus status = this.gitClient.getStatus(repository);
-            this.repoStatus.set(status);
+            List<GitRemote> currentRemotes = List.copyOf(this.gitClient.getRemotes(repository));
+            GitUpstream currentUpstream = this.gitClient.getUpstream(repository).orElse(null);
+            GitPullStrategy currentPullStrategy = status != null && status.branch() != null
+                ? this.gitClient.getPullStrategy(repository, status.branch())
+                : null;
+            GitPushStrategy currentPushStrategy = this.gitClient.getPushStrategy(repository);
+            runOnFxThread(() -> {
+                this.repoStatus.set(status);
+                this.remotes.set(currentRemotes);
+                this.upstream.set(currentUpstream);
+                this.pullStrategy.set(currentPullStrategy);
+                this.pushStrategy.set(currentPushStrategy);
+            });
 //            Railroad.LOGGER.debug("Loaded {} changes from Git repository at {}",
 //                status.changes().size(),
 //                repository.root());
         } else {
-            this.repoStatus.set(null);
+            runOnFxThread(() -> {
+                this.repoStatus.set(null);
+                this.remotes.set(List.of());
+                this.upstream.set(null);
+                this.pullStrategy.set(null);
+                this.pushStrategy.set(null);
+            });
         }
     }
 
@@ -441,7 +467,7 @@ public class GitManager {
         this.executorService.submit(() -> {
             try {
                 GitIdentity identity = this.gitClient.getIdentity();
-                this.gitIdentity.set(identity);
+                runOnFxThread(() -> this.gitIdentity.set(identity));
                 Railroad.LOGGER.debug("Loaded Git identity: {}", identity);
             } catch (Exception exception) {
                 Railroad.LOGGER.warn("Failed to load Git identity", exception);
@@ -1345,11 +1371,20 @@ public class GitManager {
      * @return remote URLs
      */
     public List<String> getRemoteUrls(GitRemote remote) {
-        GitRepository repository = this.gitRepository.get();
-        if (repository == null || remote == null)
+        if (remote == null)
             return List.of();
 
-        return this.gitClient.getRemoteUrls(repository, remote);
+        if (remote.fetchUrl() != null && !remote.fetchUrl().isBlank()
+            && Objects.equals(remote.fetchUrl(), remote.pushUrl())) {
+            return List.of(remote.fetchUrl());
+        }
+
+        List<String> urls = new ArrayList<>(2);
+        if (remote.fetchUrl() != null && !remote.fetchUrl().isBlank())
+            urls.add(remote.fetchUrl());
+        if (remote.pushUrl() != null && !remote.pushUrl().isBlank())
+            urls.add(remote.pushUrl());
+        return List.copyOf(urls);
     }
 
     /**
@@ -1382,7 +1417,7 @@ public class GitManager {
                 });
                 refreshStatusInternal();
                 for (GitRemote remote : getRemotes()) {
-                    this.remoteFetchTimestamps.put(remote.name(), System.currentTimeMillis());
+                    runOnFxThread(() -> this.remoteFetchTimestamps.put(remote.name(), System.currentTimeMillis()));
                 }
             }
         });
@@ -1482,11 +1517,7 @@ public class GitManager {
      * @return pull strategy, or {@code null} when no repository is active
      */
     public GitPullStrategy getPullStrategy() {
-        GitRepository repository = this.gitRepository.get();
-        if (repository == null)
-            return null;
-
-        return this.gitClient.getPullStrategy(repository, getCurrentBranch());
+        return this.pullStrategy.get();
     }
 
     /**
@@ -1495,11 +1526,7 @@ public class GitManager {
      * @return push strategy, or {@code null} when no repository is active
      */
     public GitPushStrategy getPushStrategy() {
-        GitRepository repository = this.gitRepository.get();
-        if (repository == null)
-            return null;
-
-        return this.gitClient.getPushStrategy(repository);
+        return this.pushStrategy.get();
     }
 
     /**
@@ -1541,19 +1568,12 @@ public class GitManager {
      * @return current remote, or {@code null}
      */
     public @Nullable GitRemote getCurrentRemote() {
-        GitRepository repository = this.gitRepository.get();
-        if (repository == null)
-            return null;
-
-        String currentBranch = getCurrentBranch();
         List<GitRemote> remotes = getRemotes();
-        if (currentBranch != null) {
-            String remoteTrackingBranch = getRemoteTrackingBranch(currentBranch);
-            if (remoteTrackingBranch != null) {
-                for (GitRemote remote : remotes) {
-                    if (remoteTrackingBranch.startsWith(remote.name() + "/"))
-                        return remote;
-                }
+        GitUpstream currentUpstream = this.upstream.get();
+        if (currentUpstream != null) {
+            for (GitRemote remote : remotes) {
+                if (remote.name().equals(currentUpstream.remoteName()))
+                    return remote;
             }
         }
 
@@ -1565,6 +1585,14 @@ public class GitManager {
             return remotes.getFirst();
 
         return null;
+    }
+
+    private void runOnFxThread(Runnable action) {
+        if (Platform.isFxApplicationThread()) {
+            action.run();
+        } else {
+            Platform.runLater(action);
+        }
     }
 
     /**
