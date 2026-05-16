@@ -3,22 +3,16 @@ package dev.railroadide.railroad.settings;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonPrimitive;
-import dev.railroadide.railroad.utility.javafx.ComboBoxConverter;
 import dev.railroadide.railroad.localization.Language;
 import dev.railroadide.railroad.localization.Languages;
 import dev.railroadide.railroad.plugin.PluginManager;
 import dev.railroadide.railroad.plugin.spi.PluginDescriptor;
 import dev.railroadide.railroad.plugin.ui.PluginsPane;
-import dev.railroadide.railroad.settings.ui.TerminalInstalledFontPane;
-import dev.railroadide.railroad.settings.ui.TerminalCustomFontFamilyPane;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.settings.keybinds.KeybindsList;
-import dev.railroadide.railroad.settings.ui.AbstractPathListPane;
-import dev.railroadide.railroad.settings.ui.DirectoryListPane;
-import dev.railroadide.railroad.settings.ui.FileListPane;
-import dev.railroadide.railroad.settings.ui.GitExecutablePathPane;
-import dev.railroadide.railroad.settings.ui.WindowsTerminalSettingsPathPane;
+import dev.railroadide.railroad.settings.ui.*;
 import dev.railroadide.railroad.theme.ui.ThemeSettingsSection;
+import dev.railroadide.railroad.utility.javafx.ComboBoxConverter;
 import javafx.scene.control.ComboBox;
 
 import java.nio.file.Path;
@@ -155,5 +149,31 @@ public class SettingCodecs {
             .valueToNode((path, pane) -> pane.setSettingsPath(path))
             .jsonEncoder(path -> path == null ? JsonNull.INSTANCE : new JsonPrimitive(path.toString()))
             .jsonDecoder(json -> (json == null || json.isJsonNull()) ? null : Path.of(json.getAsString()))
+            .build();
+
+    public static final SettingCodec<Integer, ComboBox<Integer>> UI_SCALE =
+        SettingCodec.<Integer, ComboBox<Integer>>builder("railroad:ui_scale")
+            .nodeToValue(comboBox -> comboBox.getValue() == null ? 100 : comboBox.getValue())
+            .valueToNode((scale, comboBox) -> comboBox.setValue(scale == null ? 100 : scale))
+            .jsonDecoder(json -> json == null || json.isJsonNull() ? 100 : json.getAsInt())
+            .jsonEncoder(JsonPrimitive::new)
+            .createNode(scale -> {
+                var comboBox = new ComboBox<Integer>();
+                comboBox.getItems().addAll(75, 100, 125, 150, 175, 200, 250, 300);
+                comboBox.setValue(scale == null ? 100 : scale);
+                comboBox.setConverter(new ComboBoxConverter<>(value -> value + "%", value -> {
+                    if (value == null || value.isBlank())
+                        return 100;
+
+                    String normalized = value.endsWith("%") ? value.substring(0, value.length() - 1) : value;
+                    try {
+                        return Integer.parseInt(normalized.trim());
+                    } catch (NumberFormatException ignored) {
+                        return 100;
+                    }
+                }));
+
+                return comboBox;
+            })
             .build();
 }

@@ -2,8 +2,12 @@ package dev.railroadide.railroad.window;
 
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.settings.Settings;
+import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.utility.MacUtils;
+import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Screen;
@@ -20,6 +24,11 @@ import java.util.*;
  * Handles the primary window, sub-windows, and dialog-style popups.
  */
 public class WindowManager {
+    private static final String SCALE_STYLE_MARKER_START = "/* railroad-ui-scale:start */";
+    private static final String SCALE_STYLE_MARKER_END = "/* railroad-ui-scale:end */";
+    private static final String SCALE_VALUE_KEY = "railroad.uiScale.value";
+    private static final String SCALE_LISTENER_KEY = "railroad.uiScale.listener";
+
     @Getter
     private Stage primaryStage;
     @Getter
@@ -66,6 +75,7 @@ public class WindowManager {
         primaryStage.setScene(this.primaryScene);
         primaryStage.setTitle(title);
         applyPreferredSize(primaryStage);
+        applyCurrentUiScale(primaryStage);
         setPrimaryStage(primaryStage);
 
         // Create a MacOS specific Menu Bar and Application Menu
@@ -154,6 +164,7 @@ public class WindowManager {
 
     public void registerChildWindow(Stage stage) {
         childWindows.add(stage);
+        applyCurrentUiScale(stage);
         trackWindowEvents(stage);
         stage.setOnCloseRequest(event -> {
             childWindows.remove(stage);
@@ -180,5 +191,83 @@ public class WindowManager {
     public static void toggleFullScreen() {
         Stage primaryStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
         primaryStage.setFullScreen(!primaryStage.isFullScreen());
+    }
+
+    public void applyUiScaleToAllWindows(Integer newValue) {
+        if (newValue == null || newValue <= 0)
+            return;
+
+        double scale = newValue / 100.0;
+        if (primaryStage != null) {
+            applyUiScale(primaryStage, scale);
+        }
+
+        for (Stage child : childWindows) {
+            applyUiScale(child, scale);
+        }
+    }
+
+    public void applyUiScale(Stage stage, double scale) {
+        if (stage == null)
+            return;
+
+        Scene scene = stage.getScene();
+        if (scene == null)
+            return;
+
+        ensureSceneScaleTracking(scene);
+        scene.getProperties().put(SCALE_VALUE_KEY, scale);
+        applyUiScale(scene, scale);
+    }
+
+    private double getCurrentScale(Scene scene) {
+        Object value = scene.getProperties().get(SCALE_VALUE_KEY);
+        return value instanceof Number number ? number.doubleValue() : 1.0;
+    }
+
+    private void applyCurrentUiScale(Stage stage) {
+        int scalePercent = SettingsHandler.getValue(Settings.UI_SCALE);
+        applyUiScale(stage, scalePercent / 100.0);
+    }
+
+    private void ensureSceneScaleTracking(Scene scene) {
+        if (scene.getProperties().containsKey(SCALE_LISTENER_KEY))
+            return;
+
+        ChangeListener<Object> listener = (observable, oldValue, newValue) ->
+            Platform.runLater(() -> applyUiScale(scene, getCurrentScale(scene)));
+        scene.rootProperty().addListener(listener);
+        scene.getProperties().put(SCALE_LISTENER_KEY, listener);
+    }
+
+    private void applyUiScale(Scene scene, double scale) {
+        if (scene == null || scene.getRoot() == null)
+            return;
+
+        String style = scene.getRoot().getStyle();
+        String normalizedStyle = stripUiScaleStyle(style);
+        String scaleStyle = SCALE_STYLE_MARKER_START + " -fx-font-size: " + Math.round(scale * 100.0) + "%; " + SCALE_STYLE_MARKER_END;
+        scene.getRoot().setStyle(normalizedStyle.isBlank() ? scaleStyle : normalizedStyle + " " + scaleStyle);
+    }
+
+    private String stripUiScaleStyle(String style) {
+        if (style == null || style.isBlank())
+            return "";
+
+        int start = style.indexOf(SCALE_STYLE_MARKER_START);
+        int end = style.indexOf(SCALE_STYLE_MARKER_END);
+        if (start >= 0 && end >= start) {
+            String prefix = style.substring(0, start).trim();
+            String suffix = style.substring(end + SCALE_STYLE_MARKER_END.length()).trim();
+            if (prefix.isEmpty())
+                return suffix;
+
+            if (suffix.isEmpty())
+                return prefix;
+
+            return prefix + " " + suffix;
+        }
+
+        return style.trim();
     }
 }
