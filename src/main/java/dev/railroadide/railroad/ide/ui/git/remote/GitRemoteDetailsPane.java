@@ -13,7 +13,6 @@ import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.layout.*;
@@ -69,14 +68,9 @@ public class GitRemoteDetailsPane extends RRVBox {
 
     private void configureGrid() {
         detailsGrid.getStyleClass().add("git-remote-details-grid");
-        detailsGrid.setHgap(12);
-        detailsGrid.setVgap(0);
 
         var col1 = new ColumnConstraints();
         col1.setHgrow(Priority.NEVER);
-        col1.setPrefWidth(Region.USE_COMPUTED_SIZE);
-        col1.setMinWidth(Region.USE_PREF_SIZE);
-        col1.setMaxWidth(Region.USE_PREF_SIZE);
         var col2 = new ColumnConstraints();
         col2.setHgrow(Priority.ALWAYS);
         detailsGrid.getColumnConstraints().addAll(col1, col2);
@@ -119,8 +113,6 @@ public class GitRemoteDetailsPane extends RRVBox {
     private void addSeparator(int row) {
         var separator = new Region();
         separator.getStyleClass().add("git-remote-details-row-separator");
-        separator.setMaxWidth(Double.MAX_VALUE);
-        GridPane.setMargin(separator, new Insets(4, 0, 4, 0));
         detailsGrid.add(separator, 0, row, 2, 1);
     }
 

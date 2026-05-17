@@ -11,9 +11,9 @@ public class TerminalInstalledFontPane extends ComboBox<String> {
     public TerminalInstalledFontPane(@Nullable String selectedFont) {
         var fonts = FXCollections.observableArrayList(Font.getFamilies());
         fonts.sort(String.CASE_INSENSITIVE_ORDER);
+        getStyleClass().add("terminal-installed-font-pane");
         setItems(fonts);
         setVisibleRowCount(16);
-        setMaxWidth(Double.MAX_VALUE);
 
         if (selectedFont != null && !selectedFont.isBlank()) {
             if (!fonts.contains(selectedFont)) {

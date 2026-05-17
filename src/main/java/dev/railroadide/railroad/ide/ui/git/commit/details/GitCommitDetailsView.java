@@ -12,7 +12,6 @@ public class GitCommitDetailsView extends RRVBox {
     public GitCommitDetailsView(Project project, GitCommit commit, String headCommitHash, Map<String, List<String>> tagsByCommit) {
         super();
         getStyleClass().add("git-commit-details-view");
-        setSpacing(14);
         setAlignment(Pos.TOP_LEFT);
 
         getChildren().add(new GitCommitHeaderCard(commit));

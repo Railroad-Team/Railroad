@@ -30,6 +30,7 @@ public class GitExecutablePathPane extends RRHBox {
     );
 
     public GitExecutablePathPane(@Nullable Path path) {
+        getStyleClass().add("git-executable-path-pane");
         browseButton.textFieldProperty().set(pathField);
         browseButton.browseTypeProperty().set(BrowseButton.BrowseType.FILE);
         browseButton.defaultLocationProperty().set(path != null ? path.getParent() : Path.of(System.getProperty("user.home")));
@@ -71,7 +72,6 @@ public class GitExecutablePathPane extends RRHBox {
         downloadButton.setVisible(OperatingSystem.CURRENT != OperatingSystem.UNKNOWN);
 
         getChildren().addAll(pathField, browseButton, downloadButton);
-        setSpacing(10);
         HBox.setHgrow(pathField, Priority.ALWAYS);
 
         setGitExecutablePath(path);

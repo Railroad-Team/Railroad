@@ -20,6 +20,7 @@ public class WindowsTerminalSettingsPathPane extends RRHBox {
     private final BrowseButton browseButton = new BrowseButton();
 
     public WindowsTerminalSettingsPathPane(@Nullable Path path) {
+        getStyleClass().add("windows-terminal-settings-path-pane");
         browseButton.textFieldProperty().set(pathField);
         browseButton.browseTypeProperty().set(BrowseButton.BrowseType.FILE);
         browseButton.defaultLocationProperty().set(path != null ? path.getParent() : Path.of(System.getProperty("user.home")));
@@ -42,7 +43,6 @@ public class WindowsTerminalSettingsPathPane extends RRHBox {
         });
 
         getChildren().addAll(pathField, browseButton);
-        setSpacing(10);
         HBox.setHgrow(pathField, Priority.ALWAYS);
 
         setSettingsPath(path);

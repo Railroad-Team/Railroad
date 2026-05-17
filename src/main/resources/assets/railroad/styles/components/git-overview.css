@@ -1,3 +1,7 @@
+.git-overview-pane-root {
+    -fx-spacing: 8px;
+}
+
 /* Git overview pane styles */
 .git-overview-header-pane,
 .git-overview-identity-pane {
@@ -15,6 +19,8 @@
 .git-overview-info-grid,
 .git-overview-identity-grid {
     -fx-padding: 4 4 4 4;
+    -fx-hgap: 12px;
+    -fx-vgap: 0;
 }
 
 .git-overview-grid-row-separator {
@@ -103,6 +109,7 @@
     -fx-border-width: 1px;
     -fx-padding: 6px 10px;
     -fx-alignment: center;
+    -fx-spacing: 4px;
 }
 
 .git-overview-change-number {

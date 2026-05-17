@@ -23,7 +23,6 @@ import javafx.beans.property.LongProperty;
 import javafx.beans.property.ReadOnlyLongProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.collections.FXCollections;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ListCell;
@@ -62,10 +61,8 @@ public class GitStashPane extends RRVBox {
         this.project = project;
         this.gitManager = project.getGitManager();
         getStyleClass().add("git-stash-pane");
-        setSpacing(10);
-        setPadding(new Insets(8));
 
-        var controlsRow = new RRHBox(8);
+        var controlsRow = new RRHBox();
         controlsRow.getStyleClass().add("git-stash-controls");
         controlsRow.setAlignment(Pos.CENTER_LEFT);
 
@@ -98,12 +95,10 @@ public class GitStashPane extends RRVBox {
         stashChangesTree.getStyleClass().add("git-stash-changes-tree");
         stashChangesTree.setShowRoot(false);
         stashChangesTree.setCellFactory(ignored -> new CommitChangeTreeCell());
-        stashChangesTree.setMinHeight(140);
-        stashChangesTree.setPrefHeight(180);
         VBox.setVgrow(stashChangesTree, Priority.SOMETIMES);
         clearStashChanges();
 
-        var actionsRow = new RRHBox(8);
+        var actionsRow = new RRHBox();
         actionsRow.getStyleClass().add("git-stash-actions");
 
         applyButton = new RRButton("railroad.git.stash.actions.apply", FontAwesomeSolid.CHECK);
@@ -347,26 +342,25 @@ public class GitStashPane extends RRVBox {
             Tooltip.install(hashText, hashTooltip);
             Tooltip.install(timestampText, timestampTooltip);
 
-            var metadataColumn = new VBox(2, branchText, hashText, timestampText);
+            var metadataColumn = new VBox(branchText, hashText, timestampText);
             metadataColumn.getStyleClass().add("git-stash-item-metadata-column");
             metadataColumn.setAlignment(Pos.CENTER_LEFT);
 
-            var leftContent = new VBox(4, nameText, metadataColumn);
+            var leftContent = new VBox(nameText, metadataColumn);
             leftContent.getStyleClass().add("git-stash-item-left");
             HBox.setHgrow(leftContent, Priority.ALWAYS);
 
-            var stats = new HBox(6, additionsText, deletionsText);
+            var stats = new HBox(additionsText, deletionsText);
             stats.getStyleClass().add("git-stash-item-stats");
             stats.setAlignment(Pos.CENTER_RIGHT);
 
-            var rightContent = new HBox(8, referenceText, stats);
+            var rightContent = new HBox(referenceText, stats);
             rightContent.getStyleClass().add("git-stash-item-right");
             rightContent.setAlignment(Pos.CENTER_RIGHT);
 
-            itemRoot = new HBox(10, leftContent, rightContent);
+            itemRoot = new HBox(leftContent, rightContent);
             itemRoot.getStyleClass().add("git-stash-item");
             itemRoot.setAlignment(Pos.CENTER_LEFT);
-            itemRoot.setMaxWidth(Double.MAX_VALUE);
             itemRoot.setFillHeight(true);
 
             setContentDisplay(ContentDisplay.GRAPHIC_ONLY);

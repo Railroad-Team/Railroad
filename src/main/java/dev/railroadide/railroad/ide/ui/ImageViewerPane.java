@@ -3,7 +3,6 @@ package dev.railroadide.railroad.ide.ui;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.ImageUtils;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.canvas.Canvas;
@@ -53,6 +52,7 @@ public class ImageViewerPane extends BorderPane {
     private Text numberOfColorsText;
 
     private StackPane canvasContainer;
+    private StackPane infoPaneContainer;
 
     public ImageViewerPane(Path imagePath) {
         super();
@@ -75,8 +75,7 @@ public class ImageViewerPane extends BorderPane {
         canvas = new Canvas();
         gc = canvas.getGraphicsContext2D();
 
-        infoPane = new RRVBox(5);
-        infoPane.setPadding(new Insets(10));
+        infoPane = new RRVBox();
         infoPane.setVisible(false);
         infoPane.setMouseTransparent(true);
         infoPane.setMaxWidth(VBox.USE_PREF_SIZE);
@@ -92,11 +91,14 @@ public class ImageViewerPane extends BorderPane {
         numberOfColorsText = new Text("Number of Colors: ");
         infoPane.getChildren().addAll(dimensionsText, fileNameText, fileSizeText, typeText, colorDepthText, colorSpaceText, numberOfColorsText);
 
-        canvasContainer = new StackPane(canvas, infoPane);
+        infoPaneContainer = new StackPane(infoPane);
+        infoPaneContainer.getStyleClass().add("ide-image-viewer-info-pane-container");
+        infoPaneContainer.setMouseTransparent(true);
+
+        canvasContainer = new StackPane(canvas, infoPaneContainer);
         canvasContainer.getStyleClass().add("ide-image-viewer-canvas-container");
 
-        StackPane.setAlignment(infoPane, Pos.TOP_LEFT);
-        StackPane.setMargin(infoPane, new Insets(10));
+        StackPane.setAlignment(infoPaneContainer, Pos.TOP_LEFT);
 
         canvas.widthProperty().bind(canvasContainer.widthProperty());
         canvas.heightProperty().bind(canvasContainer.heightProperty());

@@ -7,7 +7,6 @@ import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.welcome.imports.WelcomeImportProjectsPane;
 import dev.railroadide.railroad.welcome.project.ui.NewProjectPane;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.HBox;
@@ -30,26 +29,22 @@ public class WelcomePane extends HBox {
     private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
 
     public WelcomePane() {
-        setSpacing(0);
-        setPadding(new Insets(0));
+        getStyleClass().add("welcome-root");
 
         leftPane = new WelcomeLeftPane();
         headerPane = new WelcomeHeaderPane();
         projectsPane = new WelcomeProjectsPane(headerPane.getSearchField());
         projectsPane.setSortProperty(headerPane.getSortComboBox().valueProperty());
-        headerPane.setPrefHeight(80);
+        headerPane.getStyleClass().add("welcome-header-pane");
 
-        var rightPane = new RRVBox(18);
-        rightPane.setPadding(new Insets(18, 24, 18, 24));
-        rightPane.getStyleClass().add("welcome-right-pane");
+        var rightPane = new RRVBox();
+        rightPane.getStyleClass().addAll("welcome-right-pane", "welcome-right-pane-content");
         rightPane.getChildren().addAll(headerPane, projectsPane);
         VBox.setVgrow(projectsPane, Priority.ALWAYS);
-        rightPane.setMinWidth(340);
         rightPane.setMaxWidth(Double.MAX_VALUE);
 
         var verticalSeparator = new Separator(Orientation.VERTICAL);
-        verticalSeparator.setPadding(new Insets(0, 0, 0, 0));
-        verticalSeparator.setPrefWidth(1);
+        verticalSeparator.getStyleClass().add("welcome-vertical-separator");
 
         getChildren().addAll(leftPane, verticalSeparator, rightPane);
         HBox.setHgrow(rightPane, Priority.ALWAYS);

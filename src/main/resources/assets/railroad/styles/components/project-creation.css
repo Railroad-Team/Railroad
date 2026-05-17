@@ -1,4 +1,26 @@
 /* Project creation styles */
+.project-creation-card {
+    -fx-spacing: 18px;
+    -fx-padding: 24px;
+    -fx-max-width: 760px;
+}
+
+.project-creation-header {
+    -fx-spacing: 6px;
+}
+
+.project-creation-chip-row {
+    -fx-spacing: 10px;
+}
+
+.project-creation-footer {
+    -fx-spacing: 12px;
+}
+
+.rr-chip {
+    -fx-padding: 6px 12px;
+}
+
 .project-creation-title {
     -fx-font-size: 24px;
     -fx-font-weight: bold;

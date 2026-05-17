@@ -1,7 +1,6 @@
 package dev.railroadide.railroad.settings;
 
 import com.google.gson.reflect.TypeToken;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.localization.Language;
 import dev.railroadide.railroad.localization.Languages;
@@ -207,16 +206,6 @@ public final class Settings {
         .defaultValue(null)
         .canBeNull(true)
         .build());
-
-    public static final Setting<Integer> UI_SCALE = registerSetting(
-        Setting.builder(Integer.class, "railroad:ui_scale")
-            .treePath("appearance")
-            .category(SettingCategory.simple("railroad:appearance.display"))
-            .codec(SettingCodecs.UI_SCALE)
-            .defaultValue(100)
-            .canBeNull(false)
-            .addListener((oldValue, newValue) -> Railroad.WINDOW_MANAGER.applyUiScaleToAllWindows(newValue))
-            .build());
 
     public static void initialize() {
         // intentionally empty - triggers class loading and static init

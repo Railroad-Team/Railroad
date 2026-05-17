@@ -1,0 +1,38 @@
+.preloader-root {
+    -fx-padding: 32px;
+    -fx-background-color: transparent;
+}
+
+.preloader-content {
+    -fx-spacing: 12px;
+    -fx-background-radius: 24px;
+    -fx-border-radius: 24px;
+    -fx-border-width: 1px;
+    -fx-border-color: rgba(255,255,255,0.25);
+    -fx-background-color: linear-gradient(to bottom right, rgba(33, 40, 62, 0.95), rgba(16, 18, 27, 0.96));
+    -fx-padding: 32px 36px;
+}
+
+.preloader-title {
+    -fx-font-size: 30px;
+    -fx-font-weight: 800;
+    -fx-text-fill: white;
+}
+
+.preloader-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: rgba(255,255,255,0.75);
+}
+
+.preloader-message {
+    -fx-font-size: 15px;
+    -fx-text-fill: #f4f4f8;
+}
+
+.preloader-progress {
+    -fx-pref-width: 360px;
+    -fx-accent: #ff851a;
+    -fx-control-inner-background: rgba(16,16,24,0.55);
+    -fx-background-radius: 999px;
+    -fx-padding: 6px;
+}

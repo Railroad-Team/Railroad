@@ -39,14 +39,16 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
      * @param params   The parameters to pass to the primary component.
      */
     public LabeledHBox(@NotNull String labelKey, boolean required, Map<String, Object> params) {
-        super(10);
+        super();
+        getStyleClass().add("field-container");
         setAlignment(Pos.CENTER_LEFT);
 
         this.label = createLabel(this, labelKey, required);
         this.primaryComponent = createPrimaryComponent(params);
         this.label.setLabelFor(primaryComponent);
 
-        this.verticalLayout = new RRVBox(8);
+        this.verticalLayout = new RRVBox();
+        this.verticalLayout.getStyleClass().add("field-vertical-layout");
         this.verticalLayout.setAlignment(Pos.CENTER_LEFT);
 
         if (primaryComponent instanceof Region) {
@@ -128,8 +130,6 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
     protected static LocalizedLabel createLabel(RRHBox hBox, @NotNull String label, boolean required) {
         var labelNode = new LocalizedLabel(label);
         labelNode.getStyleClass().add("field-label");
-        labelNode.setMinWidth(Region.USE_PREF_SIZE);
-        labelNode.setPrefWidth(Region.USE_COMPUTED_SIZE);
         labelNode.setWrapText(true);
         HBox.setHgrow(labelNode, Priority.ALWAYS);
         hBox.getChildren().add(labelNode);

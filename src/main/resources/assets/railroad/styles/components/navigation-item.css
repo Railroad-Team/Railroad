@@ -4,8 +4,14 @@
     -fx-background-radius: 8px;
     -fx-border-radius: 8px;
     -fx-border-width: 0;
+    -fx-padding: 8px 12px;
+    -fx-spacing: 8px;
     -fx-cursor: hand;
     -fx-transition: all 0.2s ease-in-out;
+}
+
+.rr-navigation-item-content {
+    -fx-spacing: 12px;
 }
 
 .rr-navigation-item:hover {

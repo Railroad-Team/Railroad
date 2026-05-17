@@ -151,29 +151,4 @@ public class SettingCodecs {
             .jsonDecoder(json -> (json == null || json.isJsonNull()) ? null : Path.of(json.getAsString()))
             .build();
 
-    public static final SettingCodec<Integer, ComboBox<Integer>> UI_SCALE =
-        SettingCodec.<Integer, ComboBox<Integer>>builder("railroad:ui_scale")
-            .nodeToValue(comboBox -> comboBox.getValue() == null ? 100 : comboBox.getValue())
-            .valueToNode((scale, comboBox) -> comboBox.setValue(scale == null ? 100 : scale))
-            .jsonDecoder(json -> json == null || json.isJsonNull() ? 100 : json.getAsInt())
-            .jsonEncoder(JsonPrimitive::new)
-            .createNode(scale -> {
-                var comboBox = new ComboBox<Integer>();
-                comboBox.getItems().addAll(75, 100, 125, 150, 175, 200, 250, 300);
-                comboBox.setValue(scale == null ? 100 : scale);
-                comboBox.setConverter(new ComboBoxConverter<>(value -> value + "%", value -> {
-                    if (value == null || value.isBlank())
-                        return 100;
-
-                    String normalized = value.endsWith("%") ? value.substring(0, value.length() - 1) : value;
-                    try {
-                        return Integer.parseInt(normalized.trim());
-                    } catch (NumberFormatException ignored) {
-                        return 100;
-                    }
-                }));
-
-                return comboBox;
-            })
-            .build();
 }

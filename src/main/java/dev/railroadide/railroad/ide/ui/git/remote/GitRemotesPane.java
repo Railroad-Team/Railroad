@@ -35,7 +35,6 @@ public class GitRemotesPane extends RRVBox {
         });
 
         getChildren().addAll(actionsPane, remotesList, detailsPane);
-        setSpacing(10);
         getStyleClass().add("git-remotes-pane");
         VBox.setVgrow(remotesList, Priority.ALWAYS);
     }

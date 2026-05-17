@@ -1,4 +1,9 @@
 /* Welcome pane styles */
+.welcome-root {
+    -fx-padding: 0;
+    -fx-spacing: 0;
+}
+
 .welcome-app-name {
     -fx-font-size: 18px;
     -fx-font-weight: bold;
@@ -33,9 +38,35 @@
     -fx-background-color: transparent;
 }
 
+.welcome-right-pane-content {
+    -fx-padding: 18px 24px;
+    -fx-spacing: 18px;
+    -fx-min-width: 340px;
+}
+
+.welcome-header-pane {
+    -fx-pref-height: 80px;
+}
+
 /* Project type pane styles */
 .project-type-search-field {
     -fx-font-size: 15px;
+}
+
+.project-type-pane {
+    -fx-padding: 18px;
+    -fx-spacing: 16px;
+    -fx-min-width: 240px;
+    -fx-max-width: 320px;
+}
+
+.new-project-pane {
+    -fx-padding: 24px 32px;
+    -fx-spacing: 18px;
+}
+
+.new-project-content-box {
+    -fx-spacing: 0;
 }
 
 .project-types-scroller {
@@ -104,6 +135,7 @@
 /* Import project list cell styles */
 .import-project-card {
     -fx-background-color: -color-card-bg;
+    -fx-padding: 12px 18px;
 }
 
 .import-project-card-selected {
@@ -126,6 +158,18 @@
     -fx-background-radius: 8px;
 }
 
+.import-project-list-cell {
+    -fx-padding: 4px 0;
+}
+
+.import-project-content-row {
+    -fx-spacing: 14px;
+}
+
+.import-project-info-box {
+    -fx-spacing: 8px;
+}
+
 .import-project-name {
     -fx-font-size: 16px;
     -fx-font-weight: bold;
@@ -146,9 +190,11 @@
 
 .features-grid {
     -fx-padding: 8 0;
+    -fx-spacing: 16px;
 }
 
 .feature-item {
+    -fx-spacing: 12px;
     -fx-padding: 12 16;
     -fx-background-radius: 8;
     -fx-background-color: transparent;
@@ -227,6 +273,28 @@
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 8, 0.15, 0, 2);
 }
 
+.welcome-left-pane {
+    -fx-padding: 18px 8px;
+    -fx-spacing: 18px;
+    -fx-min-width: 220px;
+    -fx-max-width: 240px;
+}
+
+.welcome-left-top-box {
+    -fx-spacing: 6px;
+    -fx-padding: 0 0 8px 0;
+    -fx-pref-height: 110px;
+}
+
+.welcome-left-separator {
+    -fx-padding: 10px -10px;
+}
+
+.welcome-vertical-separator {
+    -fx-padding: 0;
+    -fx-pref-width: 1px;
+}
+
 /* Project type cell styling */
 .project-type-cell {
     /* Default state - no special styling */
@@ -267,6 +335,11 @@
 
 .welcome-hero-text {
     -fx-spacing: 4px;
+}
+
+.welcome-header-content {
+    -fx-spacing: 18px;
+    -fx-padding: 8px 12px;
 }
 
 .welcome-stats-bar {
@@ -316,7 +389,9 @@
 
 /* Project sort combo box */
 .project-sort-combo {
+    -fx-min-width: 170px;
     -fx-pref-width: 220px;
+    -fx-max-width: 260px;
 }
 
 .project-sort-option {
@@ -417,4 +492,77 @@
 
 .welcome-search-container:focused .welcome-search-clear-icon {
     -fx-fill: -color-accent-emphasis;
+}
+
+.welcome-nav-item {
+    -fx-pref-height: 44px;
+}
+
+.welcome-import-projects-pane {
+    -fx-spacing: 0;
+}
+
+.welcome-projects-empty-box {
+    -fx-spacing: 12px;
+    -fx-padding: 40px 0;
+}
+
+.welcome-import-sidebar {
+    -fx-pref-width: 200px;
+}
+
+.welcome-import-right-pane {
+    -fx-padding: 18px;
+}
+
+.welcome-import-loading-box {
+    -fx-spacing: 18px;
+    -fx-padding: 40px 0;
+}
+
+.welcome-import-loading-indicator {
+    -fx-min-width: 48px;
+    -fx-min-height: 48px;
+    -fx-max-width: 48px;
+    -fx-max-height: 48px;
+}
+
+.welcome-import-empty-label {
+    -fx-padding: 20px;
+}
+
+.welcome-import-search-field {
+    -fx-pref-height: 36px;
+}
+
+.welcome-import-title-box {
+    -fx-spacing: 10px;
+}
+
+.welcome-import-content-box {
+    -fx-spacing: 18px;
+}
+
+.welcome-import-account-box {
+    -fx-spacing: 18px;
+}
+
+.welcome-import-dir-box {
+    -fx-spacing: 10px;
+}
+
+.welcome-import-url-box {
+    -fx-spacing: 18px;
+}
+
+.welcome-import-url-field {
+    -fx-pref-width: 320px;
+}
+
+.welcome-import-clone-button {
+    -fx-max-width: Infinity;
+}
+
+.account-list-cell-title-box {
+    -fx-spacing: 4px;
 }

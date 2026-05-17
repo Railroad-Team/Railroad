@@ -40,11 +40,11 @@ public class DetectedJdkListPane extends RRVBox {
     private final LocalizedLabel countLabel = new LocalizedLabel("railroad.settings.ide.jdk_management.detected.count", 0);
 
     public DetectedJdkListPane() {
-        setSpacing(12);
         setFillWidth(true);
         getStyleClass().add("detected-jdk-list-pane");
 
-        var header = new RRHBox(8);
+        var header = new RRHBox();
+        header.getStyleClass().add("detected-jdk-list-header");
         header.setFillHeight(true);
         var title = new LocalizedLabel("railroad.settings.ide.jdk_management.detected.title");
         title.getStyleClass().add("section-label");
@@ -59,9 +59,7 @@ public class DetectedJdkListPane extends RRVBox {
 
         listView.setItems(items);
         listView.setFocusTraversable(false);
-        listView.setMinHeight(160);
-        listView.setPrefHeight(220);
-        listView.setMaxHeight(220);
+        listView.getStyleClass().add("detected-jdk-list-view");
         listView.setCellFactory(view -> new JdkCell());
         listView.setPlaceholder(new LocalizedLabel("railroad.settings.ide.jdk_management.detected.empty"));
 
@@ -79,8 +77,8 @@ public class DetectedJdkListPane extends RRVBox {
     }
 
     public static class JdkCell extends ListCell<JDK> {
-        private final HBox container = new HBox(12);
-        private final VBox textContainer = new VBox(2);
+        private final HBox container = new HBox();
+        private final VBox textContainer = new VBox();
         private final LocalizedLabel versionLabel = new LocalizedLabel("");
         private final LocalizedLabel nameLabel = new LocalizedLabel("");
         private final LocalizedLabel pathLabel = new LocalizedLabel("");
@@ -93,6 +91,7 @@ public class DetectedJdkListPane extends RRVBox {
             nameLabel.getStyleClass().add("detected-jdk-name");
             pathLabel.getStyleClass().add("detected-jdk-path");
 
+            textContainer.getStyleClass().add("detected-jdk-text-container");
             textContainer.getChildren().addAll(versionLabel, nameLabel, pathLabel);
             HBox.setHgrow(textContainer, Priority.ALWAYS);
         }

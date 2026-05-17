@@ -375,7 +375,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
         }
     }
 
-    private class GitCommitMiniDetailsPane extends RRVBox {
+        private class GitCommitMiniDetailsPane extends RRVBox {
         private final Text message = new Text();
         private final Text author = new Text();
         private final Text hash = new Text();
@@ -399,9 +399,6 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
             separator.getStyleClass().add("git-commit-separator");
 
             tagsFlow.getStyleClass().add("git-commit-tags-pane");
-            tagsFlow.setPrefWrapLength(220);
-            tagsFlow.setMaxWidth(220);
-            tagsFlow.setMinWidth(0);
 
             subheadingHBox.getChildren().addAll(author, hash);
             Tooltip.install(author, authorTooltip);

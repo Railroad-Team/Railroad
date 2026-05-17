@@ -34,7 +34,6 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.WorkerStateEvent;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -68,8 +67,6 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
     public ProjectExplorerPane(Project project, RRBorderPane mainPane) {
         Path rootPath = project.getPath();
-        setPadding(new Insets(0));
-        setSpacing(0);
         getStyleClass().add("rr-project-explorer");
 
         this.searchField = new RRTextField("railroad.ide.project_explorer.search_field");
@@ -414,13 +411,13 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     private Node createModernHeader(Project project) {
-        var header = new HBox(8);
+        var header = new HBox();
         header.getStyleClass().add("project-explorer-header");
-        header.setPadding(new Insets(12, 16, 8, 16));
         header.setAlignment(Pos.CENTER_LEFT);
 
         // Project icon and name
-        var projectInfo = new HBox(8);
+        var projectInfo = new HBox();
+        projectInfo.getStyleClass().add("project-explorer-project-info");
         projectInfo.setAlignment(Pos.CENTER_LEFT);
         var projectIcon = new FontIcon(FontAwesomeSolid.FOLDER_OPEN);
         projectIcon.getStyleClass().add("project-icon");
@@ -432,12 +429,12 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         // Search field
         this.searchField.setPromptText("Search files...");
-        this.searchField.setPrefWidth(200);
-        this.searchField.setMaxWidth(260);
+        this.searchField.getStyleClass().add("project-explorer-search-field");
         HBox.setHgrow(this.searchField, Priority.ALWAYS);
 
         // Action buttons
-        var actionButtons = new HBox(4);
+        var actionButtons = new HBox();
+        actionButtons.getStyleClass().add("project-explorer-action-buttons");
         actionButtons.setAlignment(Pos.CENTER_RIGHT);
 
         var refreshButton = new RRButton("", FontAwesomeSolid.SYNC_ALT);
