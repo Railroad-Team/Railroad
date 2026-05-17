@@ -62,8 +62,8 @@ public record SemanticDiagnosticsProvider(Project project, Path filePath) implem
                 case INFO -> Diagnostic.Kind.NOTE;
             };
 
-            int start = Math.clamp(source.length, 0, diagnostic.startOffset());
-            int end = Math.clamp(source.length, start, diagnostic.endOffset());
+            int start = Math.clamp(diagnostic.startOffset(), 0, source.length);
+            int end = Math.clamp(diagnostic.endOffset(), start, source.length);
             long line = computeLine(source, start);
             long column = computeColumn(source, start);
             diagnostics.add(new EditorDiagnostic(
