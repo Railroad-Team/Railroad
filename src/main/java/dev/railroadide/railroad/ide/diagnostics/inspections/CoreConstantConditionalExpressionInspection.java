@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
@@ -14,6 +15,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
 import java.util.*;
 
+@RegisteredInspection(id = CoreConstantConditionalExpressionInspection.ID)
 public class CoreConstantConditionalExpressionInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-constant-conditional-expression";
     private static final Set<String> DATA_FLOW_ROOT_KINDS = Set.of(

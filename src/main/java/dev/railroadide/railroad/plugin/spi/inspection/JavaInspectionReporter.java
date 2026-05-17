@@ -6,9 +6,9 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 /**
  * Sink used by inspections to report diagnostics.
  * <p>
- * New rule-based inspections normally use {@link JavaInspectionRuleReporter}, but this
- * reporter remains the output contract for the legacy {@link JavaInspection} extension
- * point.
+ * This is the low-level diagnostic sink used by the rule engine. New rule-based inspections
+ * normally report through {@link JavaInspectionRuleReporter} instead of constructing
+ * {@link SemanticDiagnostic} instances directly.
  */
 public interface JavaInspectionReporter {
     /**

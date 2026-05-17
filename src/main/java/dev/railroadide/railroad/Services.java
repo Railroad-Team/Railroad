@@ -2,19 +2,18 @@ package dev.railroadide.railroad;
 
 import com.google.gson.Gson;
 import dev.railroadide.logger.Logger;
-import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRegistries;
 import dev.railroadide.railroad.ide.DefaultDocumentEditorStateService;
 import dev.railroadide.railroad.ide.DefaultIDEStateService;
+import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRegistries;
 import dev.railroadide.railroad.ide.sst.project.ProjectSemanticService;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.localization.Language;
 import dev.railroadide.railroad.localization.LocalizationService;
+import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.plugin.spi.services.ApplicationInfoService;
 import dev.railroadide.railroad.plugin.spi.services.DocumentEditorStateService;
 import dev.railroadide.railroad.plugin.spi.services.IDEStateService;
 import dev.railroadide.railroad.plugin.spi.services.VCSService;
-import dev.railroadide.railroad.plugin.spi.inspection.JavaInspection;
-import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.project.creation.ProjectCreationPipelineService;
 import dev.railroadide.railroad.project.creation.ProjectServiceRegistry;
 import dev.railroadide.railroad.project.creation.service.*;
@@ -80,7 +79,6 @@ public class Services {
 
     public static final DefaultProjectCreationPipelineService PROJECT_CREATION_PIPELINE = new DefaultProjectCreationPipelineService();
     public static final ProjectSemanticService PROJECT_SEMANTIC_SERVICE = new ProjectSemanticService();
-    public static final Registry<JavaInspection> JAVA_INSPECTION_REGISTRY = JavaInspectionRegistries.JAVA_INSPECTION_REGISTRY;
     public static final Registry<JavaInspectionRuleProvider> JAVA_INSPECTION_RULE_PROVIDER_REGISTRY =
             JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY;
 

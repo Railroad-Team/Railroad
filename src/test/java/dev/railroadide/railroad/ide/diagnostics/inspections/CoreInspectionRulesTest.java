@@ -4,10 +4,10 @@ import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleEngine;
 import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleSettings;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
-import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionContext;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
+import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -3752,7 +3752,7 @@ class CoreInspectionRulesTest {
     private static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, Path filePath, String document) {
         JavaInspectionRuleSettings.resetAll();
         var model = JavaSemanticAnalyzer.analyzeFacts(document);
-        JavaInspectionContext context = new JavaInspectionContext(filePath, document, model);
+        JavaRuleContext context = new JavaRuleContext(filePath, document, model);
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
         JavaInspectionReporter reporter = diagnostics::add;
         JavaInspectionRuleEngine.runRules(provider, context, reporter);

@@ -91,16 +91,6 @@ public final class JavaRuleContext {
     private volatile @Nullable Map<String, List<MethodDescriptor>> cachedDeclaredMethodsByOwner;
 
     /**
-     * Creates a rule context from the legacy inspection context wrapper.
-     *
-     * @param context legacy inspection context
-     * @throws NullPointerException if {@code context} is {@code null}
-     */
-    public JavaRuleContext(JavaInspectionContext context) {
-        this(context.filePath(), context.documentText(), context.semanticModel());
-    }
-
-    /**
      * Creates a rule context from raw file and semantic analysis inputs.
      *
      * @param filePath      file path being inspected

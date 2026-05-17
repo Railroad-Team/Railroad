@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
@@ -12,31 +13,32 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
+@RegisteredInspection(id = CoreAccessibilityInspection.ID)
 public final class CoreAccessibilityInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-accessibility";
 
     private static final List<JavaInspectionRule> RULES = List.of(
-            new SimpleJavaInspectionRule(
-                    JavaSemanticRules.INACCESSIBLE_TYPE.id(),
-                    JavaSemanticRules.INACCESSIBLE_TYPE.defaultSeverity(),
-                    JavaSemanticRules.INACCESSIBLE_TYPE.messageTemplate(),
-                    Set.of("core", "accessibility", "types"),
-                    CoreAccessibilityInspection::reportInaccessibleTypes
-            ),
-            new SimpleJavaInspectionRule(
-                    JavaSemanticRules.INACCESSIBLE_MEMBER.id(),
-                    JavaSemanticRules.INACCESSIBLE_MEMBER.defaultSeverity(),
-                    JavaSemanticRules.INACCESSIBLE_MEMBER.messageTemplate(),
-                    Set.of("core", "accessibility", "members"),
-                    CoreAccessibilityInspection::reportInaccessibleMembers
-            ),
-            new SimpleJavaInspectionRule(
-                    JavaSemanticRules.INACCESSIBLE_CALL.id(),
-                    JavaSemanticRules.INACCESSIBLE_CALL.defaultSeverity(),
-                    JavaSemanticRules.INACCESSIBLE_CALL.messageTemplate(),
-                    Set.of("core", "accessibility", "calls"),
-                    CoreAccessibilityInspection::reportInaccessibleCalls
-            )
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.INACCESSIBLE_TYPE.id(),
+            JavaSemanticRules.INACCESSIBLE_TYPE.defaultSeverity(),
+            JavaSemanticRules.INACCESSIBLE_TYPE.messageTemplate(),
+            Set.of("core", "accessibility", "types"),
+            CoreAccessibilityInspection::reportInaccessibleTypes
+        ),
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.INACCESSIBLE_MEMBER.id(),
+            JavaSemanticRules.INACCESSIBLE_MEMBER.defaultSeverity(),
+            JavaSemanticRules.INACCESSIBLE_MEMBER.messageTemplate(),
+            Set.of("core", "accessibility", "members"),
+            CoreAccessibilityInspection::reportInaccessibleMembers
+        ),
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.INACCESSIBLE_CALL.id(),
+            JavaSemanticRules.INACCESSIBLE_CALL.defaultSeverity(),
+            JavaSemanticRules.INACCESSIBLE_CALL.messageTemplate(),
+            Set.of("core", "accessibility", "calls"),
+            CoreAccessibilityInspection::reportInaccessibleCalls
+        )
     );
 
     @Override
@@ -126,8 +128,8 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
 
             SyntaxNode typeRef = context.directChild(node, "JAVA_TYPE_REFERENCE");
             String displayName = typeRef == null
-                    ? context.ownerQualifiedName(resolved).orElse(resolved.simpleName())
-                    : context.canonicalTypeText(typeRef);
+                ? context.ownerQualifiedName(resolved).orElse(resolved.simpleName())
+                : context.canonicalTypeText(typeRef);
             if (displayName == null || displayName.isBlank())
                 displayName = resolved.simpleName();
             reporter.report(typeRef == null ? node : typeRef, context.simpleTypeName(displayName));

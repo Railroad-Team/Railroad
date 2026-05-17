@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
@@ -17,6 +18,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+@RegisteredInspection(id = CoreDefiniteAssignmentInspection.ID)
 public final class CoreDefiniteAssignmentInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-definite-assignment";
     private static final int LOOP_FIXPOINT_ITERATION_LIMIT = 32;

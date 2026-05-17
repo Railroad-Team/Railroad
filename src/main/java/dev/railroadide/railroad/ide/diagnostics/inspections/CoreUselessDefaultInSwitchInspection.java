@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+@RegisteredInspection(id = CoreUselessDefaultInSwitchInspection.ID)
 public class CoreUselessDefaultInSwitchInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-useless-default-in-switch";
 

@@ -44,9 +44,5 @@
  *     }
  * }
  * }</pre>
- * <p>
- * The older {@link dev.railroadide.railroad.plugin.spi.inspection.JavaInspection} interface
- * remains available for compatibility, but rule providers are the preferred extension
- * point for new work.
  */
 package dev.railroadide.railroad.plugin.spi.inspection;

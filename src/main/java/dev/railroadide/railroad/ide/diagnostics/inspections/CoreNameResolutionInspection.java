@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRule;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
-import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
@@ -11,6 +11,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
+@RegisteredInspection(id = CoreNameResolutionInspection.ID)
 public final class CoreNameResolutionInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-name-resolution";
     private static final String JAVA_NAME_EXPRESSION = "JAVA_NAME_EXPRESSION";
@@ -29,6 +30,7 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
     public List<JavaInspectionRule> rules() {
         return RULES;
     }
+
     private static JavaInspectionRule rule(JavaSemanticRule semanticRule) {
         return new SimpleJavaInspectionRule(
                 semanticRule.id(),

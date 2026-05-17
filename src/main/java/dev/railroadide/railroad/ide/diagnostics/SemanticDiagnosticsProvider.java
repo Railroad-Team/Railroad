@@ -8,9 +8,8 @@ import dev.railroadide.railroad.ide.sst.project.ProjectSemanticService;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
-import dev.railroadide.railroad.plugin.spi.inspection.JavaInspection;
-import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionContext;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionReporter;
+import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,7 +20,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Diagnostics provider backed by the SST semantic analyzer.
@@ -64,8 +62,8 @@ public record SemanticDiagnosticsProvider(Project project, Path filePath) implem
                 case INFO -> Diagnostic.Kind.NOTE;
             };
 
-            int start = Math.max(0, Math.min(source.length, diagnostic.startOffset()));
-            int end = Math.max(start, Math.min(source.length, diagnostic.endOffset()));
+            int start = Math.clamp(source.length, 0, diagnostic.startOffset());
+            int end = Math.clamp(source.length, start, diagnostic.endOffset());
             long line = computeLine(source, start);
             long column = computeColumn(source, start);
             diagnostics.add(new EditorDiagnostic(
@@ -85,7 +83,7 @@ public record SemanticDiagnosticsProvider(Project project, Path filePath) implem
 
     private List<SemanticDiagnostic> runRegisteredInspections(String document, SemanticModel semanticModel) {
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
-        JavaInspectionContext context = new JavaInspectionContext(filePath, document, semanticModel);
+        JavaRuleContext context = new JavaRuleContext(filePath, document, semanticModel);
         JavaInspectionReporter reporter = diagnostic -> diagnostics.add(Objects.requireNonNull(diagnostic, "diagnostic"));
 
         for (JavaInspectionRuleProvider provider : sortedRuleProviders()) {
@@ -99,37 +97,19 @@ public record SemanticDiagnosticsProvider(Project project, Path filePath) implem
             }
         }
 
-        for (JavaInspection inspection : sortedInspections()) {
-            if (inspection == null)
-                continue;
-
-            try {
-                inspection.inspect(context, reporter);
-            } catch (Exception exception) {
-                Railroad.LOGGER.error("Legacy Java inspection '{}' failed for {}", inspection.id(), filePath, exception);
-            }
-        }
-
         return List.copyOf(diagnostics);
-    }
-
-    private static List<JavaInspection> sortedInspections() {
-        return JavaInspectionRegistries.JAVA_INSPECTION_REGISTRY.entries().entrySet().stream()
-                .sorted(java.util.Map.Entry.comparingByKey())
-                .map(java.util.Map.Entry::getValue)
-                .collect(Collectors.toUnmodifiableList());
     }
 
     private static List<JavaInspectionRuleProvider> sortedRuleProviders() {
         return JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.entries().entrySet().stream()
                 .sorted(java.util.Map.Entry.comparingByKey())
                 .map(java.util.Map.Entry::getValue)
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 
     private static long computeLine(char[] source, int position) {
         long line = 1;
-        int bound = Math.max(0, Math.min(source.length, position));
+        int bound = Math.clamp(source.length, 0, position);
         for (int index = 0; index < bound; index++) {
             if (source[index] == '\n')
                 line++;
@@ -139,7 +119,7 @@ public record SemanticDiagnosticsProvider(Project project, Path filePath) implem
 
     private static long computeColumn(char[] source, int position) {
         int column = 1;
-        int index = Math.max(0, Math.min(source.length, position)) - 1;
+        int index = Math.clamp(source.length, 0, position) - 1;
         for (; index >= 0; index--) {
             char ch = source[index];
             if (ch == '\n' || ch == '\r')

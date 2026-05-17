@@ -1,9 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics;
 
 import dev.railroadide.railroad.ide.diagnostics.inspections.CoreNameResolutionInspection;
-import dev.railroadide.railroad.plugin.spi.inspection.JavaInspection;
-import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionContext;
-import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
@@ -23,7 +20,6 @@ class SemanticDiagnosticsProviderTest {
     void coreSemanticInspectionIsRegisteredAndProducesDiagnostics() {
         JavaInspectionRuleProvider core = JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.get(CoreNameResolutionInspection.ID);
         assertNotNull(core);
-        assertFalse(JavaInspectionRegistries.JAVA_INSPECTION_REGISTRY.contains(CoreNameResolutionInspection.ID));
 
         SemanticDiagnosticsProvider provider = new SemanticDiagnosticsProvider(Path.of("Example.java"));
         List<EditorDiagnostic> diagnostics = provider.compute("""
@@ -120,65 +116,6 @@ class SemanticDiagnosticsProviderTest {
             assertEquals(Diagnostic.Kind.NOTE, unresolved.kind());
         } finally {
             JavaInspectionRuleSettings.resetAll();
-        }
-    }
-
-    @Test
-    void runsRegisteredPluginInspections() {
-        String id = "test:plugin-inspection-" + UUID.randomUUID();
-        JavaInspection inspection = new JavaInspection() {
-            @Override
-            public String id() {
-                return id;
-            }
-
-            @Override
-            public void inspect(JavaInspectionContext context, JavaInspectionReporter reporter) {
-                reporter.warning(
-                        "PLUGIN_TEST_WARNING",
-                        "Plugin inspection warning",
-                        context.syntaxTree().root()
-                );
-            }
-        };
-
-        try {
-            JavaInspectionRegistries.JAVA_INSPECTION_REGISTRY.register(id, inspection);
-            SemanticDiagnosticsProvider provider = new SemanticDiagnosticsProvider(Path.of("Example.java"));
-            List<EditorDiagnostic> diagnostics = provider.compute("class Example {}");
-
-            assertTrue(diagnostics.stream().anyMatch(diagnostic -> "PLUGIN_TEST_WARNING".equals(diagnostic.code())));
-            assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.WARNING));
-        } finally {
-            if (JavaInspectionRegistries.JAVA_INSPECTION_REGISTRY.contains(id))
-                JavaInspectionRegistries.JAVA_INSPECTION_REGISTRY.unregister(id);
-        }
-    }
-
-    @Test
-    void isolatesInspectionFailures() {
-        String id = "test:plugin-inspection-fail-" + UUID.randomUUID();
-        JavaInspection inspection = new JavaInspection() {
-            @Override
-            public String id() {
-                return id;
-            }
-
-            @Override
-            public void inspect(JavaInspectionContext context, JavaInspectionReporter reporter) {
-                throw new IllegalStateException("boom");
-            }
-        };
-
-        try {
-            JavaInspectionRegistries.JAVA_INSPECTION_REGISTRY.register(id, inspection);
-            SemanticDiagnosticsProvider provider = new SemanticDiagnosticsProvider(Path.of("Example.java"));
-            List<EditorDiagnostic> diagnostics = provider.compute("class Example {}");
-
-            assertEquals(0L, diagnostics.stream().filter(diagnostic -> "PLUGIN_TEST_WARNING".equals(diagnostic.code())).count());
-        } finally {
-            if (JavaInspectionRegistries.JAVA_INSPECTION_REGISTRY.contains(id))
-                JavaInspectionRegistries.JAVA_INSPECTION_REGISTRY.unregister(id);
         }
     }
 }

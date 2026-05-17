@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@RegisteredInspection(id = CoreDuplicateDeclarationInspection.ID)
 public final class CoreDuplicateDeclarationInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-duplicate-declaration";
     private static final String JAVA_BLOCK = "JAVA_BLOCK";

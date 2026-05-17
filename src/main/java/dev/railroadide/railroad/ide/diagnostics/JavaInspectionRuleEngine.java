@@ -18,7 +18,7 @@ public final class JavaInspectionRuleEngine {
 
     public static void runRules(
             JavaInspectionRuleProvider provider,
-            JavaInspectionContext context,
+            JavaRuleContext context,
             JavaInspectionReporter reporter
     ) {
         Objects.requireNonNull(provider, "provider");
@@ -29,7 +29,6 @@ public final class JavaInspectionRuleEngine {
         if (rules == null || rules.isEmpty())
             return;
 
-        JavaRuleContext ruleContext = new JavaRuleContext(context);
         for (JavaInspectionRule rule : rules) {
             if (rule == null)
                 continue;
@@ -38,7 +37,7 @@ public final class JavaInspectionRuleEngine {
 
             try {
                 JavaInspectionRuleReporter ruleReporter = new RuleReporter(rule, reporter);
-                rule.evaluate(ruleContext, ruleReporter);
+                rule.evaluate(context, ruleReporter);
             } catch (Exception exception) {
                 Railroad.LOGGER.error("Java inspection rule '{}:{}' failed for {}",
                         provider.id(), rule.id(), context.filePath(), exception);
@@ -48,7 +47,7 @@ public final class JavaInspectionRuleEngine {
 
     public static List<SemanticDiagnostic> collectDiagnostics(
             JavaInspectionRuleProvider provider,
-            JavaInspectionContext context
+            JavaRuleContext context
     ) {
         Objects.requireNonNull(provider, "provider");
         Objects.requireNonNull(context, "context");

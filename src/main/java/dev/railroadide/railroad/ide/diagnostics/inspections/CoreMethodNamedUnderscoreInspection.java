@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
@@ -11,6 +12,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
+@RegisteredInspection(id = CoreMethodNamedUnderscoreInspection.ID)
 public class CoreMethodNamedUnderscoreInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-method-named-underscore";
 

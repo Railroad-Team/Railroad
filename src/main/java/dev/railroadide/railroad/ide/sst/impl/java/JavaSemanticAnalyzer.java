@@ -12,7 +12,7 @@ import dev.railroadide.railroad.ide.sst.semantic.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
-import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionContext;
+import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
@@ -163,10 +163,12 @@ public final class JavaSemanticAnalyzer {
     }
 
     private static SemanticModel withCoreDiagnostics(SemanticModel facts) {
-        JavaInspectionContext context = new JavaInspectionContext(Path.of("memory.java"), "", facts);
+        JavaRuleContext context = new JavaRuleContext(Path.of("memory.java"), "", facts);
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
-        for (var provider : JavaInspectionRegistries.coreRuleProviders())
+        for (var provider : JavaInspectionRegistries.coreRuleProviders()) {
             diagnostics.addAll(JavaInspectionRuleEngine.collectDiagnostics(provider, context));
+        }
+
         return facts.withAdditionalDiagnostics(diagnostics);
     }
 

@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRule;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@RegisteredInspection(id = CoreImportInspection.ID)
 public final class CoreImportInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-imports";
 

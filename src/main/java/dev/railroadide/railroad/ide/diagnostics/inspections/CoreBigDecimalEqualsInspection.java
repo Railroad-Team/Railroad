@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
@@ -14,6 +15,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
+@RegisteredInspection(id = CoreBigDecimalEqualsInspection.ID)
 public class CoreBigDecimalEqualsInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-big-decimal-equals";
 
