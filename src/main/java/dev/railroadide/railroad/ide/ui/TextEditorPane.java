@@ -82,6 +82,10 @@ public class TextEditorPane extends CodeArea {
         ShutdownHooks.addHook(this::close);
     }
 
+    public Path getFilePath() {
+        return filePath;
+    }
+
     public void close() {
         watcherExecutor.shutdownNow();
         if (watchService != null) {

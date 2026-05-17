@@ -71,6 +71,10 @@ public class ImageViewerPane extends BorderPane {
         }
     }
 
+    public Path getImagePath() {
+        return imagePath;
+    }
+
     private void initComponents() {
         canvas = new Canvas();
         gc = canvas.getGraphicsContext2D();
