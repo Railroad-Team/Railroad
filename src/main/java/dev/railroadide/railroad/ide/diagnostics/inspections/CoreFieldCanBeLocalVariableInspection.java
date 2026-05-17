@@ -39,14 +39,20 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
             Symbol symbol = context.resolvedSymbol(node).orElse(null);
             if (symbol == null) return;
 
-            SyntaxNode callable = context.nearestEnclosingCallableOrLambda(node);
-            if (callable == null) {
+            SyntaxNode callableOrLambda = context.nearestEnclosingCallableOrLambda(node);
+            if (callableOrLambda == null) {
                 referencesOutsideCallable.add(symbol);
                 return;
             }
 
-            if (callable.kind().id().equals(JavaSyntaxKinds.LAMBDA_EXPRESSION.id()) && isWriteTarget(context, node)) {
+            if (callableOrLambda.kind().id().equals(JavaSyntaxKinds.LAMBDA_EXPRESSION.id()) && isWriteTarget(context, node)) {
                 symbolsWrittenInLambdas.add(symbol);
+            }
+
+            SyntaxNode callable = enclosingNonLambdaCallable(context, callableOrLambda);
+            if (callable == null) {
+                referencesOutsideCallable.add(symbol);
+                return;
             }
 
             callablesBySymbol.computeIfAbsent(symbol, k -> new HashSet<>()).add(callable);
@@ -99,6 +105,16 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
         }
 
         return false;
+    }
+
+    private static SyntaxNode enclosingNonLambdaCallable(JavaRuleContext context, SyntaxNode callableOrLambda) {
+        SyntaxNode current = callableOrLambda;
+        while (current.kind().id().equals(JavaSyntaxKinds.LAMBDA_EXPRESSION.id())) {
+            current = context.nearestEnclosingCallableOrLambda(current);
+            if (current == null) return null;
+        }
+
+        return current;
     }
 
     private static boolean isIncrementOrDecrement(SyntaxNode node) {

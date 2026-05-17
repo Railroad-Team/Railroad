@@ -2453,6 +2453,23 @@ class CoreInspectionRulesTest {
     }
 
     @Test
+    void coreFieldCanBeLocalVariableRuleEmitsDiagnosticForFieldReadInMethodAndLambdaWithinSameMethod() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
+            class Example {
+                private int field = 1;
+
+                void method() {
+                    System.out.println(field);
+                    Runnable task = () -> System.out.println(field);
+                    task.run();
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FIELD_CAN_BE_LOCAL_VARIABLE".equals(d.code())));
+    }
+
+    @Test
     void coreFieldCanBeLocalVariableRuleDoesNotEmitDiagnosticForFieldAssignedInsideLambda() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
             class Example {
@@ -2620,6 +2637,25 @@ class CoreInspectionRulesTest {
                 "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
                         && d.message().contains("Child")));
     }
+
+    @Test
+    void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticWhenDefaultMethodOverridesInheritedAbstractMethod() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
+            interface Base {
+                void run();
+            }
+
+            interface Child extends Base {
+                default void run() {
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d ->
+                "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
+                        && d.message().contains("Child")));
+    }
+
     @Test
     void coreConstantConditionalExpressionRuleFlagsHardcodedIfLiteral() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """

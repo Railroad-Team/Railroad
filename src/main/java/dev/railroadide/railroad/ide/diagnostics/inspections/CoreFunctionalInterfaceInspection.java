@@ -42,9 +42,10 @@ public final class CoreFunctionalInterfaceInspection implements JavaInspectionRu
             int abstractMethodCount = 0;
             Set<String> seenMethods = new HashSet<>();
             for (JavaRuleContext.MethodDescriptor descriptor : context.declaredMethodDescriptors(qualifiedName)) {
+                String signatureKey = descriptor.signatureKey();
+                seenMethods.add(signatureKey);
                 if (!descriptor.isAbstract() || isObjectMethod(descriptor)) continue;
                 abstractMethodCount++;
-                seenMethods.add(descriptor.signatureKey());
                 if (abstractMethodCount > 1) break;
             }
 
