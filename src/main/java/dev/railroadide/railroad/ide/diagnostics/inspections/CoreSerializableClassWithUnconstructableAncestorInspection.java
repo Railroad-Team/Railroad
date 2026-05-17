@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
-import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.classparser.stub.ConstructorStub;
+import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
@@ -39,7 +39,7 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
     }
 
     private static void reportSerializableClassWithUnconstructableAncestor(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
-        Map<String, SyntaxNode> localTypeDeclarations = localTypeDeclarations(context);
+        Map<String, SyntaxNode> localTypeDeclarations = context.localTypeDeclarations();
         for (SyntaxNode classNode : context.nodesOfKind(JavaSyntaxKinds.CLASS_DECLARATION.id())) {
             Symbol classSymbol = context.declaredSymbol(classNode).orElse(null);
             if (classSymbol == null)
@@ -161,17 +161,5 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
         }
 
         return "java.lang.Object";
-    }
-
-
-    private static Map<String, SyntaxNode> localTypeDeclarations(JavaRuleContext context) {
-        Map<String, SyntaxNode> result = new LinkedHashMap<>();
-        context.traverse(node -> context.declaredSymbol(node).ifPresent(symbol -> {
-            String qualifiedName = symbol.qualifiedName().orElse(null);
-            if (qualifiedName != null && context.isTypeSymbol(symbol.kind()))
-                result.putIfAbsent(qualifiedName, node);
-        }));
-
-        return Map.copyOf(result);
     }
 }

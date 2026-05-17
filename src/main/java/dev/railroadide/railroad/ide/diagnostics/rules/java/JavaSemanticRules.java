@@ -321,6 +321,11 @@ public final class JavaSemanticRules {
         SemanticDiagnostic.Severity.WARNING,
         "Serializable type '%s' cannot be deserialized because non-serializable ancestor '%s' has no accessible no-arg constructor"
     );
+    public static final JavaSemanticRule REDUNDANT_INTERFACE_DECLARATION = new JavaSemanticRule(
+        "SEM_REDUNDANT_INTERFACE_DECLARATION",
+        SemanticDiagnostic.Severity.INFO,
+        "Type '%s' declares redundant interface '%s' that is already implemented by a superclass"
+    );
 
     private JavaSemanticRules() {
     }

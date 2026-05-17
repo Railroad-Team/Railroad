@@ -364,7 +364,7 @@ Inspectopedia label in the sections below.
 - [ ] [medium] `Parameter type prevents overriding` - Find visually similar but package-different parameter types that
   break overriding.
 - [ ] [easy] `Public constructor in abstract class` - Flag instantiation-oriented constructors on abstract types.
-- [ ] [medium] `Redundant interface declaration` - Remove interfaces already inherited through a superclass or
+- [x] [medium] `Redundant interface declaration` - Remove interfaces already inherited through a superclass or
   superinterface.
 - [ ] [easy] `Static inheritance` - Detect interfaces used only to inherit constants.
 - [ ] [easy] `Type parameter extends 'final' class` - Flag generic bounds that cannot vary beyond a final type.

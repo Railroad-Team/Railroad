@@ -104,6 +104,17 @@ public final class JavaRuleContext {
         this.semanticModel = Objects.requireNonNull(semanticModel, "semanticModel");
     }
 
+    public Map<String, SyntaxNode> localTypeDeclarations() {
+        Map<String, SyntaxNode> result = new LinkedHashMap<>();
+        traverse(node -> declaredSymbol(node).ifPresent(symbol -> {
+            String qualifiedName = symbol.qualifiedName().orElse(null);
+            if (qualifiedName != null && isTypeSymbol(symbol.kind()))
+                result.putIfAbsent(qualifiedName, node);
+        }));
+
+        return Map.copyOf(result);
+    }
+
     public @Nullable SyntaxNode forBodyOf(SyntaxNode forNode) {
         boolean seenHeader = false;
         for (SyntaxNode child : forNode.children()) {
@@ -182,7 +193,7 @@ public final class JavaRuleContext {
      * @return {@code true} when the block has no nested syntax children
      */
     public boolean isEmptyBlock(SyntaxNode block) {
-        if(block == null)
+        if (block == null)
             return true;
 
         for (SyntaxNode child : block.children()) {

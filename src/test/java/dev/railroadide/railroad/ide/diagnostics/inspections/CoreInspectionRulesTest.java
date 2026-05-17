@@ -75,6 +75,7 @@ class CoreInspectionRulesTest {
         assertRuleIds(new CoreInfiniteRecursionInspection(), Set.of("SEM_INFINITE_RECURSION"));
         assertRuleIds(new CoreBigDecimalEqualsInspection(), Set.of("SEM_BIG_DECIMAL_EQUALS"));
         assertRuleIds(new CoreSerializableClassWithUnconstructableAncestorInspection(), Set.of("SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR"));
+        assertRuleIds(new CoreRedundantInterfaceDeclarationInspection(), Set.of("SEM_REDUNDANT_INTERFACE_DECLARATION"));
     }
 
     @Test
@@ -3743,6 +3744,51 @@ class CoreInspectionRulesTest {
 
         assertFalse(diagnostics.stream().anyMatch(d ->
             "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+    }
+
+    @Test
+    void coreInheritanceRuleEmitsDiagnosticForInterfaceRedundantThroughSuperclass() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreRedundantInterfaceDeclarationInspection(), """
+            interface Worker {}
+            class Base implements Worker {}
+            class Child extends Base implements Worker {}
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_REDUNDANT_INTERFACE_DECLARATION".equals(d.code())));
+    }
+
+    @Test
+    void coreInheritanceRuleEmitsDiagnosticForInterfaceRedundantThroughSiblingInterface() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreRedundantInterfaceDeclarationInspection(), """
+            interface Base {}
+            interface Derived extends Base {}
+            class Example implements Base, Derived {}
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_REDUNDANT_INTERFACE_DECLARATION".equals(d.code())));
+    }
+
+    @Test
+    void coreInheritanceRuleEmitsDiagnosticForSuperinterfaceRedundantThroughAnotherSuperinterface() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreRedundantInterfaceDeclarationInspection(), """
+            interface Base {}
+            interface Derived extends Base {}
+            interface Example extends Base, Derived {}
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_REDUNDANT_INTERFACE_DECLARATION".equals(d.code())));
+    }
+
+
+    @Test
+    void coreInheritanceRuleDoesNotEmitDiagnosticForIndependentInterfaces() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreRedundantInterfaceDeclarationInspection(), """
+            interface Left {}
+            interface Right {}
+            class Example implements Left, Right {}
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_REDUNDANT_INTERFACE_DECLARATION".equals(d.code())));
     }
 
     private static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, String document) {
