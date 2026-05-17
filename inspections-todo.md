@@ -402,7 +402,7 @@ Inspectopedia label in the sections below.
 ## Numeric issues
 
 - [ ] [easy] `'char' expression used in arithmetic context` - Flag `char` arithmetic that can be surprising.
-- [ ] [easy] `'equals()' called on 'BigDecimal'` - Detect scale-sensitive `BigDecimal.equals()` comparisons.
+- [x] [easy] `'equals()' called on 'BigDecimal'` - Detect scale-sensitive `BigDecimal.equals()` comparisons.
 - [ ] [starter] `'long' literal ending with 'l' instead of 'L'` - Prefer uppercase `L` to avoid confusion with `1`.
 - [ ] [medium] `Call to 'BigDecimal' method without a rounding mode argument` - Require explicit rounding where
   division/scale operations need it.
@@ -473,7 +473,7 @@ Inspectopedia label in the sections below.
   objects.
 - [ ] [easy] `Non-serializable object passed to 'ObjectOutputStream'` - Flag direct attempts to write non-serializable
   objects.
-- [ ] [medium] `Serializable class with unconstructable ancestor` - Detect serializable types whose non-serializable
+- [x] [medium] `Serializable class with unconstructable ancestor` - Detect serializable types whose non-serializable
   ancestor lacks a no-arg constructor.
 - [ ] [hard] `Serializable class without 'readObject()' and 'writeObject()'` - Track serializable classes missing
   explicit custom protocol hooks where required by policy.

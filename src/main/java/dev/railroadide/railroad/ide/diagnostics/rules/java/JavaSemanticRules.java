@@ -271,7 +271,6 @@ public final class JavaSemanticRules {
         SemanticDiagnostic.Severity.INFO,
         "Interface '%s' may be annotated as '@FunctionalInterface'"
     );
-
     public static final JavaSemanticRule CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL = new JavaSemanticRule(
         "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL",
         SemanticDiagnostic.Severity.WARNING,
@@ -311,6 +310,16 @@ public final class JavaSemanticRules {
         "SEM_INTEGER_DIVISION_IN_FLOATING_POINT_CONTEXT",
         SemanticDiagnostic.Severity.WARNING,
         "Integer division in floating-point context may lead to loss of precision"
+    );
+    public static final JavaSemanticRule BIG_DECIMAL_EQUALS = new JavaSemanticRule(
+        "SEM_BIG_DECIMAL_EQUALS",
+        SemanticDiagnostic.Severity.WARNING,
+        "'BigDecimal.equals()' is scale-sensitive; consider 'compareTo() == 0' if numeric equality is intended"
+    );
+    public static final JavaSemanticRule SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR = new JavaSemanticRule(
+        "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR",
+        SemanticDiagnostic.Severity.WARNING,
+        "Serializable type '%s' cannot be deserialized because non-serializable ancestor '%s' has no accessible no-arg constructor"
     );
 
     private JavaSemanticRules() {

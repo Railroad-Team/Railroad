@@ -54,6 +54,8 @@ public final class JavaInspectionRegistries {
     public static final CoreAutoCloseableWithoutTryWithResourcesInspection CORE_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES_INSPECTION = new CoreAutoCloseableWithoutTryWithResourcesInspection();
     public static final CoreFallthroughCaseInSwitchInspection CORE_FALLTHROUGH_CASE_IN_SWITCH_INSPECTION = new CoreFallthroughCaseInSwitchInspection();
     public static final CoreIntegerDivisionInFloatingPointContextInspection CORE_INTEGER_DIVISION_IN_FLOATING_POINT_CONTEXT_INSPECTION = new CoreIntegerDivisionInFloatingPointContextInspection();
+    public static final CoreBigDecimalEqualsInspection CORE_BIG_DECIMAL_EQUALS_INSPECTION = new CoreBigDecimalEqualsInspection();
+    public static final CoreSerializableClassWithUnconstructableAncestorInspection CORE_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR_INSPECTION = new CoreSerializableClassWithUnconstructableAncestorInspection();
 
     public static final Registry<JavaInspection> JAVA_INSPECTION_REGISTRY =
         RegistryManager.createRegistry("railroad:java_inspection", JavaInspection.class);
@@ -103,6 +105,8 @@ public final class JavaInspectionRegistries {
         JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreAutoCloseableWithoutTryWithResourcesInspection.ID, CORE_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES_INSPECTION);
         JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreFallthroughCaseInSwitchInspection.ID, CORE_FALLTHROUGH_CASE_IN_SWITCH_INSPECTION);
         JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreIntegerDivisionInFloatingPointContextInspection.ID, CORE_INTEGER_DIVISION_IN_FLOATING_POINT_CONTEXT_INSPECTION);
+        JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreBigDecimalEqualsInspection.ID, CORE_BIG_DECIMAL_EQUALS_INSPECTION);
+        JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(CoreSerializableClassWithUnconstructableAncestorInspection.ID, CORE_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR_INSPECTION);
     }
 
     private JavaInspectionRegistries() {
@@ -151,7 +155,9 @@ public final class JavaInspectionRegistries {
             CORE_INFINITE_RECURSION_INSPECTION,
             CORE_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES_INSPECTION,
             CORE_FALLTHROUGH_CASE_IN_SWITCH_INSPECTION,
-            CORE_INTEGER_DIVISION_IN_FLOATING_POINT_CONTEXT_INSPECTION
+            CORE_INTEGER_DIVISION_IN_FLOATING_POINT_CONTEXT_INSPECTION,
+            CORE_BIG_DECIMAL_EQUALS_INSPECTION,
+            CORE_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR_INSPECTION
         );
     }
 }
