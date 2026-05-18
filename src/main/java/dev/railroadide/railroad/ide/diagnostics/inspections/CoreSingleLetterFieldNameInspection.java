@@ -12,7 +12,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreSingleLetterFieldNameInspection.ID)
+@RegisteredInspection
 public class CoreSingleLetterFieldNameInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-single-letter-field-name";
 

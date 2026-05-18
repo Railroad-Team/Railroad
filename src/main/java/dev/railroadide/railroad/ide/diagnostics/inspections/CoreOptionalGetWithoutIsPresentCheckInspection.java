@@ -13,7 +13,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
 import java.util.*;
 
-@RegisteredInspection(id = CoreOptionalGetWithoutIsPresentCheckInspection.ID)
+@RegisteredInspection
 public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-optional-get-without-is-present-check";
 

@@ -17,7 +17,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreExceptionInspection.ID)
+@RegisteredInspection
 public final class CoreExceptionInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-exceptions";
 

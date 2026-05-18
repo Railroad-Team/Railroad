@@ -16,7 +16,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
-@RegisteredInspection(id = CoreSerializableClassWithUnconstructableAncestorInspection.ID)
+@RegisteredInspection
 public class CoreSerializableClassWithUnconstructableAncestorInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-serializable-class-with-unconstructable-ancestor";
 
@@ -53,17 +53,22 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
             if (ancestor == null)
                 continue;
 
-            if (hasAccessibleNoArgConstructor(context, ancestor, localTypeDeclarations))
+            if (hasAccessibleNoArgConstructor(context, ancestor, qualifiedClassName, localTypeDeclarations))
                 continue;
 
             reporter.report(classNode, classSymbol.simpleName(), context.simpleTypeName(ancestor));
         }
     }
 
-    private static boolean hasAccessibleNoArgConstructor(JavaRuleContext context, String ancestorQualifiedName, Map<String, SyntaxNode> localTypeDeclarations) {
+    private static boolean hasAccessibleNoArgConstructor(
+        JavaRuleContext context,
+        String ancestorQualifiedName,
+        String usageTypeQualifiedName,
+        Map<String, SyntaxNode> localTypeDeclarations
+    ) {
         SyntaxNode localDeclaration = localTypeDeclarations.get(ancestorQualifiedName);
         if (localDeclaration != null)
-            return hasAccessibleLocalNoArgConstructor(context, localDeclaration, ancestorQualifiedName);
+            return hasAccessibleLocalNoArgConstructor(context, localDeclaration, ancestorQualifiedName, usageTypeQualifiedName);
 
         ClassStub stub = context.jdkClassStubsByQualifiedName().get(ancestorQualifiedName);
         if (stub == null)
@@ -74,14 +79,25 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
             return true;
 
         for (ConstructorStub constructor : stub.constructors()) {
-            if (constructor.parameters().isEmpty() && isAccessibleFromHere(context, ancestorQualifiedName, constructor.modifiers()))
+            if (constructor.parameters().isEmpty() && isAccessibleFromHere(
+                context,
+                ancestorQualifiedName,
+                usageTypeQualifiedName,
+                constructor.modifiers(),
+                stub.packageName()
+            ))
                 return true;
         }
 
         return false;
     }
 
-    private static boolean hasAccessibleLocalNoArgConstructor(JavaRuleContext context, SyntaxNode typeNode, String ownerQualifiedName) {
+    private static boolean hasAccessibleLocalNoArgConstructor(
+        JavaRuleContext context,
+        SyntaxNode typeNode,
+        String ownerQualifiedName,
+        String usageTypeQualifiedName
+    ) {
         List<SyntaxNode> constructors = new ArrayList<>();
         context.traverseDescendants(typeNode, node -> {
             if (!Objects.equals(JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id(), node.kind().id()))
@@ -105,7 +121,13 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
                 }
             }
 
-            if (parameterCount == 0 && isAccessibleFromHere(context, ownerQualifiedName, modifierBits(context, constructor)))
+            if (parameterCount == 0 && isAccessibleFromHere(
+                context,
+                ownerQualifiedName,
+                usageTypeQualifiedName,
+                modifierBits(context, constructor),
+                context.currentPackageName()
+            ))
                 return true;
         }
 
@@ -126,14 +148,24 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
         return modifiers;
     }
 
-    private static boolean isAccessibleFromHere(JavaRuleContext context, String ownerQualifiedName, int modifiers) {
-        if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers))
+    private static boolean isAccessibleFromHere(
+        JavaRuleContext context,
+        String ownerQualifiedName,
+        String usageTypeQualifiedName,
+        int modifiers,
+        String ownerPackageName
+    ) {
+        if (Modifier.isPublic(modifiers))
             return true;
 
         if (Modifier.isPrivate(modifiers))
             return false;
 
-        return Objects.equals(context.currentPackageName(), context.packagePrefix(ownerQualifiedName));
+        boolean samePackage = Objects.equals(context.currentPackageName(), ownerPackageName);
+        if (Modifier.isProtected(modifiers))
+            return samePackage || context.isSubtype(usageTypeQualifiedName, ownerQualifiedName);
+
+        return samePackage;
     }
 
     private static String firstNonSerializableAncestor(JavaRuleContext context, String qualifiedName) {

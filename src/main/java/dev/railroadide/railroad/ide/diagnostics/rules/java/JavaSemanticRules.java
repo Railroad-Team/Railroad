@@ -324,7 +324,7 @@ public final class JavaSemanticRules {
     public static final JavaSemanticRule REDUNDANT_INTERFACE_DECLARATION = new JavaSemanticRule(
         "SEM_REDUNDANT_INTERFACE_DECLARATION",
         SemanticDiagnostic.Severity.INFO,
-        "Type '%s' declares redundant interface '%s' that is already implemented by a superclass"
+        "Type '%s' declares redundant interface '%s'"
     );
 
     private JavaSemanticRules() {

@@ -15,7 +15,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
 import java.util.*;
 
-@RegisteredInspection(id = CoreConstantConditionalExpressionInspection.ID)
+@RegisteredInspection
 public class CoreConstantConditionalExpressionInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-constant-conditional-expression";
     private static final Set<String> DATA_FLOW_ROOT_KINDS = Set.of(

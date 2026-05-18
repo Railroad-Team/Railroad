@@ -15,7 +15,7 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@RegisteredInspection(id = CoreFeatureEnvyInspection.ID)
+@RegisteredInspection
 public class CoreFeatureEnvyInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-feature-envy";
 

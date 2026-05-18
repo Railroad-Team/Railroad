@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreImportInspection.ID)
+@RegisteredInspection
 public final class CoreImportInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-imports";
 

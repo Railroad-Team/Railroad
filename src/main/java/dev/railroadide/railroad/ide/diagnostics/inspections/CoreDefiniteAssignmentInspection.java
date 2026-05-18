@@ -18,7 +18,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreDefiniteAssignmentInspection.ID)
+@RegisteredInspection
 public final class CoreDefiniteAssignmentInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-definite-assignment";
     private static final int LOOP_FIXPOINT_ITERATION_LIMIT = 32;

@@ -3575,6 +3575,21 @@ class CoreInspectionRulesTest {
     }
 
     @Test
+    void coreBigDecimalEqualsRuleEmitsDiagnosticForImportedBigDecimalEqualsCall() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreBigDecimalEqualsInspection(), """
+            import java.math.BigDecimal;
+
+            class Example {
+                boolean same(BigDecimal left, BigDecimal right) {
+                    return left.equals(right);
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_BIG_DECIMAL_EQUALS".equals(d.code())));
+    }
+
+    @Test
     void coreBigDecimalEqualsRuleEmitsDiagnosticForBigDecimalLiteralEqualsCall() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreBigDecimalEqualsInspection(), """
             class Example {
@@ -3611,6 +3626,25 @@ class CoreInspectionRulesTest {
             """);
 
         assertFalse(diagnostics.stream().anyMatch(d -> "SEM_BIG_DECIMAL_EQUALS".equals(d.code())));
+    }
+
+    @Test
+    void coreBigDecimalEqualsRuleEmitsDiagnosticWhenArgumentIsBigDecimalSubtype() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreBigDecimalEqualsInspection(), """
+            class CustomBigDecimal extends java.math.BigDecimal {
+                CustomBigDecimal(String value) {
+                    super(value);
+                }
+            }
+
+            class Example {
+                boolean same(java.math.BigDecimal left, CustomBigDecimal right) {
+                    return left.equals(right);
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_BIG_DECIMAL_EQUALS".equals(d.code())));
     }
 
     @Test
@@ -3731,6 +3765,24 @@ class CoreInspectionRulesTest {
     }
 
     @Test
+    void coreSerializationRuleDoesNotEmitDiagnosticForNestedAncestorImplicitPackagePrivateNoArgConstructor() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+            import java.io.Serializable;
+
+            class Outer {
+                static class Base {
+                }
+            }
+
+            class Child extends Outer.Base implements Serializable {
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d ->
+            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+    }
+
+    @Test
     void coreSerializationRuleDoesNotEmitDiagnosticForNonSerializableClass() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
             class Base {
@@ -3774,6 +3826,26 @@ class CoreInspectionRulesTest {
             interface Base {}
             interface Derived extends Base {}
             interface Example extends Base, Derived {}
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_REDUNDANT_INTERFACE_DECLARATION".equals(d.code())));
+    }
+
+    @Test
+    void coreInheritanceRuleEmitsDiagnosticForDuplicateImplementedInterface() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreRedundantInterfaceDeclarationInspection(), """
+            interface Worker {}
+            class Example implements Worker, Worker {}
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_REDUNDANT_INTERFACE_DECLARATION".equals(d.code())));
+    }
+
+    @Test
+    void coreInheritanceRuleEmitsDiagnosticForDuplicateExtendedInterface() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreRedundantInterfaceDeclarationInspection(), """
+            interface Worker {}
+            interface Example extends Worker, Worker {}
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_REDUNDANT_INTERFACE_DECLARATION".equals(d.code())));

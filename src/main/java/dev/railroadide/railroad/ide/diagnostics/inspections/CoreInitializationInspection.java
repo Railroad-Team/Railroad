@@ -13,7 +13,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
-@RegisteredInspection(id = CoreInitializationInspection.ID)
+@RegisteredInspection
 public final class CoreInitializationInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-initialization-inspection";
 

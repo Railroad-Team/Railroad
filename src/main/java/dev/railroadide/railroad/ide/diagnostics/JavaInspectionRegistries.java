@@ -19,15 +19,21 @@ public final class JavaInspectionRegistries {
         RegistryManager.createRegistry("railroad:java_inspection_rule_provider", JavaInspectionRuleProvider.class);
 
     static {
+        loadInspections(ClassLoader.getSystemClassLoader(), "dev.railroadide.railroad.ide.diagnostics.inspections");
+    }
+
+    // TODO: Plugins need to be able to register their own inspections, so we need to load inspections from plugin class loaders as well.
+    private static void loadInspections(ClassLoader classLoader, String packageName) {
         var reflections = new Reflections(
             new ConfigurationBuilder()
-                .addClassLoaders(ClassLoader.getSystemClassLoader())
+                .addClassLoaders(classLoader)
+                .forPackage(packageName)
                 .setScanners(Scanners.TypesAnnotated)
         );
 
         List<JavaInspectionRuleProvider> registeredInspections = reflections.get(Scanners.TypesAnnotated.with(RegisteredInspection.class).asClass()).stream()
             .filter(clazz -> {
-                if (!clazz.isAssignableFrom(JavaInspectionRuleProvider.class)) {
+                if (!JavaInspectionRuleProvider.class.isAssignableFrom(clazz)) {
                     Railroad.LOGGER.error("Class {} is annotated with @RegisteredInspection but does not implement JavaInspectionRuleProvider", clazz.getName());
                     return false;
                 }
@@ -57,7 +63,8 @@ public final class JavaInspectionRegistries {
         for (JavaInspectionRuleProvider provider : registeredInspections) {
             if (JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.contains(provider.id())) {
                 JavaInspectionRuleProvider existing = JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.get(provider.id());
-                Railroad.LOGGER.error("Duplicate JavaInspectionRuleProvider with id {}: {} and {}", provider.id(), provider.getClass().getName(), existing.getClass().getName());
+                String existingClassName = existing != null ? existing.getClass().getName() : "null";
+                Railroad.LOGGER.error("Duplicate JavaInspectionRuleProvider with id {}: {} and {}", provider.id(), provider.getClass().getName(), existingClassName);
                 continue;
             }
 
@@ -70,7 +77,7 @@ public final class JavaInspectionRegistries {
 
     public static List<JavaInspectionRuleProvider> coreRuleProviders() {
         return JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.values().stream()
-            .filter(provider -> provider.id().startsWith("railroad:core-"))
+            .filter(provider -> provider.id().startsWith("railroad"))
             .toList();
     }
 }

@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreDuplicateDeclarationInspection.ID)
+@RegisteredInspection
 public final class CoreDuplicateDeclarationInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-duplicate-declaration";
     private static final String JAVA_BLOCK = "JAVA_BLOCK";

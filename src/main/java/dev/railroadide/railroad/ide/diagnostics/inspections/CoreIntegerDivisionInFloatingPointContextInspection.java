@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreIntegerDivisionInFloatingPointContextInspection.ID)
+@RegisteredInspection
 public class CoreIntegerDivisionInFloatingPointContextInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-integer-division-in-floating-point-context";
 

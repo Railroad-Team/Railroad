@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreFallthroughCaseInSwitchInspection.ID)
+@RegisteredInspection
 public class CoreFallthroughCaseInSwitchInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-fallthrough-case-in-switch";
 

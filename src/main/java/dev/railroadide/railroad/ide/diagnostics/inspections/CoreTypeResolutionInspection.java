@@ -11,7 +11,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreTypeResolutionInspection.ID)
+@RegisteredInspection
 public final class CoreTypeResolutionInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-type-resolution";
     private static final String JAVA_TYPE_REFERENCE = "JAVA_TYPE_REFERENCE";

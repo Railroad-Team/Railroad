@@ -11,7 +11,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreEmptySynchronizedInspection.ID)
+@RegisteredInspection
 public class CoreEmptySynchronizedInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-empty-synchronized";
 

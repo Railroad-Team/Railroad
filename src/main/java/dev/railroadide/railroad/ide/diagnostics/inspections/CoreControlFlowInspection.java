@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreControlFlowInspection.ID)
+@RegisteredInspection
 public final class CoreControlFlowInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-control-flow";
 

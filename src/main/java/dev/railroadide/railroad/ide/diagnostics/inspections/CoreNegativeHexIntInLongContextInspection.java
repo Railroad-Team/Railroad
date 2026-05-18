@@ -18,7 +18,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreNegativeHexIntInLongContextInspection.ID)
+@RegisteredInspection
 public class CoreNegativeHexIntInLongContextInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-negative-hex-int-in-long-context";
 

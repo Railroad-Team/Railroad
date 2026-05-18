@@ -10,7 +10,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreWildcardImportInspection.ID)
+@RegisteredInspection
 public class CoreWildcardImportInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-wildcard-imports";
 

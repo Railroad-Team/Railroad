@@ -11,7 +11,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
 import java.util.*;
 
-@RegisteredInspection(id = CoreRedundantInterfaceDeclarationInspection.ID)
+@RegisteredInspection
 public class CoreRedundantInterfaceDeclarationInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-redundant-interface-declaration";
 
@@ -35,17 +35,24 @@ public class CoreRedundantInterfaceDeclarationInspection implements JavaInspecti
 
     private static void reportRedundantInterfaceDeclaration(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
         for (Map.Entry<String, SyntaxNode> entry : context.localTypeDeclarations().entrySet()) {
+            String ownerQualifiedName = entry.getKey();
             SyntaxNode declarationNode = entry.getValue();
             List<InterfaceRef> directInterfaces = directDeclaredInterfaces(context, declarationNode);
             if (directInterfaces.isEmpty())
                 continue;
 
             String directSuperclass = directSuperclass(context, declarationNode);
+            Set<String> seenQualifiedNames = new HashSet<>();
             for (int i = 0; i < directInterfaces.size(); i++) {
                 InterfaceRef candidate = directInterfaces.get(i);
                 String candidateQualifiedName = candidate.qualifiedName();
+                if (!seenQualifiedNames.add(candidateQualifiedName)) {
+                    reporter.report(candidate.node(), context.simpleTypeName(ownerQualifiedName), context.simpleTypeName(candidateQualifiedName));
+                    continue;
+                }
+
                 if (directSuperclass != null && context.isSubtype(directSuperclass, candidateQualifiedName)) {
-                    reporter.report(candidate.node(), context.simpleTypeName(candidateQualifiedName));
+                    reporter.report(candidate.node(), context.simpleTypeName(ownerQualifiedName), context.simpleTypeName(candidateQualifiedName));
                     continue;
                 }
 
@@ -59,7 +66,7 @@ public class CoreRedundantInterfaceDeclarationInspection implements JavaInspecti
                         continue;
 
                     if (context.isSubtype(otherQualifiedName, candidateQualifiedName)) {
-                        reporter.report(candidate.node(), context.simpleTypeName(candidateQualifiedName));
+                        reporter.report(candidate.node(), context.simpleTypeName(ownerQualifiedName), context.simpleTypeName(candidateQualifiedName));
                         break;
                     }
                 }

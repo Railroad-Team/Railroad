@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreCastConflictingWithInstanceofInspection.ID)
+@RegisteredInspection
 public class CoreCastConflictingWithInstanceofInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:cast-conflicting-with-instanceof";
 

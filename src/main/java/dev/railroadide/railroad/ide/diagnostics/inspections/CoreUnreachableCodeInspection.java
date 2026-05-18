@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreUnreachableCodeInspection.ID)
+@RegisteredInspection
 public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-unreachable-code";
 

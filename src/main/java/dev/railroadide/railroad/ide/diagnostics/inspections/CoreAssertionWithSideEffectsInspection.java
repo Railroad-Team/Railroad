@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreAssertionWithSideEffectsInspection.ID)
+@RegisteredInspection
 public class CoreAssertionWithSideEffectsInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-assertion-with-side-effects";
 

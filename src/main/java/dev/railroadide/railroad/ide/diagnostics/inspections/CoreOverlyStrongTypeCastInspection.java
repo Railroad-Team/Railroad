@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-@RegisteredInspection(id = CoreOverlyStrongTypeCastInspection.ID)
+@RegisteredInspection
 public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-overly-strong-type-cast";
 

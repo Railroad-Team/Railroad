@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreUselessDefaultInSwitchInspection.ID)
+@RegisteredInspection
 public class CoreUselessDefaultInSwitchInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-useless-default-in-switch";
 

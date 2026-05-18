@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreThisReferenceEscapedObjectConstructionInspection.ID)
+@RegisteredInspection
 public class CoreThisReferenceEscapedObjectConstructionInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-this-reference-escaped-object-construction";
 

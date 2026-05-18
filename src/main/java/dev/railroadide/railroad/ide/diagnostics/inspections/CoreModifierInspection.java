@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreModifierInspection.ID)
+@RegisteredInspection
 public final class CoreModifierInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-modifiers";
 

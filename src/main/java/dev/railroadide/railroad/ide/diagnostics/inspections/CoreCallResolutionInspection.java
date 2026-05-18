@@ -11,7 +11,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreCallResolutionInspection.ID)
+@RegisteredInspection
 public final class CoreCallResolutionInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-call-resolution";
 

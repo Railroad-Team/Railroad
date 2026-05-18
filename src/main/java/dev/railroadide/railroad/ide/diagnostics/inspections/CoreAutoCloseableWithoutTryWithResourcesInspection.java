@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreAutoCloseableWithoutTryWithResourcesInspection.ID)
+@RegisteredInspection
 public class CoreAutoCloseableWithoutTryWithResourcesInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-auto-closeable-without-try-with-resources";
 

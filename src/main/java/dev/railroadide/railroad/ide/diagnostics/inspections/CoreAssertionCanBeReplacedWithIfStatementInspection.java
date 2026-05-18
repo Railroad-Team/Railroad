@@ -14,7 +14,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreAssertionCanBeReplacedWithIfStatementInspection.ID)
+@RegisteredInspection
 public class CoreAssertionCanBeReplacedWithIfStatementInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-assertion-can-be-replaced-with-if-statement";
 

@@ -13,7 +13,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreAccessibilityInspection.ID)
+@RegisteredInspection
 public final class CoreAccessibilityInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-accessibility";
 

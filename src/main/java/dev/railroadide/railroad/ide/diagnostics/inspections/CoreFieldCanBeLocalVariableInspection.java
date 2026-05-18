@@ -14,7 +14,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
 import java.util.*;
 
-@RegisteredInspection(id = CoreFieldCanBeLocalVariableInspection.ID)
+@RegisteredInspection
 public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-field-can-be-local-variable";
 

@@ -3,8 +3,6 @@ package dev.railroadide.railroad.ide.diagnostics.inspections;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
-import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
-import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
@@ -15,7 +13,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreBigDecimalEqualsInspection.ID)
+@RegisteredInspection
 public class CoreBigDecimalEqualsInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-big-decimal-equals";
 
@@ -44,20 +42,12 @@ public class CoreBigDecimalEqualsInspection implements JavaInspectionRuleProvide
             if (!context.isMethodInvocationNamed(invocation, "equals"))
                 continue;
 
+            SyntaxNode receiver = context.invocationReceiver(invocation);
+            if (receiver == null || !isBigDecimalType(context, receiver))
+                continue;
+
             SyntaxNode argument = firstArgument(context, invocation);
-            if (argument == null)
-                continue;
-
-            Symbol symbol = context.resolvedSymbol(invocation).orElse(null);
-            if (symbol == null || symbol.kind() != SymbolKind.METHOD)
-                continue;
-
-            String owner = context.ownerQualifiedName(symbol).orElse(null);
-            if (!"java.math.BigDecimal".equals(owner))
-                continue;
-
-            String argumentType = qualifiedTypeNameOfExpression(context, argument);
-            if (!"java.math.BigDecimal".equals(argumentType))
+            if (argument == null || !isBigDecimalType(context, argument))
                 continue;
 
             reporter.report(invocation);
@@ -79,6 +69,39 @@ public class CoreBigDecimalEqualsInspection implements JavaInspectionRuleProvide
 
     private static String qualifiedTypeNameOfExpression(JavaRuleContext context, SyntaxNode expression) {
         Type inferred = context.inferredType(expression).orElse(new Type.UnknownType("<unknown>"));
-        return inferred.kind() == Type.Kind.UNKNOWN ? null : context.resolveQualifiedTypeName(inferred.displayName());
+        return qualifiedTypeName(context, inferred);
+    }
+
+    private static boolean isBigDecimalType(JavaRuleContext context, SyntaxNode expression) {
+        String qualifiedTypeName = qualifiedTypeNameOfExpression(context, expression);
+        if (qualifiedTypeName == null)
+            return false;
+
+        return "java.math.BigDecimal".equals(qualifiedTypeName)
+            || "BigDecimal".equals(qualifiedTypeName)
+            || "BigDecimal".equals(context.simpleTypeName(qualifiedTypeName))
+            || context.isSubtype(qualifiedTypeName, "java.math.BigDecimal");
+    }
+
+    private static String qualifiedTypeName(JavaRuleContext context, Type type) {
+        return switch (type.kind()) {
+            case UNKNOWN, VOID, TYPE_VARIABLE, WILDCARD -> null;
+            case PRIMITIVE -> type.displayName();
+            case ARRAY -> {
+                if (!(type instanceof Type.ArrayType(Type componentType1)))
+                    yield null;
+
+                String componentType = qualifiedTypeName(context, componentType1);
+                yield componentType == null ? null : componentType + "[]";
+            }
+            case DECLARED -> {
+                String typeName = type.displayName();
+                int genericStart = typeName.indexOf('<');
+                if (genericStart >= 0)
+                    typeName = typeName.substring(0, genericStart);
+
+                yield context.resolveQualifiedTypeName(typeName);
+            }
+        };
     }
 }

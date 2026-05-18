@@ -11,7 +11,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreEmptyCatchInspection.ID)
+@RegisteredInspection
 public class CoreEmptyCatchInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-empty-catch";
 

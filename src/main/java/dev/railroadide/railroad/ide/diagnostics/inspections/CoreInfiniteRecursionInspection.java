@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreInfiniteRecursionInspection.ID)
+@RegisteredInspection
 public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-infinite-recursion";
 

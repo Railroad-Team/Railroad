@@ -85,6 +85,7 @@ public final class JavaRuleContext {
     private volatile @Nullable ImportIndex cachedImportIndex;
     private volatile @Nullable Set<String> cachedAvailableTypeNames;
     private volatile @Nullable String cachedCurrentPackageName;
+    private volatile @Nullable Map<String, SyntaxNode> cachedLocalTypeDeclarations;
     private volatile @Nullable Map<String, Symbol> cachedLocalTypeSymbolsByQualifiedName;
     private volatile @Nullable Map<String, List<String>> cachedDirectSuperTypesByQualifiedName;
     private volatile @Nullable Map<String, List<FieldDescriptor>> cachedDeclaredFieldsByOwner;
@@ -105,6 +106,10 @@ public final class JavaRuleContext {
     }
 
     public Map<String, SyntaxNode> localTypeDeclarations() {
+        Map<String, SyntaxNode> cached = cachedLocalTypeDeclarations;
+        if (cached != null)
+            return cached;
+
         Map<String, SyntaxNode> result = new LinkedHashMap<>();
         traverse(node -> declaredSymbol(node).ifPresent(symbol -> {
             String qualifiedName = symbol.qualifiedName().orElse(null);
@@ -112,7 +117,9 @@ public final class JavaRuleContext {
                 result.putIfAbsent(qualifiedName, node);
         }));
 
-        return Map.copyOf(result);
+        Map<String, SyntaxNode> copy = Map.copyOf(result);
+        cachedLocalTypeDeclarations = copy;
+        return copy;
     }
 
     public @Nullable SyntaxNode forBodyOf(SyntaxNode forNode) {

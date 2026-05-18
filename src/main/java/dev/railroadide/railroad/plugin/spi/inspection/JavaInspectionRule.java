@@ -50,7 +50,7 @@ public interface JavaInspectionRule {
     /**
      * Evaluates the rule and emits diagnostics through the provided reporter.
      * <p>
-     * Implementations should be side effect free and treat the supplied context as an
+     * Implementations should be side-effect-free and treat the supplied context as an
      * immutable snapshot of one file.
      *
      * @param context immutable inspection context for the current file

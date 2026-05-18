@@ -15,7 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreFunctionalInterfaceInspection.ID)
+@RegisteredInspection
 public final class CoreFunctionalInterfaceInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-functional-interface";
 

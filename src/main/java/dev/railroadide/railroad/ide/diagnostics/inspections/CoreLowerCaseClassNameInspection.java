@@ -12,7 +12,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreLowerCaseClassNameInspection.ID)
+@RegisteredInspection
 public class CoreLowerCaseClassNameInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-lower-case-class-names";
 

@@ -12,7 +12,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
-@RegisteredInspection(id = CoreAssignmentInspection.ID)
+@RegisteredInspection
 public final class CoreAssignmentInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-assignment";
     private static final String JAVA_VARIABLE_DECLARATOR = "JAVA_VARIABLE_DECLARATOR";
