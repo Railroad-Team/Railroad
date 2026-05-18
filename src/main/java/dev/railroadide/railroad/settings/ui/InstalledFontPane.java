@@ -7,11 +7,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 
-public class TerminalInstalledFontPane extends ComboBox<String> {
-    public TerminalInstalledFontPane(@Nullable String selectedFont) {
+public class InstalledFontPane extends ComboBox<String> {
+    public InstalledFontPane(@Nullable String selectedFont) {
         var fonts = FXCollections.observableArrayList(Font.getFamilies());
         fonts.sort(String.CASE_INSENSITIVE_ORDER);
-        getStyleClass().add("terminal-installed-font-pane");
+        getStyleClass().add("installed-font-pane");
         setItems(fonts);
         setVisibleRowCount(16);
 

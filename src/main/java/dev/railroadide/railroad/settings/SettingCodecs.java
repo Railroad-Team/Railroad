@@ -79,12 +79,21 @@ public class SettingCodecs {
             })
             .build();
 
-    public static final SettingCodec<String, TerminalInstalledFontPane> TERMINAL_INSTALLED_FONT =
-        SettingCodec.<String, TerminalInstalledFontPane>builder("railroad:terminal_installed_font")
-            .createNode(TerminalInstalledFontPane::new)
+    public static final SettingCodec<String, InstalledFontPane> INSTALLED_FONT =
+        SettingCodec.<String, InstalledFontPane>builder("railroad:installed_font")
+            .createNode(InstalledFontPane::new)
             .nodeToValue(ComboBox::getValue)
             .valueToNode((font, pane) -> pane.setValue(font))
             .jsonDecoder(json -> json == null || json.isJsonNull() ? null : json.getAsString())
+            .jsonEncoder(font -> font == null ? JsonNull.INSTANCE : new JsonPrimitive(font))
+            .build();
+
+    public static final SettingCodec<String, InstalledFontPane> EDITOR_FONT_FAMILY =
+        SettingCodec.<String, InstalledFontPane>builder("railroad:editor_font_family")
+            .createNode(InstalledFontPane::new)
+            .nodeToValue(ComboBox::getValue)
+            .valueToNode((font, pane) -> pane.setValue(font))
+            .jsonDecoder(json -> json == null || json.isJsonNull() ? "JetBrains Mono" : json.getAsString())
             .jsonEncoder(font -> font == null ? JsonNull.INSTANCE : new JsonPrimitive(font))
             .build();
 

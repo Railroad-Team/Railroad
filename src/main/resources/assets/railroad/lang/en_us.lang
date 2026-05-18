@@ -397,6 +397,14 @@ railroad.settings.ide.code_style.title=Code Style
 railroad.settings.ide.code_style.description=Configure the code style settings for your projects, including indentation, line breaks, and formatting options.
 railroad.settings.ide.code_style.auto_pair_inside_strings.title=Auto-pair inside strings
 railroad.settings.ide.code_style.auto_pair_inside_strings.description=Enable or disable automatic pairing of brackets, braces and parenthesis inside string literals.
+railroad.settings.ide.code_style.indent_mode.title=Indent Mode
+railroad.settings.ide.code_style.indent_mode.description=Choose whether pressing Tab inserts a tab character or spaces.
+railroad.settings.ide.code_style.indent_width.title=Indent Width
+railroad.settings.ide.code_style.indent_width.description=The number of spaces inserted when indentation mode is set to spaces.
+railroad.settings.ide.code_style.tab_width.title=Tab Width
+railroad.settings.ide.code_style.tab_width.description=The visual width, in characters, used when rendering tab characters in the editor.
+railroad.settings.ide.code_style.editor_font_family.title=Editor Font Family
+railroad.settings.ide.code_style.editor_font_family.description=Choose the font family used by the code editor.
 
 # VCS Settings
 settings.tree.vcs=VCS

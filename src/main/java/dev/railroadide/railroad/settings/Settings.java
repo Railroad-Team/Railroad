@@ -172,7 +172,7 @@ public final class Settings {
     public static final Setting<String> TERMINAL_INSTALLED_FONT = registerSetting(Setting.builder(String.class, "railroad:terminal_installed_font")
         .treePath("appearance")
         .category(SettingCategory.simple("railroad:appearance.terminal"))
-        .codec(SettingCodecs.TERMINAL_INSTALLED_FONT)
+        .codec(SettingCodecs.INSTALLED_FONT)
         .defaultValue(null)
         .canBeNull(true)
         .build());
@@ -205,6 +205,38 @@ public final class Settings {
         .codec(SettingCodecs.GIT_EXECUTABLE_PATH)
         .defaultValue(null)
         .canBeNull(true)
+        .build());
+
+    public static final Setting<IndentMode> INDENT_MODE = registerSetting(Setting.builder(IndentMode.class, "railroad:indent_mode")
+        .treePath("ide")
+        .category(SettingCategory.simple("railroad:ide.code_style"))
+        .codec(DefaultSettingCodecs.ofEnum("railroad:indent_mode", IndentMode.class))
+        .defaultValue(IndentMode.TABS)
+        .canBeNull(false)
+        .build());
+
+    public static final Setting<Integer> INDENT_WIDTH = registerSetting(Setting.builder(Integer.class, "railroad:indent_width")
+        .treePath("ide")
+        .category(SettingCategory.simple("railroad:ide.code_style"))
+        .codec(DefaultSettingCodecs.INTEGER)
+        .defaultValue(4)
+        .canBeNull(false)
+        .build());
+
+    public static final Setting<Integer> TAB_WIDTH = registerSetting(Setting.builder(Integer.class, "railroad:tab_width")
+        .treePath("ide")
+        .category(SettingCategory.simple("railroad:ide.code_style"))
+        .codec(DefaultSettingCodecs.INTEGER)
+        .defaultValue(4)
+        .canBeNull(false)
+        .build());
+
+    public static final Setting<String> EDITOR_FONT_FAMILY = registerSetting(Setting.builder(String.class, "railroad:editor_font_family")
+        .treePath("ide")
+        .category(SettingCategory.simple("railroad:ide.code_style"))
+        .codec(SettingCodecs.EDITOR_FONT_FAMILY)
+        .defaultValue("JetBrains Mono")
+        .canBeNull(false)
         .build());
 
     public static void initialize() {
