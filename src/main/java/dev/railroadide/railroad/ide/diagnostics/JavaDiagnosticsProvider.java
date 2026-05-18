@@ -3,14 +3,14 @@ package dev.railroadide.railroad.ide.diagnostics;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
-import dev.railroadide.railroad.ide.sst.project.ProjectSemanticIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.project.ProjectSemanticService;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionReporter;
-import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
+import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import org.jetbrains.annotations.NotNull;
 
 import javax.tools.Diagnostic;
@@ -24,8 +24,8 @@ import java.util.Objects;
 /**
  * Diagnostics provider backed by the SST semantic analyzer.
  */
-public record SemanticDiagnosticsProvider(Project project, Path filePath) implements DiagnosticsProvider {
-    public SemanticDiagnosticsProvider(Path filePath) {
+public record JavaDiagnosticsProvider(Project project, Path filePath) implements DiagnosticsProvider {
+    public JavaDiagnosticsProvider(Path filePath) {
         this(null, filePath);
     }
 
@@ -37,7 +37,7 @@ public record SemanticDiagnosticsProvider(Project project, Path filePath) implem
         SemanticModel semanticModel;
         if (project != null) {
             ProjectSemanticService semanticService = Services.PROJECT_SEMANTIC_SERVICE;
-            ProjectSemanticIndex projectIndex = semanticService.current(project);
+            JavaProjectSemanticIndex projectIndex = semanticService.current(project);
             semanticModel = projectIndex == null
                     ? JavaSemanticAnalyzer.analyzeFacts(document)
                     : JavaSemanticAnalyzer.analyzeFacts(document, projectIndex);

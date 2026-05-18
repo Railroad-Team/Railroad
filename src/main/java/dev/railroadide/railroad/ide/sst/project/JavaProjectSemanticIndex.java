@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.language.index.LanguageFileIndex;
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.utility.FileUtils;
 import org.jetbrains.annotations.NotNull;
@@ -8,14 +10,14 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.*;
 
-public final class ProjectSemanticIndex {
+public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<JavaProjectSemanticIndex.SourceFileIndex> {
     private final Map<Path, SourceFileIndex> filesByPath;
     private final Map<String, List<SourceFileIndex>> filesByPackage;
     private final Map<String, List<SymbolDescriptor>> symbolsBySimpleName;
     private final Map<String, List<SymbolDescriptor>> symbolsByQualifiedName;
     private final Map<String, List<SymbolDescriptor>> membersByOwnerQualifiedName;
 
-    private ProjectSemanticIndex(Map<Path, SourceFileIndex> filesByPath) {
+    private JavaProjectSemanticIndex(Map<Path, SourceFileIndex> filesByPath) {
         this.filesByPath = copyFileMap(filesByPath);
         this.filesByPackage = buildFilesByPackage(this.filesByPath);
         this.symbolsBySimpleName = buildSymbolsBySimpleName(this.filesByPath.values());
@@ -23,8 +25,8 @@ public final class ProjectSemanticIndex {
         this.membersByOwnerQualifiedName = buildMembersByOwnerQualifiedName(this.filesByPath.values());
     }
 
-    public static ProjectSemanticIndex empty() {
-        return new ProjectSemanticIndex(Map.of());
+    public static JavaProjectSemanticIndex empty() {
+        return new JavaProjectSemanticIndex(Map.of());
     }
 
     public static Builder builder() {
@@ -176,6 +178,16 @@ public final class ProjectSemanticIndex {
         return value;
     }
 
+    @Override
+    public String languageId() {
+        return "java";
+    }
+
+    @Override
+    public SourceFileIndex getFileIndex(Path path) {
+        return filesByPath.get(FileUtils.normalizePath(path));
+    }
+
     public static final class Builder {
         private final Map<Path, SourceFileIndex> filesByPath = new LinkedHashMap<>();
 
@@ -193,8 +205,8 @@ public final class ProjectSemanticIndex {
             return this;
         }
 
-        public ProjectSemanticIndex build() {
-            return new ProjectSemanticIndex(filesByPath);
+        public JavaProjectSemanticIndex build() {
+            return new JavaProjectSemanticIndex(filesByPath);
         }
     }
 
@@ -203,7 +215,7 @@ public final class ProjectSemanticIndex {
         @Nullable String packageName,
         List<ImportDescriptor> imports,
         List<SymbolDescriptor> declaredSymbols
-    ) {
+    ) implements LanguageFileIndex {
         public SourceFileIndex {
             path = FileUtils.normalizePath(path);
             packageName = normalizeOptionalName(packageName);

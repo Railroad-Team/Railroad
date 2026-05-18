@@ -8,10 +8,7 @@ import dev.railroadide.railroad.gradle.ui.GradleToolsPane;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationEditorPane;
-import dev.railroadide.railroad.ide.ui.ConsolePane;
-import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
-import dev.railroadide.railroad.ide.ui.ImageViewerPane;
-import dev.railroadide.railroad.ide.ui.StatusBarPane;
+import dev.railroadide.railroad.ide.ui.*;
 import dev.railroadide.railroad.ide.ui.git.branches.GitBranchesPane;
 import dev.railroadide.railroad.ide.ui.git.commit.GitCommitPane;
 import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
@@ -241,19 +238,7 @@ public class IDESetup {
             return welcomePane;
 
         // If no welcome tab found, fall back to the original behavior
-        return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof CodeArea);
-    }
-
-    /**
-     * Find the best tab pane for images (ImageViewerPane) in the given parent.
-     * If a tab pane with an ImageViewerPane is found, it will be returned.
-     * If no tab pane with an ImageViewerPane is found, the first tab pane found will be returned.
-     *
-     * @param parent The parent to search in
-     * @return The best tab pane for images
-     */
-    public static Optional<DetachableTabPane> findBestPaneForImages(Parent parent) { // TODO: Priority based search
-        return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof ImageViewerPane || tab.getContent() instanceof CodeArea);
+        return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof TextEditorPane || tab.getContent() instanceof CodeArea || tab.getContent() instanceof ImageViewerPane || tab.getContent() instanceof MarkdownPreviewPane);
     }
 
     /**

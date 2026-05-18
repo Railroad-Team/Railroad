@@ -14,14 +14,14 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SemanticDiagnosticsProviderTest {
+class JavaDiagnosticsProviderTest {
 
     @Test
     void coreSemanticInspectionIsRegisteredAndProducesDiagnostics() {
         JavaInspectionRuleProvider core = JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.get(CoreNameResolutionInspection.ID);
         assertNotNull(core);
 
-        SemanticDiagnosticsProvider provider = new SemanticDiagnosticsProvider(Path.of("Example.java"));
+        JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
         List<EditorDiagnostic> diagnostics = provider.compute("""
                 class Example {
                     void run() {
@@ -70,7 +70,7 @@ class SemanticDiagnosticsProviderTest {
 
         try {
             JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(id, provider);
-            SemanticDiagnosticsProvider providerRunner = new SemanticDiagnosticsProvider(Path.of("Example.java"));
+            JavaDiagnosticsProvider providerRunner = new JavaDiagnosticsProvider(Path.of("Example.java"));
             List<EditorDiagnostic> diagnostics = providerRunner.compute("class Example {}");
             assertTrue(diagnostics.stream().anyMatch(diagnostic -> "PLUGIN_RULE_WARNING".equals(diagnostic.code())));
             assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.WARNING));
@@ -84,7 +84,7 @@ class SemanticDiagnosticsProviderTest {
     void supportsRuleSettingsOverridesAndDisabling() {
         try {
             JavaInspectionRuleSettings.setRuleEnabled("SEM_UNRESOLVED_NAME", false);
-            SemanticDiagnosticsProvider provider = new SemanticDiagnosticsProvider(Path.of("Example.java"));
+            JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
             List<EditorDiagnostic> disabledDiagnostics = provider.compute("""
                     class Example {
                         void run() {
@@ -100,7 +100,7 @@ class SemanticDiagnosticsProviderTest {
         try {
             JavaInspectionRuleSettings.setSeverityOverride("SEM_UNRESOLVED_NAME",
                     dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic.Severity.INFO);
-            SemanticDiagnosticsProvider provider = new SemanticDiagnosticsProvider(Path.of("Example.java"));
+            JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
             List<EditorDiagnostic> overriddenDiagnostics = provider.compute("""
                     class Example {
                         void run() {

@@ -12,13 +12,13 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * In-memory lifecycle service for project semantic indexes.
  * <p>
- * The service owns one cached {@link ProjectSemanticIndex} per project root and
+ * The service owns one cached {@link JavaProjectSemanticIndex} per project root and
  * supports full rebuilds plus single-file updates/removals.
  */
 public final class ProjectSemanticService {
     private final JavaProjectSemanticIndexer indexer;
     private final ProjectSemanticIndexPersistence persistence;
-    private final Map<Path, ProjectSemanticIndex> indexesByProjectRoot = new ConcurrentHashMap<>();
+    private final Map<Path, JavaProjectSemanticIndex> indexesByProjectRoot = new ConcurrentHashMap<>();
 
     public ProjectSemanticService() {
         this(new JavaProjectSemanticIndexer(), new ProjectSemanticIndexPersistence());
@@ -33,36 +33,36 @@ public final class ProjectSemanticService {
         this.persistence = Objects.requireNonNull(persistence, "persistence");
     }
 
-    public ProjectSemanticIndex index(Project project) {
+    public JavaProjectSemanticIndex index(Project project) {
         Objects.requireNonNull(project, "project");
         return index(project.getPath());
     }
 
-    public @Nullable ProjectSemanticIndex current(Project project) {
+    public @Nullable JavaProjectSemanticIndex current(Project project) {
         Objects.requireNonNull(project, "project");
         return current(project.getPath());
     }
 
-    public ProjectSemanticIndex index(Path projectRoot) {
+    public JavaProjectSemanticIndex index(Path projectRoot) {
         Path normalizedRoot = normalizeRoot(projectRoot);
         return indexesByProjectRoot.computeIfAbsent(normalizedRoot, root -> {
-            ProjectSemanticIndex persisted = persistence.loadIfCurrent(root);
+            JavaProjectSemanticIndex persisted = persistence.loadIfCurrent(root);
             if (persisted != null)
                 return persisted;
 
-            ProjectSemanticIndex rebuilt = indexer.build(root);
+            JavaProjectSemanticIndex rebuilt = indexer.build(root);
             persistence.save(root, rebuilt);
             return rebuilt;
         });
     }
 
-    public @Nullable ProjectSemanticIndex current(Path projectRoot) {
+    public @Nullable JavaProjectSemanticIndex current(Path projectRoot) {
         Path normalizedRoot = normalizeRoot(projectRoot);
-        ProjectSemanticIndex current = indexesByProjectRoot.get(normalizedRoot);
+        JavaProjectSemanticIndex current = indexesByProjectRoot.get(normalizedRoot);
         if (current != null)
             return current;
 
-        ProjectSemanticIndex persisted = persistence.loadIfCurrent(normalizedRoot);
+        JavaProjectSemanticIndex persisted = persistence.loadIfCurrent(normalizedRoot);
         if (persisted != null) {
             indexesByProjectRoot.put(normalizedRoot, persisted);
             return persisted;
@@ -71,37 +71,37 @@ public final class ProjectSemanticService {
         return null;
     }
 
-    public ProjectSemanticIndex rebuild(Project project) {
+    public JavaProjectSemanticIndex rebuild(Project project) {
         Objects.requireNonNull(project, "project");
         return rebuild(project.getPath());
     }
 
-    public ProjectSemanticIndex rebuild(Path projectRoot) {
+    public JavaProjectSemanticIndex rebuild(Path projectRoot) {
         Path normalizedRoot = normalizeRoot(projectRoot);
-        ProjectSemanticIndex rebuilt = indexer.build(normalizedRoot);
+        JavaProjectSemanticIndex rebuilt = indexer.build(normalizedRoot);
         indexesByProjectRoot.put(normalizedRoot, rebuilt);
         persistence.save(normalizedRoot, rebuilt);
         return rebuilt;
     }
 
-    public ProjectSemanticIndex.SourceFileIndex updateFile(Project project, Path file) {
+    public JavaProjectSemanticIndex.SourceFileIndex updateFile(Project project, Path file) {
         Objects.requireNonNull(project, "project");
         return updateFile(project.getPath(), file);
     }
 
-    public ProjectSemanticIndex.SourceFileIndex updateFile(Path projectRoot, Path file) {
+    public JavaProjectSemanticIndex.SourceFileIndex updateFile(Path projectRoot, Path file) {
         Path normalizedRoot = normalizeRoot(projectRoot);
         Path normalizedFile = normalizeFile(file);
-        ProjectSemanticIndex.SourceFileIndex indexedFile = indexer.indexFile(normalizedFile);
+        JavaProjectSemanticIndex.SourceFileIndex indexedFile = indexer.indexFile(normalizedFile);
 
-        ProjectSemanticIndex current = index(normalizedRoot);
-        ProjectSemanticIndex.Builder builder = ProjectSemanticIndex.builder();
+        JavaProjectSemanticIndex current = index(normalizedRoot);
+        JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
         current.files().forEach((path, sourceFileIndex) -> {
             if (!path.equals(normalizedFile))
                 builder.putFile(sourceFileIndex);
         });
         builder.putFile(indexedFile);
-        ProjectSemanticIndex updated = builder.build();
+        JavaProjectSemanticIndex updated = builder.build();
         indexesByProjectRoot.put(normalizedRoot, updated);
         persistence.save(normalizedRoot, updated);
         return indexedFile;
@@ -114,17 +114,17 @@ public final class ProjectSemanticService {
 
     public void removeFile(Path projectRoot, Path file) {
         Path normalizedRoot = normalizeRoot(projectRoot);
-        ProjectSemanticIndex current = indexesByProjectRoot.get(normalizedRoot);
+        JavaProjectSemanticIndex current = indexesByProjectRoot.get(normalizedRoot);
         if (current == null)
             return;
 
         Path normalizedFile = normalizeFile(file);
-        ProjectSemanticIndex.Builder builder = ProjectSemanticIndex.builder();
+        JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
         current.files().forEach((path, sourceFileIndex) -> {
             if (!path.equals(normalizedFile))
                 builder.putFile(sourceFileIndex);
         });
-        ProjectSemanticIndex updated = builder.build();
+        JavaProjectSemanticIndex updated = builder.build();
         indexesByProjectRoot.put(normalizedRoot, updated);
         persistence.save(normalizedRoot, updated);
     }

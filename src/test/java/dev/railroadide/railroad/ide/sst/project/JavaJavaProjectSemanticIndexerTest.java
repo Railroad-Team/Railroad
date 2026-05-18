@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class JavaProjectSemanticIndexerTest {
+class JavaJavaProjectSemanticIndexerTest {
 
     @TempDir
     Path tempDir;
@@ -45,7 +45,7 @@ class JavaProjectSemanticIndexerTest {
                 """);
 
         JavaProjectSemanticIndexer indexer = new JavaProjectSemanticIndexer();
-        ProjectSemanticIndex index = indexer.build(root);
+        JavaProjectSemanticIndex index = indexer.build(root);
 
         assertEquals(2, index.files().size());
         assertTrue(index.getFile(aFile).isPresent());

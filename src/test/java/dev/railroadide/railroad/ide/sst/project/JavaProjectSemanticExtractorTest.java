@@ -5,10 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class JavaProjectSemanticExtractorTest {
 
@@ -37,35 +34,35 @@ class JavaProjectSemanticExtractorTest {
                 """;
 
         JavaProjectSemanticExtractor extractor = new JavaProjectSemanticExtractor();
-        ProjectSemanticIndex.SourceFileIndex fileIndex = extractor.extract(Path.of("src/main/java/demo/sample/Utility.java"), source);
+        JavaProjectSemanticIndex.SourceFileIndex fileIndex = extractor.extract(Path.of("src/main/java/demo/sample/Utility.java"), source);
 
         assertEquals("demo.sample", fileIndex.packageName());
         assertEquals(2, fileIndex.imports().size());
         assertImport(fileIndex.imports(), "java.util.List", false, false);
         assertImport(fileIndex.imports(), "java.lang.Math.max", true, false);
 
-        ProjectSemanticIndex.SymbolDescriptor utility = findSymbol(fileIndex.declaredSymbols(), "demo.sample.Utility");
+        JavaProjectSemanticIndex.SymbolDescriptor utility = findSymbol(fileIndex.declaredSymbols(), "demo.sample.Utility");
         assertNotNull(utility);
         assertTrue(utility.isTopLevel());
 
-        ProjectSemanticIndex.SymbolDescriptor value = findSymbol(fileIndex.declaredSymbols(), "demo.sample.Utility#VALUE");
+        JavaProjectSemanticIndex.SymbolDescriptor value = findSymbol(fileIndex.declaredSymbols(), "demo.sample.Utility#VALUE");
         assertNotNull(value);
         assertTrue(value.isStatic());
         assertEquals("demo.sample.Utility", value.ownerQualifiedName());
 
-        ProjectSemanticIndex.SymbolDescriptor count = findSymbol(fileIndex.declaredSymbols(), "demo.sample.Utility#count");
+        JavaProjectSemanticIndex.SymbolDescriptor count = findSymbol(fileIndex.declaredSymbols(), "demo.sample.Utility#count");
         assertNotNull(count);
         assertFalse(count.isStatic());
 
-        ProjectSemanticIndex.SymbolDescriptor constructor = findSymbol(fileIndex.declaredSymbols(), "demo.sample.Utility#Utility");
+        JavaProjectSemanticIndex.SymbolDescriptor constructor = findSymbol(fileIndex.declaredSymbols(), "demo.sample.Utility#Utility");
         assertNotNull(constructor);
         assertEquals("()", constructor.signature());
 
-        ProjectSemanticIndex.SymbolDescriptor run = findSymbol(fileIndex.declaredSymbols(), "demo.sample.Utility#run");
+        JavaProjectSemanticIndex.SymbolDescriptor run = findSymbol(fileIndex.declaredSymbols(), "demo.sample.Utility#run");
         assertNotNull(run);
         assertEquals("(String,int)", run.signature());
 
-        ProjectSemanticIndex.SymbolDescriptor inner = findSymbol(fileIndex.declaredSymbols(), "demo.sample.Utility.Inner");
+        JavaProjectSemanticIndex.SymbolDescriptor inner = findSymbol(fileIndex.declaredSymbols(), "demo.sample.Utility.Inner");
         assertNotNull(inner);
         assertFalse(inner.isTopLevel());
 
@@ -73,7 +70,7 @@ class JavaProjectSemanticExtractorTest {
     }
 
     private static void assertImport(
-            List<ProjectSemanticIndex.ImportDescriptor> imports,
+            List<JavaProjectSemanticIndex.ImportDescriptor> imports,
             String qualifiedName,
             boolean isStatic,
             boolean isWildcard
@@ -84,8 +81,8 @@ class JavaProjectSemanticExtractorTest {
                         && isWildcard == importDescriptor.isWildcard()));
     }
 
-    private static ProjectSemanticIndex.SymbolDescriptor findSymbol(
-            List<ProjectSemanticIndex.SymbolDescriptor> symbols,
+    private static JavaProjectSemanticIndex.SymbolDescriptor findSymbol(
+            List<JavaProjectSemanticIndex.SymbolDescriptor> symbols,
             String qualifiedName
     ) {
         return symbols.stream()

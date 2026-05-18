@@ -6,11 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ProjectSemanticServiceTest {
 
@@ -29,8 +25,8 @@ class ProjectSemanticServiceTest {
         );
 
         ProjectSemanticService service = new ProjectSemanticService();
-        ProjectSemanticIndex first = service.index(root);
-        ProjectSemanticIndex second = service.index(root);
+        JavaProjectSemanticIndex first = service.index(root);
+        JavaProjectSemanticIndex second = service.index(root);
 
         assertSame(first, second);
         assertTrue(service.hasIndex(root));
@@ -48,7 +44,7 @@ class ProjectSemanticServiceTest {
         );
 
         ProjectSemanticService service = new ProjectSemanticService();
-        ProjectSemanticIndex initial = service.index(root);
+        JavaProjectSemanticIndex initial = service.index(root);
 
         Files.writeString(root.resolve("src/main/java/demo/B.java"), """
                 package demo;
@@ -57,7 +53,7 @@ class ProjectSemanticServiceTest {
                 }
                 """);
 
-        ProjectSemanticIndex rebuilt = service.rebuild(root);
+        JavaProjectSemanticIndex rebuilt = service.rebuild(root);
 
         assertFalse(initial == rebuilt);
         assertEquals(2, rebuilt.files().size());
@@ -88,7 +84,7 @@ class ProjectSemanticServiceTest {
                 """);
 
         service.updateFile(root, aFile);
-        ProjectSemanticIndex updated = service.index(root);
+        JavaProjectSemanticIndex updated = service.index(root);
 
         assertEquals(1, updated.lookupMember("demo.A", "VALUE").size());
     }
@@ -116,7 +112,7 @@ class ProjectSemanticServiceTest {
         Path bFile = root.resolve("src/main/java/demo/B.java");
         service.removeFile(root, bFile);
 
-        ProjectSemanticIndex updated = service.index(root);
+        JavaProjectSemanticIndex updated = service.index(root);
         assertEquals(1, updated.files().size());
         assertTrue(updated.lookupQualifiedName("demo.B").isEmpty());
     }
@@ -133,13 +129,13 @@ class ProjectSemanticServiceTest {
         );
 
         ProjectSemanticService service = new ProjectSemanticService();
-        ProjectSemanticIndex initial = service.index(root);
+        JavaProjectSemanticIndex initial = service.index(root);
         assertTrue(service.hasIndex(root));
 
         service.invalidate(root);
         assertFalse(service.hasIndex(root));
 
-        ProjectSemanticIndex reloaded = service.index(root);
+        JavaProjectSemanticIndex reloaded = service.index(root);
         assertNotSame(initial, reloaded);
         assertEquals(1, reloaded.lookupQualifiedName("demo.A").size());
     }
@@ -156,10 +152,10 @@ class ProjectSemanticServiceTest {
         );
 
         ProjectSemanticService writer = new ProjectSemanticService();
-        ProjectSemanticIndex initial = writer.index(root);
+        JavaProjectSemanticIndex initial = writer.index(root);
 
         ProjectSemanticService reader = new ProjectSemanticService();
-        ProjectSemanticIndex reloaded = reader.index(root);
+        JavaProjectSemanticIndex reloaded = reader.index(root);
 
         assertNotSame(initial, reloaded);
         assertEquals(1, reloaded.lookupQualifiedName("demo.A").size());
@@ -189,7 +185,7 @@ class ProjectSemanticServiceTest {
                 """);
 
         ProjectSemanticService reader = new ProjectSemanticService();
-        ProjectSemanticIndex reloaded = reader.index(root);
+        JavaProjectSemanticIndex reloaded = reader.index(root);
 
         assertEquals(1, reloaded.lookupMember("demo.A", "VALUE").size());
     }

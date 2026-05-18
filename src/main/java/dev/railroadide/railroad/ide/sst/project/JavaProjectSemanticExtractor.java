@@ -17,28 +17,28 @@ import java.util.List;
 // TODO: Improve signature extraction to handle generics, varargs, and other complex parameter types.
 // TODO: Improve signature extraction to include return type for methods.
 public final class JavaProjectSemanticExtractor {
-    public ProjectSemanticIndex.SourceFileIndex extract(Path path, CharSequence source) {
+    public JavaProjectSemanticIndex.SourceFileIndex extract(Path path, CharSequence source) {
         SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
         return extract(path, model);
     }
 
-    public ProjectSemanticIndex.SourceFileIndex extract(Path path, SemanticModel model) {
+    public JavaProjectSemanticIndex.SourceFileIndex extract(Path path, SemanticModel model) {
         SyntaxNode root = model.syntaxTree().root();
 
         String packageName = extractPackageName(root);
-        List<ProjectSemanticIndex.ImportDescriptor> imports = extractImports(root);
-        List<ProjectSemanticIndex.SymbolDescriptor> symbols = extractSymbols(path, root, model);
+        List<JavaProjectSemanticIndex.ImportDescriptor> imports = extractImports(root);
+        List<JavaProjectSemanticIndex.SymbolDescriptor> symbols = extractSymbols(path, root, model);
 
-        return new ProjectSemanticIndex.SourceFileIndex(path, packageName, imports, symbols);
+        return new JavaProjectSemanticIndex.SourceFileIndex(path, packageName, imports, symbols);
     }
 
-    private List<ProjectSemanticIndex.SymbolDescriptor> extractSymbols(Path path, SyntaxNode root, SemanticModel model) {
-        List<ProjectSemanticIndex.SymbolDescriptor> symbols = new ArrayList<>();
+    private List<JavaProjectSemanticIndex.SymbolDescriptor> extractSymbols(Path path, SyntaxNode root, SemanticModel model) {
+        List<JavaProjectSemanticIndex.SymbolDescriptor> symbols = new ArrayList<>();
         collectSymbols(path, root, model, symbols);
         return List.copyOf(symbols);
     }
 
-    private void collectSymbols(Path path, SyntaxNode node, SemanticModel model, List<ProjectSemanticIndex.SymbolDescriptor> symbols) {
+    private void collectSymbols(Path path, SyntaxNode node, SemanticModel model, List<JavaProjectSemanticIndex.SymbolDescriptor> symbols) {
         model.declaredSymbol(node)
             .filter(symbol -> isIndexedKind(symbol.kind()))
             .ifPresent(symbol -> symbols.add(toDescriptor(path, node, symbol)));
@@ -56,11 +56,11 @@ public final class JavaProjectSemanticExtractor {
         };
     }
 
-    private ProjectSemanticIndex.SymbolDescriptor toDescriptor(Path path, SyntaxNode node, Symbol symbol) {
+    private JavaProjectSemanticIndex.SymbolDescriptor toDescriptor(Path path, SyntaxNode node, Symbol symbol) {
         SyntaxNode container = declarationContainer(node);
         String qualifiedName = symbol.qualifiedName().orElse(null);
 
-        return new ProjectSemanticIndex.SymbolDescriptor(
+        return new JavaProjectSemanticIndex.SymbolDescriptor(
             symbol.kind(),
             symbol.simpleName(),
             qualifiedName,
@@ -156,8 +156,8 @@ public final class JavaProjectSemanticExtractor {
         };
     }
 
-    private List<ProjectSemanticIndex.ImportDescriptor> extractImports(SyntaxNode root) {
-        List<ProjectSemanticIndex.ImportDescriptor> imports = new ArrayList<>();
+    private List<JavaProjectSemanticIndex.ImportDescriptor> extractImports(SyntaxNode root) {
+        List<JavaProjectSemanticIndex.ImportDescriptor> imports = new ArrayList<>();
 
         for (SyntaxNode child : root.children()) {
             if (!JavaSyntaxKinds.IMPORT_DECLARATION.id().equals(child.kind().id()))
@@ -174,7 +174,7 @@ public final class JavaProjectSemanticExtractor {
             boolean isStatic = hasTokenKind(child, JavaTokenType.STATIC_KEYWORD);
             boolean isWildcard = hasTokenKind(child, JavaTokenType.STAR);
 
-            imports.add(new ProjectSemanticIndex.ImportDescriptor(
+            imports.add(new JavaProjectSemanticIndex.ImportDescriptor(
                 qualifiedName,
                 isStatic,
                 isWildcard

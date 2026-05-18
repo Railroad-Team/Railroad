@@ -5,7 +5,7 @@ import dev.railroadide.railroad.ide.classparser.stub.FieldStub;
 import dev.railroadide.railroad.ide.classparser.stub.MethodStub;
 import dev.railroadide.railroad.ide.completion.CompletionItem;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
-import dev.railroadide.railroad.ide.sst.project.ProjectSemanticIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
@@ -17,16 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * SST-backed dot completion for source/project/JDK members.
@@ -38,7 +29,7 @@ public final class JavaSemanticCompletionEngine {
     public static @Nullable CompletionResult compute(
         String document,
         int triggerAt,
-        @Nullable ProjectSemanticIndex projectIndex
+        @Nullable JavaProjectSemanticIndex projectIndex
     ) {
         if (document == null || document.isEmpty() || triggerAt < 0 || triggerAt >= document.length())
             return null;
@@ -82,7 +73,7 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable CompletionTarget resolveCompletionTarget(
         SyntaxNode node,
         SemanticModel model,
-        @Nullable ProjectSemanticIndex projectIndex
+        @Nullable JavaProjectSemanticIndex projectIndex
     ) {
         for (SyntaxNode current = node; current != null; current = current.parent().orElse(null)) {
             SyntaxNode receiver = JavaSemanticAnalyzer.explicitReceiver(current);
@@ -96,7 +87,7 @@ public final class JavaSemanticCompletionEngine {
         SyntaxNode receiver,
         SyntaxNode usageSite,
         SemanticModel model,
-        @Nullable ProjectSemanticIndex projectIndex
+        @Nullable JavaProjectSemanticIndex projectIndex
     ) {
         if (JavaSyntaxKinds.THIS_EXPRESSION.id().equals(receiver.kind().id())) {
             Symbol enclosing = enclosingTypeSymbol(usageSite, model);
@@ -146,7 +137,7 @@ public final class JavaSemanticCompletionEngine {
 
     private static void collectMembersRecursive(
         SemanticModel model,
-        @Nullable ProjectSemanticIndex projectIndex,
+        @Nullable JavaProjectSemanticIndex projectIndex,
         String ownerQualifiedName,
         boolean staticContext,
         String currentPackage,
@@ -215,7 +206,7 @@ public final class JavaSemanticCompletionEngine {
     }
 
     private static void collectProjectMembers(
-        @Nullable ProjectSemanticIndex projectIndex,
+        @Nullable JavaProjectSemanticIndex projectIndex,
         String ownerQualifiedName,
         boolean staticContext,
         Map<String, CompletionItem> out
@@ -223,7 +214,7 @@ public final class JavaSemanticCompletionEngine {
         if (projectIndex == null)
             return;
 
-        for (ProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupMembers(ownerQualifiedName)) {
+        for (JavaProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupMembers(ownerQualifiedName)) {
             switch (symbol.kind()) {
                 case FIELD -> {
                     if (symbol.isStatic() == staticContext)
@@ -381,7 +372,7 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable String superTypeQualifiedName(
         @Nullable String ownerQualifiedName,
         SemanticModel model,
-        @Nullable ProjectSemanticIndex projectIndex
+        @Nullable JavaProjectSemanticIndex projectIndex
     ) {
         List<String> superTypes = directSuperTypes(ownerQualifiedName, model, projectIndex);
         return superTypes.isEmpty() ? null : superTypes.get(0);
@@ -390,7 +381,7 @@ public final class JavaSemanticCompletionEngine {
     private static List<String> directSuperTypes(
         @Nullable String ownerQualifiedName,
         SemanticModel model,
-        @Nullable ProjectSemanticIndex projectIndex
+        @Nullable JavaProjectSemanticIndex projectIndex
     ) {
         if (ownerQualifiedName == null || ownerQualifiedName.isBlank())
             return List.of();
@@ -430,7 +421,7 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable TypeDeclarationInfo typeDeclarationInfoForOwner(
         String ownerQualifiedName,
         SemanticModel model,
-        @Nullable ProjectSemanticIndex projectIndex
+        @Nullable JavaProjectSemanticIndex projectIndex
     ) {
         TypeDeclarationInfo inCurrentModel = typeDeclarationInfoInModel(ownerQualifiedName, model, projectIndex);
         if (inCurrentModel != null)
@@ -451,7 +442,7 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable TypeDeclarationInfo typeDeclarationInfoInModel(
         String ownerQualifiedName,
         SemanticModel model,
-        @Nullable ProjectSemanticIndex projectIndex
+        @Nullable JavaProjectSemanticIndex projectIndex
     ) {
         SyntaxNode declarationNode = findTypeDeclarationNodeByQualifiedName(model, ownerQualifiedName);
         if (declarationNode == null)
@@ -484,7 +475,7 @@ public final class JavaSemanticCompletionEngine {
         @Nullable SyntaxNode clauseNode,
         SyntaxNode usageSite,
         SemanticModel model,
-        @Nullable ProjectSemanticIndex projectIndex
+        @Nullable JavaProjectSemanticIndex projectIndex
     ) {
         if (clauseNode == null)
             return;
@@ -518,12 +509,12 @@ public final class JavaSemanticCompletionEngine {
 
     private static @Nullable Path sourceFileForType(
         String ownerQualifiedName,
-        @Nullable ProjectSemanticIndex projectIndex
+        @Nullable JavaProjectSemanticIndex projectIndex
     ) {
         if (projectIndex == null)
             return null;
 
-        for (ProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupQualifiedName(ownerQualifiedName)) {
+        for (JavaProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupQualifiedName(ownerQualifiedName)) {
             if (isTypeSymbol(symbol.kind()))
                 return symbol.sourceFile();
         }
@@ -553,7 +544,7 @@ public final class JavaSemanticCompletionEngine {
         @Nullable String text,
         SyntaxNode usageSite,
         SemanticModel model,
-        @Nullable ProjectSemanticIndex projectIndex
+        @Nullable JavaProjectSemanticIndex projectIndex
     ) {
         if (text == null || text.isBlank())
             return null;
@@ -624,7 +615,7 @@ public final class JavaSemanticCompletionEngine {
         return null;
     }
 
-    private static boolean typeExists(String qualifiedName, @Nullable ProjectSemanticIndex projectIndex) {
+    private static boolean typeExists(String qualifiedName, @Nullable JavaProjectSemanticIndex projectIndex) {
         if (qualifiedName == null || qualifiedName.isBlank())
             return false;
         if (projectIndex != null && !projectIndex.lookupQualifiedName(qualifiedName).isEmpty())

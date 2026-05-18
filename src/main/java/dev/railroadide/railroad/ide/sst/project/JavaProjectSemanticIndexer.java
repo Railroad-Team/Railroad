@@ -24,7 +24,7 @@ public final class JavaProjectSemanticIndexer {
         this.extractor = Objects.requireNonNull(extractor, "extractor");
     }
 
-    public ProjectSemanticIndex build(Path projectRoot) {
+    public JavaProjectSemanticIndex build(Path projectRoot) {
         Objects.requireNonNull(projectRoot, "projectRoot");
 
         try (Stream<Path> paths = Files.walk(projectRoot)) {
@@ -39,10 +39,10 @@ public final class JavaProjectSemanticIndexer {
         }
     }
 
-    public ProjectSemanticIndex build(List<Path> sourceFiles) {
+    public JavaProjectSemanticIndex build(List<Path> sourceFiles) {
         Objects.requireNonNull(sourceFiles, "sourceFiles");
 
-        ProjectSemanticIndex.Builder builder = ProjectSemanticIndex.builder();
+        JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
         for (Path sourceFile : sourceFiles) {
             if (sourceFile == null)
                 continue;
@@ -54,7 +54,7 @@ public final class JavaProjectSemanticIndexer {
         return builder.build();
     }
 
-    public ProjectSemanticIndex.SourceFileIndex indexFile(Path sourceFile) {
+    public JavaProjectSemanticIndex.SourceFileIndex indexFile(Path sourceFile) {
         Objects.requireNonNull(sourceFile, "sourceFile");
         return extractor.extract(sourceFile, readSource(sourceFile));
     }

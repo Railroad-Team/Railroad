@@ -13,7 +13,7 @@ import java.util.List;
  * analysing the document and producing {@link SignatureHelp} records; UI logic
  * remains in the editor.
  */
-public record JdtSignatureHelpProvider(Path filePath, String[] systemModulePaths) implements SignatureHelpProvider {
+public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModulePaths) implements SignatureHelpProvider {
     @Override
     public @Nullable SignatureHelp compute(String document, int caretPosition) {
         if (document == null || document.isEmpty() || caretPosition < 0)
