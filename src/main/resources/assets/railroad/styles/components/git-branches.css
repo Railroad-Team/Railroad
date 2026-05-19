@@ -11,6 +11,7 @@
 .git-branches-section-header {
     -fx-alignment: center-left;
     -fx-padding: 2px 2px 0 2px;
+    -fx-spacing: 8px;
 }
 
 .git-branches-section-title {
@@ -387,4 +388,15 @@
     -fx-text-fill: -color-fg-default;
     -fx-font-size: 11px;
     -fx-wrap-text: true;
+}
+
+.git-branch-set-upstream-dialog-content,
+.git-branch-rename-dialog-content,
+.git-branch-delete-dialog-content,
+.git-commit-checkout-force-checkout-dialog-content {
+    -fx-spacing: 10px;
+}
+
+.git-commit-checkout-uncommitted-changes-dialog-content {
+    -fx-spacing: 2px;
 }

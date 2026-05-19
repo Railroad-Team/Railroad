@@ -5,7 +5,6 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.ui.RRNavigationItem;
 import dev.railroadide.railroad.ui.RRSidebar;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.Separator;
@@ -25,17 +24,12 @@ public class WelcomeLeftPane extends RRSidebar {
     private final RRListView<MenuType> listView;
 
     public WelcomeLeftPane() {
-        setPadding(new Insets(18, 8, 18, 8));
         getStyleClass().add("welcome-left-pane");
-        setMinWidth(220);
-        setMaxWidth(240);
         setAlignment(Pos.TOP_CENTER);
-        setSpacing(18);
 
-        var topBox = new VBox(6);
+        var topBox = new VBox();
         topBox.setAlignment(Pos.CENTER);
-        topBox.setPadding(new Insets(0, 0, 8, 0));
-        topBox.setPrefHeight(110);
+        topBox.getStyleClass().add("welcome-left-top-box");
 
         var logo = new ImageView(new Image(AppResources.iconStream(), 80, 80, true, true));
         var appName = new Text(Services.APPLICATION_INFO.getName());
@@ -48,7 +42,6 @@ public class WelcomeLeftPane extends RRSidebar {
         listView.getItems().addAll(MenuType.values());
         listView.setCellFactory(param -> new MenuTypeCell());
         listView.getStyleClass().add("welcome-left-pane-list");
-        listView.setPrefHeight(320);
         listView.setFixedCellSize(44);
         listView.setFocusTraversable(false);
         VBox.setVgrow(listView, Priority.ALWAYS);
@@ -56,7 +49,7 @@ public class WelcomeLeftPane extends RRSidebar {
         this.setFocusTraversable(false);
 
         var separator = new Separator();
-        separator.setPadding(new Insets(10, -10, 10, -10));
+        separator.getStyleClass().add("welcome-left-separator");
 
         getChildren().clear();
         getChildren().addAll(topBox, separator, listView);
@@ -94,7 +87,6 @@ public class WelcomeLeftPane extends RRSidebar {
                 return;
 
             var navItem = new RRNavigationItem();
-            navItem.setPrefHeight(44);
             navItem.getStyleClass().add("welcome-nav-item");
             navItem.setIcon(item.getIcon());
             navItem.setLocalizedText(item.getKey());

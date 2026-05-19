@@ -194,6 +194,7 @@ public class PluginManager {
             loadResult.setPlugin(plugin, classLoader);
             ShutdownHooks.addHook(() -> {
                 try {
+                    plugin.onDisable(context);
                     classLoader.close();
                     loadResult.setPlugin(null, null);
                 } catch (Exception exception) {

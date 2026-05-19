@@ -197,8 +197,8 @@ public final class OnboardingFormStep implements OnboardingStep {
         private final List<FormComponent<?, ?, ?, ?>> trackedComponents = new ArrayList<>();
         private final Map<String, FormComponent<?, ?, ?, ?>> componentsByDataKey = new HashMap<>();
         private final Map<String, DataMapping> dataMappings = new HashMap<>();
-        private int spacing = 15;
-        private Insets padding = new Insets(10);
+        private Integer spacing;
+        private Insets padding;
         private boolean disableSubmitButton = true;
         private boolean disableResetButton = true;
         private Form form;
@@ -412,8 +412,12 @@ public final class OnboardingFormStep implements OnboardingStep {
                     Form resolvedForm = this.form;
                     if (resolvedForm == null) {
                         Form.Builder builder = Form.create();
-                        builder.spacing(spacing);
-                        builder.padding(padding);
+                        if (spacing != null) {
+                            builder.spacing(spacing);
+                        }
+                        if (padding != null) {
+                            builder.padding(padding);
+                        }
 
                         if (disableSubmitButton)
                             builder.disableSubmitButton();

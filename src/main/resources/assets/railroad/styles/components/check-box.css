@@ -3,7 +3,12 @@
     -fx-background-color: transparent;
     -fx-text-fill: -color-fg-default;
     -fx-font-size: 14px;
+    -fx-padding: 8px 16px;
     -fx-transition: all 0.2s ease-in-out;
+}
+
+.rr-check-box-content {
+    -fx-spacing: 8px;
 }
 
 .rr-check-box .box {

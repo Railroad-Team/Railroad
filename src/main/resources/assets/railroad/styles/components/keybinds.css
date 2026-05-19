@@ -20,6 +20,8 @@
 
 .keybinds-category-bar {
     -fx-padding: 4px 0 0 0;
+    -fx-hgap: 8px;
+    -fx-vgap: 8px;
 }
 
 .keybinds-category-bar .keybinds-category-chip {
@@ -51,6 +53,7 @@
 
 .keybinds-card-container {
     -fx-padding: 4px 0 20px 0;
+    -fx-spacing: 12px;
 }
 
 .keybind-card {
@@ -61,6 +64,11 @@
 
 .keybind-card-header {
     -fx-padding: 4px 4px 0 4px;
+    -fx-spacing: 12px;
+}
+
+.keybind-card-title-box {
+    -fx-spacing: 4px;
 }
 
 .keybind-card-title {
@@ -85,6 +93,7 @@
 
 .keybind-card-shortcuts {
     -fx-padding: 8px 4px 4px 4px;
+    -fx-spacing: 8px;
 }
 
 .keybind-card-shortcuts-empty {
@@ -94,6 +103,7 @@
 
 .keybind-shortcut-row {
     -fx-padding: 0;
+    -fx-spacing: 8px;
 }
 
 .keybind-shortcut-chip {
@@ -129,6 +139,7 @@
 .keybinds-empty-state {
     -fx-alignment: center;
     -fx-padding: 48px;
+    -fx-spacing: 6px;
 }
 
 .keybinds-empty-state .label {

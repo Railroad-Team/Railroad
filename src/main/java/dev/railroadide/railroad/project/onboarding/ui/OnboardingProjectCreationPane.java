@@ -7,7 +7,6 @@ import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.window.WindowBuilder;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.layout.Priority;
@@ -20,7 +19,7 @@ public class OnboardingProjectCreationPane extends RRVBox {
     private final Consumer<Scene> onStartOnboarding;
 
     public OnboardingProjectCreationPane(Consumer<Scene> onStartOnboarding) {
-        super(16);
+        super();
 
         this.onStartOnboarding = onStartOnboarding;
 
@@ -33,8 +32,7 @@ public class OnboardingProjectCreationPane extends RRVBox {
         getChildren().add(startOnboardingButton);
         VBox.setVgrow(startOnboardingButton, Priority.ALWAYS);
         setAlignment(Pos.CENTER);
-        setPadding(new Insets(24));
-        getStyleClass().add("project-details-pane");
+        getStyleClass().addAll("project-details-pane", "onboarding-project-creation-pane");
     }
 
     private void startOnboarding() {

@@ -2,7 +2,6 @@ package dev.railroadide.railroad.ui;
 
 import javafx.animation.FadeTransition;
 import javafx.animation.TranslateTransition;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.layout.Priority;
@@ -46,22 +45,17 @@ public class RRSidebar extends VBox {
     private void initialize() {
         getStyleClass().addAll("rr-sidebar", "elevated-2");
         setAlignment(Pos.TOP_CENTER);
-        setPadding(new Insets(16));
-        setSpacing(16);
 
         header = new VBox();
         header.setAlignment(Pos.TOP_CENTER);
-        header.setSpacing(8);
         header.getStyleClass().add("sidebar-header");
 
         content = new VBox();
         content.setAlignment(Pos.TOP_CENTER);
-        content.setSpacing(8);
         content.getStyleClass().add("sidebar-content");
 
         footer = new VBox();
         footer.setAlignment(Pos.BOTTOM_CENTER);
-        footer.setSpacing(8);
         footer.getStyleClass().add("sidebar-footer");
 
         getChildren().addAll(header, content, footer);

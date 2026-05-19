@@ -34,9 +34,9 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.WorkerStateEvent;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
@@ -68,8 +68,6 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
     public ProjectExplorerPane(Project project, RRBorderPane mainPane) {
         Path rootPath = project.getPath();
-        setPadding(new Insets(0));
-        setSpacing(0);
         getStyleClass().add("rr-project-explorer");
 
         this.searchField = new RRTextField("railroad.ide.project_explorer.search_field");
@@ -274,6 +272,20 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         Path path = item.getPath();
         if (Files.isDirectory(path))
             return;
+        Path normalizedPath = path.toAbsolutePath().normalize();
+
+        Optional<OpenTabLocation> existing = findOpenTab(mainPane, normalizedPath);
+        if (existing.isPresent()) {
+            OpenTabLocation location = existing.get();
+            location.tabPane().getSelectionModel().select(location.tab());
+            if (location.tab().getContent() instanceof TextEditorPane textEditorPane) {
+                Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(textEditorPane);
+            } else {
+                Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(null);
+            }
+
+            return;
+        }
 
         // if it's not a binary file, open it in the text editor
         if (!FileUtils.isBinaryFile(path)) {
@@ -399,6 +411,48 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         }
     }
 
+    private static Optional<OpenTabLocation> findOpenTab(RRBorderPane mainPane, Path path) {
+        return collectTabPanes(mainPane).stream()
+            .flatMap(tabPane -> tabPane.getTabs().stream()
+                .filter(tab -> tabMatchesPath(tab, path))
+                .map(tab -> new OpenTabLocation(tabPane, tab)))
+            .findFirst();
+    }
+
+    private static boolean tabMatchesPath(Tab tab, Path path) {
+        Node content = tab.getContent();
+        if (content instanceof TextEditorPane textEditorPane)
+            return textEditorPane.getFilePath().toAbsolutePath().normalize().equals(path);
+
+        if (content instanceof MarkdownPreviewPane markdownPreviewPane)
+            return markdownPreviewPane.getMarkdownFile().toAbsolutePath().normalize().equals(path);
+
+        if (content instanceof ImageViewerPane imageViewerPane) {
+            Path imagePath = imageViewerPane.getImagePath();
+            return imagePath != null && imagePath.toAbsolutePath().normalize().equals(path);
+        }
+
+        return false;
+    }
+
+    private static List<DetachableTabPane> collectTabPanes(Parent parent) {
+        List<DetachableTabPane> panes = new ArrayList<>();
+        collectTabPanes(parent, panes);
+        return panes;
+    }
+
+    private static void collectTabPanes(Parent parent, List<DetachableTabPane> panes) {
+        if (parent instanceof DetachableTabPane tabPane) {
+            panes.add(tabPane);
+        }
+
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            if (child instanceof Parent childParent) {
+                collectTabPanes(childParent, panes);
+            }
+        }
+    }
+
     public static void expandAll(TreeItem<PathItem> treeItem) {
         treeItem.setExpanded(true);
         for (TreeItem<PathItem> child : treeItem.getChildren()) {
@@ -414,13 +468,13 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     private Node createModernHeader(Project project) {
-        var header = new HBox(8);
+        var header = new HBox();
         header.getStyleClass().add("project-explorer-header");
-        header.setPadding(new Insets(12, 16, 8, 16));
         header.setAlignment(Pos.CENTER_LEFT);
 
         // Project icon and name
-        var projectInfo = new HBox(8);
+        var projectInfo = new HBox();
+        projectInfo.getStyleClass().add("project-explorer-project-info");
         projectInfo.setAlignment(Pos.CENTER_LEFT);
         var projectIcon = new FontIcon(FontAwesomeSolid.FOLDER_OPEN);
         projectIcon.getStyleClass().add("project-icon");
@@ -432,12 +486,12 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         // Search field
         this.searchField.setPromptText("Search files...");
-        this.searchField.setPrefWidth(200);
-        this.searchField.setMaxWidth(260);
+        this.searchField.getStyleClass().add("project-explorer-search-field");
         HBox.setHgrow(this.searchField, Priority.ALWAYS);
 
         // Action buttons
-        var actionButtons = new HBox(4);
+        var actionButtons = new HBox();
+        actionButtons.getStyleClass().add("project-explorer-action-buttons");
         actionButtons.setAlignment(Pos.CENTER_RIGHT);
 
         var refreshButton = new RRButton("", FontAwesomeSolid.SYNC_ALT);
@@ -755,5 +809,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         }
 
         return true;
+    }
+
+    private record OpenTabLocation(DetachableTabPane tabPane, Tab tab) {
     }
 }

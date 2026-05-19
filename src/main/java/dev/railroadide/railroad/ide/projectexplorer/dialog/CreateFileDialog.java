@@ -1,12 +1,12 @@
 package dev.railroadide.railroad.ide.projectexplorer.dialog;
 
+import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRGridPane;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
-import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TextField;
@@ -37,9 +37,7 @@ public class CreateFileDialog {
         });
 
         var root = new RRGridPane();
-        root.setPadding(new Insets(30));
-        root.setHgap(5);
-        root.setVgap(10);
+        root.getStyleClass().add("create-file-dialog");
 
         var title = new LocalizedLabel(switch (type) {
             case FILE -> "railroad.dialog.create_file.title.file";
@@ -123,7 +121,12 @@ public class CreateFileDialog {
             root.addRow(2, okButton, cancelButton);
         }
 
-        dialog.setScene(new Scene(root));
+        var scene = new Scene(root);
+        var stylesheet = AppResources.getResource("styles/components/dialog.css");
+        if (stylesheet != null) {
+            scene.getStylesheets().add(stylesheet.toExternalForm());
+        }
+        dialog.setScene(scene);
         dialog.showAndWait();
     }
 

@@ -4,7 +4,6 @@ import dev.railroadide.railroad.ui.localized.LocalizedTextProperty;
 import javafx.animation.ScaleTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
@@ -54,7 +53,6 @@ public class RRCheckBox extends CheckBox {
     private void initialize(String localizationKey, Object... args) {
         getStyleClass().setAll("rr-check-box", "check-box");
         setAlignment(Pos.CENTER);
-        setPadding(new Insets(8, 16, 8, 16));
 
         textProperty().bindBidirectional(localizedText);
         localizedText.setTranslation(localizationKey, args);
@@ -166,7 +164,8 @@ public class RRCheckBox extends CheckBox {
         setDisable(true);
         getStyleClass().add("loading");
 
-        var loadingContent = new RRHBox(8);
+        var loadingContent = new RRHBox();
+        loadingContent.getStyleClass().add("rr-check-box-content");
         loadingContent.setAlignment(Pos.CENTER);
         loadingContent.getChildren().addAll(loadingSpinner);
 
@@ -200,7 +199,8 @@ public class RRCheckBox extends CheckBox {
             return; // Don't update content while loading
 
         if (icon != null) {
-            var content = new RRHBox(8);
+            var content = new RRHBox();
+            content.getStyleClass().add("rr-check-box-content");
             content.setAlignment(Pos.CENTER);
             content.getChildren().add(icon);
 

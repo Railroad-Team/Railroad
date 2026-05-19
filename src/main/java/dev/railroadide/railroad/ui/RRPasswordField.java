@@ -5,7 +5,6 @@ import dev.railroadide.railroad.ui.localized.LocalizedTextProperty;
 import dev.railroadide.railroad.ui.styling.TextFieldSize;
 import dev.railroadide.railroad.ui.styling.ValidationState;
 import javafx.animation.FadeTransition;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.control.PasswordField;
@@ -62,14 +61,13 @@ public class RRPasswordField extends PasswordField implements TextFieldControl {
 
     protected void initialize() {
         getStyleClass().setAll(RRPasswordField.DEFAULT_STYLE_CLASSES);
-        setPadding(new Insets(8, 12, 8, 12));
         setCursor(Cursor.TEXT);
 
         promptTextProperty().bindBidirectional(localizedPromptText);
 
         container = new HBox();
         container.setAlignment(Pos.CENTER_LEFT);
-        container.setSpacing(8);
+        container.getStyleClass().add("rr-text-field-container");
 
         focusedProperty().addListener((obs, oldVal, newVal) -> {
             var fade = new FadeTransition(Duration.millis(200), this);

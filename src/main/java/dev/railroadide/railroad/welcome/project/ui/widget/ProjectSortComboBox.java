@@ -39,9 +39,6 @@ public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {
         super(ProjectSort::getKey);
         setItems(FXCollections.observableArrayList(ProjectSort.values()));
         getStyleClass().addAll("rr-combo-box", "project-sort-combo");
-        setMinWidth(170);
-        setPrefWidth(220);
-        setMaxWidth(260);
         setVisibleRowCount(ProjectSort.values().length);
 
         setButtonCell(new ProjectSortListCell(true));
@@ -72,8 +69,8 @@ public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {
         private final FontIcon icon = new FontIcon(DEFAULT_ICON);
         private final LocalizedLabel title = new LocalizedLabel("");
         private final LocalizedLabel description = new LocalizedLabel("");
-        private final VBox textContainer = new VBox(2);
-        private final HBox container = new HBox(10);
+        private final VBox textContainer = new VBox();
+        private final HBox container = new HBox();
 
         private ProjectSortListCell(boolean compact) {
             this.compact = compact;

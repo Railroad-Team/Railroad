@@ -20,7 +20,5 @@ public class GitCommitPane extends RRVBox {
         );
 
         VBox.setVgrow(gitCommitChanges, Priority.ALWAYS);
-        gitCommitChanges.setMaxHeight(Double.MAX_VALUE);
-        gitCommitChanges.setMinHeight(0);
     }
 }

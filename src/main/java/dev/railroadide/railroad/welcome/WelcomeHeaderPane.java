@@ -10,7 +10,6 @@ import dev.railroadide.railroad.ui.styling.TextFieldSize;
 import dev.railroadide.railroad.welcome.project.ui.widget.ProjectSortComboBox;
 import javafx.collections.ListChangeListener;
 import javafx.css.PseudoClass;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
@@ -28,8 +27,7 @@ public class WelcomeHeaderPane extends RRCard {
     private final LocalizedLabel projectsStatLabel = new LocalizedLabel("railroad.home.welcome.stats.projects", 0);
 
     public WelcomeHeaderPane() {
-        super(18, new Insets(24, 32, 24, 32));
-        setSpacing(18);
+        super(18);
         getStyleClass().add("welcome-card");
 
         searchField = new RRTextField("railroad.home.welcome.projectsearch");
@@ -42,10 +40,10 @@ public class WelcomeHeaderPane extends RRCard {
         var statsBar = createStatsBar();
         var options = createOptionsRow(searchBar);
 
-        var content = new VBox(18, heroSection, statsBar, options);
+        var content = new VBox(heroSection, statsBar, options);
         content.setAlignment(Pos.CENTER_LEFT);
+        content.getStyleClass().add("welcome-header-content");
         VBox.setVgrow(options, Priority.ALWAYS);
-        content.setPadding(new Insets(8, 12, 8, 12));
 
         getChildren().setAll(content);
         initializeProjectStats();
@@ -64,10 +62,10 @@ public class WelcomeHeaderPane extends RRCard {
         var heroIcon = new FontIcon(FontAwesomeSolid.ROCKET);
         heroIcon.getStyleClass().add("welcome-hero-icon");
 
-        var textGroup = new VBox(4, welcomeMessage, title, subtitle);
+        var textGroup = new VBox(welcomeMessage, title, subtitle);
         textGroup.getStyleClass().add("welcome-hero-text");
 
-        var heroRow = new HBox(16, heroIcon, textGroup);
+        var heroRow = new HBox(heroIcon, textGroup);
         heroRow.getStyleClass().add("welcome-hero");
         heroRow.setAlignment(Pos.CENTER_LEFT);
 
@@ -79,7 +77,7 @@ public class WelcomeHeaderPane extends RRCard {
         projectsIcon.getStyleClass().add("welcome-stat-icon");
 
         projectsStatLabel.getStyleClass().add("welcome-stat-label");
-        var projectsStat = new HBox(8, projectsIcon, projectsStatLabel);
+        var projectsStat = new HBox(projectsIcon, projectsStatLabel);
         projectsStat.getStyleClass().add("welcome-stat");
         projectsStat.setAlignment(Pos.CENTER_LEFT);
 
@@ -87,11 +85,11 @@ public class WelcomeHeaderPane extends RRCard {
         tipLabel.getStyleClass().add("welcome-tip-label");
         var tipIcon = new FontIcon(FontAwesomeSolid.LIGHTBULB);
         tipIcon.getStyleClass().add("welcome-tip-icon");
-        var tip = new HBox(6, tipIcon, tipLabel);
+        var tip = new HBox(tipIcon, tipLabel);
         tip.getStyleClass().add("welcome-tip");
         tip.setAlignment(Pos.CENTER_LEFT);
 
-        var statsBar = new HBox(18, projectsStat, tip);
+        var statsBar = new HBox(projectsStat, tip);
         statsBar.getStyleClass().add("welcome-stats-bar");
         statsBar.setAlignment(Pos.CENTER_LEFT);
         statsBar.setFillHeight(false);
@@ -100,7 +98,7 @@ public class WelcomeHeaderPane extends RRCard {
     }
 
     private HBox createOptionsRow(HBox searchBar) {
-        var options = new HBox(14, searchBar, sortComboBox);
+        var options = new HBox(searchBar, sortComboBox);
         options.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(searchBar, Priority.ALWAYS);
         HBox.setHgrow(sortComboBox, Priority.NEVER);
@@ -123,7 +121,7 @@ public class WelcomeHeaderPane extends RRCard {
         clearButton.visibleProperty().bind(searchField.textProperty().isNotEmpty());
         clearButton.managedProperty().bind(clearButton.visibleProperty());
 
-        var searchContainer = new HBox(10, searchIcon, searchField, clearButton);
+        var searchContainer = new HBox(searchIcon, searchField, clearButton);
         searchContainer.getStyleClass().add("welcome-search-container");
         searchContainer.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(searchField, Priority.ALWAYS);

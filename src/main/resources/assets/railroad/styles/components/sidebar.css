@@ -5,6 +5,8 @@
     -fx-border-width: 0 1px 0 0;
     -fx-min-width: 240px;
     -fx-max-width: 240px;
+    -fx-padding: 16px;
+    -fx-spacing: 16px;
     -fx-transition: all 0.3s ease-in-out;
 }
 
@@ -30,16 +32,19 @@
 
 /* Sidebar sections */
 .rr-sidebar .sidebar-header {
+    -fx-spacing: 8px;
     -fx-padding: 0 0 16px 0;
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 0 0 1px 0;
 }
 
 .rr-sidebar .sidebar-content {
+    -fx-spacing: 8px;
     -fx-padding: 16px 0;
 }
 
 .rr-sidebar .sidebar-footer {
+    -fx-spacing: 8px;
     -fx-padding: 16px 0 0 0;
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 1px 0 0 0;

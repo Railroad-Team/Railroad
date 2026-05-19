@@ -4,7 +4,6 @@ import dev.railroadide.railroad.project.onboarding.step.OnboardingStep;
 import dev.railroadide.railroad.ui.*;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -27,9 +26,8 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
 
     public BasicOnboardingUI(Node content) {
         getStyleClass().add("onboarding-root");
-        setPadding(new Insets(32, 40, 24, 40));
 
-        var mainContainer = new RRVBox(24);
+        var mainContainer = new RRVBox();
         mainContainer.getStyleClass().add("onboarding-main");
         mainContainer.setFillWidth(true);
         setCenter(mainContainer);
@@ -45,17 +43,16 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
 
         this.progressBar = new ProgressBar(0);
         this.progressBar.getStyleClass().add("onboarding-progress-bar");
-        this.progressBar.setMaxWidth(Double.MAX_VALUE);
 
         this.progressLabel = new Label();
         this.progressLabel.getStyleClass().add("onboarding-progress-label");
 
-        var header = new RRVBox(12);
+        var header = new RRVBox();
         header.getChildren().addAll(titleLabel, descriptionLabel, createProgressContainer());
         header.getStyleClass().add("onboarding-header");
 
         // Content
-        this.contentContainer = new RRVBox(16);
+        this.contentContainer = new RRVBox();
         this.contentContainer.getStyleClass().add("onboarding-content-container");
         this.contentContainer.setFillWidth(true);
 
@@ -87,7 +84,7 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
     }
 
     private Node createProgressContainer() {
-        var progressContainer = new RRHBox(12);
+        var progressContainer = new RRHBox();
         progressContainer.getChildren().addAll(progressBar, progressLabel);
         progressContainer.setAlignment(Pos.CENTER_LEFT);
         progressContainer.getStyleClass().add("onboarding-progress");
@@ -97,7 +94,7 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
 
     private StackPane createBusyOverlay() {
         ProgressIndicator indicator = new ProgressIndicator();
-        indicator.setMaxSize(48, 48);
+        indicator.getStyleClass().add("onboarding-busy-indicator");
         StackPane overlay = new StackPane(indicator);
         overlay.getStyleClass().add("onboarding-busy-overlay");
         overlay.setVisible(false);

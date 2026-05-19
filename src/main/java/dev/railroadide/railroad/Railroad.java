@@ -124,7 +124,7 @@ public class Railroad extends Application {
                 try (ExecutorService executorService = HTTP_CLIENT.dispatcher().executorService()) {
                     executorService.shutdown();
                 }
-
+        
                 HTTP_CLIENT.connectionPool().evictAll();
             }))
         );

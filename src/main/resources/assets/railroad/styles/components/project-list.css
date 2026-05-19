@@ -1,6 +1,7 @@
 .project-list-cell {
     -fx-background-color: transparent, -color-bg-inset;
     -fx-background-insets: 0px, 2px;
+    -fx-pref-height: 80px;
 }
 
 .project-list-cell:empty {
@@ -11,6 +12,23 @@
 
 .project-list-node, .project-list-node .Pane {
     -fx-background-color: -color-bg-subtle;
+}
+
+.project-list-card {
+    -fx-padding: 10px 5px;
+}
+
+.project-list-root {
+    -fx-spacing: 16px;
+    -fx-padding: 0;
+}
+
+.project-list-info-box {
+    -fx-spacing: 4px;
+}
+
+.project-list-facet-tags {
+    -fx-spacing: 5px;
 }
 /* base tag style */
 .project-list-facet-tag {

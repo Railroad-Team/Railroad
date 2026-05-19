@@ -94,6 +94,23 @@
     -fx-spacing: 12px;
 }
 
+.rr-form-container-custom-padding {
+    -fx-padding: 0;
+}
+
+.rr-form-section.compact {
+    -fx-padding: 12px;
+    -fx-spacing: 8px;
+}
+
+.rr-form-section.compact .section-content {
+    -fx-spacing: 8px;
+}
+
+.rr-form-section-custom-padding {
+    -fx-padding: 0;
+}
+
 .form-title {
     -fx-font-size: 24px;
     -fx-font-weight: bold;
@@ -110,4 +127,26 @@
 .form-section-title {
     -fx-font-size: 20px;
     -fx-font-weight: bold;
+}
+
+.form-root {
+    -fx-spacing: 20px;
+    -fx-padding: 25px;
+}
+
+.form-button-box {
+    -fx-spacing: 10px;
+}
+
+.form-section-root {
+    -fx-spacing: 16px;
+    -fx-padding: 20px;
+}
+
+.field-container {
+    -fx-spacing: 10px;
+}
+
+.field-vertical-layout {
+    -fx-spacing: 8px;
 }

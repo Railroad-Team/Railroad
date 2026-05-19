@@ -101,7 +101,6 @@ public final class RunControlsPane extends RRHBox {
 
         comboBox.getStyleClass().add("run-config-combobox");
         comboBox.setTooltip(new LocalizedTooltip("railroad.ide.toolbar.run_configurations.tooltip"));
-        comboBox.setPrefWidth(200);
         comboBox.setCellFactory(param -> new RunConfigurationListCell(project));
         comboBox.setButtonCell(new ListCell<>() {
             @Override

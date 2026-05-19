@@ -1,0 +1,5 @@
+.create-file-dialog {
+    -fx-padding: 30px;
+    -fx-hgap: 5px;
+    -fx-vgap: 10px;
+}

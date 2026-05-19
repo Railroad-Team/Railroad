@@ -21,7 +21,7 @@ public class GitSyncControlsPane extends RRVBox {
         var remoteLabel = new LocalizedLabel("railroad.git.sync.controls.remote");
         remoteLabel.getStyleClass().add("git-sync-controls-remote-label");
 
-        ObservableList<GitRemote> remotes = FXCollections.observableArrayList(gitManager.getRemotes());
+        ObservableList<GitRemote> remotes = FXCollections.observableArrayList();
         ComboBox<GitRemote> remoteComboBox = new ComboBox<>(remotes);
         remoteComboBox.getStyleClass().add("git-sync-controls-remote-combobox");
         remoteComboBox.setConverter(new StringConverter<>() {
@@ -41,7 +41,6 @@ public class GitSyncControlsPane extends RRVBox {
                     .orElse(null);
             }
         });
-        remoteComboBox.getSelectionModel().select(gitManager.getCurrentRemote());
         remoteComboBox.setOnAction($ -> {
             GitRemote selectedRemote = remoteComboBox.getSelectionModel().getSelectedItem();
             if (selectedRemote != null) {
@@ -84,5 +83,12 @@ public class GitSyncControlsPane extends RRVBox {
         buttonsHbox.getStyleClass().add("git-sync-controls-buttons-hbox");
 
         getChildren().addAll(remoteVbox, upstreamBranchVbox, buttonsHbox);
+
+        Runnable refreshRemotes = () -> {
+            remotes.setAll(gitManager.getRemotes());
+            remoteComboBox.getSelectionModel().select(gitManager.getCurrentRemote());
+        };
+        refreshRemotes.run();
+        gitManager.repoStatusProperty().addListener((obs, oldStatus, newStatus) -> refreshRemotes.run());
     }
 }

@@ -15,6 +15,21 @@
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 0 0 1 0;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 2, 0, 0, 1);
+    -fx-padding: 12px 16px 8px 16px;
+    -fx-spacing: 8px;
+}
+
+.project-explorer-project-info {
+    -fx-spacing: 8px;
+}
+
+.project-explorer-search-field {
+    -fx-pref-width: 200px;
+    -fx-max-width: 260px;
+}
+
+.project-explorer-action-buttons {
+    -fx-spacing: 4px;
 }
 
 .project-icon {

@@ -38,13 +38,12 @@ public abstract class AbstractPathListPane extends RRVBox {
                                    String placeholderKey,
                                    String addTooltipKey,
                                    String removeTooltipKey) {
-        setSpacing(12);
         setFillWidth(true);
         getStyleClass().add("path-list-pane");
 
         listView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         listView.setPlaceholder(new LocalizedLabel(placeholderKey));
-        listView.setMinHeight(200);
+        listView.getStyleClass().add("path-list-view");
         listView.setCellFactory(view -> new ListCell<>() {
             @Override
             protected void updateItem(Path item, boolean empty) {
@@ -54,7 +53,8 @@ public abstract class AbstractPathListPane extends RRVBox {
         });
         VBox.setVgrow(listView, Priority.NEVER);
 
-        var controls = new RRHBox(8);
+        var controls = new RRHBox();
+        controls.getStyleClass().add("path-list-controls");
 
         var addButton = new RRButton(null, FontAwesomeSolid.PLUS);
         addButton.setButtonSize(ButtonSize.SMALL);
