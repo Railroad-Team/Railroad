@@ -298,19 +298,6 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             return;
         Path normalizedPath = path.toAbsolutePath().normalize();
 
-        Optional<OpenTabLocation> existing = findOpenTab(mainPane, normalizedPath);
-        if (existing.isPresent()) {
-            OpenTabLocation location = existing.get();
-            location.tabPane().getSelectionModel().select(location.tab());
-            if (location.tab().getContent() instanceof TextEditorPane textEditorPane) {
-                Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(textEditorPane);
-            } else {
-                Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(null);
-            }
-
-            return;
-        }
-
         LanguageSupport support = LanguageSupportRegistry.find(path)
             .orElseGet(() -> FileUtils.isBinaryFile(path)
                 ? (FileUtils.isImageFile(path) ? ImageLanguageSupport.INSTANCE : null)
@@ -318,6 +305,19 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         if (support == null) {
             FileUtils.openInDefaultApplication(path);
             Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(path.getFileName().toString(), path), DocumentEvent.EventType.OPENED));
+            return;
+        }
+
+        Optional<OpenTabLocation> existing = findOpenTab(mainPane, normalizedPath);
+        if (existing.isPresent()) {
+            OpenTabLocation location = existing.get();
+            location.tabPane().getSelectionModel().select(location.tab());
+            if (location.tab().getContent() instanceof TextEditorPane textEditorPane) {
+                Services.DOCUMENT_EDITOR_STATE.setActiveEditor(textEditorPane, support.languageId());
+            } else {
+                Services.DOCUMENT_EDITOR_STATE.setActiveEditor(null, null);
+            }
+
             return;
         }
 
@@ -339,7 +339,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             }
 
             TextEditorPane activeEditorPane = editorOpenView.activeEditor();
-            Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(activeEditorPane);
+            Services.DOCUMENT_EDITOR_STATE.setActiveEditor(activeEditorPane, support.languageId());
 
             Node content = editorOpenView.content();
             Tab tab;
@@ -367,10 +367,10 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             tab.setOnSelectionChanged(event -> {
                 if (tab.isSelected()) {
                     Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.ACTIVATED));
-                    Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(activeEditorPane);
+                    Services.DOCUMENT_EDITOR_STATE.setActiveEditor(activeEditorPane, support.languageId());
                 } else {
                     Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.DEACTIVATED));
-                    Services.DOCUMENT_EDITOR_STATE.setActiveEditorPane(null);
+                    Services.DOCUMENT_EDITOR_STATE.setActiveEditor(null, null);
                 }
             });
         });
