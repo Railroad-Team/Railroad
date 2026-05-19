@@ -7,6 +7,7 @@ import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.ListView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.Region;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -37,9 +38,10 @@ public class RRAutoCompleteTextField extends RRTextField {
 
         suggestionsPopup.setAutoHide(true);
         suggestionsContainer.setHideOnClick(false);
-        setPrefWidth(240);
+        getStyleClass().add("rr-auto-complete-text-field");
         suggestionsPopup.getItems().add(suggestionsContainer);
 
+        suggestionsListView.getStyleClass().add("rr-auto-complete-suggestions");
         suggestionsListView.setFocusTraversable(false);
         suggestionsListView.setOnMouseClicked(event -> applySelectedSuggestion());
         suggestionsListView.setOnKeyPressed(event -> {
@@ -180,14 +182,17 @@ public class RRAutoCompleteTextField extends RRTextField {
             double rowHeight = suggestionsListView.getFixedCellSize() > 0 ?
                 suggestionsListView.getFixedCellSize() :
                 MIN_SUGGESTION_HEIGHT;
+            double maxPopupHeight = suggestionsListView.getMaxHeight();
+            if (maxPopupHeight <= 0 || maxPopupHeight == Region.USE_COMPUTED_SIZE) {
+                maxPopupHeight = MAX_POPUP_HEIGHT;
+            }
 
             int itemCount = Math.max(1, suggestionsListView.getItems().size());
             double prefHeight = (itemCount * rowHeight) + suggestionsListView.snappedTopInset() + suggestionsListView.snappedBottomInset();
 
-            double clampedHeight = Math.min(MAX_POPUP_HEIGHT, prefHeight);
+            double clampedHeight = Math.min(maxPopupHeight, prefHeight);
             suggestionsListView.setMinHeight(Math.min(rowHeight, clampedHeight));
             suggestionsListView.setPrefHeight(clampedHeight);
-            suggestionsListView.setMaxHeight(MAX_POPUP_HEIGHT);
 
             double prefWidth = Math.max(getWidth(), getPrefWidth());
             suggestionsListView.setPrefWidth(prefWidth);

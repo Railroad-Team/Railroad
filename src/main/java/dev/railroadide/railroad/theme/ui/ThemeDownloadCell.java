@@ -12,7 +12,6 @@ import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -45,17 +44,17 @@ public class ThemeDownloadCell extends ListCell<Theme> {
         super();
         getStyleClass().add("theme-download-cell");
 
-        card = new RRCard(12, new Insets(16));
+        card = new RRCard();
         card.setInteractive(false);
-        card.getStyleClass().addAll("card", "compact");
+        card.getStyleClass().addAll("card", "compact", "theme-download-card");
 
-        content = new RRHBox(16);
+        content = new RRHBox();
         content.setAlignment(Pos.CENTER_LEFT);
-        content.getStyleClass().add("transparent-background");
+        content.getStyleClass().addAll("transparent-background", "theme-download-content");
 
-        infoSection = new RRVBox(4);
+        infoSection = new RRVBox();
         infoSection.setAlignment(Pos.CENTER_LEFT);
-        infoSection.getStyleClass().add("transparent-background");
+        infoSection.getStyleClass().addAll("transparent-background", "theme-download-info");
         HBox.setHgrow(infoSection, Priority.ALWAYS);
 
         themeNameLabel = new Label();
@@ -66,9 +65,9 @@ public class ThemeDownloadCell extends ListCell<Theme> {
 
         infoSection.getChildren().addAll(themeNameLabel, themeSizeLabel);
 
-        actionSection = new RRHBox(8);
+        actionSection = new RRHBox();
         actionSection.setAlignment(Pos.CENTER_RIGHT);
-        actionSection.getStyleClass().add("transparent-background");
+        actionSection.getStyleClass().addAll("transparent-background", "theme-download-actions");
 
         previewButton = new RRButton();
         previewButton.setIcon(FontAwesomeSolid.EYE);

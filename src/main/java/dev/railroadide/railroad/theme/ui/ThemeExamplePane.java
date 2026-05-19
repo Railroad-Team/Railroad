@@ -13,7 +13,6 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -61,7 +60,6 @@ public class ThemeExamplePane {
     private VBox createPreviewContent() {
 
         var mainContainer = new RRFormContainer();
-        mainContainer.setPadding(new Insets(24));
         mainContainer.setAlignment(Pos.TOP_LEFT);
         mainContainer.getStyleClass().add("theme-example-main-container");
 
@@ -87,8 +85,9 @@ public class ThemeExamplePane {
     }
 
     private VBox createHeaderSection() {
-        var header = new RRVBox(8);
+        var header = new RRVBox();
         header.setAlignment(Pos.CENTER_LEFT);
+        header.getStyleClass().add("theme-example-header");
 
         var title = new LocalizedLabel("railroad.home.settings.appearance.preview.title");
         title.getStyleClass().add("form-title");
@@ -101,9 +100,9 @@ public class ThemeExamplePane {
     }
 
     private HBox createNavigationSection() {
-        var navigation = new RRHBox(12);
+        var navigation = new RRHBox();
         navigation.setAlignment(Pos.CENTER_LEFT);
-        navigation.setPadding(new Insets(16, 0, 16, 0));
+        navigation.getStyleClass().add("theme-example-navigation");
 
         var navItems = Arrays.asList(
             "railroad.home.settings.appearance.preview.navigation.0",
@@ -127,24 +126,24 @@ public class ThemeExamplePane {
         var formSection = new RRFormSection();
         formSection.setLocalizedHeaderText("railroad.home.settings.appearance.preview.form.components");
 
-        var textFieldRow = new RRHBox(12);
+        var textFieldRow = new RRHBox();
         textFieldRow.setAlignment(Pos.CENTER_LEFT);
-        textFieldRow.getStyleClass().add("transparent-background");
+        textFieldRow.getStyleClass().addAll("transparent-background", "theme-example-row");
 
         var textField = new RRTextField("railroad.home.settings.appearance.preview.form.text_prompt");
-        textField.setPrefWidth(200);
+        textField.getStyleClass().add("theme-example-text-input");
 
         var passwordField = new RRPasswordField("railroad.home.settings.appearance.preview.form.password_prompt");
-        passwordField.setPrefWidth(200);
+        passwordField.getStyleClass().add("theme-example-text-input");
 
         textFieldRow.getChildren().addAll(
             new LocalizedLabel("railroad.theme.preview.text_field"), textField,
             new LocalizedLabel("railroad.theme.preview.password"), passwordField
         );
 
-        var controlsRow = new RRHBox(12);
+        var controlsRow = new RRHBox();
         controlsRow.setAlignment(Pos.CENTER_LEFT);
-        controlsRow.getStyleClass().add("transparent-background");
+        controlsRow.getStyleClass().addAll("transparent-background", "theme-example-row");
 
         var comboBox = LocalizedComboBox.fromLocalizationKeys(FXCollections.observableArrayList(
             "railroad.home.settings.appearance.preview.form.combo_box.items.0",
@@ -152,7 +151,7 @@ public class ThemeExamplePane {
             "railroad.home.settings.appearance.preview.form.combo_box.items.2"
         ));
         comboBox.setValue("railroad.home.settings.appearance.preview.form.combo_box.items.0");
-        comboBox.setPrefWidth(150);
+        comboBox.getStyleClass().add("theme-example-combo");
 
         var checkBox = new RRCheckBox("railroad.home.settings.appearance.preview.form.check_box.label");
         checkBox.setSelected(true);
@@ -187,9 +186,7 @@ public class ThemeExamplePane {
             L18n.localize("railroad.home.settings.appearance.preview.list.items.6"),
             L18n.localize("railroad.home.settings.appearance.preview.list.items.7")
         );
-        listView.setPrefHeight(250);
-        listView.setMinHeight(200);
-        listView.getStyleClass().add("theme-example-list-view");
+        listView.getStyleClass().addAll("theme-example-list-view", "theme-example-tall-list");
 
         var table = new RRTableView<ProjectData>();
         var nameColumn = new LocalizedTableColumn<ProjectData, String>("railroad.home.settings.appearance.preview.table.columns.0");
@@ -200,12 +197,11 @@ public class ThemeExamplePane {
         typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
 
-        nameColumn.setPrefWidth(200);
-        typeColumn.setPrefWidth(120);
-        statusColumn.setPrefWidth(120);
-
         // noinspection unchecked
         table.getColumns().addAll(nameColumn, typeColumn, statusColumn);
+        nameColumn.prefWidthProperty().bind(table.widthProperty().multiply(0.45));
+        typeColumn.prefWidthProperty().bind(table.widthProperty().multiply(0.275));
+        statusColumn.prefWidthProperty().bind(table.widthProperty().multiply(0.275));
 
         ObservableList<ProjectData> data = FXCollections.observableArrayList(
             new ProjectData("MyMod", "Fabric", "Active"),
@@ -214,8 +210,7 @@ public class ThemeExamplePane {
             new ProjectData("DemoMod", "Bukkit", "Inactive")
         );
         table.setItems(data);
-        table.setPrefHeight(250);
-        table.setMinHeight(200);
+        table.getStyleClass().addAll("theme-example-table", "theme-example-tall-table");
 
         listSection.addContent(listView, table);
         return listSection;
@@ -225,9 +220,9 @@ public class ThemeExamplePane {
         var buttonSection = new RRFormSection();
         buttonSection.setLocalizedHeaderText("railroad.home.settings.appearance.preview.button.components");
 
-        var buttonRow1 = new RRHBox(12);
+        var buttonRow1 = new RRHBox();
         buttonRow1.setAlignment(Pos.CENTER_LEFT);
-        buttonRow1.getStyleClass().add("transparent-background");
+        buttonRow1.getStyleClass().addAll("transparent-background", "theme-example-row");
 
         var primaryButton = new RRButton("railroad.home.settings.appearance.preview.button.primary");
         primaryButton.setVariant(ButtonVariant.PRIMARY);
@@ -243,9 +238,9 @@ public class ThemeExamplePane {
 
         buttonRow1.getChildren().addAll(primaryButton, secondaryButton, dangerButton, successButton);
 
-        var buttonRow2 = new RRHBox(12);
+        var buttonRow2 = new RRHBox();
         buttonRow2.setAlignment(Pos.CENTER_LEFT);
-        buttonRow2.getStyleClass().add("transparent-background");
+        buttonRow2.getStyleClass().addAll("transparent-background", "theme-example-row");
 
         var ghostButton = new RRButton("railroad.home.settings.appearance.preview.button.ghost");
         ghostButton.setVariant(ButtonVariant.GHOST);
@@ -267,9 +262,9 @@ public class ThemeExamplePane {
     }
 
     private HBox createFooterSection() {
-        var footer = new RRHBox(12);
+        var footer = new RRHBox();
         footer.setAlignment(Pos.CENTER_RIGHT);
-        footer.setPadding(new Insets(16, 0, 0, 0));
+        footer.getStyleClass().add("theme-example-footer");
 
         var closeButton = new RRButton("railroad.home.settings.appearance.preview.close");
         closeButton.setVariant(ButtonVariant.SECONDARY);

@@ -18,9 +18,8 @@ public class GitCommitActionsPane extends RRVBox {
         this.gitCommitChanges = gitCommitChanges;
 
         getStyleClass().add("git-commit-actions-pane");
-        setSpacing(8);
 
-        var header = new RRHBox(4);
+        var header = new RRHBox();
         header.getStyleClass().add("git-commit-actions-header");
 
         this.amendCheckbox = new RRCheckBox("git.commit.actions.amend.checkbox");
@@ -40,7 +39,7 @@ public class GitCommitActionsPane extends RRVBox {
         this.commitDescriptionArea.setWrapText(true);
         getChildren().add(this.commitDescriptionArea);
 
-        var footer = new RRHBox(4);
+        var footer = new RRHBox();
         footer.getStyleClass().add("git-commit-actions-footer");
 
         var commitButton = RRButton.primary("git.commit.actions.commit.button");

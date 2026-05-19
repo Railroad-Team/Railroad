@@ -32,6 +32,15 @@
 
 .runconfig-picker-toolbar {
     -fx-alignment: center-left;
+    -fx-spacing: 6px;
+}
+
+.runconfig-picker {
+    -fx-spacing: 8px;
+}
+
+.runconfig-picker-list {
+    -fx-pref-height: 200px;
 }
 
 .runconfig-picker-toolbar .runconfig-picker-button {
@@ -60,4 +69,33 @@
 
 .runconfig-picker-button-remove:hover .ikonli-font-icon {
     -fx-icon-color: #f59aa4 !important;
+}
+
+.run-configuration-editor-empty-state {
+    -fx-spacing: 8px;
+    -fx-padding: 20px;
+}
+
+.run-configuration-editor-empty-state-description {
+    -fx-max-width: 320px;
+}
+
+.run-configuration-editor-top-bar {
+    -fx-spacing: 5px;
+    -fx-padding: 5px;
+}
+
+.run-configuration-editor-bottom-bar {
+    -fx-spacing: 5px;
+    -fx-padding: 5px 10px;
+}
+
+.run-config-combobox {
+    -fx-pref-width: 200px;
+}
+
+.runconfig-gradle-jdk-combobox {
+    -fx-min-height: 72px;
+    -fx-pref-height: 72px;
+    -fx-max-height: 72px;
 }

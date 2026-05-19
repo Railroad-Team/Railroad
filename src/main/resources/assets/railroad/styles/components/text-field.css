@@ -8,7 +8,12 @@
     -fx-border-width: 1px;
     -fx-font-size: 14px;
     -fx-min-height: 36px;
+    -fx-padding: 8px 12px;
     -fx-transition: all 0.2s ease-in-out;
+}
+
+.rr-text-field-container {
+    -fx-spacing: 8px;
 }
 
 .rr-text-field:focused {
@@ -89,4 +94,13 @@
 .rr-text-field:focused .prefix-icon,
 .rr-text-field:focused .suffix-icon {
     -fx-icon-color: -color-accent-emphasis;
+}
+
+.rr-auto-complete-text-field {
+    -fx-pref-width: 240px;
+}
+
+.rr-auto-complete-suggestions {
+    -fx-fixed-cell-size: 28px;
+    -fx-max-height: 200px;
 }

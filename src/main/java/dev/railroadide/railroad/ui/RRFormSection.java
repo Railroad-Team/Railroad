@@ -21,7 +21,7 @@ public class RRFormSection extends VBox {
     }
 
     public RRFormSection(@Nullable String headerText) {
-        this(headerText, new Insets(20));
+        this(headerText, null);
     }
 
     public RRFormSection(@Nullable String headerText, Insets padding) {
@@ -40,11 +40,13 @@ public class RRFormSection extends VBox {
 
         headerLabel.setVisible(headerText != null && !headerText.trim().isEmpty());
 
-        contentArea = new VBox(12);
+        contentArea = new VBox();
         contentArea.getStyleClass().add("section-content");
 
-        setPadding(padding);
-        setSpacing(16);
+        if (padding != null) {
+            setPadding(padding);
+            getStyleClass().add("rr-form-section-custom-padding");
+        }
 
         getChildren().addAll(headerLabel, contentArea);
         VBox.setVgrow(contentArea, javafx.scene.layout.Priority.ALWAYS);
@@ -116,14 +118,8 @@ public class RRFormSection extends VBox {
     public void setCompact(boolean compact) {
         if (compact) {
             getStyleClass().add("compact");
-            setPadding(new Insets(12));
-            setSpacing(8);
-            contentArea.setSpacing(8);
         } else {
             getStyleClass().remove("compact");
-            setPadding(new Insets(20));
-            setSpacing(16);
-            contentArea.setSpacing(12);
         }
     }
 

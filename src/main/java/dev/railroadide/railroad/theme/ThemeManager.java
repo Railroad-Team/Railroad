@@ -67,6 +67,17 @@ public class ThemeManager {
         });
     }
 
+    public static void prepareSceneTransition(Scene previousScene, Scene nextScene) {
+        if (nextScene == null)
+            return;
+
+        if (previousScene != null) {
+            nextScene.getStylesheets().setAll(previousScene.getStylesheets());
+        }
+
+        apply(nextScene);
+    }
+
     public static StringProperty getCurrentThemeProperty() {
         return currentTheme;
     }

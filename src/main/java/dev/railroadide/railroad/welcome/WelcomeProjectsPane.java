@@ -12,7 +12,6 @@ import dev.railroadide.railroad.welcome.project.ProjectSort;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
@@ -132,9 +131,9 @@ public class WelcomeProjectsPane extends ScrollPane {
     private void updateEmptyState() {
         if (projectsList.getItems().isEmpty()) {
             // Show empty state illustration and message
-            var emptyBox = new RRVBox(12);
+            var emptyBox = new RRVBox();
             emptyBox.setAlignment(Pos.CENTER);
-            emptyBox.setPadding(new Insets(40, 0, 40, 0));
+            emptyBox.getStyleClass().add("welcome-projects-empty-box");
             var illustration = new ImageView(new Image(AppResources.iconStream(), 96, 96, true, true));
             var message = new LocalizedLabel("railroad.home.welcome.projects.empty");
             message.getStyleClass().add("welcome-projects-message");

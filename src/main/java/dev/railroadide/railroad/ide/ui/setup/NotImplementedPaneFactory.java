@@ -2,7 +2,6 @@ package dev.railroadide.railroad.ide.ui.setup;
 
 import dev.railroadide.railroad.ui.RRCard;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.text.TextAlignment;
@@ -18,9 +17,8 @@ public final class NotImplementedPaneFactory {
 
     public static Node create() {
         var card = new RRCard(16);
-        card.setPadding(new Insets(32, 32, 32, 32));
-        card.setMaxWidth(Double.MAX_VALUE);
         card.setAlignment(Pos.CENTER);
+        card.getStyleClass().add("not-implemented-card");
 
         var icon = new FontIcon(FontAwesomeSolid.TOOLS);
         icon.setIconSize(48);

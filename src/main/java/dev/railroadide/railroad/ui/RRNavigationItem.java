@@ -3,7 +3,6 @@ package dev.railroadide.railroad.ui;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import javafx.animation.FadeTransition;
 import javafx.animation.ScaleTransition;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -94,12 +93,10 @@ public class RRNavigationItem extends VBox {
     private void initialize() {
         getStyleClass().addAll("rr-navigation-item", "interactive");
         setAlignment(Pos.CENTER_LEFT);
-        setPadding(new Insets(8, 12, 8, 12));
-        setSpacing(8);
 
         content = new HBox();
         content.setAlignment(Pos.CENTER_LEFT);
-        content.setSpacing(12);
+        content.getStyleClass().add("rr-navigation-item-content");
 
         label = new LocalizedLabel("");
         label.getStyleClass().add("navigation-label");

@@ -13,7 +13,6 @@ import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
 import dev.railroadide.railroad.window.DialogBuilder;
 import dev.railroadide.railroad.window.WindowBuilder;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
@@ -51,18 +50,14 @@ public class GitRemoteActionsPane extends RRVBox {
 
         var primaryActionsBox = new RRHBox(fetchAllButton, pruneAllButton, addRemoteButton);
         primaryActionsBox.getStyleClass().add("git-remotes-actions-primary-actions");
-        primaryActionsBox.setSpacing(5);
         primaryActionsBox.setAlignment(Pos.CENTER);
 
         var secondaryActionsBox = new RRHBox(editRemoteButton, removeRemoteButton, fetchButton, pruneButton, openInBrowserButton);
         secondaryActionsBox.getStyleClass().add("git-remotes-actions-secondary-actions");
-        secondaryActionsBox.setSpacing(5);
         secondaryActionsBox.setAlignment(Pos.CENTER);
 
         getChildren().addAll(primaryActionsBox, secondaryActionsBox);
-        setSpacing(10);
         setAlignment(Pos.TOP_CENTER);
-        setPadding(new Insets(5));
 
         fetchAllButton.setOnAction(event -> gitManager.fetchAllRemotes());
         pruneAllButton.setOnAction(event -> gitManager.pruneAllRemotes());
@@ -120,7 +115,7 @@ public class GitRemoteActionsPane extends RRVBox {
     }
 
     private void openAddRemoteDialog() {
-        var content = new RRVBox(8);
+        var content = new RRVBox();
         content.getStyleClass().add("git-remote-add-dialog-content");
 
         var nameLabel = new LocalizedText("railroad.git.remotes.actions.add_dialog.name.label");
@@ -166,7 +161,7 @@ public class GitRemoteActionsPane extends RRVBox {
     }
 
     private void openEditRemoteDialog(GitRemote remote) {
-        var content = new RRVBox(8);
+        var content = new RRVBox();
         content.getStyleClass().add("git-remote-edit-dialog-content");
 
         var currentRemoteText = new LocalizedText("railroad.git.remotes.actions.edit_dialog.current_remote", remote.name());
@@ -217,7 +212,7 @@ public class GitRemoteActionsPane extends RRVBox {
     }
 
     private void openRemoveRemoteDialog(GitRemote remote) {
-        var content = new RRVBox(8);
+        var content = new RRVBox();
         content.getStyleClass().add("git-remote-remove-dialog-content");
 
         var infoText = new LocalizedText("railroad.git.remotes.actions.remove_dialog.content", remote.name());

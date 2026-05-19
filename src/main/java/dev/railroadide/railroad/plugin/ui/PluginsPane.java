@@ -16,7 +16,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -76,13 +75,10 @@ public class PluginsPane extends SplitPane {
         placeholderSubtitle.getStyleClass().add("plugins-pane-placeholder-subtitle");
         placeholderTitle.setWrapText(true);
         placeholderSubtitle.setWrapText(true);
-        placeholderTitle.setMaxWidth(360);
-        placeholderSubtitle.setMaxWidth(360);
         placeholderBox.setAlignment(Pos.CENTER);
         placeholderBox.getStyleClass().add("plugins-pane-placeholder");
 
         listPlaceholderLabel.setWrapText(true);
-        listPlaceholderLabel.setMaxWidth(Double.MAX_VALUE);
         listPlaceholderLabel.setAlignment(Pos.CENTER);
         headerLabel.getStyleClass().add("plugins-pane-title");
         headerLabel.setWrapText(true);
@@ -143,7 +139,7 @@ public class PluginsPane extends SplitPane {
     private void setupListPane() {
         pluginListView.setItems(filteredPlugins);
         pluginListView.setPlaceholder(listPlaceholderLabel);
-        pluginListView.setPrefWidth(280);
+        pluginListView.getStyleClass().add("plugins-pane-list-view");
         pluginListView.setBordered(true);
         pluginListView.setDense(true);
         pluginListView.getSelectionModel().selectedItemProperty()
@@ -168,15 +164,13 @@ public class PluginsPane extends SplitPane {
         searchField.textProperty().addListener((obs, oldText, newText) -> applyFilter(newText));
 
         var container = new RRVBox();
-        container.setSpacing(12);
-        container.setPadding(new Insets(16));
+        container.getStyleClass().add("plugins-pane-list-section");
         container.getChildren().addAll(headerLabel, searchField, pluginListView);
         VBox.setVgrow(pluginListView, Priority.ALWAYS);
         return container;
     }
 
     private Node setupDetailPane() {
-        detailContainer.setPadding(new Insets(24));
         detailContainer.getStyleClass().add("plugin-detail-container");
 
         var iconWrapper = new StackPane();
@@ -194,11 +188,13 @@ public class PluginsPane extends SplitPane {
             setPluginEnabled(activeDescriptor, enabled);
         });
 
-        var headerTexts = new VBox(4, nameLabel, metaLabel);
+        var headerTexts = new VBox(nameLabel, metaLabel);
+        headerTexts.getStyleClass().add("plugin-detail-header-texts");
         HBox.setHgrow(headerTexts, Priority.ALWAYS);
 
-        var header = new HBox(16, iconWrapper, headerTexts, detailToggle);
+        var header = new HBox(iconWrapper, headerTexts, detailToggle);
         header.setAlignment(Pos.CENTER_LEFT);
+        header.getStyleClass().add("plugin-detail-header");
 
         descriptionValue.setWrapText(true);
         descriptionValue.getStyleClass().add("plugin-detail-description");
@@ -236,8 +232,6 @@ public class PluginsPane extends SplitPane {
 
     private GridPane buildMetadataGrid() {
         var grid = new GridPane();
-        grid.setHgap(16);
-        grid.setVgap(10);
         grid.getStyleClass().add("plugin-detail-grid");
 
         addMetadataRow(grid, 0, "railroad.plugins.details.label.identifier", idValue);
@@ -402,7 +396,7 @@ public class PluginsPane extends SplitPane {
         private final Label subtitle = new Label();
         private final FontIcon icon = new FontIcon(FontAwesomeSolid.PUZZLE_PIECE);
         private final CheckBox toggle = new CheckBox();
-        private final HBox container = new HBox(12);
+        private final HBox container = new HBox();
         private boolean updating;
 
         private PluginListCell() {
@@ -431,14 +425,13 @@ public class PluginsPane extends SplitPane {
                 }
             });
 
-            var textContainer = new VBox(2, title, subtitle);
+            var textContainer = new VBox(title, subtitle);
+            textContainer.getStyleClass().add("plugin-cell-texts");
             HBox.setHgrow(textContainer, Priority.ALWAYS);
 
             container.setAlignment(Pos.CENTER_LEFT);
             container.getChildren().addAll(icon, textContainer, toggle);
             setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-            setPrefHeight(Region.USE_COMPUTED_SIZE);
-
             selectedProperty().addListener(
                 (obs, oldSelected, newSelected) -> updateSelectedState(newSelected));
             updateSelectedState(isSelected());

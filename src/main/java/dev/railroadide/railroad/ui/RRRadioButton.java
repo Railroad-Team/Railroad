@@ -4,7 +4,6 @@ import dev.railroadide.railroad.ui.localized.LocalizedTextProperty;
 import javafx.animation.ScaleTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.RadioButton;
@@ -55,8 +54,6 @@ public class RRRadioButton extends RadioButton {
 
     protected void initialize(String localizationKey, Object... args) {
         getStyleClass().setAll(RRRadioButton.DEFAULT_STYLE_CLASSES);
-
-        setPadding(new Insets(8, 16, 8, 16));
 
         textProperty().bindBidirectional(localizedText);
         localizedText.setTranslation(localizationKey, args);
@@ -143,7 +140,8 @@ public class RRRadioButton extends RadioButton {
         setDisable(true);
         getStyleClass().add("loading");
 
-        var loadingContent = new RRHBox(8);
+        var loadingContent = new RRHBox();
+        loadingContent.getStyleClass().add("rr-radio-button-content");
         loadingContent.setAlignment(Pos.CENTER);
         loadingContent.getChildren().addAll(loadingSpinner);
 
@@ -177,7 +175,8 @@ public class RRRadioButton extends RadioButton {
             return; // Don't update content while loading
 
         if (icon != null) {
-            var content = new RRHBox(8);
+            var content = new RRHBox();
+            content.getStyleClass().add("rr-radio-button-content");
             content.setAlignment(Pos.CENTER);
             content.getChildren().add(icon);
 

@@ -1,5 +1,6 @@
 .alert-overlay {
     -fx-background-color: rgba(15, 15, 20, 0.55);
+    -fx-padding: 24px;
 }
 
 .alert-card {
@@ -10,7 +11,13 @@
     -fx-border-radius: 16px;
     -fx-border-insets: 0;
     -fx-border-width: 1px;
+    -fx-padding: 24px;
+    -fx-spacing: 18px;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 20, 0, 0, 0);
+}
+
+.alert-header {
+    -fx-spacing: 12px;
 }
 
 .alert-card.alert-info {
@@ -35,9 +42,14 @@
 
 .alert-icon-wrap {
     -fx-background-color: transparent;
+    -fx-min-width: 32px;
+    -fx-min-height: 32px;
+    -fx-pref-width: 32px;
+    -fx-pref-height: 32px;
 }
 
 .alert-icon-bg {
+    -fx-radius: 16px;
     -fx-fill: -alert-accent-soft;
     -fx-stroke: -alert-accent-color;
     -fx-stroke-width: 1.25px;

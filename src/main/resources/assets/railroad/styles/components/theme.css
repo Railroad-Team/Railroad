@@ -1,4 +1,17 @@
 /* Theme styles */
+.theme-settings-section {
+    -fx-spacing: 24px;
+    -fx-padding: 0;
+}
+
+.theme-selector {
+    -fx-spacing: 16px;
+}
+
+.theme-selector-selection-row {
+    -fx-spacing: 12px;
+}
+
 .theme-description-label {
     -fx-font-size: 12px;
     -fx-text-fill: -color-fg-muted;
@@ -8,10 +21,32 @@
 .theme-selector-combo {
     -fx-font-size: 14px;
     -fx-min-height: 36px;
+    -fx-max-width: Infinity;
 }
 
 .theme-example-main-container {
     -fx-background-color: -color-bg-default;
+}
+
+.theme-example-header {
+    -fx-spacing: 8px;
+}
+
+.theme-example-navigation {
+    -fx-spacing: 12px;
+    -fx-padding: 16px 0;
+}
+
+.theme-example-row {
+    -fx-spacing: 12px;
+}
+
+.theme-example-text-input {
+    -fx-pref-width: 200px;
+}
+
+.theme-example-combo {
+    -fx-pref-width: 150px;
 }
 
 .theme-example-nav-button {
@@ -37,10 +72,47 @@
     -fx-border-color: -color-border-subtle;
 }
 
+.theme-example-tall-list {
+    -fx-pref-height: 250px;
+    -fx-min-height: 200px;
+}
+
+.theme-example-table {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-subtle;
+}
+
+.theme-example-tall-table {
+    -fx-pref-height: 250px;
+    -fx-min-height: 200px;
+}
+
+.theme-example-footer {
+    -fx-spacing: 12px;
+    -fx-padding: 16px 0 0 0;
+}
+
 .theme-download-container {
     -fx-background-radius: 0px;
     -fx-background-color: -color-bg-default;
     -fx-border-radius: 0px;
+}
+
+.theme-download-header {
+    -fx-spacing: 16px;
+}
+
+.theme-download-themes-section {
+    -fx-spacing: 12px;
+}
+
+.theme-download-section-header {
+    -fx-spacing: 12px;
+}
+
+.theme-download-footer {
+    -fx-spacing: 12px;
+    -fx-padding: 16px 0 0 0;
 }
 
 .theme-download-description {
@@ -78,8 +150,20 @@
 /* Theme download cell styling */
 .theme-download-cell {
     -fx-background-color: transparent;
+}
 
-    .card {
-        -fx-background-color: -color-bg-subtle;
-    }
+.theme-download-card {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.theme-download-content {
+    -fx-spacing: 16px;
+}
+
+.theme-download-info {
+    -fx-spacing: 4px;
+}
+
+.theme-download-actions {
+    -fx-spacing: 8px;
 }

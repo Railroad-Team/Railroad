@@ -6,14 +6,13 @@ import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.vcs.connections.VCSProfile;
 import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
 import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.HBox;
 
 public class AccountListCell extends ListCell<Object> {
-    private final HBox container = new RRHBox(8);
+    private final HBox container = new RRHBox();
     private final MFXFontIcon forkIcon = new MFXFontIcon();
     private final MFXFontIcon accountIcon = new MFXFontIcon();
     private final LocalizedLabel title = new LocalizedLabel("");
@@ -33,14 +32,14 @@ public class AccountListCell extends ListCell<Object> {
         title.getStyleClass().add("account-list-cell-title");
         subtitle.getStyleClass().add("account-list-cell-subtitle");
 
-        this.titleContainer = new RRVBox(4);
+        this.titleContainer = new RRVBox();
         titleContainer.getChildren().add(title);
         titleContainer.setFillWidth(true);
         titleContainer.setAlignment(Pos.CENTER_LEFT);
         titleContainer.getStyleClass().add("account-list-cell-title-container");
+        titleContainer.getStyleClass().add("account-list-cell-title-box");
 
         container.getChildren().addAll(forkIcon, titleContainer);
-        container.setPadding(new Insets(8, 12, 8, 12));
         container.getStyleClass().add("account-list-cell-container");
         container.setAlignment(Pos.CENTER_LEFT);
 
