@@ -8,9 +8,11 @@ import dev.railroadide.railroad.ide.language.BaseLanguageSupport;
 import dev.railroadide.railroad.ide.language.EditorOpenView;
 import dev.railroadide.railroad.ide.language.LanguageFeatureFactory;
 import dev.railroadide.railroad.ide.language.impl.index.JavaProjectLanguageIndexer;
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexPersistence;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexer;
 import dev.railroadide.railroad.ide.signature.JdtJavaSignatureHelpProvider;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticPersistence;
 import dev.railroadide.railroad.ide.ui.JavaCodeEditorPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 
@@ -18,13 +20,21 @@ import java.nio.file.Path;
 import java.util.Set;
 
 public final class JavaLanguageSupport extends BaseLanguageSupport {
+    public static final String LANGUAGE_ID = "java";
+
     public JavaLanguageSupport() {
-        super("java", "Java", Set.of("java"));
+        super(LANGUAGE_ID, "Java", Set.of("java"));
     }
 
     @Override
     public EditorOpenView open(Project project, Path file) {
-        var editorPane = new JavaCodeEditorPane(project, file);
+        var editorPane = new JavaCodeEditorPane(
+            project,
+            file,
+            completionFactory().create(project, file),
+            diagnosticsFactory().create(project, file),
+            signatureHelpFactory().create(project, file)
+        );
         return new EditorOpenView(editorPane, editorPane, languageId());
     }
 
@@ -40,11 +50,16 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
 
     @Override
     public LanguageFeatureFactory<SignatureHelpProvider> signatureHelpFactory() {
-        return (project, file) -> new JdtJavaSignatureHelpProvider(file, new String[0]);
+        return (project, file) -> new JdtJavaSignatureHelpProvider(file, JavaCodeEditorPane.resolveSystemModules());
     }
 
     @Override
     public ProjectLanguageIndexer<?, ?> createIndexer() {
         return new JavaProjectLanguageIndexer();
+    }
+
+    @Override
+    public ProjectLanguageIndexPersistence<?> createPersistence() {
+        return new JavaProjectSemanticPersistence();
     }
 }

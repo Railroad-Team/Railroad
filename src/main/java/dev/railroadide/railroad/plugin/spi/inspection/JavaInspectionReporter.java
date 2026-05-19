@@ -10,7 +10,7 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
  * normally report through {@link JavaInspectionRuleReporter} instead of constructing
  * {@link SemanticDiagnostic} instances directly.
  */
-public interface JavaInspectionReporter {
+public interface JavaInspectionReporter extends LanguageInspectionReporter {
     /**
      * Reports a fully constructed diagnostic.
      *

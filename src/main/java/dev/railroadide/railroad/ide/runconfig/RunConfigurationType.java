@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public abstract class RunConfigurationType<D extends RunConfigurationData> {
     public static final Registry<RunConfigurationType<?>> REGISTRY =
-        RegistryManager.createRegistry("railroad:run_configuration_type", RunConfigurationType.class);
+        RegistryManager.createOrderedRegistry("railroad:run_configuration_type", RunConfigurationType.class);
 
     private final String localizationKey;
     private final Ikon icon;

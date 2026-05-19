@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
+import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.plugin.spi.events.DocumentModifiedEvent;
 import dev.railroadide.railroad.settings.IndentMode;
@@ -55,6 +56,8 @@ public class TextEditorPane extends CodeArea {
 
     @Getter
     protected final Path filePath;
+    @Getter
+    protected final String languageId;
 
     private final AtomicReference<String> lastSavedText = new AtomicReference<>("");
     private final AtomicReference<String> pendingSnapshot = new AtomicReference<>("");
@@ -70,8 +73,9 @@ public class TextEditorPane extends CodeArea {
 
     private int fontSizeIndex = 5;
 
-    public TextEditorPane(Path item) {
+    public TextEditorPane(Path item, String languageId) {
         this.filePath = Objects.requireNonNull(item, "item");
+        this.languageId = Objects.requireNonNull(languageId, "languageId");
 
         setParagraphGraphicFactory(LineNumberFactory.get(this));
         setMouseOverTextDelay(Duration.ofMillis(500));
@@ -331,8 +335,8 @@ public class TextEditorPane extends CodeArea {
         Railroad.EVENT_BUS.publish(new DocumentModifiedEvent(document(), changes));
     }
 
-    private FileSystemDocument document() {
-        return new FileSystemDocument(filePath.getFileName().toString(), filePath);
+    private Document document() {
+        return new FileSystemDocument(filePath.getFileName().toString(), filePath, languageId);
     }
 
     private void startExternalWatcher() {

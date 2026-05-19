@@ -2,9 +2,9 @@ package dev.railroadide.railroad.ide.diagnostics;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
-import dev.railroadide.railroad.ide.sst.project.ProjectSemanticService;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -36,8 +36,8 @@ public record JavaDiagnosticsProvider(Project project, Path filePath) implements
 
         SemanticModel semanticModel;
         if (project != null) {
-            ProjectSemanticService semanticService = Services.PROJECT_SEMANTIC_SERVICE;
-            JavaProjectSemanticIndex projectIndex = semanticService.current(project);
+            JavaProjectSemanticIndex projectIndex =
+                Services.PROJECT_LANGUAGE_INDEX_SERVICE.indexTyped(project.getPath(), JavaLanguageSupport.LANGUAGE_ID);
             semanticModel = projectIndex == null
                     ? JavaSemanticAnalyzer.analyzeFacts(document)
                     : JavaSemanticAnalyzer.analyzeFacts(document, projectIndex);
@@ -101,7 +101,7 @@ public record JavaDiagnosticsProvider(Project project, Path filePath) implements
     }
 
     private static List<JavaInspectionRuleProvider> sortedRuleProviders() {
-        return JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.entries().entrySet().stream()
+        return JavaInspectionRegistries.ruleProviderEntries().entrySet().stream()
                 .sorted(java.util.Map.Entry.comparingByKey())
                 .map(java.util.Map.Entry::getValue)
                 .toList();

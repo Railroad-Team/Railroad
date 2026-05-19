@@ -10,13 +10,13 @@ import dev.railroadide.railroad.ide.language.LanguageSupport;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.impl.ImageLanguageSupport;
 import dev.railroadide.railroad.ide.language.impl.PlainTextLanguageSupport;
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexCoordinator;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CopyModalDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import dev.railroadide.railroad.ide.projectexplorer.task.FileCopyTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.SearchTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
-import dev.railroadide.railroad.ide.sst.project.ProjectSemanticService;
 import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
 import dev.railroadide.railroad.ide.ui.ImageViewerPane;
 import dev.railroadide.railroad.ide.ui.MarkdownPreviewPane;
@@ -69,6 +69,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private static boolean fileChangeListenerEnabled = true;
     private final Project project;
     private final ExecutorService executorService = Executors.newFixedThreadPool(3);
+    private final ProjectLanguageIndexCoordinator projectLanguageIndexCoordinator;
     private final StringProperty messageProperty = new SimpleStringProperty();
     private final TreeView<PathItem> treeView = new TreeView<>();
     private final TextField searchField;
@@ -78,6 +79,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
     public ProjectExplorerPane(Project project, RRBorderPane mainPane) {
         this.project = project;
+        this.projectLanguageIndexCoordinator = new ProjectLanguageIndexCoordinator(project.getPath());
         Path rootPath = project.getPath();
         getStyleClass().add("rr-project-explorer");
 
@@ -168,7 +170,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         handleSearchEvents(rootPath);
 
-        warmProjectSemanticIndex();
+        warmProjectLanguageIndexes();
 
         var watchTask = new WatchTask(rootPath, this);
         this.executorService.submit(watchTask);
@@ -180,15 +182,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         ShutdownHooks.addHook(this.executorService::shutdownNow);
     }
 
-    private void warmProjectSemanticIndex() {
-        executorService.submit(() -> {
-            ProjectSemanticService semanticService = Services.PROJECT_SEMANTIC_SERVICE;
-            try {
-                semanticService.index(project);
-            } catch (RuntimeException exception) {
-                Railroad.LOGGER.warn("Failed to warm project semantic index for {}", project.getPath(), exception);
-            }
-        });
+    private void warmProjectLanguageIndexes() {
+        executorService.submit(projectLanguageIndexCoordinator::warmIndexes);
     }
 
     public static void disableFileChangeListener() {
@@ -304,7 +299,10 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 : PlainTextLanguageSupport.INSTANCE);
         if (support == null) {
             FileUtils.openInDefaultApplication(path);
-            Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(path.getFileName().toString(), path), DocumentEvent.EventType.OPENED));
+            Railroad.EVENT_BUS.publish(new DocumentEvent(
+                new FileSystemDocument(path.getFileName().toString(), path, LanguageSupportRegistry.resolveLanguageId(path)),
+                DocumentEvent.EventType.OPENED
+            ));
             return;
         }
 
@@ -334,7 +332,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             EditorOpenView editorOpenView = support.open(project, path);
             if (editorOpenView == null) {
                 FileUtils.openInDefaultApplication(path);
-                Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(path.getFileName().toString(), path), DocumentEvent.EventType.OPENED));
+                Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(path.getFileName().toString(), path, support.languageId()), DocumentEvent.EventType.OPENED));
                 return;
             }
 
@@ -353,7 +351,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
             detachableTabPane.getSelectionModel().select(tab);
 
-            var document = new FileSystemDocument(fileName, path);
+            var document = new FileSystemDocument(fileName, path, support.languageId());
             Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.OPENED));
             Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.ACTIVATED));
 
@@ -503,7 +501,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         if (!fileChangeListenerEnabled)
             return;
 
-        updateProjectSemanticIndex(path, kind);
+        projectLanguageIndexCoordinator.handleFileChange(path, kind);
 
         Platform.runLater(() -> {
             // Refresh the tree view based on the kind of event
@@ -522,39 +520,6 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 executorService.submit(searchTask);
             }
         });
-    }
-
-    private void updateProjectSemanticIndex(Path path, WatchEvent.Kind<?> kind) {
-        if (!isJavaSourcePath(path, kind))
-            return;
-
-        ProjectSemanticService semanticService = Services.PROJECT_SEMANTIC_SERVICE;
-        try {
-            if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
-                semanticService.removeFile(project, path);
-            } else if (kind == StandardWatchEventKinds.ENTRY_CREATE || kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-                if (Files.isDirectory(path))
-                    return;
-
-                semanticService.updateFile(project, path);
-            }
-        } catch (RuntimeException exception) {
-            Railroad.LOGGER.warn("Failed to update project semantic index for {}", path, exception);
-        }
-    }
-
-    private static boolean isJavaSourcePath(Path path, WatchEvent.Kind<?> kind) {
-        if (path == null || kind == null)
-            return false;
-
-        String fileName = path.getFileName() == null ? "" : path.getFileName().toString();
-        if (!fileName.endsWith(".java"))
-            return false;
-
-        if (kind == StandardWatchEventKinds.ENTRY_DELETE)
-            return true;
-
-        return Files.exists(path);
     }
 
     private void handleDragDrop(PathTreeCell cell) {

@@ -147,7 +147,7 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
     private static List<RuleDescriptor> collectRules() {
         List<RuleDescriptor> rules = new ArrayList<>();
         List<Map.Entry<String, JavaInspectionRuleProvider>> providers = new ArrayList<>(
-                JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.entries().entrySet()
+                JavaInspectionRegistries.ruleProviderEntries().entrySet()
         );
         providers.sort(Map.Entry.comparingByKey());
 

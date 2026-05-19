@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.language;
 
 import dev.railroadide.railroad.ide.completion.CompletionProvider;
 import dev.railroadide.railroad.ide.diagnostics.DiagnosticsProvider;
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexPersistence;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexer;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -55,11 +56,13 @@ public interface LanguageSupport {
     @Nullable
     LanguageFeatureFactory<SignatureHelpProvider> signatureHelpFactory();
 
-    default boolean hasSemanticIndex() {
-        return false;
+    @Nullable
+    default ProjectLanguageIndexer<?, ?> createIndexer() {
+        return null;
     }
 
-    default ProjectLanguageIndexer<?, ?> createIndexer() {
-        return ProjectLanguageIndexer.noop();
+    @Nullable
+    default ProjectLanguageIndexPersistence<?> createPersistence() {
+        return null;
     }
 }

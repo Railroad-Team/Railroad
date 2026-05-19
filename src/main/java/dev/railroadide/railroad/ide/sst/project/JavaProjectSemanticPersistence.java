@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexPersistence;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.utility.FileUtils;
 import org.jetbrains.annotations.Nullable;
@@ -16,7 +17,7 @@ import java.util.*;
  * Persists {@link JavaProjectSemanticIndex} entries as a compact binary cache under
  * the project root.
  */
-public final class ProjectSemanticIndexPersistence {
+public final class JavaProjectSemanticPersistence implements ProjectLanguageIndexPersistence<JavaProjectSemanticIndex> {
     private static final String CACHE_DIRECTORY = ".railroad/index/semantic";
     private static final String ENTRIES_DIRECTORY = "files";
     private static final String MANIFEST_FILE = "project-semantic-index.bin";
@@ -24,6 +25,12 @@ public final class ProjectSemanticIndexPersistence {
     private static final String ENTRY_MAGIC = "RSSTFIL1";
     private static final int FORMAT_VERSION = 1;
 
+    @Override
+    public String languageId() {
+        return "java";
+    }
+
+    @Override
     public @Nullable JavaProjectSemanticIndex loadIfCurrent(Path projectRoot) {
         Path normalizedRoot = normalizeRoot(projectRoot);
         Path manifestPath = manifestPath(normalizedRoot);
@@ -63,6 +70,7 @@ public final class ProjectSemanticIndexPersistence {
         }
     }
 
+    @Override
     public void save(Path projectRoot, JavaProjectSemanticIndex index) {
         Path normalizedRoot = normalizeRoot(projectRoot);
         try {
@@ -92,6 +100,7 @@ public final class ProjectSemanticIndexPersistence {
         }
     }
 
+    @Override
     public void delete(Path projectRoot) {
         Path normalizedRoot = normalizeRoot(projectRoot);
         FileUtils.deleteFolder(cacheDirectory(normalizedRoot));

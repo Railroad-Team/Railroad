@@ -17,7 +17,7 @@ public class PlainTextLanguageSupport extends BaseLanguageSupport {
 
     @Override
     public EditorOpenView open(Project project, Path file) {
-        var editor = new TextEditorPane(file);
+        var editor = new TextEditorPane(file, languageId());
         return new EditorOpenView(
             editor,
             editor,

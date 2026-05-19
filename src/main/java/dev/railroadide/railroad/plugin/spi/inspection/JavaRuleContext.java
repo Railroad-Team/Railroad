@@ -8,6 +8,7 @@ import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.classparser.stub.ConstructorStub;
 import dev.railroadide.railroad.ide.classparser.stub.FieldStub;
 import dev.railroadide.railroad.ide.classparser.stub.MethodStub;
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
@@ -44,7 +45,7 @@ import java.util.function.Consumer;
  *     <li>Report diagnostics against the narrowest relevant syntax node.</li>
  * </ol>
  */
-public final class JavaRuleContext {
+public final class JavaRuleContext implements LanguageRuleContext {
     public static final int DEFAULT_MODIFIER = 0x00010000;
     public static final int SEALED_MODIFIER = 0x00020000;
     public static final int NON_SEALED_MODIFIER = 0x00040000;
@@ -211,20 +212,17 @@ public final class JavaRuleContext {
         return true;
     }
 
-    /**
-     * Returns the current file path being inspected.
-     *
-     * @return current file path
-     */
+    @Override
+    public String languageId() {
+        return JavaLanguageSupport.LANGUAGE_ID;
+    }
+
+    @Override
     public Path filePath() {
         return filePath;
     }
 
-    /**
-     * Returns the full source text for the current file.
-     *
-     * @return current file contents
-     */
+    @Override
     public String documentText() {
         return documentText;
     }

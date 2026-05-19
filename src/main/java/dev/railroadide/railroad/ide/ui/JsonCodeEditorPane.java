@@ -33,6 +33,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class JsonCodeEditorPane extends TextEditorPane {
+    public static final String LANGUAGE_ID = "json";
+
     private static final String DEFAULT_SCHEMA = """
         {
           "$schema": "http://json-schema.org/draft-07/schema",
@@ -49,7 +51,7 @@ public class JsonCodeEditorPane extends TextEditorPane {
     private Schema schema;
 
     public JsonCodeEditorPane(Path item) {
-        super(item);
+        super(item, LANGUAGE_ID);
         syntaxHighlight();
         autoInsertPairs();
         autoIndentOnEnter();

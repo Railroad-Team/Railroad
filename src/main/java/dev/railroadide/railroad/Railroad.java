@@ -110,6 +110,8 @@ public class Railroad extends Application {
             new InitializationStep("Scanning language files", Languages::initialize),
             new InitializationStep("Loading settings", Settings::initialize),
             new InitializationStep("Registering language supports", LanguageSupports::initialize),
+            new InitializationStep("Registering language indexers", LanguageSupports::initializeLanguageIndexers),
+            new InitializationStep("Registering language index persistence", LanguageSupports::initializeLanguagePersistence),
             new InitializationStep("Preparing settings handler", SettingsHandler::init),
             new InitializationStep("Preparing themes", ThemeManager::init),
             new InitializationStep("Finding Java versions", JDKManager::refreshJDKs),
@@ -126,7 +128,7 @@ public class Railroad extends Application {
                 try (ExecutorService executorService = HTTP_CLIENT.dispatcher().executorService()) {
                     executorService.shutdown();
                 }
-        
+
                 HTTP_CLIENT.connectionPool().evictAll();
             }))
         );

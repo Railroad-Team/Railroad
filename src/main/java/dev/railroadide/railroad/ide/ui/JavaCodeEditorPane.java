@@ -4,11 +4,9 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.completion.CompletionItem;
 import dev.railroadide.railroad.ide.completion.CompletionProvider;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
-import dev.railroadide.railroad.ide.completion.JavaCompletionProvider;
 import dev.railroadide.railroad.ide.diagnostics.DiagnosticsProvider;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic;
-import dev.railroadide.railroad.ide.diagnostics.JavaDiagnosticsProvider;
-import dev.railroadide.railroad.ide.signature.JdtJavaSignatureHelpProvider;
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.signature.SignatureHelp;
 import dev.railroadide.railroad.ide.signature.SignatureHelp.ParameterInfo;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
@@ -76,8 +74,6 @@ public class JavaCodeEditorPane extends TextEditorPane {
         "do"
     );
 
-    private static final String[] SYSTEM_MODULE_PATHS = resolveSystemModules();
-
     private final ExecutorService worker = Executors.newFixedThreadPool(
         Math.max(2, Runtime.getRuntime().availableProcessors() / 2),
         namedThreadFactory("railroad-java-editor-"));
@@ -112,12 +108,18 @@ public class JavaCodeEditorPane extends TextEditorPane {
 
     private int[] bracketHighlightRange;
 
-    public JavaCodeEditorPane(Project project, Path item) {
-        super(item);
+    public JavaCodeEditorPane(
+        Project project,
+        Path item,
+        CompletionProvider completionProvider,
+        DiagnosticsProvider diagnosticsProvider,
+        SignatureHelpProvider signatureHelpProvider
+    ) {
+        super(item, JavaLanguageSupport.LANGUAGE_ID);
         this.project = Objects.requireNonNull(project, "project");
-        this.completionProvider = new JavaCompletionProvider(project, filePath);
-        this.diagnosticsProvider = new JavaDiagnosticsProvider(project, filePath);
-        this.signatureHelpProvider = new JdtJavaSignatureHelpProvider(filePath, SYSTEM_MODULE_PATHS);
+        this.completionProvider = Objects.requireNonNull(completionProvider, "completionProvider");
+        this.diagnosticsProvider = Objects.requireNonNull(diagnosticsProvider, "diagnosticsProvider");
+        this.signatureHelpProvider = Objects.requireNonNull(signatureHelpProvider, "signatureHelpProvider");
 
         diagnosticPopup.setAutoHide(true);
         signaturePopup.setAutoHide(false);
@@ -277,7 +279,7 @@ public class JavaCodeEditorPane extends TextEditorPane {
         }
     }
 
-    private static String[] resolveSystemModules() {
+    public static String[] resolveSystemModules() {
         try {
             Path javaHome = Path.of(System.getProperty("java.home"));
             Path jmods = javaHome.resolve("jmods");
