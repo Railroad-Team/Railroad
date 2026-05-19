@@ -160,7 +160,7 @@ public class TextEditorPane extends CodeArea {
                 event.consume();
 
                 IndentMode indentMode = Settings.INDENT_MODE.getOrDefaultValue();
-                int indentWidth = Settings.INDENT_WIDTH.getOrDefaultValue();
+                int indentWidth = Math.max(1, Settings.INDENT_WIDTH.getOrDefaultValue());
 
                 if (event.isShiftDown()) {
                     if (getSelection().getLength() == 0) {
@@ -180,7 +180,7 @@ public class TextEditorPane extends CodeArea {
     }
 
     private void applyEditorStyles() {
-        int tabWidth = Settings.TAB_WIDTH.getOrDefaultValue();
+        int tabWidth = Math.max(1, Settings.TAB_WIDTH.getOrDefaultValue());
         String fontFamily = Settings.EDITOR_FONT_FAMILY.getOrDefaultValue();
         Font font = Font.font(fontFamily, FONT_SIZES[fontSizeIndex]);
         double visualWidth = JavaFXUtils.measureTextWidth(" ".repeat(tabWidth), font);
@@ -188,6 +188,7 @@ public class TextEditorPane extends CodeArea {
     }
 
     private void insertIndentAtCaret(IndentMode indentMode, int indentWidth) {
+        indentWidth = Math.max(1, indentWidth);
         String indentString = indentMode == IndentMode.TABS ? "\t" : " ".repeat(indentWidth);
         int caret = getCaretPosition();
         insertText(caret, indentString);

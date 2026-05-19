@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.vcs.git;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.vcs.git.commit.GitCommitData;
 import dev.railroadide.railroad.vcs.git.diff.GitDiffMode;
@@ -284,12 +283,7 @@ public final class GitCommands {
      * @return configured git command
      */
     public static GitCommand getGitVersion() {
-        Long timeoutMs = Settings.GIT_VERSION_COMMAND_TIMEOUT_MS.getValue();
-        if (timeoutMs == null) {
-            Railroad.LOGGER.error("Git version timeout setting is null, using default of 5000ms");
-            timeoutMs = 5000L;
-        }
-
+        Long timeoutMs = Settings.GIT_VERSION_COMMAND_TIMEOUT_MS.getOrDefaultValue();
         return GitCommand.builder()
             .timeout(timeoutMs, TimeUnit.MILLISECONDS)
             .addArgs("--version")

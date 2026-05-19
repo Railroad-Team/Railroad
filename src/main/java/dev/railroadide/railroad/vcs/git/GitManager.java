@@ -101,11 +101,11 @@ public class GitManager {
             runOnFxThread(() -> {
                 this.gitRepository.set(repository);
                 this.active.set(true);
+                startAutoRefresh();
             });
-            refreshStatusInternal();
-            startAutoRefresh();
+            refreshStatusInternal(repository);
             loadIdentity();
-            fetch();
+            fetch(repository);
         }, () -> runOnFxThread(() -> {
             this.gitRepository.set(null);
             this.active.set(false);
@@ -124,7 +124,7 @@ public class GitManager {
      * Schedules an asynchronous status refresh.
      */
     public void refreshStatus() {
-        this.executorService.submit(this::refreshStatusInternal);
+        this.executorService.submit(() -> refreshStatusInternal());
     }
 
     /**
@@ -310,18 +310,7 @@ public class GitManager {
     public void fetch() {
         this.executorService.submit(() -> {
             GitRepository repository = this.gitRepository.get();
-            if (repository != null) {
-                this.gitClient.fetch(repository, GitOutputListener.NO_OP, event -> {
-                    if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                        Railroad.LOGGER.debug("Git Fetch Progress - {}: {}%", phase, percent);
-                    } else if (event instanceof GitProgressEvent.Message(String message)) {
-                        Railroad.LOGGER.debug("Git Fetch Message - {}", message);
-                    }
-                });
-                String remoteName = this.gitClient.getUpstream(repository).map(GitUpstream::remoteName).orElse("");
-                runOnFxThread(() -> this.remoteFetchTimestamps.put(remoteName, System.currentTimeMillis()));
-                refreshStatusInternal();
-            }
+            fetch(repository);
         });
     }
 
@@ -355,25 +344,11 @@ public class GitManager {
 
     private void refreshStatusInternal() {
         GitRepository repository = this.gitRepository.get();
-        if (repository != null) {
-            GitRepoStatus status = this.gitClient.getStatus(repository);
-            List<GitRemote> currentRemotes = List.copyOf(this.gitClient.getRemotes(repository));
-            GitUpstream currentUpstream = this.gitClient.getUpstream(repository).orElse(null);
-            GitPullStrategy currentPullStrategy = status != null && status.branch() != null
-                ? this.gitClient.getPullStrategy(repository, status.branch())
-                : null;
-            GitPushStrategy currentPushStrategy = this.gitClient.getPushStrategy(repository);
-            runOnFxThread(() -> {
-                this.repoStatus.set(status);
-                this.remotes.set(currentRemotes);
-                this.upstream.set(currentUpstream);
-                this.pullStrategy.set(currentPullStrategy);
-                this.pushStrategy.set(currentPushStrategy);
-            });
-//            Railroad.LOGGER.debug("Loaded {} changes from Git repository at {}",
-//                status.changes().size(),
-//                repository.root());
-        } else {
+        refreshStatusInternal(repository);
+    }
+
+    private void refreshStatusInternal(@Nullable GitRepository repository) {
+        if (repository == null) {
             runOnFxThread(() -> {
                 this.repoStatus.set(null);
                 this.remotes.set(List.of());
@@ -381,7 +356,42 @@ public class GitManager {
                 this.pullStrategy.set(null);
                 this.pushStrategy.set(null);
             });
+            return;
         }
+
+        GitRepoStatus status = this.gitClient.getStatus(repository);
+        List<GitRemote> currentRemotes = List.copyOf(this.gitClient.getRemotes(repository));
+        GitUpstream currentUpstream = this.gitClient.getUpstream(repository).orElse(null);
+        GitPullStrategy currentPullStrategy = status != null && status.branch() != null
+            ? this.gitClient.getPullStrategy(repository, status.branch())
+            : null;
+        GitPushStrategy currentPushStrategy = this.gitClient.getPushStrategy(repository);
+        runOnFxThread(() -> {
+            this.repoStatus.set(status);
+            this.remotes.set(currentRemotes);
+            this.upstream.set(currentUpstream);
+            this.pullStrategy.set(currentPullStrategy);
+            this.pushStrategy.set(currentPushStrategy);
+        });
+//            Railroad.LOGGER.debug("Loaded {} changes from Git repository at {}",
+//                status.changes().size(),
+//                repository.root());
+    }
+
+    private void fetch(@Nullable GitRepository repository) {
+        if (repository == null)
+            return;
+
+        this.gitClient.fetch(repository, GitOutputListener.NO_OP, event -> {
+            if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
+                Railroad.LOGGER.debug("Git Fetch Progress - {}: {}%", phase, percent);
+            } else if (event instanceof GitProgressEvent.Message(String message)) {
+                Railroad.LOGGER.debug("Git Fetch Message - {}", message);
+            }
+        });
+        String remoteName = this.gitClient.getUpstream(repository).map(GitUpstream::remoteName).orElse("");
+        runOnFxThread(() -> this.remoteFetchTimestamps.put(remoteName, System.currentTimeMillis()));
+        refreshStatusInternal(repository);
     }
 
     private long getAutoRefreshIntervalMillis() {
