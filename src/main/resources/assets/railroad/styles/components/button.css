@@ -13,6 +13,10 @@
     -fx-padding: 8px 16px;
 }
 
+.rr-button-content {
+    -fx-spacing: 8px;
+}
+
 .rr-button:hover {
     -fx-background-color: -color-accent-6;
     -fx-effect: dropshadow(gaussian, rgba(94, 129, 172, 0.3), 4, 0, 0, 2);

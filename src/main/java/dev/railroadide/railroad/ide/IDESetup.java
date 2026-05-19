@@ -29,6 +29,7 @@ import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
+import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.ui.RRBorderPane;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
@@ -202,6 +203,7 @@ public class IDESetup {
             try {
                 Scene ideScene = IDESetup.createIDEScene(project);
                 Stage ideStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
+                ThemeManager.prepareSceneTransition(ideStage.getScene(), ideScene);
                 ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion() + " - " + project.getAlias());
                 ideStage.setScene(ideScene);
                 ideStage.setResizable(true);
@@ -224,21 +226,38 @@ public class IDESetup {
 
     /**
      * Find the best tab pane for files (CodeArea) in the given parent.
-     * If a welcome tab is found, it will be returned to replace it.
-     * If no welcome tab is found, it will look for a tab pane with a CodeArea.
+     * If a tab pane with a CodeArea is found, it will be returned.
+     * If no tab pane with a CodeArea is found, it will look for a welcome tab to replace.
      * If no tab pane with a CodeArea is found, the first tab pane found will be returned.
      *
      * @param parent The parent to search in
      * @return The best tab pane for files
      */
     public static Optional<DetachableTabPane> findBestPaneForFiles(Parent parent) {
-        // First, try to find a pane with a welcome tab to replace it
+        // Prefer panes that already contain editors so code tabs stay grouped together.
+        var codePane = findBestPaneForFiles(parent, tab -> tab.getContent() instanceof CodeArea);
+        if (codePane.isPresent())
+            return codePane;
+
+        // Fall back to replacing a welcome tab when no editor pane exists yet.
         var welcomePane = findBestPaneForFiles(parent, tab -> tab.getContent() instanceof IDEWelcomePane);
         if (welcomePane.isPresent())
             return welcomePane;
 
-        // If no welcome tab found, fall back to the original behavior
+        // If no welcome tab exists, reuse a pane that already hosts file-like content.
         return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof TextEditorPane || tab.getContent() instanceof CodeArea || tab.getContent() instanceof ImageViewerPane || tab.getContent() instanceof MarkdownPreviewPane);
+    }
+
+    /**
+     * Find the best tab pane for images (ImageViewerPane) in the given parent.
+     * If a tab pane with an ImageViewerPane is found, it will be returned.
+     * If no tab pane with an ImageViewerPane is found, the first tab pane found will be returned.
+     *
+     * @param parent The parent to search in
+     * @return The best tab pane for images
+     */
+    public static Optional<DetachableTabPane> findBestPaneForImages(Parent parent) { // TODO: Priority based search
+        return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof ImageViewerPane || tab.getContent() instanceof CodeArea);
     }
 
     /**

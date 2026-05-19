@@ -55,9 +55,7 @@ public class GradleRunConfigurationData extends RunConfigurationData {
         ObjectProperty<ComboBox<JDK>> javaHomeComboBoxProperty = new SimpleObjectProperty<>();
         javaHomeComboBoxProperty.addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
-                newValue.setMinHeight(72);
-                newValue.setPrefHeight(72);
-                newValue.setMaxHeight(72);
+                newValue.getStyleClass().add("runconfig-gradle-jdk-combobox");
             }
         });
 

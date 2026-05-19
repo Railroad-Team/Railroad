@@ -31,6 +31,8 @@ public class FormSection {
     private final List<FormComponent<?, ?, ?, ?>> fields;
     private final double spacing;
     private final Insets padding;
+    private final boolean customSpacing;
+    private final boolean customPadding;
     private final Border border;
     private final Consumer<LocalizedText> titleConsumer;
     @Getter
@@ -48,6 +50,8 @@ public class FormSection {
         this.fields = builder.fields;
         this.spacing = builder.spacing;
         this.padding = builder.padding;
+        this.customSpacing = builder.customSpacing;
+        this.customPadding = builder.customPadding;
         this.border = Objects.requireNonNullElseGet(builder.border,
             () -> new Border(new BorderStroke(builder.borderColor, builder.borderStyle, builder.borderRadii, builder.borderWidths)));
         this.titleConsumer = builder.titleConsumer;
@@ -88,9 +92,15 @@ public class FormSection {
      * form section will be displayed at the top of the VBox.
      */
     public Node createUI() {
-        var vbox = new RRVBox(spacing);
+        var vbox = new RRVBox();
+        vbox.getStyleClass().add("form-section-root");
         vbox.setBorder(border);
-        vbox.setPadding(padding);
+        if (customSpacing) {
+            vbox.setSpacing(spacing);
+        }
+        if (customPadding) {
+            vbox.setPadding(padding);
+        }
 
         var title = new LocalizedText(titleKey);
         title.getStyleClass().add("form-section-title");
@@ -177,8 +187,10 @@ public class FormSection {
     public static class Builder {
         private final List<FormComponent<?, ?, ?, ?>> fields = new ArrayList<>();
         private String title;
-        private double spacing = 10;
-        private Insets padding = new Insets(10);
+        private double spacing;
+        private @Nullable Insets padding;
+        private boolean customSpacing;
+        private boolean customPadding;
 
         // Border properties
         private Border border = null;
@@ -221,6 +233,7 @@ public class FormSection {
          */
         public Builder spacing(double spacing) {
             this.spacing = spacing;
+            this.customSpacing = true;
             return this;
         }
 
@@ -232,6 +245,7 @@ public class FormSection {
          */
         public Builder padding(@NotNull Insets padding) {
             this.padding = padding;
+            this.customPadding = true;
             return this;
         }
 

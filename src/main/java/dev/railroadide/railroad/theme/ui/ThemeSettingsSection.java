@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.theme.ui;
 
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -15,9 +14,8 @@ public class ThemeSettingsSection extends VBox {
     private final ThemeSelector themeSelector;
 
     public ThemeSettingsSection(String initialTheme) {
-        setSpacing(24);
         setAlignment(Pos.TOP_LEFT);
-        setPadding(new Insets(0));
+        getStyleClass().add("theme-settings-section");
 
         themeSelector = new ThemeSelector(initialTheme);
         VBox.setVgrow(themeSelector, Priority.ALWAYS);

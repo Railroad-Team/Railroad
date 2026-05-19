@@ -9,7 +9,6 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -126,7 +125,6 @@ public class RRButton extends Button {
         getStyleClass().setAll(RRButton.DEFAULT_STYLE_CLASSES);
 
         setAlignment(Pos.CENTER);
-        setPadding(new Insets(8, 16, 8, 16));
 
         textProperty().bindBidirectional(localizedText);
         localizedText.setTranslation(localizationKey, args);
@@ -260,7 +258,8 @@ public class RRButton extends Button {
         setDisable(true);
         getStyleClass().add("loading");
 
-        var loadingContent = new RRHBox(8);
+        var loadingContent = new RRHBox();
+        loadingContent.getStyleClass().add("rr-button-content");
         loadingContent.setAlignment(Pos.CENTER);
         loadingContent.getChildren().addAll(loadingSpinner);
 
@@ -326,7 +325,8 @@ public class RRButton extends Button {
             return; // Don't update content while loading
 
         if (icon != null) {
-            var content = new RRHBox(8);
+            var content = new RRHBox();
+            content.getStyleClass().add("rr-button-content");
             content.setAlignment(Pos.CENTER);
             content.getChildren().add(icon);
 

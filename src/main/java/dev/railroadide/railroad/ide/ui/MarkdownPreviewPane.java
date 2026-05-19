@@ -59,6 +59,10 @@ public class MarkdownPreviewPane extends RRVBox {
         showContent(splitView(), topRow);
     }
 
+    public Path getMarkdownFile() {
+        return markdownFile;
+    }
+
     private TextEditorPane codeView() {
         if (textEditorPane != null)
             return textEditorPane;

@@ -223,7 +223,6 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         for (Node actionButton : row.getChildren()) {
             if (actionButton instanceof Region region) {
                 HBox.setHgrow(region, Priority.ALWAYS);
-                region.setMaxWidth(Double.MAX_VALUE);
             }
         }
 
@@ -239,7 +238,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
             .sorted()
             .collect(Collectors.toList());
 
-        var content = new RRVBox(10);
+        var content = new RRVBox();
         content.getStyleClass().add("git-branch-set-upstream-dialog-content");
 
         var localBranchLabel = new LocalizedText("railroad.git.branches.set_upstream_dialog.local_branch", localBranch.name());
@@ -346,7 +345,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
     }
 
     private void openRenameBranchDialog(GitBranch.LocalGitBranch localBranch) {
-        var content = new RRVBox(10);
+        var content = new RRVBox();
         content.getStyleClass().add("git-branch-rename-dialog-content");
 
         var currentBranchLabel = new LocalizedText("railroad.git.branches.rename_dialog.current_branch", localBranch.name());
@@ -467,7 +466,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
             return;
         }
 
-        var content = new RRVBox(10);
+        var content = new RRVBox();
         content.getStyleClass().add("git-branch-delete-dialog-content");
 
         var infoText = new LocalizedText(
@@ -536,7 +535,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         String targetBranchName,
         GitRepoStatus repoStatus
     ) {
-        var content = new RRVBox(2);
+        var content = new RRVBox();
         content.getStyleClass().add("git-commit-checkout-uncommitted-changes-dialog-content");
 
         var infoText = new LocalizedText("railroad.git.commit.details.checkout_commit_dialog.uncommitted_changes_info");
@@ -594,7 +593,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
             var discardTextField = new RRTextField("railroad.git.commit.details.checkout_commit_dialog.force_checkout.confirmation_placeholder");
             discardTextField.getStyleClass().add("git-commit-checkout-force-checkout-confirmation-text-field");
 
-            var forceContent = new RRVBox(10);
+            var forceContent = new RRVBox();
             forceContent.getStyleClass().add("git-commit-checkout-force-checkout-dialog-content");
             var forceInfoText = new LocalizedText("railroad.git.commit.details.checkout_commit_dialog.force_checkout_info");
             forceInfoText.getStyleClass().add("git-commit-checkout-force-checkout-info-text");

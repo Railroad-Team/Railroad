@@ -4,6 +4,7 @@
     -fx-background-radius: 8px;
     -fx-border-radius: 8px;
     -fx-border-insets: 0;
+    -fx-padding: 8px;
 }
 
 .rr-list-view.bordered {
@@ -104,6 +105,7 @@
     -fx-border-radius: 8px;
     -fx-background-radius: 8px;
     -fx-padding: 8px;
+    -fx-spacing: 8px;
     -fx-cursor: hand;
 }
 

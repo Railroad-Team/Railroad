@@ -8,14 +8,12 @@ import dev.railroadide.railroad.ui.RRCard;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.utility.TimeFormatter;
-import io.github.palexdev.mfxcore.builders.InsetsBuilder;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.WeakInvalidationListener;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleLongProperty;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.control.*;
@@ -47,15 +45,15 @@ public class ProjectListCell extends ListCell<Project> {
         ELAPSED_TIMELINE.setCycleCount(Timeline.INDEFINITE);
     }
 
-    private final RRCard card = new RRCard(14, new Insets(8, 32, 8, 32));
-    private final HBox root = new HBox(16);
+    private final RRCard card = new RRCard();
+    private final HBox root = new HBox();
     private final ImageView icon = new ImageView();
-    private final VBox infoBox = new VBox(4);
+    private final VBox infoBox = new VBox();
     private final Label nameLabel = new Label();
     private final Label pathLabel = new Label();
     private final Label lastOpenedLabel = new Label();
     private final RRButton ellipsisButton = new RRButton();
-    private final HBox facetTagsBox = new HBox(5);
+    private final HBox facetTagsBox = new HBox();
     private final InvalidationListener elapsedTickListener = $ -> refreshElapsedText();
 
     /**
@@ -67,12 +65,9 @@ public class ProjectListCell extends ListCell<Project> {
         super();
         getStyleClass().add("project-list-cell");
 
-        setPrefHeight(80);
-
         card.getStyleClass().add("project-list-card");
-        card.setPadding(InsetsBuilder.of(10, 5, 10, 5));
         root.setAlignment(Pos.CENTER_LEFT);
-        root.setPadding(new Insets(0));
+        root.getStyleClass().add("project-list-root");
 
         icon.setFitWidth(40);
         icon.setFitHeight(40);
@@ -81,6 +76,7 @@ public class ProjectListCell extends ListCell<Project> {
         icon.setEffect(new DropShadow(8, Color.rgb(0, 0, 0, 0.10)));
 
         infoBox.setAlignment(Pos.CENTER_LEFT);
+        infoBox.getStyleClass().add("project-list-info-box");
         VBox.setVgrow(infoBox, Priority.ALWAYS);
         nameLabel.getStyleClass().add("project-list-name");
 
@@ -96,8 +92,6 @@ public class ProjectListCell extends ListCell<Project> {
         ellipsisButton.setGraphic(ellipsisIcon);
         ellipsisButton.setButtonSize(ButtonSize.SMALL);
         ellipsisButton.setVariant(ButtonVariant.GHOST);
-        ellipsisButton.setPrefWidth(32);
-        ellipsisButton.setPrefHeight(32);
         ellipsisButton.getStyleClass().add("project-list-ellipsis-button");
 
         root.getChildren().addAll(icon, infoBox, ellipsisButton);
@@ -150,7 +144,6 @@ public class ProjectListCell extends ListCell<Project> {
         if (empty || project == null) {
             setText(null);
             setGraphic(null);
-            setPadding(Insets.EMPTY);
             lastOpenedLabel.setText(null);
         } else {
             icon.setImage(project.getIcon());

@@ -205,8 +205,10 @@ public class PluginManager {
 
             loadResult.setPlugin(plugin, classLoader);
             loadResult.setJavaInspectionRuleProviderRegistrationIds(registeredProviderIds);
+            Plugin enabledPlugin = plugin;
             ShutdownHooks.addHook(() -> {
                 try {
+                    enabledPlugin.onDisable(context);
                     unloadPluginRuntime(loadResult);
                 } catch (Exception exception) {
                     Railroad.LOGGER.error("Error during plugin {} shutdown cleanup", descriptor.getName(), exception);

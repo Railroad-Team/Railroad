@@ -2,7 +2,6 @@ package dev.railroadide.railroad;
 
 import javafx.application.Platform;
 import javafx.application.Preloader;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
@@ -27,41 +26,31 @@ public class RailroadPreloader extends Preloader {
         stage.setResizable(false);
 
         var titleLabel = new Label("Railroad");
-        titleLabel.setStyle("-fx-font-size: 30px; -fx-font-weight: 800; -fx-text-fill: white;");
+        titleLabel.getStyleClass().add("preloader-title");
 
         var subtitleLabel = new Label("Booting the workbench");
-        subtitleLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(255,255,255,0.75);");
+        subtitleLabel.getStyleClass().add("preloader-subtitle");
 
         messageLabel = new Label("Starting Railroad...");
-        messageLabel.setStyle("-fx-font-size: 15px; -fx-text-fill: #f4f4f8;");
+        messageLabel.getStyleClass().add("preloader-message");
 
         progressBar = new ProgressBar(0);
-        progressBar.setPrefWidth(360);
-        progressBar.setStyle("""
-            -fx-accent: #ff851a;
-            -fx-control-inner-background: rgba(16,16,24,0.55);
-            -fx-background-radius: 999;
-            -fx-padding: 6;
-            """);
+        progressBar.getStyleClass().add("preloader-progress");
 
-        var content = new VBox(12, titleLabel, subtitleLabel, messageLabel, progressBar);
+        var content = new VBox(titleLabel, subtitleLabel, messageLabel, progressBar);
         content.setAlignment(Pos.CENTER_LEFT);
-        content.setStyle("""
-            -fx-background-radius: 24;
-            -fx-border-radius: 24;
-            -fx-border-width: 1;
-            -fx-border-color: rgba(255,255,255,0.25);
-            -fx-background-color: linear-gradient(to bottom right, rgba(33, 40, 62, 0.95), rgba(16, 18, 27, 0.96));
-            -fx-padding: 32 36 32 36;
-            """);
+        content.getStyleClass().add("preloader-content");
         content.setEffect(new DropShadow(40, Color.color(0, 0, 0, 0.45)));
 
         var root = new StackPane(content);
-        root.setPadding(new Insets(32));
-        root.setStyle("-fx-background-color: transparent;");
+        root.getStyleClass().add("preloader-root");
 
         var scene = new Scene(root);
         scene.setFill(Color.TRANSPARENT);
+        var stylesheet = AppResources.getResource("styles/preloader.css");
+        if (stylesheet != null) {
+            scene.getStylesheets().add(stylesheet.toExternalForm());
+        }
         stage.setScene(scene);
         stage.sizeToScene();
         stage.show();

@@ -21,7 +21,7 @@ public class RRFormContainer extends VBox {
     }
 
     public RRFormContainer(@Nullable String title) {
-        this(title, new Insets(24));
+        this(title, null);
     }
 
     public RRFormContainer(@Nullable String title, Insets padding) {
@@ -36,16 +36,17 @@ public class RRFormContainer extends VBox {
             setTitle(title);
         }
 
-        formContent = new VBox(20);
+        formContent = new VBox();
         formContent.getStyleClass().add("form-content");
 
         initialize(padding);
     }
 
     protected void initialize(Insets padding) {
-
-        setPadding(padding);
-        setSpacing(20);
+        if (padding != null) {
+            setPadding(padding);
+            getStyleClass().add("rr-form-container-custom-padding");
+        }
 
         VBox.setVgrow(formContent, javafx.scene.layout.Priority.ALWAYS);
         updateLayout();
@@ -128,14 +129,8 @@ public class RRFormContainer extends VBox {
     public void setCompact(boolean compact) {
         if (compact) {
             getStyleClass().add("compact");
-            setPadding(new Insets(16));
-            setSpacing(12);
-            formContent.setSpacing(12);
         } else {
             getStyleClass().remove("compact");
-            setPadding(new Insets(24));
-            setSpacing(20);
-            formContent.setSpacing(20);
         }
     }
 

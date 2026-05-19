@@ -6,7 +6,6 @@ import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.welcome.project.ui.widget.ProjectTypeCell;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Priority;
 import lombok.Getter;
@@ -18,13 +17,8 @@ public class ProjectTypePane extends RRVBox {
     private final ObservableList<ProjectType> allProjectTypes = FXCollections.observableArrayList(ProjectType.REGISTRY.values());
 
     public ProjectTypePane() {
-        super(16);
-
-        setPadding(new Insets(18, 18, 18, 18));
+        super();
         getStyleClass().add("project-type-pane");
-
-        setMinWidth(240);
-        setMaxWidth(320);
 
         projectTypesScroller = new ScrollPane();
         projectTypesScroller.setFitToWidth(true);
@@ -39,7 +33,6 @@ public class ProjectTypePane extends RRVBox {
         projectTypeListView.setListViewSize(RRListView.ListViewSize.MEDIUM);
         projectTypeListView.setDense(true);
         projectTypeListView.setBordered(true);
-        projectTypeListView.setPrefHeight(220);
         projectTypeListView.setFocusTraversable(false);
         projectTypeListView.getStyleClass().add("hide-empty-cells");
 

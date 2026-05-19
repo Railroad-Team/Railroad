@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TerminalFX</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        #terminal {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+<div id="terminal"></div>
+<script src="hterm_all.js"></script>
+<script>
+
+    function updatePrefs(prefs) {
+        var prefsObject = JSON.parse(prefs);
+        for (var key in prefsObject) {
+            var value = prefsObject[key];
+            if (window.t) {
+                t.getPrefs().set(key, value);
+            }
+        }
+    }
+
+    function startTerminal() {
+        hterm.defaultStorage = new lib.Storage.Memory();
+        hterm.copySelectionToClipboard = function (document) {
+            app.copy(document.getSelection().toString());
+        };
+        hterm.msg = function (name, args = [], string) {
+            return string;
+        };
+        window.t = new hterm.Terminal("myterm");
+        t.overlaySize = function () {
+        };
+
+        updatePrefs(app.getPrefs());
+
+        t.onTerminalReady = function () {
+
+            app.onTerminalInit();
+
+            var io = t.io.push();
+
+            io.onVTKeystroke = function (str) {
+                app.command(str);
+            };
+
+            io.sendString = io.onVTKeystroke;
+
+            io.onTerminalResize = function (columns, rows) {
+                app.resizeTerminal(columns, rows);
+            };
+
+            t.installKeyboard();
+            app.onTerminalReady();
+
+        };
+
+        t.decorate(document.querySelector('#terminal'));
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        lib.init(startTerminal);
+    });
+
+</script>
+</body>
+</html>

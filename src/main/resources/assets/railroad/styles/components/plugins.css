@@ -15,6 +15,24 @@
     -fx-padding: 32px;
 }
 
+.plugins-pane-placeholder-title,
+.plugins-pane-placeholder-subtitle {
+    -fx-max-width: 360px;
+}
+
+.plugins-pane .label {
+    -fx-max-width: Infinity;
+}
+
+.plugins-pane-list-view {
+    -fx-pref-width: 280px;
+}
+
+.plugins-pane-list-section {
+    -fx-spacing: 12px;
+    -fx-padding: 16px;
+}
+
 /* ===== PLUGIN DETAIL VIEW ===== */
 .plugin-detail-scroll {
     -fx-background-color: transparent;
@@ -28,12 +46,21 @@
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 1px;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 12, 0, 0, 6);
+    -fx-padding: 24px;
 }
 
 .plugin-detail-icon {
     -fx-background-color: -color-bg-subtle;
     -fx-background-radius: 50%;
     -fx-padding: 16px;
+}
+
+.plugin-detail-header {
+    -fx-spacing: 16px;
+}
+
+.plugin-detail-header-texts {
+    -fx-spacing: 4px;
 }
 
 .plugin-detail-name {
@@ -54,6 +81,8 @@
 
 .plugin-detail-grid {
     -fx-padding: 12px 0 0 0;
+    -fx-hgap: 16px;
+    -fx-vgap: 10px;
 }
 
 .plugin-detail-label {
@@ -83,6 +112,7 @@
 .plugin-cell-container {
     -fx-background-color: transparent;
     -fx-padding: 6px 10px;
+    -fx-spacing: 12px;
     -fx-background-radius: 10px;
     -fx-border-radius: 10px;
     -fx-border-color: transparent;
@@ -114,4 +144,8 @@
 
 .plugin-cell-icon {
     -mfx-color: -color-fg-muted;
+}
+
+.plugin-cell-texts {
+    -fx-spacing: 2px;
 }

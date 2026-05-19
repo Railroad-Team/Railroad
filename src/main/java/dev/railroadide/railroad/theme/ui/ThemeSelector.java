@@ -37,8 +37,8 @@ public class ThemeSelector extends VBox {
     public ThemeSelector(String currentTheme) {
         selectedThemeProperty = new SimpleStringProperty(currentTheme);
 
-        setSpacing(16);
         setAlignment(Pos.TOP_LEFT);
+        getStyleClass().add("theme-selector");
 
         var contentSection = createContentSection();
         getChildren().add(contentSection);
@@ -51,7 +51,6 @@ public class ThemeSelector extends VBox {
         section.setLocalizedHeaderText("railroad.home.settings.appearance.selecttheme");
 
         themeComboBox = new ComboBox<>();
-        themeComboBox.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(themeComboBox, Priority.ALWAYS);
         themeComboBox.getStyleClass().add("theme-selector-combo");
 
@@ -61,8 +60,9 @@ public class ThemeSelector extends VBox {
         previewButton.setVariant(ButtonVariant.GHOST);
         previewButton.setOnAction(e -> previewSelectedTheme());
 
-        var selectionRow = new HBox(12);
+        var selectionRow = new HBox();
         selectionRow.setAlignment(Pos.CENTER_LEFT);
+        selectionRow.getStyleClass().add("theme-selector-selection-row");
         selectionRow.getChildren().addAll(themeComboBox, previewButton);
 
         section.addContent(selectionRow);

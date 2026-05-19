@@ -8,7 +8,6 @@ import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.identity.GitIdentity;
 import dev.railroadide.railroad.vcs.git.identity.GitSigningStatus;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
 import javafx.geometry.VPos;
 import javafx.scene.layout.*;
 import javafx.scene.text.Text;
@@ -35,14 +34,9 @@ public class GitOverviewIdentityPane extends RRVBox {
 
     private void configureGrid() {
         identityGrid.getStyleClass().add("git-overview-identity-grid");
-        identityGrid.setHgap(12);
-        identityGrid.setVgap(0); // Set vgap to 0 because separators will provide vertical spacing
 
         var col1 = new ColumnConstraints();
         col1.setHgrow(Priority.NEVER);
-        col1.setPrefWidth(Region.USE_COMPUTED_SIZE);
-        col1.setMinWidth(Region.USE_PREF_SIZE);
-        col1.setMaxWidth(Region.USE_PREF_SIZE);
         var col2 = new ColumnConstraints();
         col2.setHgrow(Priority.ALWAYS);
         identityGrid.getColumnConstraints().addAll(col1, col2);
@@ -61,8 +55,6 @@ public class GitOverviewIdentityPane extends RRVBox {
         row++;
         Region separator0 = new Region();
         separator0.getStyleClass().add("git-overview-grid-row-separator");
-        separator0.setMaxWidth(Double.MAX_VALUE); // Ensure the separator stretches
-        GridPane.setMargin(separator0, new Insets(4, 0, 4, 0));
         identityGrid.add(separator0, 0, row, 2, 1);
         row++;
 
@@ -73,8 +65,6 @@ public class GitOverviewIdentityPane extends RRVBox {
         row++;
         Region separator1 = new Region();
         separator1.getStyleClass().add("git-overview-grid-row-separator");
-        separator1.setMaxWidth(Double.MAX_VALUE); // Ensure the separator stretches
-        GridPane.setMargin(separator1, new Insets(4, 0, 4, 0));
         identityGrid.add(separator1, 0, row, 2, 1);
         row++;
 
@@ -85,8 +75,6 @@ public class GitOverviewIdentityPane extends RRVBox {
         row++;
         Region separator2 = new Region();
         separator2.getStyleClass().add("git-overview-grid-row-separator");
-        separator2.setMaxWidth(Double.MAX_VALUE); // Ensure the separator stretches
-        GridPane.setMargin(separator2, new Insets(4, 0, 4, 0));
         identityGrid.add(separator2, 0, row, 2, 1);
         row++;
 
