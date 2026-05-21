@@ -65,7 +65,7 @@ public final class LanguageSupportRegistry {
                 if (ImageLanguageSupport.INSTANCE.supports(path))
                     return ImageLanguageSupport.INSTANCE.languageId();
 
-                if (Files.exists(path) && FileUtils.isBinaryFile(path))
+                if (Files.isRegularFile(path) && FileUtils.isBinaryFile(path))
                     return "binary";
 
                 return PlainTextLanguageSupport.INSTANCE.languageId();
