@@ -2,7 +2,7 @@ package dev.railroadide.railroad.ide.language.impl;
 
 import dev.railroadide.railroad.ide.language.BaseLanguageSupport;
 import dev.railroadide.railroad.ide.language.EditorOpenView;
-import dev.railroadide.railroad.ide.ui.TextEditorPane;
+import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import java.nio.file.Path;

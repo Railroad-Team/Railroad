@@ -9,6 +9,7 @@ import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationEditorPane;
 import dev.railroadide.railroad.ide.ui.*;
+import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.ide.ui.git.branches.GitBranchesPane;
 import dev.railroadide.railroad.ide.ui.git.commit.GitCommitPane;
 import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;

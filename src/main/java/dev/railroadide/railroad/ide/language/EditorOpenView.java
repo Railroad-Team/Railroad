@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide.language;
 
-import dev.railroadide.railroad.ide.ui.TextEditorPane;
+import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import javafx.scene.Node;
 import org.jspecify.annotations.Nullable;
 

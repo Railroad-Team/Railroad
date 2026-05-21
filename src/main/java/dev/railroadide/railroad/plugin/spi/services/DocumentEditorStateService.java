@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.plugin.spi.services;
 
-import dev.railroadide.railroad.ide.ui.TextEditorPane;
+import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.spi.state.Cursor;
 import dev.railroadide.railroad.plugin.spi.state.Selection;
 import org.jspecify.annotations.Nullable;

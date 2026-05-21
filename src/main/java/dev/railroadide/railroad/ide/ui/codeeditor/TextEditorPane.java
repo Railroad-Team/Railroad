@@ -1,4 +1,4 @@
-package dev.railroadide.railroad.ide.ui;
+package dev.railroadide.railroad.ide.ui.codeeditor;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;

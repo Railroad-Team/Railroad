@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.ui.RRButton;
