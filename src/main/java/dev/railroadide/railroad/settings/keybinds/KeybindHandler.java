@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public class KeybindHandler {
-    private static final Registry<Keybind> KEYBIND_REGISTRY = RegistryManager.createRegistry("keybinds", Keybind.class);
+    private static final Registry<Keybind> KEYBIND_REGISTRY = RegistryManager.createOrderedRegistry("keybinds", Keybind.class);
 
     /**
      * Registers the provided node to capture key events.

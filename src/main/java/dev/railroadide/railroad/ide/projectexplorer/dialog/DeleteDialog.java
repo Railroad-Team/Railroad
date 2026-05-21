@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.projectexplorer.dialog;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.utility.FileUtils;
@@ -18,13 +19,20 @@ public class DeleteDialog {
             "railroad.dialog.delete.message",
             () -> {
                 try {
+                    boolean wasRegularFile = Files.isRegularFile(path);
+                    FileSystemDocument document = wasRegularFile
+                        ? new FileSystemDocument(path.getFileName().toString(), path, LanguageSupportRegistry.resolveLanguageId(path))
+                        : null;
+
                     if (Files.isDirectory(path)) {
                         FileUtils.deleteFolder(path);
                     } else {
                         Files.deleteIfExists(path);
                     }
 
-                    Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(path.getFileName().toString(), path), DocumentEvent.EventType.DELETED));
+                    if (document != null) {
+                        Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.DELETED));
+                    }
                 } catch (IOException exception) {
                     Railroad.LOGGER.error("Failed to delete file or directory: {}", path, exception);
                 }

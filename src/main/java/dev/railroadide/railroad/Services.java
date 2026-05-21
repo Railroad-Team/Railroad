@@ -4,9 +4,12 @@ import com.google.gson.Gson;
 import dev.railroadide.logger.Logger;
 import dev.railroadide.railroad.ide.DefaultDocumentEditorStateService;
 import dev.railroadide.railroad.ide.DefaultIDEStateService;
+import dev.railroadide.railroad.ide.diagnostics.LanguageInspectionRegistries;
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.localization.Language;
 import dev.railroadide.railroad.localization.LocalizationService;
+import dev.railroadide.railroad.plugin.spi.inspection.LanguageInspectionProvider;
 import dev.railroadide.railroad.plugin.spi.services.ApplicationInfoService;
 import dev.railroadide.railroad.plugin.spi.services.DocumentEditorStateService;
 import dev.railroadide.railroad.plugin.spi.services.IDEStateService;
@@ -16,6 +19,7 @@ import dev.railroadide.railroad.project.creation.ProjectServiceRegistry;
 import dev.railroadide.railroad.project.creation.service.*;
 import dev.railroadide.railroad.project.onboarding.creation.DefaultProjectCreationPipelineService;
 import dev.railroadide.railroad.project.onboarding.creation.service.*;
+import dev.railroadide.railroad.registry.Registry;
 import dev.railroadide.railroad.utility.DiscardingOutputStream;
 import javafx.application.HostServices;
 import javafx.beans.property.ObjectProperty;
@@ -74,6 +78,9 @@ public class Services {
     }};
 
     public static final DefaultProjectCreationPipelineService PROJECT_CREATION_PIPELINE = new DefaultProjectCreationPipelineService();
+    public static final ProjectLanguageIndexService PROJECT_LANGUAGE_INDEX_SERVICE = new ProjectLanguageIndexService();
+    public static final Registry<LanguageInspectionProvider> LANGUAGE_INSPECTION_PROVIDER_REGISTRY =
+            LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY;
 
     /**
      * Retrieves a service instance by its class type.
@@ -107,6 +114,8 @@ public class Services {
             return (T) PROJECT_SERVICE_REGISTRY;
         } else if (serviceClass == ProjectCreationPipelineService.class) {
             return (T) PROJECT_CREATION_PIPELINE;
+        } else if (serviceClass == ProjectLanguageIndexService.class) {
+            return (T) PROJECT_LANGUAGE_INDEX_SERVICE;
         }
 
         throw new IllegalArgumentException("Service " + serviceClass.getName() + " is not available.");

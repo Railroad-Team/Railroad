@@ -11,17 +11,21 @@ import java.util.stream.Stream;
 public class FileSystemDocument implements Document {
     private final String name;
     private final Path path;
+    private final String languageId;
     @Setter
     private boolean dirty = false;
 
-    public FileSystemDocument(String name, Path path) {
+    public FileSystemDocument(String name, Path path, String languageId) {
         if (name == null || name.isBlank())
             throw new IllegalArgumentException("Document name cannot be null or empty");
         if (path == null || Files.notExists(path) || !Files.isRegularFile(path))
             throw new IllegalArgumentException("Invalid document path: " + path);
+        if (languageId == null || languageId.isBlank())
+            throw new IllegalArgumentException("Language ID cannot be null or empty");
 
         this.name = name;
         this.path = path;
+        this.languageId = languageId;
     }
 
     @Override
@@ -54,9 +58,7 @@ public class FileSystemDocument implements Document {
 
     @Override
     public String getLanguageId() {
-        return this.name.contains(".") ?
-            this.name.substring(this.name.lastIndexOf('.') + 1) :
-            "plaintext";
+        return this.languageId;
     }
 
     @Override

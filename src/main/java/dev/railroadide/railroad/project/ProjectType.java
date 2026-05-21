@@ -13,7 +13,7 @@ import java.util.function.Supplier;
  * This class provides a builder for creating instances and a registry for managing them.
  */
 public class ProjectType {
-    public static final Registry<ProjectType> REGISTRY = RegistryManager.createRegistry("railroad:project_type", ProjectType.class);
+    public static final Registry<ProjectType> REGISTRY = RegistryManager.createOrderedRegistry("railroad:project_type", ProjectType.class);
 
     @Getter
     private final String name;

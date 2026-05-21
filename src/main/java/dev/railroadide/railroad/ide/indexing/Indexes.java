@@ -3,6 +3,8 @@ package dev.railroadide.railroad.ide.indexing;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.classparser.ClassStubParser;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
+import dev.railroadide.railroad.java.JDK;
+import dev.railroadide.railroad.java.JDKManager;
 import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
@@ -18,7 +20,12 @@ public class Indexes {
     public static List<ClassStub> scanStandardLibrary() {
         List<ClassStub> stubs = new ArrayList<>();
 
-        Path javaHome = Path.of(System.getProperty("java.home"));
+        Path javaHome = resolveJavaHome();
+        if (javaHome == null) {
+            Railroad.LOGGER.error("Failed to locate a JDK home for standard library scanning");
+            return stubs;
+        }
+
         // check if its using java 9 modules
         if (Files.notExists(javaHome.resolve("lib").resolve("modules"))) {
             scanRTJar(javaHome, stubs);
@@ -73,5 +80,48 @@ public class Indexes {
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to scan standard library", exception);
         }
+    }
+
+    private static Path resolveJavaHome() {
+        Path configured = normalizeHome(System.getProperty("java.home"));
+        if (configured != null && hasScannableStandardLibrary(configured))
+            return configured;
+
+        Path javaHomeEnv = normalizeHome(System.getenv("JAVA_HOME"));
+        if (javaHomeEnv != null && hasScannableStandardLibrary(javaHomeEnv))
+            return javaHomeEnv;
+
+        Path jdkHomeEnv = normalizeHome(System.getenv("JDK_HOME"));
+        if (jdkHomeEnv != null && hasScannableStandardLibrary(jdkHomeEnv))
+            return jdkHomeEnv;
+
+        JDKManager.refreshJDKs();
+        for (JDK jdk : JDKManager.getAvailableJDKs()) {
+            if (hasScannableStandardLibrary(jdk.path()))
+                return jdk.path();
+        }
+
+        return configured;
+    }
+
+    private static Path normalizeHome(String home) {
+        if (home == null || home.isBlank())
+            return null;
+
+        try {
+            return Path.of(home).toAbsolutePath().normalize();
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static boolean hasScannableStandardLibrary(Path javaHome) {
+        if (javaHome == null || Files.notExists(javaHome))
+            return false;
+
+        if (Files.isRegularFile(javaHome.resolve("lib").resolve("rt.jar")))
+            return true;
+
+        return Files.isRegularFile(javaHome.resolve("jmods").resolve("java.base.jmod"));
     }
 }

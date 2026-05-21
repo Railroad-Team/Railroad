@@ -1,0 +1,15 @@
+relative_path,kind,features
+valid/01_compilation_unit_basics.java,valid,package;imports;class;comments;trivia
+valid/02_module_declaration_all_directives.java,valid,module;requires;exports;opens;uses;provides
+valid/03_type_declarations_all_forms.java,valid,class;interface;enum;annotation;record;empty-type
+valid/04_members_and_initializers.java,valid,fields;methods;constructors;compact-ctor;initializers;nested-types
+valid/05_types_generics_annotations.java,valid,generics;bounds;wildcards;type-annotations;array-dimensions;union-types
+valid/06_statements_control_flow.java,valid,if;switch;loops;try-catch-finally;synchronized;assert;labeled-flow
+valid/07_expressions_all_forms.java,valid,assignment;binary;unary;casts;arrays;method-reference;lambda;switch-expression
+valid/08_annotations_and_element_values.java,valid,annotation-declaration;element-values;defaults;nested-annotations
+valid/09_switch_patterns_and_when.java,valid,pattern-switch;when-guard;record-pattern;null-case
+valid/10_labeled_statement_syntax_only.java,valid,labeled-statements;break-label;continue-label
+recovery/90_missing_type_and_braces.java,recovery,missing-parameter-list;missing-expression;missing-braces
+recovery/91_malformed_module.java,recovery,malformed-module-directives;missing-identifiers
+recovery/92_expression_garbage.java,recovery,invalid-expressions;postfix-errors
+recovery/93_unterminated_tokens.java,recovery,unterminated-string;unterminated-comment
