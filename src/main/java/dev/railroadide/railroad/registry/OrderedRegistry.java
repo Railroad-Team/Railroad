@@ -27,6 +27,9 @@ public class OrderedRegistry<T> implements Registry<T> {
 
     @Override
     public synchronized T register(String id, T object) {
+        if (id == null || id.isBlank())
+            throw new IllegalArgumentException("ID cannot be null or empty");
+
         if (object == null)
             throw new IllegalArgumentException("Cannot register null value");
 

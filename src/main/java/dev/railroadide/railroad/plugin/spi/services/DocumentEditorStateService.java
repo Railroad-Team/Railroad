@@ -38,7 +38,7 @@ public interface DocumentEditorStateService {
      *
      * @return the active {@link TextEditorPane}, or null if no editor is active
      */
-    TextEditorPane getActiveEditorPane();
+    @Nullable TextEditorPane getActiveEditorPane();
 
     /**
      * Sets the active text editor and its associated language ID.

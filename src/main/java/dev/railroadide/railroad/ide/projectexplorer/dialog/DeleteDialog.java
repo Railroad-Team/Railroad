@@ -20,9 +20,8 @@ public class DeleteDialog {
             () -> {
                 try {
                     boolean wasRegularFile = Files.isRegularFile(path);
-                    String languageId = LanguageSupportRegistry.resolveLanguageId(path);
                     FileSystemDocument document = wasRegularFile
-                        ? new FileSystemDocument(path.getFileName().toString(), path, languageId)
+                        ? new FileSystemDocument(path.getFileName().toString(), path, LanguageSupportRegistry.resolveLanguageId(path))
                         : null;
 
                     if (Files.isDirectory(path)) {
