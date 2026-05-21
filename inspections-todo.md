@@ -194,11 +194,11 @@ Inspectopedia label in the sections below.
   clearer.
 - [ ] [medium] `Conditional can be pushed inside branch expression` - Simplify duplicated ternary branch structure.
 - [ ] [hard] `Conditional expression` - Flag ternaries where statement form may be clearer.
-- [ ] [starter] `Conditional expression with identical branches` - Detect ternaries that produce the same result on both
+- [x] [starter] `Conditional expression with identical branches` - Detect ternaries that produce the same result on both
   sides.
 - [ ] [easy] `Conditional expression with negated condition` - Simplify negated ternary conditions.
 - [x] [medium] `Constant conditional expression` - Detect conditions known at compile/data-flow time.
-- [ ] [starter] `Double negation` - Simplify `!!expr` style logic.
+- [x] [starter] `Double negation` - Simplify `!!expr` style logic.
 - [ ] [easy] `Duplicate condition` - Find repeated boolean conditions in the same decision logic.
 - [ ] [medium] `Enum 'switch' statement that misses case` - Detect non-exhaustive enum switches.
 - [ ] [medium] `Expression can be factorized` - Identify algebraically factorable expressions.

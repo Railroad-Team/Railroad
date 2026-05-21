@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.ide.diagnostics;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.plugin.spi.inspection.*;
 

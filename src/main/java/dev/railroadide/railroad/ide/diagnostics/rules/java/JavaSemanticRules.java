@@ -311,6 +311,16 @@ public final class JavaSemanticRules {
         SemanticDiagnostic.Severity.WARNING,
         "Integer division in floating-point context may lead to loss of precision"
     );
+    public static final JavaSemanticRule DOUBLE_NEGATION = new JavaSemanticRule(
+        "SEM_DOUBLE_NEGATION",
+        SemanticDiagnostic.Severity.WARNING,
+        "Double negation can be simplified"
+    );
+    public static final JavaSemanticRule CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES = new JavaSemanticRule(
+        "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES",
+        SemanticDiagnostic.Severity.WARNING,
+        "Conditional expression '%s' with identical branches"
+    );
     public static final JavaSemanticRule BIG_DECIMAL_EQUALS = new JavaSemanticRule(
         "SEM_BIG_DECIMAL_EQUALS",
         SemanticDiagnostic.Severity.WARNING,

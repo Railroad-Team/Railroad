@@ -3863,6 +3863,83 @@ class CoreInspectionRulesTest {
         assertFalse(diagnostics.stream().anyMatch(d -> "SEM_REDUNDANT_INTERFACE_DECLARATION".equals(d.code())));
     }
 
+    @Test
+    void coreDoubleNegationDoesEmitDiagnosticWhenDoubleNegative() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDoubleNegationInspection(), """
+            class Example {
+                boolean run() {
+                    return !!true;
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_DOUBLE_NEGATION".equals(d.code())));
+    }
+
+    @Test
+    void coreDoubleNegationDoesEmitDiagnosticWhenDoubleNegativeWithParenthesis() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDoubleNegationInspection(), """
+            class Example {
+                boolean run() {
+                    return !(!true);
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_DOUBLE_NEGATION".equals(d.code())));
+    }
+
+    @Test
+    void coreDoubleNegationDoesNotEmitDiagnosticWhenSingleNegative() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDoubleNegationInspection(), """
+            class Example {
+                boolean run() {
+                    return !true;
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_DOUBLE_NEGATION".equals(d.code())));
+    }
+
+    @Test
+    void coreDoubleNegationDoesNotEmitDiagnosticWhenSingleNegativeWithParenthesis() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDoubleNegationInspection(), """
+            class Example {
+                boolean run() {
+                    return !(true);
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_DOUBLE_NEGATION".equals(d.code())));
+    }
+
+    @Test
+    void coreConditionalExpressionWithIdenticalBranchesEmitsDiagnosticWhenTernaryHasSameBranch() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
+            class Example {
+                int run(boolean flag, int value) {
+                    return flag ? value : value;
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
+    }
+
+    @Test
+    void coreConditionalExpressionWithIdenticalBranchesDoesNotEmitDiagnosticWhenTernaryHasDifferentBranch() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
+            class Example {
+                int run(boolean flag, int valueA, int valueB) {
+                    return flag ? valueA : valueB;
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
+    }
     private static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, String document) {
         return runProvider(provider, Path.of("Example.java"), document);
     }

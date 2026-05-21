@@ -2,8 +2,8 @@ package dev.railroadide.railroad.ide.diagnostics;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
-import dev.railroadide.railroad.plugin.spi.inspection.LanguageInspectionProvider;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
+import dev.railroadide.railroad.plugin.spi.inspection.LanguageInspectionProvider;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import org.reflections.util.ConfigurationBuilder;

@@ -9,6 +9,7 @@ import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionReporter;
+import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import org.jetbrains.annotations.NotNull;
