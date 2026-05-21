@@ -4,7 +4,6 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
-import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TreeItem;
@@ -91,14 +90,14 @@ public class SettingsUIHandler {
 
             if (!folderBoxes.containsKey(categoryId)) {
                 var folderBox = new RRVBox();
+                folderBox.getStyleClass().add("settings-folder-box");
                 folderBoxes.put(categoryId, folderBox);
-                VBox.setMargin(folderBox, new Insets(5, 10, 0, 10));
             }
 
             VBox folderBox = folderBoxes.get(categoryId);
 
             var settingBox = new RRVBox();
-            VBox.setMargin(settingBox, new Insets(5));
+            settingBox.getStyleClass().add("settings-setting-box");
 
             Node settingNode = setting.createNode();
             if (settingNode == null) {
@@ -143,8 +142,7 @@ public class SettingsUIHandler {
             SettingCategory category = categoryMap.get(categoryId);
 
             var headerBox = new RRHBox();
-            headerBox.setSpacing(10);
-            headerBox.setPadding(new Insets(5, 10, 0, 10));
+            headerBox.getStyleClass().add("settings-category-header");
 
             Node titleNode = null;
             if (category.hasTitle()) {
@@ -154,7 +152,7 @@ public class SettingsUIHandler {
             }
 
             var separator = new Separator();
-            separator.setMaxWidth(Double.MAX_VALUE);
+            separator.getStyleClass().add("settings-category-separator");
             HBox.setHgrow(separator, Priority.ALWAYS);
 
             if (titleNode != null) {
@@ -166,9 +164,8 @@ public class SettingsUIHandler {
             Node descriptionNode = null;
             if (category.hasDescription()) {
                 var descriptionLabel = new LocalizedLabel(category.description());
-                descriptionLabel.getStyleClass().add("section-description-label");
+                descriptionLabel.getStyleClass().addAll("section-description-label", "settings-category-description");
                 descriptionLabel.setWrapText(true);
-                descriptionLabel.setPadding(new Insets(0, 0, 0, 5));
                 descriptionNode = descriptionLabel;
             }
 

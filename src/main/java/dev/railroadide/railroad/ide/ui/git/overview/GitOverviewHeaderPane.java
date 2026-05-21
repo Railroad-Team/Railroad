@@ -12,7 +12,6 @@ import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import dev.railroadide.railroad.vcs.git.status.GitRepoStatus;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.layout.*;
@@ -23,9 +22,9 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import java.util.List;
 
 public class GitOverviewHeaderPane extends RRVBox {
-    private final RRHBox actionsBox = new RRHBox(8);
+    private final RRHBox actionsBox = new RRHBox();
     private final GridPane infoGrid = new RRGridPane();
-    private final RRHBox changesRow = new RRHBox(10);
+    private final RRHBox changesRow = new RRHBox();
     private final ChangeChip stagedChip = new ChangeChip("Staged");
     private final ChangeChip unstagedChip = new ChangeChip("Unstaged");
     private final ChangeChip untrackedChip = new ChangeChip("Untracked");
@@ -50,7 +49,6 @@ public class GitOverviewHeaderPane extends RRVBox {
 
     public GitOverviewHeaderPane(Project project) {
         getStyleClass().add("git-overview-header-pane");
-        setSpacing(8);
 
         // Actions Box
         actionsBox.getStyleClass().add("git-overview-actions-box");
@@ -96,14 +94,9 @@ public class GitOverviewHeaderPane extends RRVBox {
 
     private void configureInfoGrid() {
         infoGrid.getStyleClass().add("git-overview-info-grid");
-        infoGrid.setHgap(12);
-        infoGrid.setVgap(0); // Set vgap to 0 because separators will provide vertical spacing
 
         var col1 = new ColumnConstraints();
         col1.setHgrow(Priority.NEVER);
-        col1.setPrefWidth(Region.USE_COMPUTED_SIZE);
-        col1.setMinWidth(Region.USE_PREF_SIZE);
-        col1.setMaxWidth(Region.USE_PREF_SIZE);
         var col2 = new ColumnConstraints();
         col2.setHgrow(Priority.ALWAYS);
         infoGrid.getColumnConstraints().addAll(col1, col2);
@@ -121,8 +114,6 @@ public class GitOverviewHeaderPane extends RRVBox {
         row++;
         Region separator0 = new Region();
         separator0.getStyleClass().add("git-overview-grid-row-separator");
-        separator0.setMaxWidth(Double.MAX_VALUE); // Ensure the separator stretches
-        GridPane.setMargin(separator0, new Insets(4, 0, 4, 0)); // Add vertical margin for separator
         infoGrid.add(separator0, 0, row, 2, 1); // col=0, row=current, columnspan=2, rowspan=1
         row++;
 
@@ -139,8 +130,6 @@ public class GitOverviewHeaderPane extends RRVBox {
         row++;
         Region separator1 = new Region();
         separator1.getStyleClass().add("git-overview-grid-row-separator");
-        separator1.setMaxWidth(Double.MAX_VALUE); // Ensure the separator stretches
-        GridPane.setMargin(separator1, new Insets(4, 0, 4, 0)); // Add vertical margin for separator
         infoGrid.add(separator1, 0, row, 2, 1);
         row++;
 
@@ -166,8 +155,6 @@ public class GitOverviewHeaderPane extends RRVBox {
         row++;
         Region separator2 = new Region();
         separator2.getStyleClass().add("git-overview-grid-row-separator");
-        separator2.setMaxWidth(Double.MAX_VALUE); // Ensure the separator stretches
-        GridPane.setMargin(separator2, new Insets(4, 0, 4, 0)); // Add vertical margin for separator
         infoGrid.add(separator2, 0, row, 2, 1);
         row++;
 
@@ -261,7 +248,7 @@ public class GitOverviewHeaderPane extends RRVBox {
     }
 
     private static HBox createTag(String... styleClasses) {
-        var tag = new RRHBox(4);
+        var tag = new RRHBox();
         tag.getStyleClass().addAll(styleClasses);
         return tag;
     }
@@ -286,7 +273,7 @@ public class GitOverviewHeaderPane extends RRVBox {
         private final Text countText = new Text();
 
         private ChangeChip(String label) {
-            super(4);
+            super();
             getStyleClass().add("git-overview-change-chip");
             var labelText = new Text(label);
             countText.getStyleClass().add("git-overview-change-number");

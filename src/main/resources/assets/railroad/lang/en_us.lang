@@ -241,6 +241,20 @@ railroad.settings.ide.jdk_management.detected.unknown_version=Unknown Version
 railroad.settings.ide.jdk_management.detected.version=Java %s
 railroad.settings.ide.jdk_management.detected.name=Distribution: %s
 railroad.settings.ide.jdk_management.detected.path=Path: %s
+railroad.settings.appearance.terminal.title=Terminal
+railroad.settings.appearance.terminal.description=Configure how Railroad discovers and styles embedded terminal sessions.
+railroad.settings.appearance.display.title=Display
+railroad.settings.appearance.display.description=Adjust interface scaling for high-DPI displays and desktop environments with poor automatic JavaFX scaling.
+railroad.settings.appearance.terminal.windows_terminal_settings_path.title=Windows Terminal Settings Path
+railroad.settings.appearance.terminal.windows_terminal_settings_path.description=Optional path to a Windows Terminal settings.json file. Leave blank to auto-detect stable, preview, dev, or unpackaged installs.
+railroad.settings.appearance.terminal.windows_terminal_settings_path.placeholder=Path to Windows Terminal settings.json
+railroad.settings.appearance.terminal.terminal_font_mode.title=Terminal Font Mode
+railroad.settings.appearance.terminal.terminal_font_mode.description=Choose whether Railroad should auto-detect a terminal font, use an installed system font, or use a custom CSS font-family string.
+railroad.settings.appearance.terminal.terminal_installed_font.title=Installed Terminal Font
+railroad.settings.appearance.terminal.terminal_installed_font.description=Select a font family from the fonts installed on this machine. This is used when Terminal Font Mode is set to Installed Font.
+railroad.settings.appearance.terminal.terminal_custom_font_family.title=Custom Terminal Font Family
+railroad.settings.appearance.terminal.terminal_custom_font_family.description=Enter a CSS font-family value such as "FiraCode Nerd Font" or "\"FiraCode Nerd Font\", \"Cascadia Mono\", monospace". This is used when Terminal Font Mode is set to Custom Family.
+railroad.settings.appearance.terminal.terminal_custom_font_family.placeholder=Example: "FiraCode Nerd Font", "Cascadia Mono", monospace
 
 # Keybind settings
 railroad.settings.keybinds.title=Keybinds
@@ -303,14 +317,20 @@ railroad.settings.projects.defaults.group_id.title=Default Group ID
 railroad.settings.projects.defaults.group_id.description=Manage the default Maven group identifier assigned to new projects.
 railroad.settings.projects.defaults.group_id.default_group_id.title=Override default group ID
 railroad.settings.projects.defaults.group_id.default_group_id.description=Set the Maven group ID that Railroad pre-fills during project onboarding. Leave blank to use the generated value.
+railroad.settings.projects.defaults.group_id.projects.default_group_id.title=Override default group ID
+railroad.settings.projects.defaults.group_id.projects.default_group_id.description=Set the Maven group ID that Railroad pre-fills during project onboarding. Leave blank to use the generated value.
 railroad.settings.projects.defaults.version.title=Default Project Version
 railroad.settings.projects.defaults.version.description=Control the default version string applied when creating projects.
 railroad.settings.projects.defaults.version.default_version.title=Override default project version
 railroad.settings.projects.defaults.version.default_version.description=Set the version number Railroad pre-fills during project onboarding. Leave blank to keep the standard value.
+railroad.settings.projects.defaults.version.projects.default_version.title=Override default project version
+railroad.settings.projects.defaults.version.projects.default_version.description=Set the version number Railroad pre-fills during project onboarding. Leave blank to keep the standard value.
 railroad.settings.projects.defaults.author.title=Default Project Author
 railroad.settings.projects.defaults.author.description=Configure the default author shown for newly created projects.
 railroad.settings.projects.defaults.author.default_author.title=Override default project author
 railroad.settings.projects.defaults.author.default_author.description=Set the author name Railroad pre-fills during project onboarding. Leave blank to fall back to the system user name.
+railroad.settings.projects.defaults.author.projects.default_author.title=Override default project author
+railroad.settings.projects.defaults.author.projects.default_author.description=Set the author name Railroad pre-fills during project onboarding. Leave blank to fall back to the system user name.
 
 # Theme management
 railroad.home.settings.appearance.theme=Select a Theme
@@ -377,6 +397,14 @@ railroad.settings.ide.code_style.title=Code Style
 railroad.settings.ide.code_style.description=Configure the code style settings for your projects, including indentation, line breaks, and formatting options.
 railroad.settings.ide.code_style.auto_pair_inside_strings.title=Auto-pair inside strings
 railroad.settings.ide.code_style.auto_pair_inside_strings.description=Enable or disable automatic pairing of brackets, braces and parenthesis inside string literals.
+railroad.settings.ide.code_style.indent_mode.title=Indent Mode
+railroad.settings.ide.code_style.indent_mode.description=Choose whether pressing Tab inserts a tab character or spaces.
+railroad.settings.ide.code_style.indent_width.title=Indent Width
+railroad.settings.ide.code_style.indent_width.description=The number of spaces inserted when indentation mode is set to spaces.
+railroad.settings.ide.code_style.tab_width.title=Tab Width
+railroad.settings.ide.code_style.tab_width.description=The visual width, in characters, used when rendering tab characters in the editor.
+railroad.settings.ide.code_style.editor_font_family.title=Editor Font Family
+railroad.settings.ide.code_style.editor_font_family.description=Choose the font family used by the code editor.
 
 # VCS Settings
 settings.tree.vcs=VCS
@@ -384,6 +412,8 @@ railroad.settings.vcs.title=VCS
 railroad.settings.vcs.description=Settings relating to VCS (Version Control System) such as Git.
 railroad.settings.vcs.git_binary_command_search_timeout_ms.title=Git binary search command timeout(ms)
 railroad.settings.vcs.git_binary_command_search_timeout_ms.description=The time in milliseconds to wait when running the command that searches for the git binary executable.
+railroad.settings.vcs.git_version_command_timeout_ms.title=Git version command timeout(ms)
+railroad.settings.vcs.git_version_command_timeout_ms.description=The time in milliseconds to wait when running the command that queries the installed Git version.
 railroad.settings.vcs.git_executable_path.title=Git Executable Path
 railroad.settings.vcs.git_executable_path.placeholder=Path to your git executable binary
 railroad.settings.vcs.git_executable_path.description=The path to the Git executable binary file.

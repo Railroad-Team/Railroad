@@ -3940,7 +3940,6 @@ class CoreInspectionRulesTest {
 
         assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
     }
-
     private static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, String document) {
         return runProvider(provider, Path.of("Example.java"), document);
     }

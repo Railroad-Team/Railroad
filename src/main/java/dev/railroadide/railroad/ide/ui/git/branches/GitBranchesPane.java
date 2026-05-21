@@ -5,7 +5,6 @@ import dev.railroadide.railroad.ui.RRTextField;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import javafx.beans.binding.Bindings;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -31,8 +30,6 @@ public class GitBranchesPane extends RRVBox {
         getChildren().addAll(searchBar, localHeader, localBranchesListView, remoteHeader, remoteBranchesListView);
         getStyleClass().add("git-branches-pane");
         setAlignment(Pos.TOP_LEFT);
-        setSpacing(10);
-        setPadding(new Insets(5));
 
         searchBar.textProperty().addListener((observable, oldValue, newValue) -> {
             localBranchesListView.filterBranches(newValue);
@@ -41,7 +38,7 @@ public class GitBranchesPane extends RRVBox {
     }
 
     private static HBox createSectionHeader(String localizationKey, javafx.scene.control.ListView<?> listView) {
-        HBox header = new HBox(8);
+        HBox header = new HBox();
         header.getStyleClass().add("git-branches-section-header");
 
         LocalizedLabel title = new LocalizedLabel(localizationKey);

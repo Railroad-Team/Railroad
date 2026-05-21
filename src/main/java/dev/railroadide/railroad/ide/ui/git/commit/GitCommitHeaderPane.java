@@ -23,7 +23,6 @@ public class GitCommitHeaderPane extends RRHBox {
             expandAllButton,
             collapseAllButton
         );
-        setSpacing(8);
         getStyleClass().add("git-commit-header-pane");
 
         refreshButton.setOnAction(event ->

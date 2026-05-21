@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.plugin.spi.inspection;
 
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
-
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import java.util.Set;
 
 /**
@@ -16,7 +16,7 @@ import java.util.Set;
  * semantic queries such as {@link JavaRuleContext#resolvedSymbol} and
  * {@link JavaRuleContext#inferredType}.
  */
-public interface JavaInspectionRule {
+public interface JavaInspectionRule extends LanguageInspectionRule<JavaRuleContext> {
     /**
      * Stable namespaced id for this rule (e.g. {@code my.plugin:my-rule}).
      *
@@ -58,4 +58,24 @@ public interface JavaInspectionRule {
      * @throws NullPointerException if an implementation does not tolerate {@code null}
      */
     void evaluate(JavaRuleContext context, JavaInspectionRuleReporter reporter);
+
+    @Override
+    default void evaluate(JavaRuleContext context, LanguageInspectionRuleReporter reporter) {
+        if (reporter instanceof JavaInspectionRuleReporter javaReporter) {
+            evaluate(context, javaReporter);
+            return;
+        }
+
+        evaluate(context, new JavaInspectionRuleReporter() {
+            @Override
+            public void report(SyntaxNode node, Object... messageArgs) {
+                reporter.report(node, messageArgs);
+            }
+
+            @Override
+            public void reportMessage(SyntaxNode node, String message) {
+                reporter.reportMessage(node, message);
+            }
+        });
+    }
 }

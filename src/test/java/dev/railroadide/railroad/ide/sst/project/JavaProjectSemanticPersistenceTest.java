@@ -6,11 +6,9 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
-class ProjectSemanticIndexPersistenceTest {
+class JavaProjectSemanticPersistenceTest {
 
     @TempDir
     Path tempDir;
@@ -28,11 +26,11 @@ class ProjectSemanticIndexPersistenceTest {
                 }
                 """);
 
-        ProjectSemanticIndex index = new JavaProjectSemanticIndexer().build(root);
-        ProjectSemanticIndexPersistence persistence = new ProjectSemanticIndexPersistence();
+        JavaProjectSemanticIndex index = new JavaProjectSemanticIndexer().build(root);
+        JavaProjectSemanticPersistence persistence = new JavaProjectSemanticPersistence();
         persistence.save(root, index);
 
-        ProjectSemanticIndex loaded = persistence.loadIfCurrent(root);
+        JavaProjectSemanticIndex loaded = persistence.loadIfCurrent(root);
 
         assertNotNull(loaded);
         assertEquals(1, loaded.files().size());
@@ -53,7 +51,7 @@ class ProjectSemanticIndexPersistenceTest {
                 """);
 
         JavaProjectSemanticIndexer indexer = new JavaProjectSemanticIndexer();
-        ProjectSemanticIndexPersistence persistence = new ProjectSemanticIndexPersistence();
+        JavaProjectSemanticPersistence persistence = new JavaProjectSemanticPersistence();
         persistence.save(root, indexer.build(root));
 
         Files.writeString(aFile, """
@@ -64,7 +62,7 @@ class ProjectSemanticIndexPersistenceTest {
                 }
                 """);
 
-        ProjectSemanticIndex loaded = persistence.loadIfCurrent(root);
+        JavaProjectSemanticIndex loaded = persistence.loadIfCurrent(root);
 
         assertTrue(loaded == null);
     }

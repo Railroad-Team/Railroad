@@ -1,10 +1,13 @@
 .git-stash-pane {
     -fx-background-color: transparent;
+    -fx-spacing: 10px;
+    -fx-padding: 8px;
 }
 
 .git-stash-controls,
 .git-stash-actions {
     -fx-alignment: center-left;
+    -fx-spacing: 8px;
 }
 
 .git-stash-message-field {
@@ -39,10 +42,12 @@
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-padding: 10 12;
+    -fx-spacing: 10px;
 }
 
 .git-stash-item-left {
     -fx-background-color: transparent;
+    -fx-spacing: 4px;
 }
 
 .git-stash-item-name {
@@ -52,6 +57,7 @@
 
 .git-stash-item-metadata-column {
     -fx-alignment: center-left;
+    -fx-spacing: 2px;
 }
 
 .git-stash-item-branch,
@@ -62,6 +68,7 @@
 
 .git-stash-item-right {
     -fx-alignment: center-right;
+    -fx-spacing: 8px;
 }
 
 .git-stash-item-reference {
@@ -72,6 +79,7 @@
 
 .git-stash-item-stats {
     -fx-alignment: center-right;
+    -fx-spacing: 6px;
 }
 
 .git-stash-item-additions {
@@ -94,6 +102,8 @@
     -fx-border-width: 0;
     -fx-background-insets: 0;
     -fx-padding: 2 4 0 4;
+    -fx-min-height: 140px;
+    -fx-pref-height: 180px;
 }
 
 .git-stash-changes-tree > .virtual-flow,

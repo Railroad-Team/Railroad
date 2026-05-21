@@ -205,8 +205,10 @@ public class PluginManager {
 
             loadResult.setPlugin(plugin, classLoader);
             loadResult.setJavaInspectionRuleProviderRegistrationIds(registeredProviderIds);
+            Plugin enabledPlugin = plugin;
             ShutdownHooks.addHook(() -> {
                 try {
+                    enabledPlugin.onDisable(context);
                     unloadPluginRuntime(loadResult);
                 } catch (Exception exception) {
                     Railroad.LOGGER.error("Error during plugin {} shutdown cleanup", descriptor.getName(), exception);
@@ -519,7 +521,7 @@ public class PluginManager {
                 if (!registrationIds.add(registrationId))
                     throw new IllegalArgumentException("Duplicate Java inspection rule provider registration id: " + registrationId);
 
-                JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(registrationId, provider);
+                JavaInspectionRegistries.registerRuleProvider(registrationId, provider);
             }
             return List.copyOf(registrationIds);
         } catch (Exception exception) {
@@ -558,8 +560,8 @@ public class PluginManager {
         for (String registrationId : registrationIds) {
             if (registrationId == null || registrationId.isBlank())
                 continue;
-            if (JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.contains(registrationId))
-                JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.unregister(registrationId);
+            if (JavaInspectionRegistries.containsRuleProvider(registrationId))
+                JavaInspectionRegistries.unregisterRuleProvider(registrationId);
         }
     }
 

@@ -7,7 +7,7 @@ import dev.railroadide.railroad.ide.classparser.stub.MethodStub;
 import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRegistries;
 import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleEngine;
 import dev.railroadide.railroad.ide.indexing.Indexes;
-import dev.railroadide.railroad.ide.sst.project.ProjectSemanticIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
@@ -106,7 +106,7 @@ public final class JavaSemanticAnalyzer {
         return analyze(JavaSyntaxParser.parse(source));
     }
 
-    public static SemanticModel analyze(CharSequence source, ProjectSemanticIndex projectIndex) {
+    public static SemanticModel analyze(CharSequence source, JavaProjectSemanticIndex projectIndex) {
         Objects.requireNonNull(source, "source");
         return analyze(JavaSyntaxParser.parse(source), projectIndex);
     }
@@ -116,7 +116,7 @@ public final class JavaSemanticAnalyzer {
         return withCoreDiagnostics(analyzeFacts(syntaxTree));
     }
 
-    public static SemanticModel analyze(SyntaxTree syntaxTree, ProjectSemanticIndex projectIndex) {
+    public static SemanticModel analyze(SyntaxTree syntaxTree, JavaProjectSemanticIndex projectIndex) {
         Objects.requireNonNull(syntaxTree, "syntaxTree");
         return withCoreDiagnostics(analyzeFacts(syntaxTree, projectIndex));
     }
@@ -126,7 +126,7 @@ public final class JavaSemanticAnalyzer {
         return analyzeFacts(JavaSyntaxParser.parse(source));
     }
 
-    public static SemanticModel analyzeFacts(CharSequence source, ProjectSemanticIndex projectIndex) {
+    public static SemanticModel analyzeFacts(CharSequence source, JavaProjectSemanticIndex projectIndex) {
         Objects.requireNonNull(source, "source");
         return analyzeFacts(JavaSyntaxParser.parse(source), projectIndex);
     }
@@ -136,7 +136,7 @@ public final class JavaSemanticAnalyzer {
         return performAnalysis(syntaxTree, true);
     }
 
-    public static SemanticModel analyzeFacts(SyntaxTree syntaxTree, ProjectSemanticIndex projectIndex) {
+    public static SemanticModel analyzeFacts(SyntaxTree syntaxTree, JavaProjectSemanticIndex projectIndex) {
         Objects.requireNonNull(syntaxTree, "syntaxTree");
         Objects.requireNonNull(projectIndex, "projectIndex");
         return performAnalysis(syntaxTree, true, projectIndex);
@@ -179,7 +179,7 @@ public final class JavaSemanticAnalyzer {
     private static SemanticModel performAnalysis(
             SyntaxTree syntaxTree,
             boolean includeResolutionAndTypes,
-            @Nullable ProjectSemanticIndex projectIndex
+            @Nullable JavaProjectSemanticIndex projectIndex
     ) {
         Scope rootScope = Scope.root();
         SemanticModel.Builder builder = SemanticModel.builder(syntaxTree, rootScope);
@@ -201,10 +201,10 @@ public final class JavaSemanticAnalyzer {
         private final Map<SyntaxNode, Scope> scopeByNode = new IdentityHashMap<>();
         private final Map<SyntaxNode, Symbol> declaredSymbolByNode = new IdentityHashMap<>();
         private final Map<SyntaxNode, Symbol> resolvedSymbolByNode = new IdentityHashMap<>();
-        private final @Nullable ProjectSemanticIndex projectIndex;
+        private final @Nullable JavaProjectSemanticIndex projectIndex;
         private @Nullable String currentPackageName;
 
-        private AnalysisContext(Scope rootScope, SemanticModel.Builder builder, @Nullable ProjectSemanticIndex projectIndex) {
+        private AnalysisContext(Scope rootScope, SemanticModel.Builder builder, @Nullable JavaProjectSemanticIndex projectIndex) {
             this.rootScope = rootScope;
             this.builder = builder;
             this.projectIndex = projectIndex;
@@ -528,7 +528,7 @@ public final class JavaSemanticAnalyzer {
 
     private static final class NameResolver {
         private final AnalysisContext context;
-        private final @Nullable ProjectSemanticIndex projectIndex;
+        private final @Nullable JavaProjectSemanticIndex projectIndex;
         private final Set<String> localQualifiedTypeNames;
         private final Set<String> availableQualifiedTypeNames;
         private final Map<String, ClassStub> jdkClassStubsByQualifiedName;
@@ -555,7 +555,7 @@ public final class JavaSemanticAnalyzer {
             this.localQualifiedTypeNames = Set.copyOf(qualified);
             Set<String> available = new HashSet<>(localQualifiedTypeNames);
             if (projectIndex != null) {
-                for (ProjectSemanticIndex.SourceFileIndex file : projectIndex.files().values()) {
+                for (JavaProjectSemanticIndex.SourceFileIndex file : projectIndex.files().values()) {
                     available.addAll(file.declaredQualifiedNames());
                 }
             }
@@ -1273,7 +1273,7 @@ public final class JavaSemanticAnalyzer {
             if (projectIndex == null || !visitedOwners.add(ownerQualifiedName))
                 return;
 
-            for (ProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupMember(ownerQualifiedName, fieldName)) {
+            for (JavaProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupMember(ownerQualifiedName, fieldName)) {
                 if (symbol.kind() != SymbolKind.FIELD || symbol.isStatic() != staticAccess)
                     continue;
 
@@ -1297,7 +1297,7 @@ public final class JavaSemanticAnalyzer {
             if (projectIndex == null || !visitedOwners.add(ownerQualifiedName))
                 return;
 
-            for (ProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupMember(ownerQualifiedName, methodName)) {
+            for (JavaProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupMember(ownerQualifiedName, methodName)) {
                 if (symbol.kind() != SymbolKind.METHOD || symbol.isStatic() != staticAccess)
                     continue;
 
@@ -1316,7 +1316,7 @@ public final class JavaSemanticAnalyzer {
             if (projectIndex == null)
                 return;
 
-            for (ProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupMembers(ownerQualifiedName)) {
+            for (JavaProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupMembers(ownerQualifiedName)) {
                 if (symbol.kind() != SymbolKind.CONSTRUCTOR)
                     continue;
 
@@ -1871,11 +1871,11 @@ public final class JavaSemanticAnalyzer {
 
         private Symbol typeSymbolForQualifiedName(String simpleName, String qualifiedName, SyntaxNode declarationOrUsageSite) {
             if (projectIndex != null) {
-                List<ProjectSemanticIndex.SymbolDescriptor> projectMatches = projectIndex.lookupQualifiedName(qualifiedName).stream()
+                List<JavaProjectSemanticIndex.SymbolDescriptor> projectMatches = projectIndex.lookupQualifiedName(qualifiedName).stream()
                         .filter(symbol -> isTypeSymbol(symbol.kind()))
                         .toList();
                 if (!projectMatches.isEmpty()) {
-                    ProjectSemanticIndex.SymbolDescriptor match = projectMatches.getFirst();
+                    JavaProjectSemanticIndex.SymbolDescriptor match = projectMatches.getFirst();
                     return new SimpleSymbol(match.kind(), match.simpleName(), match.qualifiedName(), declarationOrUsageSite);
                 }
             }
@@ -1883,7 +1883,7 @@ public final class JavaSemanticAnalyzer {
         }
 
         private SyntheticMemberSymbol syntheticProjectMemberSymbol(
-                ProjectSemanticIndex.SymbolDescriptor symbol,
+                JavaProjectSemanticIndex.SymbolDescriptor symbol,
                 Type valueType,
                 List<Type> parameterTypes
         ) {
@@ -2056,7 +2056,7 @@ public final class JavaSemanticAnalyzer {
         private static final Set<String> NUMERIC_PRIMITIVES = Set.of("byte", "short", "char", "int", "long", "float", "double");
 
         private final AnalysisContext context;
-        private final @Nullable ProjectSemanticIndex projectIndex;
+        private final @Nullable JavaProjectSemanticIndex projectIndex;
         private final Set<String> localQualifiedTypeNames;
         private final Set<String> availableQualifiedTypeNames;
         private final Map<String, ImportSpec> singleTypeImportsBySimpleName = new LinkedHashMap<>();
@@ -2075,7 +2075,7 @@ public final class JavaSemanticAnalyzer {
 
             Set<String> available = new HashSet<>(localQualifiedTypeNames);
             if (projectIndex != null) {
-                for (ProjectSemanticIndex.SourceFileIndex file : projectIndex.files().values()) {
+                for (JavaProjectSemanticIndex.SourceFileIndex file : projectIndex.files().values()) {
                     available.addAll(file.declaredQualifiedNames());
                 }
             }

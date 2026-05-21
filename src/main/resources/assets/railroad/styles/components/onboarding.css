@@ -1,6 +1,7 @@
 /* ===== ONBOARDING LAYOUT ===== */
 .onboarding-root {
     -fx-background-color: -color-bg-default;
+    -fx-padding: 32px 40px 24px 40px;
 }
 
 .onboarding-main {
@@ -12,6 +13,11 @@
     -fx-padding: 32px;
     -fx-spacing: 24px;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.18), 24, 0.18, 0, 12);
+}
+
+.onboarding-project-creation-pane {
+    -fx-padding: 24px;
+    -fx-spacing: 16px;
 }
 
 .onboarding-header {
@@ -37,6 +43,7 @@
 .onboarding-progress-bar {
     -fx-accent: -color-accent-emphasis;
     -fx-pref-height: 6px;
+    -fx-max-width: Infinity;
     -fx-background-radius: 6px;
 }
 
@@ -80,6 +87,11 @@
 .onboarding-busy-overlay {
     -fx-background-color: rgba(0, 0, 0, 0.35);
     -fx-alignment: center;
+}
+
+.onboarding-busy-indicator {
+    -fx-max-width: 48px;
+    -fx-max-height: 48px;
 }
 
 .onboarding-button-bar {

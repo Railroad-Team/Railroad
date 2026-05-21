@@ -12,7 +12,6 @@ public class GitOverviewPane extends RRVBox {
 
     public GitOverviewPane(Project project) {
         getStyleClass().add("git-overview-pane-root");
-        setSpacing(8);
 
         this.headerPane = new GitOverviewHeaderPane(project);
         this.identityPane = new GitOverviewIdentityPane(project);

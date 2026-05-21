@@ -30,6 +30,12 @@
     -fx-background-color: #444444ee;
     -fx-border-color: #444;
     -fx-border-width: 1px;
+    -fx-spacing: 5px;
+    -fx-padding: 10px;
+}
+
+.ide-image-viewer-info-pane-container {
+    -fx-padding: 10px;
 }
 
 .ide-image-viewer-canvas-container {
@@ -40,20 +46,6 @@
 .welcome-icon {
     -fx-text-fill: -color-accent-9;
     -fx-opacity: 0.9;
-}
-
-.welcome-title {
-    -fx-font-size: 32px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -color-fg-default;
-    -fx-text-alignment: center;
-}
-
-.welcome-description {
-    -fx-font-size: 18px;
-    -fx-text-fill: -color-fg-muted;
-    -fx-text-alignment: center;
-    -fx-wrap-text: true;
 }
 
 .not-implemented-title {
@@ -79,4 +71,9 @@
     display: block;
     margin-left: auto;
     margin-right: auto;
+}
+
+.not-implemented-card {
+    -fx-padding: 32px;
+    -fx-max-width: Infinity;
 }

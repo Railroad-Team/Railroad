@@ -56,6 +56,12 @@
 
 .git-commit-actions-pane {
     -fx-padding: 10px;
+    -fx-spacing: 8px;
+}
+
+.git-commit-actions-header,
+.git-commit-actions-footer {
+    -fx-spacing: 4px;
 }
 
 .git-file-item-modified > .git-commit-change-title-text {
@@ -207,6 +213,9 @@
     -fx-alignment: center-left;
     -fx-hgap: 6px;
     -fx-vgap: 4px;
+    -fx-pref-wrap-length: 220px;
+    -fx-max-width: 220px;
+    -fx-min-width: 0;
 }
 
 .git-commit-tag {

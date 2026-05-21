@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.plugin;
 
+import dev.railroadide.railroad.ide.diagnostics.LanguageInspectionRegistries;
 import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRegistries;
 import dev.railroadide.railroad.plugin.defaults.DefaultPluginDescriptor;
 import dev.railroadide.railroad.plugin.spi.PluginDescriptor;
@@ -33,16 +34,19 @@ class PluginManagerTest {
             loadResult.setJavaInspectionRuleProviderRegistrationIds(registeredIds);
 
             assertEquals(List.of(registrationId), registeredIds);
-            assertTrue(JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.contains(registrationId));
-            assertSame(provider, JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.get(registrationId));
+            assertTrue(JavaInspectionRegistries.containsRuleProvider(registrationId));
+            assertSame(provider, JavaInspectionRegistries.getRuleProvider(registrationId));
+            assertTrue(LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.contains(registrationId));
+            assertSame(provider, LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.get(registrationId));
 
             PluginManager.unregisterJavaInspectionRuleProviders(loadResult);
 
-            assertFalse(JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.contains(registrationId));
+            assertFalse(JavaInspectionRegistries.containsRuleProvider(registrationId));
+            assertFalse(LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.contains(registrationId));
             assertTrue(loadResult.javaInspectionRuleProviderRegistrationIds().isEmpty());
         } finally {
-            if (JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.contains(registrationId))
-                JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.unregister(registrationId);
+            if (JavaInspectionRegistries.containsRuleProvider(registrationId))
+                JavaInspectionRegistries.unregisterRuleProvider(registrationId);
         }
     }
 
@@ -57,7 +61,7 @@ class PluginManagerTest {
         );
 
         assertTrue(exception.getMessage().contains(registrationId));
-        assertFalse(JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.contains(registrationId));
+        assertFalse(JavaInspectionRegistries.containsRuleProvider(registrationId));
     }
 
     private static PluginDescriptor testDescriptor(String pluginId) {

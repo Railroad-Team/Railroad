@@ -5,6 +5,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
+import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import org.junit.jupiter.api.Test;
 
 import javax.tools.Diagnostic;
@@ -14,14 +15,16 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SemanticDiagnosticsProviderTest {
+class JavaDiagnosticsProviderTest {
+    private static final String PLUGIN_RULE_PROVIDER_ID = "test:plugin-rule-provider";
+    private static final String PLUGIN_RULE_ID = "PLUGIN_RULE_WARNING";
 
     @Test
     void coreSemanticInspectionIsRegisteredAndProducesDiagnostics() {
-        JavaInspectionRuleProvider core = JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.get(CoreNameResolutionInspection.ID);
+        JavaInspectionRuleProvider core = JavaInspectionRegistries.getRuleProvider(CoreNameResolutionInspection.ID);
         assertNotNull(core);
 
-        SemanticDiagnosticsProvider provider = new SemanticDiagnosticsProvider(Path.of("Example.java"));
+        JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
         List<EditorDiagnostic> diagnostics = provider.compute("""
                 class Example {
                     void run() {
@@ -35,48 +38,18 @@ class SemanticDiagnosticsProviderTest {
 
     @Test
     void runsRegisteredPluginRuleProviders() {
-        String id = "test:plugin-rule-provider-" + UUID.randomUUID();
-        JavaInspectionRuleProvider provider = new JavaInspectionRuleProvider() {
-            @Override
-            public String id() {
-                return id;
-            }
-
-            @Override
-            public List<JavaInspectionRule> rules() {
-                return List.of(new JavaInspectionRule() {
-                    @Override
-                    public String id() {
-                        return "PLUGIN_RULE_WARNING";
-                    }
-
-                    @Override
-                    public dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic.Severity defaultSeverity() {
-                        return dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic.Severity.WARNING;
-                    }
-
-                    @Override
-                    public String messageTemplate() {
-                        return "Plugin rule warning";
-                    }
-
-                    @Override
-                    public void evaluate(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
-                        reporter.reportMessage(context.syntaxTree().root(), "Plugin rule warning");
-                    }
-                });
-            }
-        };
+        String id = PLUGIN_RULE_PROVIDER_ID + "-" + UUID.randomUUID();
+        JavaInspectionRuleProvider provider = new TestJavaInspectionRuleProvider(id);
 
         try {
-            JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(id, provider);
-            SemanticDiagnosticsProvider providerRunner = new SemanticDiagnosticsProvider(Path.of("Example.java"));
+            JavaInspectionRegistries.registerRuleProvider(id, provider);
+            JavaDiagnosticsProvider providerRunner = new JavaDiagnosticsProvider(Path.of("Example.java"));
             List<EditorDiagnostic> diagnostics = providerRunner.compute("class Example {}");
-            assertTrue(diagnostics.stream().anyMatch(diagnostic -> "PLUGIN_RULE_WARNING".equals(diagnostic.code())));
+            assertTrue(diagnostics.stream().anyMatch(diagnostic -> PLUGIN_RULE_ID.equals(diagnostic.code())));
             assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.WARNING));
         } finally {
-            if (JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.contains(id))
-                JavaInspectionRegistries.JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.unregister(id);
+            if (JavaInspectionRegistries.containsRuleProvider(id))
+                JavaInspectionRegistries.unregisterRuleProvider(id);
         }
     }
 
@@ -84,7 +57,7 @@ class SemanticDiagnosticsProviderTest {
     void supportsRuleSettingsOverridesAndDisabling() {
         try {
             JavaInspectionRuleSettings.setRuleEnabled("SEM_UNRESOLVED_NAME", false);
-            SemanticDiagnosticsProvider provider = new SemanticDiagnosticsProvider(Path.of("Example.java"));
+            JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
             List<EditorDiagnostic> disabledDiagnostics = provider.compute("""
                     class Example {
                         void run() {
@@ -99,8 +72,8 @@ class SemanticDiagnosticsProviderTest {
 
         try {
             JavaInspectionRuleSettings.setSeverityOverride("SEM_UNRESOLVED_NAME",
-                    dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic.Severity.INFO);
-            SemanticDiagnosticsProvider provider = new SemanticDiagnosticsProvider(Path.of("Example.java"));
+                    SemanticDiagnostic.Severity.INFO);
+            JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
             List<EditorDiagnostic> overriddenDiagnostics = provider.compute("""
                     class Example {
                         void run() {
@@ -116,6 +89,46 @@ class SemanticDiagnosticsProviderTest {
             assertEquals(Diagnostic.Kind.NOTE, unresolved.kind());
         } finally {
             JavaInspectionRuleSettings.resetAll();
+        }
+    }
+
+    private static final class TestJavaInspectionRuleProvider implements JavaInspectionRuleProvider {
+        private final String id;
+
+        private TestJavaInspectionRuleProvider(String id) {
+            this.id = id;
+        }
+
+        @Override
+        public String id() {
+            return id;
+        }
+
+        @Override
+        public List<JavaInspectionRule> rules() {
+            return List.of(new TestJavaInspectionRule());
+        }
+    }
+
+    private static final class TestJavaInspectionRule implements JavaInspectionRule {
+        @Override
+        public String id() {
+            return PLUGIN_RULE_ID;
+        }
+
+        @Override
+        public SemanticDiagnostic.Severity defaultSeverity() {
+            return SemanticDiagnostic.Severity.WARNING;
+        }
+
+        @Override
+        public String messageTemplate() {
+            return "Plugin rule warning";
+        }
+
+        @Override
+        public void evaluate(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+            reporter.reportMessage(context.syntaxTree().root(), "Plugin rule warning");
         }
     }
 }

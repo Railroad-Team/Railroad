@@ -4,7 +4,6 @@ import javafx.animation.FadeTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
@@ -65,8 +64,6 @@ public class RRListView<T> extends ListView<T> {
         if (!getStyleClass().contains("rr-list-view")) {
             getStyleClass().add("rr-list-view");
         }
-
-        setPadding(new Insets(8));
 
         // Add selection animation
         getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {

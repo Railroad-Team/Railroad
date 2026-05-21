@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndexer;
-import dev.railroadide.railroad.ide.sst.project.ProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
@@ -10,16 +10,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class JavaSemanticAnalyzerTest {
     @TempDir
@@ -375,7 +372,7 @@ class JavaSemanticAnalyzerTest {
 
     @Test
     void resolvesTypeNamesFromProjectIndexInSamePackage() throws IOException {
-        ProjectSemanticIndex index = buildProjectIndex(
+        JavaProjectSemanticIndex index = buildProjectIndex(
                 "src/main/java/demo/Shared.java", """
                         package demo;
 
@@ -399,7 +396,7 @@ class JavaSemanticAnalyzerTest {
 
     @Test
     void resolvesTypeNamesFromProjectIndexViaExplicitImport() throws IOException {
-        ProjectSemanticIndex index = buildProjectIndex(
+        JavaProjectSemanticIndex index = buildProjectIndex(
                 "src/main/java/lib/Shared.java", """
                         package lib;
 
@@ -424,7 +421,7 @@ class JavaSemanticAnalyzerTest {
 
     @Test
     void resolvesTypeNamesFromProjectIndexViaWildcardImport() throws IOException {
-        ProjectSemanticIndex index = buildProjectIndex(
+        JavaProjectSemanticIndex index = buildProjectIndex(
                 "src/main/java/lib/Shared.java", """
                         package lib;
 
@@ -449,7 +446,7 @@ class JavaSemanticAnalyzerTest {
 
     @Test
     void resolvesStaticImportsFromProjectIndex() throws IOException {
-        ProjectSemanticIndex index = buildProjectIndex(
+        JavaProjectSemanticIndex index = buildProjectIndex(
                 "src/main/java/lib/Util.java", """
                         package lib;
 
@@ -491,7 +488,7 @@ class JavaSemanticAnalyzerTest {
 
     @Test
     void resolvesDirectProjectMemberAccessAndConstructors() throws IOException {
-        ProjectSemanticIndex index = buildProjectIndex(
+        JavaProjectSemanticIndex index = buildProjectIndex(
                 "src/main/java/lib/Util.java", """
                         package lib;
 
@@ -700,7 +697,7 @@ class JavaSemanticAnalyzerTest {
         return builder.toString();
     }
 
-    private ProjectSemanticIndex buildProjectIndex(String relativePath, String source, String... additionalPathAndSourcePairs) throws IOException {
+    private JavaProjectSemanticIndex buildProjectIndex(String relativePath, String source, String... additionalPathAndSourcePairs) throws IOException {
         writeProjectSource(relativePath, source);
         for (int index = 0; index < additionalPathAndSourcePairs.length; index += 2) {
             writeProjectSource(additionalPathAndSourcePairs[index], additionalPathAndSourcePairs[index + 1]);

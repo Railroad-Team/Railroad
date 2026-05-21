@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.ui;
 
 import javafx.beans.binding.Bindings;
-import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A modern card component with enhanced styling and hover effects.
@@ -14,17 +14,19 @@ public class RRCard extends VBox {
     private final VBox content;
 
     public RRCard() {
-        this(8); // Default corner radius to 8 for consistency with CSS
+        this(8);
     }
 
     public RRCard(double cornerRadius) {
-        this(cornerRadius, new Insets(16));
+        this(cornerRadius, null);
     }
 
-    public RRCard(double cornerRadius, Insets padding) {
+    public RRCard(double cornerRadius, @Nullable javafx.geometry.Insets padding) {
         content = new VBox();
-        content.setPadding(padding);
-        content.setSpacing(8);
+        content.getStyleClass().add("rr-card-content");
+        if (padding != null) {
+            content.setPadding(padding);
+        }
         content.visibleProperty().bind(Bindings.isNotEmpty(content.getChildren()));
         content.managedProperty().bind(Bindings.isNotEmpty(content.getChildren()));
 
@@ -38,9 +40,6 @@ public class RRCard extends VBox {
 
         getChildren().add(content);
         getStyleClass().addAll("rr-card", "elevated-1");
-
-        setSpacing(0);
-        setPadding(Insets.EMPTY);
 
         setOnMouseEntered($ -> {
             getStyleClass().remove("elevated-1");

@@ -27,6 +27,8 @@ public class Form {
     private final List<FormSection> formSections;
     private final int spacing;
     private final Insets padding;
+    private final boolean customSpacing;
+    private final boolean customPadding;
     private final @Nullable Button submitButton;
     private final @Nullable Button resetButton;
     private final Pos buttonAlignment;
@@ -46,6 +48,8 @@ public class Form {
         this.formSections = builder.formSections;
         this.spacing = builder.spacing;
         this.padding = builder.padding;
+        this.customSpacing = builder.customSpacing;
+        this.customPadding = builder.customPadding;
 
         this.submitButton = builder.submitButtonFactory != null ? builder.submitButtonFactory.apply(this) : null;
         this.resetButton = builder.resetButtonFactory != null ? builder.resetButtonFactory.apply(this) : null;
@@ -79,15 +83,22 @@ public class Form {
      * The form section will be bound to the formData object.
      */
     public Node createUI() {
-        var vbox = new RRVBox(spacing);
-        vbox.setPadding(padding);
+        var vbox = new RRVBox();
+        vbox.getStyleClass().add("form-root");
+        if (customSpacing) {
+            vbox.setSpacing(spacing);
+        }
+        if (customPadding) {
+            vbox.setPadding(padding);
+        }
 
         for (FormSection section : formSections) {
             vbox.getChildren().add(section.createUI());
             section.bindFormData(formData);
         }
 
-        var buttonBox = new RRHBox(10);
+        var buttonBox = new RRHBox();
+        buttonBox.getStyleClass().add("form-button-box");
         buttonBox.setAlignment(buttonAlignment);
         if (submitButton != null) {
             submitButton.setOnAction(event -> onSubmit.accept(this, formData));
@@ -127,7 +138,9 @@ public class Form {
         protected final List<FormSection> formSections = new ArrayList<>();
         private BiConsumer<Form, FormData> onSubmit;
         private int spacing;
-        private Insets padding = new Insets(25);
+        private @Nullable Insets padding;
+        private boolean customSpacing;
+        private boolean customPadding;
         private @Nullable Function<Form, Button> submitButtonFactory = form -> new Button("Submit");
         private @Nullable Function<Form, Button> resetButtonFactory = form -> new Button("Reset");
         private Pos buttonAlignment = Pos.CENTER;
@@ -192,6 +205,7 @@ public class Form {
          */
         public Builder spacing(int spacing) {
             this.spacing = spacing;
+            this.customSpacing = true;
             return this;
         }
 
@@ -203,6 +217,7 @@ public class Form {
          */
         public Builder padding(Insets padding) {
             this.padding = padding;
+            this.customPadding = true;
             return this;
         }
 

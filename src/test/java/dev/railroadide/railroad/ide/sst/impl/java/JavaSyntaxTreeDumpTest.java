@@ -24,6 +24,7 @@ class JavaSyntaxTreeDumpTest {
             );
         }
 
+        expected = expected.replace("\r\n", "\n").replace('\r', '\n');
         assertEquals(expected, actual);
     }
 }

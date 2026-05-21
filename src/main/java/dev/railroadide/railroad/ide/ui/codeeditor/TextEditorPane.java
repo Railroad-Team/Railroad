@@ -1,14 +1,21 @@
-package dev.railroadide.railroad.ide.ui;
+package dev.railroadide.railroad.ide.ui.codeeditor;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
+import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.plugin.spi.events.DocumentModifiedEvent;
+import dev.railroadide.railroad.settings.IndentMode;
+import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.utility.ShutdownHooks;
+import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
 import javafx.application.Platform;
+import javafx.scene.control.IndexRange;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.text.Font;
 import javafx.util.Pair;
+import lombok.Getter;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
 import org.fxmisc.richtext.model.PlainTextChange;
@@ -47,7 +54,10 @@ public class TextEditorPane extends CodeArea {
         });
     }
 
+    @Getter
     protected final Path filePath;
+    @Getter
+    protected final String languageId;
 
     private final AtomicReference<String> lastSavedText = new AtomicReference<>("");
     private final AtomicReference<String> pendingSnapshot = new AtomicReference<>("");
@@ -63,14 +73,16 @@ public class TextEditorPane extends CodeArea {
 
     private int fontSizeIndex = 5;
 
-    public TextEditorPane(Path item) {
+    public TextEditorPane(Path item, String languageId) {
         this.filePath = Objects.requireNonNull(item, "item");
+        this.languageId = Objects.requireNonNull(languageId, "languageId");
 
         setParagraphGraphicFactory(LineNumberFactory.get(this));
         setMouseOverTextDelay(Duration.ofMillis(500));
 
         loadInitialContent();
         configureFontControls();
+        configureTabBehaviour();
         subscribeToChanges();
         startExternalWatcher();
 
@@ -128,12 +140,141 @@ public class TextEditorPane extends CodeArea {
 
     private void configureFontControls() {
         updateFontSizeClass();
-        setOnKeyPressed(this::handleFontResizing);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleFontResizing);
     }
 
     private void updateFontSizeClass() {
         getStyleClass().removeIf(styleClass -> styleClass.startsWith("text-editor-font-size-"));
         getStyleClass().add("text-editor-font-size-" + FONT_SIZES[fontSizeIndex]);
+        applyEditorStyles();
+    }
+
+    private void configureTabBehaviour() {
+        applyEditorStyles();
+        Platform.runLater(this::applyEditorStyles);
+        Settings.TAB_WIDTH.addListener((oldVal, newVal) -> applyEditorStyles());
+        Settings.EDITOR_FONT_FAMILY.addListener((oldVal, newVal) -> applyEditorStyles());
+
+        addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            // Skip if any modifier keys are pressed to allow for shortcuts like Ctrl+Tab, Alt+Tab, etc.
+            if (event.isControlDown() || event.isAltDown() || event.isMetaDown())
+                return;
+
+            if (event.getCode() == KeyCode.TAB) {
+                event.consume();
+
+                IndentMode indentMode = Settings.INDENT_MODE.getOrDefaultValue();
+                int indentWidth = Math.max(1, Settings.INDENT_WIDTH.getOrDefaultValue());
+
+                if (event.isShiftDown()) {
+                    if (getSelection().getLength() == 0) {
+                        unindentCurrentLine(indentWidth);
+                    } else {
+                        unindentSelected(indentWidth);
+                    }
+                } else {
+                    if (getSelection().getLength() == 0) {
+                        insertIndentAtCaret(indentMode, indentWidth);
+                    } else {
+                        indentSelected(indentMode, indentWidth);
+                    }
+                }
+            }
+        });
+    }
+
+    private void applyEditorStyles() {
+        int tabWidth = Math.max(1, Settings.TAB_WIDTH.getOrDefaultValue());
+        String fontFamily = Settings.EDITOR_FONT_FAMILY.getOrDefaultValue();
+        Font font = Font.font(fontFamily, FONT_SIZES[fontSizeIndex]);
+        double visualWidth = JavaFXUtils.measureTextWidth(" ".repeat(tabWidth), font);
+        setStyle("-fx-font-family: \"" + fontFamily.replace("\"", "\\\"") + "\"; -fx-tab-size: " + visualWidth + "px;");
+    }
+
+    private void insertIndentAtCaret(IndentMode indentMode, int indentWidth) {
+        indentWidth = Math.max(1, indentWidth);
+        String indentString = indentMode == IndentMode.TABS ? "\t" : " ".repeat(indentWidth);
+        int caret = getCaretPosition();
+        insertText(caret, indentString);
+        moveTo(caret + indentString.length());
+    }
+
+    private void unindentCurrentLine(int indentWidth) {
+        int caret = getCaretPosition();
+        String fullText = getText();
+        int lineStart = fullText.lastIndexOf('\n', Math.max(0, caret - 1)) + 1;
+        int lineEnd = fullText.indexOf('\n', caret);
+        if (lineEnd == -1) {
+            lineEnd = fullText.length();
+        }
+
+        String line = fullText.substring(lineStart, lineEnd);
+        String modified = unindentLine(line, indentWidth);
+        if (modified.equals(line))
+            return;
+
+        replaceText(lineStart, lineEnd, modified);
+        moveTo(Math.max(lineStart, caret - (line.length() - modified.length())));
+    }
+
+    private void unindentSelected(int indentWidth) {
+        IndexRange selection = getSelection();
+        int selectionStart = selection.getStart();
+        int selectionEnd = selection.getEnd();
+        String fullText = getText();
+
+        int blockStart = fullText.lastIndexOf('\n', Math.max(0, selectionStart - 1)) + 1;
+        int blockEnd = fullText.indexOf('\n', selectionEnd);
+        if (blockEnd == -1) {
+            blockEnd = fullText.length();
+        }
+
+        String block = fullText.substring(blockStart, blockEnd);
+        String[] lines = block.split("\n", -1);
+        for (int i = 0; i < lines.length; i++) {
+            lines[i] = unindentLine(lines[i], indentWidth);
+        }
+
+        String modified = String.join("\n", lines);
+
+        replaceText(blockStart, blockEnd, modified);
+        moveTo(blockStart);
+        selectRange(blockStart, blockStart + modified.length());
+    }
+
+    private String unindentLine(String line, int indentWidth) {
+        if (line.startsWith("\t"))
+            return line.substring(1);
+
+        int spacesToRemove = 0;
+        while (spacesToRemove < line.length()
+            && spacesToRemove < indentWidth
+            && line.charAt(spacesToRemove) == ' ') {
+            spacesToRemove++;
+        }
+
+        return line.substring(spacesToRemove);
+    }
+
+    private void indentSelected(IndentMode indentMode, int indentWidth) {
+        IndexRange selection = getSelection();
+        int selectionStart = selection.getStart();
+        int selectionEnd = selection.getEnd();
+        String fullText = getText();
+
+        int blockStart = fullText.lastIndexOf('\n', Math.max(0, selectionStart - 1)) + 1;
+        int blockEnd = fullText.indexOf('\n', selectionEnd);
+        if (blockEnd == -1) {
+            blockEnd = fullText.length();
+        }
+
+        String block = fullText.substring(blockStart, blockEnd);
+        String indentString = indentMode == IndentMode.TABS ? "\t" : " ".repeat(indentWidth);
+        String modified = indentString + block.replace("\n", "\n" + indentString);
+
+        replaceText(blockStart, blockEnd, modified);
+        moveTo(blockStart);
+        selectRange(blockStart, blockStart + modified.length());
     }
 
     private void subscribeToChanges() {
@@ -194,8 +335,8 @@ public class TextEditorPane extends CodeArea {
         Railroad.EVENT_BUS.publish(new DocumentModifiedEvent(document(), changes));
     }
 
-    private FileSystemDocument document() {
-        return new FileSystemDocument(filePath.getFileName().toString(), filePath);
+    private Document document() {
+        return new FileSystemDocument(filePath.getFileName().toString(), filePath, languageId);
     }
 
     private void startExternalWatcher() {

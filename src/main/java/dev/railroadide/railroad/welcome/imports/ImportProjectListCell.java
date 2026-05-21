@@ -4,7 +4,6 @@ import dev.railroadide.railroad.ui.RRCard;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.vcs.Repository;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -17,10 +16,10 @@ import javafx.scene.paint.Color;
 
 
 public class ImportProjectListCell extends ListCell<Repository> {
-    private final RRCard card = new RRCard(12, new Insets(12, 18, 12, 18));
-    private final HBox content = new RRHBox(14);
+    private final RRCard card = new RRCard(12);
+    private final HBox content = new RRHBox();
     private final ImageView icon = new ImageView();
-    private final VBox infoBox = new RRVBox(4);
+    private final VBox infoBox = new RRVBox();
 
     public ImportProjectListCell() {
         card.getStyleClass().add("import-project-card");
@@ -31,21 +30,20 @@ public class ImportProjectListCell extends ListCell<Repository> {
         icon.setEffect(new DropShadow(4, Color.rgb(0, 0, 0, 0.10)));
 
         content.setAlignment(Pos.CENTER_LEFT);
-        content.setPadding(new Insets(0));
+        content.getStyleClass().add("import-project-content-row");
 
         infoBox.setAlignment(Pos.CENTER_LEFT);
-        infoBox.setSpacing(8);
+        infoBox.getStyleClass().add("import-project-info-box");
         VBox.setVgrow(infoBox, Priority.ALWAYS);
 
         content.getChildren().addAll(icon, infoBox);
         content.setFillHeight(true);
         content.setAlignment(Pos.CENTER_LEFT);
-        content.setPadding(new Insets(8));
         content.getStyleClass().add("import-project-content");
         HBox.setHgrow(infoBox, Priority.ALWAYS);
         card.getChildren().add(content);
 
-        setPadding(new Insets(4, 0, 4, 0));
+        getStyleClass().add("import-project-list-cell");
     }
 
     @Override

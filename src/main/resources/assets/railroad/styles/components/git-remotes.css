@@ -117,6 +117,12 @@
     -fx-alignment: center;
 }
 
+.git-remote-add-dialog-content,
+.git-remote-edit-dialog-content,
+.git-remote-remove-dialog-content {
+    -fx-spacing: 8px;
+}
+
 .git-remote-actions-dialog-error-text {
     -fx-fill: -color-danger-emphasis;
 }
@@ -133,6 +139,8 @@
 
 .git-remote-details-grid {
     -fx-padding: 4 4 4 4;
+    -fx-hgap: 12px;
+    -fx-vgap: 0;
 }
 
 .git-remote-details-row-separator {

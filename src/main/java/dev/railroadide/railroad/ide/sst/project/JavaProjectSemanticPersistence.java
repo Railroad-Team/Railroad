@@ -1,31 +1,23 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexPersistence;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.utility.FileUtils;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
- * Persists {@link ProjectSemanticIndex} entries as a compact binary cache under
+ * Persists {@link JavaProjectSemanticIndex} entries as a compact binary cache under
  * the project root.
  */
-public final class ProjectSemanticIndexPersistence {
+public final class JavaProjectSemanticPersistence implements ProjectLanguageIndexPersistence<JavaProjectSemanticIndex> {
     private static final String CACHE_DIRECTORY = ".railroad/index/semantic";
     private static final String ENTRIES_DIRECTORY = "files";
     private static final String MANIFEST_FILE = "project-semantic-index.bin";
@@ -33,7 +25,13 @@ public final class ProjectSemanticIndexPersistence {
     private static final String ENTRY_MAGIC = "RSSTFIL1";
     private static final int FORMAT_VERSION = 1;
 
-    public @Nullable ProjectSemanticIndex loadIfCurrent(Path projectRoot) {
+    @Override
+    public String languageId() {
+        return "java";
+    }
+
+    @Override
+    public @Nullable JavaProjectSemanticIndex loadIfCurrent(Path projectRoot) {
         Path normalizedRoot = normalizeRoot(projectRoot);
         Path manifestPath = manifestPath(normalizedRoot);
         if (Files.notExists(manifestPath))
@@ -43,7 +41,7 @@ public final class ProjectSemanticIndexPersistence {
             verifyHeader(input, MANIFEST_MAGIC);
             int fileCount = input.readInt();
 
-            ProjectSemanticIndex.Builder builder = ProjectSemanticIndex.builder();
+            JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
             for (int index = 0; index < fileCount; index++) {
                 Path sourcePath = normalizedRoot.resolve(input.readUTF()).normalize();
                 long expectedLastModified = input.readLong();
@@ -72,17 +70,18 @@ public final class ProjectSemanticIndexPersistence {
         }
     }
 
-    public void save(Path projectRoot, ProjectSemanticIndex index) {
+    @Override
+    public void save(Path projectRoot, JavaProjectSemanticIndex index) {
         Path normalizedRoot = normalizeRoot(projectRoot);
         try {
             Files.createDirectories(entriesDirectory(normalizedRoot));
 
             List<ManifestEntry> manifestEntries = new ArrayList<>();
-            List<ProjectSemanticIndex.SourceFileIndex> files = index.files().values().stream()
+            List<JavaProjectSemanticIndex.SourceFileIndex> files = index.files().values().stream()
                 .sorted(Comparator.comparing(file -> file.path().toString()))
                 .toList();
 
-            for (ProjectSemanticIndex.SourceFileIndex file : files) {
+            for (JavaProjectSemanticIndex.SourceFileIndex file : files) {
                 if (Files.notExists(file.path()))
                     continue;
 
@@ -101,21 +100,22 @@ public final class ProjectSemanticIndexPersistence {
         }
     }
 
+    @Override
     public void delete(Path projectRoot) {
         Path normalizedRoot = normalizeRoot(projectRoot);
         FileUtils.deleteFolder(cacheDirectory(normalizedRoot));
     }
 
-    private static ProjectSemanticIndex.SourceFileIndex readEntry(Path entryPath, Path projectRoot) throws IOException {
+    private static JavaProjectSemanticIndex.SourceFileIndex readEntry(Path entryPath, Path projectRoot) throws IOException {
         try (DataInputStream input = new DataInputStream(new BufferedInputStream(Files.newInputStream(entryPath)))) {
             verifyHeader(input, ENTRY_MAGIC);
             Path sourcePath = projectRoot.resolve(input.readUTF()).normalize();
             String packageName = readNullableString(input);
 
             int importCount = input.readInt();
-            List<ProjectSemanticIndex.ImportDescriptor> imports = new ArrayList<>(importCount);
+            List<JavaProjectSemanticIndex.ImportDescriptor> imports = new ArrayList<>(importCount);
             for (int index = 0; index < importCount; index++) {
-                imports.add(new ProjectSemanticIndex.ImportDescriptor(
+                imports.add(new JavaProjectSemanticIndex.ImportDescriptor(
                     input.readUTF(),
                     input.readBoolean(),
                     input.readBoolean()
@@ -123,9 +123,9 @@ public final class ProjectSemanticIndexPersistence {
             }
 
             int symbolCount = input.readInt();
-            List<ProjectSemanticIndex.SymbolDescriptor> symbols = new ArrayList<>(symbolCount);
+            List<JavaProjectSemanticIndex.SymbolDescriptor> symbols = new ArrayList<>(symbolCount);
             for (int index = 0; index < symbolCount; index++) {
-                symbols.add(new ProjectSemanticIndex.SymbolDescriptor(
+                symbols.add(new JavaProjectSemanticIndex.SymbolDescriptor(
                     SymbolKind.valueOf(input.readUTF()),
                     input.readUTF(),
                     readNullableString(input),
@@ -137,11 +137,11 @@ public final class ProjectSemanticIndexPersistence {
                 ));
             }
 
-            return new ProjectSemanticIndex.SourceFileIndex(sourcePath, packageName, imports, symbols);
+            return new JavaProjectSemanticIndex.SourceFileIndex(sourcePath, packageName, imports, symbols);
         }
     }
 
-    private static void writeEntry(Path entryPath, Path projectRoot, ProjectSemanticIndex.SourceFileIndex file) throws IOException {
+    private static void writeEntry(Path entryPath, Path projectRoot, JavaProjectSemanticIndex.SourceFileIndex file) throws IOException {
         Files.createDirectories(entryPath.getParent());
         Path tempFile = Files.createTempFile(entryPath.getParent(), "semantic-entry", ".tmp");
         try {
@@ -151,14 +151,14 @@ public final class ProjectSemanticIndexPersistence {
                 writeNullableString(output, file.packageName());
 
                 output.writeInt(file.imports().size());
-                for (ProjectSemanticIndex.ImportDescriptor importDescriptor : file.imports()) {
+                for (JavaProjectSemanticIndex.ImportDescriptor importDescriptor : file.imports()) {
                     output.writeUTF(importDescriptor.qualifiedName());
                     output.writeBoolean(importDescriptor.isStatic());
                     output.writeBoolean(importDescriptor.isWildcard());
                 }
 
                 output.writeInt(file.declaredSymbols().size());
-                for (ProjectSemanticIndex.SymbolDescriptor symbol : file.declaredSymbols()) {
+                for (JavaProjectSemanticIndex.SymbolDescriptor symbol : file.declaredSymbols()) {
                     output.writeUTF(symbol.kind().name());
                     output.writeUTF(symbol.simpleName());
                     writeNullableString(output, symbol.qualifiedName());

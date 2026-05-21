@@ -31,10 +31,10 @@ public class KeybindsList extends RRVBox {
     private final RRTextField searchField = new RRTextField();
     private final FlowPane categoryBar = new FlowPane();
     private final ToggleGroup categoryToggleGroup = new ToggleGroup();
-    private final VBox cardsContainer = new VBox(12);
+    private final VBox cardsContainer = new VBox();
     private final LocalizedLabel emptyTitle = new LocalizedLabel("railroad.settings.keybinds.empty.title");
     private final LocalizedLabel emptySubtitle = new LocalizedLabel("railroad.settings.keybinds.empty.subtitle");
-    private final VBox emptyState = new VBox(6, emptyTitle, emptySubtitle);
+    private final VBox emptyState = new VBox(emptyTitle, emptySubtitle);
     private final StackPane listStack = new StackPane();
 
     private String activeCategoryId;
@@ -47,7 +47,6 @@ public class KeybindsList extends RRVBox {
 
     public KeybindsList(Map<String, List<KeybindData>> initialKeybinds) {
         getStyleClass().add("keybinds-pane");
-        setSpacing(18);
         setFillWidth(true);
 
         createHeader();
@@ -86,7 +85,7 @@ public class KeybindsList extends RRVBox {
         searchField.setLocalizedPlaceholder("railroad.settings.keybinds.search");
         searchField.textProperty().addListener((obs, oldText, newText) -> renderKeybindCards());
 
-        var headerBox = new VBox(4, title, subtitle);
+        var headerBox = new VBox(title, subtitle);
         headerBox.getStyleClass().add("keybinds-header");
 
         getChildren().addAll(headerBox, searchField);
@@ -94,8 +93,6 @@ public class KeybindsList extends RRVBox {
 
     private void createCategoryBar() {
         categoryBar.getStyleClass().add("keybinds-category-bar");
-        categoryBar.setHgap(8);
-        categoryBar.setVgap(8);
         getChildren().add(categoryBar);
     }
 
@@ -217,7 +214,8 @@ public class KeybindsList extends RRVBox {
             subtitle.getStyleClass().add("keybind-card-subtitle");
         }
 
-        var titleBox = new VBox(4);
+        var titleBox = new VBox();
+        titleBox.getStyleClass().add("keybind-card-title-box");
         titleBox.getChildren().add(title);
         if (subtitle != null) {
             titleBox.getChildren().add(subtitle);
@@ -229,12 +227,12 @@ public class KeybindsList extends RRVBox {
         addButton.getStyleClass().add("keybind-card-add");
         addButton.setOnAction(event -> addBlankShortcut(keybindId, bindings));
 
-        var header = new HBox(12, titleBox, addButton);
+        var header = new HBox(titleBox, addButton);
         header.getStyleClass().add("keybind-card-header");
         header.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(titleBox, Priority.ALWAYS);
 
-        var shortcutsBox = new VBox(8);
+        var shortcutsBox = new VBox();
         shortcutsBox.getStyleClass().add("keybind-card-shortcuts");
 
         if (bindings.isEmpty()) {
@@ -269,7 +267,7 @@ public class KeybindsList extends RRVBox {
     }
 
     private Node createShortcutRow(String keybindId, List<KeybindData> bindings, KeybindData binding, int index) {
-        var row = new HBox(8);
+        var row = new HBox();
         row.getStyleClass().add("keybind-shortcut-row");
         row.setAlignment(Pos.CENTER_LEFT);
 

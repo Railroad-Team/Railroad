@@ -14,7 +14,6 @@ public class GitSyncPane extends RRVBox {
 
     public GitSyncPane(Project project) {
         getStyleClass().add("git-sync-pane-root");
-        setSpacing(8);
 
         GitManager gitManager = project.getGitManager();
         this.infoPane = new GitSyncInfoPane(gitManager);

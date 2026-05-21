@@ -98,21 +98,18 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
     public Scene buildScene() {
         var overlay = new RRStackPane();
         overlay.getStyleClass().add("alert-overlay");
-        overlay.setPadding(new Insets(24));
 
-        var card = new RRVBox(18);
+        var card = new RRVBox();
         card.setAlignment(Pos.TOP_LEFT);
-        card.setPadding(new Insets(24));
         card.getStyleClass().addAll("alert-card", "alert-" + alertType.name().toLowerCase());
 
-        var header = new RRHBox(12);
+        var header = new RRHBox();
         header.setAlignment(Pos.CENTER_LEFT);
+        header.getStyleClass().add("alert-header");
 
         var iconWrap = new RRStackPane();
-        iconWrap.setMinSize(32, 32);
-        iconWrap.setPrefSize(32, 32);
         iconWrap.getStyleClass().add("alert-icon-wrap");
-        var iconBg = new Circle(16);
+        var iconBg = new Circle();
         iconBg.getStyleClass().add("alert-icon-bg");
 
         var fontIcon = new MFXFontIcon(switch (alertType) {

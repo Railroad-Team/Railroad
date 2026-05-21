@@ -1,23 +1,22 @@
 package dev.railroadide.railroad.ide.diagnostics;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
-import dev.railroadide.railroad.registry.Registry;
-import dev.railroadide.railroad.registry.RegistryManager;
+import dev.railroadide.railroad.plugin.spi.inspection.LanguageInspectionProvider;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import org.reflections.util.ConfigurationBuilder;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Global registries for Java inspection extension points.
  */
 public final class JavaInspectionRegistries {
-    public static final Registry<JavaInspectionRuleProvider> JAVA_INSPECTION_RULE_PROVIDER_REGISTRY =
-        RegistryManager.createRegistry("railroad:java_inspection_rule_provider", JavaInspectionRuleProvider.class);
-
     static {
         loadInspections(ClassLoader.getSystemClassLoader(), "dev.railroadide.railroad.ide.diagnostics.inspections");
     }
@@ -61,14 +60,14 @@ public final class JavaInspectionRegistries {
             .toList();
 
         for (JavaInspectionRuleProvider provider : registeredInspections) {
-            if (JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.contains(provider.id())) {
-                JavaInspectionRuleProvider existing = JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.get(provider.id());
+            if (containsRuleProvider(provider.id())) {
+                JavaInspectionRuleProvider existing = getRuleProvider(provider.id());
                 String existingClassName = existing != null ? existing.getClass().getName() : "null";
                 Railroad.LOGGER.error("Duplicate JavaInspectionRuleProvider with id {}: {} and {}", provider.id(), provider.getClass().getName(), existingClassName);
                 continue;
             }
 
-            JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.register(provider.id(), provider);
+            registerRuleProvider(provider.id(), provider);
         }
     }
 
@@ -76,8 +75,53 @@ public final class JavaInspectionRegistries {
     }
 
     public static List<JavaInspectionRuleProvider> coreRuleProviders() {
-        return JAVA_INSPECTION_RULE_PROVIDER_REGISTRY.values().stream()
+        return ruleProviders().stream()
             .filter(provider -> provider.id().startsWith("railroad"))
             .toList();
+    }
+
+    public static JavaInspectionRuleProvider registerRuleProvider(String id, JavaInspectionRuleProvider provider) {
+        Objects.requireNonNull(provider, "provider");
+        LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.register(id, provider);
+        return provider;
+    }
+
+    public static JavaInspectionRuleProvider unregisterRuleProvider(String id) {
+        return asJavaProvider(LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.unregister(id));
+    }
+
+    public static JavaInspectionRuleProvider getRuleProvider(String id) {
+        return asJavaProvider(LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.get(id));
+    }
+
+    public static boolean containsRuleProvider(String id) {
+        LanguageInspectionProvider provider = LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.get(id);
+        return provider instanceof JavaInspectionRuleProvider javaProvider
+            && JavaLanguageSupport.LANGUAGE_ID.equals(javaProvider.languageId());
+    }
+
+    public static List<JavaInspectionRuleProvider> ruleProviders() {
+        return ruleProviderEntries().values().stream().toList();
+    }
+
+    public static Map<String, JavaInspectionRuleProvider> ruleProviderEntries() {
+        return LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.entries().entrySet().stream()
+            .filter(entry -> entry.getValue() instanceof JavaInspectionRuleProvider javaProvider
+                && JavaLanguageSupport.LANGUAGE_ID.equals(javaProvider.languageId()))
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> (JavaInspectionRuleProvider) entry.getValue(),
+                (left, right) -> left,
+                java.util.LinkedHashMap::new
+            ));
+    }
+
+    private static JavaInspectionRuleProvider asJavaProvider(LanguageInspectionProvider provider) {
+        if (provider == null)
+            return null;
+        if (provider instanceof JavaInspectionRuleProvider javaProvider)
+            return javaProvider;
+
+        throw new IllegalStateException("Inspection provider '" + provider.id() + "' is not a Java provider.");
     }
 }

@@ -8,7 +8,6 @@ import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -37,7 +36,6 @@ public class ThemeDownloadPane {
         var mainContainer = new RRFormContainer();
         mainContainer.getStyleClass().add("theme-download-container");
         mainContainer.setLocalizedTitle("railroad.home.settings.appearance.downloadtheme");
-        mainContainer.setPadding(new Insets(24));
 
         var headerSection = createHeaderSection();
         mainContainer.addContent(headerSection);
@@ -60,8 +58,9 @@ public class ThemeDownloadPane {
     }
 
     private VBox createHeaderSection() {
-        var headerSection = new RRVBox(16);
+        var headerSection = new RRVBox();
         headerSection.setAlignment(Pos.CENTER_LEFT);
+        headerSection.getStyleClass().add("theme-download-header");
 
         var description = new LocalizedLabel("railroad.home.settings.appearance.downloadtheme.description");
         description.getStyleClass().add("theme-download-description");
@@ -74,11 +73,13 @@ public class ThemeDownloadPane {
     }
 
     private VBox createThemesSection() {
-        var themesSection = new RRVBox(12);
+        var themesSection = new RRVBox();
+        themesSection.getStyleClass().add("theme-download-themes-section");
         VBox.setVgrow(themesSection, Priority.ALWAYS);
 
-        var sectionHeader = new RRHBox(12);
+        var sectionHeader = new RRHBox();
         sectionHeader.setAlignment(Pos.CENTER_LEFT);
+        sectionHeader.getStyleClass().add("theme-download-section-header");
 
         var themesLabel = new LocalizedLabel("railroad.home.settings.appearance.themes");
         themesLabel.getStyleClass().add("theme-download-themes-label");
@@ -101,9 +102,9 @@ public class ThemeDownloadPane {
     }
 
     private HBox createFooterSection() {
-        var footerSection = new RRHBox(12);
+        var footerSection = new RRHBox();
         footerSection.setAlignment(Pos.CENTER_RIGHT);
-        footerSection.setPadding(new Insets(16, 0, 0, 0));
+        footerSection.getStyleClass().add("theme-download-footer");
 
         var closeButton = new RRButton("railroad.generic.close");
         closeButton.setVariant(ButtonVariant.SECONDARY);

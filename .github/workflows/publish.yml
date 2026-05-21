@@ -7,6 +7,9 @@ on:
     tags:
       - 'v*.*.*' # Only publish tagged pushes. Tag must match v*.*.* regex
 
+permissions:
+  contents: read
+
 jobs:
   build-linux:
     runs-on: self-hosted
@@ -76,6 +79,8 @@ jobs:
 
   release:
     runs-on: self-hosted
+    permissions:
+      contents: write
     needs: build-linux
     steps:
       - name: Download Linux Build

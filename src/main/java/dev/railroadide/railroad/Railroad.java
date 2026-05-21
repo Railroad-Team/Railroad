@@ -8,6 +8,7 @@ import dev.railroadide.logger.Logger;
 import dev.railroadide.logger.LoggerManager;
 import dev.railroadide.logger.LoggerService;
 import dev.railroadide.railroad.config.ConfigHandler;
+import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.java.JDKManager;
 import dev.railroadide.railroad.localization.L18n;
@@ -108,6 +109,9 @@ public class Railroad extends Application {
             new InitializationStep("Registering keybinds", Keybinds::initialize),
             new InitializationStep("Scanning language files", Languages::initialize),
             new InitializationStep("Loading settings", Settings::initialize),
+            new InitializationStep("Registering language supports", LanguageSupports::initialize),
+            new InitializationStep("Registering language indexers", LanguageSupports::initializeLanguageIndexers),
+            new InitializationStep("Registering language index persistence", LanguageSupports::initializeLanguagePersistence),
             new InitializationStep("Preparing settings handler", SettingsHandler::init),
             new InitializationStep("Preparing themes", ThemeManager::init),
             new InitializationStep("Finding Java versions", JDKManager::refreshJDKs),

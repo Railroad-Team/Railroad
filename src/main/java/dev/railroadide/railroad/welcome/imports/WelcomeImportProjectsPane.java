@@ -19,7 +19,6 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.ProgressIndicator;
@@ -58,7 +57,8 @@ public class WelcomeImportProjectsPane extends RRHBox {
     private String lastBaseDirectory = System.getProperty("user.home");
 
     public WelcomeImportProjectsPane() {
-        sidebar.setPrefWidth(200);
+        getStyleClass().add("welcome-import-projects-pane");
+        sidebar.getStyleClass().add("welcome-import-sidebar");
         sidebar.setAnimationsEnabled(false);
         sidebar.setCellFactory(param -> new AccountListCell());
         sidebar.getItems().add(REPO_URL_OPTION);
@@ -69,7 +69,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
 
         repositoryListView.setCellFactory(param -> new ImportProjectListCell());
 
-        rightPane.setPadding(new Insets(18));
+        rightPane.getStyleClass().add("welcome-import-right-pane");
         rightPane.prefHeightProperty().bind(heightProperty());
 
         getChildren().addAll(sidebar, rightPane);
@@ -84,16 +84,15 @@ public class WelcomeImportProjectsPane extends RRHBox {
     }
 
     private static void showCloneLoading(CompletableFuture<Boolean> future, Path projectDir) {
-        var loadingBox = new RRVBox(18);
+        var loadingBox = new RRVBox();
         loadingBox.setAlignment(Pos.CENTER);
-        loadingBox.setPadding(new Insets(40, 0, 40, 0));
+        loadingBox.getStyleClass().add("welcome-import-loading-box");
         VBox.setVgrow(loadingBox, Priority.ALWAYS);
 
         var progressIndicator = new ProgressIndicator();
         progressIndicator.setVisible(true);
         progressIndicator.setProgress(-1);
-        progressIndicator.setMaxSize(48, 48);
-        progressIndicator.setMinSize(48, 48);
+        progressIndicator.getStyleClass().add("welcome-import-loading-indicator");
         loadingBox.getChildren().addAll(progressIndicator, new LocalizedLabel("railroad.importprojects.clone.loading"));
 
         var stage = new Stage();
@@ -166,7 +165,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
         contentBox.getChildren().removeAll(repositoryListView, progressIndicator, loadingLabel, errorLabel, emptyLabel);
 
         emptyLabel.setAlignment(Pos.CENTER);
-        emptyLabel.setPadding(new Insets(20));
+        emptyLabel.getStyleClass().add("welcome-import-empty-label");
         emptyLabel.getStyleClass().add("welcome-empty-state");
         contentBox.getChildren().add(emptyLabel);
     }
@@ -202,14 +201,13 @@ public class WelcomeImportProjectsPane extends RRHBox {
         rightPane.getChildren().clear();
 
         if (isLoading) {
-            var loadingBox = new RRVBox(18);
+            var loadingBox = new RRVBox();
             loadingBox.setAlignment(Pos.CENTER);
-            loadingBox.setPadding(new Insets(40, 0, 40, 0));
+            loadingBox.getStyleClass().add("welcome-import-loading-box");
             VBox.setVgrow(loadingBox, Priority.ALWAYS);
             progressIndicator.setVisible(true);
             progressIndicator.setProgress(-1);
-            progressIndicator.setMaxSize(48, 48);
-            progressIndicator.setMinSize(48, 48);
+            progressIndicator.getStyleClass().add("welcome-import-loading-indicator");
             loadingBox.getChildren().addAll(progressIndicator, loadingLabel);
             rightPane.getChildren().add(loadingBox);
             return;
@@ -221,7 +219,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
         title.getStyleClass().add("welcome-title");
 
         searchField.setLocalizedPlaceholder("railroad.importprojects.search");
-        searchField.setPrefHeight(36);
+        searchField.getStyleClass().add("welcome-import-search-field");
 
         var refreshButton = new RRButton("");
         var refreshIcon = new FontIcon(FontAwesomeSolid.SYNC_ALT);
@@ -233,11 +231,12 @@ public class WelcomeImportProjectsPane extends RRHBox {
             }
         });
 
-        var titleBox = new RRHBox(10);
+        var titleBox = new RRHBox();
+        titleBox.getStyleClass().add("welcome-import-title-box");
         titleBox.getChildren().addAll(title, refreshButton);
         titleBox.setAlignment(Pos.CENTER_LEFT);
         contentBox.getChildren().addAll(titleBox, searchField);
-        contentBox.setSpacing(18);
+        contentBox.getStyleClass().add("welcome-import-content-box");
 
         if (selected instanceof VCSProfile profile) {
             if (!connectionCache.containsKey(profile) || profile != lastLoadedProfile) {
@@ -253,7 +252,8 @@ public class WelcomeImportProjectsPane extends RRHBox {
                 }
             }
 
-            var accountBox = new RRVBox(18);
+            var accountBox = new RRVBox();
+            accountBox.getStyleClass().add("welcome-import-account-box");
             accountBox.getChildren().add(contentBox);
             VBox.setVgrow(contentBox, Priority.ALWAYS);
 
@@ -265,12 +265,13 @@ public class WelcomeImportProjectsPane extends RRHBox {
             folderIcon.setIconSize(16);
             chooseDirButton.setGraphic(folderIcon);
 
-            var dirBox = new RRHBox(10);
+            var dirBox = new RRHBox();
+            dirBox.getStyleClass().add("welcome-import-dir-box");
             dirBox.getChildren().addAll(directoryField, chooseDirButton);
             HBox.setHgrow(directoryField, Priority.ALWAYS);
 
             var cloneButton = new RRButton("railroad.importprojects.clone");
-            cloneButton.setMaxWidth(Double.MAX_VALUE);
+            cloneButton.getStyleClass().add("welcome-import-clone-button");
 
             repositoryListView.getSelectionModel().selectedItemProperty().addListener((obs, oldRepo, newRepo) -> {
                 if (newRepo != null) {
@@ -319,23 +320,25 @@ public class WelcomeImportProjectsPane extends RRHBox {
             rightPane.getChildren().add(accountBox);
             VBox.setVgrow(accountBox, Priority.ALWAYS);
         } else if (REPO_URL_OPTION.equals(selected)) {
-            var urlBox = new RRVBox(18);
+            var urlBox = new RRVBox();
+            urlBox.getStyleClass().add("welcome-import-url-box");
             urlBox.setAlignment(Pos.CENTER);
 
             var urlField = new RRTextField("railroad.importprojects.repositoryurl.placeholder");
-            urlField.setPrefWidth(320);
+            urlField.getStyleClass().add("welcome-import-url-field");
 
             var directoryField = new RRTextField("railroad.importprojects.directory");
             var chooseDirButton = new RRButton("");
             var folderIcon = new FontIcon(FontAwesomeSolid.FOLDER);
             folderIcon.setIconSize(16);
             chooseDirButton.setGraphic(folderIcon);
-            var dirBox = new RRHBox(10);
+            var dirBox = new RRHBox();
+            dirBox.getStyleClass().add("welcome-import-dir-box");
             dirBox.getChildren().addAll(directoryField, chooseDirButton);
             HBox.setHgrow(directoryField, Priority.ALWAYS);
 
             var cloneButton = new RRButton("railroad.importprojects.clone");
-            cloneButton.setMaxWidth(Double.MAX_VALUE);
+            cloneButton.getStyleClass().add("welcome-import-clone-button");
 
             chooseDirButton.setOnAction($ -> {
                 var chooser = new DirectoryChooser();

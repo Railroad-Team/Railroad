@@ -13,13 +13,11 @@ import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 
@@ -40,37 +38,25 @@ public class SettingsPane extends RRVBox {
      * displays the selected category's settings with apply/cancel buttons.
      */
     public SettingsPane() {
-        setPadding(new Insets(24));
-        setSpacing(10);
-        setMaxWidth(Double.MAX_VALUE);
+        getStyleClass().add("settings-root");
 
         var splitPane = new SplitPane();
-        splitPane.setMaxWidth(Double.MAX_VALUE);
-        splitPane.setPrefWidth(Region.USE_COMPUTED_SIZE);
         HBox.setHgrow(splitPane, Priority.ALWAYS);
 
         var leftVbox = new RRVBox();
-        leftVbox.setSpacing(10);
-        leftVbox.setPadding(new Insets(0, 24, 0, 0));
         leftVbox.getStyleClass().add("settings-left-vbox");
         leftVbox.getStyleClass().remove("background-2");
         leftVbox.getStyleClass().add("settings-left-pane");
-        leftVbox.setMinWidth(260);
-        leftVbox.setPrefWidth(280);
-        leftVbox.setMaxWidth(280);
 
         var searchBar = new RRTextField("railroad.home.settings.search");
-        searchBar.setMaxWidth(Double.MAX_VALUE);
-        searchBar.setPrefHeight(40);
+        searchBar.getStyleClass().add("settings-search-field");
         TreeView<LocalizedLabel> tree = SettingsUIHandler.createCategoryTree(SettingsHandler.SETTINGS_REGISTRY.values());
         tree.getStyleClass().addAll("settings-tree", "rr-sidebar-tree");
         tree.getStyleClass().add("settings-category-tree");
-        tree.setMinWidth(Region.USE_COMPUTED_SIZE);
         VBox.setVgrow(tree, Priority.ALWAYS);
         leftVbox.getChildren().addAll(searchBar, tree);
 
         var rightVbox = new RRVBox();
-        rightVbox.setSpacing(0);
         rightVbox.getStyleClass().add("settings-right-vbox");
         rightVbox.getStyleClass().remove("background-2");
         rightVbox.getStyleClass().add("settings-right-pane");
@@ -78,12 +64,10 @@ public class SettingsPane extends RRVBox {
         var pathLabel = new Label("");
         pathLabel.getStyleClass().add("settings-path-title");
         var settingsContentBox = new RRVBox();
-        settingsContentBox.setSpacing(20);
         settingsContentBox.setFillWidth(true);
         settingsContentBox.getStyleClass().add("settings-content-box");
         settingsContentBox.getStyleClass().remove("background-2");
         settingsContentBox.getStyleClass().add("settings-content-stack");
-        settingsContentBox.setPadding(new Insets(0, 0, 0, 32));
         var settingsContent = new ScrollPane(settingsContentBox);
         settingsContent.setFitToWidth(true);
         settingsContent.setFitToHeight(true);
@@ -131,7 +115,7 @@ public class SettingsPane extends RRVBox {
             // TODO: Temporary until we add a decorations system.
             if ("ide".equals(parts[parts.length - 1])) {
                 var detectedPane = new DetectedJdkListPane();
-                VBox.setMargin(detectedPane, new Insets(10, 10, 0, 10));
+                detectedPane.getStyleClass().add("settings-detected-pane");
                 vbox.getChildren().add(detectedPane);
             }
 
@@ -173,12 +157,12 @@ public class SettingsPane extends RRVBox {
         borderContainer.getStyleClass().remove("background-2");
         VBox.setVgrow(borderContainer, Priority.ALWAYS);
 
-        var buttonBar = new RRHBox(12);
+        var buttonBar = new RRHBox();
         buttonBar.setAlignment(Pos.CENTER_RIGHT);
+        buttonBar.getStyleClass().add("settings-button-bar");
         var apply = new RRButton("railroad.generic.apply");
         var cancel = new RRButton("railroad.generic.cancel");
         buttonBar.getChildren().addAll(apply, cancel);
-        VBox.setMargin(buttonBar, new Insets(24, 0, 0, 0));
 
         apply.setOnAction(event -> {
             for (Runnable listener : applyListeners) {
