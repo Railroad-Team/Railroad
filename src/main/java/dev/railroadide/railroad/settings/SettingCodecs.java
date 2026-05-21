@@ -3,6 +3,8 @@ package dev.railroadide.railroad.settings;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonPrimitive;
+import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleSettingsState;
+import dev.railroadide.railroad.ide.diagnostics.ui.JavaInspectionRuleSettingsPane;
 import dev.railroadide.railroad.localization.Language;
 import dev.railroadide.railroad.localization.Languages;
 import dev.railroadide.railroad.plugin.PluginManager;
@@ -151,6 +153,14 @@ public class SettingCodecs {
             .jsonDecoder(json -> (json == null || json.isJsonNull()) ? null : Path.of(json.getAsString()))
             .build();
 
+    public static final SettingCodec<JavaInspectionRuleSettingsState, JavaInspectionRuleSettingsPane> JAVA_INSPECTION_RULE_SETTINGS =
+        SettingCodec.<JavaInspectionRuleSettingsState, JavaInspectionRuleSettingsPane>builder("railroad:java_inspection_rule_settings")
+            .createNode(ignored -> new JavaInspectionRuleSettingsPane(JavaInspectionRuleSettingsState.snapshot()))
+            .nodeToValue(JavaInspectionRuleSettingsPane::getState)
+            .valueToNode((state, pane) -> pane.setState(state))
+            .jsonEncoder(state -> JsonNull.INSTANCE)
+            .jsonDecoder(json -> JavaInspectionRuleSettingsState.empty())
+            .build();
     public static final SettingCodec<Path, WindowsTerminalSettingsPathPane> WINDOWS_TERMINAL_SETTINGS_PATH =
         SettingCodec.<Path, WindowsTerminalSettingsPathPane>builder("railroad:windows_terminal_settings_path")
             .createNode(WindowsTerminalSettingsPathPane::new)
@@ -159,5 +169,4 @@ public class SettingCodecs {
             .jsonEncoder(path -> path == null ? JsonNull.INSTANCE : new JsonPrimitive(path.toString()))
             .jsonDecoder(json -> (json == null || json.isJsonNull()) ? null : Path.of(json.getAsString()))
             .build();
-
 }

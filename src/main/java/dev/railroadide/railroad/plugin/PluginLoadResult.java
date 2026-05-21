@@ -4,6 +4,8 @@ import dev.railroadide.railroad.plugin.spi.Plugin;
 import dev.railroadide.railroad.plugin.spi.PluginDescriptor;
 
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -14,6 +16,7 @@ public final class PluginLoadResult {
     private final PluginDescriptor descriptor;
     private Plugin pluginInstance;
     private PluginClassLoader classLoader;
+    private List<String> javaInspectionRuleProviderRegistrationIds = List.of();
 
     /**
      * @param pluginPath The path to the loaded plugin JAR file.
@@ -53,6 +56,13 @@ public final class PluginLoadResult {
     }
 
     /**
+     * @return Registry ids auto-registered for this plugin's Java inspection rule providers.
+     */
+    public List<String> javaInspectionRuleProviderRegistrationIds() {
+        return javaInspectionRuleProviderRegistrationIds;
+    }
+
+    /**
      * Sets the plugin instance and its class loader.
      *
      * @param plugin      The plugin instance to set.
@@ -63,25 +73,49 @@ public final class PluginLoadResult {
         this.classLoader = classLoader;
     }
 
+    /**
+     * Replaces the tracked Java inspection rule provider registration ids for this plugin.
+     */
+    public void setJavaInspectionRuleProviderRegistrationIds(Collection<String> registrationIds) {
+        if (registrationIds == null || registrationIds.isEmpty()) {
+            this.javaInspectionRuleProviderRegistrationIds = List.of();
+            return;
+        }
+
+        this.javaInspectionRuleProviderRegistrationIds = List.copyOf(registrationIds);
+    }
+
+    /**
+     * Clears the tracked Java inspection rule provider registration ids for this plugin.
+     */
+    public void clearJavaInspectionRuleProviderRegistrationIds() {
+        this.javaInspectionRuleProviderRegistrationIds = List.of();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         PluginLoadResult that = (PluginLoadResult) o;
-        return Objects.equals(pluginPath, that.pluginPath) && Objects.equals(descriptor, that.descriptor) && Objects.equals(pluginInstance, that.pluginInstance) && Objects.equals(classLoader, that.classLoader);
+        return Objects.equals(pluginPath, that.pluginPath)
+                && Objects.equals(descriptor, that.descriptor)
+                && Objects.equals(pluginInstance, that.pluginInstance)
+                && Objects.equals(classLoader, that.classLoader)
+                && Objects.equals(javaInspectionRuleProviderRegistrationIds, that.javaInspectionRuleProviderRegistrationIds);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(pluginPath, descriptor, pluginInstance, classLoader);
+        return Objects.hash(pluginPath, descriptor, pluginInstance, classLoader, javaInspectionRuleProviderRegistrationIds);
     }
 
     @Override
     public String toString() {
         return "PluginLoadResult{" +
-            "pluginPath=" + pluginPath +
-            ", descriptor=" + descriptor +
-            ", pluginInstance=" + pluginInstance +
-            ", classLoader=" + classLoader +
-            '}';
+                "pluginPath=" + pluginPath +
+                ", descriptor=" + descriptor +
+                ", pluginInstance=" + pluginInstance +
+                ", classLoader=" + classLoader +
+                ", javaInspectionRuleProviderRegistrationIds=" + javaInspectionRuleProviderRegistrationIds +
+                '}';
     }
 }

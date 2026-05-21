@@ -14,6 +14,9 @@ import java.util.Optional;
 
 public class Config implements JsonSerializable<JsonObject> {
     private final Map<String, Boolean> enabledPlugins = new LinkedHashMap<>();
+    private final Map<String, Boolean> inspectionRuleEnabledOverrides = new LinkedHashMap<>();
+    private final Map<String, Boolean> inspectionRuleTagEnabledOverrides = new LinkedHashMap<>();
+    private final Map<String, String> inspectionRuleSeverityOverrides = new LinkedHashMap<>();
 
     public Map<String, Boolean> getEnabledPlugins() {
         return new LinkedHashMap<>(enabledPlugins);
@@ -25,6 +28,42 @@ public class Config implements JsonSerializable<JsonObject> {
             return;
 
         this.enabledPlugins.putAll(enabledPlugins);
+    }
+
+    public Map<String, Boolean> getInspectionRuleEnabledOverrides() {
+        return new LinkedHashMap<>(inspectionRuleEnabledOverrides);
+    }
+
+    public void setInspectionRuleEnabledOverrides(Map<String, Boolean> overrides) {
+        inspectionRuleEnabledOverrides.clear();
+        if (overrides == null || overrides.isEmpty())
+            return;
+
+        inspectionRuleEnabledOverrides.putAll(overrides);
+    }
+
+    public Map<String, Boolean> getInspectionRuleTagEnabledOverrides() {
+        return new LinkedHashMap<>(inspectionRuleTagEnabledOverrides);
+    }
+
+    public void setInspectionRuleTagEnabledOverrides(Map<String, Boolean> overrides) {
+        inspectionRuleTagEnabledOverrides.clear();
+        if (overrides == null || overrides.isEmpty())
+            return;
+
+        inspectionRuleTagEnabledOverrides.putAll(overrides);
+    }
+
+    public Map<String, String> getInspectionRuleSeverityOverrides() {
+        return new LinkedHashMap<>(inspectionRuleSeverityOverrides);
+    }
+
+    public void setInspectionRuleSeverityOverrides(Map<String, String> overrides) {
+        inspectionRuleSeverityOverrides.clear();
+        if (overrides == null || overrides.isEmpty())
+            return;
+
+        inspectionRuleSeverityOverrides.putAll(overrides);
     }
 
     @Override
@@ -50,12 +89,39 @@ public class Config implements JsonSerializable<JsonObject> {
 
         json.add("EnabledPlugins", enabledPluginsJson);
 
+        JsonObject inspectionRuleEnabledJson = new JsonObject();
+        for (Map.Entry<String, Boolean> entry : inspectionRuleEnabledOverrides.entrySet()) {
+            if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null)
+                continue;
+            inspectionRuleEnabledJson.addProperty(entry.getKey(), entry.getValue());
+        }
+        json.add("InspectionRuleEnabledOverrides", inspectionRuleEnabledJson);
+
+        JsonObject inspectionRuleTagEnabledJson = new JsonObject();
+        for (Map.Entry<String, Boolean> entry : inspectionRuleTagEnabledOverrides.entrySet()) {
+            if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null)
+                continue;
+            inspectionRuleTagEnabledJson.addProperty(entry.getKey(), entry.getValue());
+        }
+        json.add("InspectionRuleTagEnabledOverrides", inspectionRuleTagEnabledJson);
+
+        JsonObject inspectionRuleSeverityJson = new JsonObject();
+        for (Map.Entry<String, String> entry : inspectionRuleSeverityOverrides.entrySet()) {
+            if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null || entry.getValue().isBlank())
+                continue;
+            inspectionRuleSeverityJson.addProperty(entry.getKey(), entry.getValue());
+        }
+        json.add("InspectionRuleSeverityOverrides", inspectionRuleSeverityJson);
+
         return json;
     }
 
     @Override
     public void fromJson(JsonObject json) {
         enabledPlugins.clear();
+        inspectionRuleEnabledOverrides.clear();
+        inspectionRuleTagEnabledOverrides.clear();
+        inspectionRuleSeverityOverrides.clear();
 
         if (json.has("Projects")) {
             JsonElement projects = json.get("Projects");
@@ -82,6 +148,42 @@ public class Config implements JsonSerializable<JsonObject> {
                         continue;
 
                     enabledPlugins.put(pluginId, enabledJson.getAsBoolean());
+                }
+            }
+        }
+
+        if (json.has("InspectionRuleEnabledOverrides")) {
+            JsonElement enabledRulesElement = json.get("InspectionRuleEnabledOverrides");
+            if (enabledRulesElement.isJsonObject()) {
+                JsonObject enabledRulesJson = enabledRulesElement.getAsJsonObject();
+                for (Map.Entry<String, JsonElement> entry : enabledRulesJson.entrySet()) {
+                    if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null || !entry.getValue().isJsonPrimitive())
+                        continue;
+                    inspectionRuleEnabledOverrides.put(entry.getKey(), entry.getValue().getAsBoolean());
+                }
+            }
+        }
+
+        if (json.has("InspectionRuleTagEnabledOverrides")) {
+            JsonElement enabledTagsElement = json.get("InspectionRuleTagEnabledOverrides");
+            if (enabledTagsElement.isJsonObject()) {
+                JsonObject enabledTagsJson = enabledTagsElement.getAsJsonObject();
+                for (Map.Entry<String, JsonElement> entry : enabledTagsJson.entrySet()) {
+                    if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null || !entry.getValue().isJsonPrimitive())
+                        continue;
+                    inspectionRuleTagEnabledOverrides.put(entry.getKey(), entry.getValue().getAsBoolean());
+                }
+            }
+        }
+
+        if (json.has("InspectionRuleSeverityOverrides")) {
+            JsonElement severityElement = json.get("InspectionRuleSeverityOverrides");
+            if (severityElement.isJsonObject()) {
+                JsonObject severityJson = severityElement.getAsJsonObject();
+                for (Map.Entry<String, JsonElement> entry : severityJson.entrySet()) {
+                    if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null || !entry.getValue().isJsonPrimitive())
+                        continue;
+                    inspectionRuleSeverityOverrides.put(entry.getKey(), entry.getValue().getAsString());
                 }
             }
         }

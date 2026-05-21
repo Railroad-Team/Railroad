@@ -15,7 +15,7 @@ public interface Language {
      * The registry for managing Language instances.
      * This registry allows for the registration and retrieval of languages by their codes.
      */
-    Registry<Language> REGISTRY = RegistryManager.createRegistry("languages", Language.class);
+    Registry<Language> REGISTRY = RegistryManager.createOrderedRegistry("languages", Language.class);
 
     /**
      * Creates a new LanguageBuilder for constructing a Language instance.

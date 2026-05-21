@@ -101,8 +101,23 @@ public class ClassStubVisitor extends ClassVisitor {
             parameterAnnotations.add(new ArrayList<>());
         }
 
+        List<Type> thrownTypes = exceptions == null
+                ? List.of()
+                : Arrays.stream(exceptions)
+                .map(internalName -> Type.fromAsmType(org.objectweb.asm.Type.getObjectType(internalName)))
+                .toList();
         List<AnnotationStub> methodAnnotations = new ArrayList<>();
-        return new MethodStubVisitor(access, name, parameterTypes, returnType, parameterNames, parameterAnnotations, methodAnnotations, methodTypeParameters);
+        return new MethodStubVisitor(
+                access,
+                name,
+                parameterTypes,
+                returnType,
+                parameterNames,
+                parameterAnnotations,
+                methodAnnotations,
+                methodTypeParameters,
+                thrownTypes
+        );
     }
 
     public ClassStub createClassStub() {
@@ -307,9 +322,10 @@ public class ClassStubVisitor extends ClassVisitor {
         private final List<List<AnnotationStub>> parameterAnnotations;
         private final List<AnnotationStub> methodAnnotations;
         private final List<TypeParameter> finalMethodTypeParameters;
+        private final List<Type> thrownTypes;
         private int parameterIndex = 0;
 
-        public MethodStubVisitor(int access, String name, List<Type> parameterTypes, Type returnType, List<String> parameterNames, List<List<AnnotationStub>> parameterAnnotations, List<AnnotationStub> methodAnnotations, List<TypeParameter> finalMethodTypeParameters) {
+        public MethodStubVisitor(int access, String name, List<Type> parameterTypes, Type returnType, List<String> parameterNames, List<List<AnnotationStub>> parameterAnnotations, List<AnnotationStub> methodAnnotations, List<TypeParameter> finalMethodTypeParameters, List<Type> thrownTypes) {
             super(Opcodes.ASM9);
             this.access = access;
             this.name = name;
@@ -319,6 +335,7 @@ public class ClassStubVisitor extends ClassVisitor {
             this.parameterAnnotations = parameterAnnotations;
             this.methodAnnotations = methodAnnotations;
             this.finalMethodTypeParameters = finalMethodTypeParameters;
+            this.thrownTypes = List.copyOf(thrownTypes);
         }
 
         @Override
@@ -357,11 +374,11 @@ public class ClassStubVisitor extends ClassVisitor {
 
             if (name.equals("<init>")) {
                 var constructorStub = new ConstructorStub(
-                    parameters, access, methodAnnotations, finalMethodTypeParameters);
+                    parameters, access, thrownTypes, methodAnnotations, finalMethodTypeParameters);
                 ClassStubVisitor.this.constructors.add(constructorStub);
             } else {
                 var methodStub = new MethodStub(
-                    name, returnType, parameters, access, methodAnnotations, finalMethodTypeParameters);
+                    name, returnType, parameters, access, thrownTypes, methodAnnotations, finalMethodTypeParameters);
                 ClassStubVisitor.this.methods.add(methodStub);
             }
         }

@@ -16,7 +16,7 @@ import java.util.function.Function;
 @EqualsAndHashCode
 @AllArgsConstructor
 public class MappingChannel {
-    public static final Registry<MappingChannel> REGISTRY = RegistryManager.createRegistry("railroad:mapping_channel", MappingChannel.class);
+    public static final Registry<MappingChannel> REGISTRY = RegistryManager.createOrderedRegistry("railroad:mapping_channel", MappingChannel.class);
 
     private final String id;
     private final String translationKey;

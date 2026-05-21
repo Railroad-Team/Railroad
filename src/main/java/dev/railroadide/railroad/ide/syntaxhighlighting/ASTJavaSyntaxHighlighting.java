@@ -24,6 +24,14 @@ public class ASTJavaSyntaxHighlighting {
 
     public static StyleSpans<Collection<String>> computeHighlighting(String text) {
         long start = System.currentTimeMillis();
+        try {
+            var styles = SyntaxTreeJavaSyntaxHighlighting.computeHighlighting(text);
+            Railroad.LOGGER.debug("Computed highlighting in {} ms", System.currentTimeMillis() - start);
+            return styles;
+        } catch (RuntimeException bridgeFailure) {
+            Railroad.LOGGER.debug("Syntax-tree highlighting fallback to JavaParser AST", bridgeFailure);
+        }
+
         CompilationUnit compilationUnit = PARSER.parse(text).getResult().orElseThrow();
 
         var highlighter = new SyntaxHighlighter(text);
