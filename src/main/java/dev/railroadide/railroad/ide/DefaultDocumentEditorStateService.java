@@ -1,35 +1,21 @@
 package dev.railroadide.railroad.ide;
 
-import dev.railroadide.railroad.ide.ui.JavaCodeEditorPane;
-import dev.railroadide.railroad.ide.ui.JsonCodeEditorPane;
-import dev.railroadide.railroad.ide.ui.TextEditorPane;
+import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.spi.services.DocumentEditorStateService;
 import dev.railroadide.railroad.plugin.spi.state.Cursor;
 import dev.railroadide.railroad.plugin.spi.state.Selection;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
 public class DefaultDocumentEditorStateService implements DocumentEditorStateService {
     private TextEditorPane activeEditorPane;
+    private String activeLanguageId = "";
 
-    public void setActiveEditorPane(TextEditorPane activeEditorPane) {
-        this.activeEditorPane = activeEditorPane;
-    }
-
-    private Cursor getCursorFromPosition(String text, int position) {
-        int line = 0;
-        int column = 0;
-
-        for (int i = 0; i < position && i < text.length(); i++) {
-            if (text.charAt(i) == '\n') {
-                line++;
-                column = 0;
-            } else {
-                column++;
-            }
-        }
-
-        return new Cursor(line, column);
+    @Override
+    public void setActiveEditor(@Nullable TextEditorPane editor, @Nullable String languageId) {
+        this.activeEditorPane = editor;
+        this.activeLanguageId = editor != null && languageId != null ? languageId : "";
     }
 
     @Override
@@ -60,13 +46,28 @@ public class DefaultDocumentEditorStateService implements DocumentEditorStateSer
 
     @Override
     public String getLanguageId() {
-        if (activeEditorPane instanceof JavaCodeEditorPane) {
-            return ((JavaCodeEditorPane) activeEditorPane).getLanguageId();
-        } else if (activeEditorPane instanceof JsonCodeEditorPane) {
-            return ((JsonCodeEditorPane) activeEditorPane).getLanguageId();
+        return activeLanguageId;
+    }
+
+    @Override
+    public TextEditorPane getActiveEditorPane() {
+        return activeEditorPane;
+    }
+
+    private Cursor getCursorFromPosition(String text, int position) {
+        int line = 0;
+        int column = 0;
+
+        for (int i = 0; i < position && i < text.length(); i++) {
+            if (text.charAt(i) == '\n') {
+                line++;
+                column = 0;
+            } else {
+                column++;
+            }
         }
 
-        return "";
+        return new Cursor(line, column);
     }
 }
 

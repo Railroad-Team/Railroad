@@ -1,14 +1,14 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.ide.syntaxhighlighting.JsonSyntaxHighlighting;
+import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
+import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
-import dev.railroadide.railroad.utility.ShutdownHooks;
 import javafx.collections.FXCollections;
 import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableMap;
-import javafx.concurrent.Task;
 import javafx.geometry.Point2D;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
@@ -27,12 +27,11 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-public class JsonCodeEditorPane extends TextEditorPane {
+public class JsonCodeEditorPane extends CodeEditorPane {
+    public static final String LANGUAGE_ID = "json";
+
     private static final String DEFAULT_SCHEMA = """
         {
           "$schema": "http://json-schema.org/draft-07/schema",
@@ -44,13 +43,11 @@ public class JsonCodeEditorPane extends TextEditorPane {
           "required": ["name", "version"]
         }
         """;
-    private final ExecutorService executor0 = Executors.newSingleThreadExecutor();
     private final ObservableMap<ValidationException, ValidationEntry> errors = FXCollections.observableHashMap();
     private Schema schema;
 
-    public JsonCodeEditorPane(Path item) {
-        super(item);
-        syntaxHighlight();
+    public JsonCodeEditorPane(Project project, Path item, CodeEditorConfig config) {
+        super(project, item, config);
         autoInsertPairs();
         autoIndentOnEnter();
 
@@ -61,26 +58,6 @@ public class JsonCodeEditorPane extends TextEditorPane {
                 change.getValueRemoved().popup().hide();
             }
         });
-
-        ShutdownHooks.addHook(executor0::shutdown);
-    }
-
-    private void syntaxHighlight() {
-        applyHighlighting(computeHighlighting(getText()));
-        multiPlainChanges()
-            .successionEnds(Duration.ofMillis(5))
-            .retainLatestUntilLater(executor0)
-            .supplyTask(this::computeHighlightingAsync)
-            .awaitLatest(multiPlainChanges())
-            .filterMap(throwable -> {
-                if (throwable.isSuccess()) {
-                    return throwable.toOptional();
-                } else {
-                    Railroad.LOGGER.error("Failed to compute highlighting", throwable.getFailure());
-                    return Optional.empty();
-                }
-            })
-            .subscribe(this::applyHighlighting);
     }
 
     private void autoInsertPairs() {
@@ -183,24 +160,6 @@ public class JsonCodeEditorPane extends TextEditorPane {
         });
     }
 
-    private Task<StyleSpans<Collection<String>>> computeHighlightingAsync() {
-        String text = getText();
-        Task<StyleSpans<Collection<String>>> task = new Task<>() {
-            @Override
-            protected StyleSpans<Collection<String>> call() {
-                return computeHighlighting(text);
-            }
-        };
-
-        executor0.submit(task);
-        return task;
-    }
-
-    private void applyHighlighting(StyleSpans<Collection<String>> highlighting) {
-        setStyleSpans(0, highlighting);
-        overlayErrorHighlights();
-    }
-
     private void overlayErrorHighlights() {
         errors.values().forEach(entry -> addStyleClass(entry.start, entry.end, "error"));
     }
@@ -220,16 +179,10 @@ public class JsonCodeEditorPane extends TextEditorPane {
         setStyleSpans(start, builder.create());
     }
 
-    private StyleSpans<Collection<String>> computeHighlighting(String text) {
-        return JsonSyntaxHighlighting.computeHighlighting(text);
-    }
-
     private void clearErrorHighlights() {
-        int length = getLength();
-        setStyle(0, length, Collections.emptyList());
-        applyHighlighting(computeHighlighting(getText()));
         errors.values().forEach(entry -> entry.popup.hide());
         errors.clear();
+        reapplyEditorStyles();
     }
 
     private void highlightValidationErrors(ValidationException rootEx) {
@@ -379,10 +332,16 @@ public class JsonCodeEditorPane extends TextEditorPane {
         }
     }
 
-    private record ValidationEntry(int start, int end, Popup popup) {
+    @Override
+    protected boolean shouldRequestSignatureHelp(String text, int caret, boolean textChanged) {
+        return false;
     }
 
-    public String getLanguageId() {
-        return "json";
+    @Override
+    protected void onEditorStylesApplied() {
+        overlayErrorHighlights();
+    }
+
+    private record ValidationEntry(int start, int end, Popup popup) {
     }
 }

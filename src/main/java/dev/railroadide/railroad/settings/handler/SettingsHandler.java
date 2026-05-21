@@ -20,7 +20,7 @@ import java.util.Map;
 
 public class SettingsHandler {
     private static final SettingsHolder SETTINGS_HOLDER = new SettingsHolder();
-    private static final Registry<Setting<?>> SETTINGS_REGISTRY_DELEGATE = RegistryManager.createRegistry("settings", new TypeToken<>() {
+    private static final Registry<Setting<?>> SETTINGS_REGISTRY_DELEGATE = RegistryManager.createOrderedRegistry("settings", new TypeToken<>() {
     });
     public static final Registry<Setting<?>> SETTINGS_REGISTRY = new Registry<>() {
         @Override

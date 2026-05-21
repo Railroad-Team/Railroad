@@ -8,10 +8,8 @@ import dev.railroadide.railroad.gradle.ui.GradleToolsPane;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationEditorPane;
-import dev.railroadide.railroad.ide.ui.ConsolePane;
-import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
-import dev.railroadide.railroad.ide.ui.ImageViewerPane;
-import dev.railroadide.railroad.ide.ui.StatusBarPane;
+import dev.railroadide.railroad.ide.ui.*;
+import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.ide.ui.git.branches.GitBranchesPane;
 import dev.railroadide.railroad.ide.ui.git.commit.GitCommitPane;
 import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
@@ -243,7 +241,12 @@ public class IDESetup {
             return codePane;
 
         // Fall back to replacing a welcome tab when no editor pane exists yet.
-        return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof IDEWelcomePane);
+        var welcomePane = findBestPaneForFiles(parent, tab -> tab.getContent() instanceof IDEWelcomePane);
+        if (welcomePane.isPresent())
+            return welcomePane;
+
+        // If no welcome tab exists, reuse a pane that already hosts file-like content.
+        return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof TextEditorPane || tab.getContent() instanceof CodeArea || tab.getContent() instanceof ImageViewerPane || tab.getContent() instanceof MarkdownPreviewPane);
     }
 
     /**

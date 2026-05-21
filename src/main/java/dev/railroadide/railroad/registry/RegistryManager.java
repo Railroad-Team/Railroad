@@ -31,13 +31,23 @@ public class RegistryManager {
      * @return a new Registry instance
      */
     public static <T> Registry<T> createRegistry(String id, Type type) {
+        return createRegistry(id, type, false);
+    }
+
+    public static <T> Registry<T> createOrderedRegistry(String id, Type type) {
+        return createRegistry(id, type, true);
+    }
+
+    private static <T> Registry<T> createRegistry(String id, Type type, boolean ordered) {
         if (id == null || id.isBlank())
             throw new IllegalArgumentException("Registry ID cannot be null or empty");
 
         if (type == null)
             throw new IllegalArgumentException("Type cannot be null");
 
-        Registry<T> registry = new BasicRegistry<>(id, type);
+        Registry<T> registry = ordered
+            ? new OrderedRegistry<>(id, type)
+            : new BasicRegistry<>(id, type);
         REGISTRIES.put(id, registry);
         return registry;
     }
@@ -55,6 +65,13 @@ public class RegistryManager {
             throw new IllegalArgumentException("TypeToken cannot be null");
 
         return createRegistry(id, type.getType());
+    }
+
+    public static <T> Registry<T> createOrderedRegistry(String id, TypeToken<T> type) {
+        if (type == null)
+            throw new IllegalArgumentException("TypeToken cannot be null");
+
+        return createOrderedRegistry(id, type.getType());
     }
 
     /**

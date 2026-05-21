@@ -194,3 +194,17 @@ tasks.matching { it.name == 'startShadowScripts' }.configureEach {
 tasks.named('build') {
     dependsOn tasks.named('shadowJar')
 }
+
+tasks.register('runJavaParserBenchmark', JavaExec) {
+    group = 'verification'
+    description = 'Runs lexer/parser benchmark for Java syntax and legacy AST parsers.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.railroadide.railroad.ide.sst.impl.java.JavaParserBenchmarkRunner'
+}
+
+tasks.register('runJavaParserMemoryProfile', JavaExec) {
+    group = 'verification'
+    description = 'Profiles green tree and red wrapper memory characteristics for Java syntax parser.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxMemoryProfileRunner'
+}

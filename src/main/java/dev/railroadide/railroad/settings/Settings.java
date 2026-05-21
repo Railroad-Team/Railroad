@@ -1,6 +1,9 @@
 package dev.railroadide.railroad.settings;
 
 import com.google.gson.reflect.TypeToken;
+import dev.railroadide.railroad.config.ConfigHandler;
+import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleSettings;
+import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleSettingsState;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.localization.Language;
 import dev.railroadide.railroad.localization.Languages;
@@ -145,6 +148,27 @@ public final class Settings {
         .codec(SettingCodecs.FILE_PATH_LIST)
         .defaultValue(List.of())
         .build());
+
+    public static final Setting<JavaInspectionRuleSettingsState> JAVA_INSPECTION_RULE_SETTINGS = registerSetting(
+        Setting.builder(JavaInspectionRuleSettingsState.class, "railroad:java_inspection_rule_settings")
+            .treePath("ide")
+            .category(SettingCategory.builder("railroad:ide.inspections")
+                .title("Inspection Rules")
+                .noDescription()
+                .build())
+            .codec(SettingCodecs.JAVA_INSPECTION_RULE_SETTINGS)
+            .defaultValue(JavaInspectionRuleSettingsState.snapshot())
+            .persisted(false)
+            .noTitle()
+            .noDescription()
+            .canBeNull(false)
+            .addListener((oldValue, newValue) -> {
+                if (newValue == null)
+                    newValue = JavaInspectionRuleSettingsState.empty();
+                JavaInspectionRuleSettings.replaceAll(newValue);
+                ConfigHandler.saveConfig();
+            })
+            .build());
 
     public static final Setting<Long> JAVA_VERSION_DETECTION_TIMEOUT_MS = registerSetting(Setting.builder(Long.class, "railroad:java_version_detection_timeout_ms")
         .treePath("ide")

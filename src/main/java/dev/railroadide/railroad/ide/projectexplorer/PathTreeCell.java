@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.projectexplorer;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
@@ -208,10 +209,11 @@ public class PathTreeCell extends TreeCell<PathItem> {
 
                 String oldName = editingPath.getFileName().toString();
                 String newName = newValue.getPath().getFileName().toString();
+                String languageId = LanguageSupportRegistry.resolveLanguageId(newValue.getPath());
 
                 Files.move(editingPath, newValue.getPath());
                 getItem().setPath(newValue.getPath());
-                Railroad.EVENT_BUS.publish(new DocumentRenamedEvent(new FileSystemDocument(newName, newValue.getPath()), oldName, newName));
+                Railroad.EVENT_BUS.publish(new DocumentRenamedEvent(new FileSystemDocument(newName, newValue.getPath(), languageId), oldName, newName));
             } catch (IOException exception) {
                 cancelEdit();
                 messageProperty.setValue("Renaming %s failed".formatted(editingPath.getFileName()));
