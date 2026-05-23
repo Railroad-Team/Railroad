@@ -4,6 +4,7 @@ import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.gradle.ui.GradleToolsPane;
+import dev.railroadide.railroad.ide.IDEViewMode;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.ui.git.branches.GitBranchesPane;
 import dev.railroadide.railroad.ide.ui.git.commit.GitCommitPane;
@@ -30,10 +31,12 @@ import javafx.application.Platform;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.Tab;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 
 public final class IDEPane extends RRBorderPane {
@@ -42,18 +45,27 @@ public final class IDEPane extends RRBorderPane {
     public IDEPane(Project project) {
         this.project = Objects.requireNonNull(project, "Project cannot be null");
 
+        var viewModeProperty = Services.IDE_STATE.currentViewModeProperty();
+        viewModeProperty.set(IDEViewMode.CODE);
 
-        setTop(new IDETopBarPane(project));
+        setTop(new IDETopBarPane(project, viewModeProperty));
 
         var leftPane = createLeftPane();
         var rightPane = new DetachableTabPane();
         Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.IDE_RIGHT_DOCK, rightPane);
-        var editorPane = createEditorPane();
+        var codeEditorPane = createCodeEditorPane();
+        var gitEditorPane = createGitEditorPane();
+        Map<IDEViewMode, DetachableTabPane> editorPanesByMode = Map.of(
+            IDEViewMode.CODE, codeEditorPane,
+            IDEViewMode.GIT, gitEditorPane
+        );
         var consolePane = createBottomPane();
 
-        var centerBottomSplit = new SplitPane(editorPane, consolePane);
+        var centerBottomSplit = new SplitPane(editorPanesByMode.get(viewModeProperty.get()), consolePane);
         centerBottomSplit.setOrientation(Orientation.VERTICAL);
         centerBottomSplit.setDividerPositions(0.75);
+        viewModeProperty.addListener((_, _, newValue) ->
+            swapEditorPaneForViewMode(centerBottomSplit, editorPanesByMode, newValue));
 
         var mainSplit = new SplitPane(leftPane, centerBottomSplit, rightPane);
         mainSplit.setOrientation(Orientation.HORIZONTAL);
@@ -71,20 +83,44 @@ public final class IDEPane extends RRBorderPane {
 
     private DetachableTabPane createLeftPane() {
         var pane = new DetachableTabPane();
-        pane.addTab("Project", new ProjectExplorerPane(project));
-        pane.addTab("Git Commit", new GitCommitPane(project));
-        pane.addTab("Git Overview", new GitOverviewPane(project));
-        pane.addTab("Git Commit List", new GitCommitListPane(project));
-        pane.addTab("Git Branches", new GitBranchesPane(project));
-        pane.addTab("Git Remotes", new GitRemotesPane(project));
-        pane.addTab("Git Sync", new GitSyncPane(project));
-        pane.addTab("Git Stash", new GitStashPane(project));
+        var projectTab = createTab("Project", new ProjectExplorerPane(project));
+        var gitOverviewTab = createTab("Git Overview", new GitOverviewPane(project));
+        var gitCommitTab = createTab("Git Commit", new GitCommitPane(project));
+        var gitCommitListTab = createTab("Git Commit List", new GitCommitListPane(project));
+        var gitBranchesTab = createTab("Git Branches", new GitBranchesPane(project));
+        var gitRemotesTab = createTab("Git Remotes", new GitRemotesPane(project));
+        var gitSyncTab = createTab("Git Sync", new GitSyncPane(project));
+        var gitStashTab = createTab("Git Stash", new GitStashPane(project));
+
+        Map<IDEViewMode, List<Tab>> tabsByMode = Map.of(
+            IDEViewMode.CODE, List.of(projectTab),
+            IDEViewMode.GIT, List.of(
+                gitOverviewTab,
+                gitCommitTab,
+                gitCommitListTab,
+                gitBranchesTab,
+                gitRemotesTab,
+                gitSyncTab,
+                gitStashTab
+            )
+        );
+        var viewModeProperty = Services.IDE_STATE.currentViewModeProperty();
+        applyViewMode(pane, tabsByMode, viewModeProperty.get());
+        viewModeProperty.addListener((_, _, newValue) -> applyViewMode(pane, tabsByMode, newValue));
 
         Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.IDE_LEFT_DOCK, pane);
         return pane;
     }
 
-    private DetachableTabPane createEditorPane() {
+    private DetachableTabPane createCodeEditorPane() {
+        var pane = new DetachableTabPane();
+        pane.addTab("Welcome", new IDEWelcomePane());
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.IDE_EDITOR_DOCK, pane);
+        return pane;
+    }
+
+    private DetachableTabPane createGitEditorPane() {
         var pane = new DetachableTabPane();
         pane.addTab("Welcome", new IDEWelcomePane());
 
@@ -98,6 +134,47 @@ public final class IDEPane extends RRBorderPane {
 
         Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.IDE_EDITOR_DOCK, pane);
         return pane;
+    }
+
+    private static Tab createTab(String title, Node content) {
+        var tab = new Tab(title, content);
+        tab.setClosable(false);
+        return tab;
+    }
+
+    private static void applyViewMode(DetachableTabPane pane, Map<IDEViewMode, List<Tab>> tabsByMode, IDEViewMode viewMode) {
+        IDEViewMode resolvedMode = viewMode == null ? IDEViewMode.CODE : viewMode;
+        List<Tab> tabs = tabsByMode.getOrDefault(resolvedMode, tabsByMode.get(IDEViewMode.CODE));
+        pane.getTabs().setAll(tabs);
+        if (!tabs.isEmpty()) {
+            pane.getSelectionModel().select(tabs.getFirst());
+        }
+    }
+
+    private static void swapEditorPaneForViewMode(
+        SplitPane splitPane,
+        Map<IDEViewMode, DetachableTabPane> editorPanesByMode,
+        IDEViewMode viewMode
+    ) {
+        IDEViewMode resolvedMode = viewMode == null ? IDEViewMode.CODE : viewMode;
+        DetachableTabPane editorPane = editorPanesByMode.getOrDefault(
+            resolvedMode,
+            editorPanesByMode.get(IDEViewMode.CODE)
+        );
+
+        if (splitPane.getItems().isEmpty()) {
+            splitPane.getItems().add(editorPane);
+            splitPane.setDividerPositions(0.75);
+            return;
+        }
+
+        if (splitPane.getItems().getFirst() != editorPane) {
+            double dividerPosition = splitPane.getDividerPositions().length > 0
+                ? splitPane.getDividerPositions()[0]
+                : 0.75;
+            splitPane.getItems().set(0, editorPane);
+            splitPane.setDividerPositions(dividerPosition);
+        }
     }
 
     private DetachableTabPane createBottomPane() {

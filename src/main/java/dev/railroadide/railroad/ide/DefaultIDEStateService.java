@@ -6,6 +6,8 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.plugin.spi.services.IDEStateService;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import lombok.Getter;
 
 import java.nio.file.Path;
@@ -18,6 +20,7 @@ public class DefaultIDEStateService implements IDEStateService {
     private static DefaultIDEStateService instance;
     private final Map<Document, Long> openDocuments = new HashMap<>();
     private final Map<Path, Long> recentFiles = new HashMap<>();
+    private final ObjectProperty<IDEViewMode> currentViewMode = new SimpleObjectProperty<>(IDEViewMode.CODE);
 
     private Project currentProject;
     private long openedProjectAtMillis = -1L;
@@ -44,6 +47,7 @@ public class DefaultIDEStateService implements IDEStateService {
     private void setCurrentProject_internal(Project project) {
         this.currentProject = project;
         this.openedProjectAtMillis = project != null ? System.currentTimeMillis() : -1L;
+        this.currentViewMode.set(IDEViewMode.CODE);
 
         if (project == null) {
             clearOpenDocuments_internal();
@@ -120,6 +124,15 @@ public class DefaultIDEStateService implements IDEStateService {
     }
 
     @Override
+    public IDEViewMode getCurrentViewMode() {
+        return currentViewMode.get();
+    }
+
+    public ObjectProperty<IDEViewMode> currentViewModeProperty() {
+        return currentViewMode;
+    }
+
+    @Override
     public void setActiveDocument(Document document) {
         setActiveDocument_internal(document);
     }
@@ -137,5 +150,10 @@ public class DefaultIDEStateService implements IDEStateService {
     @Override
     public void closeDocument(Document document) {
         closeDocument_internal(document);
+    }
+
+    @Override
+    public void setCurrentViewMode(IDEViewMode viewMode) {
+        currentViewMode.set(viewMode == null ? IDEViewMode.CODE : viewMode);
     }
 }
