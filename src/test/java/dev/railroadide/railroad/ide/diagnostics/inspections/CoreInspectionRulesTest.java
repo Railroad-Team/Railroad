@@ -44,6 +44,7 @@ class CoreInspectionRulesTest {
             "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE"));
         assertRuleIds(new CoreDefiniteAssignmentInspection(), Set.of("SEM_UNASSIGNED_VARIABLE", "SEM_ILLEGAL_FINAL_ASSIGNMENT", "SEM_UNINITIALIZED_FINAL_FIELD"));
         assertRuleIds(new CoreAssignmentInspection(), Set.of("SEM_INCOMPATIBLE_ASSIGNMENT"));
+        assertRuleIds(new CoreImplicitNumericConversionInspection(), Set.of("SEM_IMPLICIT_NUMERIC_CONVERSION"));
         assertRuleIds(new CoreNegativeHexIntInLongContextInspection(), Set.of("SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT"));
         assertRuleIds(new CoreOverlyStrongTypeCastInspection(), Set.of("SEM_OVERLY_STRONG_TYPE_CAST"));
         assertRuleIds(new CoreCastConflictingWithInstanceofInspection(), Set.of("SEM_CAST_CONFLICTING_WITH_INSTANCEOF"));
@@ -810,6 +811,222 @@ class CoreInspectionRulesTest {
             """);
 
         assertFalse(diagnostics.stream().anyMatch(d -> "SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT".equals(d.code())));
+    }
+
+    @Test
+    void coreImplicitNumericConversionRuleEmitsDiagnosticForVariableInitializerWidening() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
+            class Example {
+                void run() {
+                    int source = 1;
+                    long target = source;
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+                && d.message().contains("widening")
+                && d.message().contains("'int'")
+                && d.message().contains("'long'")));
+    }
+
+    @Test
+    void coreImplicitNumericConversionRuleEmitsDiagnosticForAssignmentWidening() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
+            class Example {
+                void run() {
+                    int source = 1;
+                    long target = 0L;
+                    target = source;
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+                && d.message().contains("widening")
+                && d.message().contains("'int'")
+                && d.message().contains("'long'")));
+    }
+
+    @Test
+    void coreImplicitNumericConversionRuleEmitsDiagnosticForReturnWidening() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
+            class Example {
+                long run() {
+                    int value = 1;
+                    return value;
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+                && d.message().contains("widening")
+                && d.message().contains("'int'")
+                && d.message().contains("'long'")));
+    }
+
+    @Test
+    void coreImplicitNumericConversionRuleEmitsDiagnosticForMethodInvocationArgument() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
+            class Example {
+                void accept(long value) {
+                }
+
+                void run() {
+                    int value = 1;
+                    accept(value);
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+                && d.message().contains("widening")
+                && d.message().contains("'int'")
+                && d.message().contains("'long'")));
+    }
+
+    @Test
+    void coreImplicitNumericConversionRuleEmitsDiagnosticForConstructorArgument() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
+            class Example {
+                Example(long value) {
+                }
+
+                static Example create() {
+                    int value = 1;
+                    return new Example(value);
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+                && d.message().contains("widening")
+                && d.message().contains("'int'")
+                && d.message().contains("'long'")));
+    }
+
+    @Test
+    void coreImplicitNumericConversionRuleEmitsDiagnosticForMultipleMethodArguments() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
+            class Example {
+                void accept(long first, long second) {
+                }
+
+                void run() {
+                    int first = 1;
+                    int second = 2;
+                    accept(first, second);
+                }
+            }
+            """);
+
+        long count = diagnostics.stream()
+            .filter(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code()))
+            .count();
+        assertEquals(2L, count);
+    }
+
+    @Test
+    void coreImplicitNumericConversionRuleEmitsDiagnosticForArithmeticCompoundAssignmentNarrowing() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
+            class Example {
+                void run() {
+                    short value = 1;
+                    value += 1;
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+                && d.message().contains("narrowing")
+                && d.message().contains("'int'")
+                && d.message().contains("'short'")));
+    }
+
+    @Test
+    void coreImplicitNumericConversionRuleEmitsDiagnosticForShiftCompoundAssignmentNarrowing() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
+            class Example {
+                void run() {
+                    short value = 1;
+                    value <<= 1;
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.stream().anyMatch(d ->
+            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+                && d.message().contains("narrowing")
+                && d.message().contains("'int'")
+                && d.message().contains("'short'")));
+    }
+
+    @Test
+    void coreImplicitNumericConversionRuleDoesNotEmitForSameTypeAssignment() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
+            class Example {
+                void run() {
+                    int source = 1;
+                    int target = source;
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())));
+    }
+
+    @Test
+    void coreImplicitNumericConversionRuleDoesNotEmitForExplicitCast() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
+            class Example {
+                void run() {
+                    int source = 1;
+                    long target = (long) source;
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())));
+    }
+
+    @Test
+    void coreImplicitNumericConversionRuleDoesNotEmitForCompoundAssignmentWithoutNarrowing() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
+            class Example {
+                void run() {
+                    int value = 1;
+                    value += 2;
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())));
+    }
+
+    @Test
+    void coreImplicitNumericConversionRuleDoesNotEmitForLambdaReturn() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
+            interface Factory {
+                long create();
+            }
+
+            class Example {
+                Factory createFactory() {
+                    return () -> {
+                        int value = 1;
+                        return value;
+                    };
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())));
     }
 
     @Test

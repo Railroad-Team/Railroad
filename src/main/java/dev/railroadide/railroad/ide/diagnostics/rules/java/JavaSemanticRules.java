@@ -336,6 +336,11 @@ public final class JavaSemanticRules {
         SemanticDiagnostic.Severity.INFO,
         "Type '%s' declares redundant interface '%s'"
     );
+    public static final JavaSemanticRule IMPLICIT_NUMERIC_CONVERSION = new JavaSemanticRule(
+        "SEM_IMPLICIT_NUMERIC_CONVERSION",
+        SemanticDiagnostic.Severity.INFO,
+        "Implicit numeric conversion '%s' from '%s' to '%s'"
+    );
 
     private JavaSemanticRules() {
     }
