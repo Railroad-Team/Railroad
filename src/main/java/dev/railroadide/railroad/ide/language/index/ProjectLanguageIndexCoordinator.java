@@ -4,7 +4,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.language.LanguageSupport;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
-import dev.railroadide.railroad.utility.FileUtils;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,20 +18,20 @@ import java.util.Objects;
  * Applies project-wide language index lifecycle updates in response to file system events.
  */
 public final class ProjectLanguageIndexCoordinator {
-    private final Path projectRoot;
+    private final ProjectIndexContext context;
     private final ProjectLanguageIndexService indexService;
     private final List<LanguageSupport> supports;
 
-    public ProjectLanguageIndexCoordinator(Path projectRoot) {
-        this(projectRoot, Services.PROJECT_LANGUAGE_INDEX_SERVICE, LanguageSupportRegistry.all());
+    public ProjectLanguageIndexCoordinator(Project project) {
+        this(new DefaultProjectIndexContextResolver().resolve(project), Services.PROJECT_LANGUAGE_INDEX_SERVICE, LanguageSupportRegistry.all());
     }
 
     public ProjectLanguageIndexCoordinator(
-        Path projectRoot,
+        ProjectIndexContext context,
         ProjectLanguageIndexService indexService,
         Collection<LanguageSupport> supports
     ) {
-        this.projectRoot = FileUtils.normalizePath(Objects.requireNonNull(projectRoot, "projectRoot"));
+        this.context = Objects.requireNonNull(context, "context");
         this.indexService = Objects.requireNonNull(indexService, "indexService");
         this.supports = List.copyOf(Objects.requireNonNull(supports, "supports"));
     }
@@ -42,12 +42,23 @@ public final class ProjectLanguageIndexCoordinator {
                 continue;
 
             try {
-                indexService.index(projectRoot, support.languageId());
+                indexService.index(context, support.languageId());
             } catch (RuntimeException exception) {
                 Railroad.LOGGER.warn(
                     "Failed to warm project index for language {} in {}",
                     support.languageId(),
-                    projectRoot,
+                    context.projectRoot(),
+                    exception
+                );
+            }
+
+            try {
+                support.warmAdditionalIndexes(context);
+            } catch (RuntimeException exception) {
+                Railroad.LOGGER.warn(
+                    "Failed to warm additional indexes for language {} in {}",
+                    support.languageId(),
+                    context.projectRoot(),
                     exception
                 );
             }
@@ -64,7 +75,7 @@ public final class ProjectLanguageIndexCoordinator {
 
         try {
             if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
-                indexService.removeFile(projectRoot, support.languageId(), path);
+                indexService.removeFile(context, support.languageId(), path);
                 return;
             }
 
@@ -72,7 +83,7 @@ public final class ProjectLanguageIndexCoordinator {
                 if (Files.isDirectory(path))
                     return;
 
-                indexService.updateFile(projectRoot, support.languageId(), path);
+                indexService.updateFile(context, support.languageId(), path);
             }
         } catch (RuntimeException exception) {
             Railroad.LOGGER.warn(

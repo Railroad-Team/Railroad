@@ -57,7 +57,7 @@ public class ToolingGradleModelService implements GradleModelService {
 
     public static GradleBuildModel loadModel(Project project, GradleEnvironment environment) {
         GradleConnector connector = GradleConnector.newConnector()
-            .forProjectDirectory(project.getPath().toFile());
+            .forProjectDirectory(project.path().toFile());
         configureConnector(connector, environment);
 
         Path initScriptPath = null;

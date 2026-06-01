@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.project.facet.detector;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.maven.DefaultMavenModelService;
+import dev.railroadide.railroad.maven.MavenModelService;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
@@ -10,7 +12,6 @@ import dev.railroadide.railroad.utility.JavaVersion;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
-import org.apache.maven.model.building.*;
 import org.codehaus.plexus.configuration.PlexusConfigurationException;
 import org.codehaus.plexus.configuration.xml.XmlPlexusConfiguration;
 import org.gradle.tooling.model.java.InstalledJdk;
@@ -31,6 +32,8 @@ import java.util.stream.Stream;
  * This detector is used by the facet system to identify Java projects and extract relevant configuration data.
  */
 public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
+    private static final MavenModelService MAVEN_MODELS = new DefaultMavenModelService();
+
     /**
      * Attempts to determine the most reliable Java version for the given project path.
      * Checks Gradle, Maven, compiled class files, and system properties in order.
@@ -43,7 +46,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
         if (gradleVersion.major() != -1)
             return gradleVersion;
 
-        Path path = project.getPath();
+        Path path = project.path();
         if (path == null) {
             Railroad.LOGGER.warn("Project path is null for project: {}", project.getAlias());
             return JavaVersion.fromMajor(-1);
@@ -156,16 +159,11 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             return JavaVersion.fromMajor(-1);
 
         try {
-            // TODO: Look into replacement of these as they are deprecated(?)
-            ModelBuildingRequest req = new DefaultModelBuildingRequest()
-                .setProcessPlugins(false)
-                .setPomFile(pom.toFile());
+            Optional<Model> maybeModel = MAVEN_MODELS.loadEffectiveModel(projectDir);
+            if (maybeModel.isEmpty())
+                return JavaVersion.fromMajor(-1);
 
-            ModelBuildingResult res = new DefaultModelBuilderFactory()
-                .newInstance()
-                .build(req);
-
-            Model model = res.getEffectiveModel();
+            Model model = maybeModel.get();
 
             // 1) look in <properties>
             String src = model.getProperties().getProperty("maven.compiler.source");
@@ -199,7 +197,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             JavaVersion targetVer = JavaVersion.fromReleaseString(tgt);
 
             return sourceVer.compareTo(targetVer) >= 0 ? sourceVer : targetVer;
-        } catch (ModelBuildingException | PlexusConfigurationException exception) {
+        } catch (PlexusConfigurationException exception) {
             Railroad.LOGGER.error("Error reading POM for Java version: {}", projectDir, exception);
             return JavaVersion.fromMajor(-1);
         }
@@ -215,12 +213,12 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
     public Optional<Facet<JavaFacetData>> detect(@UnknownNullability Project project) {
         long javaFileCount = 0;
         try {
-            try (Stream<Path> javaFiles = Files.find(project.getPath(), 10,
+            try (Stream<Path> javaFiles = Files.find(project.path(), 10,
                 (p, attrs) -> p.toString().endsWith(".java"))) {
                 javaFileCount = javaFiles.count();
             }
         } catch (IOException exception) {
-            Railroad.LOGGER.error("Error while detecting Java files in path: {}", project.getPath(), exception);
+            Railroad.LOGGER.error("Error while detecting Java files in path: {}", project.path(), exception);
         }
 
         JavaFacetData data = null;

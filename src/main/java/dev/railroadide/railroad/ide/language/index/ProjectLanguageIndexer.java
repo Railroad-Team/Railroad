@@ -11,12 +11,11 @@ public interface ProjectLanguageIndexer<
 
     boolean supports(Path file);
 
-    I build(Path projectRoot, Collection<Path> sourceFiles);
+    I build(ProjectIndexContext context, Collection<Path> sourceFiles);
 
-    F indexFile(Path sourceFile, String sourceContent);
+    F indexFile(ProjectIndexContext context, Path sourceFile, String sourceContent);
 
     I withUpdatedFile(I index, Path sourceFile, F indexedFile);
 
     I withRemovedFile(I index, Path sourceFile);
-
 }

@@ -157,7 +157,21 @@
 
 .diagnostic-pane {
     -fx-background-color: -color-bg-overlay;
+    -fx-padding: 8px;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
     -fx-border-width: 0 0 1 0;
+}
+
+.diagnostic-pane-message {
+    -fx-min-height: 56px;
+    -fx-pref-width: 420px;
+}
+
+.diagnostic-pane-message,
+.diagnostic-pane-message .content {
+    -fx-background-color: -color-bg-overlay;
+    -fx-text-fill: -color-fg-default;
 }
 
 .signature-help-container {

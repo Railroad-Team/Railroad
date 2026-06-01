@@ -7,7 +7,11 @@ import dev.railroadide.railroad.ide.diagnostics.JavaDiagnosticsProvider;
 import dev.railroadide.railroad.ide.language.BaseLanguageSupport;
 import dev.railroadide.railroad.ide.language.EditorOpenView;
 import dev.railroadide.railroad.ide.language.LanguageFeatureFactory;
+import dev.railroadide.railroad.ide.language.impl.index.JavaAnalysisContextProvider;
+import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContextContributor;
 import dev.railroadide.railroad.ide.language.impl.index.JavaProjectLanguageIndexer;
+import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
+import dev.railroadide.railroad.ide.language.index.LanguageIndexContextContributor;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexPersistence;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexer;
 import dev.railroadide.railroad.ide.signature.JdtJavaSignatureHelpProvider;
@@ -17,12 +21,14 @@ import dev.railroadide.railroad.ide.syntaxhighlighting.TreeSitterJavaSyntaxHighl
 import dev.railroadide.railroad.ide.ui.JavaCodeEditorPane;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import org.jspecify.annotations.NonNull;
 
 import java.nio.file.Path;
 import java.util.Set;
 
 public final class JavaLanguageSupport extends BaseLanguageSupport {
     public static final String LANGUAGE_ID = "java";
+    private static final JavaAnalysisContextProvider ANALYSIS_CONTEXT_PROVIDER = new JavaAnalysisContextProvider();
 
     public JavaLanguageSupport() {
         super(LANGUAGE_ID, "Java", Set.of("java"));
@@ -61,5 +67,19 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
     @Override
     public ProjectLanguageIndexPersistence<?> createPersistence() {
         return new JavaProjectSemanticPersistence();
+    }
+
+    @Override
+    public @NonNull LanguageIndexContextContributor createIndexContextContributor() {
+        return new JavaLanguageIndexContextContributor();
+    }
+
+    @Override
+    public void warmAdditionalIndexes(ProjectIndexContext context) {
+        ANALYSIS_CONTEXT_PROVIDER.index(context);
+    }
+
+    public static JavaAnalysisContextProvider analysisContextProvider() {
+        return ANALYSIS_CONTEXT_PROVIDER;
     }
 }

@@ -6,6 +6,7 @@ import dev.railroadide.railroad.ide.classparser.stub.MethodStub;
 import dev.railroadide.railroad.ide.completion.CompletionItem;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
@@ -29,7 +30,7 @@ public final class JavaSemanticCompletionEngine {
     public static @Nullable CompletionResult compute(
         String document,
         int triggerAt,
-        @Nullable JavaProjectSemanticIndex projectIndex
+        @Nullable JavaSymbolIndex projectIndex
     ) {
         if (document == null || document.isEmpty() || triggerAt < 0 || triggerAt >= document.length())
             return null;
@@ -73,7 +74,7 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable CompletionTarget resolveCompletionTarget(
         SyntaxNode node,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
+        @Nullable JavaSymbolIndex projectIndex
     ) {
         for (SyntaxNode current = node; current != null; current = current.parent().orElse(null)) {
             SyntaxNode receiver = JavaSemanticAnalyzer.explicitReceiver(current);
@@ -87,7 +88,7 @@ public final class JavaSemanticCompletionEngine {
         SyntaxNode receiver,
         SyntaxNode usageSite,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
+        @Nullable JavaSymbolIndex projectIndex
     ) {
         if (JavaSyntaxKinds.THIS_EXPRESSION.id().equals(receiver.kind().id())) {
             Symbol enclosing = enclosingTypeSymbol(usageSite, model);
@@ -137,7 +138,7 @@ public final class JavaSemanticCompletionEngine {
 
     private static void collectMembersRecursive(
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex,
+        @Nullable JavaSymbolIndex projectIndex,
         String ownerQualifiedName,
         boolean staticContext,
         String currentPackage,
@@ -149,7 +150,7 @@ public final class JavaSemanticCompletionEngine {
 
         collectLocalMembers(model, ownerQualifiedName, staticContext, out);
         collectProjectMembers(projectIndex, ownerQualifiedName, staticContext, out);
-        collectJdkMembers(ownerQualifiedName, staticContext, currentPackage, out);
+        collectJdkMembers(ownerQualifiedName, staticContext, currentPackage, out, projectIndex);
 
         for (String superType : directSuperTypes(ownerQualifiedName, model, projectIndex)) {
             collectMembersRecursive(model, projectIndex, superType, staticContext, currentPackage, out, visitedOwners);
@@ -206,7 +207,7 @@ public final class JavaSemanticCompletionEngine {
     }
 
     private static void collectProjectMembers(
-        @Nullable JavaProjectSemanticIndex projectIndex,
+        @Nullable JavaSymbolIndex projectIndex,
         String ownerQualifiedName,
         boolean staticContext,
         Map<String, CompletionItem> out
@@ -240,9 +241,10 @@ public final class JavaSemanticCompletionEngine {
         String ownerQualifiedName,
         boolean staticContext,
         String currentPackage,
-        Map<String, CompletionItem> out
+        Map<String, CompletionItem> out,
+        @Nullable JavaSymbolIndex projectIndex
     ) {
-        ClassStub stub = JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName().get(ownerQualifiedName);
+        ClassStub stub = lookupBinaryClassStub(ownerQualifiedName, projectIndex);
         if (stub == null)
             return;
 
@@ -372,7 +374,7 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable String superTypeQualifiedName(
         @Nullable String ownerQualifiedName,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
+        @Nullable JavaSymbolIndex projectIndex
     ) {
         List<String> superTypes = directSuperTypes(ownerQualifiedName, model, projectIndex);
         return superTypes.isEmpty() ? null : superTypes.get(0);
@@ -381,12 +383,12 @@ public final class JavaSemanticCompletionEngine {
     private static List<String> directSuperTypes(
         @Nullable String ownerQualifiedName,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
+        @Nullable JavaSymbolIndex projectIndex
     ) {
         if (ownerQualifiedName == null || ownerQualifiedName.isBlank())
             return List.of();
 
-        ClassStub stub = JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName().get(ownerQualifiedName);
+        ClassStub stub = lookupBinaryClassStub(ownerQualifiedName, projectIndex);
         if (stub != null) {
             List<String> result = new ArrayList<>();
             if (stub.superClass() instanceof dev.railroadide.railroad.ide.classparser.Type.ClassType classType)
@@ -421,7 +423,7 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable TypeDeclarationInfo typeDeclarationInfoForOwner(
         String ownerQualifiedName,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
+        @Nullable JavaSymbolIndex projectIndex
     ) {
         TypeDeclarationInfo inCurrentModel = typeDeclarationInfoInModel(ownerQualifiedName, model, projectIndex);
         if (inCurrentModel != null)
@@ -442,7 +444,7 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable TypeDeclarationInfo typeDeclarationInfoInModel(
         String ownerQualifiedName,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
+        @Nullable JavaSymbolIndex projectIndex
     ) {
         SyntaxNode declarationNode = findTypeDeclarationNodeByQualifiedName(model, ownerQualifiedName);
         if (declarationNode == null)
@@ -475,7 +477,7 @@ public final class JavaSemanticCompletionEngine {
         @Nullable SyntaxNode clauseNode,
         SyntaxNode usageSite,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
+        @Nullable JavaSymbolIndex projectIndex
     ) {
         if (clauseNode == null)
             return;
@@ -509,7 +511,7 @@ public final class JavaSemanticCompletionEngine {
 
     private static @Nullable Path sourceFileForType(
         String ownerQualifiedName,
-        @Nullable JavaProjectSemanticIndex projectIndex
+        @Nullable JavaSymbolIndex projectIndex
     ) {
         if (projectIndex == null)
             return null;
@@ -544,7 +546,7 @@ public final class JavaSemanticCompletionEngine {
         @Nullable String text,
         SyntaxNode usageSite,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
+        @Nullable JavaSymbolIndex projectIndex
     ) {
         if (text == null || text.isBlank())
             return null;
@@ -615,12 +617,20 @@ public final class JavaSemanticCompletionEngine {
         return null;
     }
 
-    private static boolean typeExists(String qualifiedName, @Nullable JavaProjectSemanticIndex projectIndex) {
+    private static boolean typeExists(String qualifiedName, @Nullable JavaSymbolIndex projectIndex) {
         if (qualifiedName == null || qualifiedName.isBlank())
             return false;
-        if (projectIndex != null && !projectIndex.lookupQualifiedName(qualifiedName).isEmpty())
-            return true;
+        if (projectIndex != null)
+            return !projectIndex.lookupQualifiedName(qualifiedName).isEmpty();
         return JavaSemanticAnalyzer.loadJdkQualifiedTypeNames().contains(qualifiedName);
+    }
+
+    private static @Nullable ClassStub lookupBinaryClassStub(String qualifiedName, @Nullable JavaSymbolIndex projectIndex) {
+        if (qualifiedName == null || qualifiedName.isBlank())
+            return null;
+        if (projectIndex != null)
+            return projectIndex.lookupClassStub(qualifiedName);
+        return JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName().get(qualifiedName);
     }
 
     private static @Nullable SyntaxNode findDeepestNodeContaining(SyntaxNode node, int offset) {
@@ -652,7 +662,10 @@ public final class JavaSemanticCompletionEngine {
         return separator > 0 ? qualifiedName.substring(0, separator) : null;
     }
 
-    private static String renderJvmType(dev.railroadide.railroad.ide.classparser.Type type) {
+    private static String renderJvmType(@Nullable dev.railroadide.railroad.ide.classparser.Type type) {
+        if (type == null)
+            return "?";
+
         return switch (type) {
             case dev.railroadide.railroad.ide.classparser.Type.PrimitiveType primitive -> primitive.name();
             case dev.railroadide.railroad.ide.classparser.Type.ArrayType array -> renderJvmType(array.componentType()) + "[]";

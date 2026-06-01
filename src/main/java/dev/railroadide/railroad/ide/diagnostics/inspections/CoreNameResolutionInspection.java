@@ -54,6 +54,8 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
             String qualifiedName = context.canonicalQualifiedName(node);
             if (qualifiedName == null || qualifiedName.isBlank())
                 return;
+            if (context.isSelectorNameExpression(node))
+                return;
             if (context.resolvedSymbol(node).isPresent())
                 return;
 

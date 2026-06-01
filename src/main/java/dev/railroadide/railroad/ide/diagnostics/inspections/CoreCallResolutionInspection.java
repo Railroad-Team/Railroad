@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
@@ -41,6 +42,8 @@ public final class CoreCallResolutionInspection implements JavaInspectionRulePro
             if ("JAVA_METHOD_INVOCATION_EXPRESSION".equals(kindId)) {
                 if (context.resolvedSymbol(node).isPresent())
                     return;
+                if (context.canResolveMethodInvocation(node))
+                    return;
 
                 SyntaxNode memberNode = context.selectorNameNode(node);
                 String callName = memberNode == null
@@ -48,6 +51,11 @@ public final class CoreCallResolutionInspection implements JavaInspectionRulePro
                         : context.canonicalQualifiedName(memberNode);
                 if (callName == null || callName.isBlank())
                     return;
+                Railroad.LOGGER.warn(
+                    "Unresolved method invocation detail for {}: {}",
+                    callName,
+                    context.describeMethodInvocationResolution(node)
+                );
                 reporter.report(memberNode == null ? node : memberNode, callName);
                 return;
             }
@@ -55,6 +63,8 @@ public final class CoreCallResolutionInspection implements JavaInspectionRulePro
             if (!"JAVA_CLASS_INSTANCE_CREATION_EXPRESSION".equals(kindId))
                 return;
             if (context.resolvedSymbol(node).isPresent())
+                return;
+            if (context.canResolveClassInstanceCreation(node))
                 return;
 
             SyntaxNode typeRef = context.directChild(node, "JAVA_TYPE_REFERENCE");

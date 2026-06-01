@@ -6,6 +6,8 @@ import dev.railroadide.railroad.utility.FileUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -23,7 +25,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
     private static final String MANIFEST_FILE = "project-semantic-index.bin";
     private static final String MANIFEST_MAGIC = "RSSTIDX1";
     private static final String ENTRY_MAGIC = "RSSTFIL1";
-    private static final int FORMAT_VERSION = 1;
+    private static final int FORMAT_VERSION = 2;
 
     @Override
     public String languageId() {
@@ -169,7 +171,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
                 }
             }
 
-            Files.move(tempFile, entryPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            moveIntoPlace(tempFile, entryPath);
         } finally {
             Files.deleteIfExists(tempFile);
         }
@@ -190,9 +192,17 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
                 }
             }
 
-            Files.move(tempFile, manifestPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            moveIntoPlace(tempFile, manifestPath);
         } finally {
             Files.deleteIfExists(tempFile);
+        }
+    }
+
+    private static void moveIntoPlace(Path tempFile, Path target) throws IOException {
+        try {
+            Files.move(tempFile, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException | AccessDeniedException exception) {
+            Files.move(tempFile, target, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 

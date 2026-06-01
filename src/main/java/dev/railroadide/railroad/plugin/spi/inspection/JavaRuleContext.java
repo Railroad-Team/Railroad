@@ -12,6 +12,8 @@ import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type.*;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
@@ -20,9 +22,11 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Modifier;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Stable rule evaluation context with semantic model access and Java-specific helpers.
@@ -67,6 +71,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private static final String JAVA_ENUM_DECLARATION = "JAVA_ENUM_DECLARATION";
     private static final String JAVA_ANNOTATION_TYPE_DECLARATION = "JAVA_ANNOTATION_TYPE_DECLARATION";
     private static final String JAVA_RECORD_DECLARATION = "JAVA_RECORD_DECLARATION";
+    private static final String JAVA_RECORD_HEADER = "JAVA_RECORD_HEADER";
+    private static final String JAVA_RECORD_COMPONENT = "JAVA_RECORD_COMPONENT";
     private static final String JAVA_METHOD_DECLARATION = "JAVA_METHOD_DECLARATION";
     private static final String JAVA_CONSTRUCTOR_DECLARATION = "JAVA_CONSTRUCTOR_DECLARATION";
     private static final String JAVA_RECORD_COMPACT_CONSTRUCTOR = "JAVA_RECORD_COMPACT_CONSTRUCTOR";
@@ -74,6 +80,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private static final String JAVA_UNION_TYPE_REFERENCE = "JAVA_UNION_TYPE_REFERENCE";
     private static final String JAVA_CATCH_CLAUSE = "JAVA_CATCH_CLAUSE";
     private static final String JAVA_CLASS_INSTANCE_CREATION_EXPRESSION = "JAVA_CLASS_INSTANCE_CREATION_EXPRESSION";
+    private static final String JAVA_CLASS_BODY = "JAVA_CLASS_BODY";
+    private static final String JAVA_TYPE_PARAMETERS = "JAVA_TYPE_PARAMETERS";
+    private static final String JAVA_TYPE_PARAMETER = "JAVA_TYPE_PARAMETER";
     private static final String JAVA_LAMBDA_EXPRESSION = "JAVA_LAMBDA_EXPRESSION";
     private static final String JAVA_LOCAL_VARIABLE_DECLARATION_STATEMENT = "JAVA_LOCAL_VARIABLE_DECLARATION_STATEMENT";
     private static final String JAVA_VARIABLE_DECLARATOR = "JAVA_VARIABLE_DECLARATOR";
@@ -83,14 +92,19 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private final Path filePath;
     private final String documentText;
     private final SemanticModel semanticModel;
+    private final @Nullable JavaSymbolIndex symbolIndex;
     private volatile @Nullable ImportIndex cachedImportIndex;
     private volatile @Nullable Set<String> cachedAvailableTypeNames;
     private volatile @Nullable String cachedCurrentPackageName;
     private volatile @Nullable Map<String, SyntaxNode> cachedLocalTypeDeclarations;
     private volatile @Nullable Map<String, Symbol> cachedLocalTypeSymbolsByQualifiedName;
     private volatile @Nullable Map<String, List<String>> cachedDirectSuperTypesByQualifiedName;
+    private volatile @Nullable Map<String, List<String>> cachedIndexedSourceDirectSuperTypesByQualifiedName;
+    private volatile @Nullable Map<String, List<FieldDescriptor>> cachedIndexedSourceFieldsByOwner;
+    private volatile @Nullable Map<String, List<MethodDescriptor>> cachedIndexedSourceMethodsByOwner;
     private volatile @Nullable Map<String, List<FieldDescriptor>> cachedDeclaredFieldsByOwner;
     private volatile @Nullable Map<String, List<MethodDescriptor>> cachedDeclaredMethodsByOwner;
+    private boolean collectingDirectSuperTypes;
 
     /**
      * Creates a rule context from raw file and semantic analysis inputs.
@@ -101,9 +115,14 @@ public final class JavaRuleContext implements LanguageRuleContext {
      * @throws NullPointerException if any argument is {@code null}
      */
     public JavaRuleContext(Path filePath, String documentText, SemanticModel semanticModel) {
+        this(filePath, documentText, semanticModel, null);
+    }
+
+    public JavaRuleContext(Path filePath, String documentText, SemanticModel semanticModel, @Nullable JavaSymbolIndex symbolIndex) {
         this.filePath = Objects.requireNonNull(filePath, "filePath");
         this.documentText = Objects.requireNonNull(documentText, "documentText");
         this.semanticModel = Objects.requireNonNull(semanticModel, "semanticModel");
+        this.symbolIndex = symbolIndex;
     }
 
     public Map<String, SyntaxNode> localTypeDeclarations() {
@@ -227,6 +246,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return documentText;
     }
 
+    public String sourceText(SyntaxNode node) {
+        Objects.requireNonNull(node, "node");
+        int start = Math.clamp(node.start(), 0, documentText.length());
+        int end = Math.clamp(node.end(), start, documentText.length());
+        return documentText.substring(start, end).replaceAll("\\s+", " ").trim();
+    }
+
     /**
      * Returns the underlying semantic model.
      *
@@ -294,6 +320,19 @@ public final class JavaRuleContext implements LanguageRuleContext {
      */
     public Map<String, ClassStub> jdkClassStubsByQualifiedName() {
         return JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName();
+    }
+
+    private Set<String> availableQualifiedTypeNames() {
+        if (symbolIndex == null)
+            return jdkQualifiedTypeNames();
+
+        Set<String> names = new LinkedHashSet<>(symbolIndex.declaredQualifiedNames());
+        names.addAll(symbolIndex.classStubsByQualifiedName().keySet());
+        return Set.copyOf(names);
+    }
+
+    private Map<String, ClassStub> availableClassStubsByQualifiedName() {
+        return symbolIndex == null ? jdkClassStubsByQualifiedName() : symbolIndex.classStubsByQualifiedName();
     }
 
     /**
@@ -564,6 +603,171 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return methodName.equals(actualName);
     }
 
+    public boolean canResolveMethodInvocation(SyntaxNode invocation) {
+        Objects.requireNonNull(invocation, "invocation");
+        if (!JAVA_METHOD_INVOCATION_EXPRESSION.equals(invocation.kind().id()))
+            return false;
+        if (resolvedSymbol(invocation).isPresent())
+            return true;
+
+        SyntaxNode selector = selectorNameNode(invocation);
+        String methodName = selector == null ? firstIdentifierLikeTokenText(invocation) : lastIdentifierLikeTokenText(selector);
+        if (methodName == null || methodName.isBlank())
+            return false;
+
+        List<Type> argumentTypes = invocationArgumentTypes(invocation);
+        SyntaxNode receiver = unwrapTransparentExpression(invocationReceiver(invocation));
+        if (receiver != null) {
+            MethodOwner owner = methodOwner(receiver);
+            if (owner == null)
+                return false;
+
+            List<MethodDescriptor> methods = new ArrayList<>(declaredMethodDescriptors(owner.qualifiedTypeName()));
+            methods.addAll(inheritedMethodDescriptors(owner.qualifiedTypeName()));
+            boolean matched = methods.stream().anyMatch(method ->
+                method.name().equals(methodName)
+                    && (!owner.staticAccess() || Modifier.isStatic(method.modifiers()))
+                    && isApplicableMethod(method.parameterTypes(), argumentTypes)
+            );
+            if (matched)
+                return true;
+
+            if (canResolveIndexedSourceMethod(owner, methodName, argumentTypes))
+                return true;
+
+            if (owner.staticAccess()) {
+                return methods.stream().anyMatch(method ->
+                    method.name().equals(methodName) && isApplicableMethod(method.parameterTypes(), argumentTypes)
+                );
+            }
+            return false;
+        }
+
+        Symbol enclosingType = enclosingTypeSymbol(invocation).orElse(null);
+        if (enclosingType == null)
+            return false;
+
+        String ownerQualifiedTypeName = enclosingType.qualifiedName().orElse(null);
+        if (ownerQualifiedTypeName == null || ownerQualifiedTypeName.isBlank())
+            return false;
+
+        List<MethodDescriptor> methods = new ArrayList<>(declaredMethodDescriptors(ownerQualifiedTypeName));
+        methods.addAll(inheritedMethodDescriptors(ownerQualifiedTypeName));
+        return methods.stream().anyMatch(method ->
+            method.name().equals(methodName)
+                && !Modifier.isStatic(method.modifiers())
+                && isApplicableMethod(method.parameterTypes(), argumentTypes)
+        ) || canResolveIndexedSourceMethod(new MethodOwner(ownerQualifiedTypeName, false), methodName, argumentTypes);
+    }
+
+    public String describeMethodInvocationResolution(SyntaxNode invocation) {
+        Objects.requireNonNull(invocation, "invocation");
+        if (!JAVA_METHOD_INVOCATION_EXPRESSION.equals(invocation.kind().id()))
+            return "not a method invocation";
+
+        SyntaxNode selector = selectorNameNode(invocation);
+        String methodName = selector == null ? firstIdentifierLikeTokenText(invocation) : lastIdentifierLikeTokenText(selector);
+        List<Type> argumentTypes = invocationArgumentTypes(invocation);
+        SyntaxNode receiver = unwrapTransparentExpression(invocationReceiver(invocation));
+        MethodOwner owner = receiver == null ? null : methodOwner(receiver);
+        String receiverText = receiver == null ? "<implicit>" : sourceText(receiver);
+        Type inferred = receiver == null ? new UnknownType("<implicit>") : inferredType(receiver).orElse(new UnknownType("<unknown>"));
+        String resolved = receiver == null
+            ? "<implicit>"
+            : resolvedSymbol(receiver)
+                .flatMap(symbol -> symbol.qualifiedName().map(qualified -> symbol.kind() + " " + qualified))
+                .orElse("<unresolved>");
+        int candidateCount = 0;
+        List<String> directSupers = List.of();
+        List<String> methodNames = List.of();
+        List<String> superDetails = List.of();
+        boolean ownerStubPresent = false;
+        boolean ownerTypeKnown = false;
+        if (owner != null && methodName != null && !methodName.isBlank()) {
+            ownerStubPresent = availableClassStubsByQualifiedName().containsKey(owner.qualifiedTypeName());
+            ownerTypeKnown = availableQualifiedTypeNames().contains(owner.qualifiedTypeName())
+                || localTypeSymbolsByQualifiedName().containsKey(owner.qualifiedTypeName());
+            List<MethodDescriptor> declared = declaredMethodDescriptors(owner.qualifiedTypeName());
+            List<MethodDescriptor> inherited = inheritedMethodDescriptors(owner.qualifiedTypeName());
+            candidateCount = (int) Stream.concat(declared.stream(), inherited.stream())
+                .filter(method -> method.name().equals(methodName))
+                .count();
+            directSupers = directSuperTypeNamesInternal(owner.qualifiedTypeName());
+            methodNames = Stream.concat(declared.stream(), inherited.stream())
+                .map(MethodDescriptor::name)
+                .distinct()
+                .limit(25)
+                .toList();
+            String requestedMethodName = methodName;
+            superDetails = directSupers.stream()
+                .map(superName -> {
+                    ClassStub superStub = availableClassStubsByQualifiedName().get(superName);
+                    long matchingMethods = methodDescriptorsForType(superName).stream()
+                        .filter(method -> method.name().equals(requestedMethodName))
+                        .count();
+                    return "%s{known=%s, stub=%s, methods=%d, requestedMethods=%d, supers=%s}".formatted(
+                        superName,
+                        availableQualifiedTypeNames().contains(superName) || localTypeSymbolsByQualifiedName().containsKey(superName),
+                        superStub != null,
+                        superStub == null ? 0 : superStub.methods().size(),
+                        matchingMethods,
+                        directSuperTypeNamesInternal(superName)
+                    );
+                })
+                .toList();
+        }
+
+        return "method='%s', receiver='%s', receiverKind='%s', inferred='%s', resolved=%s, owner=%s, ownerKnown=%s, ownerStub=%s, static=%s, args=%s, candidates=%d, directSupers=%s, superDetails=%s, methods=%s, indexHasObservableList=%s, indexHasJavaUtilList=%s, indexHasReadOnlyDoubleProperty=%s"
+            .formatted(
+                methodName,
+                receiverText,
+                receiver == null ? "<none>" : receiver.kind().id(),
+                inferred.displayName(),
+                resolved,
+                owner == null ? "<none>" : owner.qualifiedTypeName(),
+                ownerTypeKnown,
+                ownerStubPresent,
+                owner != null && owner.staticAccess(),
+                argumentTypes.stream().map(Type::displayName).toList(),
+                candidateCount,
+                directSupers,
+                superDetails,
+                methodNames,
+                availableClassStubsByQualifiedName().containsKey("javafx.collections.ObservableList"),
+                availableClassStubsByQualifiedName().containsKey("java.util.List"),
+                availableClassStubsByQualifiedName().containsKey("javafx.beans.property.ReadOnlyDoubleProperty")
+            );
+    }
+
+    public boolean canResolveClassInstanceCreation(SyntaxNode creation) {
+        Objects.requireNonNull(creation, "creation");
+        if (!"JAVA_CLASS_INSTANCE_CREATION_EXPRESSION".equals(creation.kind().id()))
+            return false;
+        if (resolvedSymbol(creation).isPresent())
+            return true;
+
+        SyntaxNode typeRef = directChild(creation, JAVA_TYPE_REFERENCE);
+        if (typeRef == null)
+            return false;
+
+        String ownerQualifiedTypeName = resolveQualifiedTypeName(typeRef);
+        if (ownerQualifiedTypeName == null || ownerQualifiedTypeName.isBlank())
+            return false;
+
+        SyntaxNode argumentList = directChild(creation, JAVA_ARGUMENT_LIST);
+        List<Type> argumentTypes = argumentList == null ? List.of() : invocationArgumentTypesFromArgumentList(argumentList);
+        boolean anonymousClass = directChild(creation, JAVA_CLASS_BODY) != null || sourceText(creation).contains("{");
+        if (anonymousClass && isInterfaceType(ownerQualifiedTypeName) && argumentTypes.isEmpty())
+            return true;
+
+        List<MethodDescriptor> constructors = constructorDescriptorsForType(ownerQualifiedTypeName);
+        if (constructors.stream().anyMatch(ctor -> isApplicableMethod(ctor.parameterTypes(), argumentTypes)))
+            return true;
+
+        return hasComplexArgumentShape(argumentList)
+            && constructors.stream().anyMatch(ctor -> ctor.parameterTypes().size() == argumentTypes.size());
+    }
+
     public @Nullable SyntaxNode invocationReceiver(SyntaxNode invocation) {
         Objects.requireNonNull(invocation, "invocation");
         return explicitReceiver(invocation);
@@ -662,9 +866,26 @@ public final class JavaRuleContext implements LanguageRuleContext {
         var parent = variableDeclarator.parent();
         while (parent.isPresent()) {
             SyntaxNode candidate = parent.get();
+            if (JAVA_LOCAL_VARIABLE_DECLARATION_STATEMENT.equals(candidate.kind().id())
+                && hasTokenKind(candidate, JavaTokenType.VAR_KEYWORD)) {
+                SyntaxNode initializer = firstDirectExpressionChild(variableDeclarator);
+                return initializer == null
+                    ? new UnknownType("<unknown>")
+                    : inferredType(initializer).orElse(new UnknownType("<unknown>"));
+            }
+
             SyntaxNode typeRef = directChild(candidate, JAVA_TYPE_REFERENCE);
-            if (typeRef != null)
+            if (typeRef != null) {
+                if ("var".equals(canonicalTypeText(typeRef))) {
+                    SyntaxNode initializer = firstDirectExpressionChild(variableDeclarator);
+                    return initializer == null
+                        ? new UnknownType("<unknown>")
+                    : inferredType(initializer).orElse(new UnknownType("<unknown>"));
+                }
                 return inferredType(typeRef).orElse(new UnknownType("<unknown>"));
+            }
+            if (JAVA_LOCAL_VARIABLE_DECLARATION_STATEMENT.equals(candidate.kind().id()))
+                return new UnknownType("<unknown>");
             parent = candidate.parent();
         }
         return new UnknownType("<unknown>");
@@ -682,10 +903,26 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (isNumericType(target) && isNumericType(source))
             return numericRank(target.displayName()) >= numericRank(source.displayName());
 
+        if (target.kind() == Kind.ARRAY && source.kind() == Kind.ARRAY) {
+            Type.ArrayType targetArray = (Type.ArrayType) target;
+            Type.ArrayType sourceArray = (Type.ArrayType) source;
+            return isAssignable(targetArray.componentType(), sourceArray.componentType());
+        }
+
+        if (target.kind() == Kind.DECLARED && source.kind() == Kind.ARRAY) {
+            String targetQualifiedName = resolveQualifiedTypeName(target.displayName());
+            return "java.lang.Object".equals(targetQualifiedName);
+        }
+
         if (target.kind() == Kind.DECLARED && source.kind() == Kind.DECLARED) {
-            String targetName = simpleTypeName(target.displayName());
-            String sourceName = simpleTypeName(source.displayName());
-            return targetName.equals(sourceName) || "Object".equals(targetName);
+            String targetQualifiedName = resolveQualifiedTypeName(target.displayName());
+            String sourceQualifiedName = resolveQualifiedTypeName(source.displayName());
+            if (targetQualifiedName == null || sourceQualifiedName == null)
+                return true;
+
+            return targetQualifiedName.equals(sourceQualifiedName)
+                || "java.lang.Object".equals(targetQualifiedName)
+                || isSubtype(sourceQualifiedName, targetQualifiedName);
         }
         return false;
     }
@@ -759,20 +996,37 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     public @Nullable String resolveQualifiedTypeName(SyntaxNode typeNode) {
-        return resolveQualifiedTypeName(canonicalTypeText(typeNode));
+        return resolveQualifiedTypeName(canonicalTypeText(typeNode), typeNode);
     }
 
     public @Nullable String resolveQualifiedTypeName(@Nullable String typeText) {
+        return resolveQualifiedTypeName(typeText, null);
+    }
+
+    private @Nullable String resolveQualifiedTypeName(@Nullable String typeText, @Nullable SyntaxNode usageSite) {
         if (typeText == null || typeText.isBlank())
             return null;
 
-        String text = typeText;
+        String text = JavaSemanticAnalyzer.eraseTypeArguments(typeText);
         while (text.endsWith("[]"))
             text = text.substring(0, text.length() - 2);
         if ("void".equals(text) || Set.of("boolean", "byte", "short", "char", "int", "long", "float", "double").contains(text))
             return text;
-        if (localTypeSymbolsByQualifiedName().containsKey(text) || jdkQualifiedTypeNames().contains(text))
+        if (isTypeParameterNameInScope(text, usageSite))
             return text;
+        Set<String> availableQualifiedTypeNames = availableQualifiedTypeNames();
+        String directType = resolvableQualifiedTypeName(text, availableQualifiedTypeNames);
+        if (directType != null)
+            return directType;
+        String nestedType = resolveNestedQualifiedTypeName(text, availableQualifiedTypeNames, usageSite);
+        if (nestedType != null)
+            return nestedType;
+        if (text.indexOf('.') > 0 && !currentPackageName().isBlank()) {
+            String inCurrentPackage = currentPackageName() + "." + text;
+            String currentPackageType = resolvableQualifiedTypeName(inCurrentPackage, availableQualifiedTypeNames);
+            if (currentPackageType != null)
+                return currentPackageType;
+        }
 
         String simpleName = simpleTypeName(text);
         for (String localQualifiedTypeName : localTypeSymbolsByQualifiedName().keySet()) {
@@ -783,27 +1037,135 @@ public final class JavaRuleContext implements LanguageRuleContext {
         for (ImportEntry entry : importEntries()) {
             if (entry.isStatic() || entry.isWildcard())
                 continue;
-            if (simpleName.equals(entry.importedName()))
-                return entry.qualifiedTarget();
+            if (simpleName.equals(entry.importedName())) {
+                String imported = resolvableQualifiedTypeName(entry.qualifiedTarget(), availableQualifiedTypeNames);
+                if (imported != null)
+                    return imported;
+            }
         }
 
         String currentPackageType = currentPackageName().isBlank() ? simpleName : currentPackageName() + "." + simpleName;
-        if (localTypeSymbolsByQualifiedName().containsKey(currentPackageType) || jdkQualifiedTypeNames().contains(currentPackageType))
-            return currentPackageType;
+        String currentPackageResolved = resolvableQualifiedTypeName(currentPackageType, availableQualifiedTypeNames);
+        if (currentPackageResolved != null)
+            return currentPackageResolved;
 
         String javaLangType = "java.lang." + simpleName;
-        if (jdkQualifiedTypeNames().contains(javaLangType))
-            return javaLangType;
+        String javaLangResolved = resolvableQualifiedTypeName(javaLangType, availableQualifiedTypeNames);
+        if (javaLangResolved != null)
+            return javaLangResolved;
+
+        if (!collectingDirectSuperTypes) {
+            String inheritedMemberType = resolveInheritedMemberType(simpleName, availableQualifiedTypeNames, usageSite);
+            if (inheritedMemberType != null)
+                return inheritedMemberType;
+        }
 
         for (ImportEntry entry : importEntries()) {
             if (entry.isStatic() || !entry.isWildcard())
                 continue;
             String imported = entry.ownerName() + "." + simpleName;
-            if (localTypeSymbolsByQualifiedName().containsKey(imported) || jdkQualifiedTypeNames().contains(imported))
-                return imported;
+            String importedType = resolvableQualifiedTypeName(imported, availableQualifiedTypeNames);
+            if (importedType != null)
+                return importedType;
         }
 
         return text;
+    }
+
+    private @Nullable String resolvableQualifiedTypeName(String qualifiedTypeName, Set<String> availableQualifiedTypeNames) {
+        if (qualifiedTypeName == null || qualifiedTypeName.isBlank())
+            return null;
+        if (localTypeSymbolsByQualifiedName().containsKey(qualifiedTypeName) || availableQualifiedTypeNames.contains(qualifiedTypeName))
+            return qualifiedTypeName;
+
+        String candidate = qualifiedTypeName;
+        int dot = candidate.lastIndexOf('.');
+        while (dot > 0) {
+            candidate = candidate.substring(0, dot) + "$" + candidate.substring(dot + 1);
+            if (localTypeSymbolsByQualifiedName().containsKey(candidate) || availableQualifiedTypeNames.contains(candidate))
+                return candidate;
+            dot = candidate.lastIndexOf('.', dot - 1);
+        }
+        return null;
+    }
+
+    private @Nullable String resolveNestedQualifiedTypeName(
+        String text,
+        Set<String> availableQualifiedTypeNames,
+        @Nullable SyntaxNode usageSite
+    ) {
+        int dot = text.lastIndexOf('.');
+        if (dot <= 0 || dot >= text.length() - 1)
+            return null;
+
+        String owner = resolveQualifiedTypeName(text.substring(0, dot), usageSite);
+        if (owner == null || owner.isBlank())
+            return null;
+
+        return resolvableQualifiedTypeName(owner + "$" + text.substring(dot + 1), availableQualifiedTypeNames);
+    }
+
+    private @Nullable String resolveInheritedMemberType(
+        String simpleName,
+        Set<String> availableQualifiedTypeNames,
+        @Nullable SyntaxNode usageSite
+    ) {
+        String ownerQualifiedName = usageSite == null
+            ? null
+            : topLevelEnclosingTypeSymbol(usageSite).flatMap(Symbol::qualifiedName).orElse(null);
+        if (ownerQualifiedName == null || ownerQualifiedName.isBlank()) {
+            ownerQualifiedName = usageSite == null
+                ? null
+                : enclosingTypeSymbol(usageSite).flatMap(Symbol::qualifiedName).orElse(null);
+        }
+        if (ownerQualifiedName == null || ownerQualifiedName.isBlank()) {
+            ownerQualifiedName = topLevelEnclosingTypeSymbol(syntaxTree().root())
+                .flatMap(Symbol::qualifiedName)
+                .orElse(null);
+        }
+        if (ownerQualifiedName == null || ownerQualifiedName.isBlank()) {
+            for (Symbol symbol : localTypeSymbolsByQualifiedName().values()) {
+                ownerQualifiedName = symbol.qualifiedName().orElse(null);
+                if (ownerQualifiedName != null && !ownerQualifiedName.isBlank())
+                    break;
+            }
+        }
+        if (ownerQualifiedName == null || ownerQualifiedName.isBlank())
+            return null;
+
+        for (String directSuper : directSuperTypeNamesInternal(ownerQualifiedName)) {
+            String resolved = resolveMemberTypeInHierarchy(directSuper, simpleName, availableQualifiedTypeNames, new HashSet<>());
+            if (resolved != null)
+                return resolved;
+        }
+        return null;
+    }
+
+    private @Nullable String resolveMemberTypeInHierarchy(
+        String ownerQualifiedName,
+        String simpleName,
+        Set<String> availableQualifiedTypeNames,
+        Set<String> visited
+    ) {
+        if (!visited.add(ownerQualifiedName))
+            return null;
+
+        String sourceNested = ownerQualifiedName + "." + simpleName;
+        String sourceResolved = resolvableQualifiedTypeName(sourceNested, availableQualifiedTypeNames);
+        if (sourceResolved != null)
+            return sourceResolved;
+
+        String binaryNested = ownerQualifiedName + "$" + simpleName;
+        String binaryResolved = resolvableQualifiedTypeName(binaryNested, availableQualifiedTypeNames);
+        if (binaryResolved != null)
+            return binaryResolved;
+
+        for (String directSuper : directSuperTypeNamesInternal(ownerQualifiedName)) {
+            String resolved = resolveMemberTypeInHierarchy(directSuper, simpleName, availableQualifiedTypeNames, visited);
+            if (resolved != null)
+                return resolved;
+        }
+        return null;
     }
 
     public int symbolModifiers(Symbol symbol) {
@@ -814,7 +1176,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return sourceSymbolModifiers(symbol, declaration);
 
         if (isTypeSymbol(symbol.kind())) {
-            ClassStub stub = jdkClassStubsByQualifiedName().get(symbol.qualifiedName().orElse(null));
+            ClassStub stub = availableClassStubsByQualifiedName().get(symbol.qualifiedName().orElse(null));
             return stub == null ? Modifier.PUBLIC : stub.modifiers();
         }
 
@@ -822,7 +1184,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (ownerQualifiedName == null)
             return Modifier.PUBLIC;
 
-        ClassStub stub = jdkClassStubsByQualifiedName().get(ownerQualifiedName);
+        ClassStub stub = availableClassStubsByQualifiedName().get(ownerQualifiedName);
         if (stub == null)
             return symbol.kind() == SymbolKind.CONSTRUCTOR ? typeModifiers(ownerQualifiedName) : Modifier.PUBLIC;
 
@@ -856,8 +1218,18 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (localType != null)
             return localType.kind() == SymbolKind.INTERFACE || localType.kind() == SymbolKind.ANNOTATION;
 
-        ClassStub stub = jdkClassStubsByQualifiedName().get(qualifiedTypeName);
-        return stub != null && Modifier.isInterface(stub.modifiers());
+        ClassStub stub = availableClassStubsByQualifiedName().get(qualifiedTypeName);
+        if (stub != null)
+            return Modifier.isInterface(stub.modifiers());
+
+        if (symbolIndex != null) {
+            for (JavaProjectSemanticIndex.SymbolDescriptor symbol : symbolIndex.lookupQualifiedName(qualifiedTypeName)) {
+                if (symbol.kind() == SymbolKind.INTERFACE || symbol.kind() == SymbolKind.ANNOTATION)
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     public boolean isFinalType(String qualifiedTypeName) {
@@ -982,6 +1354,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 symbol.qualifiedName().ifPresent(names::add);
             }
         }));
+        collectTypeParameterNames(syntaxTree().root(), names);
+        for (String qualifiedName : availableQualifiedTypeNames()) {
+            names.add(simpleTypeName(qualifiedName));
+            names.add(qualifiedName);
+        }
         names.add("String");
         names.add("Object");
         Set<String> copy = Set.copyOf(names);
@@ -1093,7 +1470,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
         String callableName = qualifiedName.substring(separator + 1, signatureStart);
         String signature = qualifiedName.substring(signatureStart);
-        ClassStub stub = jdkClassStubsByQualifiedName().get(ownerQualifiedName);
+        ClassStub stub = availableClassStubsByQualifiedName().get(ownerQualifiedName);
         if (stub == null)
             return List.of();
 
@@ -1335,25 +1712,69 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return copy;
     }
 
+    private boolean isTypeParameterNameInScope(String name, @Nullable SyntaxNode usageSite) {
+        if (name == null || name.isBlank() || usageSite == null)
+            return false;
+
+        SyntaxNode current = usageSite;
+        while (current != null) {
+            SyntaxNode typeParameters = directChild(current, JAVA_TYPE_PARAMETERS);
+            if (typeParameters != null && typeParameterNames(typeParameters).contains(name))
+                return true;
+
+            current = current.parent().orElse(null);
+        }
+        return false;
+    }
+
+    private static void collectTypeParameterNames(SyntaxNode node, Set<String> out) {
+        if (JAVA_TYPE_PARAMETER.equals(node.kind().id())) {
+            String name = JavaSemanticAnalyzer.firstIdentifierLikeTokenText(node);
+            if (name != null && !name.isBlank())
+                out.add(name);
+        }
+
+        for (SyntaxNode child : node.children())
+            collectTypeParameterNames(child, out);
+    }
+
+    private static Set<String> typeParameterNames(SyntaxNode typeParameters) {
+        Set<String> names = new HashSet<>();
+        for (SyntaxNode child : typeParameters.children()) {
+            if (!JAVA_TYPE_PARAMETER.equals(child.kind().id()))
+                continue;
+
+            String name = JavaSemanticAnalyzer.firstIdentifierLikeTokenText(child);
+            if (name != null && !name.isBlank())
+                names.add(name);
+        }
+        return names;
+    }
+
     private Map<String, List<String>> directSuperTypesByQualifiedName() {
         Map<String, List<String>> cached = cachedDirectSuperTypesByQualifiedName;
         if (cached != null)
             return cached;
 
         Map<String, List<String>> collected = new LinkedHashMap<>();
-        traverse(node -> declaredSymbol(node).ifPresent(symbol -> {
-            if (!isTypeSymbol(symbol.kind()))
-                return;
+        collectingDirectSuperTypes = true;
+        try {
+            traverse(node -> declaredSymbol(node).ifPresent(symbol -> {
+                if (!isTypeSymbol(symbol.kind()))
+                    return;
 
-            String qualifiedName = symbol.qualifiedName().orElse(null);
-            if (qualifiedName == null || qualifiedName.isBlank())
-                return;
+                String qualifiedName = symbol.qualifiedName().orElse(null);
+                if (qualifiedName == null || qualifiedName.isBlank())
+                    return;
 
-            List<String> directSupers = new ArrayList<>();
-            collectDirectSuperTypes(node, JAVA_EXTENDS_CLAUSE, directSupers);
-            collectDirectSuperTypes(node, JAVA_IMPLEMENTS_CLAUSE, directSupers);
-            collected.put(qualifiedName, List.copyOf(directSupers));
-        }));
+                List<String> directSupers = new ArrayList<>();
+                collectDirectSuperTypes(node, JAVA_EXTENDS_CLAUSE, directSupers);
+                collectDirectSuperTypes(node, JAVA_IMPLEMENTS_CLAUSE, directSupers);
+                collected.put(qualifiedName, List.copyOf(directSupers));
+            }));
+        } finally {
+            collectingDirectSuperTypes = false;
+        }
         Map<String, List<String>> copy = Map.copyOf(collected);
         cachedDirectSuperTypesByQualifiedName = copy;
         return copy;
@@ -1378,11 +1799,52 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 .add(sourceMethodDescriptor(ownerQualifiedName, symbol, declaration));
         }));
 
+        addImplicitRecordAccessors(collected);
+
         Map<String, List<MethodDescriptor>> withJdk = new LinkedHashMap<>();
         collected.forEach((owner, methods) -> withJdk.put(owner, List.copyOf(methods)));
         Map<String, List<MethodDescriptor>> copy = Map.copyOf(withJdk);
         cachedDeclaredMethodsByOwner = copy;
         return copy;
+    }
+
+    private void addImplicitRecordAccessors(Map<String, List<MethodDescriptor>> collected) {
+        localTypeSymbolsByQualifiedName().forEach((ownerQualifiedName, typeSymbol) -> {
+            if (typeSymbol.kind() != SymbolKind.RECORD)
+                return;
+
+            SyntaxNode declaration = typeSymbol.declaration().orElse(null);
+            if (declaration == null)
+                return;
+
+            SyntaxNode header = directChild(declaration, JAVA_RECORD_HEADER);
+            if (header == null)
+                return;
+
+            List<MethodDescriptor> methods = collected.computeIfAbsent(ownerQualifiedName, ignored -> new ArrayList<>());
+            for (SyntaxNode child : header.children()) {
+                if (!JAVA_RECORD_COMPONENT.equals(child.kind().id()))
+                    continue;
+
+                String componentName = lastIdentifierLikeTokenText(child);
+                if (componentName == null || componentName.isBlank())
+                    continue;
+                if (methods.stream().anyMatch(method -> method.name().equals(componentName) && method.parameterTypes().isEmpty()))
+                    continue;
+
+                SyntaxNode typeRef = directChild(child, JAVA_TYPE_REFERENCE);
+                methods.add(new MethodDescriptor(
+                    ownerQualifiedName,
+                    componentName,
+                    List.of(),
+                    semanticTypeFromTypeReference(typeRef),
+                    List.of(),
+                    Modifier.PUBLIC,
+                    child,
+                    declaredSymbol(child).orElse(null)
+                ));
+            }
+        });
     }
 
     private Map<String, List<FieldDescriptor>> declaredFieldsByOwner() {
@@ -1498,7 +1960,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (localType != null && localType.declaration().isPresent())
             return sourceSymbolModifiers(localType, localType.declaration().orElseThrow());
 
-        ClassStub stub = jdkClassStubsByQualifiedName().get(qualifiedTypeName);
+        ClassStub stub = availableClassStubsByQualifiedName().get(qualifiedTypeName);
         if (stub != null)
             return stub.modifiers();
 
@@ -1514,7 +1976,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (localType != null)
             return currentPackageName();
 
-        ClassStub stub = jdkClassStubsByQualifiedName().get(qualifiedTypeName);
+        ClassStub stub = availableClassStubsByQualifiedName().get(qualifiedTypeName);
         if (stub != null)
             return stub.packageName();
 
@@ -1547,12 +2009,22 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
     private List<String> directSuperTypeNamesInternal(String qualifiedTypeName) {
         List<String> sourceSupers = directSuperTypesByQualifiedName().get(qualifiedTypeName);
-        if (sourceSupers != null)
+        if (sourceSupers != null) {
+            if (shouldAddImplicitObjectLocalSuper(qualifiedTypeName, sourceSupers)) {
+                List<String> supers = new ArrayList<>(sourceSupers);
+                supers.add("java.lang.Object");
+                return List.copyOf(supers);
+            }
             return sourceSupers;
+        }
 
-        ClassStub stub = jdkClassStubsByQualifiedName().get(qualifiedTypeName);
-        if (stub == null)
-            return List.of();
+        ClassStub stub = availableClassStubsByQualifiedName().get(qualifiedTypeName);
+        if (stub == null) {
+            List<String> indexedSupers = indexedSourceDirectSuperTypes(qualifiedTypeName);
+            if (indexedSupers.isEmpty() && isImplicitObjectBackedIndexedType(qualifiedTypeName))
+                return List.of("java.lang.Object");
+            return indexedSupers;
+        }
 
         List<String> supers = new ArrayList<>();
         if (stub.superClass() != null) {
@@ -1565,6 +2037,434 @@ public final class JavaRuleContext implements LanguageRuleContext {
             .filter(Objects::nonNull)
             .forEach(supers::add);
         return List.copyOf(supers);
+    }
+
+    private boolean shouldAddImplicitObjectLocalSuper(String qualifiedTypeName, List<String> directSupers) {
+        Symbol localType = localTypeSymbol(qualifiedTypeName).orElse(null);
+        if (localType == null || directSupers.contains("java.lang.Object"))
+            return false;
+        if (localType.kind() == SymbolKind.RECORD)
+            return true;
+        if (localType.kind() != SymbolKind.CLASS)
+            return false;
+
+        SyntaxNode declaration = localType.declaration().orElse(null);
+        return declaration != null && directChild(declaration, JAVA_EXTENDS_CLAUSE) == null;
+    }
+
+    private boolean isImplicitObjectBackedIndexedType(String qualifiedTypeName) {
+        if (symbolIndex == null)
+            return false;
+
+        return symbolIndex.lookupQualifiedName(qualifiedTypeName).stream()
+            .anyMatch(symbol -> symbol.sourceFile() != null
+                && (symbol.kind() == SymbolKind.CLASS || symbol.kind() == SymbolKind.RECORD));
+    }
+
+    private List<Type> invocationArgumentTypes(SyntaxNode invocation) {
+        SyntaxNode argumentList = directChild(invocation, JAVA_ARGUMENT_LIST);
+        if (argumentList == null)
+            return List.of();
+
+        return invocationArgumentTypesFromArgumentList(argumentList);
+    }
+
+    private List<Type> invocationArgumentTypesFromArgumentList(SyntaxNode argumentList) {
+        Objects.requireNonNull(argumentList, "argumentList");
+
+        List<Type> argumentTypes = new ArrayList<>();
+        for (SyntaxNode child : argumentList.children()) {
+            if (!isExpressionNode(child))
+                continue;
+            argumentTypes.add(inferredType(child).orElse(new UnknownType("<unknown>")));
+        }
+        return List.copyOf(argumentTypes);
+    }
+
+    private List<MethodDescriptor> constructorDescriptorsForType(String ownerQualifiedTypeName) {
+        List<MethodDescriptor> constructors = new ArrayList<>();
+
+        Symbol localType = localTypeSymbol(ownerQualifiedTypeName).orElse(null);
+        if (localType != null && localType.declaration().isPresent()) {
+            SyntaxNode declaration = localType.declaration().orElseThrow();
+            traverseNode(declaration, node -> declaredSymbol(node).ifPresent(symbol -> {
+                if (symbol.kind() != SymbolKind.CONSTRUCTOR)
+                    return;
+                if (!Objects.equals(ownerQualifiedName(symbol).orElse(null), ownerQualifiedTypeName))
+                    return;
+                SyntaxNode ctorDeclaration = symbol.declaration().orElse(null);
+                if (ctorDeclaration == null || !JAVA_CONSTRUCTOR_DECLARATION.equals(ctorDeclaration.kind().id()))
+                    return;
+                constructors.add(sourceConstructorDescriptor(ownerQualifiedTypeName, symbol, ctorDeclaration));
+            }));
+
+            if (constructors.isEmpty() && localType.kind() == SymbolKind.RECORD) {
+                constructors.add(implicitRecordConstructorDescriptor(ownerQualifiedTypeName, declaration));
+            }
+            return List.copyOf(constructors);
+        }
+
+        List<MethodDescriptor> indexedConstructors = indexedSourceMethodDescriptors(ownerQualifiedTypeName)
+            .stream()
+            .filter(method -> "<init>".equals(method.name()))
+            .toList();
+        if (!indexedConstructors.isEmpty())
+            return indexedConstructors;
+
+        ClassStub stub = availableClassStubsByQualifiedName().get(ownerQualifiedTypeName);
+        if (stub == null)
+            return List.of();
+
+        stub.constructors().forEach(constructor -> {
+            List<Type> parameterTypes = constructor.parameters().stream()
+                .map(parameter -> toSemanticType(parameter.type()))
+                .toList();
+            constructors.add(new MethodDescriptor(
+                ownerQualifiedTypeName,
+                "<init>",
+                parameterTypes,
+                new DeclaredType(ownerQualifiedTypeName, List.of()),
+                thrownTypeNames(constructor.thrownTypes()),
+                constructor.modifiers(),
+                null,
+                null
+            ));
+        });
+        return List.copyOf(constructors);
+    }
+
+    private MethodDescriptor sourceConstructorDescriptor(String ownerQualifiedName, Symbol symbol, SyntaxNode declaration) {
+        List<Type> parameterTypes = new ArrayList<>();
+        SyntaxNode parameterList = directChild(declaration, JAVA_PARAMETER_LIST);
+        if (parameterList != null) {
+            for (SyntaxNode child : parameterList.children()) {
+                if (!JAVA_PARAMETER.equals(child.kind().id()))
+                    continue;
+                SyntaxNode typeRef = directChild(child, JAVA_TYPE_REFERENCE);
+                String qualifiedTypeName = typeRef == null ? null : resolveQualifiedTypeName(typeRef);
+                parameterTypes.add(typeRef == null || qualifiedTypeName == null
+                    ? new UnknownType("<unknown>")
+                    : new DeclaredType(qualifiedTypeName, List.of()));
+            }
+        }
+
+        return new MethodDescriptor(
+            ownerQualifiedName,
+            "<init>",
+            List.copyOf(parameterTypes),
+            new DeclaredType(ownerQualifiedName, List.of()),
+            declaredThrownTypeNames(declaration),
+            sourceSymbolModifiers(symbol, declaration),
+            declaration,
+            symbol
+        );
+    }
+
+    private MethodDescriptor implicitRecordConstructorDescriptor(String ownerQualifiedName, SyntaxNode declaration) {
+        List<Type> parameterTypes = new ArrayList<>();
+        SyntaxNode header = directChild(declaration, JAVA_RECORD_HEADER);
+        if (header != null) {
+            for (SyntaxNode child : header.children()) {
+                if (!JAVA_RECORD_COMPONENT.equals(child.kind().id()))
+                    continue;
+                SyntaxNode typeRef = directChild(child, JAVA_TYPE_REFERENCE);
+                parameterTypes.add(semanticTypeFromTypeReference(typeRef));
+            }
+        }
+
+        return new MethodDescriptor(
+            ownerQualifiedName,
+            "<init>",
+            List.copyOf(parameterTypes),
+            new DeclaredType(ownerQualifiedName, List.of()),
+            List.of(),
+            sourceSymbolModifiers(localTypeSymbol(ownerQualifiedName).orElseThrow(), declaration),
+            declaration,
+            localTypeSymbol(ownerQualifiedName).orElse(null)
+        );
+    }
+
+    private Type semanticTypeFromTypeReference(@Nullable SyntaxNode typeRef) {
+        String qualifiedTypeName = typeRef == null ? null : resolveQualifiedTypeName(typeRef);
+        if (typeRef == null || qualifiedTypeName == null)
+            return new UnknownType("<unknown>");
+        if (Set.of("boolean", "byte", "short", "char", "int", "long", "float", "double").contains(qualifiedTypeName))
+            return new Type.PrimitiveType(qualifiedTypeName);
+        if ("void".equals(qualifiedTypeName))
+            return new VoidType();
+        return new DeclaredType(qualifiedTypeName, List.of());
+    }
+
+    private @Nullable MethodOwner methodOwner(SyntaxNode receiver) {
+        Symbol symbol = resolvedSymbol(receiver).orElse(null);
+        if (symbol != null && isTypeSymbol(symbol.kind())) {
+            String qualifiedTypeName = symbol.qualifiedName().orElse(null);
+            return qualifiedTypeName == null || qualifiedTypeName.isBlank() ? null : new MethodOwner(qualifiedTypeName, true);
+        }
+
+        String typeReceiverName = expressionTypeReceiverName(receiver);
+        if (typeReceiverName != null)
+            return new MethodOwner(typeReceiverName, true);
+
+        Type inferred = inferredType(receiver).orElse(new UnknownType("<unknown>"));
+        if (inferred.kind() == Kind.UNKNOWN) {
+            String methodReturnTypeName = methodInvocationValueTypeName(receiver);
+            if (methodReturnTypeName != null && !methodReturnTypeName.isBlank())
+                return new MethodOwner(methodReturnTypeName, false);
+
+            String fieldTypeName = fieldAccessValueTypeName(receiver);
+            return fieldTypeName == null || fieldTypeName.isBlank() ? null : new MethodOwner(fieldTypeName, false);
+        }
+
+        String qualifiedTypeName = resolveQualifiedTypeName(inferred.displayName());
+        if (qualifiedTypeName != null && !qualifiedTypeName.isBlank())
+            return new MethodOwner(qualifiedTypeName, false);
+
+        qualifiedTypeName = fieldAccessValueTypeName(receiver);
+        return qualifiedTypeName == null || qualifiedTypeName.isBlank() ? null : new MethodOwner(qualifiedTypeName, false);
+    }
+
+    private @Nullable String methodInvocationValueTypeName(SyntaxNode receiver) {
+        if (!JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id().equals(receiver.kind().id()))
+            return null;
+
+        Symbol resolved = resolvedSymbol(receiver).orElse(null);
+        if (resolved != null && resolved.kind() == SymbolKind.METHOD) {
+            String ownerQualifiedName = ownerQualifiedName(resolved).orElse(null);
+            if (ownerQualifiedName != null && !ownerQualifiedName.isBlank()) {
+                String returnType = methodReturnTypeName(ownerQualifiedName, resolved.simpleName());
+                if (returnType != null)
+                    return returnType;
+            }
+        }
+
+        MethodDescriptor descriptor = resolveMethodInvocationDescriptor(receiver);
+        if (descriptor == null || descriptor.returnType().kind() != Kind.DECLARED)
+            return null;
+
+        return resolveQualifiedTypeName(descriptor.returnType().displayName());
+    }
+
+    private @Nullable MethodDescriptor resolveMethodInvocationDescriptor(SyntaxNode invocation) {
+        SyntaxNode selector = selectorNameNode(invocation);
+        String methodName = selector == null ? firstIdentifierLikeTokenText(invocation) : lastIdentifierLikeTokenText(selector);
+        if (methodName == null || methodName.isBlank())
+            return null;
+
+        List<Type> argumentTypes = invocationArgumentTypes(invocation);
+        SyntaxNode receiver = unwrapTransparentExpression(invocationReceiver(invocation));
+        if (receiver != null) {
+            MethodOwner owner = methodOwner(receiver);
+            if (owner == null)
+                return null;
+
+            MethodDescriptor descriptor = selectApplicableMethod(owner, methodName, argumentTypes);
+            if (descriptor != null)
+                return descriptor;
+            if (!owner.staticAccess())
+                return null;
+
+            return selectApplicableMethod(new MethodOwner(owner.qualifiedTypeName(), false), methodName, argumentTypes);
+        }
+
+        Symbol enclosingType = enclosingTypeSymbol(invocation).orElse(null);
+        String ownerQualifiedTypeName = enclosingType == null ? null : enclosingType.qualifiedName().orElse(null);
+        if (ownerQualifiedTypeName == null || ownerQualifiedTypeName.isBlank())
+            return null;
+
+        return selectApplicableMethod(new MethodOwner(ownerQualifiedTypeName, false), methodName, argumentTypes);
+    }
+
+    private @Nullable MethodDescriptor selectApplicableMethod(MethodOwner owner, String methodName, List<Type> argumentTypes) {
+        List<MethodDescriptor> methods = new ArrayList<>(declaredMethodDescriptors(owner.qualifiedTypeName()));
+        methods.addAll(inheritedMethodDescriptors(owner.qualifiedTypeName()));
+        for (MethodDescriptor method : methods) {
+            if (!method.name().equals(methodName))
+                continue;
+            if (owner.staticAccess() && !Modifier.isStatic(method.modifiers()))
+                continue;
+            if (isApplicableMethod(method.parameterTypes(), argumentTypes))
+                return method;
+        }
+        return null;
+    }
+
+    private @Nullable String methodReturnTypeName(String ownerQualifiedName, String methodName) {
+        for (MethodDescriptor method : methodDescriptorsForType(ownerQualifiedName)) {
+            if (!method.name().equals(methodName))
+                continue;
+            if (method.returnType().kind() != Kind.DECLARED)
+                return null;
+            return resolveQualifiedTypeName(method.returnType().displayName());
+        }
+        for (MethodDescriptor method : inheritedMethodDescriptors(ownerQualifiedName)) {
+            if (!method.name().equals(methodName))
+                continue;
+            if (method.returnType().kind() != Kind.DECLARED)
+                return null;
+            return resolveQualifiedTypeName(method.returnType().displayName());
+        }
+        return null;
+    }
+
+    private @Nullable String fieldAccessValueTypeName(SyntaxNode receiver) {
+        if (!JavaSyntaxKinds.FIELD_ACCESS_EXPRESSION.id().equals(receiver.kind().id()))
+            return null;
+
+        SyntaxNode selector = selectorNameNode(receiver);
+        String fieldName = selector == null ? null : lastIdentifierLikeTokenText(selector);
+        if (fieldName == null || fieldName.isBlank())
+            return null;
+
+        SyntaxNode ownerNode = unwrapTransparentExpression(explicitReceiver(receiver));
+        if (ownerNode == null)
+            return null;
+
+        MethodOwner owner = methodOwner(ownerNode);
+        if (owner == null)
+            return null;
+
+        List<FieldDescriptor> fields = new ArrayList<>(fieldDescriptorsForType(owner.qualifiedTypeName()));
+        fields.addAll(inheritedFieldDescriptors(owner.qualifiedTypeName()));
+        return fields.stream()
+            .filter(field -> field.name().equals(fieldName))
+            .filter(field -> !owner.staticAccess() || Modifier.isStatic(field.modifiers()))
+            .findFirst()
+            .map(FieldDescriptor::type)
+            .filter(type -> type.kind() == Kind.DECLARED)
+            .map(Type::displayName)
+            .map(this::resolveQualifiedTypeName)
+            .orElse(null);
+    }
+
+    private @Nullable String expressionTypeReceiverName(SyntaxNode receiver) {
+        if (!JavaSyntaxKinds.NAME_EXPRESSION.id().equals(receiver.kind().id()))
+            return null;
+
+        String text = canonicalQualifiedName(receiver);
+        if (text == null || text.isBlank())
+            text = firstIdentifierLikeTokenText(receiver);
+        String qualifiedTypeName = resolveQualifiedTypeName(text);
+        if (qualifiedTypeName == null || qualifiedTypeName.isBlank())
+            return null;
+
+        if (localTypeSymbolsByQualifiedName().containsKey(qualifiedTypeName) || availableQualifiedTypeNames().contains(qualifiedTypeName))
+            return qualifiedTypeName;
+        return null;
+    }
+
+    private boolean isApplicableMethod(List<Type> parameterTypes, List<Type> argumentTypes) {
+        boolean varargs = !parameterTypes.isEmpty() && parameterTypes.getLast().kind() == Kind.ARRAY;
+        if (!varargs && parameterTypes.size() != argumentTypes.size())
+            return false;
+        if (varargs && argumentTypes.size() < parameterTypes.size() - 1)
+            return false;
+
+        int fixedCount = varargs ? parameterTypes.size() - 1 : parameterTypes.size();
+        for (int index = 0; index < fixedCount; index++) {
+            if (!isInvocationAssignable(parameterTypes.get(index), argumentTypes.get(index)))
+                return false;
+        }
+
+        if (!varargs)
+            return true;
+
+        Type.ArrayType varargsArray = (Type.ArrayType) parameterTypes.getLast();
+        if (argumentTypes.size() == parameterTypes.size()
+            && isInvocationAssignable(varargsArray, argumentTypes.getLast())) {
+            return true;
+        }
+
+        for (int index = fixedCount; index < argumentTypes.size(); index++) {
+            if (!isInvocationAssignable(varargsArray.componentType(), argumentTypes.get(index)))
+                return false;
+        }
+        return true;
+    }
+
+    private boolean canResolveIndexedSourceMethod(MethodOwner owner, String methodName, List<Type> argumentTypes) {
+        if (symbolIndex == null)
+            return false;
+
+        for (JavaProjectSemanticIndex.SymbolDescriptor symbol : symbolIndex.lookupMember(owner.qualifiedTypeName(), methodName)) {
+            if (symbol.kind() != SymbolKind.METHOD)
+                continue;
+            if (owner.staticAccess() && !symbol.isStatic())
+                continue;
+
+            List<Type> parameterTypes = parameterTypesFromIndexedSignature(symbol.signature());
+            if (isApplicableMethod(parameterTypes, argumentTypes))
+                return true;
+            if (parameterTypes.size() == argumentTypes.size())
+                return true;
+        }
+        return false;
+    }
+
+    private List<Type> parameterTypesFromIndexedSignature(@Nullable String signature) {
+        if (signature == null || signature.length() < 2 || signature.charAt(0) != '(' || signature.charAt(signature.length() - 1) != ')')
+            return List.of();
+
+        String content = signature.substring(1, signature.length() - 1).trim();
+        if (content.isEmpty())
+            return List.of();
+
+        List<Type> parameterTypes = new ArrayList<>();
+        for (String parameter : content.split(",")) {
+            String qualifiedTypeName = resolveQualifiedTypeName(parameter.trim());
+            parameterTypes.add(qualifiedTypeName == null
+                ? new UnknownType("<unknown>")
+                : new DeclaredType(qualifiedTypeName, List.of()));
+        }
+        return List.copyOf(parameterTypes);
+    }
+
+    private boolean isInvocationAssignable(Type target, Type source) {
+        if (target.kind() == Kind.UNKNOWN || source.kind() == Kind.UNKNOWN)
+            return true;
+        if (target.kind() == Kind.TYPE_VARIABLE || target.kind() == Kind.WILDCARD)
+            return true;
+        if (source.kind() == Kind.TYPE_VARIABLE || source.kind() == Kind.WILDCARD)
+            return true;
+        return isAssignable(target, source);
+    }
+
+    private List<String> indexedSourceDirectSuperTypes(String qualifiedTypeName) {
+        Map<String, List<String>> cached = cachedIndexedSourceDirectSuperTypesByQualifiedName;
+        if (cached != null && cached.containsKey(qualifiedTypeName))
+            return cached.getOrDefault(qualifiedTypeName, List.of());
+        if (symbolIndex == null)
+            return List.of();
+
+        JavaProjectSemanticIndex.SymbolDescriptor sourceType = symbolIndex.lookupQualifiedName(qualifiedTypeName).stream()
+            .filter(symbol -> symbol.sourceFile() != null && symbol.isTopLevel())
+            .findFirst()
+            .orElse(null);
+        if (sourceType == null)
+            return rememberIndexedSourceDirectSuperTypes(Map.of(qualifiedTypeName, List.of())).getOrDefault(qualifiedTypeName, List.of());
+
+        try {
+            String source = Files.readString(sourceType.sourceFile());
+            SemanticModel sourceModel = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
+            JavaRuleContext sourceContext = new JavaRuleContext(sourceType.sourceFile(), source, sourceModel, symbolIndex);
+            Map<String, List<String>> directSupers = new LinkedHashMap<>();
+            sourceContext.directSuperTypesByQualifiedName().keySet().forEach(typeName ->
+                directSupers.put(typeName, sourceContext.directSuperTypeNamesInternal(typeName)));
+            return rememberIndexedSourceDirectSuperTypes(directSupers)
+                .getOrDefault(qualifiedTypeName, List.of());
+        } catch (Exception ignored) {
+            return rememberIndexedSourceDirectSuperTypes(Map.of(qualifiedTypeName, List.of())).getOrDefault(qualifiedTypeName, List.of());
+        }
+    }
+
+    private synchronized Map<String, List<String>> rememberIndexedSourceDirectSuperTypes(Map<String, List<String>> additional) {
+        Map<String, List<String>> merged = new LinkedHashMap<>();
+        if (cachedIndexedSourceDirectSuperTypesByQualifiedName != null)
+            merged.putAll(cachedIndexedSourceDirectSuperTypesByQualifiedName);
+        additional.forEach((qualifiedName, supers) -> merged.putIfAbsent(qualifiedName, List.copyOf(supers)));
+        Map<String, List<String>> copy = Map.copyOf(merged);
+        cachedIndexedSourceDirectSuperTypesByQualifiedName = copy;
+        return copy;
     }
 
     private void collectInheritedMethodDescriptors(String ownerQualifiedTypeName, List<MethodDescriptor> out, Set<String> visited) {
@@ -1592,7 +2492,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (source != null)
             return source;
 
-        ClassStub stub = jdkClassStubsByQualifiedName().get(ownerQualifiedTypeName);
+        List<MethodDescriptor> indexedSource = indexedSourceMethodDescriptors(ownerQualifiedTypeName);
+        if (!indexedSource.isEmpty())
+            return indexedSource.stream()
+                .filter(method -> !"<init>".equals(method.name()))
+                .toList();
+
+        ClassStub stub = availableClassStubsByQualifiedName().get(ownerQualifiedTypeName);
         if (stub == null)
             return List.of();
 
@@ -1620,7 +2526,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (source != null)
             return source;
 
-        ClassStub stub = jdkClassStubsByQualifiedName().get(ownerQualifiedTypeName);
+        List<FieldDescriptor> indexedSource = indexedSourceFieldDescriptors(ownerQualifiedTypeName);
+        if (!indexedSource.isEmpty())
+            return indexedSource;
+
+        ClassStub stub = availableClassStubsByQualifiedName().get(ownerQualifiedTypeName);
         if (stub == null)
             return List.of();
 
@@ -1702,6 +2612,110 @@ public final class JavaRuleContext implements LanguageRuleContext {
             declaration,
             symbol
         );
+    }
+
+    private List<MethodDescriptor> indexedSourceMethodDescriptors(String ownerQualifiedTypeName) {
+        Map<String, List<MethodDescriptor>> cached = cachedIndexedSourceMethodsByOwner;
+        if (cached != null && cached.containsKey(ownerQualifiedTypeName))
+            return cached.getOrDefault(ownerQualifiedTypeName, List.of());
+
+        IndexedSourceDescriptors descriptors = indexedSourceDescriptors(ownerQualifiedTypeName);
+        rememberIndexedSourceDescriptors(descriptors);
+        return descriptors.methodsByOwner().getOrDefault(ownerQualifiedTypeName, List.of());
+    }
+
+    private List<FieldDescriptor> indexedSourceFieldDescriptors(String ownerQualifiedTypeName) {
+        Map<String, List<FieldDescriptor>> cached = cachedIndexedSourceFieldsByOwner;
+        if (cached != null && cached.containsKey(ownerQualifiedTypeName))
+            return cached.getOrDefault(ownerQualifiedTypeName, List.of());
+
+        IndexedSourceDescriptors descriptors = indexedSourceDescriptors(ownerQualifiedTypeName);
+        rememberIndexedSourceDescriptors(descriptors);
+        return descriptors.fieldsByOwner().getOrDefault(ownerQualifiedTypeName, List.of());
+    }
+
+    private IndexedSourceDescriptors indexedSourceDescriptors(String ownerQualifiedTypeName) {
+        if (symbolIndex == null)
+            return new IndexedSourceDescriptors(Map.of(), Map.of());
+
+        Path sourceFile = indexedSourceFile(ownerQualifiedTypeName);
+        if (sourceFile == null)
+            return new IndexedSourceDescriptors(
+                Map.of(ownerQualifiedTypeName, List.of()),
+                Map.of(ownerQualifiedTypeName, List.of())
+            );
+
+        Map<String, List<MethodDescriptor>> methods = new LinkedHashMap<>();
+        Map<String, List<FieldDescriptor>> fields = new LinkedHashMap<>();
+        try {
+            String source = Files.readString(sourceFile);
+            SemanticModel sourceModel = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
+            JavaRuleContext sourceContext = new JavaRuleContext(sourceFile, source, sourceModel, symbolIndex);
+            sourceContext.declaredMethodsByOwner().forEach((owner, descriptors) ->
+                methods.computeIfAbsent(owner, ignored -> new ArrayList<>()).addAll(descriptors));
+            for (String owner : sourceContext.localTypeSymbolsByQualifiedName().keySet()) {
+                List<MethodDescriptor> constructors = sourceContext.constructorDescriptorsForType(owner);
+                if (!constructors.isEmpty())
+                    methods.computeIfAbsent(owner, ignored -> new ArrayList<>()).addAll(constructors);
+            }
+            sourceContext.declaredFieldsByOwner().forEach((owner, descriptors) ->
+                fields.computeIfAbsent(owner, ignored -> new ArrayList<>()).addAll(descriptors));
+        } catch (Exception ignored) {
+        }
+
+        return new IndexedSourceDescriptors(copyDescriptorMap(methods), copyDescriptorMap(fields));
+    }
+
+    private @Nullable Path indexedSourceFile(String ownerQualifiedTypeName) {
+        if (symbolIndex == null)
+            return null;
+
+        JavaProjectSemanticIndex.SymbolDescriptor type = symbolIndex.lookupQualifiedName(ownerQualifiedTypeName).stream()
+            .filter(symbol -> symbol.sourceFile() != null)
+            .findFirst()
+            .orElse(null);
+        if (type != null)
+            return type.sourceFile();
+
+        return symbolIndex.lookupMembers(ownerQualifiedTypeName).stream()
+            .map(JavaProjectSemanticIndex.SymbolDescriptor::sourceFile)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null);
+    }
+
+    private synchronized void rememberIndexedSourceDescriptors(IndexedSourceDescriptors descriptors) {
+        cachedIndexedSourceMethodsByOwner = mergeDescriptorMaps(cachedIndexedSourceMethodsByOwner, descriptors.methodsByOwner());
+        cachedIndexedSourceFieldsByOwner = mergeDescriptorMaps(cachedIndexedSourceFieldsByOwner, descriptors.fieldsByOwner());
+    }
+
+    private static <T> Map<String, List<T>> mergeDescriptorMaps(
+        @Nullable Map<String, List<T>> existing,
+        Map<String, List<T>> additional
+    ) {
+        Map<String, List<T>> merged = new LinkedHashMap<>();
+        if (existing != null)
+            merged.putAll(existing);
+        additional.forEach((owner, values) -> merged.put(owner, List.copyOf(values)));
+        return Map.copyOf(merged);
+    }
+
+    private static <T> Map<String, List<T>> copyDescriptorMap(Map<String, List<T>> descriptors) {
+        Map<String, List<T>> copy = new LinkedHashMap<>();
+        descriptors.forEach((owner, values) -> copy.put(owner, List.copyOf(values)));
+        return Map.copyOf(copy);
+    }
+
+    private boolean hasComplexArgumentShape(@Nullable SyntaxNode argumentList) {
+        if (argumentList == null)
+            return false;
+
+        for (SyntaxNode child : argumentList.children()) {
+            String kindId = child.kind().id();
+            if (JAVA_LAMBDA_EXPRESSION.equals(kindId) || JavaSyntaxKinds.METHOD_REFERENCE_EXPRESSION.id().equals(kindId))
+                return true;
+        }
+        return false;
     }
 
     private static boolean isPrivateModifier(int modifiers) {
@@ -1909,6 +2923,15 @@ public final class JavaRuleContext implements LanguageRuleContext {
     ) {
     }
 
+    private record MethodOwner(String qualifiedTypeName, boolean staticAccess) {
+    }
+
+    private record IndexedSourceDescriptors(
+        Map<String, List<MethodDescriptor>> methodsByOwner,
+        Map<String, List<FieldDescriptor>> fieldsByOwner
+    ) {
+    }
+
     public static final class ImportIndex {
         private final List<ImportEntry> imports;
         private final Map<String, List<ImportEntry>> staticSingleImportsByMemberName;
@@ -2045,7 +3068,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
             Set<String> localQualifiedTypeNames = collectLocalQualifiedTypeNames(context);
             Set<String> availableQualifiedTypeNames = new HashSet<>(localQualifiedTypeNames);
-            availableQualifiedTypeNames.addAll(context.jdkQualifiedTypeNames());
+            availableQualifiedTypeNames.addAll(context.availableQualifiedTypeNames());
 
             Map<String, Set<String>> localStaticFieldsByOwner = new LinkedHashMap<>();
             Map<String, Map<String, Set<Integer>>> localStaticMethodAritiesByOwner = new LinkedHashMap<>();
@@ -2057,7 +3080,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 List.copyOf(onDemandStaticImports),
                 Set.copyOf(localQualifiedTypeNames),
                 Set.copyOf(availableQualifiedTypeNames),
-                context.jdkClassStubsByQualifiedName(),
+                context.availableClassStubsByQualifiedName(),
                 copySetMap(localStaticFieldsByOwner),
                 copyNestedSetMap(localStaticMethodAritiesByOwner)
             );

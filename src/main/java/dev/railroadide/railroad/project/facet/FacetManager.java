@@ -153,9 +153,9 @@ public class FacetManager {
                 .collect(Collectors.toSet());
 
             if (facets.isEmpty()) {
-                Railroad.LOGGER.warn("No facets detected for project at {}", project.getPath());
+                Railroad.LOGGER.warn("No facets detected for project at {}", project.path());
             } else {
-                Railroad.LOGGER.info("Detected {} facets for project at {}", facets.size(), project.getPath());
+                Railroad.LOGGER.info("Detected {} facets for project at {}", facets.size(), project.path());
             }
 
             return facets;

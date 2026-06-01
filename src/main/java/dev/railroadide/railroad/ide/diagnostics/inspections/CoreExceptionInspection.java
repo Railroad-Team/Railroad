@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.diagnostics.inspections;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
@@ -51,6 +52,13 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         "java.lang.Exception",
         "java.lang.RuntimeException",
         "java.lang.Error"
+    );
+    private static final Set<String> TYPE_DECLARATION_KINDS = Set.of(
+        JavaSyntaxKinds.CLASS_DECLARATION.id(),
+        JavaSyntaxKinds.INTERFACE_DECLARATION.id(),
+        JavaSyntaxKinds.ENUM_DECLARATION.id(),
+        JavaSyntaxKinds.ANNOTATION_TYPE_DECLARATION.id(),
+        JavaSyntaxKinds.RECORD_DECLARATION.id()
     );
 
     private static final List<JavaInspectionRule> RULES = List.of(
@@ -150,7 +158,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
             }
 
             if (JAVA_CATCH_CLAUSE.equals(kindId)) {
-                reportInvalidTypeReferences(context, reporter, node, "caught type");
+                reportInvalidTypeReferences(context, reporter, catchTypeNodes(node), "caught type");
                 return;
             }
 
@@ -179,6 +187,8 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
             Symbol methodSymbol = context.declaredSymbol(syntaxNode).orElse(null);
             if (methodSymbol == null)
                 continue;
+            if (isInsidePrivateHelperType(context, syntaxNode))
+                continue;
 
             SyntaxNode throwsClauseNode = context.directChild(syntaxNode, JavaSyntaxKinds.THROWS_CLAUSE.id());
             if (throwsClauseNode == null)
@@ -194,6 +204,16 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
                 }
             }
         }
+    }
+
+    private static boolean isInsidePrivateHelperType(JavaRuleContext context, SyntaxNode node) {
+        SyntaxNode current = node;
+        while (current != null) {
+            if (TYPE_DECLARATION_KINDS.contains(current.kind().id()) && context.hasDirectModifierToken(current, JavaTokenType.PRIVATE_KEYWORD))
+                return true;
+            current = current.parent().orElse(null);
+        }
+        return false;
     }
 
     private static List<ThrownException> collectUnhandledCheckedExceptions(JavaRuleContext context, SyntaxNode node, Set<String> allowed) {
@@ -331,12 +351,49 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         SyntaxNode root,
         String role
     ) {
-        for (SyntaxNode typeNode : directTypeNodes(root)) {
+        reportInvalidTypeReferences(context, reporter, directTypeNodes(root), role);
+    }
+
+    private static void reportInvalidTypeReferences(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        List<SyntaxNode> typeNodes,
+        String role
+    ) {
+        for (SyntaxNode typeNode : typeNodes) {
             String qualifiedTypeName = context.resolveQualifiedTypeName(typeNode);
             if (qualifiedTypeName == null || context.isThrowableType(qualifiedTypeName))
                 continue;
             reporter.reportMessage(typeNode, "%s '%s' must extend Throwable".formatted(role, qualifiedTypeName));
         }
+    }
+
+    private static List<SyntaxNode> catchTypeNodes(SyntaxNode catchClause) {
+        List<SyntaxNode> nodes = new ArrayList<>();
+        collectCatchTypeNodes(catchClause, nodes);
+        return List.copyOf(nodes);
+    }
+
+    private static void collectCatchTypeNodes(SyntaxNode node, List<SyntaxNode> out) {
+        String kindId = node.kind().id();
+        if (JAVA_BLOCK.equals(kindId))
+            return;
+
+        if (JAVA_TYPE_REFERENCE.equals(kindId)) {
+            out.add(node);
+            return;
+        }
+
+        if (JAVA_UNION_TYPE_REFERENCE.equals(kindId)) {
+            for (SyntaxNode child : node.children()) {
+                if (JAVA_TYPE_REFERENCE.equals(child.kind().id()))
+                    out.add(child);
+            }
+            return;
+        }
+
+        for (SyntaxNode child : node.children())
+            collectCatchTypeNodes(child, out);
     }
 
     private static List<SyntaxNode> directTypeNodes(SyntaxNode root) {

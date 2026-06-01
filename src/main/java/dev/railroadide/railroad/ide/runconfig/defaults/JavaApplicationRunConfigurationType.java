@@ -71,7 +71,7 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         var data = new JavaApplicationRunConfigurationData();
         data.setName("New Java Application");
         data.setJdk(/*project.getJDKManager().getDefaultJDK()*/ JDKManager.getDefaultJDK()); // TODO
-        data.setWorkingDirectory(project.getPath());
+        data.setWorkingDirectory(project.path());
         return data;
     }
 

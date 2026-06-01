@@ -79,8 +79,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
     public ProjectExplorerPane(Project project, RRBorderPane mainPane) {
         this.project = project;
-        this.projectLanguageIndexCoordinator = new ProjectLanguageIndexCoordinator(project.getPath());
-        Path rootPath = project.getPath();
+        this.projectLanguageIndexCoordinator = new ProjectLanguageIndexCoordinator(project);
+        Path rootPath = project.path();
         getStyleClass().add("rr-project-explorer");
 
         this.searchField = new RRTextField("railroad.ide.project_explorer.search_field");

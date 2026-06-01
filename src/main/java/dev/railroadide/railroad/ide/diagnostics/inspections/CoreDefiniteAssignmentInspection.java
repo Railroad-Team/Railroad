@@ -744,7 +744,13 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
     }
 
     private static boolean isTrackedVariable(Symbol symbol) {
-        return symbol != null && (symbol.kind() == SymbolKind.LOCAL_VARIABLE || symbol.kind() == SymbolKind.PARAMETER);
+        if (symbol == null)
+            return false;
+        if (symbol.declaration().map(declaration -> "JAVA_PATTERN".equals(declaration.kind().id())).orElse(false))
+            return false;
+        if (symbol.declaration().map(declaration -> "JAVA_RECORD_COMPONENT".equals(declaration.kind().id())).orElse(false))
+            return false;
+        return symbol.kind() == SymbolKind.LOCAL_VARIABLE || symbol.kind() == SymbolKind.PARAMETER;
     }
 
     private static boolean isVisibleAtUse(Symbol symbol, SyntaxNode usageNode) {

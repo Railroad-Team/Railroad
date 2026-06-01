@@ -85,7 +85,7 @@ public class RailroadProject implements Project {
     }
 
     private BufferedImage createIconImage() {
-        var color = new Color(Math.abs(getPath().toAbsolutePath().toString().hashCode() % 0xFFFFFF));
+        var color = new Color(Math.abs(path().toAbsolutePath().toString().hashCode() % 0xFFFFFF));
         String abbreviation = StringUtils.getAbbreviation(getAlias()).toUpperCase(Locale.ROOT);
         abbreviation = abbreviation.isBlank() ? "?" : abbreviation;
         abbreviation = abbreviation.length() > 4 ? abbreviation.substring(0, 4) : abbreviation;
@@ -114,7 +114,7 @@ public class RailroadProject implements Project {
             Files.createDirectories(iconPath.getParent());
             ImageIO.write(iconImage, "png", iconPath.toFile());
         } catch (Exception exception) {
-            Railroad.LOGGER.error("Failed to create project icon for: {}", getPath(), exception);
+            Railroad.LOGGER.error("Failed to create project icon for: {}", path(), exception);
             return SwingFXUtils.toFXImage(iconImage, null);
         }
 
@@ -187,7 +187,7 @@ public class RailroadProject implements Project {
     }
 
     @Override
-    public Path getPath() {
+    public Path path() {
         return this.path.get();
     }
 

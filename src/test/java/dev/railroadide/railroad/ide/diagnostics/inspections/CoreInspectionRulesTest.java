@@ -3,6 +3,10 @@ package dev.railroadide.railroad.ide.diagnostics.inspections;
 import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleEngine;
 import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleSettings;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
+import dev.railroadide.railroad.ide.sst.project.CompositeJavaSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaJdkSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndexer;
+import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
@@ -10,11 +14,13 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -2033,6 +2039,64 @@ class CoreInspectionRulesTest {
             """);
 
         assertFalse(diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
+    }
+
+    @Test
+    void coreExceptionRuleDoesNotTreatRecordPatternTypesAsCaughtExceptions() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
+            import javafx.application.Preloader.PreloaderNotification;
+
+            class Example {
+                void handle(PreloaderNotification notification) {
+                    if (notification instanceof ErrorNotification(String message)) {
+                        System.out.println(message);
+                    }
+                }
+
+                record ErrorNotification(String message) implements PreloaderNotification {
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INVALID_EXCEPTION_TYPE".equals(d.code())));
+    }
+
+    @Test
+    void coreExceptionRuleDoesNotEmitDisallowedExceptionDiagnosticForPrivateNestedHelperInterface() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
+            class Example {
+                private interface CheckedRunnable {
+                    void run() throws Exception;
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
+    }
+
+    @Test
+    void coreExceptionRuleDoesNotTreatPreloaderRecordPatternAsCaughtTypeInRealisticShape() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
+            import javafx.application.Preloader.PreloaderNotification;
+
+            public class RailroadPreloader {
+                public void handleApplicationNotification(PreloaderNotification notification) {
+                    if (notification instanceof StatusNotification(String message, double progress)) {
+                        System.out.println(message + progress);
+                    } else if (notification instanceof ErrorNotification(String message)) {
+                        System.out.println(message);
+                    }
+                }
+
+                public record StatusNotification(String message, double progress) implements PreloaderNotification {
+                }
+
+                public record ErrorNotification(String message) implements PreloaderNotification {
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(d -> d.message().contains("caught type")));
     }
 
     @Test
@@ -4068,6 +4132,173 @@ class CoreInspectionRulesTest {
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_REDUNDANT_INTERFACE_DECLARATION".equals(d.code())));
     }
 
+    @Test
+    void realRailroadStartupCodeDoesNotReportKnownFalseCallAndExceptionDiagnostics() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        Path railroadPath = sourceRoot.resolve("dev/railroadide/railroad/Railroad.java").normalize();
+        Path preloaderPath = sourceRoot.resolve("dev/railroadide/railroad/RailroadPreloader.java").normalize();
+        JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+            new JavaProjectSemanticIndexer().build(sourceRoot),
+            JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+
+        List<SemanticDiagnostic> railroadCallDiagnostics =
+            runProvider(new CoreCallResolutionInspection(), railroadPath, Files.readString(railroadPath), symbolIndex);
+        assertFalse(railroadCallDiagnostics.stream()
+            .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve call 'InitializationStep'")),
+            () -> railroadCallDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+        assertFalse(railroadCallDiagnostics.stream()
+            .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve call 'publish'")),
+            () -> railroadCallDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+
+        List<SemanticDiagnostic> preloaderExceptionDiagnostics =
+            runProvider(new CoreExceptionInspection(), preloaderPath, Files.readString(preloaderPath), symbolIndex);
+        assertFalse(preloaderExceptionDiagnostics.stream()
+            .anyMatch(diagnostic -> diagnostic.message().contains("ErrorNotification") && diagnostic.message().contains("must extend Throwable")));
+    }
+
+    @Test
+    void projectEventBusPublishCallsResolveAcrossRealSources() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+            new JavaProjectSemanticIndexer().build(sourceRoot),
+            JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+
+        List<String> unresolvedPublishDiagnostics = new ArrayList<>();
+        try (Stream<Path> paths = Files.walk(sourceRoot)) {
+            for (Path sourceFile : paths
+                .filter(Files::isRegularFile)
+                .filter(path -> path.getFileName().toString().endsWith(".java"))
+                .toList()) {
+                String source = Files.readString(sourceFile);
+                if (!source.contains(".publish("))
+                    continue;
+
+                List<SemanticDiagnostic> diagnostics =
+                    runProvider(new CoreCallResolutionInspection(), sourceFile, source, symbolIndex);
+                diagnostics.stream()
+                    .filter(diagnostic -> diagnostic.message().equals("Cannot resolve call 'publish'"))
+                    .map(diagnostic -> sourceRoot.relativize(sourceFile) + ": " + diagnostic.message())
+                    .forEach(unresolvedPublishDiagnostics::add);
+            }
+        }
+
+        assertTrue(unresolvedPublishDiagnostics.isEmpty(), () -> String.join("\n", unresolvedPublishDiagnostics));
+    }
+
+    @Test
+    void realRailroadPreloaderVarDeclarationsDoNotReportVoidAssignmentDiagnostics() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        Path preloaderPath = sourceRoot.resolve("dev/railroadide/railroad/RailroadPreloader.java").normalize();
+        JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+            new JavaProjectSemanticIndexer().build(sourceRoot),
+            JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+
+        List<SemanticDiagnostic> diagnostics =
+            runProvider(new CoreAssignmentInspection(), preloaderPath, Files.readString(preloaderPath), symbolIndex);
+
+        assertFalse(diagnostics.stream()
+            .anyMatch(diagnostic -> diagnostic.message().contains(" to 'void'")),
+            () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+    }
+
+    @Test
+    void realServicesAnonymousInterfacesAndGenericServiceLookupDoNotReportKnownFalseDiagnostics() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        Path servicesPath = sourceRoot.resolve("dev/railroadide/railroad/Services.java").normalize();
+        JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+            new JavaProjectSemanticIndexer().build(sourceRoot),
+            JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+
+        List<SemanticDiagnostic> callDiagnostics =
+            runProvider(new CoreCallResolutionInspection(), servicesPath, Files.readString(servicesPath), symbolIndex);
+        assertFalse(callDiagnostics.stream()
+                .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve call 'ApplicationInfoService'")
+                    || diagnostic.message().equals("Cannot resolve call 'LocalizationService'")),
+            () -> callDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+
+        List<SemanticDiagnostic> typeDiagnostics =
+            runProvider(new CoreTypeResolutionInspection(), servicesPath, Files.readString(servicesPath), symbolIndex);
+        assertFalse(typeDiagnostics.stream()
+                .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve type 'T'")),
+            () -> typeDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+    }
+
+    @Test
+    void realDefaultGradleEnvironmentRecordAndObjectMembersDoNotReportKnownFalseDiagnostics() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        Path environmentPath = sourceRoot.resolve("dev/railroadide/railroad/DefaultGradleEnvironment.java").normalize();
+        JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+            new JavaProjectSemanticIndexer().build(sourceRoot),
+            JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+        String source = Files.readString(environmentPath);
+
+        List<SemanticDiagnostic> callDiagnostics =
+            runProvider(new CoreCallResolutionInspection(), environmentPath, source, symbolIndex);
+        assertFalse(callDiagnostics.stream()
+                .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve call 'equals'")),
+            () -> callDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+
+        List<SemanticDiagnostic> inheritanceDiagnostics =
+            runProvider(new CoreInheritanceInspection(), environmentPath, source, symbolIndex);
+        assertFalse(inheritanceDiagnostics.stream()
+                .anyMatch(diagnostic -> diagnostic.message().contains("project()")),
+            () -> inheritanceDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+
+        List<SemanticDiagnostic> assignmentDiagnostics =
+            runProvider(new CoreDefiniteAssignmentInspection(), environmentPath, source, symbolIndex);
+        assertFalse(assignmentDiagnostics.stream()
+                .anyMatch(diagnostic -> diagnostic.message().contains("Variable 'project'")
+                    || diagnostic.message().contains("Variable 'settings'")
+                    || diagnostic.message().contains("Variable 'gradleInstallationPath'")),
+            () -> assignmentDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+
+        List<SemanticDiagnostic> memberDiagnostics =
+            runProvider(new CoreMemberResolutionInspection(), environmentPath, source, symbolIndex);
+        assertFalse(memberDiagnostics.stream()
+                .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve member 'length'")),
+            () -> memberDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+    }
+
+    @Test
+    void dumpProjectWideDiagnosticsForCurrentRailroadSources() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+            new JavaProjectSemanticIndexer().build(sourceRoot),
+            JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+
+        List<String> report = new ArrayList<>();
+        try (Stream<Path> paths = Files.walk(sourceRoot)) {
+            for (Path sourceFile : paths
+                .filter(Files::isRegularFile)
+                .filter(path -> path.getFileName().toString().endsWith(".java"))
+                .toList()) {
+                String source = Files.readString(sourceFile);
+                List<SemanticDiagnostic> diagnostics = runProvider(new CoreCallResolutionInspection(), sourceFile, source, symbolIndex);
+                diagnostics.addAll(runProvider(new CoreMemberResolutionInspection(), sourceFile, source, symbolIndex));
+                diagnostics.addAll(runProvider(new CoreTypeResolutionInspection(), sourceFile, source, symbolIndex));
+                diagnostics.addAll(runProvider(new CoreInheritanceInspection(), sourceFile, source, symbolIndex));
+                diagnostics.addAll(runProvider(new CoreDefiniteAssignmentInspection(), sourceFile, source, symbolIndex));
+
+                if (diagnostics.isEmpty())
+                    continue;
+
+                report.add(sourceRoot.relativize(sourceFile) + " (" + diagnostics.size() + ")");
+                for (SemanticDiagnostic diagnostic : diagnostics) {
+                    report.add("  [" + diagnostic.severity() + "] " + diagnostic.message());
+                }
+            }
+        }
+
+        System.out.println("PROJECT_DIAGNOSTICS_BEGIN");
+        report.forEach(System.out::println);
+        System.out.println("PROJECT_DIAGNOSTICS_END");
+    }
 
     @Test
     void coreInheritanceRuleDoesNotEmitDiagnosticForIndependentInterfaces() {
@@ -4162,9 +4393,20 @@ class CoreInspectionRulesTest {
     }
 
     private static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, Path filePath, String document) {
+        return runProvider(provider, filePath, document, null);
+    }
+
+    private static List<SemanticDiagnostic> runProvider(
+        JavaInspectionRuleProvider provider,
+        Path filePath,
+        String document,
+        JavaSymbolIndex symbolIndex
+    ) {
         JavaInspectionRuleSettings.resetAll();
-        var model = JavaSemanticAnalyzer.analyzeFacts(document);
-        JavaRuleContext context = new JavaRuleContext(filePath, document, model);
+        var model = symbolIndex == null
+            ? JavaSemanticAnalyzer.analyzeFacts(document)
+            : JavaSemanticAnalyzer.analyzeFacts(document, symbolIndex);
+        JavaRuleContext context = new JavaRuleContext(filePath, document, model, symbolIndex);
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
         JavaInspectionReporter reporter = diagnostics::add;
         JavaInspectionRuleEngine.runRules(provider, context, reporter);

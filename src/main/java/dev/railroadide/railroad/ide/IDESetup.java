@@ -98,7 +98,7 @@ public class IDESetup {
 
         var consolePane = new DetachableTabPane();
         consolePane.addTab("Console", new ConsolePane());
-        consolePane.addTab("Terminal", TerminalFactory.create(project.getPath()));
+        consolePane.addTab("Terminal", TerminalFactory.create(project.path()));
 
         var centerBottomSplit = new SplitPane(editorPane, consolePane);
         centerBottomSplit.setOrientation(Orientation.VERTICAL);

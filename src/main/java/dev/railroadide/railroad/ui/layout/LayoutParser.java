@@ -356,13 +356,13 @@ public class LayoutParser {
     }
 
     public static Layout loadLayout(Project project) {
-        Path projectPath = project.getPath();
+        Path projectPath = project.path();
         Path layoutPath = projectPath.resolve(".railroad").resolve(".railayout");
 
         try {
             return parse(layoutPath);
         } catch (LayoutParseException exception) {
-            Railroad.LOGGER.error("Failed to load layout for project: {}", project.getPath(), exception);
+            Railroad.LOGGER.error("Failed to load layout for project: {}", project.path(), exception);
             return new Layout(new Tree<>(new Node<>(new LayoutItem("error"))));
         }
     }

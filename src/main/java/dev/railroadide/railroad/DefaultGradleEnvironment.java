@@ -77,7 +77,7 @@ public record DefaultGradleEnvironment(Project project, Path gradleInstallationP
             return false;
 
         Path configuredProjectPath = data.getGradleProjectPath();
-        if (!pathsMatch(configuredProjectPath, project.getPath()))
+        if (!pathsMatch(configuredProjectPath, project.path()))
             return false;
 
         JDK configurationJdk = data.getJavaHome();

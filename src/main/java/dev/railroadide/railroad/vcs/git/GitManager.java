@@ -87,7 +87,7 @@ public class GitManager {
      */
     public GitManager(Project project, GitClient gitClient) {
         this(project, gitClient, Executors.newSingleThreadScheduledExecutor(runnable -> {
-            var thread = new Thread(runnable, "railroad-git-manager-" + project.getPath());
+            var thread = new Thread(runnable, "railroad-git-manager-" + project.path());
             thread.setDaemon(true);
             return thread;
         }));
@@ -97,7 +97,7 @@ public class GitManager {
      * Detects repository for the current project path and updates manager state.
      */
     public void detectRepository() {
-        this.executorService.submit(() -> this.gitClient.detectRepository(this.project.getPath()).ifPresentOrElse(repository -> {
+        this.executorService.submit(() -> this.gitClient.detectRepository(this.project.path()).ifPresentOrElse(repository -> {
             runOnFxThread(() -> {
                 this.gitRepository.set(repository);
                 this.active.set(true);

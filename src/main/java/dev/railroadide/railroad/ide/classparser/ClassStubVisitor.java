@@ -246,6 +246,22 @@ public class ClassStubVisitor extends ClassVisitor {
                     parent.typeArguments().add(typeVariable);
                 }
             }
+
+            finishIfComplete();
+        }
+
+        @Override
+        public void visitBaseType(char descriptor) {
+            this.result = Type.fromAsmType(org.objectweb.asm.Type.getType(String.valueOf(descriptor)));
+            finishIfComplete();
+        }
+
+        @Override
+        public SignatureVisitor visitArrayType() {
+            return new TypeSignatureVisitor(component -> {
+                this.result = new Type.ArrayType(component);
+                finishIfComplete();
+            });
         }
 
         @Override
@@ -270,8 +286,13 @@ public class ClassStubVisitor extends ClassVisitor {
                 this.typeStack.pop();
             }
 
+            finishIfComplete();
+        }
+
+        private void finishIfComplete() {
             if (this.typeStack.isEmpty() && this.onFinish != null && this.result != null) {
                 this.onFinish.accept(this.result);
+                this.result = null;
             }
         }
     }

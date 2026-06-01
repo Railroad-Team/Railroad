@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.language.impl.index;
 
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexer;
+import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticExtractor;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 
@@ -25,19 +26,19 @@ public final class JavaProjectLanguageIndexer implements ProjectLanguageIndexer<
     }
 
     @Override
-    public JavaProjectSemanticIndex build(Path projectRoot, Collection<Path> sourceFiles) {
+    public JavaProjectSemanticIndex build(ProjectIndexContext context, Collection<Path> sourceFiles) {
         JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
 
         sourceFiles.stream()
             .filter(this::supports)
             .sorted(Comparator.naturalOrder())
-            .forEach(path -> builder.putFile(indexFile(path, read(path))));
+            .forEach(path -> builder.putFile(indexFile(context, path, read(path))));
 
         return builder.build();
     }
 
     @Override
-    public JavaProjectSemanticIndex.SourceFileIndex indexFile(Path sourceFile, String sourceContent) {
+    public JavaProjectSemanticIndex.SourceFileIndex indexFile(ProjectIndexContext context, Path sourceFile, String sourceContent) {
         return extractor.extract(sourceFile, sourceContent);
     }
 

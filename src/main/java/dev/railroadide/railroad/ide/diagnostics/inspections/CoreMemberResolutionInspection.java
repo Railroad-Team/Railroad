@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.diagnostics.inspections;
 
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
+import dev.railroadide.railroad.ide.sst.semantic.api.Type;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
@@ -49,8 +50,19 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
             String memberName = context.canonicalQualifiedName(memberNode);
             if (memberName == null || memberName.isBlank())
                 return;
+            if (isArrayLengthAccess(context, node, memberName))
+                return;
 
             reporter.report(memberNode, memberName);
         });
+    }
+
+    private static boolean isArrayLengthAccess(JavaRuleContext context, SyntaxNode fieldAccess, String memberName) {
+        if (!"length".equals(memberName))
+            return false;
+
+        SyntaxNode receiver = context.invocationReceiver(fieldAccess);
+        return receiver != null
+            && context.inferredType(receiver).map(type -> type.kind() == Type.Kind.ARRAY).orElse(false);
     }
 }

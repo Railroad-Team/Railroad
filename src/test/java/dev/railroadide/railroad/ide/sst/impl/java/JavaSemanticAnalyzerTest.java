@@ -1,11 +1,17 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
+import com.google.gson.GsonBuilder;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndexer;
+import dev.railroadide.railroad.ide.sst.project.CompositeJavaSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaJdkSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
+import javafx.application.Application;
+import javafx.application.Preloader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -637,6 +643,490 @@ class JavaSemanticAnalyzerTest {
 
         assertTrue(unresolvedCallDiagnostics >= 2);
         assertTrue(unresolvedMemberDiagnostics >= 1);
+    }
+
+    @Test
+    void resolvesBinaryConstructorsAndFluentCalls() throws Exception {
+        String source = """
+                import com.google.gson.Gson;
+                import com.google.gson.GsonBuilder;
+                import javafx.application.Application;
+                import javafx.application.HostServices;
+
+                class BinaryCalls extends Application {
+                    Gson gson = new GsonBuilder()
+                        .disableHtmlEscaping()
+                        .create();
+
+                    HostServices host() {
+                        if (getHostServices() == null) {
+                            throw new IllegalStateException("missing");
+                        }
+                        return getHostServices();
+                    }
+                }
+                """;
+
+        Path gsonJar = Path.of(GsonBuilder.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        Path javafxJar = Path.of(Application.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        CompositeJavaSymbolIndex index = new CompositeJavaSymbolIndex(List.of(
+                JavaLibrarySymbolIndex.build(List.of(gsonJar, javafxJar)),
+                JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+        assertNotNull(index.lookupClassStub("com.google.gson.GsonBuilder"));
+        assertFalse(index.lookupClassStub("com.google.gson.GsonBuilder").constructors().isEmpty());
+        assertNotNull(index.lookupClassStub("java.lang.IllegalStateException"));
+        assertFalse(index.lookupClassStub("java.lang.IllegalStateException").constructors().isEmpty());
+        SemanticModel model = JavaSemanticAnalyzer.analyze(source, index);
+
+        List<SyntaxNode> creations = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION.id());
+        SyntaxNode gsonBuilderCreation = creations.stream()
+                .filter(node -> syntaxText(node).contains("new GsonBuilder()"))
+                .findFirst()
+                .orElse(null);
+        SyntaxNode illegalStateCreation = creations.stream()
+                .filter(node -> syntaxText(node).contains("new IllegalStateException(\"missing\")"))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(gsonBuilderCreation);
+        assertNotNull(illegalStateCreation);
+        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(gsonBuilderCreation).orElseThrow().kind());
+        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(illegalStateCreation).orElseThrow().kind());
+
+        List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
+        SyntaxNode disableHtmlEscapingCall = invocations.stream()
+                .filter(node -> syntaxText(node).contains("disableHtmlEscaping()"))
+                .findFirst()
+                .orElse(null);
+        SyntaxNode createCall = invocations.stream()
+                .filter(node -> syntaxText(node).contains("create()"))
+                .findFirst()
+                .orElse(null);
+        SyntaxNode getHostServicesCall = invocations.stream()
+                .filter(node -> syntaxText(node).contains("getHostServices()"))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(disableHtmlEscapingCall);
+        assertNotNull(createCall);
+        assertNotNull(getHostServicesCall);
+        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(disableHtmlEscapingCall).orElseThrow().kind());
+        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(createCall).orElseThrow().kind());
+        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(getHostServicesCall).orElseThrow().kind());
+    }
+
+    @Test
+    void resolvesImplicitRecordConstructorsAndListOfVarargs() {
+        String source = """
+                import java.util.List;
+
+                class RecordAndList {
+                    void run() {
+                        List<Step> steps = List.of(
+                            new Step("a", () -> {}),
+                            new Step("b", () -> {})
+                        );
+                    }
+
+                    private record Step(String name, Runnable action) {
+                    }
+                }
+                """;
+
+        assertNotNull(JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName().get("java.util.List"));
+        assertTrue(JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName().get("java.util.List").methods().stream()
+                .anyMatch(method -> method.name().equals("of")));
+        assertTrue(JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName().get("java.util.List").methods().stream()
+                .filter(method -> method.name().equals("of"))
+                .anyMatch(method -> java.lang.reflect.Modifier.isStatic(method.modifiers())));
+
+        SemanticModel model = JavaSemanticAnalyzer.analyze(source);
+
+        List<SyntaxNode> creations = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION.id());
+        SyntaxNode firstStepCreation = creations.stream()
+                .filter(node -> syntaxText(node).contains("new Step(\"a\", () -> {})"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(firstStepCreation);
+        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(firstStepCreation).orElseThrow().kind());
+
+        List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
+        SyntaxNode listOfCall = invocations.stream()
+                .filter(node -> syntaxText(node).contains("List.of("))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(listOfCall);
+        SyntaxNode listReceiver = JavaSemanticAnalyzer.explicitReceiver(listOfCall);
+        assertNotNull(listReceiver);
+        assertEquals("List", syntaxText(listReceiver).trim());
+        assertTrue(model.resolvedSymbol(listReceiver).isPresent());
+        assertTrue(switch (model.resolvedSymbol(listReceiver).orElseThrow().kind()) {
+            case CLASS, INTERFACE, ENUM, ANNOTATION, RECORD -> true;
+            default -> false;
+        });
+        SyntaxNode listSelector = JavaSemanticAnalyzer.selectorNameNode(listOfCall);
+        assertNotNull(listSelector);
+        assertEquals("of", syntaxText(listSelector).trim());
+        List<SyntaxNode> names = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.NAME_EXPRESSION.id());
+        SyntaxNode listName = names.stream()
+                .filter(node -> "List".equals(syntaxText(node).trim()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(listName);
+        assertTrue(model.resolvedSymbol(listName).isPresent());
+        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(listOfCall).orElseThrow().kind());
+    }
+
+    @Test
+    void resolvesRailroadStyleInitializationCalls() throws Exception {
+        String source = """
+                import javafx.application.Application;
+                import javafx.application.Preloader;
+
+                import java.util.List;
+
+                class Demo extends Application {
+                    void runThing() {
+                    }
+
+                    void init2() {
+                        List<InitializationStep> steps = List.of(
+                                new InitializationStep("Initializing logger", this::runThing)
+                        );
+
+                        int totalSteps = steps.size();
+                        for (int stepIndex = 0; stepIndex < totalSteps; stepIndex++) {
+                            InitializationStep step = steps.get(stepIndex);
+                            notifyPreloader(new StatusNotification(step.message(), (double) stepIndex / totalSteps));
+                        }
+                    }
+
+                    private record StatusNotification(String message, double progress) implements Preloader.PreloaderNotification {
+                    }
+
+                    private record InitializationStep(String message, Runnable action) {
+                    }
+                }
+                """;
+
+        Path javafxJar = Path.of(Application.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        CompositeJavaSymbolIndex index = new CompositeJavaSymbolIndex(List.of(
+                JavaLibrarySymbolIndex.build(List.of(javafxJar)),
+                JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+
+        SemanticModel model = JavaSemanticAnalyzer.analyze(source, index);
+
+        List<SyntaxNode> creations = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION.id());
+        SyntaxNode initStepCreation = creations.stream()
+                .filter(node -> syntaxText(node).contains("new InitializationStep"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(initStepCreation);
+        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(initStepCreation).orElseThrow().kind());
+
+        SyntaxNode statusNotificationCreation = creations.stream()
+                .filter(node -> syntaxText(node).contains("new StatusNotification"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(statusNotificationCreation);
+        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(statusNotificationCreation).orElseThrow().kind());
+
+        List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
+        SyntaxNode getCall = invocations.stream()
+                .filter(node -> syntaxText(node).contains("steps.get(stepIndex)"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(getCall);
+        SyntaxNode getReceiver = JavaSemanticAnalyzer.explicitReceiver(getCall);
+        assertNotNull(getReceiver);
+        assertEquals("steps", syntaxText(getReceiver).trim());
+        assertTrue(model.resolvedSymbol(getReceiver).isPresent());
+        assertTrue(model.inferredType(getReceiver).isPresent());
+        SyntaxNode getSelector = JavaSemanticAnalyzer.selectorNameNode(getCall);
+        assertNotNull(getSelector);
+        assertEquals("get", JavaSemanticAnalyzer.lastIdentifierLikeTokenText(getSelector));
+        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(getCall).orElseThrow().kind());
+
+        SyntaxNode notifyPreloaderCall = invocations.stream()
+                .filter(node -> syntaxText(node).contains("notifyPreloader("))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(notifyPreloaderCall);
+        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(notifyPreloaderCall).orElseThrow().kind());
+    }
+
+    @Test
+    void resolvesProjectRecordConstructorsAndAccessors() throws Exception {
+        String railroad = """
+                package dev.railroadide.railroad;
+
+                class RailroadLike {
+                    private record InitializationStep(String message, CheckedRunnable action) {
+                    }
+
+                    @FunctionalInterface
+                    private interface CheckedRunnable {
+                        void run() throws Exception;
+                    }
+
+                    void init2() throws Exception {
+                        InitializationStep step = new InitializationStep("a", () -> {});
+                        step.action().run();
+                        String msg = step.message();
+                        Object status = new RailroadPreloader.StatusNotification(msg, 1.0);
+                    }
+                }
+                """;
+
+        String preloader = """
+                package dev.railroadide.railroad;
+
+                class RailroadPreloader {
+                    public record StatusNotification(String message, double progress) {
+                    }
+                }
+                """;
+
+        JavaProjectSemanticIndex index = buildProjectIndex(
+                "src/main/java/dev/railroadide/railroad/RailroadLike.java",
+                railroad,
+                "src/main/java/dev/railroadide/railroad/RailroadPreloader.java",
+                preloader
+        );
+        SemanticModel model = JavaSemanticAnalyzer.analyze(railroad, index);
+
+        List<SyntaxNode> creations = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION.id());
+        SyntaxNode initStepCreation = creations.stream()
+                .filter(node -> syntaxText(node).contains("new InitializationStep"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(initStepCreation);
+        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(initStepCreation).orElseThrow().kind());
+
+        SyntaxNode statusCreation = creations.stream()
+                .filter(node -> syntaxText(node).contains("new RailroadPreloader.StatusNotification"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(statusCreation);
+        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(statusCreation).orElseThrow().kind());
+
+        List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
+        SyntaxNode actionCall = invocations.stream()
+                .filter(node -> syntaxText(node).contains("step.action()"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(actionCall);
+        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(actionCall).orElseThrow().kind());
+
+        SyntaxNode runCall = invocations.stream()
+                .filter(node -> syntaxText(node).contains(".run()"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(runCall);
+        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(runCall).orElseThrow().kind());
+
+        SyntaxNode messageCall = invocations.stream()
+                .filter(node -> syntaxText(node).contains("step.message()"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(messageCall);
+        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(messageCall).orElseThrow().kind());
+    }
+
+    @Test
+    void resolvesProjectInterfaceMethodsThroughStaticFieldType() throws Exception {
+        String railroad = """
+                package dev.railroadide.railroad;
+
+                class RailroadLike {
+                    String title() {
+                        return Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion();
+                    }
+                }
+                """;
+
+        String services = """
+                package dev.railroadide.railroad;
+
+                import dev.railroadide.railroad.plugin.spi.services.ApplicationInfoService;
+
+                class Services {
+                    static final ApplicationInfoService APPLICATION_INFO = new ApplicationInfoService() {
+                        @Override
+                        public String getVersion() {
+                            return "0.0.3";
+                        }
+
+                        @Override
+                        public String getName() {
+                            return "Railroad IDE";
+                        }
+                    };
+                }
+                """;
+
+        String applicationInfoService = """
+                package dev.railroadide.railroad.plugin.spi.services;
+
+                public interface ApplicationInfoService {
+                    String getVersion();
+                    String getName();
+                }
+                """;
+
+        JavaProjectSemanticIndex index = buildProjectIndex(
+                "src/main/java/dev/railroadide/railroad/RailroadLike.java",
+                railroad,
+                "src/main/java/dev/railroadide/railroad/Services.java",
+                services,
+                "src/main/java/dev/railroadide/railroad/plugin/spi/services/ApplicationInfoService.java",
+                applicationInfoService
+        );
+        SemanticModel model = JavaSemanticAnalyzer.analyzeFacts(railroad, new CompositeJavaSymbolIndex(List.of(index)));
+
+        List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
+        SyntaxNode getNameCall = invocations.stream()
+                .filter(node -> syntaxText(node).contains("getName()"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(getNameCall);
+        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(getNameCall).orElseThrow().kind());
+
+        SyntaxNode getVersionCall = invocations.stream()
+                .filter(node -> syntaxText(node).contains("getVersion()"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(getVersionCall);
+        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(getVersionCall).orElseThrow().kind());
+    }
+
+    @Test
+    void resolvesProjectInterfaceMethodWithProjectParameterThroughStaticFieldType() throws Exception {
+        String railroad = """
+                package dev.railroadide.railroad;
+
+                import dev.railroadide.railroad.plugin.spi.event.ApplicationStartEvent;
+
+                class RailroadLike {
+                    void start() {
+                        Railroad.EVENT_BUS.publish(new ApplicationStartEvent());
+                    }
+                }
+                """;
+
+        String railroadHolder = """
+                package dev.railroadide.railroad;
+
+                import dev.railroadide.railroad.plugin.defaults.DefaultEventBus;
+                import dev.railroadide.railroad.plugin.spi.event.EventBus;
+
+                class Railroad {
+                    static final EventBus EVENT_BUS = new DefaultEventBus();
+                }
+                """;
+
+        String eventBus = """
+                package dev.railroadide.railroad.plugin.spi.event;
+
+                public interface EventBus {
+                    void publish(Event event);
+                }
+                """;
+
+        String event = """
+                package dev.railroadide.railroad.plugin.spi.event;
+
+                public interface Event {
+                }
+                """;
+
+        String startEvent = """
+                package dev.railroadide.railroad.plugin.spi.event;
+
+                public class ApplicationStartEvent implements Event {
+                }
+                """;
+
+        String defaultEventBus = """
+                package dev.railroadide.railroad.plugin.defaults;
+
+                import dev.railroadide.railroad.plugin.spi.event.Event;
+                import dev.railroadide.railroad.plugin.spi.event.EventBus;
+
+                public class DefaultEventBus implements EventBus {
+                    @Override
+                    public void publish(Event event) {
+                    }
+                }
+                """;
+
+        JavaProjectSemanticIndex index = buildProjectIndex(
+                "src/main/java/dev/railroadide/railroad/RailroadLike.java", railroad,
+                "src/main/java/dev/railroadide/railroad/Railroad.java", railroadHolder,
+                "src/main/java/dev/railroadide/railroad/plugin/spi/event/EventBus.java", eventBus,
+                "src/main/java/dev/railroadide/railroad/plugin/spi/event/Event.java", event,
+                "src/main/java/dev/railroadide/railroad/plugin/spi/event/ApplicationStartEvent.java", startEvent,
+                "src/main/java/dev/railroadide/railroad/plugin/defaults/DefaultEventBus.java", defaultEventBus
+        );
+        SemanticModel model = JavaSemanticAnalyzer.analyzeFacts(railroad, new CompositeJavaSymbolIndex(List.of(index)));
+
+        List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
+        SyntaxNode publishCall = invocations.stream()
+                .filter(node -> syntaxText(node).contains("publish("))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(publishCall);
+        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(publishCall).orElseThrow().kind());
+    }
+
+    @Test
+    void resolvesRailroadStyleInitializationMethodReferences() throws Exception {
+        String source = """
+                class Demo {
+                    static void one() {
+                    }
+
+                    static void two() throws Exception {
+                    }
+
+                    void init2() {
+                        java.util.List<InitializationStep> steps = java.util.List.of(
+                                new InitializationStep("one", Demo::one),
+                                new InitializationStep("two", Demo::two),
+                                new InitializationStep("three", () -> one())
+                        );
+                    }
+
+                    private record InitializationStep(String message, CheckedRunnable action) {
+                    }
+
+                    @FunctionalInterface
+                    private interface CheckedRunnable {
+                        void run() throws Exception;
+                    }
+                }
+                """;
+
+        SemanticModel model = JavaSemanticAnalyzer.analyze(source);
+        List<SyntaxNode> creations = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION.id());
+        List<SyntaxNode> initCreations = creations.stream()
+                .filter(node -> syntaxText(node).contains("new InitializationStep"))
+                .toList();
+        assertEquals(3, initCreations.size());
+        for (SyntaxNode creation : initCreations)
+            assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(creation).orElseThrow().kind());
+    }
+
+    @Test
+    void unresolvedDirectSuperTypeDoesNotReenterHierarchyResolution() {
+        String source = """
+                class Child extends Missing {
+                }
+                """;
+
+        assertDoesNotThrow(() -> JavaSemanticAnalyzer.analyzeFacts(source));
     }
 
     private static void assertSymbol(List<Symbol> symbols, SymbolKind expectedKind) {

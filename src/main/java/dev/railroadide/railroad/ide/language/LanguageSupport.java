@@ -2,6 +2,8 @@ package dev.railroadide.railroad.ide.language;
 
 import dev.railroadide.railroad.ide.completion.CompletionProvider;
 import dev.railroadide.railroad.ide.diagnostics.DiagnosticsProvider;
+import dev.railroadide.railroad.ide.language.index.LanguageIndexContextContributor;
+import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexPersistence;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexer;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
@@ -64,5 +66,13 @@ public interface LanguageSupport {
     @Nullable
     default ProjectLanguageIndexPersistence<?> createPersistence() {
         return null;
+    }
+
+    @Nullable
+    default LanguageIndexContextContributor createIndexContextContributor() {
+        return null;
+    }
+
+    default void warmAdditionalIndexes(ProjectIndexContext context) {
     }
 }

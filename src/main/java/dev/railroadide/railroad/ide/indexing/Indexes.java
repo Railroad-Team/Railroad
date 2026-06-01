@@ -8,8 +8,12 @@ import dev.railroadide.railroad.java.JDKManager;
 import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -27,10 +31,12 @@ public class Indexes {
         }
 
         // check if its using java 9 modules
-        if (Files.notExists(javaHome.resolve("lib").resolve("modules"))) {
+        if (Files.isRegularFile(javaHome.resolve("lib").resolve("rt.jar"))) {
             scanRTJar(javaHome, stubs);
-        } else {
+        } else if (Files.isRegularFile(javaHome.resolve("jmods").resolve("java.base.jmod"))) {
             scanJMods(javaHome, stubs);
+        } else {
+            scanJrtRuntime(stubs);
         }
 
         return stubs;
@@ -79,6 +85,38 @@ public class Indexes {
             }
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to scan standard library", exception);
+        }
+    }
+
+    private static void scanJrtRuntime(List<ClassStub> stubs) {
+        try {
+            FileSystem fileSystem;
+            try {
+                fileSystem = FileSystems.getFileSystem(URI.create("jrt:/"));
+            } catch (Exception ignored) {
+                fileSystem = FileSystems.newFileSystem(URI.create("jrt:/"), Collections.emptyMap());
+            }
+
+            Path javaBase = fileSystem.getPath("/modules/java.base/java");
+            try (var paths = Files.walk(javaBase)) {
+                paths.filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".class"))
+                    .filter(path -> {
+                        String name = path.getFileName().toString();
+                        return !name.equals("module-info.class") && !name.equals("package-info.class");
+                    })
+                    .forEach(path -> parseRuntimeClass(path, stubs));
+            }
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to scan current runtime standard library", exception);
+        }
+    }
+
+    private static void parseRuntimeClass(Path classFile, List<ClassStub> stubs) {
+        try (var input = Files.newInputStream(classFile)) {
+            stubs.add(ClassStubParser.parse(new ClassReader(input)));
+        } catch (Exception exception) {
+            Railroad.LOGGER.warn("Ignoring unreadable runtime class {}", classFile, exception);
         }
     }
 

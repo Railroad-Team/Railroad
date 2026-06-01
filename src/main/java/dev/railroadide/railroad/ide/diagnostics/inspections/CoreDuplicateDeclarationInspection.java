@@ -26,6 +26,7 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
     private static final String JAVA_ENUM_DECLARATION = "JAVA_ENUM_DECLARATION";
     private static final String JAVA_ANNOTATION_TYPE_DECLARATION = "JAVA_ANNOTATION_TYPE_DECLARATION";
     private static final String JAVA_RECORD_DECLARATION = "JAVA_RECORD_DECLARATION";
+    private static final String JAVA_PATTERN = "JAVA_PATTERN";
 
     private static final List<JavaInspectionRule> RULES = List.of(
             new SimpleJavaInspectionRule(
@@ -49,10 +50,14 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
     private static void visitScopes(JavaRuleContext context, SyntaxNode node, ScopeTracker scope, JavaInspectionRuleReporter reporter) {
         Symbol symbol = context.declaredSymbol(node).orElse(null);
         if (symbol != null && symbol.kind() != SymbolKind.IMPORT) {
-            if (!scope.firstDeclarationByName.containsKey(symbol.simpleName())) {
-                scope.firstDeclarationByName.put(symbol.simpleName(), node);
-            } else {
-                reporter.report(node, symbol.simpleName());
+            if (JAVA_PATTERN.equals(node.kind().id()))
+                symbol = null;
+            if (symbol != null) {
+                if (!scope.firstDeclarationByName.containsKey(symbol.simpleName())) {
+                    scope.firstDeclarationByName.put(symbol.simpleName(), node);
+                } else {
+                    reporter.report(node, symbol.simpleName());
+                }
             }
         }
 

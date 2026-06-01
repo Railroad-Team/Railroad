@@ -35,7 +35,7 @@ public final class ProjectDataStore {
      * Ensures the per-project data directory exists and returns it.
      */
     public Path dataDirectory() {
-        Path projectPath = project.getPath();
+        Path projectPath = project.path();
         if (projectPath == null)
             throw new IllegalStateException("Project path is not set yet");
 
