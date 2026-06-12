@@ -8,7 +8,6 @@ import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.data.FabricFacetData;
-import dev.railroadide.railroadplugin.dto.FabricDataModel;
 import org.gradle.api.GradleException;
 import org.gradle.tooling.BuildException;
 import org.jetbrains.annotations.UnknownNullability;
@@ -54,26 +53,29 @@ public class FabricFacetDetector implements FacetDetector<FabricFacetData> {
             data.setIssuesUrl(contact.has("issues") ? contact.get("issues").getAsString() : "");
             data.setChangelogUrl(json.has("changelog") ? json.get("changelog").getAsString() : "");
 
-            GradleModelService gradleModelService = project.getGradleManager().getGradleModelService();
-            gradleModelService.getCachedModel().ifPresent(gradleBuildModel -> {
-                FabricDataModel fabricDataModel = gradleBuildModel.fabricData();
-                data.setMinecraftVersion(fabricDataModel.minecraftVersion());
-                data.setYarnMappingsVersion(fabricDataModel.mappingsVersion());
-                data.setFabricLoaderVersion(fabricDataModel.loaderVersion());
-                data.setFabricApiVersion(fabricDataModel.fabricApiVersion());
-                if (fabricDataModel.loomVersion() != null) {
-                    data.setLoomVersion(fabricDataModel.loomVersion().version());
-                    data.setArchitecturyLoom(fabricDataModel.loomVersion().isArchitecturyLoom());
-                }
+            if (project.getGradleManager().isGradleProject()) {
+                GradleModelService gradleModelService = project.getGradleManager().getGradleModelService();
+                gradleModelService.getCachedModel().map(gradleBuildModel -> gradleBuildModel.fabricData()).ifPresent(fabricDataModel -> {
+                    data.setMinecraftVersion(fabricDataModel.minecraftVersion());
+                    data.setYarnMappingsVersion(fabricDataModel.mappingsVersion());
+                    data.setFabricLoaderVersion(fabricDataModel.loaderVersion());
+                    data.setFabricApiVersion(fabricDataModel.fabricApiVersion());
+                    if (fabricDataModel.loomVersion() != null) {
+                        data.setLoomVersion(fabricDataModel.loomVersion().version());
+                        data.setArchitecturyLoom(fabricDataModel.loomVersion().isArchitecturyLoom());
+                    }
 
-                // TODO: Set source file
-            });
+                    // TODO: Set source file
+                });
+            }
 
             return Optional.of(new Facet<>(FacetManager.FABRIC, data));
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to read fabric.mod.json at {}", fabricModJson, exception);
             return Optional.empty();
         } catch (GradleException | BuildException ignored) {
+        } catch (RuntimeException exception) {
+            Railroad.LOGGER.error("Failed to parse Fabric metadata at {}", fabricModJson, exception);
         }
 
         return Optional.empty();

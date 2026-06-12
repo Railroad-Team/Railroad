@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.vcs.git.diff;
 
-import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.vcs.git.GitLog;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -102,11 +102,11 @@ public final class DiffParser {
                     if (!currentHunk.lines().isEmpty()) {
                         currentHunk.lines().add(DiffHunkLine.noNewlineAtEnd(currentHunk.lines().removeLast()));
                     } else {
-                        Railroad.LOGGER.warn("No lines in hunk to apply 'No newline at end of file' to.");
+                        GitLog.LOGGER.warn("No lines in hunk to apply 'No newline at end of file' to.");
                     }
                 } else {
                     // Unrecognized line in hunk
-                    Railroad.LOGGER.warn("Unrecognized line in diff hunk: {}", line);
+                    GitLog.LOGGER.warn("Unrecognized line in diff hunk: {}", line);
                 }
             } else if (currentFile != null) {
                 if (line.startsWith("Binary files ")) {

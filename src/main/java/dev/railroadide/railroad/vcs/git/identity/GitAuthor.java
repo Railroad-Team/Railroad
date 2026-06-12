@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.vcs.git.identity;
 
-import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.vcs.git.GitLog;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ public record GitAuthor(int commitCount, String name, @Nullable String email) {
                 try {
                     commits = Integer.parseInt(commitsStr);
                 } catch (NumberFormatException exception) {
-                    Railroad.LOGGER.warn("Failed to parse commit count '{}' in git shortlog line: {}", commitsStr, line);
+                    GitLog.LOGGER.warn("Failed to parse commit count '{}' in git shortlog line: {}", commitsStr, line);
                     commits = 0;
                 }
 
@@ -47,7 +47,7 @@ public record GitAuthor(int commitCount, String name, @Nullable String email) {
                 String email = includeEmail ? matcher.group("email") : null;
                 authors.add(new GitAuthor(commits, name, email));
             } else {
-                Railroad.LOGGER.warn("Failed to parse git shortlog line: {}", line);
+                GitLog.LOGGER.warn("Failed to parse git shortlog line: {}", line);
             }
         }
 

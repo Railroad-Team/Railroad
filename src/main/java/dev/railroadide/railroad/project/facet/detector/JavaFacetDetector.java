@@ -18,12 +18,9 @@ import org.gradle.tooling.model.java.InstalledJdk;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnknownNullability;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -56,10 +53,6 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
         if (mavenVersion.major() != -1)
             return mavenVersion;
 
-        JavaVersion classVersion = findHighestJavaVersionForClasses(path);
-        if (classVersion.major() != -1)
-            return classVersion;
-
         String systemVersionStr = System.getProperty("java.version");
         JavaVersion systemVersion = JavaVersion.fromReleaseString(systemVersionStr);
         if (systemVersion.major() != -1)
@@ -67,61 +60,6 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
 
         Railroad.LOGGER.warn("No reliable Java version found for path: {}", path);
         return JavaVersion.fromMajor(-1);
-    }
-
-    /**
-     * Finds the highest Java version among all compiled class files in the project.
-     *
-     * @param path the project directory
-     * @return the highest JavaVersion found, or an invalid version if none
-     */
-    private static JavaVersion findHighestJavaVersionForClasses(@NotNull Path path) {
-        List<Path> classFiles = findAllClassFiles(path);
-        if (classFiles.isEmpty())
-            return JavaVersion.fromMajor(-1); // No class files found
-
-        return classFiles.stream()
-            .map(JavaFacetDetector::parseJavaVersionFromClassFile)
-            .filter(version -> version.major() != -1)
-            .max(Comparator.naturalOrder())
-            .orElse(JavaVersion.fromMajor(-1));
-    }
-
-    /**
-     * Recursively finds all .class files in the given directory.
-     *
-     * @param path the project directory
-     * @return a list of paths to .class files
-     */
-    private static List<Path> findAllClassFiles(@NotNull Path path) {
-        try (Stream<Path> classFiles = Files.walk(path)) {
-            return classFiles.filter(p -> p.toString().endsWith(".class"))
-                .toList();
-        } catch (IOException exception) {
-            Railroad.LOGGER.error("Error while finding class files in path: {}", path, exception);
-            return List.of();
-        }
-    }
-
-    /**
-     * Parses the Java version from a .class file by reading its major and minor version fields.
-     *
-     * @param classFile the path to the .class file
-     * @return the JavaVersion represented by the class file, or an invalid version if not a valid class file
-     */
-    private static JavaVersion parseJavaVersionFromClassFile(@NotNull Path classFile) {
-        try (var inputStream = new DataInputStream(Files.newInputStream(classFile))) {
-            int magic = inputStream.readInt();
-            if (magic != 0xCAFEBABE)
-                return JavaVersion.fromMajor(-1); // Not a valid class file
-
-            int minorVersion = inputStream.readUnsignedShort();
-            int majorVersion = inputStream.readUnsignedShort();
-            return JavaVersion.fromMajorMinor(majorVersion, minorVersion);
-        } catch (IOException exception) {
-            Railroad.LOGGER.error("Error reading class file: {}", classFile, exception);
-            return JavaVersion.fromMajor(-1);
-        }
     }
 
     /**
@@ -211,24 +149,24 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
      */
     @Override
     public Optional<Facet<JavaFacetData>> detect(@UnknownNullability Project project) {
-        long javaFileCount = 0;
+        boolean hasJavaFiles = false;
         try {
             try (Stream<Path> javaFiles = Files.find(project.path(), 10,
                 (p, attrs) -> p.toString().endsWith(".java"))) {
-                javaFileCount = javaFiles.count();
+                hasJavaFiles = javaFiles.findAny().isPresent();
             }
         } catch (IOException exception) {
             Railroad.LOGGER.error("Error while detecting Java files in path: {}", project.path(), exception);
         }
 
         JavaFacetData data = null;
-        if (javaFileCount > 0) {
+        if (hasJavaFiles) {
             data = new JavaFacetData();
             JavaVersion highestJavaVersion = findMostReliableJavaVersion(project);
             data.setVersion(highestJavaVersion);
         }
 
-        return javaFileCount > 0 ?
+        return hasJavaFiles ?
             Optional.of(new Facet<>(FacetManager.JAVA, data)) :
             Optional.empty();
     }
