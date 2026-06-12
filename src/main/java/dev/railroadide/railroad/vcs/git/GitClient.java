@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.vcs.git;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import dev.railroadide.railroad.vcs.git.commit.GitCommitData;
 import dev.railroadide.railroad.vcs.git.commit.GitCommitPage;
@@ -92,12 +91,12 @@ public class GitClient {
         GitCommand isInsideCmd = GitCommands.revParseIsInsideWorkTree(path);
         GitResult isInsideResult = runner.run(isInsideCmd, null, null, GitResultCaptureMode.TEXT_LINES);
         if (isInsideResult.timedOut()) {
-            Railroad.LOGGER.warn("git {} timed out for path: {}", isInsideCmd.argsString(), path);
+            GitLog.LOGGER.warn("git {} timed out for path: {}", isInsideCmd.argsString(), path);
             return Optional.empty();
         }
 
         if (isInsideResult.cancelled()) {
-            Railroad.LOGGER.warn("git {} was cancelled for path: {}", isInsideCmd.argsString(), path);
+            GitLog.LOGGER.warn("git {} was cancelled for path: {}", isInsideCmd.argsString(), path);
             return Optional.empty();
         }
 
@@ -107,12 +106,12 @@ public class GitClient {
         GitCommand topLevelCmd = GitCommands.revParseShowTopLevel(path);
         GitResult topLevelResult = runner.run(topLevelCmd, null, null, GitResultCaptureMode.TEXT_LINES);
         if (topLevelResult.timedOut()) {
-            Railroad.LOGGER.warn("git {} timed out for path: {}", topLevelCmd.argsString(), path);
+            GitLog.LOGGER.warn("git {} timed out for path: {}", topLevelCmd.argsString(), path);
             return Optional.empty();
         }
 
         if (topLevelResult.cancelled()) {
-            Railroad.LOGGER.warn("git {} was cancelled for path: {}", topLevelCmd.argsString(), path);
+            GitLog.LOGGER.warn("git {} was cancelled for path: {}", topLevelCmd.argsString(), path);
             return Optional.empty();
         }
 
@@ -124,7 +123,7 @@ public class GitClient {
             Path topLevelPath = Path.of(topLevelPathStr).toAbsolutePath().normalize();
             return Optional.of(new GitRepository(topLevelPath));
         } catch (Exception exception) {
-            Railroad.LOGGER.warn("Failed to parse git top-level path: {}", topLevelPathStr, exception);
+            GitLog.LOGGER.warn("Failed to parse git top-level path: {}", topLevelPathStr, exception);
             return Optional.empty();
         }
     }
@@ -154,9 +153,9 @@ public class GitClient {
             // TODO: Allow passing listeners from higher up
             push(repo, GitOutputListener.NO_OP, event -> {
                 if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                    Railroad.LOGGER.debug("Git Push Progress - {}: {}%", phase, percent);
+                    GitLog.LOGGER.debug("Git Push Progress - {}: {}%", phase, percent);
                 } else if (event instanceof GitProgressEvent.Message(String message)) {
-                    Railroad.LOGGER.debug("Git Push Message - {}", message);
+                    GitLog.LOGGER.debug("Git Push Message - {}", message);
                 }
             });
         }
@@ -564,17 +563,17 @@ public class GitClient {
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
 
         if (result.timedOut()) {
-            Railroad.LOGGER.warn("git diff timed out for path: {}", filePath);
+            GitLog.LOGGER.warn("git diff timed out for path: {}", filePath);
             return Optional.empty();
         }
 
         if (result.cancelled()) {
-            Railroad.LOGGER.warn("git diff was cancelled for path: {}", filePath);
+            GitLog.LOGGER.warn("git diff was cancelled for path: {}", filePath);
             return Optional.empty();
         }
 
         if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git diff failed for path {}: {}", filePath, String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git diff failed for path {}: {}", filePath, String.join("\n", result.stderr()));
             return Optional.empty();
         }
 
@@ -592,17 +591,17 @@ public class GitClient {
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
 
         if (result.timedOut()) {
-            Railroad.LOGGER.warn("git rev-parse timed out for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git rev-parse timed out for repository at: {}", repo.root());
             return null;
         }
 
         if (result.cancelled()) {
-            Railroad.LOGGER.warn("git rev-parse was cancelled for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git rev-parse was cancelled for repository at: {}", repo.root());
             return null;
         }
 
         if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git rev-parse failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git rev-parse failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
             return null;
         }
 
@@ -622,17 +621,17 @@ public class GitClient {
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
 
         if (result.timedOut()) {
-            Railroad.LOGGER.warn("git tag timed out for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git tag timed out for repository at: {}", repo.root());
             return List.of();
         }
 
         if (result.cancelled()) {
-            Railroad.LOGGER.warn("git tag was cancelled for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git tag was cancelled for repository at: {}", repo.root());
             return List.of();
         }
 
         if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git tag failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git tag failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
             return List.of();
         }
 
@@ -655,17 +654,17 @@ public class GitClient {
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
 
         if (result.timedOut()) {
-            Railroad.LOGGER.warn("git show-ref timed out for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git show-ref timed out for repository at: {}", repo.root());
             return Map.of();
         }
 
         if (result.cancelled()) {
-            Railroad.LOGGER.warn("git show-ref was cancelled for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git show-ref was cancelled for repository at: {}", repo.root());
             return Map.of();
         }
 
         if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git show-ref failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git show-ref failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
             return Map.of();
         }
 
@@ -694,17 +693,17 @@ public class GitClient {
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
 
         if (result.timedOut()) {
-            Railroad.LOGGER.warn("git branch timed out for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git branch timed out for repository at: {}", repo.root());
             return List.of();
         }
 
         if (result.cancelled()) {
-            Railroad.LOGGER.warn("git branch was cancelled for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git branch was cancelled for repository at: {}", repo.root());
             return List.of();
         }
 
         if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git branch failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git branch failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
             return List.of();
         }
 
@@ -727,17 +726,17 @@ public class GitClient {
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
 
         if (result.timedOut()) {
-            Railroad.LOGGER.warn("git branch --list timed out for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git branch --list timed out for repository at: {}", repo.root());
             return List.of();
         }
 
         if (result.cancelled()) {
-            Railroad.LOGGER.warn("git branch --list was cancelled for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git branch --list was cancelled for repository at: {}", repo.root());
             return List.of();
         }
 
         if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git branch --list failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git branch --list failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
             return List.of();
         }
 
@@ -760,17 +759,17 @@ public class GitClient {
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
 
         if (result.timedOut()) {
-            Railroad.LOGGER.warn("git branch -r timed out for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git branch -r timed out for repository at: {}", repo.root());
             return List.of();
         }
 
         if (result.cancelled()) {
-            Railroad.LOGGER.warn("git branch -r was cancelled for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git branch -r was cancelled for repository at: {}", repo.root());
             return List.of();
         }
 
         if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git branch -r failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git branch -r failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
             return List.of();
         }
 
@@ -794,17 +793,17 @@ public class GitClient {
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
 
         if (result.timedOut()) {
-            Railroad.LOGGER.warn("git shortlog timed out for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git shortlog timed out for repository at: {}", repo.root());
             return List.of();
         }
 
         if (result.cancelled()) {
-            Railroad.LOGGER.warn("git shortlog was cancelled for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git shortlog was cancelled for repository at: {}", repo.root());
             return List.of();
         }
 
         if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git shortlog failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git shortlog failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
             return List.of();
         }
 
@@ -828,17 +827,17 @@ public class GitClient {
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
 
         if (result.timedOut()) {
-            Railroad.LOGGER.warn("git rev-list timed out for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git rev-list timed out for repository at: {}", repo.root());
             return 0L;
         }
 
         if (result.cancelled()) {
-            Railroad.LOGGER.warn("git rev-list was cancelled for repository at: {}", repo.root());
+            GitLog.LOGGER.warn("git rev-list was cancelled for repository at: {}", repo.root());
             return 0L;
         }
 
         if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git rev-list failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git rev-list failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
             return 0L;
         }
 
@@ -846,7 +845,7 @@ public class GitClient {
         try {
             return Long.parseLong(stdout);
         } catch (NumberFormatException exception) {
-            Railroad.LOGGER.warn("Failed to parse repository creation date '{}' for repository at {}",
+            GitLog.LOGGER.warn("Failed to parse repository creation date '{}' for repository at {}",
                 stdout,
                 repo.root());
             return 0L;
@@ -1017,7 +1016,7 @@ public class GitClient {
                 additions = additionsDeletions.stream().mapToInt(GitAdditionsDeletions::additions).sum();
                 deletions = additionsDeletions.stream().mapToInt(GitAdditionsDeletions::deletions).sum();
             } catch (RuntimeException exception) {
-                Railroad.LOGGER.debug("Failed to load stash additions/deletions for {}", parts[0], exception);
+                GitLog.LOGGER.debug("Failed to load stash additions/deletions for {}", parts[0], exception);
             }
 
             stashes.add(new GitStashEntry(parts[0], branch, parts[1], createdAtEpochSeconds, message, additions, deletions));
@@ -1145,17 +1144,17 @@ public class GitClient {
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_WHOLE);
 
         if (result.timedOut()) {
-            Railroad.LOGGER.warn("git stash diff timed out for {} in {}", filePath, stashRef);
+            GitLog.LOGGER.warn("git stash diff timed out for {} in {}", filePath, stashRef);
             return Optional.empty();
         }
 
         if (result.cancelled()) {
-            Railroad.LOGGER.warn("git stash diff was cancelled for {} in {}", filePath, stashRef);
+            GitLog.LOGGER.warn("git stash diff was cancelled for {} in {}", filePath, stashRef);
             return Optional.empty();
         }
 
         if (result.exitCode() != 0) {
-            Railroad.LOGGER.warn("git stash diff failed for {} in {}: {}", filePath, stashRef, String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git stash diff failed for {} in {}: {}", filePath, stashRef, String.join("\n", result.stderr()));
             return Optional.empty();
         }
 
@@ -1205,7 +1204,7 @@ public class GitClient {
             // Assume support for versions 2.23 and above
             return (major > 2) || (major == 2 && minor >= 23);
         } catch (NumberFormatException exception) {
-            Railroad.LOGGER.warn("Failed to parse git version numbers from: {}", versionStr, exception);
+            GitLog.LOGGER.warn("Failed to parse git version numbers from: {}", versionStr, exception);
             return false;
         }
     }
@@ -1562,7 +1561,7 @@ public class GitClient {
         try {
             String[] parts = stdout.split("\\s+");
             if (parts.length != 2) {
-                Railroad.LOGGER.warn("Unexpected ahead-behind output '{}' for branch {} in repository at {}",
+                GitLog.LOGGER.warn("Unexpected ahead-behind output '{}' for branch {} in repository at {}",
                     stdout, branchName, repo.root());
                 return new int[]{0, 0};
             }
@@ -1571,7 +1570,7 @@ public class GitClient {
             int behindCount = Integer.parseInt(parts[1]);
             return new int[]{aheadCount, behindCount};
         } catch (NumberFormatException exception) {
-            Railroad.LOGGER.warn("Failed to parse ahead-behind count '{}' for branch {} in repository at {}",
+            GitLog.LOGGER.warn("Failed to parse ahead-behind count '{}' for branch {} in repository at {}",
                 stdout, branchName, repo.root(), exception);
             return new int[]{0, 0};
         }
@@ -1630,7 +1629,7 @@ public class GitClient {
         try {
             return Long.parseLong(timestamp);
         } catch (NumberFormatException exception) {
-            Railroad.LOGGER.warn("Failed to parse last commit timestamp '{}' for branch {} in repository at {}",
+            GitLog.LOGGER.warn("Failed to parse last commit timestamp '{}' for branch {} in repository at {}",
                 timestamp, branchName, repo.root(), exception);
             return null;
         }

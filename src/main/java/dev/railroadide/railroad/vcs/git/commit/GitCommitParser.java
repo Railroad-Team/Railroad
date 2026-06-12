@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.vcs.git.commit;
 
-import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.vcs.git.GitLog;
 import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
@@ -35,14 +35,14 @@ public final class GitCommitParser {
             commit = commit.strip();
             String[] fields = commit.split("\u0000", -1);
             if (fields.length < 7) {
-                Railroad.LOGGER.warn("Malformed git commit entry: {}", commit);
+                GitLog.LOGGER.warn("Malformed git commit entry: {}", commit);
                 continue;
             }
 
             try {
                 commitList.add(parseCommit(fields));
             } catch (Exception exception) {
-                Railroad.LOGGER.warn("Failed to parse git commit entry: {}", commit, exception);
+                GitLog.LOGGER.warn("Failed to parse git commit entry: {}", commit, exception);
             }
         }
 
