@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.vcs.git;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
 import dev.railroadide.railroad.utility.ShutdownHooks;
@@ -373,7 +372,7 @@ public class GitManager {
             this.pullStrategy.set(currentPullStrategy);
             this.pushStrategy.set(currentPushStrategy);
         });
-//            Railroad.LOGGER.debug("Loaded {} changes from Git repository at {}",
+//            GitLog.LOGGER.debug("Loaded {} changes from Git repository at {}",
 //                status.changes().size(),
 //                repository.root());
     }
@@ -384,9 +383,9 @@ public class GitManager {
 
         this.gitClient.fetch(repository, GitOutputListener.NO_OP, event -> {
             if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                Railroad.LOGGER.debug("Git Fetch Progress - {}: {}%", phase, percent);
+                GitLog.LOGGER.debug("Git Fetch Progress - {}: {}%", phase, percent);
             } else if (event instanceof GitProgressEvent.Message(String message)) {
-                Railroad.LOGGER.debug("Git Fetch Message - {}", message);
+                GitLog.LOGGER.debug("Git Fetch Message - {}", message);
             }
         });
         String remoteName = this.gitClient.getUpstream(repository).map(GitUpstream::remoteName).orElse("");
@@ -423,9 +422,9 @@ public class GitManager {
             if (repository != null) {
                 this.gitClient.push(repository, GitOutputListener.NO_OP, event -> {
                     if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                        Railroad.LOGGER.debug("Git Push Progress - {}: {}%", phase, percent);
+                        GitLog.LOGGER.debug("Git Push Progress - {}: {}%", phase, percent);
                     } else if (event instanceof GitProgressEvent.Message(String message)) {
-                        Railroad.LOGGER.debug("Git Push Message - {}", message);
+                        GitLog.LOGGER.debug("Git Push Message - {}", message);
                     }
                 });
                 refreshStatusInternal();
@@ -442,9 +441,9 @@ public class GitManager {
             if (repository != null) {
                 this.gitClient.pull(repository, GitOutputListener.NO_OP, event -> {
                     if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                        Railroad.LOGGER.debug("Git Pull Progress - {}: {}%", phase, percent);
+                        GitLog.LOGGER.debug("Git Pull Progress - {}: {}%", phase, percent);
                     } else if (event instanceof GitProgressEvent.Message(String message)) {
-                        Railroad.LOGGER.debug("Git Pull Message - {}", message);
+                        GitLog.LOGGER.debug("Git Pull Message - {}", message);
                     }
                 });
                 refreshStatusInternal();
@@ -487,9 +486,9 @@ public class GitManager {
             try {
                 GitIdentity identity = this.gitClient.getIdentity();
                 runOnFxThread(() -> this.gitIdentity.set(identity));
-                Railroad.LOGGER.debug("Loaded Git identity: {}", identity);
+                GitLog.LOGGER.debug("Loaded Git identity: {}", identity);
             } catch (Exception exception) {
-                Railroad.LOGGER.warn("Failed to load Git identity", exception);
+                GitLog.LOGGER.warn("Failed to load Git identity", exception);
             }
         });
     }
@@ -1429,9 +1428,9 @@ public class GitManager {
             if (repository != null) {
                 this.gitClient.fetchAllRemotes(repository, GitOutputListener.NO_OP, event -> {
                     if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                        Railroad.LOGGER.debug("Git Fetch All Remotes Progress - {}: {}%", phase, percent);
+                        GitLog.LOGGER.debug("Git Fetch All Remotes Progress - {}: {}%", phase, percent);
                     } else if (event instanceof GitProgressEvent.Message(String message)) {
-                        Railroad.LOGGER.debug("Git Fetch All Remotes Message - {}", message);
+                        GitLog.LOGGER.debug("Git Fetch All Remotes Message - {}", message);
                     }
                 });
                 refreshStatusInternal();
@@ -1451,9 +1450,9 @@ public class GitManager {
             if (repository != null) {
                 this.gitClient.pruneAllRemotes(repository, GitOutputListener.NO_OP, event -> {
                     if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                        Railroad.LOGGER.debug("Git Prune All Remotes Progress - {}: {}%", phase, percent);
+                        GitLog.LOGGER.debug("Git Prune All Remotes Progress - {}: {}%", phase, percent);
                     } else if (event instanceof GitProgressEvent.Message(String message)) {
-                        Railroad.LOGGER.debug("Git Prune All Remotes Message - {}", message);
+                        GitLog.LOGGER.debug("Git Prune All Remotes Message - {}", message);
                     }
                 });
                 refreshStatusInternal();
@@ -1470,9 +1469,9 @@ public class GitManager {
             if (repository != null) {
                 this.gitClient.gc(repository, GitOutputListener.NO_OP, event -> {
                     if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                        Railroad.LOGGER.debug("Git Prune Progress - {}: {}%", phase, percent);
+                        GitLog.LOGGER.debug("Git Prune Progress - {}: {}%", phase, percent);
                     } else if (event instanceof GitProgressEvent.Message(String message)) {
-                        Railroad.LOGGER.debug("Git Prune Message - {}", message);
+                        GitLog.LOGGER.debug("Git Prune Message - {}", message);
                     }
                 });
                 refreshStatusInternal();

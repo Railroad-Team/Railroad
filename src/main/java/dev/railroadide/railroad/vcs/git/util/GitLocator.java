@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.vcs.git.util;
 
 import dev.railroadide.railroad.utility.OperatingSystem;
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.utility.CommandUtils;
 import dev.railroadide.railroad.utility.FileUtils;
+import dev.railroadide.railroad.vcs.git.GitLog;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,7 +24,7 @@ public class GitLocator {
     public static Optional<Path> findGitExecutable() {
         Long timeoutMs = Settings.GIT_BINARY_SEARCH_COMMAND_TIMEOUT_MS.getValue();
         if (timeoutMs == null) {
-            Railroad.LOGGER.error("Git binary search timeout setting is null, using default of 5000ms");
+            GitLog.LOGGER.error("Git binary search timeout setting is null, using default of 5000ms");
             timeoutMs = 5000L;
         }
 

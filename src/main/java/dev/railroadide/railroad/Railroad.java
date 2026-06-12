@@ -33,6 +33,7 @@ import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.json.LocalDateTimeTypeAdapter;
 import dev.railroadide.railroad.utility.json.PathTypeAdapter;
 import dev.railroadide.railroad.vcs.RepositoryManager;
+import dev.railroadide.railroad.vcs.git.GitLog;
 import dev.railroadide.railroad.vcs.git.util.GitUtils;
 import dev.railroadide.railroad.welcome.WelcomePane;
 import dev.railroadide.railroad.window.WindowBuilder;
@@ -103,6 +104,7 @@ public class Railroad extends Application {
 
         List<InitializationStep> steps = List.of(
             new InitializationStep("Initializing logger", LoggerManager::init),
+            new InitializationStep("Initializing Git logger", GitLog::initialize),
             new InitializationStep("Initializing run configuration types", RunConfigurationTypes::initialize),
             new InitializationStep("Loading configuration", ConfigHandler::initConfig),
             new InitializationStep("Scanning plugins", () -> PluginManager.loadPlugins(ConfigHandler.getConfigDirectory().resolve("plugins"))),
