@@ -10,27 +10,30 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRVBox;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.layout.StackPane;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class GradleTreeViewPane<T> extends RRVBox {
-    private final ObservableList<T> elements = FXCollections.observableArrayList();
-
+    private final Project project;
     private final TreeView<GradleTreeElement> treeView = new TreeView<>();
     private final MFXProgressSpinner loadingSpinner = new MFXProgressSpinner();
     private final StackPane loadingContainer = new StackPane(loadingSpinner);
     private final AtomicBoolean isLoading = new AtomicBoolean(true);
+    private final AtomicLong reloadGeneration = new AtomicLong();
 
     public GradleTreeViewPane(Project project) {
         super();
+        this.project = project;
         getStyleClass().add("gradle-tool-content-pane");
 
         loadingSpinner.getStyleClass().add("gradle-tool-loading-spinner");
@@ -42,27 +45,21 @@ public abstract class GradleTreeViewPane<T> extends RRVBox {
         treeView.setShowRoot(false);
         treeView.setCellFactory(param -> new GradleTreeCell());
         treeView.prefHeightProperty().bind(heightProperty());
-        elements.addListener((ListChangeListener<? super T>) change -> Platform.runLater(() -> {
-            GradleTreeBuilder<T> treeBuilder = createTreeBuilder();
-            treeView.setRoot(treeBuilder.buildTree(project, elements));
-        }));
 
         updateLoadingState();
 
         GradleModelService modelService = project.getGradleManager().getGradleModelService();
-        modelService.refreshModel(true);
         modelService.addListener(new GradleModelListener() {
             @Override
             public void modelReloadStarted() {
+                reloadGeneration.incrementAndGet();
                 isLoading.set(true);
                 updateLoadingState();
             }
 
             @Override
             public void modelReloadSucceeded(GradleBuildModel model) {
-                isLoading.set(false);
-                elements.setAll(getElementsFromModel(modelService, model));
-                updateLoadingState();
+                rebuildTree(modelService, model);
             }
 
             @Override
@@ -72,26 +69,53 @@ public abstract class GradleTreeViewPane<T> extends RRVBox {
                 updateLoadingState();
             }
         });
+
+        modelService.getCachedModel().ifPresent(model -> rebuildTree(modelService, model));
     }
 
     protected abstract GradleTreeBuilder<T> createTreeBuilder();
 
     protected abstract Collection<T> getElementsFromModel(GradleModelService modelService, GradleBuildModel model);
 
-    protected void updateLoadingState() {
-        Platform.runLater(() -> {
-            ObservableList<Node> children = getChildren();
-            if (isLoading.get()) {
-                if (!children.contains(loadingContainer)) {
-                    children.clear();
-                    children.add(loadingContainer);
+    private void rebuildTree(GradleModelService modelService, GradleBuildModel model) {
+        long generation = reloadGeneration.get();
+        try {
+            List<T> elements = new ArrayList<>(getElementsFromModel(modelService, model));
+            TreeItem<GradleTreeElement> root = createTreeBuilder().buildTree(project, elements);
+            Platform.runLater(() -> {
+                if (generation != reloadGeneration.get()) {
+                    return;
                 }
-            } else {
-                if (!children.contains(treeView)) {
-                    children.clear();
-                    children.add(treeView);
-                }
+                treeView.setRoot(root);
+                isLoading.set(false);
+                updateLoadingState();
+            });
+        } catch (Throwable error) {
+            Railroad.LOGGER.error("Failed to build Gradle tree", error);
+            if (generation == reloadGeneration.get()) {
+                isLoading.set(false);
+                updateLoadingState();
             }
-        });
+        }
+    }
+
+    protected void updateLoadingState() {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(this::updateLoadingState);
+            return;
+        }
+
+        ObservableList<Node> children = getChildren();
+        if (isLoading.get()) {
+            if (!children.contains(loadingContainer)) {
+                children.clear();
+                children.add(loadingContainer);
+            }
+        } else {
+            if (!children.contains(treeView)) {
+                children.clear();
+                children.add(treeView);
+            }
+        }
     }
 }

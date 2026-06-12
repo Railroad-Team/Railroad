@@ -24,6 +24,7 @@ import dev.railroadide.railroad.vcs.git.GitClient;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.execution.GitProcessRunner;
 import javafx.beans.property.*;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableSet;
 import javafx.embed.swing.SwingFXUtils;
@@ -149,16 +150,18 @@ public class RailroadProject implements Project {
 
     private void discoverFacets() {
         this.facets.clear();
-        FacetManager.scan(this).thenAcceptAsync(facets -> {
-            for (Facet<?> facet : facets) {
-                if (facet != null) {
-                    this.facets.add(facet);
-                    Railroad.EVENT_BUS.publish(new FacetDetectedEvent(this, facet));
-                } else {
-                    Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
+        FacetManager.scan(this).thenAccept(discoveredFacets ->
+            Platform.runLater(() -> {
+                for (Facet<?> facet : discoveredFacets) {
+                    if (facet != null) {
+                        this.facets.add(facet);
+                        Railroad.EVENT_BUS.publish(new FacetDetectedEvent(this, facet));
+                    } else {
+                        Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
+                    }
                 }
-            }
-        }).exceptionally(ex -> {
+            })
+        ).exceptionally(ex -> {
             Railroad.LOGGER.error("Failed to discover facets for project: {}", getPathString(), ex);
             return null;
         });
