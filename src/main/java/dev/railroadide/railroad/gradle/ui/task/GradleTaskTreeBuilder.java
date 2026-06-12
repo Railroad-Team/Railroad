@@ -10,7 +10,6 @@ import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroadplugin.dto.RailroadGradleTask;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.scene.control.TreeItem;
 
 import java.util.Comparator;
@@ -23,7 +22,7 @@ import java.util.stream.Collectors;
 
 public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTask> {
     @Override
-    public TreeItem<GradleTreeElement> buildTree(Project project, ObservableList<RailroadGradleTask> elements) {
+    public TreeItem<GradleTreeElement> buildTree(Project project, List<RailroadGradleTask> elements) {
         TreeItem<GradleTreeElement> root = new TreeItem<>();
 
         Map<RailroadModule, List<RailroadGradleTask>> tasksByProject = elements.stream()

@@ -125,6 +125,8 @@ public class GradleToolsPane extends RRVBox {
         tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         getChildren().add(tabPane);
         VBox.setVgrow(tabPane, Priority.ALWAYS);
+
+        modelService.refreshModel(false);
     }
 
     private static ButtonBase createButtonBarButton(Ikon ikon, String tooltipKey, String styleClass, boolean toggle) {

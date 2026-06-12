@@ -158,6 +158,7 @@ public class ToolingGradleModelService implements GradleModelService {
 
     @Override
     public CompletableFuture<GradleBuildModel> refreshModel(boolean force) {
+        CompletableFuture<GradleBuildModel> refresh;
         synchronized (lock) {
             if (!force) {
                 GradleBuildModel existingModel = cachedModel.get();
@@ -165,33 +166,63 @@ public class ToolingGradleModelService implements GradleModelService {
                     return CompletableFuture.completedFuture(existingModel);
             }
 
-            if (ongoingRefresh != null && !ongoingRefresh.isDone())
+            if (ongoingRefresh != null)
                 return ongoingRefresh;
 
-            listeners.forEach(GradleModelListener::modelReloadStarted);
-
-            ongoingRefresh = CompletableFuture.supplyAsync(
+            refresh = CompletableFuture.supplyAsync(
                     safely(() -> ToolingGradleModelService.loadModel(this.project, this.environment)),
                     executor)
-                .orTimeout(modelTimeout.toMillis(), TimeUnit.MILLISECONDS)
-                .whenComplete((model, throwable) -> {
-                    synchronized (lock) {
-                        if (throwable == null && model != null) {
-                            cachedModel.set(model);
-                            listeners.forEach(listener -> listener.modelReloadSucceeded(model));
-                        } else {
-                            listeners.forEach(listener ->
-                                listener.modelReloadFailed(throwable != null ?
-                                    throwable :
-                                    new IllegalStateException("Failed to load model"))
-                            );
-                        }
+                .orTimeout(modelTimeout.toMillis(), TimeUnit.MILLISECONDS);
+            ongoingRefresh = refresh;
+        }
 
-                        ongoingRefresh = null;
-                    }
-                });
+        notifyReloadStarted();
+        refresh.whenComplete((model, throwable) -> completeRefresh(refresh, model, throwable));
+        return refresh;
+    }
 
-            return ongoingRefresh;
+    private void completeRefresh(CompletableFuture<GradleBuildModel> refresh,
+                                 GradleBuildModel model,
+                                 Throwable throwable) {
+        synchronized (lock) {
+            if (throwable == null && model != null) {
+                cachedModel.set(model);
+            }
+        }
+
+        try {
+            if (throwable == null && model != null) {
+                listeners.forEach(listener -> notifyListener(
+                    () -> listener.modelReloadSucceeded(model),
+                    "success"
+                ));
+            } else {
+                Throwable error = throwable != null
+                    ? throwable
+                    : new IllegalStateException("Failed to load model");
+                listeners.forEach(listener -> notifyListener(
+                    () -> listener.modelReloadFailed(error),
+                    "failure"
+                ));
+            }
+        } finally {
+            synchronized (lock) {
+                if (ongoingRefresh == refresh) {
+                    ongoingRefresh = null;
+                }
+            }
+        }
+    }
+
+    private void notifyReloadStarted() {
+        listeners.forEach(listener -> notifyListener(listener::modelReloadStarted, "start"));
+    }
+
+    private void notifyListener(Runnable callback, String phase) {
+        try {
+            callback.run();
+        } catch (Throwable error) {
+            Railroad.LOGGER.error("Gradle model listener failed during {} notification", phase, error);
         }
     }
 

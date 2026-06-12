@@ -30,6 +30,14 @@ public class PathTreeItem extends TreeItem<PathItem> {
         return super.getChildren();
     }
 
+    public boolean areChildrenLoaded() {
+        return !isFirstTimeChildren;
+    }
+
+    public ObservableList<TreeItem<PathItem>> getLoadedChildren() {
+        return super.getChildren();
+    }
+
     @Override
     public boolean isLeaf() {
         if (this.isFirstTimeLeft) {
@@ -49,6 +57,7 @@ public class PathTreeItem extends TreeItem<PathItem> {
                 for (Path directory : directories) {
                     children.add(new PathTreeItem(new PathItem(directory)));
                 }
+                children.sort(new PathTreeItemComparator());
             } catch (IOException exception) {
                 Railroad.LOGGER.error("Failed to build children for tree item: {}", treeItem, exception);
             }

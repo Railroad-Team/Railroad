@@ -16,7 +16,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Utility class for managing project facets and their detection.
@@ -28,6 +29,12 @@ import java.util.stream.Collectors;
 public class FacetManager {
     private static final Map<String, FacetType<?>> TYPES = new ConcurrentHashMap<>();
     private static final List<FacetDetector<?>> DETECTORS = new CopyOnWriteArrayList<>();
+    private static final ExecutorService SCAN_EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
+        var thread = new Thread(runnable, "railroad-facet-scanner");
+        thread.setDaemon(true);
+        thread.setPriority(Thread.MIN_PRIORITY);
+        return thread;
+    });
     /**
      * The facet type for Java language support.
      */
@@ -147,10 +154,19 @@ public class FacetManager {
 
     public static CompletableFuture<Collection<Facet<?>>> scan(@NotNull Project project) {
         return CompletableFuture.supplyAsync(() -> {
-            Set<Facet<?>> facets = DETECTORS.stream()
-                .map(detector -> detector.detect(project))
-                .flatMap(Optional::stream)
-                .collect(Collectors.toSet());
+            Map<FacetType<?>, Facet<?>> facets = new LinkedHashMap<>();
+            for (FacetDetector<?> detector : DETECTORS) {
+                try {
+                    detector.detect(project).ifPresent(facet -> facets.put(facet.getType(), facet));
+                } catch (Throwable error) {
+                    Railroad.LOGGER.error(
+                        "Facet detector {} failed for project at {}",
+                        detector.getClass().getSimpleName(),
+                        project.getPath(),
+                        error
+                    );
+                }
+            }
 
             if (facets.isEmpty()) {
                 Railroad.LOGGER.warn("No facets detected for project at {}", project.getPath());
@@ -158,7 +174,7 @@ public class FacetManager {
                 Railroad.LOGGER.info("Detected {} facets for project at {}", facets.size(), project.getPath());
             }
 
-            return facets;
-        });
+            return List.copyOf(facets.values());
+        }, SCAN_EXECUTOR);
     }
 }

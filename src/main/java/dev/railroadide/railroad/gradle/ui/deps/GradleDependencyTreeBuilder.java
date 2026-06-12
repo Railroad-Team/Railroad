@@ -10,7 +10,6 @@ import dev.railroadide.railroadplugin.dto.RailroadConfiguration;
 import dev.railroadide.railroadplugin.dto.RailroadDependency;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.scene.control.TreeItem;
 import org.gradle.tooling.model.DomainObjectSet;
 
@@ -18,7 +17,7 @@ import java.util.*;
 
 public class GradleDependencyTreeBuilder implements GradleTreeBuilder<RailroadConfiguration> {
     @Override
-    public TreeItem<GradleTreeElement> buildTree(Project project, ObservableList<RailroadConfiguration> elements) {
+    public TreeItem<GradleTreeElement> buildTree(Project project, List<RailroadConfiguration> elements) {
         TreeItem<GradleTreeElement> root = new TreeItem<>();
 
         List<RailroadConfiguration> rootConfigs = elements.stream()

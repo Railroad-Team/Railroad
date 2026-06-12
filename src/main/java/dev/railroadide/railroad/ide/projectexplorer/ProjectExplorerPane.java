@@ -502,6 +502,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             return;
 
         projectLanguageIndexCoordinator.handleFileChange(path, kind);
+        if (kind != StandardWatchEventKinds.ENTRY_CREATE && kind != StandardWatchEventKinds.ENTRY_DELETE)
+            return;
 
         Platform.runLater(() -> {
             // Refresh the tree view based on the kind of event
@@ -713,9 +715,13 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     private void sortTreeItems(TreeItem<PathItem> parentItem) {
-        if (parentItem != null && !parentItem.getChildren().isEmpty()) {
-            parentItem.getChildren().sort(new PathTreeItemComparator());
-            for (TreeItem<PathItem> child : parentItem.getChildren()) {
+        if (parentItem == null)
+            return;
+
+        ObservableList<TreeItem<PathItem>> children = getLoadedChildren(parentItem);
+        if (!children.isEmpty()) {
+            children.sort(new PathTreeItemComparator());
+            for (TreeItem<PathItem> child : children) {
                 sortTreeItems(child);
             }
         }
@@ -748,13 +754,22 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         if (currentItem.getValue().getPath().equals(path)) {
             return currentItem;
         }
-        for (TreeItem<PathItem> child : currentItem.getChildren()) {
+
+        for (TreeItem<PathItem> child : getLoadedChildren(currentItem)) {
             TreeItem<PathItem> result = findTreeItemRecursive(child, path);
             if (result != null) {
                 return result;
             }
         }
         return null;
+    }
+
+    private static ObservableList<TreeItem<PathItem>> getLoadedChildren(TreeItem<PathItem> item) {
+        if (item instanceof PathTreeItem pathTreeItem && !pathTreeItem.areChildrenLoaded()) {
+            return FXCollections.emptyObservableList();
+        }
+
+        return item.getChildren();
     }
 
     private void expandAllFolders(TreeItem<PathItem> item) {
