@@ -1772,7 +1772,7 @@ final class JavaGreenParser {
         }
 
         expectSignificant(JavaTokenType.CLOSE_PAREN, children);
-        children.add(parseUnaryExpression());
+        children.add(isLambdaHeader() ? parseLambdaExpression() : parseUnaryExpression());
         return greenNode(JavaSyntaxKinds.CAST_EXPRESSION, children);
     }
 
@@ -2209,8 +2209,14 @@ final class JavaGreenParser {
         int marker = position;
         parsePattern();
         boolean consumed = position > marker;
+        int significantTokens = 0;
+        for (int index = marker; index < position; index++) {
+            Token<JavaTokenType> token = tokens.get(index);
+            if (!isTrivia(token) && !isEof(token))
+                significantTokens++;
+        }
         JavaTokenType terminator = peekSignificantType();
-        boolean looksLikePattern = consumed &&
+        boolean looksLikePattern = consumed && significantTokens > 1 &&
                 (terminator == JavaTokenType.WHEN_KEYWORD ||
                         terminator == JavaTokenType.COMMA ||
                         terminator == JavaTokenType.COLON ||

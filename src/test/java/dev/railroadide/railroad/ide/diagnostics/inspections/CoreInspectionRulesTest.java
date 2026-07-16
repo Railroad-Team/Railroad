@@ -5,6 +5,7 @@ import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleSettings;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.project.CompositeJavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaJdkSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndexer;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
@@ -14,9 +15,11 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -4231,8 +4234,10 @@ class CoreInspectionRulesTest {
     void realDefaultGradleEnvironmentRecordAndObjectMembersDoNotReportKnownFalseDiagnostics() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path environmentPath = sourceRoot.resolve("dev/railroadide/railroad/DefaultGradleEnvironment.java").normalize();
+        Path compiledClasses = Path.of("build/classes/java/main").toAbsolutePath().normalize();
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
+            JavaLibrarySymbolIndex.build(List.of(compiledClasses)),
             JavaJdkSymbolIndex.fromCurrentRuntime()
         ));
         String source = Files.readString(environmentPath);
@@ -4240,7 +4245,19 @@ class CoreInspectionRulesTest {
         List<SemanticDiagnostic> callDiagnostics =
             runProvider(new CoreCallResolutionInspection(), environmentPath, source, symbolIndex);
         assertFalse(callDiagnostics.stream()
-                .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve call 'equals'")),
+                .anyMatch(diagnostic -> Set.of(
+                    "Cannot resolve call 'equals'",
+                    "Cannot resolve call 'isUseWrapper'",
+                    "Cannot resolve call 'getGradleUserHome'",
+                    "Cannot resolve call 'getGradleJvm'",
+                    "Cannot resolve call 'getConfigurations'",
+                    "Cannot resolve call 'getVmOptions'",
+                    "Cannot resolve call 'isDaemonEnabled'",
+                    "Cannot resolve call 'getDaemonIdleTimeout'",
+                    "Cannot resolve call 'getTask'",
+                    "Cannot resolve call 'getGradleProjectPath'",
+                    "Cannot resolve call 'getJavaHome'"
+                ).contains(diagnostic.message())),
             () -> callDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
 
         List<SemanticDiagnostic> inheritanceDiagnostics =
@@ -4265,6 +4282,213 @@ class CoreInspectionRulesTest {
     }
 
     @Test
+    void realWindowManagerFullyQualifiedAccessAndOverloadedConstructorsResolve() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        Path windowManagerPath = sourceRoot.resolve("dev/railroadide/railroad/window/WindowManager.java").normalize();
+        Path compiledClasses = Path.of("build/classes/java/main").toAbsolutePath().normalize();
+        JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+            new JavaProjectSemanticIndexer().build(sourceRoot),
+            JavaLibrarySymbolIndex.build(List.of(compiledClasses)),
+            JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+        String source = Files.readString(windowManagerPath);
+
+        List<SemanticDiagnostic> diagnostics = new ArrayList<>();
+        diagnostics.addAll(runProvider(new CoreCallResolutionInspection(), windowManagerPath, source, symbolIndex));
+        diagnostics.addAll(runProvider(new CoreMemberResolutionInspection(), windowManagerPath, source, symbolIndex));
+        diagnostics.addAll(runProvider(new CoreNameResolutionInspection(), windowManagerPath, source, symbolIndex));
+        diagnostics.addAll(runProvider(new CoreDuplicateDeclarationInspection(), windowManagerPath, source, symbolIndex));
+
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> Set.of(
+            "Cannot resolve call 'getPrimaryStage'",
+            "Cannot resolve member 'Railroad'",
+            "Cannot resolve member 'railroad'",
+            "Cannot resolve member 'railroadide'",
+            "Cannot resolve name 'dev'",
+            "Duplicate declaration for 'WindowManager'"
+        ).contains(diagnostic.message())),
+            () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+    }
+
+    @Test
+    void realWindowEventsPublishCallsAndLambdaParametersResolve() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        Path windowEventsPath = sourceRoot.resolve("dev/railroadide/railroad/window/WindowEvents.java").normalize();
+        Path compiledClasses = Path.of("build/classes/java/main").toAbsolutePath().normalize();
+        JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+            new JavaProjectSemanticIndexer().build(sourceRoot),
+            JavaLibrarySymbolIndex.build(List.of(compiledClasses)),
+            JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+        String source = Files.readString(windowEventsPath);
+
+        List<SemanticDiagnostic> diagnostics = new ArrayList<>();
+        diagnostics.addAll(runProvider(new CoreCallResolutionInspection(), windowEventsPath, source, symbolIndex));
+        diagnostics.addAll(runProvider(new CoreNameResolutionInspection(), windowEventsPath, source, symbolIndex));
+        diagnostics.addAll(runProvider(new CoreDuplicateDeclarationInspection(), windowEventsPath, source, symbolIndex));
+
+        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
+                diagnostic.message().equals("Cannot resolve call 'publish'")
+                    || diagnostic.message().equals("Cannot resolve name 'event'")
+                    || diagnostic.message().equals("Duplicate declaration for 'event'")),
+            () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+    }
+
+    @Test
+    void realWindowBuilderFluentGenericsAndLambdaParametersResolve() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        Path sourcePath = sourceRoot.resolve("dev/railroadide/railroad/window/WindowBuilder.java").normalize();
+        Path compiledClasses = Path.of("build/classes/java/main").toAbsolutePath().normalize();
+        JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+            new JavaProjectSemanticIndexer().build(sourceRoot),
+            JavaLibrarySymbolIndex.build(List.of(compiledClasses)),
+            JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+        String source = Files.readString(sourcePath);
+
+        List<SemanticDiagnostic> diagnostics = new ArrayList<>();
+        diagnostics.addAll(runProvider(new CoreCallResolutionInspection(), sourcePath, source, symbolIndex));
+        diagnostics.addAll(runProvider(new CoreAssignmentInspection(), sourcePath, source, symbolIndex));
+
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> Set.of(
+            "Cannot resolve call 'title'",
+            "Cannot resolve call 'content'",
+            "Cannot resolve call 'onClose'",
+            "Cannot resolve call 'translateContent'",
+            "Cannot resolve call 'onConfirm'",
+            "Cannot resolve call 'onCancel'",
+            "Cannot assign 'boolean' to 'dev.railroadide.railroad.window.DialogBuilder'"
+        ).contains(diagnostic.message())),
+            () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+    }
+
+    @Test
+    void realDialogBuilderCastsConditionalsAndStreamChainResolve() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        Path sourcePath = sourceRoot.resolve("dev/railroadide/railroad/window/DialogBuilder.java").normalize();
+        Path compiledClasses = Path.of("build/classes/java/main").toAbsolutePath().normalize();
+        JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+            new JavaProjectSemanticIndexer().build(sourceRoot),
+            JavaLibrarySymbolIndex.build(List.of(compiledClasses)),
+            JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+        String source = Files.readString(sourcePath);
+
+        List<SemanticDiagnostic> diagnostics = new ArrayList<>();
+        diagnostics.addAll(runProvider(new CoreCallResolutionInspection(), sourcePath, source, symbolIndex));
+        diagnostics.addAll(runProvider(new CoreAssignmentInspection(), sourcePath, source, symbolIndex));
+
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> Set.of(
+            "Cannot resolve call 'toList'",
+            "Cannot assign 'boolean' to 'java.lang.Runnable'",
+            "Cannot assign 'javafx.scene.Node' to 'javafx.scene.layout.VBox'",
+            "Cannot assign 'javafx.scene.Node' to 'javafx.scene.layout.HBox'"
+        ).contains(diagnostic.message())),
+            () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+    }
+
+    @Test
+    void switchExpressionsAndEnumLabelsResolve() {
+        String source = """
+            import java.util.function.Consumer;
+
+            class Base {
+                void touch() {}
+            }
+            class Derived extends Base {}
+            enum Kind { INFO, ERROR }
+            class Box {
+                Box(String value) {}
+            }
+            class Example {
+                void accept(Consumer<? super String> consumer) {}
+
+                void run(boolean flag, Kind kind) {
+                    var nullable = flag ? new Base() : null;
+                    nullable.touch();
+                    var box = new Box(switch (kind) {
+                        case INFO -> "info";
+                        case ERROR -> "error";
+                    });
+                    accept(text -> text.length());
+                }
+            }
+            """;
+
+        JavaSymbolIndex symbolIndex = JavaJdkSymbolIndex.fromCurrentRuntime();
+        Path sourcePath = Path.of("Example.java").toAbsolutePath().normalize();
+        List<SemanticDiagnostic> diagnostics = new ArrayList<>();
+        diagnostics.addAll(runProvider(new CoreCallResolutionInspection(), sourcePath, source, symbolIndex));
+        diagnostics.addAll(runProvider(new CoreTypeResolutionInspection(), sourcePath, source, symbolIndex));
+        diagnostics.addAll(runProvider(new CoreNameResolutionInspection(), sourcePath, source, symbolIndex));
+
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> Set.of(
+            "Cannot resolve call 'Box'",
+            "Cannot resolve call 'length'",
+            "Cannot resolve call 'touch'",
+            "Cannot resolve type 'INFO'",
+            "Cannot resolve type 'ERROR'",
+            "Cannot resolve name 'INFO'",
+            "Cannot resolve name 'ERROR'"
+        ).contains(diagnostic.message())),
+            () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+    }
+
+    @Test
+    void realAlertBuilderVarAndJavaFxLambdaReceiversResolve() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        Path sourcePath = sourceRoot.resolve("dev/railroadide/railroad/window/AlertBuilder.java").normalize();
+        List<Path> runtimeClasspath = Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
+                .map(Path::of)
+                .filter(Files::exists)
+                .toList();
+        JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+            new JavaProjectSemanticIndexer().build(sourceRoot),
+            JavaLibrarySymbolIndex.build(runtimeClasspath),
+            JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+        String source = Files.readString(sourcePath);
+
+        List<SemanticDiagnostic> diagnostics = new ArrayList<>();
+        diagnostics.addAll(runProvider(new CoreCallResolutionInspection(), sourcePath, source, symbolIndex));
+        diagnostics.addAll(runProvider(new CoreNameResolutionInspection(), sourcePath, source, symbolIndex));
+
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> Set.of(
+            "Cannot resolve call 'hide'",
+            "Cannot resolve call 'getCode'",
+            "Cannot resolve call 'consume'",
+            "Cannot resolve call 'setOnCloseRequest'",
+            "Cannot resolve name 'INFO'",
+            "Cannot resolve name 'SUCCESS'",
+            "Cannot resolve name 'WARNING'",
+            "Cannot resolve name 'ERROR'"
+        ).contains(diagnostic.message())),
+            () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+    }
+
+    @Test
+    void duplicateDeclarationRuleAllowsCallableOverloads() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDuplicateDeclarationInspection(), """
+            class Overloads {
+                Overloads() {
+                }
+
+                Overloads(String value) {
+                }
+
+                void run() {
+                }
+
+                void run(int value) {
+                }
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
+            "SEM_DUPLICATE_DECLARATION".equals(diagnostic.code())));
+    }
+
+    @Test
     void dumpProjectWideDiagnosticsForCurrentRailroadSources() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
@@ -4279,7 +4503,9 @@ class CoreInspectionRulesTest {
                 .filter(path -> path.getFileName().toString().endsWith(".java"))
                 .toList()) {
                 String source = Files.readString(sourceFile);
-                List<SemanticDiagnostic> diagnostics = runProvider(new CoreCallResolutionInspection(), sourceFile, source, symbolIndex);
+                List<SemanticDiagnostic> diagnostics = new ArrayList<>(
+                    runProvider(new CoreCallResolutionInspection(), sourceFile, source, symbolIndex)
+                );
                 diagnostics.addAll(runProvider(new CoreMemberResolutionInspection(), sourceFile, source, symbolIndex));
                 diagnostics.addAll(runProvider(new CoreTypeResolutionInspection(), sourceFile, source, symbolIndex));
                 diagnostics.addAll(runProvider(new CoreInheritanceInspection(), sourceFile, source, symbolIndex));

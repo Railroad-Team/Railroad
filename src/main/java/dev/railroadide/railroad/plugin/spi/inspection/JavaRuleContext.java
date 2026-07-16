@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.plugin.spi.inspection;
 
+import com.google.common.collect.ImmutableSet;
 import dev.railroadide.railroad.ide.classparser.Type.*;
 import dev.railroadide.railroad.ide.classparser.Type.ArrayType;
 import dev.railroadide.railroad.ide.classparser.Type.PrimitiveType;
@@ -322,13 +323,14 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName();
     }
 
-    private Set<String> availableQualifiedTypeNames() {
+    private ImmutableSet<String> availableQualifiedTypeNames() {
         if (symbolIndex == null)
-            return jdkQualifiedTypeNames();
+            return ImmutableSet.copyOf(jdkQualifiedTypeNames());
 
-        Set<String> names = new LinkedHashSet<>(symbolIndex.declaredQualifiedNames());
-        names.addAll(symbolIndex.classStubsByQualifiedName().keySet());
-        return Set.copyOf(names);
+        return ImmutableSet.<String>builder()
+                .addAll(symbolIndex.declaredQualifiedNames())
+                .addAll(symbolIndex.classStubsByQualifiedName().keySet())
+                .build();
     }
 
     private Map<String, ClassStub> availableClassStubsByQualifiedName() {
@@ -1194,17 +1196,38 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 .findFirst()
                 .map(FieldStub::modifiers)
                 .orElse(Modifier.PUBLIC);
-            case METHOD -> stub.methods().stream()
-                .filter(method -> method.name().equals(symbol.simpleName()))
-                .findFirst()
-                .map(MethodStub::modifiers)
-                .orElse(Modifier.PUBLIC);
-            case CONSTRUCTOR -> stub.constructors().stream()
-                .findFirst()
-                .map(ConstructorStub::modifiers)
-                .orElse(typeModifiers(ownerQualifiedName));
+            case METHOD -> {
+                String signature = callableSignature(symbol);
+                yield stub.methods().stream()
+                    .filter(method -> method.name().equals(symbol.simpleName()))
+                    .filter(method -> signature == null || signature.equals(signatureSuffix(
+                        method.parameters().stream().map(parameter -> toSemanticType(parameter.type())).toList()
+                    )))
+                    .findFirst()
+                    .map(MethodStub::modifiers)
+                    .orElse(Modifier.PUBLIC);
+            }
+            case CONSTRUCTOR -> {
+                String signature = callableSignature(symbol);
+                yield stub.constructors().stream()
+                    .filter(constructor -> signature == null || signature.equals(signatureSuffix(
+                        constructor.parameters().stream().map(parameter -> toSemanticType(parameter.type())).toList()
+                    )))
+                    .findFirst()
+                    .map(ConstructorStub::modifiers)
+                    .orElse(typeModifiers(ownerQualifiedName));
+            }
             default -> Modifier.PUBLIC;
         };
+    }
+
+    private static @Nullable String callableSignature(Symbol symbol) {
+        String qualifiedName = symbol.qualifiedName().orElse(null);
+        if (qualifiedName == null)
+            return null;
+        int separator = qualifiedName.indexOf('#');
+        int signatureStart = qualifiedName.indexOf('(', separator + 1);
+        return separator < 0 || signatureStart < 0 ? null : qualifiedName.substring(signatureStart);
     }
 
     public boolean isSubtype(String candidateQualifiedTypeName, String targetQualifiedTypeName) {
@@ -3243,6 +3266,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 String key = symbol.qualifiedName().orElse(symbol.simpleName());
                 deduped.putIfAbsent(key, symbol);
             }
+
             return List.copyOf(deduped.values());
         }
     }

@@ -12,10 +12,14 @@ import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import javafx.application.Application;
 import javafx.application.Preloader;
+import javafx.beans.value.ObservableValue;
+import javafx.scene.control.Label;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.net.JarURLConnection;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -27,6 +31,157 @@ import static org.junit.jupiter.api.Assertions.*;
 class JavaSemanticAnalyzerTest {
     @TempDir
     Path tempDir;
+
+    @Test
+    void resolvesGenericSupertypeWithoutTreatingNestedTypeArgumentAsSuperclass() {
+        String source = """
+                package demo;
+
+                class Base<T> {
+                }
+
+                class Chooser extends Base<Chooser.Component> {
+                    static class Component {
+                    }
+                }
+                """;
+
+        assertDoesNotThrow(() -> JavaSemanticAnalyzer.analyzeFacts(source));
+    }
+
+    @Test
+    void resolvesGenericInterfaceHierarchyWithoutRecursingThroughTypeArguments() {
+        String source = """
+                package demo;
+
+                interface Index<F> {
+                }
+
+                final class SemanticIndex implements Index<SemanticIndex.SourceFileIndex> {
+                    record SourceFileIndex(String name) {
+                    }
+                }
+                """;
+
+        assertDoesNotThrow(() -> JavaSemanticAnalyzer.analyzeFacts(source));
+    }
+
+    @Test
+    void realGenericSupertypesDoNotOverflowHierarchyResolution() throws IOException {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        JavaProjectSemanticIndex projectIndex = new JavaProjectSemanticIndexer().build(sourceRoot);
+        CompositeJavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+            projectIndex,
+            JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+        List<Path> sourceFiles = List.of(
+            sourceRoot.resolve("dev/railroadide/railroad/form/ui/FormDirectoryChooser.java"),
+            sourceRoot.resolve("dev/railroadide/railroad/form/ui/FormFileChooser.java"),
+            sourceRoot.resolve("dev/railroadide/railroad/ide/sst/project/JavaProjectSemanticIndex.java")
+        );
+
+        for (Path sourceFile : sourceFiles) {
+            String source = Files.readString(sourceFile);
+            assertDoesNotThrow(
+                () -> JavaSemanticAnalyzer.analyzeFacts(source, symbolIndex),
+                sourceFile::toString
+            );
+        }
+    }
+
+    @Test
+    void resolvesRealAlertBuilderVarAndJavaFxLambdaReceivers() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        Path alertBuilder = sourceRoot.resolve("dev/railroadide/railroad/window/AlertBuilder.java");
+        List<Path> javaFxRoots = List.of(
+                classRoot(ObservableValue.class),
+                classRoot(Application.class),
+                classRoot(Label.class)
+        ).stream().distinct().toList();
+        JavaLibrarySymbolIndex javaFxIndex = JavaLibrarySymbolIndex.build(javaFxRoots);
+        assertNotNull(javaFxIndex.lookupClassStub("javafx.stage.Window"));
+        assertNotNull(javaFxIndex.lookupClassStub("javafx.scene.input.KeyEvent"));
+        assertNotNull(javaFxIndex.lookupClassStub("javafx.beans.value.ObservableValue"));
+        assertNotNull(javaFxIndex.lookupClassStub("javafx.beans.property.ReadOnlyDoubleProperty"));
+        assertEquals(
+                "ClassType[name=javafx.event.EventType, typeArguments=[ClassType[name=javafx.scene.input.KeyEvent, typeArguments=[]]]]",
+                javaFxIndex.lookupClassStub("javafx.scene.input.KeyEvent").fields().stream()
+                        .filter(field -> "KEY_PRESSED".equals(field.name()))
+                        .findFirst()
+                        .orElseThrow()
+                        .type()
+                        .toString()
+        );
+        CompositeJavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+                new JavaProjectSemanticIndexer().build(sourceRoot),
+                javaFxIndex,
+                JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+
+        SemanticModel model = JavaSemanticAnalyzer.analyze(Files.readString(alertBuilder), symbolIndex);
+        SyntaxNode windowDeclaration = nodesOfKind(
+                model.syntaxTree().root(),
+                JavaSyntaxKinds.VARIABLE_DECLARATOR.id()
+        ).stream()
+                .filter(node -> syntaxText(node).trim().startsWith("window"))
+                .findFirst()
+                .orElseThrow();
+        SyntaxNode windowDeclarationParent = windowDeclaration.parent().orElseThrow();
+        assertEquals(JavaSyntaxKinds.LOCAL_VARIABLE_DECLARATION_STATEMENT.id(), windowDeclarationParent.kind().id());
+        assertTrue(syntaxText(windowDeclarationParent).trim().startsWith("var"));
+        List<String> targetCalls = List.of("hide", "getCode", "consume", "setOnCloseRequest", "run");
+        List<String> unresolved = model.diagnostics().stream()
+                .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code()))
+                .filter(diagnostic -> targetCalls.stream()
+                        .anyMatch(call -> diagnostic.message().contains("'" + call + "'")))
+                .map(diagnostic -> diagnostic.code() + ": " + diagnostic.message())
+                .toList();
+
+        assertTrue(unresolved.isEmpty(), () -> String.join(System.lineSeparator(), unresolved));
+    }
+
+    @Test
+    void resolvesRealWelcomeProjectsPaneCastLambdaAndThreadConstructors() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        Path sourceFile = sourceRoot.resolve("dev/railroadide/railroad/welcome/WelcomeProjectsPane.java");
+        JavaLibrarySymbolIndex javaFxIndex = JavaLibrarySymbolIndex.build(List.of(
+                classRoot(ObservableValue.class),
+                classRoot(Application.class),
+                classRoot(Label.class)
+        ).stream().distinct().toList());
+        CompositeJavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+                new JavaProjectSemanticIndexer().build(sourceRoot),
+                javaFxIndex,
+                JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+
+        SemanticModel model = JavaSemanticAnalyzer.analyze(Files.readString(sourceFile), symbolIndex);
+        List<String> targetCalls = List.of("next", "wasAdded", "getAddedSubList", "wasRemoved", "getRemoved");
+        List<String> failures = model.diagnostics().stream()
+                .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code())
+                        && targetCalls.stream().anyMatch(call -> diagnostic.message().contains("'" + call + "'"))
+                        || "SEM_UNRESOLVED_NAME".equals(diagnostic.code())
+                        && diagnostic.message().contains("'c'")
+                        || "SEM_INACCESSIBLE_CALL".equals(diagnostic.code())
+                        && diagnostic.message().contains("'Thread'"))
+                .map(diagnostic -> diagnostic.code() + ": " + diagnostic.message())
+                .toList();
+
+        assertTrue(failures.isEmpty(), () -> String.join(System.lineSeparator(), failures));
+    }
+
+    private static Path classRoot(Class<?> type) throws Exception {
+        String resourceName = "/" + type.getName().replace('.', '/') + ".class";
+        URL resource = Objects.requireNonNull(type.getResource(resourceName));
+        if ("jar".equals(resource.getProtocol()))
+            return Path.of(((JarURLConnection) resource.openConnection()).getJarFileURL().toURI());
+
+        Path classFile = Path.of(resource.toURI());
+        Path root = classFile;
+        for (int index = 0; index < type.getName().split("\\.").length; index++)
+            root = root.getParent();
+        return root;
+    }
 
     @Test
     void collectsTopLevelAndMemberDeclarations() {
@@ -1079,6 +1234,89 @@ class JavaSemanticAnalyzerTest {
                 .orElse(null);
         assertNotNull(publishCall);
         assertEquals(SymbolKind.METHOD, model.resolvedSymbol(publishCall).orElseThrow().kind());
+    }
+
+    @Test
+    void resolvesFluentBuilderMethodChainReturnTypes() {
+        String source = """
+                class Demo {
+                    void run() {
+                        Command command = Command.builder()
+                            .timeout(5)
+                            .addArgs("status")
+                            .build();
+                    }
+                }
+
+                class Command {
+                    static Builder builder() {
+                        return new Builder();
+                    }
+
+                    static class Builder {
+                        Builder timeout(int seconds) {
+                            return this;
+                        }
+
+                        Builder addArgs(String arg) {
+                            return this;
+                        }
+
+                        Command build() {
+                            return new Command();
+                        }
+                    }
+                }
+                """;
+
+        SemanticModel model = JavaSemanticAnalyzer.analyze(source);
+        List<String> unresolved = model.diagnostics().stream()
+                .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code()))
+                .map(diagnostic -> diagnostic.message())
+                .toList();
+
+        assertTrue(unresolved.isEmpty(), () -> String.join(System.lineSeparator(), unresolved));
+    }
+
+    @Test
+    void resolvesProjectIndexedGitCommandBuilderChain() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        Path gitCommands = sourceRoot.resolve("dev/railroadide/railroad/vcs/git/GitCommands.java");
+        CompositeJavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+                new JavaProjectSemanticIndexer().build(sourceRoot),
+                JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+
+        SemanticModel model = JavaSemanticAnalyzer.analyzeFacts(Files.readString(gitCommands), symbolIndex);
+        List<String> unresolved = model.diagnostics().stream()
+                .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code()))
+                .filter(diagnostic -> diagnostic.message().contains("'addArgs'")
+                        || diagnostic.message().contains("'build'"))
+                .map(diagnostic -> diagnostic.message())
+                .toList();
+
+        assertTrue(unresolved.isEmpty(), () -> String.join(System.lineSeparator(), unresolved));
+    }
+
+    @Test
+    void resolvesProjectIndexedSemanticApiCallChains() throws Exception {
+        Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
+        Path accessibilityInspection = sourceRoot.resolve(
+                "dev/railroadide/railroad/ide/diagnostics/inspections/CoreAccessibilityInspection.java");
+        CompositeJavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+                new JavaProjectSemanticIndexer().build(sourceRoot),
+                JavaJdkSymbolIndex.fromCurrentRuntime()
+        ));
+
+        SemanticModel model = JavaSemanticAnalyzer.analyzeFacts(Files.readString(accessibilityInspection), symbolIndex);
+        List<String> unresolved = model.diagnostics().stream()
+                .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code()))
+                .filter(diagnostic -> diagnostic.message().contains("'kind'")
+                        || diagnostic.message().contains("'id'"))
+                .map(diagnostic -> diagnostic.message())
+                .toList();
+
+        assertTrue(unresolved.isEmpty(), () -> String.join(System.lineSeparator(), unresolved));
     }
 
     @Test

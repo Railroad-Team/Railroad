@@ -1,0 +1,54 @@
+﻿7	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'T'	src\test\resources\dev\railroadide\railroad\ide\sst\impl\java\corpus\valid\05_types_generics_annotations.java:17:68 | src\test\resources\dev\railroadide\railroad\ide\sst\impl\java\corpus\valid\05_types_generics_annotations.java:18:49 | src\test\resources\dev\railroadide\railroad\ide\sst\impl\java\corpus\valid\05_types_generics_annotations.java:20:36 | src\test\resources\dev\railroadide\railroad\ide\sst\impl\java\corpus\valid\05_types_generics_annotations.java:24:35 | src\test\resources\dev\railroadide\railroad\ide\sst\impl\java\corpus\valid\05_types_generics_annotations.java:33:5
+7	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'NotNullT'	src\main\java\dev\railroadide\railroad\switchboard\cache\CacheManager.java:13:86 | src\main\java\dev\railroadide\railroad\switchboard\cache\CacheManager.java:21:67 | src\main\java\dev\railroadide\railroad\switchboard\cache\MetadataCacheEntry.java:12:15 | src\main\java\dev\railroadide\railroad\switchboard\cache\impl\DelegatingCacheManager.java:27:93 | src\main\java\dev\railroadide\railroad\switchboard\cache\impl\JsonCacheManager.java:45:93
+7	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'ExecutionExceptionInterruptedException'	src\main\java\dev\railroadide\railroad\project\MappingChannelRegistry.java:22:22 | src\main\java\dev\railroadide\railroad\project\onboarding\impl\FabricProjectOnboarding.java:353:30 | src\main\java\dev\railroadide\railroad\project\onboarding\impl\FabricProjectOnboarding.java:388:30 | src\main\java\dev\railroadide\railroad\project\onboarding\impl\FabricProjectOnboarding.java:703:18 | src\main\java\dev\railroadide\railroad\project\onboarding\impl\FabricProjectOnboarding.java:712:18
+6	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'IOExceptionURISyntaxException'	src\main\java\dev\railroadide\railroad\project\minecraft\pistonmeta\Download.java:38:18 | src\main\java\dev\railroadide\railroad\theme\ThemeManager.java:43:18 | src\main\java\dev\railroadide\railroad\theme\ThemeManager.java:104:26 | src\main\java\dev\railroadide\railroad\utility\DesktopUtils.java:22:18 | src\main\java\dev\railroadide\railroad\utility\FileUtils.java:58:18
+6	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'NullableI'	src\main\java\dev\railroadide\railroad\ide\language\index\ProjectLanguageIndexService.java:72:76 | src\main\java\dev\railroadide\railroad\ide\language\index\ProjectLanguageIndexService.java:77:76 | src\main\java\dev\railroadide\railroad\ide\language\index\ProjectLanguageIndexService.java:118:76 | src\main\java\dev\railroadide\railroad\ide\language\index\ProjectLanguageIndexService.java:123:76 | src\main\java\dev\railroadide\railroad\ide\language\index\ProjectLanguageIndexService.java:154:76
+2	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'IOExceptionSAXException'	src\main\java\dev\railroadide\railroad\utility\XMLParser.java:36:18 | src\main\java\dev\railroadide\railroad\utility\XMLParser.java:44:18
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'NullableT'	src\main\java\dev\railroadide\railroad\ide\language\index\ProjectIndexContext.java:30:44
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_Luv'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:61:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_YCbCr'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:62:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'IllegalAccessExceptionInvocationTargetException'	src\main\java\dev\railroadide\railroad\form\impl\RadioButtonGroupComponent.java:135:34
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'ExceptionStackOverflowError'	src\main\java\dev\railroadide\railroad\ide\diagnostics\ProjectDiagnosticsScanner.java:147:18
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'NullableF'	src\main\java\dev\railroadide\railroad\ide\language\index\ProjectLanguageIndexService.java:163:76
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_BCLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:79:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_CCLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:80:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_DCLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:81:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_Yxy'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:63:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_XYZ'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:59:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_Lab'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:60:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'ARRAY'	src\main\java\dev\railroadide\railroad\ide\classparser\Type.java:18:18
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'SUPER'	src\main\java\dev\railroadide\railroad\ide\classparser\ClassStubVisitor.java:279:26
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'EXTENDS'	src\main\java\dev\railroadide\railroad\ide\classparser\ClassStubVisitor.java:278:26
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'AtomicMoveNotSupportedExceptionAccessDeniedException'	src\main\java\dev\railroadide\railroad\ide\sst\project\JavaProjectSemanticPersistence.java:204:18
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'IOExceptionInvalidPathException'	src\main\java\dev\railroadide\railroad\java\JDKManager.java:232:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'OBJECT'	src\main\java\dev\railroadide\railroad\ide\classparser\Type.java:22:18
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'VOID'	src\main\java\dev\railroadide\railroad\ide\classparser\Type.java:9:18
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'BOOLEAN'	src\main\java\dev\railroadide\railroad\ide\classparser\Type.java:10:18
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'BuildCancelledExceptionCancellationException'	src\main\java\dev\railroadide\railroad\gradle\service\impl\ToolingGradleExecutionService.java:71:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'FLOAT'	src\main\java\dev\railroadide\railroad\ide\classparser\Type.java:15:18
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'DOUBLE'	src\main\java\dev\railroadide\railroad\ide\classparser\Type.java:17:18
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'INT'	src\main\java\dev\railroadide\railroad\ide\classparser\Type.java:14:18
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'CS_GRAY'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:65:44
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_4CLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:72:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_5CLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:73:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_CMYK'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:68:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_RGB'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:64:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_GRAY'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:65:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_3CLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:71:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'RuntimeExceptionError'	src\test\resources\dev\railroadide\railroad\ide\sst\impl\java\corpus\valid\05_types_generics_annotations.java:27:18
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'GradleExceptionBuildException'	src\main\java\dev\railroadide\railroad\project\facet\detector\FabricFacetDetector.java:76:18
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_6CLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:74:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_CMY'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:69:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_2CLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:70:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'CS_LINEAR_RGB'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:85:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'CS_CIEXYZ'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:86:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'CS_PYCC'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:87:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_8CLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:76:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_9CLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:77:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_ACLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:78:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_7CLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:75:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_HSV'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:66:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_HLS'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:67:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_ECLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:82:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'TYPE_FCLR'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:83:22
+1	ERROR	SEM_UNRESOLVED_TYPE	Cannot resolve type 'CS_sRGB'	src\main\java\dev\railroadide\railroad\utility\ImageUtils.java:84:22

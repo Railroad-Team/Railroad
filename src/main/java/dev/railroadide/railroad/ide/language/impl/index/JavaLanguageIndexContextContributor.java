@@ -17,6 +17,7 @@ import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroadplugin.dto.RailroadConfiguration;
 import dev.railroadide.railroadplugin.dto.RailroadContentRoot;
+import dev.railroadide.railroadplugin.dto.RailroadCompilerOutput;
 import dev.railroadide.railroadplugin.dto.RailroadDependency;
 import dev.railroadide.railroadplugin.dto.RailroadJavaLanguageSettings;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
@@ -125,7 +126,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
                 for (RailroadModule module : model.project().getModules()) {
                     module.getDependencyRoots().stream()
                         .map(File::toPath)
-                        .forEach(path -> addReadableFile(dependencyRoots, path));
+                        .forEach(path -> addReadableRoot(dependencyRoots, path));
 
                     for (RailroadConfiguration configuration : module.getConfigurations()) {
                         for (RailroadDependency dependency : configuration.getDependencies()) {
@@ -150,7 +151,13 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
                 for (RailroadModule module : model.project().getModules()) {
                     module.getClasspathRoots().stream()
                         .map(File::toPath)
-                        .forEach(path -> addReadableFile(classpathRoots, path));
+                        .forEach(path -> addReadableRoot(classpathRoots, path));
+
+                    RailroadCompilerOutput compilerOutput = module.getCompilerOutput();
+                    if (compilerOutput != null) {
+                        addReadableDirectory(classpathRoots, toPath(compilerOutput.getOutputDirectory()));
+                        addReadableDirectory(classpathRoots, toPath(compilerOutput.getTestOutputDirectory()));
+                    }
 
                     for (RailroadConfiguration configuration : module.getConfigurations()) {
                         if (!isClasspathConfiguration(configuration.getName()))
@@ -193,7 +200,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
 
         File file = dependency.getFile();
         if (file != null) {
-            addReadableFile(roots, file.toPath());
+            addReadableRoot(roots, file.toPath());
         }
 
         for (RailroadDependency child : dependency.getChildren()) {
@@ -209,7 +216,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
                     .map(RailroadModule::getModulePathRoots)
                     .flatMap(List::stream)
                     .map(File::toPath)
-                    .forEach(path -> addReadableDirectory(moduleRoots, path));
+                    .forEach(path -> addReadableRoot(moduleRoots, path));
             });
         } else if (project.hasFacet(FacetManager.MAVEN)) {
             addMavenModuleRoots(project.path(), moduleRoots);
@@ -379,6 +386,17 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         if (path != null && Files.exists(path) && Files.isRegularFile(path) && Files.isReadable(path)) {
             paths.add(path);
         }
+    }
+
+    private static void addReadableRoot(List<Path> paths, Path path) {
+        if (path != null && Files.exists(path) && Files.isReadable(path)
+                && (Files.isRegularFile(path) || Files.isDirectory(path))) {
+            paths.add(path);
+        }
+    }
+
+    private static Path toPath(File file) {
+        return file == null ? null : file.toPath();
     }
 
     private static List<Path> normalizePaths(List<Path> paths) {

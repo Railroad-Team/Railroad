@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.diagnostics.inspections;
 
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
@@ -42,6 +43,8 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
                 return;
             if (context.resolvedSymbol(node).isPresent())
                 return;
+            if (isQualifiedTypePrefix(context, node))
+                return;
 
             SyntaxNode memberNode = context.selectorNameNode(node);
             if (memberNode == null)
@@ -55,6 +58,27 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
 
             reporter.report(memberNode, memberName);
         });
+    }
+
+    private static boolean isQualifiedTypePrefix(JavaRuleContext context, SyntaxNode node) {
+        SyntaxNode current = node.parent().orElse(null);
+        while (current != null && "JAVA_FIELD_ACCESS_EXPRESSION".equals(current.kind().id())) {
+            if (context.resolvedSymbol(current)
+                    .map(symbol -> isTypeSymbol(symbol.kind()))
+                    .orElse(false)) {
+                return true;
+            }
+            current = current.parent().orElse(null);
+        }
+        return false;
+    }
+
+    private static boolean isTypeSymbol(SymbolKind kind) {
+        return kind == SymbolKind.CLASS
+            || kind == SymbolKind.INTERFACE
+            || kind == SymbolKind.ENUM
+            || kind == SymbolKind.ANNOTATION
+            || kind == SymbolKind.RECORD;
     }
 
     private static boolean isArrayLengthAccess(JavaRuleContext context, SyntaxNode fieldAccess, String memberName) {

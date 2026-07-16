@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.diagnostics;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.diagnostics.ProjectDiagnosticsContext;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
@@ -11,6 +12,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
@@ -23,9 +25,17 @@ import java.util.Objects;
 /**
  * Diagnostics provider backed by the SST semantic analyzer.
  */
-public record JavaDiagnosticsProvider(Project project, Path filePath) implements DiagnosticsProvider {
+public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable JavaSymbolIndex projectIndex) implements DiagnosticsProvider {
     public JavaDiagnosticsProvider(Path filePath) {
-        this(null, filePath);
+        this(null, filePath, null);
+    }
+
+    public JavaDiagnosticsProvider(Project project, Path filePath) {
+        this(project, filePath, null);
+    }
+
+    public JavaDiagnosticsProvider(ProjectDiagnosticsContext context, Path filePath) {
+        this(context.project(), filePath, context.javaSymbolIndex());
     }
 
     @Override
@@ -33,13 +43,15 @@ public record JavaDiagnosticsProvider(Project project, Path filePath) implements
         if (document == null || document.isEmpty())
             return List.of();
 
-        JavaSymbolIndex symbolIndex = null;
         SemanticModel semanticModel;
-        if (project != null) {
+        JavaSymbolIndex symbolIndex = projectIndex;
+        if (symbolIndex != null) {
+            semanticModel = JavaSemanticAnalyzer.analyzeFacts(document, symbolIndex);
+        } else if (project != null) {
             symbolIndex = JavaLanguageSupport.analysisContextProvider().index(project);
             semanticModel = symbolIndex == null
-                    ? JavaSemanticAnalyzer.analyzeFacts(document)
-                    : JavaSemanticAnalyzer.analyzeFacts(document, symbolIndex);
+                ? JavaSemanticAnalyzer.analyzeFacts(document)
+                : JavaSemanticAnalyzer.analyzeFacts(document, symbolIndex);
         } else {
             semanticModel = JavaSemanticAnalyzer.analyzeFacts(document);
         }

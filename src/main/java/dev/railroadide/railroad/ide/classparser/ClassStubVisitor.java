@@ -55,6 +55,13 @@ public class ClassStubVisitor extends ClassVisitor {
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
         Type fieldType = Type.fromAsmType(org.objectweb.asm.Type.getType(descriptor));
+        if (signature != null) {
+            Type[] genericFieldType = new Type[1];
+            new SignatureReader(signature).acceptType(new TypeSignatureVisitor(type -> genericFieldType[0] = type));
+            if (genericFieldType[0] != null)
+                fieldType = genericFieldType[0];
+        }
+        Type resolvedFieldType = fieldType;
         List<AnnotationStub> fieldAnnotations = new ArrayList<>();
         return new FieldVisitor(Opcodes.ASM9) {
             @Override
@@ -65,7 +72,7 @@ public class ClassStubVisitor extends ClassVisitor {
 
             @Override
             public void visitEnd() {
-                var fieldStub = new FieldStub(name, fieldType, access, fieldAnnotations);
+                var fieldStub = new FieldStub(name, resolvedFieldType, access, fieldAnnotations);
                 ClassStubVisitor.this.fields.add(fieldStub);
             }
         };

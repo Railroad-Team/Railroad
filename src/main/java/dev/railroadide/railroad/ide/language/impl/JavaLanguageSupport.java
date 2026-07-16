@@ -7,6 +7,7 @@ import dev.railroadide.railroad.ide.diagnostics.JavaDiagnosticsProvider;
 import dev.railroadide.railroad.ide.language.BaseLanguageSupport;
 import dev.railroadide.railroad.ide.language.EditorOpenView;
 import dev.railroadide.railroad.ide.language.LanguageFeatureFactory;
+import dev.railroadide.railroad.ide.language.ProjectDiagnosticsFeatureFactory;
 import dev.railroadide.railroad.ide.language.impl.index.JavaAnalysisContextProvider;
 import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContextContributor;
 import dev.railroadide.railroad.ide.language.impl.index.JavaProjectLanguageIndexer;
@@ -46,6 +47,11 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
 
     @Override
     public LanguageFeatureFactory<DiagnosticsProvider> diagnosticsFactory() {
+        return JavaDiagnosticsProvider::new;
+    }
+
+    @Override
+    public ProjectDiagnosticsFeatureFactory<DiagnosticsProvider> projectDiagnosticsFactory() {
         return JavaDiagnosticsProvider::new;
     }
 

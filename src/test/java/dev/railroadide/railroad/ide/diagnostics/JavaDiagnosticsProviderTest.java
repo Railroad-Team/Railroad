@@ -1,17 +1,35 @@
 package dev.railroadide.railroad.ide.diagnostics;
 
+import com.google.gson.JsonObject;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.gradle.project.GradleManager;
+import dev.railroadide.railroad.ide.debug.DebuggingManager;
 import dev.railroadide.railroad.ide.diagnostics.inspections.CoreNameResolutionInspection;
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
+import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
+import dev.railroadide.railroad.java.JDK;
+import dev.railroadide.railroad.project.License;
+import dev.railroadide.railroad.project.data.ProjectDataStore;
+import dev.railroadide.railroad.project.facet.Facet;
+import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.vcs.git.GitManager;
+import javafx.scene.image.Image;
 import org.junit.jupiter.api.Test;
 
 import javax.tools.Diagnostic;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -92,6 +110,32 @@ class JavaDiagnosticsProviderTest {
         }
     }
 
+    @Test
+    void exportPathResolvesGitCommandBuilderCallsForSingleFile() throws Exception {
+        ensureJavaLanguageSupportRegistered();
+        Path projectRoot = Path.of(".").toAbsolutePath().normalize();
+        Path file = projectRoot.resolve("src/main/java/dev/railroadide/railroad/vcs/git/GitCommands.java");
+        ProjectDiagnosticsContext context = ProjectDiagnosticsContext.create(new TestProject(projectRoot));
+        JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(context, file);
+
+        List<String> unresolved = provider.compute(Files.readString(file)).stream()
+                .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code()))
+                .filter(diagnostic -> diagnostic.getMessage(null).contains("'addArgs'")
+                        || diagnostic.getMessage(null).contains("'build'"))
+                .map(diagnostic -> "line " + diagnostic.getLineNumber() + ": " + diagnostic.getMessage(null))
+                .toList();
+
+        assertTrue(unresolved.isEmpty(), () -> String.join(System.lineSeparator(), unresolved));
+    }
+
+    private static void ensureJavaLanguageSupportRegistered() {
+        if (!LanguageSupportRegistry.contains(JavaLanguageSupport.LANGUAGE_ID))
+            LanguageSupportRegistry.register(new JavaLanguageSupport());
+
+        if (!Services.PROJECT_LANGUAGE_INDEX_SERVICE.hasIndexer(JavaLanguageSupport.LANGUAGE_ID))
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE.registerIndexer(new JavaLanguageSupport().createIndexer());
+    }
+
     private static final class TestJavaInspectionRuleProvider implements JavaInspectionRuleProvider {
         private final String id;
 
@@ -129,6 +173,127 @@ class JavaDiagnosticsProviderTest {
         @Override
         public void evaluate(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
             reporter.reportMessage(context.syntaxTree().root(), "Plugin rule warning");
+        }
+    }
+
+    private record TestProject(Path path) implements Project {
+        @Override
+        public String getAlias() {
+            return path.getFileName() == null ? path.toString() : path.getFileName().toString();
+        }
+
+        @Override
+        public void setAlias(String alias) {
+            throw unsupported();
+        }
+
+        @Override
+        public boolean hasFacet(FacetType<?> type) {
+            return false;
+        }
+
+        @Override
+        public <D> Optional<Facet<D>> getFacet(FacetType<D> type) {
+            return Optional.empty();
+        }
+
+        @Override
+        public void open() {
+            throw unsupported();
+        }
+
+        @Override
+        public String getId() {
+            return getPathString();
+        }
+
+        @Override
+        public long getLastOpened() {
+            return 0L;
+        }
+
+        @Override
+        public void setLastOpened(long timestamp) {
+            throw unsupported();
+        }
+
+        @Override
+        public List<Facet<?>> getFacets() {
+            return List.of();
+        }
+
+        @Override
+        public CompletableFuture<Runnable> build(JDK jdk) {
+            throw unsupported();
+        }
+
+        @Override
+        public String getDescription() {
+            return "";
+        }
+
+        @Override
+        public void setDescription(String description) {
+            throw unsupported();
+        }
+
+        @Override
+        public License getLicense() {
+            throw unsupported();
+        }
+
+        @Override
+        public void setLicense(License license) {
+            throw unsupported();
+        }
+
+        @Override
+        public GitManager getGitManager() {
+            throw unsupported();
+        }
+
+        @Override
+        public RunConfigurationManager getRunConfigManager() {
+            throw unsupported();
+        }
+
+        @Override
+        public DebuggingManager getDebuggingManager() {
+            throw unsupported();
+        }
+
+        @Override
+        public ProjectDataStore getDataStore() {
+            throw unsupported();
+        }
+
+        @Override
+        public GradleManager getGradleManager() {
+            throw unsupported();
+        }
+
+        @Override
+        public Image getIcon() {
+            throw unsupported();
+        }
+
+        @Override
+        public void setIcon(Image icon) {
+            throw unsupported();
+        }
+
+        @Override
+        public JsonObject toJson() {
+            throw unsupported();
+        }
+
+        @Override
+        public void fromJson(JsonObject json) {
+            throw unsupported();
+        }
+
+        private static UnsupportedOperationException unsupported() {
+            return new UnsupportedOperationException("Test project only exposes the project path.");
         }
     }
 }

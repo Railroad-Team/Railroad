@@ -1,0 +1,125 @@
+﻿Report: E:\Programming\Java\Railroad\project-diagnostics.txt
+Diagnostics parsed: 4282
+Unique code/message pairs: 1087
+Unique codes: 17
+
+Top codes:
+1650	SEM_UNRESOLVED_CALL	334
+715	SEM_INCOMPATIBLE_ASSIGNMENT	187
+473	SEM_INVALID_OVERRIDE	34
+451	SEM_MISSING_IMPLEMENTATION	126
+337	SEM_UNRESOLVED_MEMBER	144
+125	SEM_UNCAUGHT_CHECKED_EXCEPTION	7
+85	SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE	62
+85	SEM_ILLEGAL_FINAL_ASSIGNMENT	24
+83	SEM_UNRESOLVED_TYPE	54
+73	SEM_DUPLICATE_DECLARATION	23
+66	SEM_UNINITIALIZED_FINAL_FIELD	49
+31	SEM_UNASSIGNED_VARIABLE	10
+26	SEM_INACCESSIBLE_MEMBER	5
+25	SEM_INVALID_CONTROL_FLOW	1
+23	SEM_UNRESOLVED_NAME	8
+18	SEM_INACCESSIBLE_CALL	5
+16	SEM_MISSING_RETURN	16
+
+Top unique messages:
+139	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'build'
+106	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'kind'
+94	ERROR	SEM_INCOMPATIBLE_ASSIGNMENT	Cannot assign 'java.util.Optional' to 'dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode'
+83	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'addArgs'
+71	ERROR	SEM_INCOMPATIBLE_ASSIGNMENT	Cannot assign 'java.util.Optional' to 'dev.railroadide.railroad.ide.sst.semantic.api.Symbol'
+61	ERROR	SEM_INCOMPATIBLE_ASSIGNMENT	Cannot assign 'java.util.Optional' to 'java.lang.String'
+57	ERROR	SEM_UNCAUGHT_CHECKED_EXCEPTION	Unhandled checked exception 'java.io.IOException'
+54	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'id'
+51	ERROR	SEM_INCOMPATIBLE_ASSIGNMENT	Cannot assign 'T' to 'java.lang.String'
+50	ERROR	SEM_INVALID_OVERRIDE	Invalid override for 'useSystemEnvironmentVariables'
+50	ERROR	SEM_INVALID_OVERRIDE	Invalid override for 'run'
+50	ERROR	SEM_INVALID_OVERRIDE	Invalid override for 'setTimeout'
+50	ERROR	SEM_INVALID_OVERRIDE	Invalid override for 'setWorkingDirectory'
+50	ERROR	SEM_INVALID_OVERRIDE	Invalid override for 'setEnvironmentVariable'
+50	ERROR	SEM_INVALID_OVERRIDE	Invalid override for 'addArgument'
+48	ERROR	SEM_UNCAUGHT_CHECKED_EXCEPTION	Unhandled checked exception 'java.lang.Exception'
+39	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'name'
+32	ERROR	SEM_INVALID_OVERRIDE	Invalid override for 'addTransformer'
+31	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'getUnit'
+30	ERROR	SEM_INCOMPATIBLE_ASSIGNMENT	Cannot assign 'T' to 'dev.railroadide.railroad.java.JDK'
+30	ERROR	SEM_DUPLICATE_DECLARATION	Duplicate declaration for 'exception'
+29	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'getPrimaryComponent'
+29	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'get'
+28	ERROR	SEM_ILLEGAL_FINAL_ASSIGNMENT	Final variable 'content' cannot be assigned here
+26	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'toString'
+25	ERROR	SEM_MISSING_IMPLEMENTATION	Type is missing implementation for 'getInputStream()'
+25	ERROR	SEM_MISSING_IMPLEMENTATION	Type is missing implementation for 'compareTo(T)'
+25	ERROR	SEM_MISSING_IMPLEMENTATION	Type is missing implementation for 'getOutputStream()'
+25	ERROR	SEM_INVALID_CONTROL_FLOW	Invalid control flow: 'yield' is only allowed inside switch expressions
+25	ERROR	SEM_MISSING_IMPLEMENTATION	Type is missing implementation for 'exitValue()'
+25	ERROR	SEM_MISSING_IMPLEMENTATION	Type is missing implementation for 'destroy()'
+25	ERROR	SEM_MISSING_IMPLEMENTATION	Type is missing implementation for 'waitFor()'
+25	ERROR	SEM_MISSING_IMPLEMENTATION	Type is missing implementation for 'getErrorStream()'
+24	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'stream'
+24	ERROR	SEM_INVALID_OVERRIDE	Invalid override for 'createPrimaryComponent'
+23	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'toLowerCase'
+23	ERROR	SEM_INCOMPATIBLE_ASSIGNMENT	Cannot assign 'java.lang.String[]' to 'java.lang.String'
+22	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'onEnter'
+22	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'equals'
+21	ERROR	SEM_INACCESSIBLE_MEMBER	Member 'LOGGER' is not accessible from here
+20	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'code'
+20	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'message'
+18	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'contains'
+18	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'type'
+18	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'markForRefresh'
+18	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'setText'
+18	ERROR	SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE	Method 'run' declares disallowed exception 'java.lang.Exception' in its signature
+17	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'getValue'
+17	ERROR	SEM_UNRESOLVED_MEMBER	Cannot resolve member 'maybeAssigned'
+17	ERROR	SEM_INVALID_OVERRIDE	Invalid override for 'build'
+16	ERROR	SEM_INVALID_OVERRIDE	Invalid override for 'listener'
+16	ERROR	SEM_INVALID_OVERRIDE	Invalid override for 'validator'
+16	ERROR	SEM_UNRESOLVED_NAME	Cannot resolve name 'dataKey'
+16	ERROR	SEM_INVALID_OVERRIDE	Invalid override for 'visible'
+15	ERROR	SEM_UNRESOLVED_MEMBER	Cannot resolve member 'definitelyAssigned'
+15	ERROR	SEM_INCOMPATIBLE_ASSIGNMENT	Cannot assign 'java.util.Optional' to 'dev.railroadide.railroad.ide.sst.semantic.api.Type'
+15	ERROR	SEM_INCOMPATIBLE_ASSIGNMENT	Cannot assign 'java.util.List' to 'dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode'
+15	ERROR	SEM_ILLEGAL_FINAL_ASSIGNMENT	Final variable 'text' cannot be assigned here
+14	ERROR	SEM_INCOMPATIBLE_ASSIGNMENT	Cannot assign 'dev.railroadide.railroad.ide.sst.lexer.Token' to 'dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType'
+14	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'path'
+13	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'project'
+13	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'canBeNull'
+13	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'getName'
+13	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'getTextField'
+13	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'warn'
+12	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'getText'
+12	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'validator'
+12	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'isEmpty'
+12	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'getPath'
+12	ERROR	SEM_INCOMPATIBLE_ASSIGNMENT	Cannot assign 'T' to 'java.util.List'
+12	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'isBlank'
+11	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'Token'
+11	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'filter'
+11	ERROR	SEM_INACCESSIBLE_CALL	Call 'TypeToken' is not accessible from here
+11	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'map'
+11	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'addEventHandler'
+10	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'setValue'
+10	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'getStyleClass'
+10	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'error'
+10	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'appendSection'
+10	ERROR	SEM_INCOMPATIBLE_ASSIGNMENT	Cannot assign 'T' to 'dev.railroadide.railroad.plugin.spi.dto.Project'
+10	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'displayName'
+9	ERROR	SEM_ILLEGAL_FINAL_ASSIGNMENT	Final variable 'path' cannot be assigned here
+9	ERROR	SEM_UNASSIGNED_VARIABLE	Variable 'key' might not have been initialized
+9	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'FontAwesomeSolid'
+9	ERROR	SEM_UNRESOLVED_MEMBER	Cannot resolve member 'reachable'
+9	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'values'
+9	ERROR	SEM_MISSING_IMPLEMENTATION	Type is missing implementation for 'write(com.google.gson.stream.JsonWriter,T)'
+9	ERROR	SEM_UNRESOLVED_MEMBER	Cannot resolve member 'DECLARED'
+9	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'toBytes'
+9	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'removeListener'
+9	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'addListener'
+9	ERROR	SEM_INVALID_OVERRIDE	Invalid override for 'read'
+9	ERROR	SEM_INCOMPATIBLE_ASSIGNMENT	Cannot assign 'int' to 'java.lang.String[]'
+9	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'bindTextFieldTo'
+9	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'dataKey'
+8	ERROR	SEM_INCOMPATIBLE_ASSIGNMENT	Cannot assign 'int[]' to 'int'
+8	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'labelKey'
+8	ERROR	SEM_UNRESOLVED_MEMBER	Cannot resolve member 'UNKNOWN'
+8	ERROR	SEM_UNRESOLVED_CALL	Cannot resolve call 'debug'
