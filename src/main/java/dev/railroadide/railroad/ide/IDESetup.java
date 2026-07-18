@@ -69,7 +69,7 @@ public class IDESetup {
      */
     public static Scene createIDEScene(Project project) {
         var root = new RRBorderPane();
-        var topBar = new RRHBox(IDEMenuBarFactory.create(), new Region(), RunControlsPane.create(project));
+        var topBar = new RRHBox(IDEMenuBarFactory.create(project), new Region(), RunControlsPane.create(project));
         HBox.setHgrow(topBar.getChildren().get(1), Priority.ALWAYS);
         root.setTop(topBar);
 
@@ -98,7 +98,7 @@ public class IDESetup {
 
         var consolePane = new DetachableTabPane();
         consolePane.addTab("Console", new ConsolePane());
-        consolePane.addTab("Terminal", TerminalFactory.create(project.getPath()));
+        consolePane.addTab("Terminal", TerminalFactory.create(project.path()));
 
         var centerBottomSplit = new SplitPane(editorPane, consolePane);
         centerBottomSplit.setOrientation(Orientation.VERTICAL);

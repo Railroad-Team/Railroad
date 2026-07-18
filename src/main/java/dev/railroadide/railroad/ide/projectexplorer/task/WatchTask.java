@@ -12,7 +12,6 @@ import static java.nio.file.StandardWatchEventKinds.*;
 
 public class WatchTask extends Task<Void> {
     private final Path path;
-    private final StringBuilder message = new StringBuilder();
     private final Map<WatchKey, Path> keys = new HashMap<>();
     private final FileChangeListener fileChangeListener;
 
@@ -51,11 +50,6 @@ public class WatchTask extends Task<Void> {
                     Path name = ev.context();
                     Path child = dir.resolve(name);
 
-                    message.append(child.toAbsolutePath());
-                    message.append(getKindToMessage(event.kind()));
-                    message.append(System.lineSeparator());
-                    updateMessage(message.toString()); // to bind to the TextArea
-
                     fileChangeListener.onFileChange(child, event.kind());
 
                     if (event.kind() == ENTRY_CREATE) {
@@ -84,15 +78,6 @@ public class WatchTask extends Task<Void> {
     @Override
     protected void cancelled() {
         updateMessage("Watch task was cancelled");
-    }
-
-    private String getKindToMessage(WatchEvent.Kind<?> kind) {
-        if (kind == ENTRY_CREATE) {
-            return " is created";
-        } else if (kind == ENTRY_DELETE) {
-            return " is deleted";
-        }
-        return " is updated";
     }
 
     private void registerAll(final Path start, WatchService watcher) throws IOException {

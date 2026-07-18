@@ -91,6 +91,8 @@ public final class JavaProjectSemanticExtractor {
             if (typeRef != null) {
                 String text = JavaSemanticAnalyzer.canonicalTypeText(typeRef);
                 if (text != null && !text.isBlank()) {
+                    if (hasTokenKind(child, JavaTokenType.ELLIPSIS))
+                        text += "[]";
                     parameterTypes.add(text);
                 }
             }
@@ -120,6 +122,8 @@ public final class JavaProjectSemanticExtractor {
     }
 
     private boolean isStaticDeclaration(SyntaxNode node) {
+        if (JavaSyntaxKinds.ENUM_CONSTANT.id().equals(node.kind().id()))
+            return true;
         return hasTokenKind(node, JavaTokenType.STATIC_KEYWORD);
     }
 

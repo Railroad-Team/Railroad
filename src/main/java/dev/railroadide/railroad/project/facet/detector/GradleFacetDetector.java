@@ -27,7 +27,7 @@ public class GradleFacetDetector implements FacetDetector<GradleFacetData> {
     @Override
     public Optional<Facet<GradleFacetData>> detect(Project project) {
         for (String buildFile : BUILD_FILES) {
-            Path buildFilePath = project.getPath().resolve(buildFile);
+            Path buildFilePath = project.path().resolve(buildFile);
             if (Files.exists(buildFilePath)) {
                 var data = new GradleFacetData(); // TODO: Come back to this and figure out what data it should store
                 return Optional.of(new Facet<>(FacetManager.GRADLE, data));

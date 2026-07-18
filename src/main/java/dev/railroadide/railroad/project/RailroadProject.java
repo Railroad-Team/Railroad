@@ -24,6 +24,7 @@ import dev.railroadide.railroad.vcs.git.GitClient;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.execution.GitProcessRunner;
 import javafx.beans.property.*;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableSet;
 import javafx.embed.swing.SwingFXUtils;
@@ -85,7 +86,7 @@ public class RailroadProject implements Project {
     }
 
     private BufferedImage createIconImage() {
-        var color = new Color(Math.abs(getPath().toAbsolutePath().toString().hashCode() % 0xFFFFFF));
+        var color = new Color(Math.abs(path().toAbsolutePath().toString().hashCode() % 0xFFFFFF));
         String abbreviation = StringUtils.getAbbreviation(getAlias()).toUpperCase(Locale.ROOT);
         abbreviation = abbreviation.isBlank() ? "?" : abbreviation;
         abbreviation = abbreviation.length() > 4 ? abbreviation.substring(0, 4) : abbreviation;
@@ -114,7 +115,7 @@ public class RailroadProject implements Project {
             Files.createDirectories(iconPath.getParent());
             ImageIO.write(iconImage, "png", iconPath.toFile());
         } catch (Exception exception) {
-            Railroad.LOGGER.error("Failed to create project icon for: {}", getPath(), exception);
+            Railroad.LOGGER.error("Failed to create project icon for: {}", path(), exception);
             return SwingFXUtils.toFXImage(iconImage, null);
         }
 
@@ -149,16 +150,18 @@ public class RailroadProject implements Project {
 
     private void discoverFacets() {
         this.facets.clear();
-        FacetManager.scan(this).thenAcceptAsync(facets -> {
-            for (Facet<?> facet : facets) {
-                if (facet != null) {
-                    this.facets.add(facet);
-                    Railroad.EVENT_BUS.publish(new FacetDetectedEvent(this, facet));
-                } else {
-                    Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
+        FacetManager.scan(this).thenAccept(discoveredFacets ->
+            Platform.runLater(() -> {
+                for (Facet<?> facet : discoveredFacets) {
+                    if (facet != null) {
+                        this.facets.add(facet);
+                        Railroad.EVENT_BUS.publish(new FacetDetectedEvent(this, facet));
+                    } else {
+                        Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
+                    }
                 }
-            }
-        }).exceptionally(ex -> {
+            })
+        ).exceptionally(ex -> {
             Railroad.LOGGER.error("Failed to discover facets for project: {}", getPathString(), ex);
             return null;
         });
@@ -187,7 +190,7 @@ public class RailroadProject implements Project {
     }
 
     @Override
-    public Path getPath() {
+    public Path path() {
         return this.path.get();
     }
 

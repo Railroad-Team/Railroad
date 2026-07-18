@@ -355,10 +355,69 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
                 SyntaxNode block = context.directChild(node, JAVA_BLOCK);
                 yield block != null && definitelyReturnsOrThrows(context, block);
             }
+            case JAVA_WHILE_STATEMENT, JAVA_DO_WHILE_STATEMENT ->
+                hasConstantTrueCondition(node) && !containsBreakThatCanExit(node, node);
             case JAVA_TRY_STATEMENT -> tryDefinitelyReturnsOrThrows(context, node);
             case JAVA_SWITCH_STATEMENT -> switchDefinitelyReturnsOrThrows(context, node);
             default -> false;
         };
+    }
+
+    private static boolean hasConstantTrueCondition(SyntaxNode loop) {
+        List<String> tokens = new ArrayList<>();
+        for (SyntaxNode child : loop.children()) {
+            if (!"JAVA_PARENTHESIZED_EXPRESSION".equals(child.kind().id()))
+                continue;
+            collectLeafTokenTexts(child, tokens);
+            List<String> significant = tokens.stream()
+                .map(String::trim)
+                .filter(text -> !text.isEmpty() && !"(".equals(text) && !")".equals(text))
+                .toList();
+            return significant.equals(List.of("true"));
+        }
+        return false;
+    }
+
+    private static boolean containsBreakThatCanExit(SyntaxNode node, SyntaxNode loop) {
+        if (JAVA_BREAK_STATEMENT.equals(node.kind().id()))
+            return breakCanExitLoop(node, loop);
+
+        for (SyntaxNode child : node.children()) {
+            if (containsBreakThatCanExit(child, loop))
+                return true;
+        }
+        return false;
+    }
+
+    private static boolean breakCanExitLoop(SyntaxNode breakStatement, SyntaxNode loop) {
+        List<String> labels = identifierLikeTokens(breakStatement);
+        if (!labels.isEmpty()) {
+            SyntaxNode target = findLabeledTarget(breakStatement, labels.getFirst());
+            return target != null && isAncestorOrSame(target, loop);
+        }
+
+        SyntaxNode current = breakStatement;
+        while (true) {
+            Optional<SyntaxNode> parent = current.parent();
+            if (parent.isEmpty())
+                return false;
+            current = parent.get();
+            String kindId = current.kind().id();
+            if (LOOP_KINDS.contains(kindId) || JAVA_SWITCH_STATEMENT.equals(kindId))
+                return current == loop;
+            if (CONTROL_FLOW_BARRIER_KINDS.contains(kindId))
+                return false;
+        }
+    }
+
+    private static boolean isAncestorOrSame(SyntaxNode ancestor, SyntaxNode node) {
+        SyntaxNode current = node;
+        while (current != null) {
+            if (current == ancestor)
+                return true;
+            current = current.parent().orElse(null);
+        }
+        return false;
     }
 
     private static boolean blockDefinitelyReturnsOrThrows(JavaRuleContext context, SyntaxNode block) {

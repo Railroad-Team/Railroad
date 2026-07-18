@@ -55,6 +55,13 @@ public class ClassStubVisitor extends ClassVisitor {
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
         Type fieldType = Type.fromAsmType(org.objectweb.asm.Type.getType(descriptor));
+        if (signature != null) {
+            Type[] genericFieldType = new Type[1];
+            new SignatureReader(signature).acceptType(new TypeSignatureVisitor(type -> genericFieldType[0] = type));
+            if (genericFieldType[0] != null)
+                fieldType = genericFieldType[0];
+        }
+        Type resolvedFieldType = fieldType;
         List<AnnotationStub> fieldAnnotations = new ArrayList<>();
         return new FieldVisitor(Opcodes.ASM9) {
             @Override
@@ -65,7 +72,7 @@ public class ClassStubVisitor extends ClassVisitor {
 
             @Override
             public void visitEnd() {
-                var fieldStub = new FieldStub(name, fieldType, access, fieldAnnotations);
+                var fieldStub = new FieldStub(name, resolvedFieldType, access, fieldAnnotations);
                 ClassStubVisitor.this.fields.add(fieldStub);
             }
         };
@@ -79,6 +86,7 @@ public class ClassStubVisitor extends ClassVisitor {
 
         List<Type> parameterTypes;
         Type returnType;
+        List<Type> signatureThrownTypes = List.of();
         List<TypeParameter> methodTypeParameters = new ArrayList<>();
         if (signature != null) {
             var signatureVisitor = new MethodSignatureVisitor();
@@ -86,6 +94,7 @@ public class ClassStubVisitor extends ClassVisitor {
             methodTypeParameters = signatureVisitor.typeParameters;
             parameterTypes = signatureVisitor.parameterTypes;
             returnType = signatureVisitor.returnType;
+            signatureThrownTypes = List.copyOf(signatureVisitor.thrownTypes);
         } else {
             parameterTypes = Arrays.stream(org.objectweb.asm.Type.getArgumentTypes(descriptor))
                 .map(Type::fromAsmType)
@@ -101,11 +110,13 @@ public class ClassStubVisitor extends ClassVisitor {
             parameterAnnotations.add(new ArrayList<>());
         }
 
-        List<Type> thrownTypes = exceptions == null
+        List<Type> descriptorThrownTypes = exceptions == null
                 ? List.of()
                 : Arrays.stream(exceptions)
                 .map(internalName -> Type.fromAsmType(org.objectweb.asm.Type.getObjectType(internalName)))
                 .toList();
+        List<Type> thrownTypes = signatureThrownTypes.isEmpty()
+            ? descriptorThrownTypes : signatureThrownTypes;
         List<AnnotationStub> methodAnnotations = new ArrayList<>();
         return new MethodStubVisitor(
                 access,
@@ -246,6 +257,22 @@ public class ClassStubVisitor extends ClassVisitor {
                     parent.typeArguments().add(typeVariable);
                 }
             }
+
+            finishIfComplete();
+        }
+
+        @Override
+        public void visitBaseType(char descriptor) {
+            this.result = Type.fromAsmType(org.objectweb.asm.Type.getType(String.valueOf(descriptor)));
+            finishIfComplete();
+        }
+
+        @Override
+        public SignatureVisitor visitArrayType() {
+            return new TypeSignatureVisitor(component -> {
+                this.result = new Type.ArrayType(component);
+                finishIfComplete();
+            });
         }
 
         @Override
@@ -265,13 +292,25 @@ public class ClassStubVisitor extends ClassVisitor {
         }
 
         @Override
+        public void visitTypeArgument() {
+            Type.ClassType parent = this.typeStack.peek();
+            if (parent != null)
+                parent.typeArguments().add(new Type.WildcardType(null, true));
+        }
+
+        @Override
         public void visitEnd() {
             if (!this.typeStack.isEmpty()) {
                 this.typeStack.pop();
             }
 
+            finishIfComplete();
+        }
+
+        private void finishIfComplete() {
             if (this.typeStack.isEmpty() && this.onFinish != null && this.result != null) {
                 this.onFinish.accept(this.result);
+                this.result = null;
             }
         }
     }
@@ -279,6 +318,7 @@ public class ClassStubVisitor extends ClassVisitor {
     private static class MethodSignatureVisitor extends SignatureVisitor {
         private final List<TypeParameter> typeParameters = new ArrayList<>();
         private final List<Type> parameterTypes = new ArrayList<>();
+        private final List<Type> thrownTypes = new ArrayList<>();
         private Type returnType;
         private TypeParameter currentTypeParameter;
 
@@ -310,6 +350,11 @@ public class ClassStubVisitor extends ClassVisitor {
         @Override
         public SignatureVisitor visitReturnType() {
             return new TypeSignatureVisitor(type -> returnType = type);
+        }
+
+        @Override
+        public SignatureVisitor visitExceptionType() {
+            return new TypeSignatureVisitor(thrownTypes::add);
         }
     }
 

@@ -8,9 +8,13 @@ import dev.railroadide.railroad.java.JDKManager;
 import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
@@ -27,10 +31,12 @@ public class Indexes {
         }
 
         // check if its using java 9 modules
-        if (Files.notExists(javaHome.resolve("lib").resolve("modules"))) {
+        if (Files.isRegularFile(javaHome.resolve("lib").resolve("rt.jar"))) {
             scanRTJar(javaHome, stubs);
-        } else {
+        } else if (Files.isRegularFile(javaHome.resolve("jmods").resolve("java.base.jmod"))) {
             scanJMods(javaHome, stubs);
+        } else {
+            scanJrtRuntime(stubs);
         }
 
         return stubs;
@@ -60,16 +66,26 @@ public class Indexes {
 
     private static void scanJMods(Path javaHome, List<ClassStub> stubs) {
         Path jmods = javaHome.resolve("jmods");
-        // Scan the `java.base` module
-        Path javaBase = jmods.resolve("java.base.jmod"); // this should be effectively a jar file
+        try (var paths = Files.list(jmods)) {
+            for (Path jmodPath : paths
+                    .filter(path -> path.getFileName().toString().endsWith(".jmod"))
+                    .sorted()
+                    .toList()) {
+                scanJMod(jmodPath, stubs);
+            }
+        } catch (IOException exception) {
+            Railroad.LOGGER.error("Failed to scan standard library modules", exception);
+        }
+    }
 
-        try (var jmod = new JarFile(javaBase.toFile())) {
+    private static void scanJMod(Path jmodPath, List<ClassStub> stubs) {
+        try (var jmod = new JarFile(jmodPath.toFile())) {
             Enumeration<JarEntry> entries = jmod.entries();
             while (entries.hasMoreElements()) {
                 JarEntry entry = entries.nextElement();
                 String className = entry.getName();
-                if (className.startsWith("classes/java/") && className.endsWith(".class")) {
-                    className = className.substring("classes/java/".length(), className.length() - ".class".length());
+                if (className.startsWith("classes/") && className.endsWith(".class")) {
+                    className = className.substring("classes/".length(), className.length() - ".class".length());
                     if (className.endsWith("module-info") || className.endsWith("package-info"))
                         continue;
 
@@ -78,14 +94,48 @@ public class Indexes {
                 }
             }
         } catch (IOException exception) {
-            Railroad.LOGGER.error("Failed to scan standard library", exception);
+            Railroad.LOGGER.warn("Ignoring unreadable standard library module {}", jmodPath, exception);
+        }
+    }
+
+    private static void scanJrtRuntime(List<ClassStub> stubs) {
+        try {
+            FileSystem fileSystem;
+            try {
+                fileSystem = FileSystems.getFileSystem(URI.create("jrt:/"));
+            } catch (Exception ignored) {
+                fileSystem = FileSystems.newFileSystem(URI.create("jrt:/"), Collections.emptyMap());
+            }
+
+            Path modules = fileSystem.getPath("/modules");
+            try (var paths = Files.walk(modules)) {
+                paths.filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".class"))
+                    .filter(path -> {
+                        String name = path.getFileName().toString();
+                        return !name.equals("module-info.class") && !name.equals("package-info.class");
+                    })
+                    .forEach(path -> parseRuntimeClass(path, stubs));
+            }
+        } catch (Exception exception) {
+            Railroad.LOGGER.error("Failed to scan current runtime standard library", exception);
+        }
+    }
+
+    private static void parseRuntimeClass(Path classFile, List<ClassStub> stubs) {
+        try (var input = Files.newInputStream(classFile)) {
+            stubs.add(ClassStubParser.parse(new ClassReader(input)));
+        } catch (Exception exception) {
+            Railroad.LOGGER.warn("Ignoring unreadable runtime class {}", classFile, exception);
         }
     }
 
     private static Path resolveJavaHome() {
         Path configured = normalizeHome(System.getProperty("java.home"));
-        if (configured != null && hasScannableStandardLibrary(configured))
+        if (configured != null && (hasScannableStandardLibrary(configured)
+                || Files.isRegularFile(configured.resolve("lib").resolve("modules")))) {
             return configured;
+        }
 
         Path javaHomeEnv = normalizeHome(System.getenv("JAVA_HOME"));
         if (javaHomeEnv != null && hasScannableStandardLibrary(javaHomeEnv))

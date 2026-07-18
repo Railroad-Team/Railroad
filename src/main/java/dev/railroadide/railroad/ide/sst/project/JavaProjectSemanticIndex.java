@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.language.index.LanguageFileIndex;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
@@ -10,12 +11,14 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.*;
 
-public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<JavaProjectSemanticIndex.SourceFileIndex> {
+public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<JavaProjectSemanticIndex.SourceFileIndex>, JavaSymbolIndex {
     private final Map<Path, SourceFileIndex> filesByPath;
     private final Map<String, List<SourceFileIndex>> filesByPackage;
     private final Map<String, List<SymbolDescriptor>> symbolsBySimpleName;
     private final Map<String, List<SymbolDescriptor>> symbolsByQualifiedName;
     private final Map<String, List<SymbolDescriptor>> membersByOwnerQualifiedName;
+    private final Set<String> declaredQualifiedNames;
+    private final Set<String> typeNames;
 
     private JavaProjectSemanticIndex(Map<Path, SourceFileIndex> filesByPath) {
         this.filesByPath = copyFileMap(filesByPath);
@@ -23,6 +26,19 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
         this.symbolsBySimpleName = buildSymbolsBySimpleName(this.filesByPath.values());
         this.symbolsByQualifiedName = buildSymbolsByQualifiedName(this.filesByPath.values());
         this.membersByOwnerQualifiedName = buildMembersByOwnerQualifiedName(this.filesByPath.values());
+        LinkedHashSet<String> qualifiedNames = new LinkedHashSet<>();
+        LinkedHashSet<String> names = new LinkedHashSet<>();
+        for (SourceFileIndex file : this.filesByPath.values()) {
+            for (SymbolDescriptor symbol : file.declaredSymbols()) {
+                if (!isTypeSymbol(symbol.kind()) || symbol.qualifiedName() == null)
+                    continue;
+                qualifiedNames.add(symbol.qualifiedName());
+                names.add(symbol.qualifiedName());
+                names.add(symbol.simpleName());
+            }
+        }
+        this.declaredQualifiedNames = Set.copyOf(qualifiedNames);
+        this.typeNames = Set.copyOf(names);
     }
 
     public static JavaProjectSemanticIndex empty() {
@@ -53,6 +69,27 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
         return filesByPackage.getOrDefault(packageName, List.of());
     }
 
+    @Override
+    public Set<String> declaredQualifiedNames() {
+        return declaredQualifiedNames;
+    }
+
+    @Override
+    public Set<String> typeNames() {
+        return typeNames;
+    }
+
+    @Override
+    public boolean containsPackage(String packageName) {
+        return !getFilesByPackage(packageName).isEmpty();
+    }
+
+    @Override
+    public Map<String, ClassStub> classStubsByQualifiedName() {
+        return Map.of();
+    }
+
+    @Override
     public List<SymbolDescriptor> lookupSimpleName(String simpleName) {
         simpleName = normalizeOptionalName(simpleName);
         if (simpleName == null)
@@ -61,6 +98,7 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
         return symbolsBySimpleName.getOrDefault(simpleName, List.of());
     }
 
+    @Override
     public List<SymbolDescriptor> lookupQualifiedName(String qualifiedName) {
         qualifiedName = normalizeOptionalName(qualifiedName);
         if (qualifiedName == null)
@@ -69,6 +107,7 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
         return symbolsByQualifiedName.getOrDefault(qualifiedName, List.of());
     }
 
+    @Override
     public List<SymbolDescriptor> lookupMembers(String qualifiedName) {
         qualifiedName = normalizeOptionalName(qualifiedName);
         if (qualifiedName == null)
@@ -77,6 +116,7 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
         return membersByOwnerQualifiedName.getOrDefault(qualifiedName, List.of());
     }
 
+    @Override
     public List<SymbolDescriptor> lookupMember(String ownerQualifiedName, String simpleName) {
         ownerQualifiedName = normalizeOptionalName(ownerQualifiedName);
         if (ownerQualifiedName == null)
@@ -168,6 +208,13 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
 
         name = name.trim();
         return name.isEmpty() ? null : name;
+    }
+
+    private static boolean isTypeSymbol(SymbolKind kind) {
+        return switch (kind) {
+            case CLASS, INTERFACE, ENUM, ANNOTATION, RECORD -> true;
+            default -> false;
+        };
     }
 
     private static String requireName(String value, String name) {

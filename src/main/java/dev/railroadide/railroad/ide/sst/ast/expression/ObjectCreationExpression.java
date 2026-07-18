@@ -5,7 +5,6 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.clazz.AnonymousClassDeclaration;
-import dev.railroadide.railroad.ide.sst.ast.typeref.ClassOrInterfaceTypeRef;
 import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
 

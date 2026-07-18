@@ -35,7 +35,7 @@ public interface Project extends JsonSerializable<JsonObject> {
      *
      * @return the path of the project
      */
-    Path getPath();
+    Path path();
 
     /**
      * Sets the alias of the project.
@@ -185,8 +185,6 @@ public interface Project extends JsonSerializable<JsonObject> {
      * @return the absolute path of the project as a string
      */
     default String getPathString() {
-        return getPath().toAbsolutePath().toString();
+        return path().toAbsolutePath().toString();
     }
-
-
 }

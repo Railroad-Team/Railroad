@@ -1,0 +1,49 @@
+﻿3	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'key' might not be initialized	src\main\java\dev\railroadide\railroad\java\JDK.java:172:9 | src\main\java\dev\railroadide\railroad\java\JDK.java:181:9 | src\main\java\dev\railroadide\railroad\welcome\WelcomeLeftPane.java:76:9
+3	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'gitManager' might not be initialized	src\main\java\dev\railroadide\railroad\ide\ui\git\diff\GitDiffPane.java:80:5 | src\main\java\dev\railroadide\railroad\project\RailroadProject.java:66:5 | src\main\java\dev\railroadide\railroad\project\RailroadProject.java:70:5
+2	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'dataStore' might not be initialized	src\main\java\dev\railroadide\railroad\project\RailroadProject.java:66:5 | src\main\java\dev\railroadide\railroad\project\RailroadProject.java:70:5
+2	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'runConfigManager' might not be initialized	src\main\java\dev\railroadide\railroad\project\RailroadProject.java:66:5 | src\main\java\dev\railroadide\railroad\project\RailroadProject.java:70:5
+2	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'debuggingManager' might not be initialized	src\main\java\dev\railroadide\railroad\project\RailroadProject.java:66:5 | src\main\java\dev\railroadide\railroad\project\RailroadProject.java:70:5
+2	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'type' might not be initialized	src\main\java\dev\railroadide\railroad\ide\runconfig\RunConfiguration.java:47:5 | src\main\java\dev\railroadide\railroad\project\facet\Facet.java:38:5
+2	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'name' might not be initialized	src\main\java\dev\railroadide\railroad\project\License.java:17:25 | src\main\java\dev\railroadide\railroad\vcs\connections\ProfileType.java:40:5
+2	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'gradleManager' might not be initialized	src\main\java\dev\railroadide\railroad\project\RailroadProject.java:66:5 | src\main\java\dev\railroadide\railroad\project\RailroadProject.java:70:5
+2	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'aliases' might not be initialized	src\main\java\dev\railroadide\railroad\java\JDK.java:172:9 | src\main\java\dev\railroadide\railroad\java\JDK.java:181:9
+2	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'headerLabel' might not be initialized	src\main\java\dev\railroadide\railroad\ui\RRFormSection.java:19:5 | src\main\java\dev\railroadide\railroad\ui\RRFormSection.java:23:5
+2	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'titleLabel' might not be initialized	src\main\java\dev\railroadide\railroad\ui\RRFormContainer.java:19:5 | src\main\java\dev\railroadide\railroad\ui\RRFormContainer.java:23:5
+2	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'content' might not be initialized	src\main\java\dev\railroadide\railroad\ui\RRCard.java:16:5 | src\main\java\dev\railroadide\railroad\ui\RRCard.java:20:5
+2	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'icon' might not be initialized	src\main\java\dev\railroadide\railroad\vcs\connections\ProfileType.java:40:5 | src\main\java\dev\railroadide\railroad\welcome\WelcomeLeftPane.java:76:9
+2	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'formContent' might not be initialized	src\main\java\dev\railroadide\railroad\ui\RRFormContainer.java:19:5 | src\main\java\dev\railroadide\railroad\ui\RRFormContainer.java:23:5
+2	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'contentArea' might not be initialized	src\main\java\dev\railroadide\railroad\ui\RRFormSection.java:19:5 | src\main\java\dev\railroadide\railroad\ui\RRFormSection.java:23:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'url' might not be initialized	src\main\java\dev\railroadide\railroad\project\License.java:18:25
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'toComponentFunction' might not be initialized	src\main\java\dev\railroadide\railroad\form\FormTransformer.java:37:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'filePath' might not be initialized	src\main\java\dev\railroadide\railroad\plugin\spi\inspection\JavaRuleContext.java:117:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'hostServices' might not be initialized	src\main\java\dev\railroadide\railroad\plugin\ui\PluginsPane.java:60:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'asynchronous' might not be initialized	src\main\java\dev\railroadide\railroad\form\FormTransformer.java:37:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'dataKey' might not be initialized	src\main\java\dev\railroadide\railroad\form\FormComponent.java:98:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'futureMapper' might not be initialized	src\main\java\dev\railroadide\railroad\form\FormTransformer.java:37:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'fromComponentFunction' might not be initialized	src\main\java\dev\railroadide\railroad\form\FormTransformer.java:37:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'documentText' might not be initialized	src\main\java\dev\railroadide\railroad\plugin\spi\inspection\JavaRuleContext.java:117:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'sourceId' might not be initialized	src\main\java\dev\railroadide\railroad\ide\sst\impl\java\JavaLexer.java:39:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'extractor' might not be initialized	src\main\java\dev\railroadide\railroad\ide\sst\project\JavaProjectSemanticIndexer.java:19:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'input' might not be initialized	src\main\java\dev\railroadide\railroad\ide\sst\impl\java\JavaLexer.java:39:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'length' might not be initialized	src\main\java\dev\railroadide\railroad\ide\sst\impl\java\JavaLexer.java:39:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'semanticModel' might not be initialized	src\main\java\dev\railroadide\railroad\plugin\spi\inspection\JavaRuleContext.java:117:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'symbolIndex' might not be initialized	src\main\java\dev\railroadide\railroad\plugin\spi\inspection\JavaRuleContext.java:117:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'headerText' might not be initialized	src\main\java\dev\railroadide\railroad\project\License.java:20:25
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'spdxId' might not be initialized	src\main\java\dev\railroadide\railroad\project\License.java:19:25
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'project' might not be initialized	src\main\java\dev\railroadide\railroad\vcs\git\GitManager.java:87:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'gitClient' might not be initialized	src\main\java\dev\railroadide\railroad\vcs\git\GitManager.java:87:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'selectedThemeProperty' might not be initialized	src\main\java\dev\railroadide\railroad\theme\ui\ThemeSelector.java:33:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'color' might not be initialized	src\main\java\dev\railroadide\railroad\welcome\WelcomeLeftPane.java:76:9
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'id' might not be initialized	src\main\java\dev\railroadide\railroad\project\minecraft\MappingChannel.java:21:25
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'versionLister' might not be initialized	src\main\java\dev\railroadide\railroad\project\minecraft\MappingChannel.java:23:59
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'executorService' might not be initialized	src\main\java\dev\railroadide\railroad\vcs\git\GitManager.java:87:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'translationKey' might not be initialized	src\main\java\dev\railroadide\railroad\project\minecraft\MappingChannel.java:22:25
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'connection' might not be initialized	src\main\java\dev\railroadide\railroad\switchboard\cache\impl\SqlCacheManager.java:35:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'visible' might not be initialized	src\main\java\dev\railroadide\railroad\form\FormComponent.java:98:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'uuid' might not be initialized	src\main\java\dev\railroadide\railroad\ide\runconfig\RunConfiguration.java:47:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'listener' might not be initialized	src\main\java\dev\railroadide\railroad\form\FormComponent.java:98:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'validator' might not be initialized	src\main\java\dev\railroadide\railroad\form\FormComponent.java:98:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'supports' might not be initialized	src\main\java\dev\railroadide\railroad\ide\language\index\ProjectLanguageIndexCoordinator.java:25:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'context' might not be initialized	src\main\java\dev\railroadide\railroad\ide\language\index\ProjectLanguageIndexCoordinator.java:25:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'data' might not be initialized	src\main\java\dev\railroadide\railroad\ide\runconfig\RunConfiguration.java:47:5
+1	ERROR	SEM_UNINITIALIZED_FINAL_FIELD	Final field 'indexService' might not be initialized	src\main\java\dev\railroadide\railroad\ide\language\index\ProjectLanguageIndexCoordinator.java:25:5

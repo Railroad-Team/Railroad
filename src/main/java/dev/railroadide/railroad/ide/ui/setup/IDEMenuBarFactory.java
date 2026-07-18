@@ -1,12 +1,15 @@
 package dev.railroadide.railroad.ide.ui.setup;
 
-import dev.railroadide.railroad.utility.OperatingSystem;
+import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.diagnostics.ProjectDiagnosticsScanner;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
 import dev.railroadide.railroad.ui.RRMenuBar;
 import dev.railroadide.railroad.ui.localized.LocalizedCheckMenuItem;
 import dev.railroadide.railroad.ui.localized.LocalizedMenu;
 import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
+import dev.railroadide.railroad.utility.OperatingSystem;
 import dev.railroadide.railroad.window.WindowManager;
 import javafx.application.Platform;
 import javafx.scene.control.MenuBar;
@@ -14,8 +17,12 @@ import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.stage.FileChooser;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+
+import java.io.File;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Builds the main IDE menu bar with all menu items, accelerators, and icons.
@@ -24,7 +31,7 @@ public final class IDEMenuBarFactory {
     private IDEMenuBarFactory() {
     }
 
-    public static MenuBar create() {
+    public static MenuBar create(Project project) {
         var newFileItem = new LocalizedMenuItem("railroad.menu.file.new_file");
         newFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE));
         newFileItem.setKeybindData(new KeybindData(KeyCode.N, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
@@ -40,6 +47,30 @@ public final class IDEMenuBarFactory {
         var saveAsItem = new LocalizedMenuItem("railroad.menu.file.save_as");
         saveAsItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
         saveAsItem.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
+
+        var exportDiagnosticsItem = new LocalizedMenuItem("railroad.menu.file.export_diagnostics");
+        exportDiagnosticsItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE_ALT));
+        exportDiagnosticsItem.setOnAction(event -> {
+            var chooser = new FileChooser();
+            chooser.setTitle(exportDiagnosticsItem.getText());
+            chooser.setInitialFileName("project-diagnostics.txt");
+            chooser.setInitialDirectory(project.path().toFile());
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt"));
+            File destination = chooser.showSaveDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
+            if (destination == null)
+                return;
+
+            exportDiagnosticsItem.setDisable(true);
+            CompletableFuture.runAsync(() -> ProjectDiagnosticsScanner.scan(project, destination.toPath()))
+                .whenComplete((ignored, exception) -> Platform.runLater(() -> {
+                    exportDiagnosticsItem.setDisable(false);
+                    if (exception == null) {
+                        Railroad.LOGGER.info("Exported project diagnostics to {}", destination);
+                    } else {
+                        Railroad.LOGGER.error("Failed to export project diagnostics to {}", destination, exception);
+                    }
+                }));
+        });
 
         var exitItem = new LocalizedMenuItem("railroad.menu.file.exit");
         exitItem.setGraphic(new FontIcon(FontAwesomeSolid.SIGN_OUT_ALT));
@@ -116,7 +147,16 @@ public final class IDEMenuBarFactory {
         terminalItem.setAccelerator(new KeyCodeCombination(KeyCode.T, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
 
         var fileMenu = new LocalizedMenu("railroad.menu.file");
-        fileMenu.getItems().addAll(newFileItem, openFileItem, saveItem, saveAsItem, new SeparatorMenuItem(), exitItem);
+        fileMenu.getItems().addAll(
+            newFileItem,
+            openFileItem,
+            saveItem,
+            saveAsItem,
+            new SeparatorMenuItem(),
+            exportDiagnosticsItem,
+            new SeparatorMenuItem(),
+            exitItem
+        );
         fileMenu.getStyleClass().add("rr-menu");
 
         var editMenu = new LocalizedMenu("railroad.menu.edit");

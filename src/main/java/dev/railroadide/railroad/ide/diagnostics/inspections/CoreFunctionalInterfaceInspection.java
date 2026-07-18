@@ -11,7 +11,6 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -41,26 +40,8 @@ public final class CoreFunctionalInterfaceInspection implements JavaInspectionRu
 
             if (hasAnnotation(context, node, "java.lang.FunctionalInterface")) continue;
 
-            int abstractMethodCount = 0;
-            Set<String> seenMethods = new HashSet<>();
-            for (JavaRuleContext.MethodDescriptor descriptor : context.declaredMethodDescriptors(qualifiedName)) {
-                String signatureKey = descriptor.signatureKey();
-                seenMethods.add(signatureKey);
-                if (!descriptor.isAbstract() || isObjectMethod(descriptor)) continue;
-                abstractMethodCount++;
-                if (abstractMethodCount > 1) break;
-            }
-
-            for (JavaRuleContext.MethodDescriptor descriptor : context.inheritedMethodDescriptors(qualifiedName)) {
-                String signatureKey = descriptor.signatureKey();
-                if (!descriptor.isAbstract() || isObjectMethod(descriptor) || seenMethods.contains(signatureKey))
-                    continue;
-                seenMethods.add(signatureKey);
-                abstractMethodCount++;
-                if (abstractMethodCount > 1) break;
-            }
-
-            if (abstractMethodCount == 1) reporter.report(node, declaredName.simpleName());
+            if (context.isFunctionalInterface(new Type.DeclaredType(qualifiedName, List.of())))
+                reporter.report(node, declaredName.simpleName());
         }
     }
 
@@ -81,15 +62,4 @@ public final class CoreFunctionalInterfaceInspection implements JavaInspectionRu
         return false;
     }
 
-    private static boolean isObjectMethod(JavaRuleContext.MethodDescriptor descriptor) {
-        List<Type> parameters = descriptor.parameterTypes();
-
-        return switch (descriptor.name()) {
-            case "toString" -> parameters.isEmpty() && "java.lang.String".equals(descriptor.returnType().displayName());
-            case "hashCode" -> parameters.isEmpty() && "int".equals(descriptor.returnType().displayName());
-            case "equals" ->
-                parameters.size() == 1 && "boolean".equals(descriptor.returnType().displayName()) && "java.lang.Object".equals(parameters.getFirst().displayName());
-            default -> false;
-        };
-    }
 }

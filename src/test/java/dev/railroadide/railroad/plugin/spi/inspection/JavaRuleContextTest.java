@@ -139,6 +139,33 @@ class JavaRuleContextTest {
     }
 
     @Test
+    void recognizesMatchingAbstractMethodsInheritedFromMultipleInterfaces() {
+        String source = """
+                interface A { void run(); }
+                interface B { void run(); }
+                interface Child extends A, B {}
+                """;
+
+        JavaRuleContext context = contextFor(source);
+
+        SyntaxNode childDeclaration = context.nodesOfKind(JavaSyntaxKinds.INTERFACE_DECLARATION.id()).stream()
+            .filter(node -> context.declaredSymbol(node)
+                .map(symbol -> symbol.simpleName().equals("Child"))
+                .orElse(false))
+            .findFirst()
+            .orElseThrow();
+        assertNotNull(context.directChild(childDeclaration, JavaSyntaxKinds.EXTENDS_CLAUSE.id()));
+        assertEquals(List.of("A", "B"), context.directSuperTypeNames("Child"));
+        assertEquals(
+            List.of("A#run()", "B#run()"),
+            context.inheritedMethodDescriptors("Child").stream()
+                .map(method -> method.ownerQualifiedName() + "#" + method.signatureKey())
+                .toList());
+        assertTrue(context.isFunctionalInterface(
+            new dev.railroadide.railroad.ide.sst.semantic.api.Type.DeclaredType("Child", List.of())));
+    }
+
+    @Test
     void exposesFieldHelpers() {
         String source = """
                 class Base {

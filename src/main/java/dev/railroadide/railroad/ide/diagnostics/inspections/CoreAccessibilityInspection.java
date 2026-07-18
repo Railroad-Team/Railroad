@@ -10,6 +10,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Set;
 
@@ -123,6 +124,10 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
             Symbol resolved = context.resolvedSymbol(node).orElse(null);
             if (resolved == null || resolved.kind() != SymbolKind.CONSTRUCTOR)
                 return;
+            if (Modifier.isProtected(context.symbolModifiers(resolved))
+                    && context.directChild(node, "JAVA_ANONYMOUS_CLASS_BODY") != null) {
+                return;
+            }
             if (ownerTypeInaccessible(context, resolved, node) || context.isSymbolAccessible(resolved, node))
                 return;
 

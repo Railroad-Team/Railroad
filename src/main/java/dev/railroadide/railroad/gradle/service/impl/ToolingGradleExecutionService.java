@@ -107,7 +107,7 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
 
     private GradleTaskExecutionResult execute(GradleTaskExecutionRequest request, ToolingGradleTaskExecutionHandle handle) {
         GradleConnector connector = GradleConnector.newConnector()
-            .forProjectDirectory(project.getPath().toFile());
+            .forProjectDirectory(project.path().toFile());
         ToolingGradleModelService.configureConnector(connector, environment);
 
         CancellationTokenSource tokenSource = GradleConnector.newCancellationTokenSource();

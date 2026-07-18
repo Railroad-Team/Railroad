@@ -248,7 +248,7 @@ public final class JavaSemanticRules {
     );
     public static final JavaSemanticRule DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE = new JavaSemanticRule(
         "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE",
-        SemanticDiagnostic.Severity.ERROR,
+        SemanticDiagnostic.Severity.WARNING,
         "Method '%s' declares disallowed exception '%s' in its signature"
     );
     public static final JavaSemanticRule THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION = new JavaSemanticRule(
@@ -335,6 +335,11 @@ public final class JavaSemanticRules {
         "SEM_REDUNDANT_INTERFACE_DECLARATION",
         SemanticDiagnostic.Severity.INFO,
         "Type '%s' declares redundant interface '%s'"
+    );
+    public static final JavaSemanticRule IMPLICIT_NUMERIC_CONVERSION = new JavaSemanticRule(
+        "SEM_IMPLICIT_NUMERIC_CONVERSION",
+        SemanticDiagnostic.Severity.INFO,
+        "Implicit numeric conversion '%s' from '%s' to '%s'"
     );
 
     private JavaSemanticRules() {

@@ -8,12 +8,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 final class JavaParserParitySupport {
     static final Set<String> TOP_LEVEL_TYPE_KIND_IDS = Set.of(

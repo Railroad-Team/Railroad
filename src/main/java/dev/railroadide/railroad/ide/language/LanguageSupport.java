@@ -2,8 +2,11 @@ package dev.railroadide.railroad.ide.language;
 
 import dev.railroadide.railroad.ide.completion.CompletionProvider;
 import dev.railroadide.railroad.ide.diagnostics.DiagnosticsProvider;
+import dev.railroadide.railroad.ide.language.index.LanguageIndexContextContributor;
+import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexPersistence;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexer;
+import dev.railroadide.railroad.ide.language.ProjectDiagnosticsFeatureFactory;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import org.jspecify.annotations.Nullable;
@@ -51,6 +54,11 @@ public interface LanguageSupport {
     LanguageFeatureFactory<DiagnosticsProvider> diagnosticsFactory();
 
     @Nullable
+    default ProjectDiagnosticsFeatureFactory<DiagnosticsProvider> projectDiagnosticsFactory() {
+        return null;
+    }
+
+    @Nullable
     LanguageFeatureFactory<CompletionProvider> completionFactory();
 
     @Nullable
@@ -64,5 +72,13 @@ public interface LanguageSupport {
     @Nullable
     default ProjectLanguageIndexPersistence<?> createPersistence() {
         return null;
+    }
+
+    @Nullable
+    default LanguageIndexContextContributor createIndexContextContributor() {
+        return null;
+    }
+
+    default void warmAdditionalIndexes(ProjectIndexContext context) {
     }
 }

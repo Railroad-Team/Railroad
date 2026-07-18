@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.plugin;
 
-import dev.railroadide.railroad.ide.diagnostics.LanguageInspectionRegistries;
 import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRegistries;
+import dev.railroadide.railroad.ide.diagnostics.LanguageInspectionRegistries;
 import dev.railroadide.railroad.plugin.defaults.DefaultPluginDescriptor;
 import dev.railroadide.railroad.plugin.spi.PluginDescriptor;
 import dev.railroadide.railroad.plugin.spi.deps.MavenDeps;

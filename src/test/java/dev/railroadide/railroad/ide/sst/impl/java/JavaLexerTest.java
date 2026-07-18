@@ -1,16 +1,14 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
+import dev.railroadide.railroad.ide.sst.lexer.Lexer.LexError;
 import dev.railroadide.railroad.ide.sst.lexer.Token;
 import dev.railroadide.railroad.ide.sst.lexer.TokenChannel;
 import dev.railroadide.railroad.ide.sst.lexer.TokenFlag;
-import dev.railroadide.railroad.ide.sst.lexer.Lexer.LexError;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class JavaLexerTest {
 
@@ -55,6 +53,24 @@ class JavaLexerTest {
         assertTrue(tokens.stream().anyMatch(token ->
                 token.type() == JavaTokenType.BLOCK_COMMENT && token.channel() == TokenChannel.TRIVIA
         ));
+    }
+
+    @Test
+    void lexesRightShiftOperatorsIncludingAtEndOfInput() {
+        List<Token<JavaTokenType>> tokens = JavaParserTestSupport.lexAll(">> >>> >>= >>>=");
+
+        List<JavaTokenType> significantTypes = tokens.stream()
+                .filter(token -> token.channel() == TokenChannel.DEFAULT)
+                .map(Token::type)
+                .toList();
+
+        assertIterableEquals(List.of(
+                JavaTokenType.RIGHT_SHIFT,
+                JavaTokenType.UNSIGNED_RIGHT_SHIFT,
+                JavaTokenType.RIGHT_SHIFT_EQUALS,
+                JavaTokenType.UNSIGNED_RIGHT_SHIFT_EQUALS,
+                JavaTokenType.EOF
+        ), significantTypes);
     }
 
     @Test

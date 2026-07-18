@@ -1,0 +1,16 @@
+﻿1	ERROR	SEM_MISSING_RETURN	Missing return: method 'nearestEnclosingCallableOrLambda' must return 'SyntaxNode' on all paths	src\main\java\dev\railroadide\railroad\plugin\spi\inspection\JavaRuleContext.java:1424:5
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'topLevelEnclosingTypeSymbol' must return 'Optional' on all paths	src\main\java\dev\railroadide\railroad\plugin\spi\inspection\JavaRuleContext.java:965:5
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'nearestCallableOrLambda' must return 'SyntaxNode' on all paths	src\main\java\dev\railroadide\railroad\ide\diagnostics\inspections\CoreControlFlowInspection.java:327:5
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'findLabeledTarget' must return 'SyntaxNode' on all paths	src\main\java\dev\railroadide\railroad\ide\diagnostics\inspections\CoreControlFlowInspection.java:249:5
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'enclosingTypeSymbol' must return 'Symbol' on all paths	src\main\java\dev\railroadide\railroad\ide\sst\impl\java\JavaSemanticAnalyzer.java:288:9
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'topLevelEnclosingTypeSymbol' must return 'Symbol' on all paths	src\main\java\dev\railroadide\railroad\ide\sst\impl\java\JavaSemanticAnalyzer.java:304:9
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'enclosingTypeSymbol' must return 'Optional' on all paths	src\main\java\dev\railroadide\railroad\plugin\spi\inspection\JavaRuleContext.java:951:5
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'scopeFor' must return 'Scope' on all paths	src\main\java\dev\railroadide\railroad\ide\sst\impl\java\JavaSemanticAnalyzer.java:230:9
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'hasContinueTarget' must return 'boolean' on all paths	src\main\java\dev\railroadide\railroad\ide\diagnostics\inspections\CoreControlFlowInspection.java:217:5
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'hasBreakTarget' must return 'boolean' on all paths	src\main\java\dev\railroadide\railroad\ide\diagnostics\inspections\CoreControlFlowInspection.java:201:5
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'lexAll' must return 'List' on all paths	src\test\java\dev\railroadide\railroad\ide\sst\impl\java\JavaParserTestSupport.java:22:5
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'enclosingTypeReference' must return 'SyntaxNode' on all paths	src\main\java\dev\railroadide\railroad\ide\diagnostics\inspections\CoreNegativeHexIntInLongContextInspection.java:295:75
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'nearestAncestor' must return 'SyntaxNode' on all paths	src\main\java\dev\railroadide\railroad\ide\diagnostics\inspections\CoreNegativeHexIntInLongContextInspection.java:187:13
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'isLongContext' must return 'boolean' on all paths	src\main\java\dev\railroadide\railroad\ide\diagnostics\inspections\CoreNegativeHexIntInLongContextInspection.java:110:12
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'hasYieldTarget' must return 'boolean' on all paths	src\main\java\dev\railroadide\railroad\ide\diagnostics\inspections\CoreControlFlowInspection.java:233:5
+1	ERROR	SEM_MISSING_RETURN	Missing return: method 'isInFloatingPointContext' must return 'boolean' on all paths	src\main\java\dev\railroadide\railroad\ide\diagnostics\inspections\CoreIntegerDivisionInFloatingPointContextInspection.java:59:5

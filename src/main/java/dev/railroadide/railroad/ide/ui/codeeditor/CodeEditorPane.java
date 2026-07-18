@@ -14,6 +14,7 @@ import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
 import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
@@ -74,6 +75,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     protected volatile List<EditorDiagnostic> visibleDiagnostics = List.of();
     protected final Popup diagnosticPopup = new Popup();
+    protected volatile boolean hoveringDiagnosticPopup = false;
+    protected final PauseTransition diagnosticHideDelay = new PauseTransition(javafx.util.Duration.millis(180));
     // endregion
 
     // region Syntax Highlighting state
@@ -122,7 +125,12 @@ public abstract class CodeEditorPane extends TextEditorPane {
             ? config.highlightingProvider()
             : text -> StyleSpans.singleton(Collections.emptyList(), text.length());
 
-        diagnosticPopup.setAutoHide(true);
+        diagnosticPopup.setAutoHide(false);
+        diagnosticPopup.setAutoFix(true);
+        diagnosticHideDelay.setOnFinished(event -> {
+            if (!hoveringDiagnosticPopup)
+                diagnosticPopup.hide();
+        });
 
         signaturePopup.setAutoHide(false);
         signaturePopup.setAutoFix(true);
@@ -257,6 +265,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         diagnosticPopup.hide();
 
+        logDiagnostics(diagnostics);
         visibleDiagnostics = diagnostics;
         boolean lineDecorationsChanged = recomputeLineDecorations();
         applyEditorStyles();
@@ -265,10 +274,56 @@ public abstract class CodeEditorPane extends TextEditorPane {
             requestLayout();
     }
 
+    private void logDiagnostics(List<EditorDiagnostic> diagnostics) {
+        if (diagnostics == null || diagnostics.isEmpty())
+            return;
+
+        Railroad.LOGGER.warn(
+            "Diagnostics for {} (language {}, {} issue{})",
+            filePath,
+            languageId,
+            diagnostics.size(),
+            diagnostics.size() == 1 ? "" : "s"
+        );
+
+        for (EditorDiagnostic diagnostic : diagnostics) {
+            Railroad.LOGGER.warn(
+                "  [{}] line {}, column {}, offsets {}-{}, code '{}', source '{}': {}",
+                diagnostic.getKind(),
+                diagnostic.getLineNumber(),
+                diagnostic.getColumnNumber(),
+                diagnostic.getStartPosition(),
+                diagnostic.getEndPosition(),
+                nullToEmpty(diagnostic.getCode()),
+                diagnosticSource(diagnostic),
+                singleLine(diagnostic.getMessage(Locale.getDefault()))
+            );
+        }
+    }
+
+    private static String diagnosticSource(EditorDiagnostic diagnostic) {
+        if (diagnostic.getSource() == null)
+            return "";
+
+        return diagnostic.getSource().toUri().toString();
+    }
+
+    private static String singleLine(String value) {
+        return nullToEmpty(value).replace('\r', ' ').replace('\n', ' ');
+    }
+
+    private static String nullToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
     private void installDiagnosticPopupHandlers() {
         addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_BEGIN, this::handleMouseOverText);
-        addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_END, event -> diagnosticPopup.hide());
+        addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_END, event -> scheduleDiagnosticHide());
         addEventHandler(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
+        focusedProperty().addListener((obs, oldValue, newValue) -> {
+            if (!newValue)
+                diagnosticPopup.hide();
+        });
     }
 
     private EditorDiagnostic findDiagnosticAt(int index) {
@@ -284,8 +339,21 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     private void showDiagnosticPopup(EditorDiagnostic diagnostic, double screenX, double screenY) {
+        diagnosticHideDelay.stop();
+        hoveringDiagnosticPopup = false;
         diagnosticPopup.getContent().clear();
-        diagnosticPopup.getContent().add(new DiagnosticPane(diagnostic));
+        DiagnosticPane diagnosticPane = new DiagnosticPane(diagnostic);
+        diagnosticPane.setOnMouseEntered(event -> {
+            diagnosticHideDelay.stop();
+            hoveringDiagnosticPopup = true;
+        });
+        diagnosticPane.setOnMouseExited(event -> {
+            hoveringDiagnosticPopup = false;
+            Point2D screenPosition = new Point2D(event.getScreenX(), event.getScreenY());
+            if (!isMouseOverDiagnostic(screenPosition))
+                scheduleDiagnosticHide();
+        });
+        diagnosticPopup.getContent().add(diagnosticPane);
         diagnosticPopup.show(this, screenX, screenY);
     }
 
@@ -306,9 +374,27 @@ public abstract class CodeEditorPane extends TextEditorPane {
         int index = hit(event.getX(), event.getY())
             .getCharacterIndex()
             .orElse(-1);
-        if (index < 0 || findDiagnosticAt(index) == null) {
-            diagnosticPopup.hide();
+        if (!hoveringDiagnosticPopup && (index < 0 || findDiagnosticAt(index) == null)) {
+            scheduleDiagnosticHide();
+        } else {
+            diagnosticHideDelay.stop();
         }
+    }
+
+    private boolean isMouseOverDiagnostic(Point2D screenPosition) {
+        Point2D local = screenToLocal(screenPosition);
+        if (local == null)
+            return false;
+
+        int index = hit(local.getX(), local.getY())
+            .getCharacterIndex()
+            .orElse(-1);
+        return index >= 0 && findDiagnosticAt(index) != null;
+    }
+
+    private void scheduleDiagnosticHide() {
+        diagnosticHideDelay.stop();
+        diagnosticHideDelay.playFromStart();
     }
     // endregion
 

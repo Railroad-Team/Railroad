@@ -2,9 +2,7 @@ package dev.railroadide.railroad.ide.sst.impl.java;
 
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 final class JavaSyntaxAssertions {
     private JavaSyntaxAssertions() {

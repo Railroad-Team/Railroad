@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.project.facet.detector;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.maven.DefaultMavenModelService;
+import dev.railroadide.railroad.maven.MavenModelService;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
@@ -10,19 +12,15 @@ import dev.railroadide.railroad.utility.JavaVersion;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
-import org.apache.maven.model.building.*;
 import org.codehaus.plexus.configuration.PlexusConfigurationException;
 import org.codehaus.plexus.configuration.xml.XmlPlexusConfiguration;
 import org.gradle.tooling.model.java.InstalledJdk;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnknownNullability;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -31,6 +29,8 @@ import java.util.stream.Stream;
  * This detector is used by the facet system to identify Java projects and extract relevant configuration data.
  */
 public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
+    private static final MavenModelService MAVEN_MODELS = new DefaultMavenModelService();
+
     /**
      * Attempts to determine the most reliable Java version for the given project path.
      * Checks Gradle, Maven, compiled class files, and system properties in order.
@@ -43,7 +43,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
         if (gradleVersion.major() != -1)
             return gradleVersion;
 
-        Path path = project.getPath();
+        Path path = project.path();
         if (path == null) {
             Railroad.LOGGER.warn("Project path is null for project: {}", project.getAlias());
             return JavaVersion.fromMajor(-1);
@@ -53,10 +53,6 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
         if (mavenVersion.major() != -1)
             return mavenVersion;
 
-        JavaVersion classVersion = findHighestJavaVersionForClasses(path);
-        if (classVersion.major() != -1)
-            return classVersion;
-
         String systemVersionStr = System.getProperty("java.version");
         JavaVersion systemVersion = JavaVersion.fromReleaseString(systemVersionStr);
         if (systemVersion.major() != -1)
@@ -64,61 +60,6 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
 
         Railroad.LOGGER.warn("No reliable Java version found for path: {}", path);
         return JavaVersion.fromMajor(-1);
-    }
-
-    /**
-     * Finds the highest Java version among all compiled class files in the project.
-     *
-     * @param path the project directory
-     * @return the highest JavaVersion found, or an invalid version if none
-     */
-    private static JavaVersion findHighestJavaVersionForClasses(@NotNull Path path) {
-        List<Path> classFiles = findAllClassFiles(path);
-        if (classFiles.isEmpty())
-            return JavaVersion.fromMajor(-1); // No class files found
-
-        return classFiles.stream()
-            .map(JavaFacetDetector::parseJavaVersionFromClassFile)
-            .filter(version -> version.major() != -1)
-            .max(Comparator.naturalOrder())
-            .orElse(JavaVersion.fromMajor(-1));
-    }
-
-    /**
-     * Recursively finds all .class files in the given directory.
-     *
-     * @param path the project directory
-     * @return a list of paths to .class files
-     */
-    private static List<Path> findAllClassFiles(@NotNull Path path) {
-        try (Stream<Path> classFiles = Files.walk(path)) {
-            return classFiles.filter(p -> p.toString().endsWith(".class"))
-                .toList();
-        } catch (IOException exception) {
-            Railroad.LOGGER.error("Error while finding class files in path: {}", path, exception);
-            return List.of();
-        }
-    }
-
-    /**
-     * Parses the Java version from a .class file by reading its major and minor version fields.
-     *
-     * @param classFile the path to the .class file
-     * @return the JavaVersion represented by the class file, or an invalid version if not a valid class file
-     */
-    private static JavaVersion parseJavaVersionFromClassFile(@NotNull Path classFile) {
-        try (var inputStream = new DataInputStream(Files.newInputStream(classFile))) {
-            int magic = inputStream.readInt();
-            if (magic != 0xCAFEBABE)
-                return JavaVersion.fromMajor(-1); // Not a valid class file
-
-            int minorVersion = inputStream.readUnsignedShort();
-            int majorVersion = inputStream.readUnsignedShort();
-            return JavaVersion.fromMajorMinor(majorVersion, minorVersion);
-        } catch (IOException exception) {
-            Railroad.LOGGER.error("Error reading class file: {}", classFile, exception);
-            return JavaVersion.fromMajor(-1);
-        }
     }
 
     /**
@@ -156,16 +97,11 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             return JavaVersion.fromMajor(-1);
 
         try {
-            // TODO: Look into replacement of these as they are deprecated(?)
-            ModelBuildingRequest req = new DefaultModelBuildingRequest()
-                .setProcessPlugins(false)
-                .setPomFile(pom.toFile());
+            Optional<Model> maybeModel = MAVEN_MODELS.loadEffectiveModel(projectDir);
+            if (maybeModel.isEmpty())
+                return JavaVersion.fromMajor(-1);
 
-            ModelBuildingResult res = new DefaultModelBuilderFactory()
-                .newInstance()
-                .build(req);
-
-            Model model = res.getEffectiveModel();
+            Model model = maybeModel.get();
 
             // 1) look in <properties>
             String src = model.getProperties().getProperty("maven.compiler.source");
@@ -199,7 +135,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             JavaVersion targetVer = JavaVersion.fromReleaseString(tgt);
 
             return sourceVer.compareTo(targetVer) >= 0 ? sourceVer : targetVer;
-        } catch (ModelBuildingException | PlexusConfigurationException exception) {
+        } catch (PlexusConfigurationException exception) {
             Railroad.LOGGER.error("Error reading POM for Java version: {}", projectDir, exception);
             return JavaVersion.fromMajor(-1);
         }
@@ -213,24 +149,24 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
      */
     @Override
     public Optional<Facet<JavaFacetData>> detect(@UnknownNullability Project project) {
-        long javaFileCount = 0;
+        boolean hasJavaFiles = false;
         try {
-            try (Stream<Path> javaFiles = Files.find(project.getPath(), 10,
+            try (Stream<Path> javaFiles = Files.find(project.path(), 10,
                 (p, attrs) -> p.toString().endsWith(".java"))) {
-                javaFileCount = javaFiles.count();
+                hasJavaFiles = javaFiles.findAny().isPresent();
             }
         } catch (IOException exception) {
-            Railroad.LOGGER.error("Error while detecting Java files in path: {}", project.getPath(), exception);
+            Railroad.LOGGER.error("Error while detecting Java files in path: {}", project.path(), exception);
         }
 
         JavaFacetData data = null;
-        if (javaFileCount > 0) {
+        if (hasJavaFiles) {
             data = new JavaFacetData();
             JavaVersion highestJavaVersion = findMostReliableJavaVersion(project);
             data.setVersion(highestJavaVersion);
         }
 
-        return javaFileCount > 0 ?
+        return hasJavaFiles ?
             Optional.of(new Facet<>(FacetManager.JAVA, data)) :
             Optional.empty();
     }

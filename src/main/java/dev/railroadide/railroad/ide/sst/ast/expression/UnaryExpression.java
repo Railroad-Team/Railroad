@@ -6,7 +6,6 @@ import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.generic.LexerToken;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
-import dev.railroadide.railroad.ide.sst.lexer.Token;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;

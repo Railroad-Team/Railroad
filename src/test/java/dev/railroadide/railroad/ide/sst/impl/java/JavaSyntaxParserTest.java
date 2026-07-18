@@ -5,9 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class JavaSyntaxParserTest {
 
@@ -51,6 +49,21 @@ class JavaSyntaxParserTest {
         JavaSyntaxParser.ParseResult result = JavaSyntaxParser.parseWithDiagnostics(source);
 
         assertFalse(result.diagnostics().isEmpty());
+        assertEquals(source, JavaParserTestSupport.syntaxText(result.tree()));
+    }
+
+    @Test
+    void nestedGenericClosersDoNotConsumeFollowingImplementedType() {
+        String source = """
+                import java.io.Serializable;
+                import java.util.Comparator;
+                import java.util.List;
+                class Example implements Comparator<List<String>>, Serializable {}
+                """;
+
+        JavaSyntaxParser.ParseResult result = JavaSyntaxParser.parseWithDiagnostics(source);
+
+        assertTrue(result.diagnostics().isEmpty(), result.diagnostics()::toString);
         assertEquals(source, JavaParserTestSupport.syntaxText(result.tree()));
     }
 

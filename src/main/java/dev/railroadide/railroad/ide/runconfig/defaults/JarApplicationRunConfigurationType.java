@@ -101,8 +101,8 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
     public JarApplicationRunConfigurationData createDataInstance(@UnknownNullability Project project) {
         var data = new JarApplicationRunConfigurationData();
         data.setName("New Jar Application");
-        data.setWorkingDirectory(project.getPath());
-        data.setJarPath(project.getPath().resolve("app.jar"));
+        data.setWorkingDirectory(project.path());
+        data.setJarPath(project.path().resolve("app.jar"));
         data.setJre(/*project.getJDKManager().getDefaultJDK()*/ JDKManager.getDefaultJDK()); // TODO
         return data;
     }
@@ -134,7 +134,7 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
     private static Path resolveWorkingDirectory(Project project, JarApplicationRunConfigurationData data) {
         Path workingDirectory = data.getWorkingDirectory();
         if (workingDirectory == null) {
-            workingDirectory = project.getPath();
+            workingDirectory = project.path();
         }
 
         if (Files.notExists(workingDirectory) || !Files.isDirectory(workingDirectory))

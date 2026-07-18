@@ -4,9 +4,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 /**
@@ -42,13 +47,34 @@ public final class JavaProjectSemanticIndexer {
     public JavaProjectSemanticIndex build(List<Path> sourceFiles) {
         Objects.requireNonNull(sourceFiles, "sourceFiles");
 
+        List<Path> files = sourceFiles.stream()
+            .filter(Objects::nonNull)
+            .toList();
         JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
-        for (Path sourceFile : sourceFiles) {
-            if (sourceFile == null)
-                continue;
+        if (files.size() < 2) {
+            files.forEach(sourceFile -> builder.putFile(indexFile(sourceFile)));
+            return builder.build();
+        }
 
-            String source = readSource(sourceFile);
-            builder.putFile(extractor.extract(sourceFile, source));
+        int parallelism = Math.min(files.size(), Math.max(2,
+            Math.min(Runtime.getRuntime().availableProcessors(), 8)));
+        ExecutorService executor = Executors.newFixedThreadPool(parallelism);
+        List<Future<JavaProjectSemanticIndex.SourceFileIndex>> futures = new ArrayList<>(files.size());
+        try {
+            for (Path sourceFile : files)
+                futures.add(executor.submit(() -> indexFile(sourceFile)));
+            for (Future<JavaProjectSemanticIndex.SourceFileIndex> future : futures)
+                builder.putFile(future.get());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Java project indexing was interrupted", exception);
+        } catch (ExecutionException exception) {
+            Throwable cause = exception.getCause();
+            if (cause instanceof RuntimeException runtimeException)
+                throw runtimeException;
+            throw new IllegalStateException("Failed to index Java project", cause);
+        } finally {
+            executor.shutdownNow();
         }
 
         return builder.build();
@@ -57,6 +83,12 @@ public final class JavaProjectSemanticIndexer {
     public JavaProjectSemanticIndex.SourceFileIndex indexFile(Path sourceFile) {
         Objects.requireNonNull(sourceFile, "sourceFile");
         return extractor.extract(sourceFile, readSource(sourceFile));
+    }
+
+    public JavaProjectSemanticIndex.SourceFileIndex indexFile(Path sourceFile, CharSequence sourceContent) {
+        Objects.requireNonNull(sourceFile, "sourceFile");
+        Objects.requireNonNull(sourceContent, "sourceContent");
+        return extractor.extract(sourceFile, sourceContent);
     }
 
     private static String readSource(Path sourceFile) {

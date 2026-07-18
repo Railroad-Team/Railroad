@@ -5,7 +5,6 @@ import dev.railroadide.railroad.ide.sst.ast.AstNode;
 import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.clazz.ClassBodyDeclaration;
-import dev.railroadide.railroad.ide.sst.ast.generic.ClassMember;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;

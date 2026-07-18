@@ -1,0 +1,5 @@
+﻿21	ERROR	SEM_INACCESSIBLE_MEMBER	Member 'LOGGER' is not accessible from here	src\main\java\dev\railroadide\railroad\localization\L18n.java:59:9 | src\main\java\dev\railroadide\railroad\localization\L18n.java:66:17 | src\main\java\dev\railroadide\railroad\localization\L18n.java:71:13 | src\main\java\dev\railroadide\railroad\localization\L18n.java:83:9 | src\main\java\dev\railroadide\railroad\localization\L18n.java:87:13
+2	ERROR	SEM_INACCESSIBLE_MEMBER	Member 'ENTRY_CREATE' is not accessible from here	src\main\java\dev\railroadide\railroad\ide\projectexplorer\task\WatchTask.java:55:40 | src\main\java\dev\railroadide\railroad\ide\projectexplorer\task\WatchTask.java:94:46
+1	ERROR	SEM_INACCESSIBLE_MEMBER	Member 'ENTRY_MODIFY' is not accessible from here	src\main\java\dev\railroadide\railroad\ide\projectexplorer\task\WatchTask.java:94:74
+1	ERROR	SEM_INACCESSIBLE_MEMBER	Member 'OVERFLOW' is not accessible from here	src\main\java\dev\railroadide\railroad\ide\projectexplorer\task\WatchTask.java:46:40
+1	ERROR	SEM_INACCESSIBLE_MEMBER	Member 'ENTRY_DELETE' is not accessible from here	src\main\java\dev\railroadide\railroad\ide\projectexplorer\task\WatchTask.java:94:60

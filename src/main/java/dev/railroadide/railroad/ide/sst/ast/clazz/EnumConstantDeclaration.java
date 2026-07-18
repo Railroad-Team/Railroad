@@ -6,8 +6,8 @@ import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.annotation.Annotation;
 import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
-import dev.railroadide.railroad.ide.sst.ast.generic.ClassMember;
 import dev.railroadide.railroad.ide.sst.ast.expression.NameExpression;
+import dev.railroadide.railroad.ide.sst.ast.generic.ClassMember;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;

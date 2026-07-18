@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -23,17 +24,15 @@ public final class ProjectLanguageIndexService {
     public void registerIndexer(ProjectLanguageIndexer<?, ?> indexer) {
         Objects.requireNonNull(indexer, "indexer");
         ProjectLanguageIndexer<?, ?> existing = indexersByLanguageId.putIfAbsent(indexer.languageId(), indexer);
-        if (existing != null) {
+        if (existing != null)
             throw new IllegalArgumentException("Project language indexer for '" + indexer.languageId() + "' is already registered.");
-        }
     }
 
     public void registerPersistence(ProjectLanguageIndexPersistence<?> persistence) {
         Objects.requireNonNull(persistence, "persistence");
         ProjectLanguageIndexPersistence<?> existing = persistenceByLanguageId.putIfAbsent(persistence.languageId(), persistence);
-        if (existing != null) {
+        if (existing != null)
             throw new IllegalArgumentException("Project language index persistence for '" + persistence.languageId() + "' is already registered.");
-        }
     }
 
     public boolean hasIndexer(String languageId) {
@@ -58,132 +57,173 @@ public final class ProjectLanguageIndexService {
 
     public @Nullable ProjectLanguageIndex<?> current(Project project, String languageId) {
         Objects.requireNonNull(project, "project");
-        return current(project.getPath(), languageId);
+        return current(new DefaultProjectIndexContextResolver().resolve(project), languageId);
     }
 
-    public @Nullable ProjectLanguageIndex<?> current(Path projectRoot, String languageId) {
-        return indexesByProjectAndLanguage.get(key(projectRoot, languageId));
+    public @Nullable ProjectLanguageIndex<?> current(ProjectIndexContext context, String languageId) {
+        Objects.requireNonNull(context, "context");
+        if (context.language(languageId) == null)
+            return null;
+
+        return indexesByProjectAndLanguage.get(key(context.projectRoot(), languageId));
     }
 
     @SuppressWarnings("unchecked")
-    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I currentTyped(Path projectRoot, String languageId) {
-        return (I) current(projectRoot, languageId);
+    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I currentTyped(Project project, String languageId) {
+        return (I) current(project, languageId);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I currentTyped(ProjectIndexContext context, String languageId) {
+        return (I) current(context, languageId);
     }
 
     public @Nullable ProjectLanguageIndex<?> index(Project project, String languageId) {
         Objects.requireNonNull(project, "project");
-        return index(project.getPath(), languageId);
+        return index(new DefaultProjectIndexContextResolver().resolve(project), languageId);
     }
 
-    public @Nullable ProjectLanguageIndex<?> index(Path projectRoot, String languageId) {
+    public @Nullable ProjectLanguageIndex<?> index(ProjectIndexContext context, String languageId) {
+        Objects.requireNonNull(context, "context");
+        return index(context, context.projectRoot(), languageId);
+    }
+
+    private @Nullable ProjectLanguageIndex<?> index(ProjectIndexContext context, Path projectRoot, String languageId) {
+        LanguageIndexContext languageContext = context.language(languageId);
+        if (languageContext == null)
+            return null;
+
         ProjectLanguageKey key = key(projectRoot, languageId);
         ProjectLanguageIndex<?> current = indexesByProjectAndLanguage.get(key);
         if (current != null)
             return current;
 
-        ProjectLanguageIndex<?> persisted = loadPersisted(key);
+        ProjectLanguageIndexer<?, ?> rawIndexer = indexersByLanguageId.get(languageId);
+        if (rawIndexer == null)
+            return null;
+
+        Collection<Path> sourceFiles = collectFiles(languageContext).stream()
+            .filter(rawIndexer::supports)
+            .toList();
+        ProjectLanguageIndex<?> persisted = loadPersisted(key, sourceFiles);
         if (persisted != null) {
             indexesByProjectAndLanguage.put(key, persisted);
             return persisted;
         }
 
-        ProjectLanguageIndexer<?, ?> rawIndexer = indexersByLanguageId.get(languageId);
-        if (rawIndexer == null)
-            return null;
-
-        ProjectLanguageIndex<?> built = buildUnchecked(rawIndexer, key.projectRoot());
+        ProjectLanguageIndex<?> built = buildUnchecked(rawIndexer, context, sourceFiles);
         savePersisted(key, built);
         indexesByProjectAndLanguage.put(key, built);
         return built;
     }
 
     @SuppressWarnings("unchecked")
-    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I indexTyped(Path projectRoot, String languageId) {
-        return (I) index(projectRoot, languageId);
+    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I indexTyped(Project project, String languageId) {
+        return (I) index(project, languageId);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I indexTyped(ProjectIndexContext context, String languageId) {
+        return (I) index(context, languageId);
     }
 
     public @Nullable ProjectLanguageIndex<?> rebuild(Project project, String languageId) {
         Objects.requireNonNull(project, "project");
-        return rebuild(project.getPath(), languageId);
+        return rebuild(new DefaultProjectIndexContextResolver().resolve(project), languageId);
     }
 
-    public @Nullable ProjectLanguageIndex<?> rebuild(Path projectRoot, String languageId) {
+    public @Nullable ProjectLanguageIndex<?> rebuild(ProjectIndexContext context, String languageId) {
+        Objects.requireNonNull(context, "context");
+        return rebuild(context, context.projectRoot(), languageId);
+    }
+
+    private @Nullable ProjectLanguageIndex<?> rebuild(ProjectIndexContext context, Path projectRoot, String languageId) {
+        LanguageIndexContext languageContext = context.language(languageId);
+        if (languageContext == null)
+            return null;
+
         ProjectLanguageIndexer<?, ?> rawIndexer = indexersByLanguageId.get(languageId);
         if (rawIndexer == null)
             return null;
 
-        Path normalizedRoot = normalize(projectRoot);
-        ProjectLanguageKey key = new ProjectLanguageKey(normalizedRoot, languageId);
-        ProjectLanguageIndex<?> rebuilt = buildUnchecked(rawIndexer, normalizedRoot);
+        ProjectLanguageKey key = new ProjectLanguageKey(projectRoot, languageId);
+        ProjectLanguageIndex<?> rebuilt = buildUnchecked(rawIndexer, context, collectFiles(languageContext));
         savePersisted(key, rebuilt);
         indexesByProjectAndLanguage.put(key, rebuilt);
         return rebuilt;
     }
 
     @SuppressWarnings("unchecked")
-    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I rebuildTyped(Path projectRoot, String languageId) {
-        return (I) rebuild(projectRoot, languageId);
+    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I rebuildTyped(Project project, String languageId) {
+        return (I) rebuild(project, languageId);
     }
 
-    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable F updateFile(Path projectRoot, String languageId, Path file) {
-        Path normalizedRoot = normalize(projectRoot);
+    @SuppressWarnings("unchecked")
+    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I rebuildTyped(ProjectIndexContext context, String languageId) {
+        return (I) rebuild(context, languageId);
+    }
+
+    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable F updateFile(ProjectIndexContext context, String languageId, Path file) {
+        Path normalizedRoot = normalize(context.projectRoot());
         Path normalizedFile = normalize(file);
+        LanguageIndexContext languageContext = context.language(languageId);
+        if (languageContext == null || !isIndexedFile(languageContext, normalizedFile))
+            return null;
 
         @SuppressWarnings("unchecked")
         ProjectLanguageIndexer<I, F> indexer = (ProjectLanguageIndexer<I, F>) indexersByLanguageId.get(languageId);
         if (indexer == null)
             return null;
 
-        I current = indexTyped(normalizedRoot, languageId);
+        I current = indexTyped(context, languageId);
         if (current == null)
             return null;
 
-        F indexedFile = indexer.indexFile(normalizedFile, readSource(normalizedFile));
+        F indexedFile = indexer.indexFile(context, normalizedFile, readSource(normalizedFile));
         I updated = indexer.withUpdatedFile(current, normalizedFile, indexedFile);
         ProjectLanguageKey key = new ProjectLanguageKey(normalizedRoot, languageId);
-        savePersisted(key, updated);
+        updatePersistedFile(key, updated, normalizedFile);
         indexesByProjectAndLanguage.put(key, updated);
         return indexedFile;
     }
 
-    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> void removeFile(Path projectRoot, String languageId, Path file) {
-        Path normalizedRoot = normalize(projectRoot);
+    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> void removeFile(ProjectIndexContext context, String languageId, Path file) {
+        Path normalizedRoot = normalize(context.projectRoot());
         Path normalizedFile = normalize(file);
+        LanguageIndexContext languageContext = context.language(languageId);
+        if (languageContext == null || !isIndexedFile(languageContext, normalizedFile))
+            return;
 
         @SuppressWarnings("unchecked")
         ProjectLanguageIndexer<I, F> indexer = (ProjectLanguageIndexer<I, F>) indexersByLanguageId.get(languageId);
         if (indexer == null)
             return;
 
-        I current = indexTyped(normalizedRoot, languageId);
+        I current = indexTyped(context, languageId);
         if (current == null)
             return;
 
         I updated = indexer.withRemovedFile(current, normalizedFile);
         ProjectLanguageKey key = new ProjectLanguageKey(normalizedRoot, languageId);
-        savePersisted(key, updated);
+        removePersistedFile(key, updated, normalizedFile);
         indexesByProjectAndLanguage.put(key, updated);
     }
 
     public void invalidate(Project project, String languageId) {
         Objects.requireNonNull(project, "project");
-        invalidate(project.getPath(), languageId);
+        indexesByProjectAndLanguage.remove(key(project.path(), languageId));
     }
 
-    public void invalidate(Path projectRoot, String languageId) {
-        indexesByProjectAndLanguage.remove(key(projectRoot, languageId));
-    }
-
-    public void deletePersisted(Path projectRoot, String languageId) {
-        ProjectLanguageKey key = key(projectRoot, languageId);
+    public void deletePersisted(Project project, String languageId) {
+        ProjectLanguageKey key = key(project.path(), languageId);
         ProjectLanguageIndexPersistence<?> persistence = persistenceByLanguageId.get(key.languageId());
         if (persistence != null) {
             persistence.delete(key.projectRoot());
         }
     }
 
-    public void invalidateProject(Path projectRoot) {
-        Path normalizedRoot = normalize(projectRoot);
+    public void invalidateProject(Project project) {
+        Path normalizedRoot = normalize(project.path());
         indexesByProjectAndLanguage.keySet().removeIf(key -> key.projectRoot().equals(normalizedRoot));
     }
 
@@ -196,14 +236,27 @@ public final class ProjectLanguageIndexService {
         return FileUtils.normalizePath(Objects.requireNonNull(path, "path"));
     }
 
-    private static Collection<Path> collectFiles(Path projectRoot) {
-        try (Stream<Path> paths = Files.walk(projectRoot)) {
-            return paths
-                .filter(Files::isRegularFile)
-                .map(ProjectLanguageIndexService::normalize)
-                .toList();
-        } catch (Exception exception) {
-            throw new RuntimeException("Failed to scan project files for " + projectRoot, exception);
+    private static Collection<Path> collectFiles(LanguageIndexContext languageContext) {
+        LinkedHashSet<Path> files = new LinkedHashSet<>();
+        collectFiles(files, languageContext.sourceRoots());
+        collectFiles(files, languageContext.generatedRoots());
+        return files;
+    }
+
+    private static void collectFiles(LinkedHashSet<Path> files, Collection<Path> roots) {
+        for (Path root : roots) {
+            Path normalizedRoot = normalize(root);
+            if (!Files.exists(normalizedRoot) || !Files.isDirectory(normalizedRoot))
+                continue;
+
+            try (Stream<Path> paths = Files.walk(normalizedRoot)) {
+                paths
+                    .filter(Files::isRegularFile)
+                    .map(ProjectLanguageIndexService::normalize)
+                    .forEach(files::add);
+            } catch (Exception exception) {
+                throw new RuntimeException("Failed to scan language files for " + normalizedRoot, exception);
+            }
         }
     }
 
@@ -216,17 +269,34 @@ public final class ProjectLanguageIndexService {
     }
 
     @SuppressWarnings("unchecked")
-    private static <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> I buildUnchecked(ProjectLanguageIndexer<?, ?> rawIndexer, Path projectRoot) {
+    private static <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> I buildUnchecked(
+        ProjectLanguageIndexer<?, ?> rawIndexer,
+        ProjectIndexContext context,
+        Collection<Path> sourceFiles
+    ) {
         ProjectLanguageIndexer<I, F> indexer = (ProjectLanguageIndexer<I, F>) rawIndexer;
-        return indexer.build(projectRoot, collectFiles(projectRoot));
+        return indexer.build(context, sourceFiles);
     }
 
-    private @Nullable ProjectLanguageIndex<?> loadPersisted(ProjectLanguageKey key) {
+    private static boolean isIndexedFile(LanguageIndexContext languageContext, Path file) {
+        return isWithinRoots(file, languageContext.sourceRoots()) || isWithinRoots(file, languageContext.generatedRoots());
+    }
+
+    private static boolean isWithinRoots(Path file, Collection<Path> roots) {
+        for (Path root : roots) {
+            if (file.startsWith(normalize(root)))
+                return true;
+        }
+
+        return false;
+    }
+
+    private @Nullable ProjectLanguageIndex<?> loadPersisted(ProjectLanguageKey key, Collection<Path> sourceFiles) {
         ProjectLanguageIndexPersistence<?> persistence = persistenceByLanguageId.get(key.languageId());
         if (persistence == null)
             return null;
 
-        return persistence.loadIfCurrent(key.projectRoot());
+        return persistence.loadIfCurrent(key.projectRoot(), sourceFiles);
     }
 
     @SuppressWarnings("unchecked")
@@ -236,6 +306,22 @@ public final class ProjectLanguageIndexService {
         if (persistence != null) {
             persistence.save(key.projectRoot(), index);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void updatePersistedFile(ProjectLanguageKey key, ProjectLanguageIndex<?> index, Path file) {
+        ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>> persistence =
+            (ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>>) persistenceByLanguageId.get(key.languageId());
+        if (persistence != null)
+            persistence.updateFile(key.projectRoot(), index, file);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void removePersistedFile(ProjectLanguageKey key, ProjectLanguageIndex<?> index, Path file) {
+        ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>> persistence =
+            (ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>>) persistenceByLanguageId.get(key.languageId());
+        if (persistence != null)
+            persistence.removeFile(key.projectRoot(), index, file);
     }
 
     private record ProjectLanguageKey(Path projectRoot, String languageId) {

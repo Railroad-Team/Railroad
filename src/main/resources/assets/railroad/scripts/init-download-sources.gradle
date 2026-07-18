@@ -5,7 +5,7 @@ initscript {
         gradlePluginPortal()
     }
     dependencies {
-        classpath "dev.railroadide:RailroadGradlePlugin:1.0.1"
+        classpath "dev.railroadide:RailroadGradlePlugin:1.0.2"
     }
 }
 
