@@ -1,16 +1,14 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
+import dev.railroadide.railroad.ide.sst.lexer.Lexer.LexError;
 import dev.railroadide.railroad.ide.sst.lexer.Token;
 import dev.railroadide.railroad.ide.sst.lexer.TokenChannel;
 import dev.railroadide.railroad.ide.sst.lexer.TokenFlag;
-import dev.railroadide.railroad.ide.sst.lexer.Lexer.LexError;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class JavaLexerTest {
 

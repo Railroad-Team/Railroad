@@ -17,6 +17,8 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
     private final Map<String, List<SymbolDescriptor>> symbolsBySimpleName;
     private final Map<String, List<SymbolDescriptor>> symbolsByQualifiedName;
     private final Map<String, List<SymbolDescriptor>> membersByOwnerQualifiedName;
+    private final Set<String> declaredQualifiedNames;
+    private final Set<String> typeNames;
 
     private JavaProjectSemanticIndex(Map<Path, SourceFileIndex> filesByPath) {
         this.filesByPath = copyFileMap(filesByPath);
@@ -24,6 +26,19 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
         this.symbolsBySimpleName = buildSymbolsBySimpleName(this.filesByPath.values());
         this.symbolsByQualifiedName = buildSymbolsByQualifiedName(this.filesByPath.values());
         this.membersByOwnerQualifiedName = buildMembersByOwnerQualifiedName(this.filesByPath.values());
+        LinkedHashSet<String> qualifiedNames = new LinkedHashSet<>();
+        LinkedHashSet<String> names = new LinkedHashSet<>();
+        for (SourceFileIndex file : this.filesByPath.values()) {
+            for (SymbolDescriptor symbol : file.declaredSymbols()) {
+                if (!isTypeSymbol(symbol.kind()) || symbol.qualifiedName() == null)
+                    continue;
+                qualifiedNames.add(symbol.qualifiedName());
+                names.add(symbol.qualifiedName());
+                names.add(symbol.simpleName());
+            }
+        }
+        this.declaredQualifiedNames = Set.copyOf(qualifiedNames);
+        this.typeNames = Set.copyOf(names);
     }
 
     public static JavaProjectSemanticIndex empty() {
@@ -56,12 +71,12 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
 
     @Override
     public Set<String> declaredQualifiedNames() {
-        Set<String> qualifiedNames = new LinkedHashSet<>();
-        for (SourceFileIndex file : filesByPath.values()) {
-            qualifiedNames.addAll(file.declaredQualifiedNames());
-        }
+        return declaredQualifiedNames;
+    }
 
-        return Set.copyOf(qualifiedNames);
+    @Override
+    public Set<String> typeNames() {
+        return typeNames;
     }
 
     @Override
@@ -193,6 +208,13 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
 
         name = name.trim();
         return name.isEmpty() ? null : name;
+    }
+
+    private static boolean isTypeSymbol(SymbolKind kind) {
+        return switch (kind) {
+            case CLASS, INTERFACE, ENUM, ANNOTATION, RECORD -> true;
+            default -> false;
+        };
     }
 
     private static String requireName(String value, String name) {

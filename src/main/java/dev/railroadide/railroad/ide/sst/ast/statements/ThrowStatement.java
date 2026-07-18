@@ -7,9 +7,7 @@ import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.expression.Expression;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public record ThrowStatement(
         Span span,

@@ -1,24 +1,15 @@
 package dev.railroadide.railroad.ide.sst.project;
 
-import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
-import dev.railroadide.railroad.ide.classparser.stub.ConstructorStub;
-import dev.railroadide.railroad.ide.classparser.stub.FieldStub;
-import dev.railroadide.railroad.ide.classparser.stub.MethodStub;
-import dev.railroadide.railroad.ide.classparser.stub.Parameter;
+import dev.railroadide.railroad.ide.classparser.stub.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import org.objectweb.asm.Opcodes;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private final Set<String> declaredQualifiedNames;
+    private final Set<String> typeNames;
     private final Set<String> packages;
     private final Map<String, ClassStub> classStubsByQualifiedName;
     private final Map<String, List<JavaProjectSemanticIndex.SymbolDescriptor>> symbolsBySimpleName;
@@ -29,6 +20,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         this.classStubsByQualifiedName = Map.copyOf(Objects.requireNonNull(classStubsByQualifiedName, "classStubsByQualifiedName"));
 
         Set<String> declaredQualifiedNames = new LinkedHashSet<>();
+        Set<String> typeNames = new LinkedHashSet<>();
         Set<String> packages = new LinkedHashSet<>();
         Map<String, List<JavaProjectSemanticIndex.SymbolDescriptor>> symbolsBySimpleName = new LinkedHashMap<>();
         Map<String, List<JavaProjectSemanticIndex.SymbolDescriptor>> symbolsByQualifiedName = new LinkedHashMap<>();
@@ -39,6 +31,9 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
             ClassStub stub = entry.getValue();
             Path sourceFile = Objects.requireNonNull(sourceByQualifiedName.get(qualifiedName), "Missing source for " + qualifiedName);
             declaredQualifiedNames.add(qualifiedName);
+            typeNames.add(qualifiedName);
+            int typeNameSeparator = Math.max(qualifiedName.lastIndexOf('.'), qualifiedName.lastIndexOf('$'));
+            typeNames.add(typeNameSeparator < 0 ? qualifiedName : qualifiedName.substring(typeNameSeparator + 1));
             if (stub.packageName() != null && !stub.packageName().isBlank())
                 packages.add(stub.packageName());
 
@@ -105,6 +100,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         }
 
         this.declaredQualifiedNames = Set.copyOf(declaredQualifiedNames);
+        this.typeNames = Set.copyOf(typeNames);
         this.packages = Set.copyOf(packages);
         this.symbolsBySimpleName = copyListMap(symbolsBySimpleName);
         this.symbolsByQualifiedName = copyListMap(symbolsByQualifiedName);
@@ -114,6 +110,11 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     @Override
     public Set<String> declaredQualifiedNames() {
         return declaredQualifiedNames;
+    }
+
+    @Override
+    public Set<String> typeNames() {
+        return typeNames;
     }
 
     @Override

@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.plugin.spi.inspection;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import dev.railroadide.railroad.ide.classparser.Type.*;
 import dev.railroadide.railroad.ide.classparser.Type.ArrayType;
 import dev.railroadide.railroad.ide.classparser.Type.PrimitiveType;
@@ -52,6 +52,7 @@ import java.util.stream.Stream;
  * </ol>
  */
 public final class JavaRuleContext implements LanguageRuleContext {
+    private static volatile @Nullable Set<String> cachedJdkTypeNames;
     public static final int DEFAULT_MODIFIER = 0x00010000;
     public static final int SEALED_MODIFIER = 0x00020000;
     public static final int NON_SEALED_MODIFIER = 0x00040000;
@@ -98,7 +99,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private final @Nullable JavaSymbolIndex symbolIndex;
     private volatile @Nullable ImportIndex cachedImportIndex;
     private volatile @Nullable Set<String> cachedAvailableTypeNames;
-    private volatile @Nullable ImmutableSet<String> cachedAvailableQualifiedTypeNames;
+    private volatile @Nullable Set<String> cachedAvailableQualifiedTypeNames;
     private volatile @Nullable String cachedCurrentPackageName;
     private volatile @Nullable Map<String, SyntaxNode> cachedLocalTypeDeclarations;
     private volatile @Nullable Map<String, Symbol> cachedLocalTypeSymbolsByQualifiedName;
@@ -327,24 +328,16 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName();
     }
 
-    private ImmutableSet<String> availableQualifiedTypeNames() {
-        ImmutableSet<String> cached = cachedAvailableQualifiedTypeNames;
+    private Set<String> availableQualifiedTypeNames() {
+        Set<String> cached = cachedAvailableQualifiedTypeNames;
         if (cached != null)
             return cached;
 
-        ImmutableSet<String> names;
-        if (symbolIndex == null) {
-            names = ImmutableSet.<String>builder()
-                .addAll(jdkQualifiedTypeNames())
-                .addAll(localTypeSymbolsByQualifiedName().keySet())
-                .build();
-        } else {
-            names = ImmutableSet.<String>builder()
-                .addAll(symbolIndex.declaredQualifiedNames())
-                .addAll(symbolIndex.classStubsByQualifiedName().keySet())
-                .addAll(localTypeSymbolsByQualifiedName().keySet())
-                .build();
-        }
+        Set<String> globalNames = symbolIndex == null
+            ? jdkQualifiedTypeNames()
+            : symbolIndex.declaredQualifiedNames();
+        Set<String> names = Collections.unmodifiableSet(
+            Sets.union(globalNames, localTypeSymbolsByQualifiedName().keySet()));
         cachedAvailableQualifiedTypeNames = names;
         return names;
     }
@@ -1409,23 +1402,42 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (cached != null)
             return cached;
 
-        Set<String> names = new HashSet<>();
+        Set<String> localNames = new HashSet<>();
         traverse(node -> declaredSymbol(node).ifPresent(symbol -> {
             if (isTypeSymbol(symbol.kind())) {
-                names.add(symbol.simpleName());
-                symbol.qualifiedName().ifPresent(names::add);
+                localNames.add(symbol.simpleName());
+                symbol.qualifiedName().ifPresent(localNames::add);
             }
         }));
-        collectTypeParameterNames(syntaxTree().root(), names);
-        for (String qualifiedName : availableQualifiedTypeNames()) {
-            names.add(simpleTypeName(qualifiedName));
-            names.add(qualifiedName);
+        collectTypeParameterNames(syntaxTree().root(), localNames);
+        localNames.add("String");
+        localNames.add("Object");
+        Set<String> globalNames;
+        if (symbolIndex != null) {
+            globalNames = symbolIndex.typeNames();
+        } else {
+            globalNames = jdkTypeNames();
         }
-        names.add("String");
-        names.add("Object");
-        Set<String> copy = Set.copyOf(names);
-        cachedAvailableTypeNames = copy;
-        return copy;
+        Set<String> names = Collections.unmodifiableSet(Sets.union(globalNames, Set.copyOf(localNames)));
+        cachedAvailableTypeNames = names;
+        return names;
+    }
+
+    private Set<String> jdkTypeNames() {
+        Set<String> cached = cachedJdkTypeNames;
+        if (cached != null)
+            return cached;
+        synchronized (JavaRuleContext.class) {
+            if (cachedJdkTypeNames == null) {
+                Set<String> names = new HashSet<>();
+                for (String qualifiedName : jdkQualifiedTypeNames()) {
+                    names.add(simpleTypeName(qualifiedName));
+                    names.add(qualifiedName);
+                }
+                cachedJdkTypeNames = Set.copyOf(names);
+            }
+            return cachedJdkTypeNames;
+        }
     }
 
     public ImportIndex importIndex() {
@@ -3545,8 +3557,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
             }
 
             Set<String> localQualifiedTypeNames = collectLocalQualifiedTypeNames(context);
-            Set<String> availableQualifiedTypeNames = new HashSet<>(localQualifiedTypeNames);
-            availableQualifiedTypeNames.addAll(context.availableQualifiedTypeNames());
+            Set<String> immutableLocalQualifiedTypeNames = Set.copyOf(localQualifiedTypeNames);
+            Set<String> availableQualifiedTypeNames = Collections.unmodifiableSet(
+                Sets.union(context.availableQualifiedTypeNames(), immutableLocalQualifiedTypeNames));
 
             Map<String, Set<String>> localStaticFieldsByOwner = new LinkedHashMap<>();
             Map<String, Map<String, Set<Integer>>> localStaticMethodAritiesByOwner = new LinkedHashMap<>();
@@ -3556,8 +3569,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 List.copyOf(imports),
                 copyListMap(staticSingleImportsByMemberName),
                 List.copyOf(onDemandStaticImports),
-                Set.copyOf(localQualifiedTypeNames),
-                Set.copyOf(availableQualifiedTypeNames),
+                immutableLocalQualifiedTypeNames,
+                availableQualifiedTypeNames,
                 context.availableClassStubsByQualifiedName(),
                 copySetMap(localStaticFieldsByOwner),
                 copyNestedSetMap(localStaticMethodAritiesByOwner)

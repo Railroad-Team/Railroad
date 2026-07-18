@@ -6,13 +6,10 @@ import dev.railroadide.railroad.ide.sst.ast.AstVisitor;
 import dev.railroadide.railroad.ide.sst.ast.Span;
 import dev.railroadide.railroad.ide.sst.ast.generic.LambdaBody;
 import dev.railroadide.railroad.ide.sst.ast.parameter.Parameter;
-import dev.railroadide.railroad.ide.sst.ast.statements.Statement;
-import dev.railroadide.railroad.ide.sst.ast.typeref.TypeRef;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public record LambdaExpression(
         Span span,

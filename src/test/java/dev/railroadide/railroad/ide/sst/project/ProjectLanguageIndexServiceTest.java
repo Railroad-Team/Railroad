@@ -211,6 +211,26 @@ class ProjectLanguageIndexServiceTest {
         assertEquals(1, reloaded.lookupMember("demo.A", "VALUE").size());
     }
 
+    @Test
+    void reloadsFromSourceWhenAFileWasAddedWhileTheProjectWasClosed() throws Exception {
+        Path root = createProject(
+            "src/main/java/demo/A.java", """
+                package demo;
+                class A {}
+                """
+        );
+        new TestJavaProjectIndexAccess().index(root);
+
+        writeProjectSource(root, "src/main/java/demo/B.java", """
+            package demo;
+            class B {}
+            """);
+
+        JavaProjectSemanticIndex reloaded = new TestJavaProjectIndexAccess().index(root);
+        assertEquals(2, reloaded.files().size());
+        assertEquals(1, reloaded.lookupQualifiedName("demo.B").size());
+    }
+
     private Path createProject(String relativePath, String source, String... additionalPathAndSourcePairs) throws Exception {
         Path root = tempDir.resolve("project-" + System.nanoTime());
         writeProjectSource(root, relativePath, source);

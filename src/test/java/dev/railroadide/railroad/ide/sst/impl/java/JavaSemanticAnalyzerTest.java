@@ -1,18 +1,13 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
 import com.google.gson.GsonBuilder;
-import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
-import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndexer;
-import dev.railroadide.railroad.ide.sst.project.CompositeJavaSymbolIndex;
-import dev.railroadide.railroad.ide.sst.project.JavaJdkSymbolIndex;
-import dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import javafx.application.Application;
-import javafx.application.Preloader;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.control.Label;
 import org.junit.jupiter.api.Test;

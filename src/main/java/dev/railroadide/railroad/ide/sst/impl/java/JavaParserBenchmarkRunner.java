@@ -3,17 +3,7 @@ package dev.railroadide.railroad.ide.sst.impl.java;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 public final class JavaParserBenchmarkRunner {
     private static final int DEFAULT_WARMUP_ITERATIONS = 5;

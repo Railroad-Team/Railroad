@@ -11,11 +11,7 @@ import dev.railroadide.railroad.ide.sst.syntax.internal.GreenNode;
 import dev.railroadide.railroad.ide.sst.syntax.internal.SyntaxInternalFactory;
 import org.jetbrains.annotations.ApiStatus;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 
 @ApiStatus.Internal

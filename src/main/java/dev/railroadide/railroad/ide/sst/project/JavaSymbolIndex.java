@@ -10,6 +10,20 @@ import java.util.Set;
 public interface JavaSymbolIndex {
     Set<String> declaredQualifiedNames();
 
+    /**
+     * All declared type names in both qualified and simple form. Implementations
+     * should cache this set because inspection contexts query it for every file.
+     */
+    default Set<String> typeNames() {
+        java.util.LinkedHashSet<String> names = new java.util.LinkedHashSet<>();
+        for (String qualifiedName : declaredQualifiedNames()) {
+            names.add(qualifiedName);
+            int separator = Math.max(qualifiedName.lastIndexOf('.'), qualifiedName.lastIndexOf('$'));
+            names.add(separator < 0 ? qualifiedName : qualifiedName.substring(separator + 1));
+        }
+        return Set.copyOf(names);
+    }
+
     boolean containsPackage(String packageName);
 
     Map<String, ClassStub> classStubsByQualifiedName();

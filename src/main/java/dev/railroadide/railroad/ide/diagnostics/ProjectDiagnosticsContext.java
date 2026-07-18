@@ -29,8 +29,8 @@ public record ProjectDiagnosticsContext(
         Objects.requireNonNull(project, "project");
 
         ProjectIndexContext indexContext = new DefaultProjectIndexContextResolver().resolve(project);
-        Railroad.LOGGER.warn("Rebuilding Java project index before diagnostics export for {}", indexContext.projectRoot());
-        Services.PROJECT_LANGUAGE_INDEX_SERVICE.rebuild(indexContext, JavaLanguageSupport.LANGUAGE_ID);
+        Railroad.LOGGER.info("Loading Java project index for diagnostics export from {}", indexContext.projectRoot());
+        Services.PROJECT_LANGUAGE_INDEX_SERVICE.index(indexContext, JavaLanguageSupport.LANGUAGE_ID);
         JavaAnalysisContextProvider analysisContextProvider = JavaLanguageSupport.analysisContextProvider();
         JavaSymbolIndex javaSymbolIndex = analysisContextProvider.index(indexContext);
         return new ProjectDiagnosticsContext(project, indexContext, javaSymbolIndex);

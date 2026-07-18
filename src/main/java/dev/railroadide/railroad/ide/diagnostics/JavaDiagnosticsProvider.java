@@ -1,7 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.ide.diagnostics.ProjectDiagnosticsContext;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
@@ -9,8 +8,8 @@ import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionReporter;
-import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
+import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 

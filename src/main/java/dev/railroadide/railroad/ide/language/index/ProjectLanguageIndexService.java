@@ -98,17 +98,20 @@ public final class ProjectLanguageIndexService {
         if (current != null)
             return current;
 
-        ProjectLanguageIndex<?> persisted = loadPersisted(key);
+        ProjectLanguageIndexer<?, ?> rawIndexer = indexersByLanguageId.get(languageId);
+        if (rawIndexer == null)
+            return null;
+
+        Collection<Path> sourceFiles = collectFiles(languageContext).stream()
+            .filter(rawIndexer::supports)
+            .toList();
+        ProjectLanguageIndex<?> persisted = loadPersisted(key, sourceFiles);
         if (persisted != null) {
             indexesByProjectAndLanguage.put(key, persisted);
             return persisted;
         }
 
-        ProjectLanguageIndexer<?, ?> rawIndexer = indexersByLanguageId.get(languageId);
-        if (rawIndexer == null)
-            return null;
-
-        ProjectLanguageIndex<?> built = buildUnchecked(rawIndexer, context, languageContext);
+        ProjectLanguageIndex<?> built = buildUnchecked(rawIndexer, context, sourceFiles);
         savePersisted(key, built);
         indexesByProjectAndLanguage.put(key, built);
         return built;
@@ -144,7 +147,7 @@ public final class ProjectLanguageIndexService {
             return null;
 
         ProjectLanguageKey key = new ProjectLanguageKey(projectRoot, languageId);
-        ProjectLanguageIndex<?> rebuilt = buildUnchecked(rawIndexer, context, languageContext);
+        ProjectLanguageIndex<?> rebuilt = buildUnchecked(rawIndexer, context, collectFiles(languageContext));
         savePersisted(key, rebuilt);
         indexesByProjectAndLanguage.put(key, rebuilt);
         return rebuilt;
@@ -179,7 +182,7 @@ public final class ProjectLanguageIndexService {
         F indexedFile = indexer.indexFile(context, normalizedFile, readSource(normalizedFile));
         I updated = indexer.withUpdatedFile(current, normalizedFile, indexedFile);
         ProjectLanguageKey key = new ProjectLanguageKey(normalizedRoot, languageId);
-        savePersisted(key, updated);
+        updatePersistedFile(key, updated, normalizedFile);
         indexesByProjectAndLanguage.put(key, updated);
         return indexedFile;
     }
@@ -202,7 +205,7 @@ public final class ProjectLanguageIndexService {
 
         I updated = indexer.withRemovedFile(current, normalizedFile);
         ProjectLanguageKey key = new ProjectLanguageKey(normalizedRoot, languageId);
-        savePersisted(key, updated);
+        removePersistedFile(key, updated, normalizedFile);
         indexesByProjectAndLanguage.put(key, updated);
     }
 
@@ -269,10 +272,10 @@ public final class ProjectLanguageIndexService {
     private static <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> I buildUnchecked(
         ProjectLanguageIndexer<?, ?> rawIndexer,
         ProjectIndexContext context,
-        LanguageIndexContext languageContext
+        Collection<Path> sourceFiles
     ) {
         ProjectLanguageIndexer<I, F> indexer = (ProjectLanguageIndexer<I, F>) rawIndexer;
-        return indexer.build(context, collectFiles(languageContext));
+        return indexer.build(context, sourceFiles);
     }
 
     private static boolean isIndexedFile(LanguageIndexContext languageContext, Path file) {
@@ -288,12 +291,12 @@ public final class ProjectLanguageIndexService {
         return false;
     }
 
-    private @Nullable ProjectLanguageIndex<?> loadPersisted(ProjectLanguageKey key) {
+    private @Nullable ProjectLanguageIndex<?> loadPersisted(ProjectLanguageKey key, Collection<Path> sourceFiles) {
         ProjectLanguageIndexPersistence<?> persistence = persistenceByLanguageId.get(key.languageId());
         if (persistence == null)
             return null;
 
-        return persistence.loadIfCurrent(key.projectRoot());
+        return persistence.loadIfCurrent(key.projectRoot(), sourceFiles);
     }
 
     @SuppressWarnings("unchecked")
@@ -303,6 +306,22 @@ public final class ProjectLanguageIndexService {
         if (persistence != null) {
             persistence.save(key.projectRoot(), index);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void updatePersistedFile(ProjectLanguageKey key, ProjectLanguageIndex<?> index, Path file) {
+        ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>> persistence =
+            (ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>>) persistenceByLanguageId.get(key.languageId());
+        if (persistence != null)
+            persistence.updateFile(key.projectRoot(), index, file);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void removePersistedFile(ProjectLanguageKey key, ProjectLanguageIndex<?> index, Path file) {
+        ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>> persistence =
+            (ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>>) persistenceByLanguageId.get(key.languageId());
+        if (persistence != null)
+            persistence.removeFile(key.projectRoot(), index, file);
     }
 
     private record ProjectLanguageKey(Path projectRoot, String languageId) {

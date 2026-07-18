@@ -2,12 +2,7 @@ package dev.railroadide.railroad.ide.sst.semantic.api;
 
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Mutable lexical scope used during declaration and resolution passes.

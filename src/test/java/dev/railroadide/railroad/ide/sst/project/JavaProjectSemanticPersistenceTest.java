@@ -66,4 +66,53 @@ class JavaProjectSemanticPersistenceTest {
 
         assertTrue(loaded == null);
     }
+
+    @Test
+    void updatesPersistedSnapshotAfterOneFileChanges() throws Exception {
+        Path root = tempDir.resolve("project");
+        Path aFile = writeSource(root, "A.java", "class A {}");
+        writeSource(root, "B.java", "class B {}");
+        JavaProjectSemanticIndexer indexer = new JavaProjectSemanticIndexer();
+        JavaProjectSemanticPersistence persistence = new JavaProjectSemanticPersistence();
+        persistence.save(root, indexer.build(root));
+
+        Files.writeString(aFile, "class A { static int VALUE; }");
+        JavaProjectSemanticIndex updated = indexer.build(root);
+        persistence.updateFile(root, updated, aFile);
+
+        JavaProjectSemanticIndex loaded = persistence.loadIfCurrent(root);
+        assertNotNull(loaded);
+        assertEquals(2, loaded.files().size());
+        assertEquals(1, loaded.lookupMember("A", "VALUE").size());
+    }
+
+    @Test
+    void removesDeletedFileFromPersistedSnapshot() throws Exception {
+        Path root = tempDir.resolve("project");
+        Path aFile = writeSource(root, "A.java", "class A {}");
+        Path bFile = writeSource(root, "B.java", "class B {}");
+        JavaProjectSemanticIndexer indexer = new JavaProjectSemanticIndexer();
+        JavaProjectSemanticPersistence persistence = new JavaProjectSemanticPersistence();
+        JavaProjectSemanticIndex initial = indexer.build(root);
+        persistence.save(root, initial);
+
+        Files.delete(bFile);
+        JavaProjectSemanticIndex updated = JavaProjectSemanticIndex.builder()
+            .putFile(initial.getFile(aFile).orElseThrow())
+            .build();
+        persistence.removeFile(root, updated, bFile);
+
+        JavaProjectSemanticIndex loaded = persistence.loadIfCurrent(root);
+        assertNotNull(loaded);
+        assertEquals(1, loaded.files().size());
+        assertTrue(loaded.lookupQualifiedName("B").isEmpty());
+    }
+
+    private static Path writeSource(Path root, String name, String source) throws Exception {
+        Path file = root.resolve(name);
+        Files.createDirectories(root);
+        Files.writeString(file, source);
+        return file;
+    }
+
 }

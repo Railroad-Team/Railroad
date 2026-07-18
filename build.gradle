@@ -30,6 +30,11 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+tasks.withType(Test).configureEach {
+    // The project-wide semantic regression retains the complete binary symbol index.
+    maxHeapSize = '4g'
+}
+
 application {
     mainClass = 'dev.railroadide.railroad.RailroadLauncher'
     applicationDefaultJvmArgs = [
@@ -208,4 +213,14 @@ tasks.register('runJavaParserMemoryProfile', JavaExec) {
     description = 'Profiles green tree and red wrapper memory characteristics for Java syntax parser.'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxMemoryProfileRunner'
+}
+
+tasks.register('runJavaIndexBenchmark', JavaExec) {
+    group = 'verification'
+    description = 'Measures persisted and cold Java semantic index startup paths.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.railroadide.railroad.ide.sst.project.JavaIndexBenchmarkRunner'
+    if (project.hasProperty('indexBenchmarkArgs')) {
+        args project.property('indexBenchmarkArgs').toString().split(' ')
+    }
 }

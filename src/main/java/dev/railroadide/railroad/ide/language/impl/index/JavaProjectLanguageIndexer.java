@@ -2,17 +2,16 @@ package dev.railroadide.railroad.ide.language.impl.index;
 
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexer;
 import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
-import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticExtractor;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndexer;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Locale;
 
 public final class JavaProjectLanguageIndexer implements ProjectLanguageIndexer<JavaProjectSemanticIndex, JavaProjectSemanticIndex.SourceFileIndex> {
-    private final JavaProjectSemanticExtractor extractor = new JavaProjectSemanticExtractor();
+    private final JavaProjectSemanticIndexer indexer = new JavaProjectSemanticIndexer();
 
     @Override
     public String languageId() {
@@ -27,19 +26,15 @@ public final class JavaProjectLanguageIndexer implements ProjectLanguageIndexer<
 
     @Override
     public JavaProjectSemanticIndex build(ProjectIndexContext context, Collection<Path> sourceFiles) {
-        JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
-
-        sourceFiles.stream()
+        return indexer.build(sourceFiles.stream()
             .filter(this::supports)
             .sorted(Comparator.naturalOrder())
-            .forEach(path -> builder.putFile(indexFile(context, path, read(path))));
-
-        return builder.build();
+            .toList());
     }
 
     @Override
     public JavaProjectSemanticIndex.SourceFileIndex indexFile(ProjectIndexContext context, Path sourceFile, String sourceContent) {
-        return extractor.extract(sourceFile, sourceContent);
+        return indexer.indexFile(sourceFile, sourceContent);
     }
 
     @Override
@@ -65,13 +60,5 @@ public final class JavaProjectLanguageIndexer implements ProjectLanguageIndexer<
         });
 
         return builder.build();
-    }
-
-    private static String read(Path path) {
-        try {
-            return Files.readString(path);
-        } catch (Exception exception) {
-            throw new RuntimeException("Failed to read " + path, exception);
-        }
     }
 }

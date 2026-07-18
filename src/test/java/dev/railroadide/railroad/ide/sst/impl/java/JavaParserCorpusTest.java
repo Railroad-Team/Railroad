@@ -14,9 +14,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class JavaParserCorpusTest {
     private static final String CORPUS_RESOURCE_ROOT = "/dev/railroadide/railroad/ide/sst/impl/java/corpus";

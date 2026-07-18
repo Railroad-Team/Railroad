@@ -4,9 +4,7 @@ import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class JavaInspectionRuleSettingsTest {
 

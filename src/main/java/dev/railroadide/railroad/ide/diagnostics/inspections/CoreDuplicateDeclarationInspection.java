@@ -10,11 +10,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
-import java.util.LinkedHashMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @RegisteredInspection
 public final class CoreDuplicateDeclarationInspection implements JavaInspectionRuleProvider {

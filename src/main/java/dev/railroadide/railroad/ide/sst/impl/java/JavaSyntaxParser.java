@@ -1,21 +1,12 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
 import dev.railroadide.railroad.ide.sst.lexer.Lexer;
-import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxDiagnostic;
-import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxKind;
-import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
-import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
-import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
+import dev.railroadide.railroad.ide.sst.syntax.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.internal.GreenElement;
 import dev.railroadide.railroad.ide.sst.syntax.internal.GreenNode;
 import dev.railroadide.railroad.ide.sst.syntax.internal.SyntaxInternalFactory;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public final class JavaSyntaxParser {
     private static final Set<String> INCREMENTAL_ANCHOR_KIND_IDS = Set.of(
