@@ -55,6 +55,21 @@ class JavaSyntaxParserTest {
     }
 
     @Test
+    void nestedGenericClosersDoNotConsumeFollowingImplementedType() {
+        String source = """
+                import java.io.Serializable;
+                import java.util.Comparator;
+                import java.util.List;
+                class Example implements Comparator<List<String>>, Serializable {}
+                """;
+
+        JavaSyntaxParser.ParseResult result = JavaSyntaxParser.parseWithDiagnostics(source);
+
+        assertTrue(result.diagnostics().isEmpty(), result.diagnostics()::toString);
+        assertEquals(source, JavaParserTestSupport.syntaxText(result.tree()));
+    }
+
+    @Test
     void incrementalParseReusesTailForInTypeEdit() {
         String oldSource = """
                 package demo;

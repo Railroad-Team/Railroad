@@ -189,6 +189,8 @@ public enum JavaTokenType {
         );
         put('>', List.of(
                 Map.entry(">=", GREATER_THAN_OR_EQUALS),
+                Map.entry(">>", RIGHT_SHIFT),
+                Map.entry(">>>", UNSIGNED_RIGHT_SHIFT),
                 Map.entry(">>=", RIGHT_SHIFT_EQUALS),
                 Map.entry(">>>=", UNSIGNED_RIGHT_SHIFT_EQUALS))
         );

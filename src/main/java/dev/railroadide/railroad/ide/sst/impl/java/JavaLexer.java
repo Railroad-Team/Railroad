@@ -418,7 +418,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         JavaTokenType matchType = null;
         for (Map.Entry<CharSequence, JavaTokenType> possibleToken : possibleTokens) {
             CharSequence possibleTokenKey = possibleToken.getKey();
-            if ((pos + 1) + possibleTokenKey.length() - 1 < length) { // TODO: Confirm (pos + 1) is correct
+            if (pos + possibleTokenKey.length() <= length) {
                 for (int i = 0; i < possibleTokenKey.length(); i++) {
                     if (peek(i) != possibleTokenKey.charAt(i))
                         break;

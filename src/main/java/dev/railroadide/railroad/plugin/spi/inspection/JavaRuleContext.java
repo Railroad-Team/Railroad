@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -75,6 +76,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private static final String JAVA_RECORD_HEADER = "JAVA_RECORD_HEADER";
     private static final String JAVA_RECORD_COMPONENT = "JAVA_RECORD_COMPONENT";
     private static final String JAVA_METHOD_DECLARATION = "JAVA_METHOD_DECLARATION";
+    private static final String JAVA_FIELD_DECLARATION = "JAVA_FIELD_DECLARATION";
     private static final String JAVA_CONSTRUCTOR_DECLARATION = "JAVA_CONSTRUCTOR_DECLARATION";
     private static final String JAVA_RECORD_COMPACT_CONSTRUCTOR = "JAVA_RECORD_COMPACT_CONSTRUCTOR";
     private static final String JAVA_THROWS_CLAUSE = "JAVA_THROWS_CLAUSE";
@@ -96,15 +98,17 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private final @Nullable JavaSymbolIndex symbolIndex;
     private volatile @Nullable ImportIndex cachedImportIndex;
     private volatile @Nullable Set<String> cachedAvailableTypeNames;
+    private volatile @Nullable ImmutableSet<String> cachedAvailableQualifiedTypeNames;
     private volatile @Nullable String cachedCurrentPackageName;
     private volatile @Nullable Map<String, SyntaxNode> cachedLocalTypeDeclarations;
     private volatile @Nullable Map<String, Symbol> cachedLocalTypeSymbolsByQualifiedName;
-    private volatile @Nullable Map<String, List<String>> cachedDirectSuperTypesByQualifiedName;
-    private volatile @Nullable Map<String, List<String>> cachedIndexedSourceDirectSuperTypesByQualifiedName;
+    private volatile @Nullable Map<String, List<DeclaredType>> cachedDirectSuperTypesByQualifiedName;
+    private volatile @Nullable Map<String, List<DeclaredType>> cachedIndexedSourceDirectSuperTypesByQualifiedName;
     private volatile @Nullable Map<String, List<FieldDescriptor>> cachedIndexedSourceFieldsByOwner;
     private volatile @Nullable Map<String, List<MethodDescriptor>> cachedIndexedSourceMethodsByOwner;
     private volatile @Nullable Map<String, List<FieldDescriptor>> cachedDeclaredFieldsByOwner;
     private volatile @Nullable Map<String, List<MethodDescriptor>> cachedDeclaredMethodsByOwner;
+    private volatile @Nullable Map<String, List<String>> cachedTypeParameterNamesByQualifiedName;
     private boolean collectingDirectSuperTypes;
 
     /**
@@ -324,13 +328,25 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     private ImmutableSet<String> availableQualifiedTypeNames() {
-        if (symbolIndex == null)
-            return ImmutableSet.copyOf(jdkQualifiedTypeNames());
+        ImmutableSet<String> cached = cachedAvailableQualifiedTypeNames;
+        if (cached != null)
+            return cached;
 
-        return ImmutableSet.<String>builder()
+        ImmutableSet<String> names;
+        if (symbolIndex == null) {
+            names = ImmutableSet.<String>builder()
+                .addAll(jdkQualifiedTypeNames())
+                .addAll(localTypeSymbolsByQualifiedName().keySet())
+                .build();
+        } else {
+            names = ImmutableSet.<String>builder()
                 .addAll(symbolIndex.declaredQualifiedNames())
                 .addAll(symbolIndex.classStubsByQualifiedName().keySet())
+                .addAll(localTypeSymbolsByQualifiedName().keySet())
                 .build();
+        }
+        cachedAvailableQualifiedTypeNames = names;
+        return names;
     }
 
     private Map<String, ClassStub> availableClassStubsByQualifiedName() {
@@ -884,7 +900,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
                         ? new UnknownType("<unknown>")
                     : inferredType(initializer).orElse(new UnknownType("<unknown>"));
                 }
-                return inferredType(typeRef).orElse(new UnknownType("<unknown>"));
+                Type inferred = inferredType(typeRef).orElse(null);
+                return inferred == null || inferred.kind() == Kind.UNKNOWN
+                    ? semanticTypeFromTypeReference(typeRef)
+                    : inferred;
             }
             if (JAVA_LOCAL_VARIABLE_DECLARATION_STATEMENT.equals(candidate.kind().id()))
                 return new UnknownType("<unknown>");
@@ -901,6 +920,21 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return true;
         if (target.displayName().equals(source.displayName()))
             return true;
+
+        if (target.kind() == Kind.PRIMITIVE && source.kind() == Kind.DECLARED) {
+            String unboxedSource = unboxedPrimitiveName(source.displayName());
+            if (unboxedSource != null) {
+                if ("boolean".equals(target.displayName()) || "boolean".equals(unboxedSource))
+                    return target.displayName().equals(unboxedSource);
+                return numericRank(target.displayName()) >= numericRank(unboxedSource);
+            }
+        }
+
+        if (target.kind() == Kind.DECLARED && source.kind() == Kind.PRIMITIVE) {
+            String boxedSource = boxedPrimitiveName(source.displayName());
+            if (boxedSource != null)
+                return isAssignable(target, new DeclaredType(boxedSource, List.of()));
+        }
 
         if (isNumericType(target) && isNumericType(source))
             return numericRank(target.displayName()) >= numericRank(source.displayName());
@@ -922,7 +956,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (targetQualifiedName == null || sourceQualifiedName == null)
                 return true;
 
-            return targetQualifiedName.equals(sourceQualifiedName)
+            return equivalentQualifiedTypeNames(targetQualifiedName, sourceQualifiedName)
                 || "java.lang.Object".equals(targetQualifiedName)
                 || isSubtype(sourceQualifiedName, targetQualifiedName);
         }
@@ -1270,7 +1304,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     public List<String> directSuperTypeNames(String qualifiedTypeName) {
-        return directSuperTypeNamesInternal(qualifiedTypeName);
+        List<DeclaredType> sourceSupers = directSuperTypesByQualifiedName().get(qualifiedTypeName);
+        if (sourceSupers == null && availableClassStubsByQualifiedName().get(qualifiedTypeName) == null)
+            sourceSupers = indexedSourceDirectSuperTypes(qualifiedTypeName);
+        if (sourceSupers == null)
+            return directSuperTypeNamesInternal(qualifiedTypeName);
+        return sourceSupers.stream().map(DeclaredType::displayName).toList();
     }
 
     public List<MethodDescriptor> declaredMethodDescriptors(String ownerQualifiedTypeName) {
@@ -1289,7 +1328,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
     public List<MethodDescriptor> inheritedMethodDescriptors(String ownerQualifiedTypeName) {
         List<MethodDescriptor> methods = new ArrayList<>();
-        collectInheritedMethodDescriptors(ownerQualifiedTypeName, methods, new HashSet<>());
+        collectInheritedMethodDescriptors(ownerQualifiedTypeName, methods, new HashSet<>(), Map.of());
         return List.copyOf(methods);
     }
 
@@ -1652,15 +1691,28 @@ public final class JavaRuleContext implements LanguageRuleContext {
     public List<String> closeThrownTypeNames(String resourceQualifiedTypeName) {
         Objects.requireNonNull(resourceQualifiedTypeName, "resourceQualifiedTypeName");
 
-        List<String> thrown = new ArrayList<>();
-        for (MethodDescriptor descriptor : declaredMethodDescriptors(resourceQualifiedTypeName)) {
-            if ("close".equals(descriptor.name()) && descriptor.parameterTypes().isEmpty())
-                thrown.addAll(descriptor.thrownTypes());
-        }
+        List<MethodDescriptor> declaredCloseMethods = methodDescriptorsForType(resourceQualifiedTypeName).stream()
+            .filter(descriptor -> "close".equals(descriptor.name()) && descriptor.parameterTypes().isEmpty())
+            .toList();
+        if (!declaredCloseMethods.isEmpty())
+            return distinctThrownTypes(declaredCloseMethods);
+
+        // Inherited descriptors are ordered from direct supertypes toward their ancestors.
+        // Keep the nearest declaration for a signature so an override such as
+        // BaseStream.close() (which throws nothing) suppresses AutoCloseable.close()'s
+        // broader Exception declaration.
+        Map<String, MethodDescriptor> nearestBySignature = new LinkedHashMap<>();
         for (MethodDescriptor descriptor : inheritedMethodDescriptors(resourceQualifiedTypeName)) {
             if ("close".equals(descriptor.name()) && descriptor.parameterTypes().isEmpty())
-                thrown.addAll(descriptor.thrownTypes());
+                nearestBySignature.putIfAbsent(descriptor.signatureKey(), descriptor);
         }
+        return distinctThrownTypes(nearestBySignature.values());
+    }
+
+    private static List<String> distinctThrownTypes(Iterable<MethodDescriptor> methods) {
+        LinkedHashSet<String> thrown = new LinkedHashSet<>();
+        for (MethodDescriptor method : methods)
+            thrown.addAll(method.thrownTypes());
         return List.copyOf(new LinkedHashSet<>(thrown));
     }
 
@@ -1774,12 +1826,73 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return names;
     }
 
-    private Map<String, List<String>> directSuperTypesByQualifiedName() {
-        Map<String, List<String>> cached = cachedDirectSuperTypesByQualifiedName;
+    private List<String> typeParameterNamesForType(String qualifiedTypeName) {
+        Map<String, List<String>> cached = cachedTypeParameterNamesByQualifiedName;
+        if (cached != null && cached.containsKey(qualifiedTypeName))
+            return cached.get(qualifiedTypeName);
+
+        Symbol localType = localTypeSymbol(qualifiedTypeName).orElse(null);
+        if (localType != null) {
+            SyntaxNode declaration = localType.declaration().orElse(null);
+            List<String> names = declaration == null
+                ? List.of()
+                : orderedTypeParameterNames(directChild(declaration, JAVA_TYPE_PARAMETERS));
+            rememberTypeParameterNames(qualifiedTypeName, names);
+            return names;
+        }
+
+        ClassStub stub = availableClassStubsByQualifiedName().get(qualifiedTypeName);
+        if (stub != null) {
+            List<String> names = stub.typeParameters().stream().map(parameter -> parameter.name()).toList();
+            rememberTypeParameterNames(qualifiedTypeName, names);
+            return names;
+        }
+
+        Path sourceFile = indexedSourceFile(qualifiedTypeName);
+        if (sourceFile != null) {
+            try {
+                String source = Files.readString(sourceFile);
+                SemanticModel sourceModel = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
+                JavaRuleContext sourceContext = new JavaRuleContext(sourceFile, source, sourceModel, symbolIndex);
+                List<String> names = sourceContext.typeParameterNamesForType(qualifiedTypeName);
+                rememberTypeParameterNames(qualifiedTypeName, names);
+                return names;
+            } catch (Exception ignored) {
+            }
+        }
+
+        rememberTypeParameterNames(qualifiedTypeName, List.of());
+        return List.of();
+    }
+
+    private static List<String> orderedTypeParameterNames(@Nullable SyntaxNode typeParameters) {
+        if (typeParameters == null)
+            return List.of();
+        List<String> names = new ArrayList<>();
+        for (SyntaxNode child : typeParameters.children()) {
+            if (!JAVA_TYPE_PARAMETER.equals(child.kind().id()))
+                continue;
+            String name = JavaSemanticAnalyzer.firstIdentifierLikeTokenText(child);
+            if (name != null && !name.isBlank())
+                names.add(name);
+        }
+        return List.copyOf(names);
+    }
+
+    private synchronized void rememberTypeParameterNames(String qualifiedTypeName, List<String> names) {
+        Map<String, List<String>> merged = new LinkedHashMap<>();
+        if (cachedTypeParameterNamesByQualifiedName != null)
+            merged.putAll(cachedTypeParameterNamesByQualifiedName);
+        merged.put(qualifiedTypeName, List.copyOf(names));
+        cachedTypeParameterNamesByQualifiedName = Map.copyOf(merged);
+    }
+
+    private Map<String, List<DeclaredType>> directSuperTypesByQualifiedName() {
+        Map<String, List<DeclaredType>> cached = cachedDirectSuperTypesByQualifiedName;
         if (cached != null)
             return cached;
 
-        Map<String, List<String>> collected = new LinkedHashMap<>();
+        Map<String, List<DeclaredType>> collected = new LinkedHashMap<>();
         collectingDirectSuperTypes = true;
         try {
             traverse(node -> declaredSymbol(node).ifPresent(symbol -> {
@@ -1790,7 +1903,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 if (qualifiedName == null || qualifiedName.isBlank())
                     return;
 
-                List<String> directSupers = new ArrayList<>();
+                List<DeclaredType> directSupers = new ArrayList<>();
                 collectDirectSuperTypes(node, JAVA_EXTENDS_CLAUSE, directSupers);
                 collectDirectSuperTypes(node, JAVA_IMPLEMENTS_CLAUSE, directSupers);
                 collected.put(qualifiedName, List.copyOf(directSupers));
@@ -1798,7 +1911,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         } finally {
             collectingDirectSuperTypes = false;
         }
-        Map<String, List<String>> copy = Map.copyOf(collected);
+        Map<String, List<DeclaredType>> copy = Map.copyOf(collected);
         cachedDirectSuperTypesByQualifiedName = copy;
         return copy;
     }
@@ -1823,6 +1936,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         }));
 
         addImplicitRecordAccessors(collected);
+        addImplicitLombokGetters(collected);
 
         Map<String, List<MethodDescriptor>> withJdk = new LinkedHashMap<>();
         collected.forEach((owner, methods) -> withJdk.put(owner, List.copyOf(methods)));
@@ -1896,18 +2010,148 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return copy;
     }
 
-    private void collectDirectSuperTypes(SyntaxNode declarationNode, String clauseKindId, List<String> out) {
+    private void collectDirectSuperTypes(SyntaxNode declarationNode, String clauseKindId, List<DeclaredType> out) {
         SyntaxNode clause = directChild(declarationNode, clauseKindId);
         if (clause == null)
             return;
 
-        traverseNode(clause, node -> {
+        for (SyntaxNode node : clause.children()) {
             if (!JAVA_TYPE_REFERENCE.equals(node.kind().id()))
-                return;
-            String qualified = resolveQualifiedTypeName(node);
-            if (qualified != null && !qualified.isBlank())
-                out.add(qualified);
-        });
+                continue;
+            Type type = semanticTypeFromTypeReference(node);
+            if (type instanceof DeclaredType declared)
+                out.add(declared);
+        }
+    }
+
+    private void addImplicitLombokGetters(Map<String, List<MethodDescriptor>> collected) {
+        for (FieldDescriptor field : declaredFieldsByOwner().values().stream().flatMap(List::stream).toList()) {
+            Symbol symbol = field.symbol();
+            if (symbol == null || field.declaration() == null)
+                continue;
+
+            SyntaxNode ownerDeclaration = localTypeSymbol(field.ownerQualifiedName())
+                .flatMap(Symbol::declaration)
+                .orElse(null);
+            SyntaxNode fieldDeclaration = ancestorOfKind(field.declaration(), JAVA_FIELD_DECLARATION);
+            boolean classGeneratesGetters = hasDirectAnnotation(ownerDeclaration, "Getter")
+                || hasDirectAnnotation(ownerDeclaration, "Data")
+                || hasDirectAnnotation(ownerDeclaration, "Value");
+            boolean fieldGeneratesGetter = hasDirectAnnotation(fieldDeclaration, "Getter");
+            if (!classGeneratesGetters && !fieldGeneratesGetter)
+                continue;
+
+            String methodName = lombokGetterName(symbol.simpleName(), field.type());
+            List<MethodDescriptor> methods = collected.computeIfAbsent(field.ownerQualifiedName(), ignored -> new ArrayList<>());
+            if (methods.stream().anyMatch(method -> method.name().equals(methodName) && method.parameterTypes().isEmpty()))
+                continue;
+
+            int modifiers = Modifier.PUBLIC;
+            if (Modifier.isStatic(field.modifiers()))
+                modifiers |= Modifier.STATIC;
+            methods.add(new MethodDescriptor(
+                field.ownerQualifiedName(),
+                methodName,
+                List.of(),
+                field.type(),
+                List.of(),
+                modifiers,
+                fieldDeclaration,
+                null
+            ));
+        }
+    }
+
+    private static @Nullable SyntaxNode ancestorOfKind(SyntaxNode node, String kindId) {
+        SyntaxNode current = node;
+        while (current != null) {
+            if (kindId.equals(current.kind().id()))
+                return current;
+            current = current.parent().orElse(null);
+        }
+        return null;
+    }
+
+    private static boolean hasDirectAnnotation(@Nullable SyntaxNode declaration, String simpleName) {
+        if (declaration == null)
+            return false;
+        for (SyntaxNode child : declaration.children()) {
+            if (!"JAVA_ANNOTATION".equals(child.kind().id()))
+                continue;
+            String annotationName = JavaSemanticAnalyzer.lastIdentifierLikeTokenText(child);
+            if (simpleName.equals(annotationName))
+                return true;
+        }
+        return false;
+    }
+
+    public boolean isFunctionalInterface(Type type) {
+        if (!(type instanceof DeclaredType declared))
+            return false;
+        String qualifiedTypeName = resolveQualifiedTypeName(declared.displayName());
+        if (qualifiedTypeName == null || !isInterfaceType(qualifiedTypeName))
+            return false;
+
+        ClassStub stub = availableClassStubsByQualifiedName().get(qualifiedTypeName);
+        if (stub != null) {
+            Map<String, MethodStub> binaryAbstractMethods = new LinkedHashMap<>();
+            stub.methods().stream()
+                .filter(method -> Modifier.isAbstract(method.modifiers()))
+                .filter(method -> !Modifier.isStatic(method.modifiers()))
+                .filter(method -> !isObjectMethodSignature(method.name(), method.parameters().size()))
+                .forEach(method -> binaryAbstractMethods.putIfAbsent(
+                    method.name() + signatureSuffix(method.parameters().stream()
+                        .map(parameter -> toSemanticType(parameter.type())).toList()),
+                    method));
+            if (binaryAbstractMethods.size() == 1)
+                return true;
+        }
+
+        List<MethodDescriptor> methods = Stream.concat(
+            declaredMethodDescriptors(qualifiedTypeName).stream(),
+            inheritedMethodDescriptors(qualifiedTypeName).stream()).toList();
+        Set<String> concreteSignatures = methods.stream()
+            .filter(method -> !method.isAbstract())
+            .filter(method -> !Modifier.isStatic(method.modifiers()))
+            .map(MethodDescriptor::signatureKey)
+            .collect(Collectors.toSet());
+        Map<String, MethodDescriptor> abstractMethods = new LinkedHashMap<>();
+        methods.stream()
+            .filter(method -> Modifier.isAbstract(method.modifiers()))
+            .filter(method -> !Modifier.isStatic(method.modifiers()))
+            .filter(method -> !isObjectMethodSignature(method))
+            .filter(method -> !concreteSignatures.contains(method.signatureKey()))
+            .forEach(method -> abstractMethods.putIfAbsent(method.signatureKey(), method));
+        return abstractMethods.size() == 1;
+    }
+
+    private static boolean isObjectMethodSignature(MethodDescriptor method) {
+        return isObjectMethodSignature(method.name(), method.parameterTypes().size());
+    }
+
+    private static boolean isObjectMethodSignature(String name, int parameterCount) {
+        return switch (name) {
+            case "toString", "hashCode", "clone", "finalize" -> parameterCount == 0;
+            case "equals" -> parameterCount == 1;
+            default -> false;
+        };
+    }
+
+    private static String lombokGetterName(String fieldName, Type fieldType) {
+        if (fieldType instanceof Type.PrimitiveType primitive && "boolean".equals(primitive.displayName())) {
+            if (fieldName.length() > 2 && fieldName.startsWith("is") && Character.isUpperCase(fieldName.charAt(2)))
+                return fieldName;
+            return "is" + capitalizePropertyName(fieldName);
+        }
+        return "get" + capitalizePropertyName(fieldName);
+    }
+
+    private static String capitalizePropertyName(String fieldName) {
+        if (fieldName.isEmpty())
+            return fieldName;
+        if (fieldName.length() > 1 && Character.isUpperCase(fieldName.charAt(1)))
+            return fieldName;
+        return Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
     }
 
     private int sourceSymbolModifiers(Symbol symbol, SyntaxNode declaration) {
@@ -1991,7 +2235,16 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     private Optional<Symbol> localTypeSymbol(String qualifiedTypeName) {
-        return Optional.ofNullable(localTypeSymbolsByQualifiedName().get(qualifiedTypeName));
+        Map<String, Symbol> localTypes = localTypeSymbolsByQualifiedName();
+        Symbol exact = localTypes.get(qualifiedTypeName);
+        if (exact != null)
+            return Optional.of(exact);
+
+        String normalized = qualifiedTypeName.replace('$', '.');
+        return localTypes.entrySet().stream()
+            .filter(entry -> entry.getKey().replace('$', '.').equals(normalized))
+            .map(Map.Entry::getValue)
+            .findFirst();
     }
 
     private String packageNameOfType(String qualifiedTypeName) {
@@ -2018,24 +2271,35 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     private boolean isSubtype(String candidateQualifiedTypeName, String targetQualifiedTypeName, Set<String> visited) {
-        if (candidateQualifiedTypeName.equals(targetQualifiedTypeName))
+        if (equivalentQualifiedTypeNames(candidateQualifiedTypeName, targetQualifiedTypeName))
             return true;
         if (!visited.add(candidateQualifiedTypeName))
             return false;
 
         for (String directSuper : directSuperTypeNamesInternal(candidateQualifiedTypeName)) {
-            if (directSuper.equals(targetQualifiedTypeName) || isSubtype(directSuper, targetQualifiedTypeName, visited))
+            if (equivalentQualifiedTypeNames(directSuper, targetQualifiedTypeName)
+                    || isSubtype(directSuper, targetQualifiedTypeName, visited))
                 return true;
         }
         return false;
     }
 
+    private static boolean equivalentQualifiedTypeNames(String left, String right) {
+        return left.equals(right) || left.replace('$', '.').equals(right.replace('$', '.'));
+    }
+
     private List<String> directSuperTypeNamesInternal(String qualifiedTypeName) {
-        List<String> sourceSupers = directSuperTypesByQualifiedName().get(qualifiedTypeName);
+        return directSuperTypesInternal(qualifiedTypeName).stream()
+            .map(DeclaredType::displayName)
+            .toList();
+    }
+
+    private List<DeclaredType> directSuperTypesInternal(String qualifiedTypeName) {
+        List<DeclaredType> sourceSupers = directSuperTypesByQualifiedName().get(qualifiedTypeName);
         if (sourceSupers != null) {
             if (shouldAddImplicitObjectLocalSuper(qualifiedTypeName, sourceSupers)) {
-                List<String> supers = new ArrayList<>(sourceSupers);
-                supers.add("java.lang.Object");
+                List<DeclaredType> supers = new ArrayList<>(sourceSupers);
+                supers.add(new DeclaredType("java.lang.Object", List.of()));
                 return List.copyOf(supers);
             }
             return sourceSupers;
@@ -2043,28 +2307,29 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
         ClassStub stub = availableClassStubsByQualifiedName().get(qualifiedTypeName);
         if (stub == null) {
-            List<String> indexedSupers = indexedSourceDirectSuperTypes(qualifiedTypeName);
+            List<DeclaredType> indexedSupers = indexedSourceDirectSuperTypes(qualifiedTypeName);
             if (indexedSupers.isEmpty() && isImplicitObjectBackedIndexedType(qualifiedTypeName))
-                return List.of("java.lang.Object");
+                return List.of(new DeclaredType("java.lang.Object", List.of()));
             return indexedSupers;
         }
 
-        List<String> supers = new ArrayList<>();
+        List<DeclaredType> supers = new ArrayList<>();
         if (stub.superClass() != null) {
-            String superName = resolveQualifiedClassParserTypeName(stub.superClass());
-            if (superName != null)
-                supers.add(superName);
+            Type superType = toSemanticType(stub.superClass());
+            if (superType instanceof DeclaredType declared)
+                supers.add(declared);
         }
         stub.interfaces().stream()
-            .map(this::resolveQualifiedClassParserTypeName)
-            .filter(Objects::nonNull)
+            .map(JavaRuleContext::toSemanticType)
+            .filter(DeclaredType.class::isInstance)
+            .map(DeclaredType.class::cast)
             .forEach(supers::add);
         return List.copyOf(supers);
     }
 
-    private boolean shouldAddImplicitObjectLocalSuper(String qualifiedTypeName, List<String> directSupers) {
+    private boolean shouldAddImplicitObjectLocalSuper(String qualifiedTypeName, List<DeclaredType> directSupers) {
         Symbol localType = localTypeSymbol(qualifiedTypeName).orElse(null);
-        if (localType == null || directSupers.contains("java.lang.Object"))
+        if (localType == null || directSupers.stream().anyMatch(type -> "java.lang.Object".equals(type.displayName())))
             return false;
         if (localType.kind() == SymbolKind.RECORD)
             return true;
@@ -2208,14 +2473,62 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     private Type semanticTypeFromTypeReference(@Nullable SyntaxNode typeRef) {
-        String qualifiedTypeName = typeRef == null ? null : resolveQualifiedTypeName(typeRef);
-        if (typeRef == null || qualifiedTypeName == null)
+        if (typeRef == null)
             return new UnknownType("<unknown>");
-        if (Set.of("boolean", "byte", "short", "char", "int", "long", "float", "double").contains(qualifiedTypeName))
-            return new Type.PrimitiveType(qualifiedTypeName);
-        if ("void".equals(qualifiedTypeName))
+        String text = canonicalTypeText(typeRef);
+        return semanticTypeFromText(text, typeRef);
+    }
+
+    private Type semanticTypeFromText(@Nullable String typeText, @Nullable SyntaxNode usageSite) {
+        if (typeText == null || typeText.isBlank())
+            return new UnknownType("<unknown>");
+
+        String text = typeText.trim();
+        if ("void".equals(text))
             return new VoidType();
-        return new DeclaredType(qualifiedTypeName, List.of());
+        if (text.startsWith("?extends"))
+            return new Type.WildcardType(semanticTypeFromText(text.substring(8), usageSite), null);
+        if (text.startsWith("?super"))
+            return new Type.WildcardType(null, semanticTypeFromText(text.substring(6), usageSite));
+        if ("?".equals(text))
+            return new Type.WildcardType(new DeclaredType("java.lang.Object", List.of()), null);
+
+        int arrayDimensions = 0;
+        while (text.endsWith("[]")) {
+            arrayDimensions++;
+            text = text.substring(0, text.length() - 2);
+        }
+
+        int typeArgumentsStart = findTopLevelTypeArgumentsStart(text);
+        String rawType = typeArgumentsStart > 0 && text.endsWith(">")
+            ? text.substring(0, typeArgumentsStart).trim()
+            : text;
+        List<Type> typeArguments = new ArrayList<>();
+        if (typeArgumentsStart > 0 && text.endsWith(">")) {
+            String argumentsText = text.substring(typeArgumentsStart + 1, text.length() - 1);
+            for (String argument : splitTopLevelTypeArguments(argumentsText)) {
+                if (!argument.isBlank())
+                    typeArguments.add(semanticTypeFromText(argument, usageSite));
+            }
+        }
+
+        String qualifiedName = resolveQualifiedTypeName(rawType, usageSite);
+        Type resolved;
+        if (Set.of("boolean", "byte", "short", "char", "int", "long", "float", "double").contains(rawType)) {
+            resolved = new Type.PrimitiveType(rawType);
+        } else if (isLikelyTypeVariableName(rawType)
+            && (qualifiedName == null
+                || qualifiedName.equals(rawType) && !availableQualifiedTypeNames().contains(qualifiedName))) {
+            resolved = new TypeVariableType(rawType);
+        } else if (qualifiedName == null || qualifiedName.isBlank()) {
+            resolved = new UnknownType(text);
+        } else {
+            resolved = new DeclaredType(qualifiedName, typeArguments);
+        }
+
+        for (int index = 0; index < arrayDimensions; index++)
+            resolved = new Type.ArrayType(resolved);
+        return resolved;
     }
 
     private @Nullable MethodOwner methodOwner(SyntaxNode receiver) {
@@ -2452,15 +2765,15 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return isAssignable(target, source);
     }
 
-    private List<String> indexedSourceDirectSuperTypes(String qualifiedTypeName) {
-        Map<String, List<String>> cached = cachedIndexedSourceDirectSuperTypesByQualifiedName;
+    private List<DeclaredType> indexedSourceDirectSuperTypes(String qualifiedTypeName) {
+        Map<String, List<DeclaredType>> cached = cachedIndexedSourceDirectSuperTypesByQualifiedName;
         if (cached != null && cached.containsKey(qualifiedTypeName))
             return cached.getOrDefault(qualifiedTypeName, List.of());
         if (symbolIndex == null)
             return List.of();
 
         JavaProjectSemanticIndex.SymbolDescriptor sourceType = symbolIndex.lookupQualifiedName(qualifiedTypeName).stream()
-            .filter(symbol -> symbol.sourceFile() != null && symbol.isTopLevel())
+            .filter(symbol -> symbol.sourceFile() != null)
             .findFirst()
             .orElse(null);
         if (sourceType == null)
@@ -2470,9 +2783,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             String source = Files.readString(sourceType.sourceFile());
             SemanticModel sourceModel = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
             JavaRuleContext sourceContext = new JavaRuleContext(sourceType.sourceFile(), source, sourceModel, symbolIndex);
-            Map<String, List<String>> directSupers = new LinkedHashMap<>();
-            sourceContext.directSuperTypesByQualifiedName().keySet().forEach(typeName ->
-                directSupers.put(typeName, sourceContext.directSuperTypeNamesInternal(typeName)));
+            Map<String, List<DeclaredType>> directSupers = new LinkedHashMap<>(sourceContext.directSuperTypesByQualifiedName());
             return rememberIndexedSourceDirectSuperTypes(directSupers)
                 .getOrDefault(qualifiedTypeName, List.of());
         } catch (Exception ignored) {
@@ -2480,24 +2791,99 @@ public final class JavaRuleContext implements LanguageRuleContext {
         }
     }
 
-    private synchronized Map<String, List<String>> rememberIndexedSourceDirectSuperTypes(Map<String, List<String>> additional) {
-        Map<String, List<String>> merged = new LinkedHashMap<>();
+    private synchronized Map<String, List<DeclaredType>> rememberIndexedSourceDirectSuperTypes(
+        Map<String, List<DeclaredType>> additional
+    ) {
+        Map<String, List<DeclaredType>> merged = new LinkedHashMap<>();
         if (cachedIndexedSourceDirectSuperTypesByQualifiedName != null)
             merged.putAll(cachedIndexedSourceDirectSuperTypesByQualifiedName);
         additional.forEach((qualifiedName, supers) -> merged.putIfAbsent(qualifiedName, List.copyOf(supers)));
-        Map<String, List<String>> copy = Map.copyOf(merged);
+        Map<String, List<DeclaredType>> copy = Map.copyOf(merged);
         cachedIndexedSourceDirectSuperTypesByQualifiedName = copy;
         return copy;
     }
 
-    private void collectInheritedMethodDescriptors(String ownerQualifiedTypeName, List<MethodDescriptor> out, Set<String> visited) {
-        if (!visited.add(ownerQualifiedTypeName))
+    private void collectInheritedMethodDescriptors(
+        String ownerQualifiedTypeName,
+        List<MethodDescriptor> out,
+        Set<String> visited,
+        Map<String, Type> substitutions
+    ) {
+        String visitKey = ownerQualifiedTypeName + substitutions.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(entry -> ";" + entry.getKey() + "=" + typeKey(entry.getValue()))
+            .collect(Collectors.joining());
+        if (!visited.add(visitKey))
             return;
 
-        for (String directSuper : directSuperTypeNamesInternal(ownerQualifiedTypeName)) {
-            out.addAll(methodDescriptorsForType(directSuper));
-            collectInheritedMethodDescriptors(directSuper, out, visited);
+        for (DeclaredType declaredSuper : directSuperTypesInternal(ownerQualifiedTypeName)) {
+            Type specialized = substituteType(declaredSuper, substitutions);
+            if (!(specialized instanceof DeclaredType directSuper))
+                continue;
+
+            Map<String, Type> superSubstitutions = typeSubstitutionsFor(directSuper);
+            methodDescriptorsForType(directSuper.displayName()).stream()
+                .map(method -> substituteMethodDescriptor(method, superSubstitutions))
+                .forEach(out::add);
+            collectInheritedMethodDescriptors(
+                directSuper.displayName(),
+                out,
+                visited,
+                superSubstitutions
+            );
         }
+    }
+
+    private Map<String, Type> typeSubstitutionsFor(DeclaredType declaredType) {
+        List<String> parameterNames = typeParameterNamesForType(declaredType.displayName());
+        int count = Math.min(parameterNames.size(), declaredType.typeArguments().size());
+        if (count == 0)
+            return Map.of();
+
+        Map<String, Type> substitutions = new LinkedHashMap<>();
+        for (int index = 0; index < count; index++)
+            substitutions.put(parameterNames.get(index), declaredType.typeArguments().get(index));
+        return Map.copyOf(substitutions);
+    }
+
+    private MethodDescriptor substituteMethodDescriptor(MethodDescriptor method, Map<String, Type> substitutions) {
+        if (substitutions.isEmpty())
+            return method;
+        return new MethodDescriptor(
+            method.ownerQualifiedName(),
+            method.name(),
+            method.parameterTypes().stream().map(type -> substituteType(type, substitutions)).toList(),
+            substituteType(method.returnType(), substitutions),
+            method.thrownTypes(),
+            method.modifiers(),
+            method.declaration(),
+            method.symbol()
+        );
+    }
+
+    private static Type substituteType(Type type, Map<String, Type> substitutions) {
+        return switch (type) {
+            case TypeVariableType variable -> substitutions.getOrDefault(variable.displayName(), variable);
+            case DeclaredType declared -> new DeclaredType(
+                declared.displayName(),
+                declared.typeArguments().stream().map(argument -> substituteType(argument, substitutions)).toList()
+            );
+            case Type.ArrayType array -> new Type.ArrayType(substituteType(array.componentType(), substitutions));
+            case Type.WildcardType wildcard -> new Type.WildcardType(
+                wildcard.upperBound() == null ? null : substituteType(wildcard.upperBound(), substitutions),
+                wildcard.lowerBound() == null ? null : substituteType(wildcard.lowerBound(), substitutions)
+            );
+            default -> type;
+        };
+    }
+
+    private static String typeKey(Type type) {
+        if (type instanceof DeclaredType declared && !declared.typeArguments().isEmpty()) {
+            return declared.displayName() + declared.typeArguments().stream()
+                .map(JavaRuleContext::typeKey)
+                .collect(Collectors.joining(",", "<", ">"));
+        }
+        return type.displayName();
     }
 
     private void collectInheritedFieldDescriptors(String ownerQualifiedTypeName, List<FieldDescriptor> out, Set<String> visited) {
@@ -2579,27 +2965,15 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 if (!JAVA_PARAMETER.equals(child.kind().id()))
                     continue;
                 SyntaxNode typeRef = directChild(child, JAVA_TYPE_REFERENCE);
-                String qualifiedTypeName = typeRef == null ? null : resolveQualifiedTypeName(typeRef);
-                parameterTypes.add(typeRef == null || qualifiedTypeName == null
-                    ? new UnknownType("<unknown>")
-                    : new DeclaredType(qualifiedTypeName, List.of()));
+                Type parameterType = semanticTypeFromTypeReference(typeRef);
+                if (hasTokenKind(child, JavaTokenType.ELLIPSIS))
+                    parameterType = new Type.ArrayType(parameterType);
+                parameterTypes.add(parameterType);
             }
         }
 
         SyntaxNode returnTypeRef = directChild(declaration, JAVA_TYPE_REFERENCE);
-        String qualifiedReturnType = returnTypeRef == null ? null : resolveQualifiedTypeName(returnTypeRef);
-        Type returnType;
-        if (returnTypeRef == null) {
-            returnType = new VoidType();
-        } else if (qualifiedReturnType == null) {
-            returnType = new UnknownType("<unknown>");
-        } else if (Set.of("boolean", "byte", "short", "char", "int", "long", "float", "double").contains(qualifiedReturnType)) {
-            returnType = new Type.PrimitiveType(qualifiedReturnType);
-        } else if ("void".equals(qualifiedReturnType)) {
-            returnType = new VoidType();
-        } else {
-            returnType = new DeclaredType(qualifiedReturnType, List.of());
-        }
+        Type returnType = returnTypeRef == null ? new VoidType() : semanticTypeFromTypeReference(returnTypeRef);
 
         int modifiers = sourceSymbolModifiers(symbol, declaration);
         if (declaration.children().stream().noneMatch(child -> JAVA_BLOCK.equals(child.kind().id()))
@@ -2729,6 +3103,56 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return Map.copyOf(copy);
     }
 
+    private static int findTopLevelTypeArgumentsStart(String text) {
+        int depth = 0;
+        for (int index = 0; index < text.length(); index++) {
+            char ch = text.charAt(index);
+            if (ch == '<') {
+                if (depth == 0)
+                    return index;
+                depth++;
+            } else if (ch == '>') {
+                depth = Math.max(0, depth - 1);
+            }
+        }
+        return -1;
+    }
+
+    private static List<String> splitTopLevelTypeArguments(String text) {
+        List<String> parts = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        int depth = 0;
+        for (int index = 0; index < text.length(); index++) {
+            char ch = text.charAt(index);
+            if (ch == '<') {
+                depth++;
+            } else if (ch == '>') {
+                depth = Math.max(0, depth - 1);
+            } else if (ch == ',' && depth == 0) {
+                parts.add(current.toString());
+                current.setLength(0);
+                continue;
+            }
+            current.append(ch);
+        }
+        if (!current.isEmpty())
+            parts.add(current.toString());
+        return List.copyOf(parts);
+    }
+
+    private static boolean isLikelyTypeVariableName(String displayName) {
+        if (displayName == null || displayName.isBlank() || displayName.indexOf('.') >= 0)
+            return false;
+        if (!Character.isUpperCase(displayName.charAt(0)))
+            return false;
+        for (int index = 1; index < displayName.length(); index++) {
+            char ch = displayName.charAt(index);
+            if (!Character.isUpperCase(ch) && !Character.isDigit(ch) && ch != '_')
+                return false;
+        }
+        return true;
+    }
+
     private boolean hasComplexArgumentShape(@Nullable SyntaxNode argumentList) {
         if (argumentList == null)
             return false;
@@ -2801,7 +3225,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 ? new VoidType()
                 : new Type.PrimitiveType(primitive.name());
             case ArrayType array -> new Type.ArrayType(toSemanticType(array.componentType()));
-            case ClassType clazz -> new DeclaredType(clazz.name(), List.of());
+            case ClassType clazz -> new DeclaredType(
+                clazz.name(),
+                clazz.typeArguments().stream().map(JavaRuleContext::toSemanticType).toList()
+            );
             case TypeVariable variable -> new TypeVariableType(variable.name());
             case WildcardType wildcard -> {
                 Type bound = wildcard.bound() == null ? new UnknownType("<unknown>") : toSemanticType(wildcard.bound());
@@ -2832,6 +3259,34 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
     private static boolean isNumericType(Type type) {
         return type.kind() == Kind.PRIMITIVE && NUMERIC_PRIMITIVES.contains(type.displayName());
+    }
+
+    private static @Nullable String boxedPrimitiveName(String primitive) {
+        return switch (primitive) {
+            case "boolean" -> "java.lang.Boolean";
+            case "byte" -> "java.lang.Byte";
+            case "short" -> "java.lang.Short";
+            case "char" -> "java.lang.Character";
+            case "int" -> "java.lang.Integer";
+            case "long" -> "java.lang.Long";
+            case "float" -> "java.lang.Float";
+            case "double" -> "java.lang.Double";
+            default -> null;
+        };
+    }
+
+    private static @Nullable String unboxedPrimitiveName(String declaredType) {
+        return switch (declaredType) {
+            case "java.lang.Boolean", "Boolean" -> "boolean";
+            case "java.lang.Byte", "Byte" -> "byte";
+            case "java.lang.Short", "Short" -> "short";
+            case "java.lang.Character", "Character" -> "char";
+            case "java.lang.Integer", "Integer" -> "int";
+            case "java.lang.Long", "Long" -> "long";
+            case "java.lang.Float", "Float" -> "float";
+            case "java.lang.Double", "Double" -> "double";
+            default -> null;
+        };
     }
 
     private static int numericRank(String primitive) {

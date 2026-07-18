@@ -248,7 +248,7 @@ public final class JavaSemanticRules {
     );
     public static final JavaSemanticRule DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE = new JavaSemanticRule(
         "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE",
-        SemanticDiagnostic.Severity.ERROR,
+        SemanticDiagnostic.Severity.WARNING,
         "Method '%s' declares disallowed exception '%s' in its signature"
     );
     public static final JavaSemanticRule THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION = new JavaSemanticRule(

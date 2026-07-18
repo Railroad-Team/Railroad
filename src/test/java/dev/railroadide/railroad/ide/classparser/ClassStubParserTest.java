@@ -43,6 +43,38 @@ class ClassStubParserTest {
                 && variable.name().equals("E")));
     }
 
+    @Test
+    void preservesUnboundedWildcardTypeArguments() throws Exception {
+        var collectorsStub = parseRuntimeClass("java/util/stream/Collectors.class");
+        var toList = collectorsStub.methods().stream()
+            .filter(method -> method.name().equals("toList"))
+            .filter(method -> method.parameters().isEmpty())
+            .findFirst()
+            .orElseThrow();
+
+        Type.ClassType collectorType = assertInstanceOf(Type.ClassType.class, toList.returnType());
+        assertEquals(3, collectorType.typeArguments().size());
+        Type.WildcardType accumulationType = assertInstanceOf(
+            Type.WildcardType.class,
+            collectorType.typeArguments().get(1));
+        assertEquals(null, accumulationType.bound());
+    }
+
+    @Test
+    void preservesGenericThrownTypeVariables() throws Exception {
+        var optionalStub = parseRuntimeClass("java/util/Optional.class");
+        var orElseThrow = optionalStub.methods().stream()
+            .filter(method -> method.name().equals("orElseThrow"))
+            .filter(method -> method.parameters().size() == 1)
+            .findFirst()
+            .orElseThrow();
+
+        assertEquals(1, orElseThrow.thrownTypes().size());
+        Type.TypeVariable thrown = assertInstanceOf(
+            Type.TypeVariable.class, orElseThrow.thrownTypes().getFirst());
+        assertEquals("X", thrown.name());
+    }
+
     private static dev.railroadide.railroad.ide.classparser.stub.ClassStub parseRuntimeClass(String classFile) throws Exception {
         Path javaHome = Path.of(System.getProperty("java.home")).toAbsolutePath().normalize();
         Path jmod = javaHome.resolve("jmods").resolve("java.base.jmod");

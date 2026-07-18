@@ -30,6 +30,10 @@ class JavaProjectSemanticExtractorTest {
 
                     class Inner {
                     }
+
+                    enum Mode {
+                        ACTIVE
+                    }
                 }
                 """;
 
@@ -66,7 +70,35 @@ class JavaProjectSemanticExtractorTest {
         assertNotNull(inner);
         assertFalse(inner.isTopLevel());
 
+        JavaProjectSemanticIndex.SymbolDescriptor enumConstant =
+            findSymbol(fileIndex.declaredSymbols(), "demo.sample.Utility.Mode#ACTIVE");
+        assertNotNull(enumConstant);
+        assertTrue(enumConstant.isStatic());
+
         assertTrue(fileIndex.declaredSymbols().stream().noneMatch(symbol -> "local".equals(symbol.simpleName())));
+    }
+
+    @Test
+    void preservesVarargsInCallableSignatures() {
+        JavaProjectSemanticIndex.SourceFileIndex fileIndex = new JavaProjectSemanticExtractor().extract(
+            Path.of("Box.java"), """
+                class Box<T> {
+                    Box(T value, Box<T>... children) {}
+                    void add(String name, int... values) {}
+                }
+                """);
+
+        JavaProjectSemanticIndex.SymbolDescriptor constructor = fileIndex.declaredSymbols().stream()
+            .filter(symbol -> symbol.kind() == dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind.CONSTRUCTOR)
+            .findFirst()
+            .orElseThrow();
+        JavaProjectSemanticIndex.SymbolDescriptor method = fileIndex.declaredSymbols().stream()
+            .filter(symbol -> symbol.kind() == dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind.METHOD)
+            .findFirst()
+            .orElseThrow();
+
+        assertEquals("(T,Box<T>[])", constructor.signature());
+        assertEquals("(String,int[])", method.signature());
     }
 
     private static void assertImport(

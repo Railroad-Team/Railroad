@@ -86,6 +86,7 @@ public class ClassStubVisitor extends ClassVisitor {
 
         List<Type> parameterTypes;
         Type returnType;
+        List<Type> signatureThrownTypes = List.of();
         List<TypeParameter> methodTypeParameters = new ArrayList<>();
         if (signature != null) {
             var signatureVisitor = new MethodSignatureVisitor();
@@ -93,6 +94,7 @@ public class ClassStubVisitor extends ClassVisitor {
             methodTypeParameters = signatureVisitor.typeParameters;
             parameterTypes = signatureVisitor.parameterTypes;
             returnType = signatureVisitor.returnType;
+            signatureThrownTypes = List.copyOf(signatureVisitor.thrownTypes);
         } else {
             parameterTypes = Arrays.stream(org.objectweb.asm.Type.getArgumentTypes(descriptor))
                 .map(Type::fromAsmType)
@@ -108,11 +110,13 @@ public class ClassStubVisitor extends ClassVisitor {
             parameterAnnotations.add(new ArrayList<>());
         }
 
-        List<Type> thrownTypes = exceptions == null
+        List<Type> descriptorThrownTypes = exceptions == null
                 ? List.of()
                 : Arrays.stream(exceptions)
                 .map(internalName -> Type.fromAsmType(org.objectweb.asm.Type.getObjectType(internalName)))
                 .toList();
+        List<Type> thrownTypes = signatureThrownTypes.isEmpty()
+            ? descriptorThrownTypes : signatureThrownTypes;
         List<AnnotationStub> methodAnnotations = new ArrayList<>();
         return new MethodStubVisitor(
                 access,
@@ -288,6 +292,13 @@ public class ClassStubVisitor extends ClassVisitor {
         }
 
         @Override
+        public void visitTypeArgument() {
+            Type.ClassType parent = this.typeStack.peek();
+            if (parent != null)
+                parent.typeArguments().add(new Type.WildcardType(null, true));
+        }
+
+        @Override
         public void visitEnd() {
             if (!this.typeStack.isEmpty()) {
                 this.typeStack.pop();
@@ -307,6 +318,7 @@ public class ClassStubVisitor extends ClassVisitor {
     private static class MethodSignatureVisitor extends SignatureVisitor {
         private final List<TypeParameter> typeParameters = new ArrayList<>();
         private final List<Type> parameterTypes = new ArrayList<>();
+        private final List<Type> thrownTypes = new ArrayList<>();
         private Type returnType;
         private TypeParameter currentTypeParameter;
 
@@ -338,6 +350,11 @@ public class ClassStubVisitor extends ClassVisitor {
         @Override
         public SignatureVisitor visitReturnType() {
             return new TypeSignatureVisitor(type -> returnType = type);
+        }
+
+        @Override
+        public SignatureVisitor visitExceptionType() {
+            return new TypeSignatureVisitor(thrownTypes::add);
         }
     }
 

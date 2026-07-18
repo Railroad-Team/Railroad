@@ -17,6 +17,8 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
     public static final String ID = "railroad:core-assignment";
     private static final String JAVA_VARIABLE_DECLARATOR = "JAVA_VARIABLE_DECLARATOR";
     private static final String JAVA_ASSIGNMENT_EXPRESSION = "JAVA_ASSIGNMENT_EXPRESSION";
+    private static final String JAVA_LAMBDA_EXPRESSION = "JAVA_LAMBDA_EXPRESSION";
+    private static final String JAVA_METHOD_REFERENCE_EXPRESSION = "JAVA_METHOD_REFERENCE_EXPRESSION";
 
     private static final List<JavaInspectionRule> RULES = List.of(
             new SimpleJavaInspectionRule(
@@ -52,6 +54,13 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
             return;
 
         Type sourceType = context.inferredType(initializer).orElse(new Type.UnknownType("<unknown>"));
+        if (isUnknownLike(declaredType) || isUnknownLike(sourceType))
+            return;
+        if (isPolyExpression(initializer)) {
+            if (!context.isFunctionalInterface(declaredType))
+                reporter.report(node, sourceType.displayName(), declaredType.displayName());
+            return;
+        }
         if (!context.isAssignable(declaredType, sourceType))
             reporter.report(node, sourceType.displayName(), declaredType.displayName());
     }
@@ -63,7 +72,25 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
 
         Type leftType = context.inferredType(expressionChildren.getFirst()).orElse(new Type.UnknownType("<unknown>"));
         Type rightType = context.inferredType(expressionChildren.get(1)).orElse(new Type.UnknownType("<unknown>"));
+        if (isUnknownLike(leftType) || isUnknownLike(rightType))
+            return;
+        if (isPolyExpression(expressionChildren.get(1))) {
+            if (!context.isFunctionalInterface(leftType))
+                reporter.report(node, rightType.displayName(), leftType.displayName());
+            return;
+        }
         if (!context.isAssignable(leftType, rightType))
             reporter.report(node, rightType.displayName(), leftType.displayName());
+    }
+
+    private static boolean isPolyExpression(SyntaxNode expression) {
+        String kindId = expression.kind().id();
+        return JAVA_LAMBDA_EXPRESSION.equals(kindId) || JAVA_METHOD_REFERENCE_EXPRESSION.equals(kindId);
+    }
+
+    private static boolean isUnknownLike(Type type) {
+        return type.kind() == Type.Kind.UNKNOWN
+            || "<unknown>".equals(type.displayName())
+            || type.displayName().isBlank();
     }
 }

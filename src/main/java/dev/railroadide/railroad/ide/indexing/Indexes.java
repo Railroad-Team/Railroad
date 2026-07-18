@@ -66,16 +66,26 @@ public class Indexes {
 
     private static void scanJMods(Path javaHome, List<ClassStub> stubs) {
         Path jmods = javaHome.resolve("jmods");
-        // Scan the `java.base` module
-        Path javaBase = jmods.resolve("java.base.jmod"); // this should be effectively a jar file
+        try (var paths = Files.list(jmods)) {
+            for (Path jmodPath : paths
+                    .filter(path -> path.getFileName().toString().endsWith(".jmod"))
+                    .sorted()
+                    .toList()) {
+                scanJMod(jmodPath, stubs);
+            }
+        } catch (IOException exception) {
+            Railroad.LOGGER.error("Failed to scan standard library modules", exception);
+        }
+    }
 
-        try (var jmod = new JarFile(javaBase.toFile())) {
+    private static void scanJMod(Path jmodPath, List<ClassStub> stubs) {
+        try (var jmod = new JarFile(jmodPath.toFile())) {
             Enumeration<JarEntry> entries = jmod.entries();
             while (entries.hasMoreElements()) {
                 JarEntry entry = entries.nextElement();
                 String className = entry.getName();
-                if (className.startsWith("classes/java/") && className.endsWith(".class")) {
-                    className = className.substring("classes/java/".length(), className.length() - ".class".length());
+                if (className.startsWith("classes/") && className.endsWith(".class")) {
+                    className = className.substring("classes/".length(), className.length() - ".class".length());
                     if (className.endsWith("module-info") || className.endsWith("package-info"))
                         continue;
 
@@ -84,7 +94,7 @@ public class Indexes {
                 }
             }
         } catch (IOException exception) {
-            Railroad.LOGGER.error("Failed to scan standard library", exception);
+            Railroad.LOGGER.warn("Ignoring unreadable standard library module {}", jmodPath, exception);
         }
     }
 
@@ -97,8 +107,8 @@ public class Indexes {
                 fileSystem = FileSystems.newFileSystem(URI.create("jrt:/"), Collections.emptyMap());
             }
 
-            Path javaBase = fileSystem.getPath("/modules/java.base/java");
-            try (var paths = Files.walk(javaBase)) {
+            Path modules = fileSystem.getPath("/modules");
+            try (var paths = Files.walk(modules)) {
                 paths.filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(".class"))
                     .filter(path -> {
@@ -122,8 +132,10 @@ public class Indexes {
 
     private static Path resolveJavaHome() {
         Path configured = normalizeHome(System.getProperty("java.home"));
-        if (configured != null && hasScannableStandardLibrary(configured))
+        if (configured != null && (hasScannableStandardLibrary(configured)
+                || Files.isRegularFile(configured.resolve("lib").resolve("modules")))) {
             return configured;
+        }
 
         Path javaHomeEnv = normalizeHome(System.getenv("JAVA_HOME"));
         if (javaHomeEnv != null && hasScannableStandardLibrary(javaHomeEnv))

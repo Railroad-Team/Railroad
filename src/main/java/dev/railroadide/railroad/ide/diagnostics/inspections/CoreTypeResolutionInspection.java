@@ -43,6 +43,8 @@ public final class CoreTypeResolutionInspection implements JavaInspectionRulePro
                 return;
 
             String simpleName = context.simpleTypeName(type.displayName());
+            if ("var".equals(simpleName))
+                return;
             if (availableTypeNames.contains(simpleName) || availableTypeNames.contains(type.displayName()))
                 return;
 

@@ -58,6 +58,24 @@ class JavaLexerTest {
     }
 
     @Test
+    void lexesRightShiftOperatorsIncludingAtEndOfInput() {
+        List<Token<JavaTokenType>> tokens = JavaParserTestSupport.lexAll(">> >>> >>= >>>=");
+
+        List<JavaTokenType> significantTypes = tokens.stream()
+                .filter(token -> token.channel() == TokenChannel.DEFAULT)
+                .map(Token::type)
+                .toList();
+
+        assertIterableEquals(List.of(
+                JavaTokenType.RIGHT_SHIFT,
+                JavaTokenType.UNSIGNED_RIGHT_SHIFT,
+                JavaTokenType.RIGHT_SHIFT_EQUALS,
+                JavaTokenType.UNSIGNED_RIGHT_SHIFT_EQUALS,
+                JavaTokenType.EOF
+        ), significantTypes);
+    }
+
+    @Test
     void reportsDiagnosticAndErrorFlagForUnterminatedString() {
         String source = "class A { String s = " + '"' + "unterminated; }";
         List<Token<JavaTokenType>> tokens;

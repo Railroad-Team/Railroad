@@ -244,16 +244,16 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
 
     private static List<ThrownException> collectUnhandledFromTry(JavaRuleContext context, SyntaxNode tryStatement, Set<String> allowed) {
         List<ThrownException> exceptions = new ArrayList<>();
+        List<ThrownException> tryExceptions = new ArrayList<>();
 
         for (SyntaxNode resource : directChildrenOfKind(tryStatement, JAVA_TRY_RESOURCE)) {
-            exceptions.addAll(collectUnhandledCheckedExceptions(context, resource, allowed));
-            addResourceCloseExceptions(context, resource, exceptions);
+            tryExceptions.addAll(collectUnhandledCheckedExceptions(context, resource, allowed));
+            addResourceCloseExceptions(context, resource, tryExceptions);
         }
 
         SyntaxNode tryBlock = context.directChild(tryStatement, JAVA_BLOCK);
-        List<ThrownException> tryExceptions = tryBlock == null
-            ? List.of()
-            : collectUnhandledCheckedExceptions(context, tryBlock, allowed);
+        if (tryBlock != null)
+            tryExceptions.addAll(collectUnhandledCheckedExceptions(context, tryBlock, allowed));
 
         List<SyntaxNode> catchClauses = directChildrenOfKind(tryStatement, JAVA_CATCH_CLAUSE);
         for (ThrownException exception : tryExceptions) {
@@ -263,8 +263,24 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
 
         for (SyntaxNode catchClause : catchClauses) {
             SyntaxNode catchBlock = context.directChild(catchClause, JAVA_BLOCK);
-            if (catchBlock != null)
-                exceptions.addAll(collectUnhandledCheckedExceptions(context, catchBlock, allowed));
+            if (catchBlock == null)
+                continue;
+
+            List<ThrownException> catchExceptions = collectUnhandledCheckedExceptions(
+                context, catchBlock, allowed);
+            List<String> catchTypes = context.catchParameterTypeNames(catchClause);
+            for (ThrownException exception : catchExceptions) {
+                if (!isRethrowOfCatchParameter(context, exception.reportNode(), catchClause)) {
+                    exceptions.add(exception);
+                    continue;
+                }
+                for (ThrownException tryException : tryExceptions) {
+                    if (isCoveredByAny(tryException.qualifiedTypeName(), catchTypes, context)) {
+                        exceptions.add(new ThrownException(
+                            exception.reportNode(), tryException.qualifiedTypeName()));
+                    }
+                }
+            }
         }
 
         SyntaxNode finallyClause = context.directChild(tryStatement, JAVA_FINALLY_CLAUSE);
@@ -275,6 +291,19 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         }
 
         return List.copyOf(exceptions);
+    }
+
+    private static boolean isRethrowOfCatchParameter(
+            JavaRuleContext context,
+            SyntaxNode thrownExpression,
+            SyntaxNode catchClause
+    ) {
+        SyntaxNode parameter = context.directChild(catchClause, JavaSyntaxKinds.PARAMETER.id());
+        if (parameter == null)
+            return false;
+        String parameterName = context.lastIdentifierLikeTokenText(parameter);
+        String expressionName = context.canonicalQualifiedName(thrownExpression);
+        return parameterName != null && parameterName.equals(expressionName);
     }
 
     private static void addResourceCloseExceptions(JavaRuleContext context, SyntaxNode resource, List<ThrownException> out) {

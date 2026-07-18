@@ -29,6 +29,9 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
     private static final String JAVA_RECORD_DECLARATION = "JAVA_RECORD_DECLARATION";
     private static final String JAVA_LAMBDA_EXPRESSION = "JAVA_LAMBDA_EXPRESSION";
     private static final String JAVA_PATTERN = "JAVA_PATTERN";
+    private static final String JAVA_TRY_STATEMENT = "JAVA_TRY_STATEMENT";
+    private static final String JAVA_CATCH_CLAUSE = "JAVA_CATCH_CLAUSE";
+    private static final String JAVA_FOR_STATEMENT = "JAVA_FOR_STATEMENT";
 
     private static final List<JavaInspectionRule> RULES = List.of(
             new SimpleJavaInspectionRule(
@@ -83,7 +86,13 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
                 continue;
             SyntaxNode typeReference = context.directChild(child, "JAVA_TYPE_REFERENCE");
             String typeText = typeReference == null ? null : context.canonicalTypeText(typeReference);
-            parameterTypes.add(typeText == null ? "<unknown>" : typeText);
+            if (typeText == null) {
+                parameterTypes.add("<unknown>");
+            } else {
+                parameterTypes.add(context.hasTokenKind(child, dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType.ELLIPSIS)
+                    ? typeText + "[]"
+                    : typeText);
+            }
         }
         return symbol.simpleName() + "(" + String.join(",", parameterTypes) + ")";
     }
@@ -98,7 +107,10 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
                 || JAVA_ENUM_DECLARATION.equals(kindId)
                 || JAVA_ANNOTATION_TYPE_DECLARATION.equals(kindId)
                 || JAVA_RECORD_DECLARATION.equals(kindId)
-                || JAVA_LAMBDA_EXPRESSION.equals(kindId);
+                || JAVA_LAMBDA_EXPRESSION.equals(kindId)
+                || JAVA_TRY_STATEMENT.equals(kindId)
+                || JAVA_CATCH_CLAUSE.equals(kindId)
+                || JAVA_FOR_STATEMENT.equals(kindId);
     }
 
     private static final class ScopeTracker {

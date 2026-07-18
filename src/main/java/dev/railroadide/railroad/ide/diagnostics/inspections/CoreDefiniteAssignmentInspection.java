@@ -44,6 +44,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
     private static final String JAVA_BASIC_FOR_STATEMENT = "JAVA_BASIC_FOR_STATEMENT";
     private static final String JAVA_ENHANCED_FOR_STATEMENT = "JAVA_ENHANCED_FOR_STATEMENT";
     private static final String JAVA_SWITCH_STATEMENT = "JAVA_SWITCH_STATEMENT";
+    private static final String JAVA_SWITCH_EXPRESSION = "JAVA_SWITCH_EXPRESSION";
     private static final String JAVA_SWITCH_RULE = "JAVA_SWITCH_RULE";
     private static final String JAVA_LABELED_STATEMENT = "JAVA_LABELED_STATEMENT";
     private static final String JAVA_TRY_STATEMENT = "JAVA_TRY_STATEMENT";
@@ -56,6 +57,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
     private static final String JAVA_YIELD_STATEMENT = "JAVA_YIELD_STATEMENT";
     private static final String JAVA_ASSIGNMENT_EXPRESSION = "JAVA_ASSIGNMENT_EXPRESSION";
     private static final String JAVA_NAME_EXPRESSION = "JAVA_NAME_EXPRESSION";
+    private static final String JAVA_METHOD_INVOCATION_EXPRESSION = "JAVA_METHOD_INVOCATION_EXPRESSION";
+    private static final String JAVA_THIS_EXPRESSION = "JAVA_THIS_EXPRESSION";
     private static final String JAVA_LAMBDA_EXPRESSION = "JAVA_LAMBDA_EXPRESSION";
     private static final Set<String> ANALYSIS_BARRIERS = Set.of(
             JAVA_METHOD_DECLARATION,
@@ -154,8 +157,15 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 return;
             }
 
+            boolean lombokInitializesFinalFields = hasDirectAnnotation(typeNode, "AllArgsConstructor")
+                    || hasDirectAnnotation(typeNode, "RequiredArgsConstructor")
+                    || hasDirectAnnotation(typeNode, "Data")
+                    || hasDirectAnnotation(typeNode, "Value");
+
             for (FieldSymbolInfo field : finalFieldSymbols(context, typeNode)) {
                 if (!field.isBlankFinal())
+                    continue;
+                if (lombokInitializesFinalFields)
                     continue;
 
                 FieldFlowState initializerState = field.isStatic()
@@ -178,6 +188,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 for (SyntaxNode constructor : constructors) {
                     SyntaxNode body = context.directChild(constructor, JAVA_BLOCK);
                     if (body == null)
+                        continue;
+                    if (delegatesToThisConstructor(body))
                         continue;
                     FieldFlowState state = analyzeFieldFlow(context, body, field.symbol(), initializerState, null);
                     if (state.reachable() && !state.definitelyAssigned())
@@ -204,8 +216,12 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     continue;
                 for (SyntaxNode constructor : constructorsOf(typeNode)) {
                     SyntaxNode body = context.directChild(constructor, JAVA_BLOCK);
-                    if (body != null)
-                        analyzeFieldFlow(context, body, field.symbol(), initializerState, reporter);
+                    if (body != null) {
+                        FieldFlowState constructorState = delegatesToThisConstructor(body)
+                                ? initializerState.assign()
+                                : initializerState;
+                        analyzeFieldFlow(context, body, field.symbol(), constructorState, reporter);
+                    }
                 }
             }
         });
@@ -245,7 +261,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             case JAVA_WHILE_STATEMENT -> analyzeWhileStatement(context, node, state, unassignedReporter, illegalFinalReporter);
             case JAVA_DO_WHILE_STATEMENT -> analyzeDoWhileStatement(context, node, state, unassignedReporter, illegalFinalReporter);
             case JAVA_FOR_STATEMENT -> analyzeForStatement(context, node, state, unassignedReporter, illegalFinalReporter);
-            case JAVA_SWITCH_STATEMENT -> analyzeSwitchStatement(context, node, state, unassignedReporter, illegalFinalReporter);
+            case JAVA_SWITCH_STATEMENT, JAVA_SWITCH_EXPRESSION -> analyzeSwitchStatement(context, node, state, unassignedReporter, illegalFinalReporter);
             case JAVA_TRY_STATEMENT -> analyzeTryStatement(context, node, state, unassignedReporter, illegalFinalReporter);
             case JAVA_RETURN_STATEMENT, JAVA_THROW_STATEMENT, JAVA_BREAK_STATEMENT, JAVA_CONTINUE_STATEMENT, JAVA_YIELD_STATEMENT ->
                     analyzeAbruptStatement(context, node, state, unassignedReporter, illegalFinalReporter);
@@ -408,22 +424,26 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             @Nullable JavaInspectionRuleReporter illegalFinalReporter,
             @Nullable String loopLabel
     ) {
+        FlowState inheritedExits = state;
+        state = state.withoutAbruptExits();
         List<SyntaxNode> children = structuralChildren(node);
         if (children.isEmpty())
-            return state;
+            return state.withAbruptExitsFrom(inheritedExits);
 
         SyntaxNode header = children.getFirst();
         SyntaxNode body = children.size() > 1 ? children.get(1) : null;
 
         FlowState headerState = state;
         if (JAVA_BASIC_FOR_STATEMENT.equals(header.kind().id())) {
-            return analyzeBasicForStatement(context, header, body, state, unassignedReporter, illegalFinalReporter, loopLabel);
+            return analyzeBasicForStatement(context, header, body, state, unassignedReporter, illegalFinalReporter, loopLabel)
+                    .withAbruptExitsFrom(inheritedExits);
         } else if (JAVA_ENHANCED_FOR_STATEMENT.equals(header.kind().id())) {
             headerState = analyzeEnhancedForHeader(context, header, state, unassignedReporter, illegalFinalReporter);
         }
 
         FlowState bodyState = body == null ? headerState : analyzeNode(context, body, headerState, unassignedReporter, illegalFinalReporter);
-        return FlowState.loopExitFrom(headerState.snapshot(), bodyState.resumeContinues(loopLabel));
+        return FlowState.loopExitFrom(headerState.snapshot(), bodyState.resumeContinues(loopLabel))
+                .withAbruptExitsFrom(inheritedExits);
     }
 
     private static FlowState analyzeBasicForStatement(
@@ -458,8 +478,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         FlowState baseHead = state.withoutAbruptExits();
         FlowState loopHead = baseHead;
         for (int i = 0; i < LOOP_FIXPOINT_ITERATION_LIMIT; i++) {
-            FlowState conditionState = analyzeNode(context, condition, loopHead, unassignedReporter, illegalFinalReporter);
-            FlowState bodyState = body == null ? conditionState : analyzeNode(context, body, conditionState, unassignedReporter, illegalFinalReporter);
+            FlowState conditionState = analyzeNode(context, condition, loopHead, null, null);
+            FlowState bodyState = body == null ? conditionState : analyzeNode(context, body, conditionState, null, null);
             FlowState nextHead = FlowState.mergeBranches(baseHead, bodyState.resumeContinues(loopLabel).withoutAbruptExits());
             if (nextHead.withoutAbruptExits().equals(loopHead.withoutAbruptExits()))
                 return nextHead;
@@ -480,14 +500,14 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         FlowState baseHead = initState.withoutAbruptExits();
         FlowState loopHead = baseHead;
         for (int i = 0; i < LOOP_FIXPOINT_ITERATION_LIMIT; i++) {
-            FlowState conditionState = analyzeNodeSequence(context, segments.conditionNodes(), loopHead, unassignedReporter, illegalFinalReporter);
-            FlowState bodyState = body == null ? conditionState : analyzeNode(context, body, conditionState, unassignedReporter, illegalFinalReporter);
+            FlowState conditionState = analyzeNodeSequence(context, segments.conditionNodes(), loopHead, null, null);
+            FlowState bodyState = body == null ? conditionState : analyzeNode(context, body, conditionState, null, null);
             FlowState updateState = analyzeNodeSequence(
                     context,
                     segments.updateNodes(),
                     bodyState.resumeContinues(loopLabel),
-                    unassignedReporter,
-                    illegalFinalReporter
+                    null,
+                    null
             );
             FlowState nextHead = FlowState.mergeBranches(baseHead, updateState.withoutAbruptExits());
             if (nextHead.withoutAbruptExits().equals(loopHead.withoutAbruptExits()))
@@ -645,6 +665,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             return analyzeAssignmentExpression(context, node, state, unassignedReporter, illegalFinalReporter);
         if (isIncrementExpression(node))
             return analyzeIncrementExpression(context, node, state, unassignedReporter, illegalFinalReporter);
+        if (JAVA_SWITCH_EXPRESSION.equals(kindId))
+            return analyzeSwitchStatement(context, node, state, unassignedReporter, illegalFinalReporter);
         if (context.isExpressionNode(node))
             return analyzeReads(context, node, state, unassignedReporter, illegalFinalReporter);
 
@@ -714,7 +736,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             if (unassignedReporter != null
                     && isTrackedVariable(symbol)
                     && isVisibleAtUse(symbol, node)
-                    && !current.definitelyAssigned().contains(symbol)) {
+                    && !current.definitelyAssigned().contains(variableKey(symbol))) {
                 unassignedReporter.report(node, symbol.simpleName());
             }
         }
@@ -737,7 +759,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         if (!isTrackedVariable(symbol) || !isVisibleAtUse(symbol, target))
             return state;
 
-        if (illegalFinalReporter != null && isFinalVariable(context, symbol) && state.maybeAssigned().contains(symbol))
+        if (illegalFinalReporter != null && isFinalVariable(context, symbol) && state.maybeAssigned().contains(variableKey(symbol)))
             illegalFinalReporter.report(target, symbol.simpleName());
 
         return state.assign(symbol);
@@ -758,8 +780,6 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
     }
 
     private static boolean isFinalVariable(JavaRuleContext context, Symbol symbol) {
-        if (symbol.kind() == SymbolKind.PARAMETER)
-            return true;
         return java.lang.reflect.Modifier.isFinal(context.symbolModifiers(symbol));
     }
 
@@ -951,6 +971,41 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         if (body == null)
             return List.of();
         return directChildrenOfKind(body, JAVA_CONSTRUCTOR_DECLARATION);
+    }
+
+    private static boolean delegatesToThisConstructor(SyntaxNode body) {
+        for (SyntaxNode child : body.children()) {
+            if (child instanceof SyntaxToken)
+                continue;
+            return containsThisConstructorInvocation(child);
+        }
+        return false;
+    }
+
+    private static boolean containsThisConstructorInvocation(SyntaxNode node) {
+        if (JAVA_METHOD_INVOCATION_EXPRESSION.equals(node.kind().id())) {
+            for (SyntaxNode child : node.children()) {
+                if (JAVA_THIS_EXPRESSION.equals(child.kind().id()))
+                    return true;
+            }
+        }
+        for (SyntaxNode child : node.children()) {
+            if (!(child instanceof SyntaxToken) && containsThisConstructorInvocation(child))
+                return true;
+        }
+        return false;
+    }
+
+    private static boolean hasDirectAnnotation(SyntaxNode declaration, String simpleName) {
+        for (SyntaxNode child : declaration.children()) {
+            if (!"JAVA_ANNOTATION".equals(child.kind().id()))
+                continue;
+            List<String> identifiers = identifierLikeTokens(child);
+            String annotationName = identifiers.isEmpty() ? null : identifiers.getLast();
+            if (simpleName.equals(annotationName))
+                return true;
+        }
+        return false;
     }
 
     private static SyntaxNode typeBody(SyntaxNode typeNode) {
@@ -1243,7 +1298,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         FieldFlowState baseHead = state.withoutAbruptExits();
         FieldFlowState loopHead = baseHead;
         for (int i = 0; i < LOOP_FIXPOINT_ITERATION_LIMIT; i++) {
-            FieldFlowState bodyState = body == null ? loopHead : analyzeFieldFlow(context, body, fieldSymbol, loopHead, reporter);
+            FieldFlowState bodyState = body == null ? loopHead : analyzeFieldFlow(context, body, fieldSymbol, loopHead, null);
             FieldFlowState nextHead = FieldFlowState.merge(baseHead, bodyState.resumeContinues(loopLabel).withoutAbruptExits());
             if (nextHead.withoutAbruptExits().equals(loopHead.withoutAbruptExits()))
                 return nextHead;
@@ -1264,14 +1319,14 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         FieldFlowState baseHead = initState.withoutAbruptExits();
         FieldFlowState loopHead = baseHead;
         for (int i = 0; i < LOOP_FIXPOINT_ITERATION_LIMIT; i++) {
-            FieldFlowState conditionState = analyzeFieldNodeSequence(context, segments.conditionNodes(), fieldSymbol, loopHead, reporter);
-            FieldFlowState bodyState = body == null ? conditionState : analyzeFieldFlow(context, body, fieldSymbol, conditionState, reporter);
+            FieldFlowState conditionState = analyzeFieldNodeSequence(context, segments.conditionNodes(), fieldSymbol, loopHead, null);
+            FieldFlowState bodyState = body == null ? conditionState : analyzeFieldFlow(context, body, fieldSymbol, conditionState, null);
             FieldFlowState updateState = analyzeFieldNodeSequence(
                     context,
                     segments.updateNodes(),
                     fieldSymbol,
                     bodyState.resumeContinues(loopLabel),
-                    reporter
+                    null
             );
             FieldFlowState nextHead = FieldFlowState.merge(baseHead, updateState.withoutAbruptExits());
             if (nextHead.withoutAbruptExits().equals(loopHead.withoutAbruptExits()))
@@ -1479,9 +1534,22 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             collectIdentifierLikeTokens(child, out);
     }
 
+    private static VariableKey variableKey(Symbol symbol) {
+        SyntaxNode declaration = symbol.declaration().orElse(null);
+        return new VariableKey(
+                symbol.kind(),
+                symbol.simpleName(),
+                declaration == null ? -1 : declaration.start(),
+                declaration == null ? -1 : declaration.end()
+        );
+    }
+
+    private record VariableKey(SymbolKind kind, String name, int declarationStart, int declarationEnd) {
+    }
+
     private record FlowState(
-            Set<Symbol> definitelyAssigned,
-            Set<Symbol> maybeAssigned,
+            Set<VariableKey> definitelyAssigned,
+            Set<VariableKey> maybeAssigned,
             boolean reachable,
             List<FlowExit> breakExits,
             List<FlowExit> continueExits
@@ -1491,10 +1559,11 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         }
 
         private FlowState assign(Symbol symbol) {
-            Set<Symbol> definitely = new LinkedHashSet<>(definitelyAssigned);
-            Set<Symbol> maybe = new LinkedHashSet<>(maybeAssigned);
-            definitely.add(symbol);
-            maybe.add(symbol);
+            VariableKey key = variableKey(symbol);
+            Set<VariableKey> definitely = new LinkedHashSet<>(definitelyAssigned);
+            Set<VariableKey> maybe = new LinkedHashSet<>(maybeAssigned);
+            definitely.add(key);
+            maybe.add(key);
             return new FlowState(Set.copyOf(definitely), Set.copyOf(maybe), reachable, breakExits, continueExits);
         }
 
@@ -1504,6 +1573,16 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
 
         private FlowState withoutAbruptExits() {
             return new FlowState(definitelyAssigned, maybeAssigned, reachable, List.of(), List.of());
+        }
+
+        private FlowState withAbruptExitsFrom(FlowState source) {
+            return new FlowState(
+                    definitelyAssigned,
+                    maybeAssigned,
+                    reachable,
+                    concat(source.breakExits, breakExits),
+                    concat(source.continueExits, continueExits)
+            );
         }
 
         private FlowState withNormalFlow(boolean reachable) {
@@ -1597,8 +1676,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             if (exits.isEmpty())
                 return new FlowState(bodyEnd.definitelyAssigned, bodyEnd.maybeAssigned, false, List.of(), List.of());
 
-            Set<Symbol> definitely = new LinkedHashSet<>(exits.getFirst().definitelyAssigned());
-            Set<Symbol> maybe = new LinkedHashSet<>();
+            Set<VariableKey> definitely = new LinkedHashSet<>(exits.getFirst().definitelyAssigned());
+            Set<VariableKey> maybe = new LinkedHashSet<>();
             for (FlowSnapshot exit : exits) {
                 definitely.retainAll(exit.definitelyAssigned());
                 maybe.addAll(exit.maybeAssigned());
@@ -1617,20 +1696,20 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             return List.copyOf(merged);
         }
 
-        private static Set<Symbol> union(Set<Symbol> left, Set<Symbol> right) {
-            LinkedHashSet<Symbol> merged = new LinkedHashSet<>(left);
+        private static Set<VariableKey> union(Set<VariableKey> left, Set<VariableKey> right) {
+            LinkedHashSet<VariableKey> merged = new LinkedHashSet<>(left);
             merged.addAll(right);
             return merged;
         }
 
-        private static Set<Symbol> intersection(Set<Symbol> left, Set<Symbol> right) {
-            LinkedHashSet<Symbol> merged = new LinkedHashSet<>(left);
+        private static Set<VariableKey> intersection(Set<VariableKey> left, Set<VariableKey> right) {
+            LinkedHashSet<VariableKey> merged = new LinkedHashSet<>(left);
             merged.retainAll(right);
             return merged;
         }
     }
 
-    private record FlowSnapshot(Set<Symbol> definitelyAssigned, Set<Symbol> maybeAssigned) {
+    private record FlowSnapshot(Set<VariableKey> definitelyAssigned, Set<VariableKey> maybeAssigned) {
     }
 
     private record FlowExit(@Nullable String label, FlowSnapshot snapshot) {

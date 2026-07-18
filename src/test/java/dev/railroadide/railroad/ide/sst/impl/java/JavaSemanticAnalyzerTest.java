@@ -9,6 +9,7 @@ import dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
+import dev.railroadide.railroad.ide.sst.semantic.api.Type;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import javafx.application.Application;
 import javafx.application.Preloader;
@@ -31,6 +32,32 @@ import static org.junit.jupiter.api.Assertions.*;
 class JavaSemanticAnalyzerTest {
     @TempDir
     Path tempDir;
+
+    @Test
+    void preservesNestedGenericClosersAroundArrayTypeArguments() {
+        String source = """
+            import java.util.concurrent.atomic.AtomicReference;
+            import java.util.function.Consumer;
+
+            class Example {
+                AtomicReference<Consumer<String[]>> reference;
+            }
+            """;
+
+        SemanticModel model = JavaSemanticAnalyzer.analyzeFacts(source);
+        SyntaxNode typeReference = nodesOfKind(
+            model.syntaxTree().root(), JavaSyntaxKinds.TYPE_REFERENCE.id()).stream()
+            .filter(node -> {
+                String text = JavaSemanticAnalyzer.canonicalTypeText(node);
+                return text != null && text.startsWith("AtomicReference<");
+            })
+            .findFirst()
+            .orElseThrow();
+
+        assertEquals(
+            "AtomicReference<Consumer<String[]>>",
+            JavaSemanticAnalyzer.canonicalTypeText(typeReference));
+    }
 
     @Test
     void resolvesGenericSupertypeWithoutTreatingNestedTypeArgumentAsSuperclass() {
@@ -1365,6 +1392,96 @@ class JavaSemanticAnalyzerTest {
                 """;
 
         assertDoesNotThrow(() -> JavaSemanticAnalyzer.analyzeFacts(source));
+    }
+
+    @Test
+    void malformedMissingParameterTypeDoesNotCreateBlankDeclaredType() {
+        String source = """
+                class Broken {
+                    void run( {
+                        int value = ;
+                """;
+
+        assertDoesNotThrow(() -> JavaSemanticAnalyzer.analyzeFacts(source));
+    }
+
+    @Test
+    void resolvesMethodCallOnCrossFileEnumConstant() throws Exception {
+        String iconSource = """
+                package demo;
+                public enum Icon {
+                    GRADLE;
+                    public String getDescription() { return "gradle"; }
+                }
+                """;
+        String useSource = """
+                package demo;
+                class Use {
+                    String description = Icon.GRADLE.getDescription();
+                }
+                """;
+        JavaProjectSemanticIndex projectIndex = buildProjectIndex(
+            "demo/Icon.java", iconSource,
+            "demo/Use.java", useSource);
+
+        assertFalse(projectIndex.lookupMember("demo.Icon", "GRADLE").isEmpty());
+        assertFalse(projectIndex.lookupMember("demo.Icon", "getDescription").isEmpty());
+
+        SemanticModel model = JavaSemanticAnalyzer.analyzeFacts(useSource, projectIndex);
+        SyntaxNode constantAccess = nodesOfKind(
+            model.syntaxTree().root(), JavaSyntaxKinds.FIELD_ACCESS_EXPRESSION.id()).stream()
+            .filter(node -> syntaxText(node).endsWith("Icon.GRADLE"))
+            .findFirst()
+            .orElseThrow();
+        assertEquals("GRADLE", model.resolvedSymbol(constantAccess).orElseThrow().simpleName());
+        assertEquals("demo.Icon", model.inferredType(constantAccess).orElseThrow().displayName());
+
+        SyntaxNode invocation = nodesOfKind(
+            model.syntaxTree().root(), JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id()).stream()
+            .filter(node -> syntaxText(node).contains("getDescription"))
+            .findFirst()
+            .orElseThrow();
+
+        assertEquals("getDescription", model.resolvedSymbol(invocation).orElseThrow().simpleName());
+    }
+
+    @Test
+    void specializesFunctionReturnTypeInLexicallyGenericMethod() {
+        String source = """
+                import java.util.function.Function;
+                class Example<T> {
+                    <N> T read(Function<N, T> function, N node) {
+                        return function.apply(node);
+                    }
+                }
+                """;
+
+        JavaJdkSymbolIndex jdkIndex = JavaJdkSymbolIndex.fromCurrentRuntime();
+        var functionStub = jdkIndex.lookupClassStub("java.util.function.Function");
+        assertEquals(List.of("T", "R"), functionStub
+            .typeParameters().stream().map(parameter -> parameter.name()).toList());
+        var applyStub = functionStub.methods().stream()
+            .filter(method -> method.name().equals("apply"))
+            .findFirst()
+            .orElseThrow();
+        assertEquals(new dev.railroadide.railroad.ide.classparser.Type.TypeVariable("R"), applyStub.returnType());
+        assertEquals(new dev.railroadide.railroad.ide.classparser.Type.TypeVariable("T"), applyStub.parameters().getFirst().type());
+        SemanticModel model = JavaSemanticAnalyzer.analyzeFacts(source, jdkIndex);
+        SyntaxNode invocation = nodesOfKind(
+            model.syntaxTree().root(), JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id()).stream()
+            .filter(node -> syntaxText(node).contains("apply"))
+            .findFirst()
+            .orElseThrow();
+        SyntaxNode receiver = invocation.children().stream()
+            .filter(node -> syntaxText(node).trim().equals("function"))
+            .findFirst()
+            .orElseThrow();
+
+        Type.DeclaredType receiverType = assertInstanceOf(
+            Type.DeclaredType.class, model.inferredType(receiver).orElseThrow());
+        assertEquals("java.util.function.Function", receiverType.displayName());
+        assertEquals(List.of("N", "T"), receiverType.typeArguments().stream().map(Type::displayName).toList());
+        assertEquals("T", model.inferredType(invocation).orElseThrow().displayName());
     }
 
     private static void assertSymbol(List<Symbol> symbols, SymbolKind expectedKind) {

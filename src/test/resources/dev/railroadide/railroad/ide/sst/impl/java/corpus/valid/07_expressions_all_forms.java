@@ -12,7 +12,7 @@ class ExpressionShowcase {
 
         Mapper mapper = value -> value * 2;
         java.util.function.IntUnaryOperator op = Math::abs;
-        Object ref = this::hashCode;
+        java.util.function.IntSupplier ref = this::hashCode;
 
         int shifted = (matrix[0][1] << 1) >>> 1;
         int unary = ~(-shifted);
