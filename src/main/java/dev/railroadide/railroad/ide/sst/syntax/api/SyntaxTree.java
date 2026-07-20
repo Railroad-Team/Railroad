@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.sst.syntax.api;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 
 import java.util.Objects;
 
@@ -13,6 +14,7 @@ import java.util.Objects;
  */
 public final class SyntaxTree {
     private final DocumentId documentId;
+    private final DocumentUri documentUri;
     private final SyntaxNode root;
 
     /**
@@ -35,7 +37,20 @@ public final class SyntaxTree {
      * @throws NullPointerException if any argument is {@code null}
      */
     public SyntaxTree(DocumentId documentId, SyntaxNode root) {
+        this(documentId, DocumentUri.inMemory(documentId), root);
+    }
+
+    /**
+     * Creates a syntax tree for a known logical document and current location.
+     *
+     * @param documentId stable identity of the parsed document
+     * @param documentUri location of the parsed document
+     * @param root root node covering the full document
+     * @throws NullPointerException if any argument is {@code null}
+     */
+    public SyntaxTree(DocumentId documentId, DocumentUri documentUri, SyntaxNode root) {
         this.documentId = Objects.requireNonNull(documentId, "documentId");
+        this.documentUri = Objects.requireNonNull(documentUri, "documentUri");
         this.root = Objects.requireNonNull(root, "root");
     }
 
@@ -46,6 +61,15 @@ public final class SyntaxTree {
      */
     public DocumentId documentId() {
         return documentId;
+    }
+
+    /**
+     * Returns the physical or virtual location parsed into this tree.
+     *
+     * @return document URI
+     */
+    public DocumentUri documentUri() {
+        return documentUri;
     }
 
     /**

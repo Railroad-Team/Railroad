@@ -8,7 +8,8 @@
  * preserve token boundaries, offsets, parent/child links, and parser recovery details.
  * Every tree also carries the stable {@link
  * dev.railroadide.railroad.ide.sst.document.api.DocumentId} of the logical document it
- * represents.
+ * represents and its current {@link
+ * dev.railroadide.railroad.ide.sst.document.api.DocumentUri}.
  * <p>
  * Prefer this package when writing inspections. It gives you:
  * <ul>

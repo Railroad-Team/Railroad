@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import org.junit.jupiter.api.Test;
 
@@ -13,10 +14,12 @@ class JavaSyntaxParserTest {
     @Test
     void carriesCallerSuppliedDocumentIdentity() {
         DocumentId documentId = DocumentId.create();
+        DocumentUri documentUri = DocumentUri.virtual("memory", "tests/Identified.java");
 
-        SyntaxTree tree = JavaSyntaxParser.parse(documentId, "class Identified {}");
+        SyntaxTree tree = JavaSyntaxParser.parse(documentId, documentUri, "class Identified {}");
 
         assertEquals(documentId, tree.documentId());
+        assertEquals(documentUri, tree.documentUri());
     }
 
     @Test
@@ -105,6 +108,7 @@ class JavaSyntaxParserTest {
 
         assertFalse(result.fullReparse());
         assertEquals(previousTree.documentId(), result.tree().documentId());
+        assertEquals(previousTree.documentUri(), result.tree().documentUri());
         assertTrue(result.reusePlan().candidates().size() > 0);
         assertEquals(newSource, JavaParserTestSupport.syntaxText(result.tree()));
     }
@@ -131,6 +135,7 @@ class JavaSyntaxParserTest {
 
         assertTrue(result.fullReparse());
         assertEquals(previousTree.documentId(), result.tree().documentId());
+        assertEquals(previousTree.documentUri(), result.tree().documentUri());
         assertEquals(newSource, JavaParserTestSupport.syntaxText(result.tree()));
     }
 

@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.lexer.Lexer;
 import dev.railroadide.railroad.ide.sst.syntax.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.internal.GreenElement;
@@ -32,10 +33,15 @@ public final class JavaSyntaxParser {
     }
 
     public static SyntaxTree parse(DocumentId documentId, CharSequence source) {
+        return parse(documentId, DocumentUri.inMemory(documentId), source);
+    }
+
+    public static SyntaxTree parse(DocumentId documentId, DocumentUri documentUri, CharSequence source) {
         Objects.requireNonNull(documentId, "documentId");
+        Objects.requireNonNull(documentUri, "documentUri");
         Objects.requireNonNull(source, "source");
         try (var lexer = new JavaLexer(source)) {
-            return parse(documentId, lexer);
+            return parse(documentId, documentUri, lexer);
         }
     }
 
@@ -44,9 +50,18 @@ public final class JavaSyntaxParser {
     }
 
     public static SyntaxTree parse(DocumentId documentId, Lexer<JavaTokenType> lexer) {
+        return parse(documentId, DocumentUri.inMemory(documentId), lexer);
+    }
+
+    public static SyntaxTree parse(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        Lexer<JavaTokenType> lexer
+    ) {
         Objects.requireNonNull(documentId, "documentId");
+        Objects.requireNonNull(documentUri, "documentUri");
         GreenNode root = new JavaGreenParser(Objects.requireNonNull(lexer, "lexer")).parseGreenTree();
-        return SyntaxInternalFactory.treeFromGreenRoot(documentId, root);
+        return SyntaxInternalFactory.treeFromGreenRoot(documentId, documentUri, root);
     }
 
     public static ParseResult parseWithDiagnostics(CharSequence source) {
@@ -54,10 +69,19 @@ public final class JavaSyntaxParser {
     }
 
     public static ParseResult parseWithDiagnostics(DocumentId documentId, CharSequence source) {
+        return parseWithDiagnostics(documentId, DocumentUri.inMemory(documentId), source);
+    }
+
+    public static ParseResult parseWithDiagnostics(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        CharSequence source
+    ) {
         Objects.requireNonNull(documentId, "documentId");
+        Objects.requireNonNull(documentUri, "documentUri");
         Objects.requireNonNull(source, "source");
         try (var lexer = new JavaLexer(source)) {
-            return parseWithDiagnostics(documentId, lexer);
+            return parseWithDiagnostics(documentId, documentUri, lexer);
         }
     }
 
@@ -66,7 +90,15 @@ public final class JavaSyntaxParser {
     }
 
     public static ParseResult parseWithDiagnostics(DocumentId documentId, Lexer<JavaTokenType> lexer) {
-        SyntaxTree tree = parse(documentId, lexer);
+        return parseWithDiagnostics(documentId, DocumentUri.inMemory(documentId), lexer);
+    }
+
+    public static ParseResult parseWithDiagnostics(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        Lexer<JavaTokenType> lexer
+    ) {
+        SyntaxTree tree = parse(documentId, documentUri, lexer);
         return new ParseResult(tree, collectSyntaxDiagnostics(tree.root()));
     }
 
@@ -88,7 +120,7 @@ public final class JavaSyntaxParser {
         ReusePlan fallbackPlan = planReuse(previousTree, previousSource, newSource, edit);
         Optional<TopLevelReparseWindow> incrementalWindow = selectTopLevelWindow(previousTree.root(), edit, oldLength, newLength);
         if (incrementalWindow.isEmpty()) {
-            SyntaxTree reparsed = parse(previousTree.documentId(), newSource);
+            SyntaxTree reparsed = parse(previousTree.documentId(), previousTree.documentUri(), newSource);
             return new IncrementalParseResult(reparsed, fallbackPlan, true);
         }
 
@@ -105,7 +137,7 @@ public final class JavaSyntaxParser {
             );
             return new IncrementalParseResult(incrementalTree, incrementalPlan, false);
         } catch (RuntimeException ignored) {
-            SyntaxTree reparsed = parse(previousTree.documentId(), newSource);
+            SyntaxTree reparsed = parse(previousTree.documentId(), previousTree.documentUri(), newSource);
             return new IncrementalParseResult(reparsed, fallbackPlan, true);
         }
     }
@@ -226,12 +258,16 @@ public final class JavaSyntaxParser {
         }
 
         CharSequence tailSource = newSource.subSequence(window.newReparseStart(), window.newReparseEnd());
-        SyntaxTree reparsedTail = parse(previousTree.documentId(), tailSource);
+        SyntaxTree reparsedTail = parse(previousTree.documentId(), previousTree.documentUri(), tailSource);
         GreenNode reparsedTailRoot = SyntaxInternalFactory.greenRoot(reparsedTail);
         mergedChildren.addAll(reparsedTailRoot.children());
 
         GreenNode mergedRoot = SyntaxInternalFactory.greenNode(JavaSyntaxKinds.COMPILATION_UNIT, mergedChildren);
-        return SyntaxInternalFactory.treeFromGreenRoot(previousTree.documentId(), mergedRoot);
+        return SyntaxInternalFactory.treeFromGreenRoot(
+            previousTree.documentId(),
+            previousTree.documentUri(),
+            mergedRoot
+        );
     }
 
     private static int findAffectedTopLevelChild(

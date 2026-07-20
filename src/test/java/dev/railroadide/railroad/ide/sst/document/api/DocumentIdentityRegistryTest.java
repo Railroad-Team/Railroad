@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DocumentIdentityRegistryTest {
     @TempDir
@@ -66,6 +67,42 @@ class DocumentIdentityRegistryTest {
         registry.associate(documentId, generatedOutput);
 
         assertEquals(documentId, registry.getOrCreate(generatedOutput));
+    }
+
+    @Test
+    void fileUriAndPathResolveToTheSameIdentity() throws IOException {
+        Path file = Files.writeString(tempDirectory.resolve("Physical.java"), "class Physical {}");
+        DocumentIdentityRegistry registry = new DocumentIdentityRegistry();
+
+        DocumentId fromPath = registry.getOrCreate(file);
+        DocumentId fromUri = registry.getOrCreate(DocumentUri.fromPath(file));
+
+        assertEquals(fromPath, fromUri);
+    }
+
+    @Test
+    void virtualUriResolutionIsStableAndIndependent() {
+        DocumentUri generated = DocumentUri.virtual("generated", "demo/Generated.java");
+        DocumentUri inMemory = DocumentUri.virtual("memory", "demo/Generated.java");
+        DocumentIdentityRegistry registry = new DocumentIdentityRegistry();
+
+        DocumentId generatedId = registry.getOrCreate(generated);
+
+        assertEquals(generatedId, registry.getOrCreate(generated));
+        assertNotEquals(generatedId, registry.getOrCreate(inMemory));
+    }
+
+    @Test
+    void rebindPreservesIdentityAcrossVirtualUriChanges() {
+        DocumentUri previous = DocumentUri.virtual("generated", "first/Generated.java");
+        DocumentUri current = DocumentUri.virtual("generated", "second/Generated.java");
+        DocumentIdentityRegistry registry = new DocumentIdentityRegistry();
+        DocumentId documentId = registry.getOrCreate(previous);
+
+        registry.rebind(documentId, previous, current);
+
+        assertTrue(registry.find(previous).isEmpty());
+        assertEquals(documentId, registry.find(current).orElseThrow());
     }
 
     @Test

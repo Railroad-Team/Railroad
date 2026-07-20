@@ -11,7 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Workspace-owned allocator and physical-location registry for document identities.
+ * Workspace-owned allocator and location registry for document identities.
  * <p>
  * The registry separates logical identity from path spelling. Existing physical files
  * are resolved through their real path, and already registered files are compared with
@@ -19,17 +19,19 @@ import java.util.Optional;
  * on one ID. Missing paths use an absolute normalized spelling until a physical file is
  * available or the owner explicitly rebinds the document.
  * <p>
- * Virtual, generated, in-memory, text, and binary documents use {@link #create()} and do
- * not need a filesystem association. Their owner may associate a physical path later.
+ * Virtual, generated, in-memory, text, and binary documents may be resolved directly by
+ * {@link DocumentUri} or use {@link #create()} before they have a location. Their owner
+ * may associate a URI or physical path later.
  * <p>
  * All operations are thread-safe. IDs are never recycled. {@link #release(DocumentId)}
  * only forgets registry associations; existing snapshots and analysis results may safely
  * retain the immutable ID. Registry persistence, when required by a workspace, should
  * store the canonical {@link DocumentId#toString()} value and restore associations with
- * {@link #associate(DocumentId, Path)}.
+ * {@link #associate(DocumentId, DocumentUri)}.
  */
 public final class DocumentIdentityRegistry {
     private final Map<Path, DocumentId> idsByPath = new HashMap<>();
+    private final Map<DocumentUri, DocumentId> idsByUri = new HashMap<>();
 
     /**
      * Allocates an unbound identity for a new logical document.
@@ -38,6 +40,22 @@ public final class DocumentIdentityRegistry {
      */
     public DocumentId create() {
         return DocumentId.create();
+    }
+
+    /**
+     * Returns the identity associated with {@code uri}, allocating one when necessary.
+     * File URIs receive the same physical-alias handling as {@link #getOrCreate(Path)}.
+     *
+     * @param uri physical or virtual document URI
+     * @return stable identity associated with the URI
+     */
+    public synchronized DocumentId getOrCreate(DocumentUri uri) {
+        uri = Objects.requireNonNull(uri, "uri");
+        Optional<Path> filePath = uri.filePath();
+        if (filePath.isPresent())
+            return getOrCreate(filePath.get());
+
+        return idsByUri.computeIfAbsent(uri, ignored -> create());
     }
 
     /**
@@ -88,6 +106,18 @@ public final class DocumentIdentityRegistry {
     }
 
     /**
+     * Finds an existing physical or virtual URI association without allocating an ID.
+     *
+     * @param uri document URI
+     * @return associated identity, or empty when the URI is unknown
+     */
+    public synchronized Optional<DocumentId> find(DocumentUri uri) {
+        uri = Objects.requireNonNull(uri, "uri");
+        Optional<Path> filePath = uri.filePath();
+        return filePath.isPresent() ? find(filePath.get()) : Optional.ofNullable(idsByUri.get(uri));
+    }
+
+    /**
      * Associates an existing identity with a physical path.
      *
      * @param documentId identity owned by this workspace
@@ -109,6 +139,29 @@ public final class DocumentIdentityRegistry {
     }
 
     /**
+     * Associates an existing identity with a physical or virtual URI.
+     *
+     * @param documentId identity owned by this workspace
+     * @param uri current document URI
+     * @throws IllegalStateException if the URI is already associated with another ID
+     */
+    public synchronized void associate(DocumentId documentId, DocumentUri uri) {
+        documentId = Objects.requireNonNull(documentId, "documentId");
+        uri = Objects.requireNonNull(uri, "uri");
+        Optional<Path> filePath = uri.filePath();
+        if (filePath.isPresent()) {
+            associate(documentId, filePath.get());
+            return;
+        }
+
+        DocumentId existing = idsByUri.get(uri);
+        if (existing != null && !existing.equals(documentId))
+            throw new IllegalStateException("Document URI is already associated with another identity: " + uri);
+
+        idsByUri.put(uri, documentId);
+    }
+
+    /**
      * Moves the physical association for a document while preserving its identity.
      * The filesystem move itself remains the caller's responsibility.
      *
@@ -119,36 +172,58 @@ public final class DocumentIdentityRegistry {
      *                               different document, or the new path belongs to another document
      */
     public synchronized void rebind(DocumentId documentId, Path previousPath, Path newPath) {
-        documentId = Objects.requireNonNull(documentId, "documentId");
-        Path previousNormalized = normalize(previousPath);
-        Path previousResolved = resolve(previousNormalized);
-        DocumentId previous = findRegistered(previousNormalized, previousResolved);
-        if (!documentId.equals(previous))
-            throw new IllegalStateException("Previous path is not associated with the supplied identity: " + previousPath);
-
-        Path newNormalized = normalize(newPath);
-        Path newResolved = resolve(newNormalized);
-        DocumentId existing = findRegistered(newNormalized, newResolved);
-        if (existing == null)
-            existing = findEquivalentPhysicalFile(newResolved);
-
-        if (existing != null && !documentId.equals(existing))
-            throw new IllegalStateException(
-                "New path is already associated with another identity: " + newPath);
-
-        idsByPath.values().removeIf(documentId::equals);
-        registerSpellings(documentId, newNormalized, newResolved);
+        rebind(
+            documentId,
+            DocumentUri.fromPath(previousPath),
+            DocumentUri.fromPath(newPath)
+        );
     }
 
     /**
-     * Forgets every physical association for an identity. The ID remains valid for any
+     * Changes a document's physical or virtual URI while preserving its identity. Any
+     * aliases registered for the previous location are forgotten. Moving filesystem
+     * content remains the caller's responsibility.
+     *
+     * @param documentId identity being moved
+     * @param previousUri previous document URI
+     * @param newUri new document URI
+     * @throws IllegalStateException if the previous URI is not owned by the supplied ID,
+     * or the new URI belongs to another document
+     */
+    public synchronized void rebind(DocumentId documentId, DocumentUri previousUri, DocumentUri newUri) {
+        documentId = Objects.requireNonNull(documentId, "documentId");
+        previousUri = Objects.requireNonNull(previousUri, "previousUri");
+        newUri = Objects.requireNonNull(newUri, "newUri");
+        DocumentId previous = find(previousUri).orElse(null);
+        if (!documentId.equals(previous)) {
+            throw new IllegalStateException(
+                "Previous URI is not associated with the supplied identity: " + previousUri);
+        }
+
+        DocumentId existing = find(newUri).orElse(null);
+        if (existing != null && !documentId.equals(existing)) {
+            throw new IllegalStateException(
+                "New URI is already associated with another identity: " + newUri);
+        }
+
+        removeAssociations(documentId);
+        associate(documentId, newUri);
+    }
+
+    /**
+     * Forgets every path and URI association for an identity. The ID remains valid for any
      * immutable snapshots or results that already reference it and is never reused.
      *
      * @param documentId identity whose associations should be removed
      */
     public synchronized void release(DocumentId documentId) {
         documentId = Objects.requireNonNull(documentId, "documentId");
+        removeAssociations(documentId);
+    }
+
+    private void removeAssociations(DocumentId documentId) {
         idsByPath.values().removeIf(documentId::equals);
+        idsByUri.values().removeIf(documentId::equals);
     }
 
     private DocumentId findEquivalentPhysicalFile(Path path) {
@@ -181,6 +256,8 @@ public final class DocumentIdentityRegistry {
     private void registerSpellings(DocumentId documentId, Path normalized, Path resolved) {
         idsByPath.put(normalized, documentId);
         idsByPath.put(resolved, documentId);
+        idsByUri.put(DocumentUri.fromPath(normalized), documentId);
+        idsByUri.put(DocumentUri.fromPath(resolved), documentId);
     }
 
     private static Path normalize(Path path) {
