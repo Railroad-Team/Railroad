@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import org.junit.jupiter.api.Test;
 
@@ -8,6 +9,15 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JavaSyntaxParserTest {
+
+    @Test
+    void carriesCallerSuppliedDocumentIdentity() {
+        DocumentId documentId = DocumentId.create();
+
+        SyntaxTree tree = JavaSyntaxParser.parse(documentId, "class Identified {}");
+
+        assertEquals(documentId, tree.documentId());
+    }
 
     @Test
     void roundTripsSourceTextFromSyntaxTree() {
@@ -94,6 +104,7 @@ class JavaSyntaxParserTest {
                 JavaSyntaxParser.parseIncremental(previousTree, oldSource, newSource, edit);
 
         assertFalse(result.fullReparse());
+        assertEquals(previousTree.documentId(), result.tree().documentId());
         assertTrue(result.reusePlan().candidates().size() > 0);
         assertEquals(newSource, JavaParserTestSupport.syntaxText(result.tree()));
     }
@@ -119,6 +130,7 @@ class JavaSyntaxParserTest {
                 JavaSyntaxParser.parseIncremental(previousTree, oldSource, newSource, edit);
 
         assertTrue(result.fullReparse());
+        assertEquals(previousTree.documentId(), result.tree().documentId());
         assertEquals(newSource, JavaParserTestSupport.syntaxText(result.tree()));
     }
 

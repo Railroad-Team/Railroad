@@ -69,7 +69,7 @@ Incremental semantic sessions and broader IDE features
 
 ## P0.2 Document identity and immutable snapshots
 
-- [ ] **SST-P0-011** Add a stable `DocumentId` independent of filesystem path spelling.
+- [x] **SST-P0-011** Add a stable `DocumentId` independent of filesystem path spelling. See [SST document identity contract](sst-document-identity.md).
 - [ ] **SST-P0-012** Add a `DocumentUri`/URI-based identity capable of representing physical and virtual documents.
 - [ ] **SST-P0-013** Add a monotonic `DocumentVersion` type.
 - [ ] **SST-P0-014** Add a sealed `DocumentSnapshot` root contract.

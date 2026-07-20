@@ -6,6 +6,9 @@
  * dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken} instances. Kind identifiers are
  * stable strings such as {@code JAVA_CLASS_DECLARATION} and {@code JAVA_IDENTIFIER}. Nodes
  * preserve token boundaries, offsets, parent/child links, and parser recovery details.
+ * Every tree also carries the stable {@link
+ * dev.railroadide.railroad.ide.sst.document.api.DocumentId} of the logical document it
+ * represents.
  * <p>
  * Prefer this package when writing inspections. It gives you:
  * <ul>

@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.lexer.Lexer;
 import dev.railroadide.railroad.ide.sst.syntax.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.internal.GreenElement;
@@ -27,25 +28,45 @@ public final class JavaSyntaxParser {
     }
 
     public static SyntaxTree parse(CharSequence source) {
+        return parse(DocumentId.create(), source);
+    }
+
+    public static SyntaxTree parse(DocumentId documentId, CharSequence source) {
+        Objects.requireNonNull(documentId, "documentId");
         Objects.requireNonNull(source, "source");
         try (var lexer = new JavaLexer(source)) {
-            return parse(lexer);
+            return parse(documentId, lexer);
         }
     }
 
     public static SyntaxTree parse(Lexer<JavaTokenType> lexer) {
-        return new JavaGreenParser(Objects.requireNonNull(lexer, "lexer")).parseSyntaxTree();
+        return parse(DocumentId.create(), lexer);
+    }
+
+    public static SyntaxTree parse(DocumentId documentId, Lexer<JavaTokenType> lexer) {
+        Objects.requireNonNull(documentId, "documentId");
+        GreenNode root = new JavaGreenParser(Objects.requireNonNull(lexer, "lexer")).parseGreenTree();
+        return SyntaxInternalFactory.treeFromGreenRoot(documentId, root);
     }
 
     public static ParseResult parseWithDiagnostics(CharSequence source) {
+        return parseWithDiagnostics(DocumentId.create(), source);
+    }
+
+    public static ParseResult parseWithDiagnostics(DocumentId documentId, CharSequence source) {
+        Objects.requireNonNull(documentId, "documentId");
         Objects.requireNonNull(source, "source");
         try (var lexer = new JavaLexer(source)) {
-            return parseWithDiagnostics(lexer);
+            return parseWithDiagnostics(documentId, lexer);
         }
     }
 
     public static ParseResult parseWithDiagnostics(Lexer<JavaTokenType> lexer) {
-        SyntaxTree tree = parse(lexer);
+        return parseWithDiagnostics(DocumentId.create(), lexer);
+    }
+
+    public static ParseResult parseWithDiagnostics(DocumentId documentId, Lexer<JavaTokenType> lexer) {
+        SyntaxTree tree = parse(documentId, lexer);
         return new ParseResult(tree, collectSyntaxDiagnostics(tree.root()));
     }
 
@@ -67,7 +88,7 @@ public final class JavaSyntaxParser {
         ReusePlan fallbackPlan = planReuse(previousTree, previousSource, newSource, edit);
         Optional<TopLevelReparseWindow> incrementalWindow = selectTopLevelWindow(previousTree.root(), edit, oldLength, newLength);
         if (incrementalWindow.isEmpty()) {
-            SyntaxTree reparsed = parse(newSource);
+            SyntaxTree reparsed = parse(previousTree.documentId(), newSource);
             return new IncrementalParseResult(reparsed, fallbackPlan, true);
         }
 
@@ -84,7 +105,7 @@ public final class JavaSyntaxParser {
             );
             return new IncrementalParseResult(incrementalTree, incrementalPlan, false);
         } catch (RuntimeException ignored) {
-            SyntaxTree reparsed = parse(newSource);
+            SyntaxTree reparsed = parse(previousTree.documentId(), newSource);
             return new IncrementalParseResult(reparsed, fallbackPlan, true);
         }
     }
@@ -205,12 +226,12 @@ public final class JavaSyntaxParser {
         }
 
         CharSequence tailSource = newSource.subSequence(window.newReparseStart(), window.newReparseEnd());
-        SyntaxTree reparsedTail = parse(tailSource);
+        SyntaxTree reparsedTail = parse(previousTree.documentId(), tailSource);
         GreenNode reparsedTailRoot = SyntaxInternalFactory.greenRoot(reparsedTail);
         mergedChildren.addAll(reparsedTailRoot.children());
 
         GreenNode mergedRoot = SyntaxInternalFactory.greenNode(JavaSyntaxKinds.COMPILATION_UNIT, mergedChildren);
-        return SyntaxInternalFactory.treeFromGreenRoot(mergedRoot);
+        return SyntaxInternalFactory.treeFromGreenRoot(previousTree.documentId(), mergedRoot);
     }
 
     private static int findAffectedTopLevelChild(

@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.syntax.internal;
 
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxKind;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
@@ -27,15 +28,25 @@ public final class SyntaxInternalFactory {
     }
 
     public static SyntaxTree treeFromRootChildren(List<? extends GreenElement> children) {
+        return treeFromRootChildren(DocumentId.create(), children);
+    }
+
+    public static SyntaxTree treeFromRootChildren(DocumentId documentId, List<? extends GreenElement> children) {
+        Objects.requireNonNull(documentId, "documentId");
         Objects.requireNonNull(children, "children");
         GreenNode rootGreen = GreenNode.root(children);
-        SyntaxTree tree = new SyntaxTree(RedFactory.root(rootGreen));
+        var tree = new SyntaxTree(documentId, RedFactory.root(rootGreen));
         SyntaxTreeValidator.validate(tree.root());
         return tree;
     }
 
     public static SyntaxTree treeFromGreenRoot(GreenNode root) {
-        SyntaxTree tree = new SyntaxTree(RedFactory.root(Objects.requireNonNull(root, "root")));
+        return treeFromGreenRoot(DocumentId.create(), root);
+    }
+
+    public static SyntaxTree treeFromGreenRoot(DocumentId documentId, GreenNode root) {
+        Objects.requireNonNull(documentId, "documentId");
+        var tree = new SyntaxTree(documentId, RedFactory.root(Objects.requireNonNull(root, "root")));
         SyntaxTreeValidator.validate(tree.root());
         return tree;
     }
