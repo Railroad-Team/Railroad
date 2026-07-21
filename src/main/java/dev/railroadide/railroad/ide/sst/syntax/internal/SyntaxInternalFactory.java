@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.sst.syntax.internal;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxKind;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
@@ -41,11 +42,21 @@ public final class SyntaxInternalFactory {
         DocumentUri documentUri,
         List<? extends GreenElement> children
     ) {
+        return treeFromRootChildren(documentId, documentUri, DocumentVersion.initial(), children);
+    }
+
+    public static SyntaxTree treeFromRootChildren(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        DocumentVersion documentVersion,
+        List<? extends GreenElement> children
+    ) {
         Objects.requireNonNull(documentId, "documentId");
         Objects.requireNonNull(documentUri, "documentUri");
+        Objects.requireNonNull(documentVersion, "documentVersion");
         Objects.requireNonNull(children, "children");
         GreenNode rootGreen = GreenNode.root(children);
-        var tree = new SyntaxTree(documentId, documentUri, RedFactory.root(rootGreen));
+        var tree = new SyntaxTree(documentId, documentUri, documentVersion, RedFactory.root(rootGreen));
         SyntaxTreeValidator.validate(tree.root());
         return tree;
     }
@@ -59,9 +70,24 @@ public final class SyntaxInternalFactory {
     }
 
     public static SyntaxTree treeFromGreenRoot(DocumentId documentId, DocumentUri documentUri, GreenNode root) {
+        return treeFromGreenRoot(documentId, documentUri, DocumentVersion.initial(), root);
+    }
+
+    public static SyntaxTree treeFromGreenRoot(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        DocumentVersion documentVersion,
+        GreenNode root
+    ) {
         Objects.requireNonNull(documentId, "documentId");
         Objects.requireNonNull(documentUri, "documentUri");
-        var tree = new SyntaxTree(documentId, documentUri, RedFactory.root(Objects.requireNonNull(root, "root")));
+        Objects.requireNonNull(documentVersion, "documentVersion");
+        var tree = new SyntaxTree(
+            documentId,
+            documentUri,
+            documentVersion,
+            RedFactory.root(Objects.requireNonNull(root, "root"))
+        );
         SyntaxTreeValidator.validate(tree.root());
         return tree;
     }

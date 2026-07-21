@@ -9,7 +9,8 @@
  * Every tree also carries the stable {@link
  * dev.railroadide.railroad.ide.sst.document.api.DocumentId} of the logical document it
  * represents and its current {@link
- * dev.railroadide.railroad.ide.sst.document.api.DocumentUri}.
+ * dev.railroadide.railroad.ide.sst.document.api.DocumentUri}, plus the immutable {@link
+ * dev.railroadide.railroad.ide.sst.document.api.DocumentVersion} parsed into the tree.
  * <p>
  * Prefer this package when writing inspections. It gives you:
  * <ul>

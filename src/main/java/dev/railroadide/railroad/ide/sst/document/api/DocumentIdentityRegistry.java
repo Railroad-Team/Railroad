@@ -6,9 +6,11 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Workspace-owned allocator and location registry for document identities.
@@ -23,23 +25,78 @@ import java.util.Optional;
  * {@link DocumentUri} or use {@link #create()} before they have a location. Their owner
  * may associate a URI or physical path later.
  * <p>
- * All operations are thread-safe. IDs are never recycled. {@link #release(DocumentId)}
- * only forgets registry associations; existing snapshots and analysis results may safely
- * retain the immutable ID. Registry persistence, when required by a workspace, should
- * store the canonical {@link DocumentId#toString()} value and restore associations with
- * {@link #associate(DocumentId, DocumentUri)}.
+ * All operations are thread-safe. IDs are never recycled, and content versions advance
+ * atomically per ID. {@link #release(DocumentId)} forgets registry associations and live
+ * version state; existing snapshots and analysis results may safely retain their
+ * immutable ID and version. Registry persistence, when required by a workspace, should
+ * store both canonical values and restore them with {@link #restoreVersion(DocumentId,
+ * DocumentVersion)} and {@link #associate(DocumentId, DocumentUri)}.
  */
 public final class DocumentIdentityRegistry {
     private final Map<Path, DocumentId> idsByPath = new HashMap<>();
     private final Map<DocumentUri, DocumentId> idsByUri = new HashMap<>();
+    private final Map<DocumentId, DocumentVersion> versionsById = new HashMap<>();
+    private final Set<DocumentId> releasedIds = new HashSet<>();
 
     /**
      * Allocates an unbound identity for a new logical document.
      *
      * @return a fresh identity
      */
-    public DocumentId create() {
-        return DocumentId.create();
+    public synchronized DocumentId create() {
+        DocumentId documentId = DocumentId.create();
+        versionsById.put(documentId, DocumentVersion.initial());
+        return documentId;
+    }
+
+    /**
+     * Returns the current content version of an identity owned by this registry.
+     *
+     * @param documentId logical document identity
+     * @return current document version
+     * @throws IllegalStateException if the identity is not owned by this registry or has
+     *                               been released
+     */
+    public synchronized DocumentVersion currentVersion(DocumentId documentId) {
+        documentId = Objects.requireNonNull(documentId, "documentId");
+        DocumentVersion version = versionsById.get(documentId);
+        if (version == null)
+            throw new IllegalStateException("Document identity is not owned by this registry: " + documentId);
+        return version;
+    }
+
+    /**
+     * Atomically advances and returns the content version of an owned document.
+     *
+     * @param documentId logical document identity
+     * @return newly allocated version
+     * @throws IllegalStateException if the identity is unknown, released, or its version
+     *                               is exhausted
+     */
+    public synchronized DocumentVersion advanceVersion(DocumentId documentId) {
+        DocumentVersion next = currentVersion(documentId).next();
+        versionsById.put(documentId, next);
+        return next;
+    }
+
+    /**
+     * Restores or advances persisted version state. Existing state may stay equal or move
+     * forward but can never move backward.
+     *
+     * @param documentId logical document identity
+     * @param version    persisted or externally allocated version
+     * @throws IllegalArgumentException if {@code version} is earlier than existing state
+     */
+    public synchronized void restoreVersion(DocumentId documentId, DocumentVersion version) {
+        documentId = Objects.requireNonNull(documentId, "documentId");
+        version = Objects.requireNonNull(version, "version");
+        rejectReleased(documentId);
+        DocumentVersion current = versionsById.get(documentId);
+        if (current != null && version.isBefore(current)) {
+            throw new IllegalArgumentException(
+                "Document version cannot move backward from " + current + " to " + version);
+        }
+        versionsById.put(documentId, version);
     }
 
     /**
@@ -55,7 +112,9 @@ public final class DocumentIdentityRegistry {
         if (filePath.isPresent())
             return getOrCreate(filePath.get());
 
-        return idsByUri.computeIfAbsent(uri, ignored -> create());
+        DocumentId documentId = idsByUri.computeIfAbsent(uri, ignored -> create());
+        ensureVersion(documentId);
+        return documentId;
     }
 
     /**
@@ -71,12 +130,15 @@ public final class DocumentIdentityRegistry {
         Path normalized = normalize(path);
         Path resolved = resolve(normalized);
         DocumentId existing = findRegistered(normalized, resolved);
-        if (existing != null)
+        if (existing != null) {
+            ensureVersion(existing);
             return existing;
+        }
 
         existing = findEquivalentPhysicalFile(resolved);
         if (existing != null) {
             registerSpellings(existing, normalized, resolved);
+            ensureVersion(existing);
             return existing;
         }
 
@@ -135,6 +197,7 @@ public final class DocumentIdentityRegistry {
         if (existing != null && !existing.equals(documentId))
             throw new IllegalStateException("Document path is already associated with another identity: " + path);
 
+        ensureVersion(documentId);
         registerSpellings(documentId, normalized, resolved);
     }
 
@@ -142,7 +205,7 @@ public final class DocumentIdentityRegistry {
      * Associates an existing identity with a physical or virtual URI.
      *
      * @param documentId identity owned by this workspace
-     * @param uri current document URI
+     * @param uri        current document URI
      * @throws IllegalStateException if the URI is already associated with another ID
      */
     public synchronized void associate(DocumentId documentId, DocumentUri uri) {
@@ -158,6 +221,7 @@ public final class DocumentIdentityRegistry {
         if (existing != null && !existing.equals(documentId))
             throw new IllegalStateException("Document URI is already associated with another identity: " + uri);
 
+        ensureVersion(documentId);
         idsByUri.put(uri, documentId);
     }
 
@@ -184,27 +248,23 @@ public final class DocumentIdentityRegistry {
      * aliases registered for the previous location are forgotten. Moving filesystem
      * content remains the caller's responsibility.
      *
-     * @param documentId identity being moved
+     * @param documentId  identity being moved
      * @param previousUri previous document URI
-     * @param newUri new document URI
+     * @param newUri      new document URI
      * @throws IllegalStateException if the previous URI is not owned by the supplied ID,
-     * or the new URI belongs to another document
+     *                               or the new URI belongs to another document
      */
     public synchronized void rebind(DocumentId documentId, DocumentUri previousUri, DocumentUri newUri) {
         documentId = Objects.requireNonNull(documentId, "documentId");
         previousUri = Objects.requireNonNull(previousUri, "previousUri");
         newUri = Objects.requireNonNull(newUri, "newUri");
         DocumentId previous = find(previousUri).orElse(null);
-        if (!documentId.equals(previous)) {
-            throw new IllegalStateException(
-                "Previous URI is not associated with the supplied identity: " + previousUri);
-        }
+        if (!documentId.equals(previous))
+            throw new IllegalStateException("Previous URI is not associated with the supplied identity: " + previousUri);
 
         DocumentId existing = find(newUri).orElse(null);
-        if (existing != null && !documentId.equals(existing)) {
-            throw new IllegalStateException(
-                "New URI is already associated with another identity: " + newUri);
-        }
+        if (existing != null && !documentId.equals(existing))
+            throw new IllegalStateException("New URI is already associated with another identity: " + newUri);
 
         removeAssociations(documentId);
         associate(documentId, newUri);
@@ -218,12 +278,25 @@ public final class DocumentIdentityRegistry {
      */
     public synchronized void release(DocumentId documentId) {
         documentId = Objects.requireNonNull(documentId, "documentId");
+        currentVersion(documentId);
         removeAssociations(documentId);
+        versionsById.remove(documentId);
+        releasedIds.add(documentId);
     }
 
     private void removeAssociations(DocumentId documentId) {
         idsByPath.values().removeIf(documentId::equals);
         idsByUri.values().removeIf(documentId::equals);
+    }
+
+    private void ensureVersion(DocumentId documentId) {
+        rejectReleased(documentId);
+        versionsById.putIfAbsent(documentId, DocumentVersion.initial());
+    }
+
+    private void rejectReleased(DocumentId documentId) {
+        if (releasedIds.contains(documentId))
+            throw new IllegalStateException("Document identity has been released and cannot be reused: " + documentId);
     }
 
     private DocumentId findEquivalentPhysicalFile(Path path) {

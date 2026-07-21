@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.sst.impl.java;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import org.junit.jupiter.api.Test;
 
@@ -15,11 +16,18 @@ class JavaSyntaxParserTest {
     void carriesCallerSuppliedDocumentIdentity() {
         DocumentId documentId = DocumentId.create();
         DocumentUri documentUri = DocumentUri.virtual("memory", "tests/Identified.java");
+        DocumentVersion documentVersion = new DocumentVersion(7);
 
-        SyntaxTree tree = JavaSyntaxParser.parse(documentId, documentUri, "class Identified {}");
+        SyntaxTree tree = JavaSyntaxParser.parse(
+            documentId,
+            documentUri,
+            documentVersion,
+            "class Identified {}"
+        );
 
         assertEquals(documentId, tree.documentId());
         assertEquals(documentUri, tree.documentUri());
+        assertEquals(documentVersion, tree.documentVersion());
     }
 
     @Test
@@ -109,6 +117,7 @@ class JavaSyntaxParserTest {
         assertFalse(result.fullReparse());
         assertEquals(previousTree.documentId(), result.tree().documentId());
         assertEquals(previousTree.documentUri(), result.tree().documentUri());
+        assertEquals(previousTree.documentVersion().next(), result.tree().documentVersion());
         assertTrue(result.reusePlan().candidates().size() > 0);
         assertEquals(newSource, JavaParserTestSupport.syntaxText(result.tree()));
     }
@@ -136,7 +145,42 @@ class JavaSyntaxParserTest {
         assertTrue(result.fullReparse());
         assertEquals(previousTree.documentId(), result.tree().documentId());
         assertEquals(previousTree.documentUri(), result.tree().documentUri());
+        assertEquals(previousTree.documentVersion().next(), result.tree().documentVersion());
         assertEquals(newSource, JavaParserTestSupport.syntaxText(result.tree()));
+    }
+
+    @Test
+    void incrementalParseAcceptsOnlyALaterCallerSuppliedVersion() {
+        String oldSource = "class A { int value = 1; }";
+        String newSource = "class A { int value = 2; }";
+        DocumentVersion previousVersion = new DocumentVersion(10);
+        SyntaxTree previousTree = JavaSyntaxParser.parse(
+            DocumentId.create(),
+            DocumentUri.virtual("memory", "tests/A.java"),
+            previousVersion,
+            oldSource
+        );
+        JavaSyntaxParser.TextEdit edit = new JavaSyntaxParser.TextEdit(oldSource.indexOf("1"), 1, "2");
+
+        JavaSyntaxParser.IncrementalParseResult result = JavaSyntaxParser.parseIncremental(
+            previousTree,
+            new DocumentVersion(15),
+            oldSource,
+            newSource,
+            edit
+        );
+
+        assertEquals(new DocumentVersion(15), result.tree().documentVersion());
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> JavaSyntaxParser.parseIncremental(
+                previousTree,
+                previousVersion,
+                oldSource,
+                newSource,
+                edit
+            )
+        );
     }
 
     private static long countKind(List<String> kinds, String kindId) {

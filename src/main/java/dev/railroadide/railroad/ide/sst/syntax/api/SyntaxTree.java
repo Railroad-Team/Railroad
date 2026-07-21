@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.sst.syntax.api;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
 
 import java.util.Objects;
 
@@ -15,6 +16,7 @@ import java.util.Objects;
 public final class SyntaxTree {
     private final DocumentId documentId;
     private final DocumentUri documentUri;
+    private final DocumentVersion documentVersion;
     private final SyntaxNode root;
 
     /**
@@ -49,8 +51,27 @@ public final class SyntaxTree {
      * @throws NullPointerException if any argument is {@code null}
      */
     public SyntaxTree(DocumentId documentId, DocumentUri documentUri, SyntaxNode root) {
+        this(documentId, documentUri, DocumentVersion.initial(), root);
+    }
+
+    /**
+     * Creates a syntax tree for a specific immutable document revision.
+     *
+     * @param documentId stable identity of the parsed document
+     * @param documentUri location of the parsed document
+     * @param documentVersion content revision parsed into this tree
+     * @param root root node covering the full document
+     * @throws NullPointerException if any argument is {@code null}
+     */
+    public SyntaxTree(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        DocumentVersion documentVersion,
+        SyntaxNode root
+    ) {
         this.documentId = Objects.requireNonNull(documentId, "documentId");
         this.documentUri = Objects.requireNonNull(documentUri, "documentUri");
+        this.documentVersion = Objects.requireNonNull(documentVersion, "documentVersion");
         this.root = Objects.requireNonNull(root, "root");
     }
 
@@ -70,6 +91,15 @@ public final class SyntaxTree {
      */
     public DocumentUri documentUri() {
         return documentUri;
+    }
+
+    /**
+     * Returns the immutable content revision parsed into this tree.
+     *
+     * @return document version
+     */
+    public DocumentVersion documentVersion() {
+        return documentVersion;
     }
 
     /**

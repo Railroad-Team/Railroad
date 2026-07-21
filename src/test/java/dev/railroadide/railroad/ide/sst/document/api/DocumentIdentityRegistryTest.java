@@ -56,6 +56,37 @@ class DocumentIdentityRegistryTest {
         DocumentId inMemoryBinary = registry.create();
 
         assertNotEquals(generatedText, inMemoryBinary);
+        assertEquals(DocumentVersion.initial(), registry.currentVersion(generatedText));
+        assertEquals(DocumentVersion.initial(), registry.currentVersion(inMemoryBinary));
+    }
+
+    @Test
+    void versionsAdvanceAtomicallyForOneDocument() {
+        DocumentIdentityRegistry registry = new DocumentIdentityRegistry();
+        DocumentId documentId = registry.create();
+
+        Set<DocumentVersion> allocated = IntStream.range(0, 100)
+            .parallel()
+            .mapToObj(index -> registry.advanceVersion(documentId))
+            .collect(Collectors.toSet());
+
+        assertEquals(100, allocated.size());
+        assertEquals(new DocumentVersion(100), registry.currentVersion(documentId));
+    }
+
+    @Test
+    void persistedVersionsCanOnlyBeRestoredForward() {
+        DocumentIdentityRegistry registry = new DocumentIdentityRegistry();
+        DocumentId documentId = DocumentId.create();
+
+        registry.restoreVersion(documentId, new DocumentVersion(10));
+        registry.restoreVersion(documentId, new DocumentVersion(12));
+
+        assertEquals(new DocumentVersion(12), registry.currentVersion(documentId));
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> registry.restoreVersion(documentId, new DocumentVersion(11))
+        );
     }
 
     @Test
@@ -98,11 +129,13 @@ class DocumentIdentityRegistryTest {
         DocumentUri current = DocumentUri.virtual("generated", "second/Generated.java");
         DocumentIdentityRegistry registry = new DocumentIdentityRegistry();
         DocumentId documentId = registry.getOrCreate(previous);
+        DocumentVersion version = registry.advanceVersion(documentId);
 
         registry.rebind(documentId, previous, current);
 
         assertTrue(registry.find(previous).isEmpty());
         assertEquals(documentId, registry.find(current).orElseThrow());
+        assertEquals(version, registry.currentVersion(documentId));
     }
 
     @Test
@@ -151,5 +184,14 @@ class DocumentIdentityRegistryTest {
         DocumentId replacement = registry.getOrCreate(file);
 
         assertNotEquals(released, replacement);
+        assertThrows(IllegalStateException.class, () -> registry.currentVersion(released));
+        assertThrows(
+            IllegalStateException.class,
+            () -> registry.associate(released, DocumentUri.virtual("memory", "released"))
+        );
+        assertThrows(
+            IllegalStateException.class,
+            () -> registry.restoreVersion(released, new DocumentVersion(100))
+        );
     }
 }
