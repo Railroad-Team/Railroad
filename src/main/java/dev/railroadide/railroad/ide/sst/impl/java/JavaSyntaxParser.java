@@ -1,22 +1,27 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.lexer.Lexer;
 import dev.railroadide.railroad.ide.sst.syntax.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.internal.GreenElement;
 import dev.railroadide.railroad.ide.sst.syntax.internal.GreenNode;
 import dev.railroadide.railroad.ide.sst.syntax.internal.SyntaxInternalFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public final class JavaSyntaxParser {
     private static final Set<String> INCREMENTAL_ANCHOR_KIND_IDS = Set.of(
-            JavaSyntaxKinds.TYPE_DECLARATION.id(),
-            JavaSyntaxKinds.CLASS_DECLARATION.id(),
-            JavaSyntaxKinds.INTERFACE_DECLARATION.id(),
-            JavaSyntaxKinds.ENUM_DECLARATION.id(),
-            JavaSyntaxKinds.ANNOTATION_TYPE_DECLARATION.id(),
-            JavaSyntaxKinds.RECORD_DECLARATION.id(),
-            JavaSyntaxKinds.EMPTY_TYPE_DECLARATION.id()
+        JavaSyntaxKinds.TYPE_DECLARATION.id(),
+        JavaSyntaxKinds.CLASS_DECLARATION.id(),
+        JavaSyntaxKinds.INTERFACE_DECLARATION.id(),
+        JavaSyntaxKinds.ENUM_DECLARATION.id(),
+        JavaSyntaxKinds.ANNOTATION_TYPE_DECLARATION.id(),
+        JavaSyntaxKinds.RECORD_DECLARATION.id(),
+        JavaSyntaxKinds.EMPTY_TYPE_DECLARATION.id()
     );
     private static final String EOF_KIND_ID = JavaSyntaxKinds.tokenKind(JavaTokenType.EOF).id();
     private static final String MISSING_TOKEN_KIND_ID = SyntaxKind.MISSING_TOKEN.id();
@@ -27,38 +32,225 @@ public final class JavaSyntaxParser {
     }
 
     public static SyntaxTree parse(CharSequence source) {
-        Objects.requireNonNull(source, "source");
-        try (var lexer = new JavaLexer(source)) {
-            return parse(lexer);
+        return parse(DocumentId.create(), source);
+    }
+
+    public static SyntaxTree parse(DocumentId documentId, CharSequence source) {
+        return parse(documentId, DocumentUri.inMemory(documentId), source);
+    }
+
+    public static SyntaxTree parse(DocumentId documentId, DocumentUri documentUri, CharSequence source) {
+        return parse(documentId, documentUri, DocumentVersion.initial(), source);
+    }
+
+    public static SyntaxTree parse(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        DocumentVersion documentVersion,
+        CharSequence source
+    ) {
+        return parse(new TextDocumentSnapshot(
+            documentId,
+            documentUri,
+            documentVersion,
+            "java",
+            source,
+            StandardCharsets.UTF_8
+        ));
+    }
+
+    public static SyntaxTree parse(TextDocumentSnapshot documentSnapshot) {
+        documentSnapshot = requireJavaSnapshot(documentSnapshot);
+        try (var lexer = new JavaLexer(documentSnapshot.text())) {
+            return parse(documentSnapshot, lexer);
         }
     }
 
     public static SyntaxTree parse(Lexer<JavaTokenType> lexer) {
-        return new JavaGreenParser(Objects.requireNonNull(lexer, "lexer")).parseSyntaxTree();
+        return parse(DocumentId.create(), lexer);
+    }
+
+    public static SyntaxTree parse(DocumentId documentId, Lexer<JavaTokenType> lexer) {
+        return parse(documentId, DocumentUri.inMemory(documentId), lexer);
+    }
+
+    public static SyntaxTree parse(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        Lexer<JavaTokenType> lexer
+    ) {
+        return parse(documentId, documentUri, DocumentVersion.initial(), lexer);
+    }
+
+    public static SyntaxTree parse(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        DocumentVersion documentVersion,
+        Lexer<JavaTokenType> lexer
+    ) {
+        Objects.requireNonNull(documentId, "documentId");
+        Objects.requireNonNull(documentUri, "documentUri");
+        Objects.requireNonNull(documentVersion, "documentVersion");
+        GreenNode root = new JavaGreenParser(Objects.requireNonNull(lexer, "lexer")).parseGreenTree();
+        var documentSnapshot = new TextDocumentSnapshot(
+            documentId,
+            documentUri,
+            documentVersion,
+            "java",
+            SyntaxInternalFactory.sourceText(root),
+            StandardCharsets.UTF_8
+        );
+        return SyntaxInternalFactory.treeFromGreenRoot(documentSnapshot, root);
+    }
+
+    public static SyntaxTree parse(
+        TextDocumentSnapshot documentSnapshot,
+        Lexer<JavaTokenType> lexer
+    ) {
+        documentSnapshot = requireJavaSnapshot(documentSnapshot);
+        GreenNode root = new JavaGreenParser(Objects.requireNonNull(lexer, "lexer")).parseGreenTree();
+        return SyntaxInternalFactory.treeFromGreenRoot(documentSnapshot, root);
     }
 
     public static ParseResult parseWithDiagnostics(CharSequence source) {
-        Objects.requireNonNull(source, "source");
-        try (var lexer = new JavaLexer(source)) {
-            return parseWithDiagnostics(lexer);
-        }
+        return parseWithDiagnostics(DocumentId.create(), source);
+    }
+
+    public static ParseResult parseWithDiagnostics(DocumentId documentId, CharSequence source) {
+        return parseWithDiagnostics(documentId, DocumentUri.inMemory(documentId), source);
+    }
+
+    public static ParseResult parseWithDiagnostics(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        CharSequence source
+    ) {
+        return parseWithDiagnostics(documentId, documentUri, DocumentVersion.initial(), source);
+    }
+
+    public static ParseResult parseWithDiagnostics(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        DocumentVersion documentVersion,
+        CharSequence source
+    ) {
+        return parseWithDiagnostics(new TextDocumentSnapshot(
+            documentId,
+            documentUri,
+            documentVersion,
+            "java",
+            source,
+            StandardCharsets.UTF_8
+        ));
+    }
+
+    public static ParseResult parseWithDiagnostics(TextDocumentSnapshot documentSnapshot) {
+        SyntaxTree tree = parse(documentSnapshot);
+        return new ParseResult(tree, collectSyntaxDiagnostics(tree.root()));
     }
 
     public static ParseResult parseWithDiagnostics(Lexer<JavaTokenType> lexer) {
-        SyntaxTree tree = parse(lexer);
+        return parseWithDiagnostics(DocumentId.create(), lexer);
+    }
+
+    public static ParseResult parseWithDiagnostics(DocumentId documentId, Lexer<JavaTokenType> lexer) {
+        return parseWithDiagnostics(documentId, DocumentUri.inMemory(documentId), lexer);
+    }
+
+    public static ParseResult parseWithDiagnostics(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        Lexer<JavaTokenType> lexer
+    ) {
+        return parseWithDiagnostics(documentId, documentUri, DocumentVersion.initial(), lexer);
+    }
+
+    public static ParseResult parseWithDiagnostics(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        DocumentVersion documentVersion,
+        Lexer<JavaTokenType> lexer
+    ) {
+        SyntaxTree tree = parse(documentId, documentUri, documentVersion, lexer);
+        return new ParseResult(tree, collectSyntaxDiagnostics(tree.root()));
+    }
+
+    public static ParseResult parseWithDiagnostics(
+        TextDocumentSnapshot documentSnapshot,
+        Lexer<JavaTokenType> lexer
+    ) {
+        SyntaxTree tree = parse(documentSnapshot, lexer);
         return new ParseResult(tree, collectSyntaxDiagnostics(tree.root()));
     }
 
     public static IncrementalParseResult parseIncremental(
-            SyntaxTree previousTree,
-            CharSequence previousSource,
-            CharSequence newSource,
-            TextEdit edit
+        SyntaxTree previousTree,
+        CharSequence previousSource,
+        CharSequence newSource,
+        TextEdit edit
     ) {
         Objects.requireNonNull(previousTree, "previousTree");
-        Objects.requireNonNull(previousSource, "previousSource");
-        Objects.requireNonNull(newSource, "newSource");
-        Objects.requireNonNull(edit, "edit");
+        verifyPreviousSource(previousTree, previousSource);
+        TextDocumentSnapshot previousSnapshot = previousTree.documentSnapshot();
+        return parseIncremental(previousTree, new TextDocumentSnapshot(
+            previousSnapshot.id(),
+            previousSnapshot.uri(),
+            previousSnapshot.version().next(),
+            previousSnapshot.languageId(),
+            newSource,
+            previousSnapshot.encoding()
+        ), edit);
+    }
+
+    public static IncrementalParseResult parseIncremental(
+        SyntaxTree previousTree,
+        DocumentVersion newVersion,
+        CharSequence previousSource,
+        CharSequence newSource,
+        TextEdit edit
+    ) {
+        Objects.requireNonNull(previousTree, "previousTree");
+        verifyPreviousSource(previousTree, previousSource);
+        TextDocumentSnapshot previousSnapshot = previousTree.documentSnapshot();
+        return parseIncremental(previousTree, new TextDocumentSnapshot(
+            previousSnapshot.id(),
+            previousSnapshot.uri(),
+            Objects.requireNonNull(newVersion, "newVersion"),
+            previousSnapshot.languageId(),
+            newSource,
+            previousSnapshot.encoding()
+        ), edit);
+    }
+
+    /**
+     * Incrementally parses a later immutable snapshot of the same logical document.
+     *
+     * @param previousTree syntax tree for the preceding snapshot
+     * @param newSnapshot complete later snapshot to parse
+     * @param edit change transforming the previous snapshot text into the new text
+     * @return incremental parse result carrying {@code newSnapshot}
+     * @throws IllegalArgumentException if identity or version continuity is invalid
+     */
+    public static IncrementalParseResult parseIncremental(
+        SyntaxTree previousTree,
+        TextDocumentSnapshot newSnapshot,
+        TextEdit edit
+    ) {
+        Objects.requireNonNull(previousTree, "previousTree");
+        newSnapshot = requireJavaSnapshot(newSnapshot);
+        edit = Objects.requireNonNull(edit, "edit");
+
+        TextDocumentSnapshot previousSnapshot = previousTree.documentSnapshot();
+        if (!newSnapshot.id().equals(previousSnapshot.id()))
+            throw new IllegalArgumentException("newSnapshot must have the same document identity as previousTree");
+        if (!newSnapshot.version().isAfter(previousSnapshot.version())) {
+            throw new IllegalArgumentException(
+                "newSnapshot version must be later than previous tree version " + previousSnapshot.version()
+            );
+        }
+
+        String previousSource = previousSnapshot.text();
+        String newSource = newSnapshot.text();
 
         int oldLength = previousSource.length();
         int newLength = newSource.length();
@@ -67,33 +259,33 @@ public final class JavaSyntaxParser {
         ReusePlan fallbackPlan = planReuse(previousTree, previousSource, newSource, edit);
         Optional<TopLevelReparseWindow> incrementalWindow = selectTopLevelWindow(previousTree.root(), edit, oldLength, newLength);
         if (incrementalWindow.isEmpty()) {
-            SyntaxTree reparsed = parse(newSource);
+            SyntaxTree reparsed = parse(newSnapshot);
             return new IncrementalParseResult(reparsed, fallbackPlan, true);
         }
 
         try {
             TopLevelReparseWindow window = incrementalWindow.get();
-            SyntaxTree incrementalTree = reparseTopLevelTail(previousTree, newSource, window);
+            SyntaxTree incrementalTree = reparseTopLevelTail(previousTree, newSnapshot, window);
             ReusePlan incrementalPlan = buildReusePlan(
-                    previousTree.root(),
-                    window.oldReparseStart(),
-                    window.oldReparseEnd(),
-                    edit,
-                    oldLength,
-                    newLength
+                previousTree.root(),
+                window.oldReparseStart(),
+                window.oldReparseEnd(),
+                edit,
+                oldLength,
+                newLength
             );
             return new IncrementalParseResult(incrementalTree, incrementalPlan, false);
         } catch (RuntimeException ignored) {
-            SyntaxTree reparsed = parse(newSource);
+            SyntaxTree reparsed = parse(newSnapshot);
             return new IncrementalParseResult(reparsed, fallbackPlan, true);
         }
     }
 
     public static ReusePlan planReuse(
-            SyntaxTree previousTree,
-            CharSequence previousSource,
-            CharSequence newSource,
-            TextEdit edit
+        SyntaxTree previousTree,
+        CharSequence previousSource,
+        CharSequence newSource,
+        TextEdit edit
     ) {
         Objects.requireNonNull(previousTree, "previousTree");
         Objects.requireNonNull(previousSource, "previousSource");
@@ -124,12 +316,12 @@ public final class JavaSyntaxParser {
     }
 
     private static ReusePlan buildReusePlan(
-            SyntaxNode root,
-            int oldReparseStart,
-            int oldReparseEnd,
-            TextEdit edit,
-            int oldLength,
-            int newLength
+        SyntaxNode root,
+        int oldReparseStart,
+        int oldReparseEnd,
+        TextEdit edit,
+        int oldLength,
+        int newLength
     ) {
         int clampedOldStart = clamp(oldReparseStart, 0, oldLength);
         int clampedOldEnd = clamp(oldReparseEnd, clampedOldStart, oldLength);
@@ -153,15 +345,15 @@ public final class JavaSyntaxParser {
         int expectedNewLength = oldLength - removedLength + edit.insertedText().length();
         if (expectedNewLength != newLength) {
             throw new IllegalArgumentException("new source length does not match edit delta: expected " +
-                    expectedNewLength + ", got " + newLength);
+                expectedNewLength + ", got " + newLength);
         }
     }
 
     private static Optional<TopLevelReparseWindow> selectTopLevelWindow(
-            SyntaxNode root,
-            TextEdit edit,
-            int oldLength,
-            int newLength
+        SyntaxNode root,
+        TextEdit edit,
+        int oldLength,
+        int newLength
     ) {
         List<SyntaxNode> topLevelChildren = root.children();
         if (topLevelChildren.isEmpty())
@@ -194,9 +386,9 @@ public final class JavaSyntaxParser {
     }
 
     private static SyntaxTree reparseTopLevelTail(
-            SyntaxTree previousTree,
-            CharSequence newSource,
-            TopLevelReparseWindow window
+        SyntaxTree previousTree,
+        TextDocumentSnapshot newSnapshot,
+        TopLevelReparseWindow window
     ) {
         List<SyntaxNode> previousChildren = previousTree.root().children();
         List<GreenElement> mergedChildren = new ArrayList<>(previousChildren.size());
@@ -204,20 +396,36 @@ public final class JavaSyntaxParser {
             mergedChildren.add(SyntaxInternalFactory.greenElement(previousChildren.get(index)));
         }
 
-        CharSequence tailSource = newSource.subSequence(window.newReparseStart(), window.newReparseEnd());
+        CharSequence tailSource = newSnapshot.text().subSequence(window.newReparseStart(), window.newReparseEnd());
         SyntaxTree reparsedTail = parse(tailSource);
         GreenNode reparsedTailRoot = SyntaxInternalFactory.greenRoot(reparsedTail);
         mergedChildren.addAll(reparsedTailRoot.children());
 
         GreenNode mergedRoot = SyntaxInternalFactory.greenNode(JavaSyntaxKinds.COMPILATION_UNIT, mergedChildren);
-        return SyntaxInternalFactory.treeFromGreenRoot(mergedRoot);
+        return SyntaxInternalFactory.treeFromGreenRoot(newSnapshot, mergedRoot);
+    }
+
+    private static TextDocumentSnapshot requireJavaSnapshot(TextDocumentSnapshot documentSnapshot) {
+        documentSnapshot = Objects.requireNonNull(documentSnapshot, "documentSnapshot");
+        if (!"java".equalsIgnoreCase(documentSnapshot.languageId()))
+            throw new IllegalArgumentException("Java parser requires a snapshot with languageId 'java'");
+        return documentSnapshot;
+    }
+
+    private static void verifyPreviousSource(SyntaxTree previousTree, CharSequence previousSource) {
+        previousSource = Objects.requireNonNull(previousSource, "previousSource");
+        if (!previousTree.documentSnapshot().text().contentEquals(previousSource)) {
+            throw new IllegalArgumentException(
+                "previousSource must match the immutable snapshot carried by previousTree"
+            );
+        }
     }
 
     private static int findAffectedTopLevelChild(
-            List<SyntaxNode> topLevelChildren,
-            int oldEditStart,
-            int oldEditEnd,
-            int oldLength
+        List<SyntaxNode> topLevelChildren,
+        int oldEditStart,
+        int oldEditEnd,
+        int oldLength
     ) {
         int probeStart = oldEditStart;
         int probeEnd = oldEditEnd;
@@ -280,11 +488,11 @@ public final class JavaSyntaxParser {
     }
 
     private static void collectReuseCandidates(
-            SyntaxNode node,
-            int oldReparseStart,
-            int oldReparseEnd,
-            int delta,
-            List<ReuseCandidate> candidates
+        SyntaxNode node,
+        int oldReparseStart,
+        int oldReparseEnd,
+        int delta,
+        List<ReuseCandidate> candidates
     ) {
         if (node instanceof SyntaxToken || node.width() == 0) {
             for (SyntaxNode child : node.children()) {
@@ -320,19 +528,19 @@ public final class JavaSyntaxParser {
             String kindId = node.kind().id();
             if (ERROR_NODE_KIND_ID.equals(kindId)) {
                 diagnostics.add(new SyntaxDiagnostic(
-                        SyntaxDiagnostic.Severity.ERROR,
-                        "JAVA_ERROR_NODE",
-                        "Recovered syntax error node",
-                        node.start(),
-                        node.end()
+                    SyntaxDiagnostic.Severity.ERROR,
+                    "JAVA_ERROR_NODE",
+                    "Recovered syntax error node",
+                    node.start(),
+                    node.end()
                 ));
             } else if (node instanceof SyntaxToken && isMissingTokenKind(kindId)) {
                 diagnostics.add(new SyntaxDiagnostic(
-                        SyntaxDiagnostic.Severity.ERROR,
-                        "JAVA_MISSING_TOKEN",
-                        "Inserted missing token",
-                        node.start(),
-                        node.end()
+                    SyntaxDiagnostic.Severity.ERROR,
+                    "JAVA_MISSING_TOKEN",
+                    "Inserted missing token",
+                    node.start(),
+                    node.end()
                 ));
             }
 
@@ -349,18 +557,18 @@ public final class JavaSyntaxParser {
     }
 
     private record TopLevelReparseWindow(
-            int startChildIndex,
-            int oldReparseStart,
-            int oldReparseEnd,
-            int newReparseStart,
-            int newReparseEnd
+        int startChildIndex,
+        int oldReparseStart,
+        int oldReparseEnd,
+        int newReparseStart,
+        int newReparseEnd
     ) {
     }
 
     public record TextEdit(
-            int startOffset,
-            int removedLength,
-            String insertedText
+        int startOffset,
+        int removedLength,
+        String insertedText
     ) {
         public TextEdit {
             if (startOffset < 0)
@@ -380,34 +588,34 @@ public final class JavaSyntaxParser {
     }
 
     public record ReuseCandidate(
-            String kindId,
-            int oldStartOffset,
-            int oldEndOffset,
-            int newStartOffset,
-            int newEndOffset
+        String kindId,
+        int oldStartOffset,
+        int oldEndOffset,
+        int newStartOffset,
+        int newEndOffset
     ) {
     }
 
     public record ReusePlan(
-            int oldReparseStart,
-            int oldReparseEnd,
-            int newReparseStart,
-            int newReparseEnd,
-            int lengthDelta,
-            List<ReuseCandidate> candidates
+        int oldReparseStart,
+        int oldReparseEnd,
+        int newReparseStart,
+        int newReparseEnd,
+        int lengthDelta,
+        List<ReuseCandidate> candidates
     ) {
     }
 
     public record IncrementalParseResult(
-            SyntaxTree tree,
-            ReusePlan reusePlan,
-            boolean fullReparse
+        SyntaxTree tree,
+        ReusePlan reusePlan,
+        boolean fullReparse
     ) {
     }
 
     public record ParseResult(
-            SyntaxTree tree,
-            List<SyntaxDiagnostic> diagnostics
+        SyntaxTree tree,
+        List<SyntaxDiagnostic> diagnostics
     ) {
         public ParseResult {
             tree = Objects.requireNonNull(tree, "tree");

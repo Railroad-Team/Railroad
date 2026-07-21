@@ -1,13 +1,63 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class JavaSyntaxParserTest {
+
+    @Test
+    void carriesCallerSuppliedDocumentIdentity() {
+        DocumentId documentId = DocumentId.create();
+        DocumentUri documentUri = DocumentUri.virtual("memory", "tests/Identified.java");
+        DocumentVersion documentVersion = new DocumentVersion(7);
+
+        SyntaxTree tree = JavaSyntaxParser.parse(
+            documentId,
+            documentUri,
+            documentVersion,
+            "class Identified {}"
+        );
+
+        assertEquals(documentId, tree.documentId());
+        assertEquals(documentUri, tree.documentUri());
+        assertEquals(documentVersion, tree.documentVersion());
+    }
+
+    @Test
+    void parsesAndRetainsTheExactTextSnapshot() {
+        TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+            DocumentId.create(),
+            DocumentUri.virtual("memory", "tests/Snapshot.java"),
+            new DocumentVersion(4),
+            "java",
+            "class Snapshot {}",
+            StandardCharsets.UTF_16LE
+        );
+
+        SyntaxTree tree = JavaSyntaxParser.parse(snapshot);
+
+        assertSame(snapshot, tree.documentSnapshot());
+        assertEquals(snapshot.text(), JavaParserTestSupport.syntaxText(tree));
+        assertThrows(IllegalArgumentException.class, () -> JavaSyntaxParser.parse(
+            new TextDocumentSnapshot(
+                snapshot.id(),
+                snapshot.uri(),
+                snapshot.version(),
+                "kotlin",
+                "class Snapshot",
+                StandardCharsets.UTF_8
+            )
+        ));
+    }
 
     @Test
     void roundTripsSourceTextFromSyntaxTree() {
@@ -94,6 +144,9 @@ class JavaSyntaxParserTest {
                 JavaSyntaxParser.parseIncremental(previousTree, oldSource, newSource, edit);
 
         assertFalse(result.fullReparse());
+        assertEquals(previousTree.documentId(), result.tree().documentId());
+        assertEquals(previousTree.documentUri(), result.tree().documentUri());
+        assertEquals(previousTree.documentVersion().next(), result.tree().documentVersion());
         assertTrue(result.reusePlan().candidates().size() > 0);
         assertEquals(newSource, JavaParserTestSupport.syntaxText(result.tree()));
     }
@@ -119,7 +172,103 @@ class JavaSyntaxParserTest {
                 JavaSyntaxParser.parseIncremental(previousTree, oldSource, newSource, edit);
 
         assertTrue(result.fullReparse());
+        assertEquals(previousTree.documentId(), result.tree().documentId());
+        assertEquals(previousTree.documentUri(), result.tree().documentUri());
+        assertEquals(previousTree.documentVersion().next(), result.tree().documentVersion());
         assertEquals(newSource, JavaParserTestSupport.syntaxText(result.tree()));
+    }
+
+    @Test
+    void incrementalParseAcceptsOnlyALaterCallerSuppliedVersion() {
+        String oldSource = "class A { int value = 1; }";
+        String newSource = "class A { int value = 2; }";
+        DocumentVersion previousVersion = new DocumentVersion(10);
+        SyntaxTree previousTree = JavaSyntaxParser.parse(
+            DocumentId.create(),
+            DocumentUri.virtual("memory", "tests/A.java"),
+            previousVersion,
+            oldSource
+        );
+        JavaSyntaxParser.TextEdit edit = new JavaSyntaxParser.TextEdit(oldSource.indexOf("1"), 1, "2");
+
+        JavaSyntaxParser.IncrementalParseResult result = JavaSyntaxParser.parseIncremental(
+            previousTree,
+            new DocumentVersion(15),
+            oldSource,
+            newSource,
+            edit
+        );
+
+        assertEquals(new DocumentVersion(15), result.tree().documentVersion());
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> JavaSyntaxParser.parseIncremental(
+                previousTree,
+                previousVersion,
+                oldSource,
+                newSource,
+                edit
+            )
+        );
+    }
+
+    @Test
+    void incrementalParseUsesSnapshotContentIdentityAndVersionAtomically() {
+        String oldSource = "class A { int value = 1; }";
+        String newSource = "class A { int value = 20; }";
+        TextDocumentSnapshot previousSnapshot = new TextDocumentSnapshot(
+            DocumentId.create(),
+            DocumentUri.virtual("memory", "tests/A.java"),
+            new DocumentVersion(5),
+            "java",
+            oldSource,
+            StandardCharsets.UTF_8
+        );
+        SyntaxTree previousTree = JavaSyntaxParser.parse(previousSnapshot);
+        TextDocumentSnapshot newSnapshot = new TextDocumentSnapshot(
+            previousSnapshot.id(),
+            DocumentUri.virtual("memory", "renamed/A.java"),
+            new DocumentVersion(9),
+            "java",
+            newSource,
+            StandardCharsets.UTF_16
+        );
+        JavaSyntaxParser.TextEdit edit = new JavaSyntaxParser.TextEdit(oldSource.indexOf("1"), 1, "20");
+
+        JavaSyntaxParser.IncrementalParseResult result =
+            JavaSyntaxParser.parseIncremental(previousTree, newSnapshot, edit);
+
+        assertSame(newSnapshot, result.tree().documentSnapshot());
+        assertEquals(newSource, JavaParserTestSupport.syntaxText(result.tree()));
+
+        TextDocumentSnapshot wrongIdentity = new TextDocumentSnapshot(
+            DocumentId.create(),
+            newSnapshot.uri(),
+            newSnapshot.version(),
+            "java",
+            newSource,
+            StandardCharsets.UTF_8
+        );
+        TextDocumentSnapshot staleVersion = new TextDocumentSnapshot(
+            previousSnapshot.id(),
+            newSnapshot.uri(),
+            previousSnapshot.version(),
+            "java",
+            newSource,
+            StandardCharsets.UTF_8
+        );
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> JavaSyntaxParser.parseIncremental(previousTree, wrongIdentity, edit)
+        );
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> JavaSyntaxParser.parseIncremental(previousTree, staleVersion, edit)
+        );
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> JavaSyntaxParser.parseIncremental(previousTree, "not the old source", newSource, edit)
+        );
     }
 
     private static long countKind(List<String> kinds, String kindId) {
