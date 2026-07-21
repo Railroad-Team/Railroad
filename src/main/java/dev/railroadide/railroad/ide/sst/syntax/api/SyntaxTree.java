@@ -3,7 +3,9 @@ package dev.railroadide.railroad.ide.sst.syntax.api;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
@@ -14,9 +16,7 @@ import java.util.Objects;
  * {@link dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext#traverse}.
  */
 public final class SyntaxTree {
-    private final DocumentId documentId;
-    private final DocumentUri documentUri;
-    private final DocumentVersion documentVersion;
+    private final TextDocumentSnapshot documentSnapshot;
     private final SyntaxNode root;
 
     /**
@@ -69,10 +69,28 @@ public final class SyntaxTree {
         DocumentVersion documentVersion,
         SyntaxNode root
     ) {
-        this.documentId = Objects.requireNonNull(documentId, "documentId");
-        this.documentUri = Objects.requireNonNull(documentUri, "documentUri");
-        this.documentVersion = Objects.requireNonNull(documentVersion, "documentVersion");
+        this(compatibilitySnapshot(documentId, documentUri, documentVersion, root), root);
+    }
+
+    /**
+     * Creates a syntax tree for an immutable text snapshot.
+     *
+     * @param documentSnapshot exact source snapshot parsed into the tree
+     * @param root root node covering the complete snapshot text
+     * @throws NullPointerException if any argument is {@code null}
+     */
+    public SyntaxTree(TextDocumentSnapshot documentSnapshot, SyntaxNode root) {
+        this.documentSnapshot = Objects.requireNonNull(documentSnapshot, "documentSnapshot");
         this.root = Objects.requireNonNull(root, "root");
+    }
+
+    /**
+     * Returns the immutable source snapshot parsed into this tree.
+     *
+     * @return text document snapshot
+     */
+    public TextDocumentSnapshot documentSnapshot() {
+        return documentSnapshot;
     }
 
     /**
@@ -81,7 +99,7 @@ public final class SyntaxTree {
      * @return document identity
      */
     public DocumentId documentId() {
-        return documentId;
+        return documentSnapshot.id();
     }
 
     /**
@@ -90,7 +108,7 @@ public final class SyntaxTree {
      * @return document URI
      */
     public DocumentUri documentUri() {
-        return documentUri;
+        return documentSnapshot.uri();
     }
 
     /**
@@ -99,7 +117,7 @@ public final class SyntaxTree {
      * @return document version
      */
     public DocumentVersion documentVersion() {
-        return documentVersion;
+        return documentSnapshot.version();
     }
 
     /**
@@ -109,5 +127,36 @@ public final class SyntaxTree {
      */
     public SyntaxNode root() {
         return root;
+    }
+
+    private static TextDocumentSnapshot compatibilitySnapshot(
+        DocumentId documentId,
+        DocumentUri documentUri,
+        DocumentVersion documentVersion,
+        SyntaxNode root
+    ) {
+        return new TextDocumentSnapshot(
+            Objects.requireNonNull(documentId, "documentId"),
+            Objects.requireNonNull(documentUri, "documentUri"),
+            Objects.requireNonNull(documentVersion, "documentVersion"),
+            "unknown",
+            sourceText(Objects.requireNonNull(root, "root")),
+            StandardCharsets.UTF_8
+        );
+    }
+
+    private static String sourceText(SyntaxNode root) {
+        StringBuilder text = new StringBuilder(Math.max(0, root.width()));
+        appendSourceText(root, text);
+        return text.toString();
+    }
+
+    private static void appendSourceText(SyntaxNode node, StringBuilder text) {
+        if (node instanceof SyntaxToken token) {
+            text.append(token.text());
+            return;
+        }
+        for (SyntaxNode child : node.children())
+            appendSourceText(child, text);
     }
 }

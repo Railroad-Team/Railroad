@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.sst.syntax.internal;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxKind;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
@@ -61,6 +62,18 @@ public final class SyntaxInternalFactory {
         return tree;
     }
 
+    public static SyntaxTree treeFromRootChildren(
+        TextDocumentSnapshot documentSnapshot,
+        List<? extends GreenElement> children
+    ) {
+        Objects.requireNonNull(documentSnapshot, "documentSnapshot");
+        Objects.requireNonNull(children, "children");
+        GreenNode rootGreen = GreenNode.root(children);
+        var tree = new SyntaxTree(documentSnapshot, RedFactory.root(rootGreen));
+        SyntaxTreeValidator.validate(tree.root());
+        return tree;
+    }
+
     public static SyntaxTree treeFromGreenRoot(GreenNode root) {
         return treeFromGreenRoot(DocumentId.create(), root);
     }
@@ -92,6 +105,16 @@ public final class SyntaxInternalFactory {
         return tree;
     }
 
+    public static SyntaxTree treeFromGreenRoot(TextDocumentSnapshot documentSnapshot, GreenNode root) {
+        Objects.requireNonNull(documentSnapshot, "documentSnapshot");
+        var tree = new SyntaxTree(
+            documentSnapshot,
+            RedFactory.root(Objects.requireNonNull(root, "root"))
+        );
+        SyntaxTreeValidator.validate(tree.root());
+        return tree;
+    }
+
     public static GreenNode greenRoot(SyntaxTree tree) {
         Objects.requireNonNull(tree, "tree");
         return greenNode(tree.root());
@@ -111,5 +134,24 @@ public final class SyntaxInternalFactory {
             return redElement.green();
 
         throw new IllegalArgumentException("syntax node is not backed by internal red element: " + node.getClass().getName());
+    }
+
+    public static String sourceText(GreenElement element) {
+        Objects.requireNonNull(element, "element");
+        var text = new StringBuilder(element.width());
+        appendSourceText(element, text);
+        return text.toString();
+    }
+
+    private static void appendSourceText(GreenElement element, StringBuilder text) {
+        if (element instanceof GreenToken token) {
+            text.append(token.text());
+            return;
+        }
+
+        GreenNode node = (GreenNode) element;
+        for (GreenElement child : node.children()) {
+            appendSourceText(child, text);
+        }
     }
 }

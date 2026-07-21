@@ -72,9 +72,9 @@ Incremental semantic sessions and broader IDE features
 - [x] **SST-P0-011** Add a stable `DocumentId` independent of filesystem path spelling. See [SST document identity contract](sst-document-identity.md).
 - [x] **SST-P0-012** Add a `DocumentUri`/URI-based identity capable of representing physical and virtual documents. See [SST document identity contract](sst-document-identity.md).
 - [x] **SST-P0-013** Add a monotonic `DocumentVersion` type. See [SST document identity contract](sst-document-identity.md).
-- [ ] **SST-P0-014** Add a sealed `DocumentSnapshot` root contract.
-- [ ] **SST-P0-015** Add `TextDocumentSnapshot` with immutable text, encoding, version, and language identity.
-- [ ] **SST-P0-016** Add `BinaryDocumentSnapshot` with immutable/read-only bytes, version, and language identity.
+- [x] **SST-P0-014** Add a sealed `DocumentSnapshot` root contract. See [SST document identity contract](sst-document-identity.md#snapshot-rules).
+- [x] **SST-P0-015** Add `TextDocumentSnapshot` with immutable text, encoding, version, and language identity. See [SST document identity contract](sst-document-identity.md#snapshot-rules).
+- [x] **SST-P0-016** Add `BinaryDocumentSnapshot` with immutable/read-only bytes, version, and language identity. See [SST document identity contract](sst-document-identity.md#snapshot-rules).
 - [ ] **SST-P0-017** Add a shared `ContentType`/content-kind model.
 - [ ] **SST-P0-018** Add a cached immutable `LineMap` for text offset/line/column conversion.
 - [ ] **SST-P0-019** Support virtual documents such as archive entries and decompiled source.
