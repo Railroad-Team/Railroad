@@ -1019,3 +1019,11 @@ railroad.git.push.strategy.matching=Matching
 railroad.git.push.strategy.nothing=Nothing
 railroad.git.sync.controls.remote.none=No remotes
 railroad.git.commit.details.unknown=Unknown
+
+# =============================================================================
+# Markdown
+# =============================================================================
+railroad.markdown.image_dialog.heading=Insert Image
+railroad.markdown.image_dialog.image_alt_text=Alt Text
+railroad.markdown.image_dialog.image_uri_prompt=Image URI
+railroad.markdown.image_dialog.insert=Insert
