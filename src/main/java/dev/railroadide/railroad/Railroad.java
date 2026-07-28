@@ -15,6 +15,7 @@ import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.localization.Languages;
 import dev.railroadide.railroad.plugin.PluginManager;
 import dev.railroadide.railroad.plugin.defaults.DefaultEventBus;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.event.EventBus;
 import dev.railroadide.railroad.plugin.spi.events.ApplicationStartEvent;
 import dev.railroadide.railroad.plugin.spi.events.ApplicationStopEvent;
@@ -42,12 +43,16 @@ import javafx.application.Application;
 import javafx.application.HostServices;
 import javafx.application.Platform;
 import javafx.scene.Scene;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import okhttp3.OkHttpClient;
 
+import java.awt.*;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -130,7 +135,7 @@ public class Railroad extends Application {
                 try (ExecutorService executorService = HTTP_CLIENT.dispatcher().executorService()) {
                     executorService.shutdown();
                 }
-        
+
                 HTTP_CLIENT.connectionPool().evictAll();
             }))
         );
@@ -168,11 +173,21 @@ public class Railroad extends Application {
 
         try {
             SvgImageLoaderFactory.install(new PrimitiveDimensionProvider());
-            WINDOW_MANAGER.showPrimary(
+
+            List<Project> projects = Railroad.PROJECT_MANAGER.getProjects();
+
+            Optional<Project> project = projects.stream().max(Comparator.comparingLong(Project::getLastOpened))
+                .filter($ -> Boolean.TRUE.equals(Settings.OPEN_LAST_PROJECT_ON_START.getValue()));
+
+            project.ifPresentOrElse(project1 -> {
+                WINDOW_MANAGER.showPrimary(primaryStage, new Scene(new VBox()), "BEANS");
+                project1.open();
+            }, () -> WINDOW_MANAGER.showPrimary(
                 primaryStage,
                 new Scene(new WelcomePane()),
                 Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()
-            );
+            ));
+
             LOGGER.info("Railroad started");
             EVENT_BUS.publish(new ApplicationStartEvent());
         } catch (Throwable exception) {
