@@ -204,7 +204,7 @@ public class IDESetup {
         Platform.runLater(() -> {
             try {
                 Scene ideScene = IDESetup.createIDEScene(project);
-                Stage ideStage = (stage == null) ? Railroad.WINDOW_MANAGER.getPrimaryStage() : stage;
+                Stage ideStage = stage == null ? Railroad.WINDOW_MANAGER.getPrimaryStage() : stage;
 
                 ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion() + " - " + project.getAlias());
                 ideStage.setResizable(true);
