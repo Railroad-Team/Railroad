@@ -43,11 +43,9 @@ import javafx.application.Application;
 import javafx.application.HostServices;
 import javafx.application.Platform;
 import javafx.scene.Scene;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import okhttp3.OkHttpClient;
 
-import java.awt.*;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -179,10 +177,7 @@ public class Railroad extends Application {
             Optional<Project> project = projects.stream().max(Comparator.comparingLong(Project::getLastOpened))
                 .filter($ -> Boolean.TRUE.equals(Settings.OPEN_LAST_PROJECT_ON_START.getValue()));
 
-            project.ifPresentOrElse(project1 -> {
-                WINDOW_MANAGER.showPrimary(primaryStage, new Scene(new VBox()), "BEANS");
-                project1.open();
-            }, () -> WINDOW_MANAGER.showPrimary(
+            project.ifPresentOrElse(project1 -> project1.open(primaryStage), () -> WINDOW_MANAGER.showPrimary(
                 primaryStage,
                 new Scene(new WelcomePane()),
                 Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()

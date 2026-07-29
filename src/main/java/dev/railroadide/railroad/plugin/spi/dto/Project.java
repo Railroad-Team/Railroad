@@ -12,6 +12,7 @@ import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.utility.json.JsonSerializable;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import javafx.scene.image.Image;
+import javafx.stage.Stage;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -65,6 +66,8 @@ public interface Project extends JsonSerializable<JsonObject> {
      * Open the project in the IDE.
      */
     void open();
+
+    void open(Stage stage);
 
     /**
      * Get the unique identifier of the project.

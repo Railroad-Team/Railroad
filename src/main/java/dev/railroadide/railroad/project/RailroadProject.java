@@ -23,12 +23,13 @@ import dev.railroadide.railroad.vcs.Repository;
 import dev.railroadide.railroad.vcs.git.GitClient;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.execution.GitProcessRunner;
-import javafx.beans.property.*;
 import javafx.application.Platform;
+import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableSet;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
+import javafx.stage.Stage;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -200,6 +201,16 @@ public class RailroadProject implements Project {
         setLastOpened(System.currentTimeMillis());
         Railroad.PROJECT_MANAGER.updateProjectInfo(this);
         IDESetup.switchToIDE(this);
+        discoverFacets();
+        this.gitManager.detectRepository();
+    }
+
+    @Override
+    public void open(Stage stage){
+        Railroad.LOGGER.debug("Opening project: {}", getPathString());
+        setLastOpened(System.currentTimeMillis());
+        Railroad.PROJECT_MANAGER.updateProjectInfo(this);
+        IDESetup.switchToIDE(this, stage);
         discoverFacets();
         this.gitManager.detectRepository();
     }

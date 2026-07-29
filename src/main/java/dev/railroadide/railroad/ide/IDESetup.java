@@ -224,6 +224,33 @@ public class IDESetup {
         });
     }
 
+    public static void switchToIDE(Project project, Stage stage) {
+        if (isSwitchingToIDE)
+            return; // Prevent multiple simultaneous IDE window creations
+
+        isSwitchingToIDE = true;
+
+        Platform.runLater(() -> {
+            try {
+                Scene ideScene = IDESetup.createIDEScene(project);
+                stage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion() + " - " + project.getAlias());
+                stage.setResizable(true);
+                stage.setMaximized(true);
+                Railroad.WINDOW_MANAGER.showPrimary(stage, ideScene, stage.getTitle());
+
+                try {
+                    Railroad.PROJECT_MANAGER.setCurrentProject(project);
+                    Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.OPENED));
+                } finally {
+                    isSwitchingToIDE = false;
+                }
+            } catch (Exception exception) {
+                isSwitchingToIDE = false;
+                throw exception;
+            }
+        });
+    }
+
 
     /**
      * Find the best tab pane for files (CodeArea) in the given parent.
