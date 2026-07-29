@@ -68,7 +68,6 @@ public interface Project extends JsonSerializable<JsonObject> {
      * 
      * @param stage The stage to use for the IDE, can be {@code null} if a new stage should be used
      */
-
     void open(@Nullable Stage stage);
 
     /**
