@@ -174,10 +174,12 @@ public class Railroad extends Application {
 
             List<Project> projects = Railroad.PROJECT_MANAGER.getProjects();
 
-            Optional<Project> project = projects.stream().max(Comparator.comparingLong(Project::getLastOpened))
+            Optional<Project> optProject = projects.stream().max(Comparator.comparingLong(Project::getLastOpened))
                 .filter($ -> Boolean.TRUE.equals(Settings.OPEN_LAST_PROJECT_ON_START.getValue()));
 
-            project.ifPresentOrElse(project1 -> project1.open(primaryStage), () -> WINDOW_MANAGER.showPrimary(
+            optProject.ifPresentOrElse(
+                project -> project.open(primaryStage), 
+                () -> WINDOW_MANAGER.showPrimary(
                 primaryStage,
                 new Scene(new WelcomePane()),
                 Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()
