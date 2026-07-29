@@ -180,9 +180,9 @@ public class Railroad extends Application {
             optProject.ifPresentOrElse(
                 project -> project.open(primaryStage), 
                 () -> WINDOW_MANAGER.showPrimary(
-                primaryStage,
-                new Scene(new WelcomePane()),
-                Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()
+                    primaryStage,
+                    new Scene(new WelcomePane()),
+                    Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()
             ));
 
             LOGGER.info("Railroad started");
