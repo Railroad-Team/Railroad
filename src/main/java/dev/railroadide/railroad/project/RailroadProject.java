@@ -32,6 +32,7 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -196,17 +197,7 @@ public class RailroadProject implements Project {
     }
 
     @Override
-    public void open() {
-        Railroad.LOGGER.debug("Opening project: {}", getPathString());
-        setLastOpened(System.currentTimeMillis());
-        Railroad.PROJECT_MANAGER.updateProjectInfo(this);
-        IDESetup.switchToIDE(this);
-        discoverFacets();
-        this.gitManager.detectRepository();
-    }
-
-    @Override
-    public void open(Stage stage){
+    public void open(@Nullable Stage stage){
         Railroad.LOGGER.debug("Opening project: {}", getPathString());
         setLastOpened(System.currentTimeMillis());
         Railroad.PROJECT_MANAGER.updateProjectInfo(this);

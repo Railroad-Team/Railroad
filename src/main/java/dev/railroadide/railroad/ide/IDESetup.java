@@ -193,8 +193,9 @@ public class IDESetup {
      * and notifies the plugins of the activity
      *
      * @param project The project to switch to
+     * @param stage The stage to switch to, can be null if a new stage is needed
      */
-    public static void switchToIDE(Project project) {
+    public static void switchToIDE(Project project, @Nullable Stage stage) {
         if (isSwitchingToIDE)
             return; // Prevent multiple simultaneous IDE window creations
 
@@ -203,40 +204,20 @@ public class IDESetup {
         Platform.runLater(() -> {
             try {
                 Scene ideScene = IDESetup.createIDEScene(project);
-                Stage ideStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
-                ThemeManager.prepareSceneTransition(ideStage.getScene(), ideScene);
+                Stage ideStage = (stage == null) ? Railroad.WINDOW_MANAGER.getPrimaryStage() : stage;
+
                 ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion() + " - " + project.getAlias());
-                ideStage.setScene(ideScene);
                 ideStage.setResizable(true);
                 ideStage.setMaximized(true);
-                Railroad.WINDOW_MANAGER.setPrimaryStage(ideStage);
 
-                try {
-                    Railroad.PROJECT_MANAGER.setCurrentProject(project);
-                    Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.OPENED));
-                } finally {
-                    isSwitchingToIDE = false;
+                if(stage == null){
+                    ThemeManager.prepareSceneTransition(ideStage.getScene(), ideScene);
+                    ideStage.setScene(ideScene);
+                    Railroad.WINDOW_MANAGER.setPrimaryStage(ideStage);
+                } else {
+                    ideStage.setScene(ideScene);
+                    Railroad.WINDOW_MANAGER.showPrimary(stage, ideScene, stage.getTitle());
                 }
-            } catch (Exception exception) {
-                isSwitchingToIDE = false;
-                throw exception;
-            }
-        });
-    }
-
-    public static void switchToIDE(Project project, Stage stage) {
-        if (isSwitchingToIDE)
-            return; // Prevent multiple simultaneous IDE window creations
-
-        isSwitchingToIDE = true;
-
-        Platform.runLater(() -> {
-            try {
-                Scene ideScene = IDESetup.createIDEScene(project);
-                stage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion() + " - " + project.getAlias());
-                stage.setResizable(true);
-                stage.setMaximized(true);
-                Railroad.WINDOW_MANAGER.showPrimary(stage, ideScene, stage.getTitle());
 
                 try {
                     Railroad.PROJECT_MANAGER.setCurrentProject(project);
