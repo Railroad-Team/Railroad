@@ -210,7 +210,7 @@ public class IDESetup {
                 ideStage.setResizable(true);
                 ideStage.setMaximized(true);
 
-                if(stage == null){
+                if(stage == null) {
                     ThemeManager.prepareSceneTransition(ideStage.getScene(), ideScene);
                     ideStage.setScene(ideScene);
                     Railroad.WINDOW_MANAGER.setPrimaryStage(ideStage);
