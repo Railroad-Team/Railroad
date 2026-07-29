@@ -193,7 +193,7 @@ public class IDESetup {
      * and notifies the plugins of the activity
      *
      * @param project The project to switch to
-     * @param stage The stage to switch to, can be null if a new stage is needed
+     * @param stage The stage to switch to. Set to {@code null} if a new stage with a transition is required
      */
     public static void switchToIDE(Project project, @Nullable Stage stage) {
         if (isSwitchingToIDE)
