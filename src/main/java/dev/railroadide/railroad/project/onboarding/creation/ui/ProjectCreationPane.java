@@ -62,7 +62,7 @@ public class ProjectCreationPane extends RRBorderPane {
         Platform.runLater(() -> {
             try {
                 var project = new RailroadProject(ctx.projectDir(), ctx.data().getAsString(ProjectData.DefaultKeys.NAME));
-                IDESetup.switchToIDE(project);
+                IDESetup.switchToIDE(project, null);
             } catch (Exception exception) {
                 Railroad.LOGGER.error("Failed to open project in IDE", exception);
 

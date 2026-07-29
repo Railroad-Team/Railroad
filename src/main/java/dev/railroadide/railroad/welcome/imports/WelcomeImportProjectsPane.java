@@ -111,7 +111,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
 
             var project = Railroad.PROJECT_MANAGER.newProject(new RailroadProject(projectDir));
             if (SettingsHandler.getValue(Settings.SWITCH_TO_IDE_AFTER_IMPORT)) {
-                Platform.runLater(() -> IDESetup.switchToIDE(project));
+                Platform.runLater(() -> IDESetup.switchToIDE(project, null));
             }
         }).exceptionally(exception -> {
             showError(exception);

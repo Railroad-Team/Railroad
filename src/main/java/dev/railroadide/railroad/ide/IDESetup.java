@@ -193,8 +193,9 @@ public class IDESetup {
      * and notifies the plugins of the activity
      *
      * @param project The project to switch to
+     * @param stage The stage to switch to. Set to {@code null} if a new stage with a transition is required
      */
-    public static void switchToIDE(Project project) {
+    public static void switchToIDE(Project project, @Nullable Stage stage) {
         if (isSwitchingToIDE)
             return; // Prevent multiple simultaneous IDE window creations
 
@@ -203,13 +204,20 @@ public class IDESetup {
         Platform.runLater(() -> {
             try {
                 Scene ideScene = IDESetup.createIDEScene(project);
-                Stage ideStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
-                ThemeManager.prepareSceneTransition(ideStage.getScene(), ideScene);
+                Stage ideStage = stage == null ? Railroad.WINDOW_MANAGER.getPrimaryStage() : stage;
+
                 ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion() + " - " + project.getAlias());
-                ideStage.setScene(ideScene);
                 ideStage.setResizable(true);
                 ideStage.setMaximized(true);
-                Railroad.WINDOW_MANAGER.setPrimaryStage(ideStage);
+
+                if(stage == null) {
+                    ThemeManager.prepareSceneTransition(ideStage.getScene(), ideScene);
+                    ideStage.setScene(ideScene);
+                    Railroad.WINDOW_MANAGER.setPrimaryStage(ideStage);
+                } else {
+                    ideStage.setScene(ideScene);
+                    Railroad.WINDOW_MANAGER.showPrimary(stage, ideScene, stage.getTitle());
+                }
 
                 try {
                     Railroad.PROJECT_MANAGER.setCurrentProject(project);

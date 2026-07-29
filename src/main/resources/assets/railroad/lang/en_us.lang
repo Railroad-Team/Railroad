@@ -332,6 +332,12 @@ railroad.settings.projects.defaults.author.default_author.description=Set the au
 railroad.settings.projects.defaults.author.projects.default_author.title=Override default project author
 railroad.settings.projects.defaults.author.projects.default_author.description=Set the author name Railroad pre-fills during project onboarding. Leave blank to fall back to the system user name.
 
+railroad.settings.projects.project.title=Project
+railroad.settings.projects.project.description=Configure settings related to opening of projects.
+railroad.settings.projects.project.open_last_project_on_start.title=Reopen last project on startup.
+railroad.settings.projects.project.open_last_project_on_start.description=Reopen the most recently opened project when railroad starts up, skipping the welcome page.
+
+
 # Theme management
 railroad.home.settings.appearance.theme=Select a Theme
 railroad.home.settings.appearance.downloadtheme=Download themes

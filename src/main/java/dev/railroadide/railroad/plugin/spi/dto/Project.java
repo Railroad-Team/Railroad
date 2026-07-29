@@ -12,6 +12,8 @@ import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.utility.json.JsonSerializable;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import javafx.scene.image.Image;
+import javafx.stage.Stage;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -63,8 +65,10 @@ public interface Project extends JsonSerializable<JsonObject> {
 
     /**
      * Open the project in the IDE.
+     * 
+     * @param stage The stage to use for the IDE, can be {@code null} if a new stage should be used
      */
-    void open();
+    void open(@Nullable Stage stage);
 
     /**
      * Get the unique identifier of the project.

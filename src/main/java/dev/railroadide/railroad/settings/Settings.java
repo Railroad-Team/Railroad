@@ -263,6 +263,13 @@ public final class Settings {
         .canBeNull(false)
         .build());
 
+    public static final Setting<Boolean> OPEN_LAST_PROJECT_ON_START = registerSetting(Setting.builder(Boolean.class, "railroad:open_last_project_on_start")
+        .treePath("projects")
+        .category(SettingCategory.simple("railroad:projects.project"))
+        .codec(DefaultSettingCodecs.BOOLEAN)
+        .defaultValue(false)
+        .build());
+
     public static void initialize() {
         // intentionally empty - triggers class loading and static init
     }
