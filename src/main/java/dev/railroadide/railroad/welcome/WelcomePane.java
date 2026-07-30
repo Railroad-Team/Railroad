@@ -96,7 +96,7 @@ public class WelcomePane extends HBox {
                 // TODO: Re-add validation here in the future
 //                if (isValidProjectDirectory(projectPath)) {
                 var project = new RailroadProject(projectPath);
-                project.open();
+                project.open(null);
 //                } else {
 //                    WindowBuilder.createAlert(
 //                        AlertType.ERROR,

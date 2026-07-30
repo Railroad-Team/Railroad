@@ -74,8 +74,7 @@ public final class GitProgressListener implements GitOutputListener {
                 currentPhase = name;
             }
 
-            // TODO: Replace 'ignored' with '_' in java 25
-            if (event instanceof GitProgressEvent.Percentage(String phase, int ignored)) {
+            if (event instanceof GitProgressEvent.Percentage(String phase, int _)) {
                 currentPhase = phase;
             }
 

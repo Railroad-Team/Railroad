@@ -104,7 +104,7 @@ public class ProjectListCell extends ListCell<Project> {
         openItem.setOnAction($ -> {
             Project project = getItem();
             if (project != null) {
-                project.open();
+                project.open(null);
             }
         });
 

@@ -24,15 +24,21 @@ import dev.railroadide.railroad.utility.DiscardingOutputStream;
 import javafx.application.HostServices;
 import javafx.beans.property.ObjectProperty;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 /**
  * Provides access to various services used in the Railroad application.
  * This class serves as a central point to retrieve instances of different services.
  */
 public class Services {
+    private static final String APPLICATION_VERSION = loadApplicationVersion();
+
     public static final ApplicationInfoService APPLICATION_INFO = new ApplicationInfoService() {
         @Override
         public String getVersion() {
-            return "0.0.3";
+            return APPLICATION_VERSION;
         }
 
         @Override
@@ -45,6 +51,23 @@ public class Services {
             return "";
         }
     };
+
+    private static String loadApplicationVersion() {
+        var properties = new Properties();
+        try (InputStream input = Services.class.getResourceAsStream("/railroad-version.properties")) {
+            if (input != null) {
+                properties.load(input);
+                String version = properties.getProperty("version");
+                if (version != null && !version.isBlank())
+                    return version;
+            }
+        } catch (IOException ignored) {
+            // Fall back to manifest metadata below.
+        }
+
+        String manifestVersion = Services.class.getPackage().getImplementationVersion();
+        return manifestVersion == null || manifestVersion.isBlank() ? "development" : manifestVersion;
+    }
 
     public static final DefaultIDEStateService IDE_STATE = DefaultIDEStateService.getInstance();
 

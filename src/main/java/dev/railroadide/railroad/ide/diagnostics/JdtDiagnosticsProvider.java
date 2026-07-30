@@ -26,7 +26,7 @@ public record JdtDiagnosticsProvider(Path filePath) implements DiagnosticsProvid
 
         char[] source = document.toCharArray();
 
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
+        ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
         parser.setResolveBindings(false);
         parser.setBindingsRecovery(false);
@@ -35,7 +35,7 @@ public record JdtDiagnosticsProvider(Path filePath) implements DiagnosticsProvid
         parser.setUnitName(filePath.getFileName().toString());
 
         Map<String, String> options = JavaCore.getOptions();
-        JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);
+        JavaCore.setComplianceOptions(JavaCore.VERSION_25, options);
         parser.setCompilerOptions(options);
 
         CompilationUnit unit = (CompilationUnit) parser.createAST(null);

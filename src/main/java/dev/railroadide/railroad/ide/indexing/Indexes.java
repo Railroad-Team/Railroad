@@ -8,6 +8,9 @@ import dev.railroadide.railroad.java.JDKManager;
 import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -30,7 +33,7 @@ public class Indexes {
         if (Files.notExists(javaHome.resolve("lib").resolve("modules"))) {
             scanRTJar(javaHome, stubs);
         } else {
-            scanJMods(javaHome, stubs);
+            scanModuleImage(stubs);
         }
 
         return stubs;
@@ -58,24 +61,21 @@ public class Indexes {
         }
     }
 
-    private static void scanJMods(Path javaHome, List<ClassStub> stubs) {
-        Path jmods = javaHome.resolve("jmods");
-        // Scan the `java.base` module
-        Path javaBase = jmods.resolve("java.base.jmod"); // this should be effectively a jar file
-
-        try (var jmod = new JarFile(javaBase.toFile())) {
-            Enumeration<JarEntry> entries = jmod.entries();
-            while (entries.hasMoreElements()) {
-                JarEntry entry = entries.nextElement();
-                String className = entry.getName();
-                if (className.startsWith("classes/java/") && className.endsWith(".class")) {
-                    className = className.substring("classes/java/".length(), className.length() - ".class".length());
-                    if (className.endsWith("module-info") || className.endsWith("package-info"))
-                        continue;
-
-                    ClassStub metadata = ClassStubParser.parse(new ClassReader(jmod.getInputStream(entry)));
-                    stubs.add(metadata);
-                }
+    private static void scanModuleImage(List<ClassStub> stubs) {
+        try {
+            FileSystem jrt = FileSystems.getFileSystem(URI.create("jrt:/"));
+            Path javaBase = jrt.getPath("/modules/java.base/java");
+            try (var entries = Files.walk(javaBase)) {
+                entries.filter(Files::isRegularFile)
+                    .filter(path -> path.toString().endsWith(".class"))
+                    .filter(path -> !path.endsWith("module-info.class") && !path.endsWith("package-info.class"))
+                    .forEach(path -> {
+                        try (var input = Files.newInputStream(path)) {
+                            stubs.add(ClassStubParser.parse(new ClassReader(input)));
+                        } catch (IOException exception) {
+                            Railroad.LOGGER.error("Failed to scan standard library class {}", path, exception);
+                        }
+                    });
             }
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to scan standard library", exception);
@@ -122,6 +122,7 @@ public class Indexes {
         if (Files.isRegularFile(javaHome.resolve("lib").resolve("rt.jar")))
             return true;
 
-        return Files.isRegularFile(javaHome.resolve("jmods").resolve("java.base.jmod"));
+        return Files.isRegularFile(javaHome.resolve("lib").resolve("modules"))
+            || Files.isRegularFile(javaHome.resolve("jmods").resolve("java.base.jmod"));
     }
 }

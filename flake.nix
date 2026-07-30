@@ -5,7 +5,7 @@
 
   outputs = inputs:
     let
-      javaVersion = 21;
+      javaVersion = 25;
 
       systems = [
         "x86_64-linux"

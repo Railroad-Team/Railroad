@@ -59,7 +59,7 @@ public class WelcomeProjectsPane extends ScrollPane {
             try {
                 Project project = projectsList.getSelectionModel().getSelectedItem();
                 if (project != null) {
-                    project.open();
+                    project.open(null);
                 }
             } finally {
                 // Reset the flag after a short delay
@@ -85,7 +85,7 @@ public class WelcomeProjectsPane extends ScrollPane {
                 try {
                     Project project = projectsList.getSelectionModel().getSelectedItem();
                     if (project != null) {
-                        project.open();
+                        project.open(null);
                     }
                 } finally {
                     // Reset the flag after a short delay

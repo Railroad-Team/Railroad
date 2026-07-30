@@ -4,12 +4,21 @@ plugins {
     id 'java'
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.1.0'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '9.4.3'
     id 'org.beryx.runtime' version '2.0.0'
 }
 
 group 'dev.railroadide'
-version '0.0.3'
+version '0.1.0'
+
+def macOsBundleVersion = providers.provider {
+    def components = project.version.toString().split('\\.', -1)
+    if (components.length != 3 || !components.every { it ==~ /\d+/ }) {
+        throw new GradleException("Project version must use major.minor.patch format: ${project.version}")
+    }
+
+    "${components[0].toInteger() + 1}.${components[1]}.${components[2]}"
+}
 
 repositories {
     mavenLocal()
@@ -22,12 +31,21 @@ repositories {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+    options.release = 25
+}
+
+processResources {
+    inputs.property('applicationVersion', project.version)
+    filesMatching('railroad-version.properties') {
+        expand(applicationVersion: project.version)
+    }
 }
 
 application {
@@ -46,7 +64,7 @@ tasks.named("run") {
 }
 
 javafx {
-    version = '21'
+    version = '25'
     modules = ['javafx.controls', 'javafx.swing', 'javafx.web', 'javafx.fxml', 'javafx.graphics', 'javafx.media']
 }
 
@@ -153,8 +171,7 @@ runtime {
         description = 'Railroad IDE - A Modern Java IDE for Minecraft Modding'
 
         def currentOs = OperatingSystem.current()
-        if (!currentOs.macOsX)
-            appVersion = project.version.toString()
+        appVersion = project.version.toString()
 
         def imgType = currentOs.windows ? 'ico' : currentOs.macOsX ? 'icns' : 'png'
         def iconPath = file("src/main/resources/assets/railroad/images/logo.$imgType").absolutePath
@@ -175,7 +192,8 @@ runtime {
         } else if (currentOs.macOsX) {
             installerOptions += ['--mac-package-name', 'railroad']
             installerOptions += ['--type', 'dmg']
-            appVersion = '1.0.3'
+            // Apple bundle versions require a major version greater than zero.
+            appVersion = macOsBundleVersion.get()
         }
     }
 }
