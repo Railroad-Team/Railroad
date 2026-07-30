@@ -8,6 +8,7 @@ import java.nio.file.Path;
 
 public final class RailroadLauncher {
     private static final String CEFFX_RUNTIME_PROPERTY = "railroad.ceffx.runtime";
+    private static final String CEFFX_PLATFORM = getCeffxPlatform();
 
     private RailroadLauncher() {
     }
@@ -50,7 +51,7 @@ public final class RailroadLauncher {
 
             Path current = root;
             while (current != null) {
-                Path bundled = current.resolve(Path.of(".railroad", "ceffx", "win"));
+                Path bundled = current.resolve(Path.of(".railroad", "ceffx", CEFFX_PLATFORM));
                 if (isRuntimeDirectory(bundled)) {
                     return bundled;
                 }
@@ -78,10 +79,37 @@ public final class RailroadLauncher {
     }
 
     private static boolean isRuntimeDirectory(Path path) {
+        if (CEFFX_PLATFORM.startsWith("mac")) {
+            return Files.exists(path.resolve("libceffx.dylib"))
+                && Files.exists(path.resolve("ceffx Helper.app"))
+                && Files.exists(path.resolve("Chromium Embedded Framework.framework"));
+        }
+
+        if (CEFFX_PLATFORM.equals("linux")) {
+            return Files.exists(path.resolve("libceffx.so"))
+                && Files.exists(path.resolve("ceffx_helper"))
+                && Files.exists(path.resolve("libcef.so"))
+                && Files.exists(path.resolve("icudtl.dat"))
+                && Files.exists(path.resolve("resources.pak"));
+        }
+
         return Files.exists(path.resolve("ceffx.dll"))
             && Files.exists(path.resolve("ceffx_helper.exe"))
             && Files.exists(path.resolve("libcef.dll"))
             && Files.exists(path.resolve("icudtl.dat"))
             && Files.exists(path.resolve("resources.pak"));
+    }
+
+    private static String getCeffxPlatform() {
+        String osName = System.getProperty("os.name", "").toLowerCase();
+        if (osName.contains("mac")) {
+            return System.getProperty("os.arch", "").equalsIgnoreCase("aarch64")
+                ? "mac-aarch64"
+                : "mac";
+        }
+        if (osName.contains("win")) {
+            return "win";
+        }
+        return "linux";
     }
 }
