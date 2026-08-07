@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.ide.ui.setup;
 
+import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.OperatingSystem;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
@@ -10,12 +12,15 @@ import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.window.WindowManager;
 import javafx.application.Platform;
 import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+
+import java.util.Comparator;
 
 /**
  * Builds the main IDE menu bar with all menu items, accelerators, and icons.
@@ -32,6 +37,17 @@ public final class IDEMenuBarFactory {
         var openFileItem = new LocalizedMenuItem("railroad.menu.file.open_file");
         openFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
         openFileItem.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.SHORTCUT_DOWN));
+
+        var recentProjects = new LocalizedMenu("railroad.menu.file.recent_projects");
+        recentProjects.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
+        recentProjects.getItems().addAll(Railroad.PROJECT_MANAGER.getProjects().stream()
+            .sorted(Comparator.comparingLong(Project::getLastOpened))
+            .limit(5)
+            .map(project -> {
+                MenuItem menuItem = new MenuItem(project.getAlias());
+                menuItem.setOnAction(_ -> project.open(Railroad.WINDOW_MANAGER.getPrimaryStage()));
+                return menuItem;
+            }).toList());
 
         var saveItem = new LocalizedMenuItem("railroad.menu.file.save");
         saveItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
@@ -116,7 +132,7 @@ public final class IDEMenuBarFactory {
         terminalItem.setAccelerator(new KeyCodeCombination(KeyCode.T, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
 
         var fileMenu = new LocalizedMenu("railroad.menu.file");
-        fileMenu.getItems().addAll(newFileItem, openFileItem, saveItem, saveAsItem, new SeparatorMenuItem(), exitItem);
+        fileMenu.getItems().addAll(newFileItem, openFileItem, recentProjects, saveItem, saveAsItem, new SeparatorMenuItem(), exitItem);
         fileMenu.getStyleClass().add("rr-menu");
 
         var editMenu = new LocalizedMenu("railroad.menu.edit");
