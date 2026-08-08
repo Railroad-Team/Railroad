@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.ui.setup;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.RailroadProcessLauncher;
+import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
@@ -53,15 +54,15 @@ public final class IDEMenuBarFactory {
             .map(project -> {
                 MenuItem menuItem = new MenuItem(project.getAlias());
 
-                RRButton thisWindowButton = new RRButton("This Window");
-                RRButton newWindowButton = new RRButton("New Window");
-                RRButton cancelButton = new RRButton("Cancel");
+                RRButton thisWindowButton = new RRButton("railroad.recent_projects.dialog.this_window_button");
+                RRButton newWindowButton = new RRButton("railroad.recent_projects.dialog.new_window_button");
+                RRButton cancelButton = new RRButton("railroad.recent_projects.dialog.cancel_button");
 
                 AtomicReference<Stage> dialog = new AtomicReference<>();
 
-                menuItem.setOnAction(_ -> dialog.set(WindowBuilder.createDialog("Open Project", new DialogBuilder()
-                    .title("Open Project")
-                    .content("Where would you like to open the project '" + project.getAlias() + "'?")
+                menuItem.setOnAction(_ -> dialog.set(WindowBuilder.createDialog("railroad.recent_projects.dialog.title", new DialogBuilder()
+                    .title("railroad.recent_projects.dialog.title")
+                    .content(L18n.localize("railroad.recent_projects.dialog.description", project.getAlias()))
                     .buttons(thisWindowButton, newWindowButton, cancelButton))));
 
                 thisWindowButton.setOnAction(_ -> {
