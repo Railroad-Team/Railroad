@@ -1,7 +1,6 @@
 package dev.railroadide.railroad.project.onboarding.creation.ui;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.project.ProjectContext;
 import dev.railroadide.railroad.project.ProjectData;
 import dev.railroadide.railroad.project.RailroadProject;
@@ -62,7 +61,7 @@ public class ProjectCreationPane extends RRBorderPane {
         Platform.runLater(() -> {
             try {
                 var project = new RailroadProject(ctx.projectDir(), ctx.data().getAsString(ProjectData.DefaultKeys.NAME));
-                IDESetup.switchToIDE(project, null);
+                project.open(null);
             } catch (Exception exception) {
                 Railroad.LOGGER.error("Failed to open project in IDE", exception);
 
