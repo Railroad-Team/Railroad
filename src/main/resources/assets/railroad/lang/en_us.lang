@@ -1028,14 +1028,6 @@ railroad.git.sync.controls.remote.none=No remotes
 railroad.git.commit.details.unknown=Unknown
 
 # =============================================================================
-# Markdown
-# =============================================================================
-railroad.markdown.image_dialog.heading=Insert Image
-railroad.markdown.image_dialog.image_alt_text=Alt Text
-railroad.markdown.image_dialog.image_uri_prompt=Image URI
-railroad.markdown.image_dialog.insert=Insert
-
-# =============================================================================
 # Recent Projects
 # =============================================================================
 railroad.recent_projects.dialog.title=Open Project
@@ -1043,3 +1035,11 @@ railroad.recent_projects.dialog.this_window_button=This Window
 railroad.recent_projects.dialog.new_window_button=New Window
 railroad.recent_projects.dialog.cancel_button=Cancel
 railroad.recent_projects.dialog.description=Where would you like to open the project '%s'?
+
+# =============================================================================
+# Markdown
+# =============================================================================
+railroad.markdown.image_dialog.heading=Insert Image
+railroad.markdown.image_dialog.image_alt_text=Alt Text
+railroad.markdown.image_dialog.image_uri_prompt=Image URI
+railroad.markdown.image_dialog.insert=Insert
