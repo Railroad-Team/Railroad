@@ -1,14 +1,18 @@
 package dev.railroadide.railroad.ide.ui.setup;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.RailroadProcessLauncher;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
-import dev.railroadide.railroad.utility.OperatingSystem;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
+import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRMenuBar;
 import dev.railroadide.railroad.ui.localized.LocalizedCheckMenuItem;
 import dev.railroadide.railroad.ui.localized.LocalizedMenu;
 import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
+import dev.railroadide.railroad.utility.OperatingSystem;
+import dev.railroadide.railroad.window.DialogBuilder;
+import dev.railroadide.railroad.window.WindowBuilder;
 import dev.railroadide.railroad.window.WindowManager;
 import javafx.application.Platform;
 import javafx.scene.control.MenuBar;
@@ -17,10 +21,13 @@ import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.stage.Stage;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.io.IOException;
 import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Builds the main IDE menu bar with all menu items, accelerators, and icons.
@@ -45,7 +52,34 @@ public final class IDEMenuBarFactory {
             .limit(5)
             .map(project -> {
                 MenuItem menuItem = new MenuItem(project.getAlias());
-                menuItem.setOnAction(_ -> project.open(Railroad.WINDOW_MANAGER.getPrimaryStage()));
+
+                RRButton thisWindowButton = new RRButton("This Window");
+                RRButton newWindowButton = new RRButton("New Window");
+                RRButton cancelButton = new RRButton("Cancel");
+
+                AtomicReference<Stage> dialog = new AtomicReference<>();
+
+                menuItem.setOnAction(_ -> dialog.set(WindowBuilder.createDialog("Open Project", new DialogBuilder()
+                    .title("Open Project")
+                    .content("Where would you like to open the project '" + project.getAlias() + "'?")
+                    .buttons(thisWindowButton, newWindowButton, cancelButton))));
+
+                thisWindowButton.setOnAction(_ -> {
+                    project.open(Railroad.WINDOW_MANAGER.getPrimaryStage());
+                    dialog.get().close();
+                });
+
+                newWindowButton.setOnAction(_ -> {
+                    try {
+                        RailroadProcessLauncher.openProject(project.getPath());
+                        dialog.get().close();
+                    } catch (IOException exception) {
+                        Railroad.LOGGER.error("An error occurred trying to start a new Railroad process", exception);
+                    }
+                });
+
+                cancelButton.setOnAction(_ -> dialog.get().close());
+
                 return menuItem;
             }).toList());
 

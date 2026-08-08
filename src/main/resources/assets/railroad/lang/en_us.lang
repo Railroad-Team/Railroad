@@ -502,6 +502,7 @@ railroad.menu.file.open_file=Open File...
 railroad.menu.file.save=Save
 railroad.menu.file.save_as=Save As...
 railroad.menu.file.exit=Exit
+railroad.menu.file.recent_projects=Recent Projects
 
 railroad.menu.edit=Edit
 railroad.menu.edit.undo=Undo
