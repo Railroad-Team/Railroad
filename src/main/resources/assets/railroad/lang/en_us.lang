@@ -502,6 +502,7 @@ railroad.menu.file.open_file=Open File...
 railroad.menu.file.save=Save
 railroad.menu.file.save_as=Save As...
 railroad.menu.file.exit=Exit
+railroad.menu.file.recent_projects=Recent Projects
 
 railroad.menu.edit=Edit
 railroad.menu.edit.undo=Undo
@@ -1025,6 +1026,15 @@ railroad.git.push.strategy.matching=Matching
 railroad.git.push.strategy.nothing=Nothing
 railroad.git.sync.controls.remote.none=No remotes
 railroad.git.commit.details.unknown=Unknown
+
+# =============================================================================
+# Recent Projects
+# =============================================================================
+railroad.recent_projects.dialog.title=Open Project
+railroad.recent_projects.dialog.this_window_button=This Window
+railroad.recent_projects.dialog.new_window_button=New Window
+railroad.recent_projects.dialog.cancel_button=Cancel
+railroad.recent_projects.dialog.description=Where would you like to open the project '%s'?
 
 # =============================================================================
 # Markdown

@@ -19,10 +19,7 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.event.EventBus;
 import dev.railroadide.railroad.plugin.spi.events.ApplicationStartEvent;
 import dev.railroadide.railroad.plugin.spi.events.ApplicationStopEvent;
-import dev.railroadide.railroad.project.LicenseRegistry;
-import dev.railroadide.railroad.project.MappingChannelRegistry;
-import dev.railroadide.railroad.project.ProjectManager;
-import dev.railroadide.railroad.project.ProjectTypeRegistry;
+import dev.railroadide.railroad.project.*;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetTypeAdapter;
 import dev.railroadide.railroad.settings.Settings;
@@ -172,18 +169,25 @@ public class Railroad extends Application {
         try {
             SvgImageLoaderFactory.install(new PrimitiveDimensionProvider());
 
-            List<Project> projects = Railroad.PROJECT_MANAGER.getProjects();
 
-            Optional<Project> optProject = projects.stream().max(Comparator.comparingLong(Project::getLastOpened))
-                .filter($ -> Boolean.TRUE.equals(Settings.OPEN_LAST_PROJECT_ON_START.getValue()));
+            List<Project> projects = Railroad.PROJECT_MANAGER.getProjects();
+            Optional<Project> optProject = getParameters()
+                .getNamed()
+                .entrySet()
+                .stream()
+                .filter(entry -> "project".equals(entry.getKey()))
+                .map(entry -> (Project) new RailroadProject(Path.of(entry.getValue())))
+                .findFirst()
+                .or(() -> projects.stream().max(Comparator.comparingLong(Project::getLastOpened))
+                    .filter(_ -> Boolean.TRUE.equals(Settings.OPEN_LAST_PROJECT_ON_START.getValue())));
 
             optProject.ifPresentOrElse(
-                project -> project.open(primaryStage), 
+                project -> project.open(primaryStage),
                 () -> WINDOW_MANAGER.showPrimary(
                     primaryStage,
                     new Scene(new WelcomePane()),
                     Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()
-            ));
+                ));
 
             LOGGER.info("Railroad started");
             EVENT_BUS.publish(new ApplicationStartEvent());
