@@ -74,7 +74,7 @@ public class RailroadProject implements Project {
     }
 
     public RailroadProject(Path path, String alias, Image icon) {
-        this.path.set(path);
+        this.path.set(ProjectPathIdentity.normalize(path));
         this.alias.set(alias);
         this.icon.set(icon == null ? createIcon() : icon);
         this.dataStore = new ProjectDataStore(this);
@@ -200,10 +200,12 @@ public class RailroadProject implements Project {
     public void open(@Nullable Stage stage){
         Railroad.LOGGER.debug("Opening project: {}", getPathString());
         setLastOpened(System.currentTimeMillis());
-        Railroad.PROJECT_MANAGER.updateProjectInfo(this);
-        IDESetup.switchToIDE(this, stage);
-        discoverFacets();
-        this.gitManager.detectRepository();
+        Project project = Railroad.PROJECT_MANAGER.updateProjectInfo(this);
+        IDESetup.switchToIDE(project, stage);
+        if (project instanceof RailroadProject railroadProject) {
+            railroadProject.discoverFacets();
+        }
+        project.getGitManager().detectRepository();
     }
 
     @Override
@@ -220,12 +222,12 @@ public class RailroadProject implements Project {
             return false;
 
         RailroadProject project = (RailroadProject) obj;
-        return path.equals(project.path);
+        return ProjectPathIdentity.matches(getPath(), project.getPath());
     }
 
     @Override
     public int hashCode() {
-        return path.hashCode();
+        return ProjectPathIdentity.key(getPath()).hashCode();
     }
 
     @Override
@@ -272,10 +274,10 @@ public class RailroadProject implements Project {
             if (pathElement.isJsonPrimitive()) {
                 JsonPrimitive pathPrimitive = pathElement.getAsJsonPrimitive();
                 if (pathPrimitive.isString()) {
-                    this.path.set(Path.of(pathElement.getAsString()));
+                    this.path.set(ProjectPathIdentity.normalize(Path.of(pathElement.getAsString())));
                 } else if (pathPrimitive.isNumber()) {
                     try {
-                        this.path.set(Path.of(String.valueOf(pathPrimitive.getAsNumber())));
+                        this.path.set(ProjectPathIdentity.normalize(Path.of(String.valueOf(pathPrimitive.getAsNumber()))));
                     } catch (Exception exception) {
                         Railroad.LOGGER.warn("Project JSON 'Path' is not a valid path: {}", pathElement, exception);
                     }

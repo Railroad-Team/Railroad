@@ -8,55 +8,82 @@ import javafx.collections.ObservableList;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 @Getter
 public final class ProjectManager {
     private final ObservableList<Project> projects = FXCollections.observableArrayList();
+    private final Runnable configSaver;
     @Getter
     private Project openProject;
 
-    public void updateProjectInfo(Project project) {
-        updateProjectInfo(project, false);
+    public ProjectManager() {
+        this(ConfigHandler::saveConfig);
     }
 
-    public void updateProjectInfo(Project project, boolean removeProject) {
+    ProjectManager(Runnable configSaver) {
+        this.configSaver = Objects.requireNonNull(configSaver, "configSaver");
+    }
+
+    public Project updateProjectInfo(Project project) {
+        Objects.requireNonNull(project, "project");
         Railroad.LOGGER.info("Starting project update: {}", project.getId());
-        boolean found = false;
-        if (removeProject) {
-            Railroad.LOGGER.info("Removing project: {}", project.getId());
-            projects.removeIf(projectObj -> projectObj.getId().equals(project.getId()));
-            ConfigHandler.saveConfig();
-            return;
+
+        Optional<Project> existingProject = findProject(project.getPath());
+        if (existingProject.isPresent()) {
+            Project existing = existingProject.get();
+            existing.setLastOpened(project.getLastOpened());
+            Railroad.LOGGER.info("Updated project: {} last opened to: {}", existing.getId(), project.getLastOpened());
+            configSaver.run();
+            return existing;
         }
 
-        for (Project projectObj : projects) {
-            if (projectObj.getId().equals(project.getId())) {
-                found = true;
-                projectObj.setLastOpened(project.getLastOpened());
-                Railroad.LOGGER.info("Starting update project: {} last opened to: {}", project.getId(), project.getLastOpened());
-            }
-        }
-
-        if (!found) {
-            Railroad.LOGGER.info("Create new Project");
-            projects.add(project);
-        }
-
-        ConfigHandler.saveConfig();
-    }
-
-    public void setProjects(Collection<? extends Project> projectCollection) {
-        this.projects.setAll(projectCollection);
-    }
-
-    public Project newProject(Project project) {
-        updateProjectInfo(project);
+        Railroad.LOGGER.info("Creating new project entry for: {}", project.getPath());
+        projects.add(project);
+        configSaver.run();
         return project;
     }
 
+    public Optional<Project> findProject(Path path) {
+        String pathKey = ProjectPathIdentity.key(path);
+        return projects.stream()
+            .filter(project -> ProjectPathIdentity.key(project.getPath()).equals(pathKey))
+            .findFirst();
+    }
+
+    public void setProjects(Collection<? extends Project> projectCollection) {
+        Objects.requireNonNull(projectCollection, "projectCollection");
+
+        Map<String, Project> projectsByPath = new LinkedHashMap<>();
+        for (Project project : projectCollection) {
+            if (project == null)
+                continue;
+
+            String pathKey = ProjectPathIdentity.key(project.getPath());
+            Project existing = projectsByPath.get(pathKey);
+            if (existing == null || project.getLastOpened() > existing.getLastOpened()) {
+                projectsByPath.put(pathKey, project);
+            }
+        }
+
+        this.projects.setAll(projectsByPath.values());
+    }
+
+    public Project newProject(Project project) {
+        return updateProjectInfo(project);
+    }
+
     public void removeProject(Project project) {
-        updateProjectInfo(project, true);
+        Objects.requireNonNull(project, "project");
+        Railroad.LOGGER.info("Removing project: {}", project.getId());
+        String pathKey = ProjectPathIdentity.key(project.getPath());
+        projects.removeIf(projectObj -> ProjectPathIdentity.key(projectObj.getPath()).equals(pathKey));
+        configSaver.run();
     }
 
     public void setCurrentProject(@Nullable Project project) {
