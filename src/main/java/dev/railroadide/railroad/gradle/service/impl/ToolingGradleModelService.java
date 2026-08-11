@@ -11,6 +11,7 @@ import dev.railroadide.railroad.utility.function.ThrowingSupplier;
 import dev.railroadide.railroadplugin.dto.FabricDataModel;
 import dev.railroadide.railroadplugin.dto.RailroadProject;
 import org.gradle.tooling.GradleConnector;
+import org.gradle.tooling.LongRunningOperation;
 import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.UnknownModelException;
 import org.gradle.tooling.model.build.BuildEnvironment;
@@ -64,16 +65,20 @@ public class ToolingGradleModelService implements GradleModelService {
         try (ProjectConnection connection = connector.connect()) {
             initScriptPath = writeInitScript();
             String[] initScriptArgs = {"--init-script", initScriptPath.toAbsolutePath().toString()};
-            connection.newBuild().withArguments(initScriptArgs).run();
+            configureJvm(connection.newBuild(), environment)
+                .withArguments(initScriptArgs)
+                .run();
 
-            BuildEnvironment buildEnvironment = connection.model(BuildEnvironment.class)
+            BuildEnvironment buildEnvironment = configureJvm(connection.model(BuildEnvironment.class), environment)
                 .withArguments(initScriptArgs)
                 .get();
-            GradleBuild gradleBuild = connection.model(GradleBuild.class)
+            GradleBuild gradleBuild = configureJvm(connection.model(GradleBuild.class), environment)
                 .withArguments(initScriptArgs)
                 .get();
-            RailroadProject gradleProject = requestOptionalModel(connection, RailroadProject.class, initScriptArgs);
-            FabricDataModel fabricDataModel = requestOptionalModel(connection, FabricDataModel.class, initScriptArgs);
+            RailroadProject gradleProject = requestOptionalModel(
+                connection, RailroadProject.class, initScriptArgs, environment);
+            FabricDataModel fabricDataModel = requestOptionalModel(
+                connection, FabricDataModel.class, initScriptArgs, environment);
 
             String gradleVersion = buildEnvironment.getGradle().getGradleVersion();
             Path rootDir = gradleBuild.getRootProject().getProjectDirectory().toPath();
@@ -102,9 +107,10 @@ public class ToolingGradleModelService implements GradleModelService {
         }
     }
 
-    private static <T> T requestOptionalModel(ProjectConnection connection, Class<T> modelClass, String[] initScriptArgs) {
+    private static <T> T requestOptionalModel(ProjectConnection connection, Class<T> modelClass,
+                                              String[] initScriptArgs, GradleEnvironment environment) {
         try {
-            return connection.model(modelClass)
+            return configureJvm(connection.model(modelClass), environment)
                 .withArguments(initScriptArgs)
                 .get();
         } catch (UnknownModelException exception) {
@@ -129,9 +135,11 @@ public class ToolingGradleModelService implements GradleModelService {
             environment.installationPath().ifPresent(path -> connector.useInstallation(path.toFile()));
             environment.userHomePath().ifPresent(path -> connector.useGradleUserHomeDir(path.toFile()));
         }
+    }
 
-        // TODO: Enable setting Java home via environment.jvm() when custom JVM support is implemented.
-        // environment.jvm().ifPresent(jvm -> connector.setJavaHome(jvm.javaHome().toFile()));
+    private static <T extends LongRunningOperation> T configureJvm(T operation, GradleEnvironment environment) {
+        environment.jvm().ifPresent(jvm -> operation.setJavaHome(jvm.path().toFile()));
+        return operation;
     }
 
     private static <T> Supplier<T> safely(ThrowingSupplier<T> supplier) {
