@@ -2,6 +2,9 @@ package dev.railroadide.railroad.ide.ui.setup;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.RailroadProcessLauncher;
+import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
+import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
+import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
@@ -23,10 +26,12 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Comparator;
 
 /**
@@ -36,10 +41,15 @@ public final class IDEMenuBarFactory {
     private IDEMenuBarFactory() {
     }
 
-    public static MenuBar create() {
+    public static MenuBar create(ProjectExplorerPane projectExplorerPane) {
         var newFileItem = new LocalizedMenuItem("railroad.menu.file.new_file");
         newFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE));
         newFileItem.setKeybindData(new KeybindData(KeyCode.N, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
+        newFileItem.setOnAction(_ -> {
+            Path directoryPath = projectExplorerPane.getSelectedDirectory();
+            Window window = projectExplorerPane.getScene().getWindow();
+            CreateFileDialog.open(window, directoryPath, FileCreateType.FILE);
+        });
 
         var openFileItem = new LocalizedMenuItem("railroad.menu.file.open_file");
         openFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));

@@ -69,12 +69,13 @@ public class IDESetup {
      */
     public static Scene createIDEScene(Project project) {
         var root = new RRBorderPane();
-        var topBar = new RRHBox(IDEMenuBarFactory.create(), new Region(), RunControlsPane.create(project));
+        var projectExplorerPane = new ProjectExplorerPane(project, root);
+        var topBar = new RRHBox(IDEMenuBarFactory.create(projectExplorerPane), new Region(), RunControlsPane.create(project));
         HBox.setHgrow(topBar.getChildren().get(1), Priority.ALWAYS);
         root.setTop(topBar);
 
         var leftPane = new DetachableTabPane();
-        leftPane.addTab("Project", new ProjectExplorerPane(project, root));
+        leftPane.addTab("Project", projectExplorerPane);
         leftPane.addTab("Git Commit", new GitCommitPane(project));
         leftPane.addTab("Git Overview", new GitOverviewPane(project));
         leftPane.addTab("Git Commit List", new GitCommitListPane(project));
