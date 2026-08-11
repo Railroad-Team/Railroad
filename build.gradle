@@ -53,6 +53,7 @@ application {
     applicationDefaultJvmArgs = [
             '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
             '-Dslf4j.provider=ch.qos.logback.classic.spi.LogbackServiceProvider',
+            '-Dslf4j.internal.report.stream=stdout',
             '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
             '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
             '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
@@ -62,6 +63,7 @@ application {
 tasks.named("run") {
     jvmArgs '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
             '-Dslf4j.provider=ch.qos.logback.classic.spi.LogbackServiceProvider',
+            '-Dslf4j.internal.report.stream=stdout',
             '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
             '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
             '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
@@ -165,6 +167,7 @@ runtime {
         jvmArgs = [
                 '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
                 '-Dslf4j.provider=ch.qos.logback.classic.spi.LogbackServiceProvider',
+                '-Dslf4j.internal.report.stream=stdout',
                 '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
                 '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
                 '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
