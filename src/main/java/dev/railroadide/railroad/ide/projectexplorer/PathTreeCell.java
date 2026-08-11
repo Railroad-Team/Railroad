@@ -21,7 +21,6 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyCode;
 import javafx.stage.Window;
 
-import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -94,9 +93,6 @@ public class PathTreeCell extends TreeCell<PathItem> {
             openInExplorer.setText("Finder");
         else if (System.getProperty("os.name").toLowerCase().contains("linux"))
             openInExplorer.setText("File Manager");
-        if (!Desktop.isDesktopSupported())
-            openInExplorer.setDisable(true);
-
         var openInTerminal = new MenuItem("Terminal");
 
         openInExplorer.setOnAction(event -> ProjectExplorerPane.openInExplorer(currentPath));

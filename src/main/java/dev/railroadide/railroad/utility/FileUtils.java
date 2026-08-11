@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.utility;
 
+import dev.railroadide.railroad.Railroad;
 import javafx.scene.Node;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -345,13 +345,8 @@ public final class FileUtils {
      * @throws RuntimeException if an error occurs while opening the file or directory
      */
     public static void openInDefaultApplication(Path path) throws RuntimeException {
-        if (Desktop.isDesktopSupported()) {
-            try {
-                Desktop.getDesktop().open(path.toFile());
-            } catch (IOException exception) {
-                throw new RuntimeException("Failed to open in default application", exception);
-            }
-        }
+        Objects.requireNonNull(path, "Path cannot be null");
+        Railroad.getHostServicess().showDocument(path.toAbsolutePath().normalize().toUri().toString());
     }
 
     /**
