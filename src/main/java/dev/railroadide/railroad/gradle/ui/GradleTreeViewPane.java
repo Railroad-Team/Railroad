@@ -49,7 +49,7 @@ public abstract class GradleTreeViewPane<T> extends RRVBox {
         updateLoadingState();
 
         GradleModelService modelService = project.getGradleManager().getGradleModelService();
-        modelService.addListener(new GradleModelListener() {
+        var modelListener = new GradleModelListener() {
             @Override
             public void modelReloadStarted() {
                 reloadGeneration.incrementAndGet();
@@ -64,9 +64,17 @@ public abstract class GradleTreeViewPane<T> extends RRVBox {
 
             @Override
             public void modelReloadFailed(Throwable error) {
-                Railroad.LOGGER.error("Failed to reload Gradle model", error);
                 isLoading.set(false);
                 updateLoadingState();
+            }
+        };
+        var modelListenerRegistered = new AtomicBoolean(true);
+        modelService.addListener(modelListener);
+        sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if (newScene == null && modelListenerRegistered.compareAndSet(true, false)) {
+                modelService.removeListener(modelListener);
+            } else if (newScene != null && modelListenerRegistered.compareAndSet(false, true)) {
+                modelService.addListener(modelListener);
             }
         });
 

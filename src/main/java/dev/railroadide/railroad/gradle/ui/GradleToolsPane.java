@@ -28,6 +28,8 @@ import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.StackedFontIcon;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 @Getter
 public class GradleToolsPane extends RRVBox {
     private final TabPane tabPane;
@@ -86,7 +88,7 @@ public class GradleToolsPane extends RRVBox {
             ((RRToggleButton) toggleOfflineButton).setSelected(newOfflineMode);
         });
 
-        var listener = new GradleModelListener() {
+        var modelListener = new GradleModelListener() {
             private void setButtonsDisabled(boolean disabled) {
                 Platform.runLater(() -> {
                     syncButton.setDisable(disabled);
@@ -110,7 +112,15 @@ public class GradleToolsPane extends RRVBox {
                 setButtonsDisabled(false);
             }
         };
-        modelService.addListener(listener);
+        var modelListenerRegistered = new AtomicBoolean(true);
+        modelService.addListener(modelListener);
+        sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if (newScene == null && modelListenerRegistered.compareAndSet(true, false)) {
+                modelService.removeListener(modelListener);
+            } else if (newScene != null && modelListenerRegistered.compareAndSet(false, true)) {
+                modelService.addListener(modelListener);
+            }
+        });
 
         var buttonBar = new RRHBox(2, syncButton, downloadSourcesButton, toggleOfflineButton);
         buttonBar.getStyleClass().add("gradle-tools-buttonbar");

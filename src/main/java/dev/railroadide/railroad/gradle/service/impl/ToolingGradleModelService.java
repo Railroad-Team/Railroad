@@ -200,6 +200,7 @@ public class ToolingGradleModelService implements GradleModelService {
                 Throwable error = throwable != null
                     ? throwable
                     : new IllegalStateException("Failed to load model");
+                Railroad.LOGGER.error("Failed to reload Gradle model", error);
                 listeners.forEach(listener -> notifyListener(
                     () -> listener.modelReloadFailed(error),
                     "failure"
