@@ -791,6 +791,17 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         return true;
     }
 
+    public Path getSelectedDirectory() {
+        TreeItem<PathItem> selected =
+            treeView.getSelectionModel().getSelectedItem();
+
+        if (selected == null)
+            return project.getPath();
+
+        Path path = selected.getValue().getPath();
+        return Files.isDirectory(path) ? path : path.getParent();
+    }
+
     private record OpenTabLocation(DetachableTabPane tabPane, Tab tab) {
     }
 }
