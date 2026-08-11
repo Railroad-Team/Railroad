@@ -1,8 +1,10 @@
 package dev.railroadide.railroad.ui;
 
+import dev.railroadide.railroad.ui.animation.UIAnimations;
 import dev.railroadide.railroad.ui.localized.LocalizedTextProperty;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
+import javafx.animation.RotateTransition;
 import javafx.animation.ScaleTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -28,6 +30,7 @@ public class RRButton extends Button {
 
     private Node originalGraphic;
     private FontIcon loadingSpinner;
+    private RotateTransition loadingSpinnerAnimation;
 
     private final BooleanProperty isLoading = new SimpleBooleanProperty(this, "isLoading", false);
 
@@ -132,6 +135,7 @@ public class RRButton extends Button {
         loadingSpinner = new FontIcon(FontAwesomeSolid.SYNC_ALT);
         loadingSpinner.setIconSize(16);
         loadingSpinner.getStyleClass().add("loading-spinner");
+        loadingSpinnerAnimation = UIAnimations.spinner(loadingSpinner);
 
         setOnMousePressed($ -> {
             if (!getIsLoading()) {
@@ -270,12 +274,15 @@ public class RRButton extends Button {
         }
 
         setGraphic(loadingContent);
+        loadingSpinnerAnimation.playFromStart();
     }
 
     /**
      * Called when the button has stopped loading
      */
     protected void onNotLoading() {
+        loadingSpinnerAnimation.stop();
+        loadingSpinner.setRotate(0);
         setDisable(false);
         getStyleClass().remove("loading");
 

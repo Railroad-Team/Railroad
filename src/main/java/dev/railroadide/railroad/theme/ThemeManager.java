@@ -113,6 +113,7 @@ public class ThemeManager {
     }
 
     public static void applyThemeToScene(String theme, Scene scene) {
+        ResponsiveDesign.install(scene);
         scene.getStylesheets().clear();
 
         if (theme != null && !theme.isEmpty()) {
