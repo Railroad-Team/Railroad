@@ -95,8 +95,8 @@ Incremental semantic sessions and broader IDE features
 
 ## P0.3 Unified ranges and locations
 
-- [ ] **SST-P0-031** Add validated half-open `TextRange`.
-- [ ] **SST-P0-032** Add validated half-open `ByteRange`.
+- [x] **SST-P0-031** Add validated half-open `TextRange`.
+- [x] **SST-P0-032** Add validated half-open `ByteRange`.
 - [ ] **SST-P0-033** Add optional binary `AddressRange` for formats with virtual addresses.
 - [ ] **SST-P0-034** Add a language-neutral `Location` containing document identity, snapshot version, and range.
 - [ ] **SST-P0-035** Add `RelatedLocation` with a human-readable relationship/message.
