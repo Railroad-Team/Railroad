@@ -24,7 +24,6 @@ import dev.railroadide.railroad.ide.ui.setup.PaneIconBarFactory;
 import dev.railroadide.railroad.ide.ui.setup.RunControlsPane;
 import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
-import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.project.FacetDetectedEvent;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
@@ -194,7 +193,7 @@ public class IDESetup {
      * and notifies the plugins of the activity
      *
      * @param project The project to switch to
-     * @param stage The stage to switch to. Set to {@code null} if a new stage with a transition is required
+     * @param stage   The stage to switch to. Set to {@code null} if a new stage with a transition is required
      */
     public static void switchToIDE(Project project, @Nullable Stage stage) {
         if (isSwitchingToIDE)
@@ -211,7 +210,7 @@ public class IDESetup {
                 ideStage.setResizable(true);
                 ideStage.setMaximized(true);
 
-                if(stage == null) {
+                if (stage == null) {
                     ThemeManager.prepareSceneTransition(ideStage.getScene(), ideScene);
                     ideStage.setScene(ideScene);
                     Railroad.WINDOW_MANAGER.setPrimaryStage(ideStage);

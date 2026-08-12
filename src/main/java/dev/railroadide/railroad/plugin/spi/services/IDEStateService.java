@@ -9,6 +9,7 @@ import java.util.List;
  * Service to manage the state of the IDE, including the current project,
  * open documents, and active document.
  */
+// TODO: Use <? extends Document> for the list of open documents to allow for subclasses of Document
 public interface IDEStateService {
     /**
      * Gets the current project in the IDE.

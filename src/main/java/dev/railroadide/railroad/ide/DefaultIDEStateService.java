@@ -31,17 +31,6 @@ public class DefaultIDEStateService implements IDEStateService {
                 setCurrentProject_internal(null);
             }
         });
-
-        Railroad.EVENT_BUS.subscribe(DocumentEvent.class, event -> {
-            Document document = event.file();
-            if (event.isOpenedEvent()) {
-                openDocument_internal(document);
-            } else if (event.isClosedEvent()) {
-                closeDocument_internal(document);
-            } else if (event.isActivatedEvent()) {
-                setActiveDocument_internal(document);
-            }
-        });
     }
 
     public static synchronized DefaultIDEStateService getInstance() {
@@ -55,35 +44,55 @@ public class DefaultIDEStateService implements IDEStateService {
     private void setCurrentProject_internal(Project project) {
         this.currentProject = project;
         this.openedProjectAtMillis = project != null ? System.currentTimeMillis() : -1L;
+
+        if (project == null) {
+            clearOpenDocuments_internal();
+            setActiveDocument_internal(null);
+        }
     }
 
     private void openDocument_internal(Document document) {
         openDocuments.put(document, System.currentTimeMillis());
+        Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.OPENED));
     }
 
     private void closeDocument_internal(Document document) {
         openDocuments.remove(document);
+        Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.CLOSED));
         recentFiles.put(document.getPath(), System.currentTimeMillis());
+        // TODO: Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.RECENT_FILE_ADDED));
 
-        if (activeDocument != null && openDocuments.isEmpty()) {
-            activeDocument = null;
-        } else if (activeDocument != null && activeDocument.equals(document)) {
-            activeDocument = null;
+        if ((activeDocument != null && openDocuments.isEmpty()) || (activeDocument != null && activeDocument.equals(document))) {
+            setActiveDocument_internal(null);
         }
     }
 
     private void setActiveDocument_internal(Document document) {
         if (openDocuments.containsKey(document)) {
             this.activeDocument = document;
+            Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.ACTIVATED));
         } else {
             this.activeDocument = null;
+            Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.DEACTIVATED));
+        }
+    }
+
+    private void clearOpenDocuments_internal() {
+        openDocuments.keySet().forEach(this::closeDocument_internal);
+        setActiveDocument_internal(null);
+    }
+
+    private void setOpenDocuments_internal(List<Document> list) {
+        clearOpenDocuments_internal();
+        for (Document document : list) {
+            openDocument_internal(document);
         }
     }
 
     @Override
     public void clearOpenDocuments() {
-        // NO-OP
-        // TODO
+        clearOpenDocuments_internal();
+        setActiveDocument_internal(null);
     }
 
     @Override
@@ -102,8 +111,7 @@ public class DefaultIDEStateService implements IDEStateService {
 
     @Override
     public void setOpenDocuments(List<Document> list) {
-        // NO-OP
-        // TODO
+        setOpenDocuments_internal(list);
     }
 
     @Override
@@ -113,25 +121,21 @@ public class DefaultIDEStateService implements IDEStateService {
 
     @Override
     public void setActiveDocument(Document document) {
-        // NO-OP
-        // TODO
+        setActiveDocument_internal(document);
     }
 
     @Override
     public void setCurrentProject(Project project) {
-        // NO-OP
-        // TODO
+        setCurrentProject_internal(project);
     }
 
     @Override
     public void openDocument(Document document) {
-        // NO-OP
-        // TODO
+        openDocument_internal(document);
     }
 
     @Override
     public void closeDocument(Document document) {
-        // NO-OP
-        // TODO
+        closeDocument_internal(document);
     }
 }

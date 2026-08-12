@@ -287,6 +287,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         });
     }
 
+    // TODO: Probably just rewrite this entire method as its not designed well for IDEStateService and the way we handle documents
     public static void openFile(Project project, PathItem item, RRBorderPane mainPane) {
         Path path = item.getPath();
         if (Files.isDirectory(path))
@@ -299,8 +300,9 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 : PlainTextLanguageSupport.INSTANCE);
         if (support == null) {
             FileUtils.openInDefaultApplication(path);
+            // TODO: This will not really work long term as everything will think its an open tab in the IDE
             Railroad.EVENT_BUS.publish(new DocumentEvent(
-                new FileSystemDocument(path.getFileName().toString(), path, LanguageSupportRegistry.resolveLanguageId(path)),
+                new FileSystemDocument(path),
                 DocumentEvent.EventType.OPENED
             ));
             return;
@@ -332,7 +334,9 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             EditorOpenView editorOpenView = support.open(project, path);
             if (editorOpenView == null) {
                 FileUtils.openInDefaultApplication(path);
-                Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(path.getFileName().toString(), path, support.languageId()), DocumentEvent.EventType.OPENED));
+                // TODO: This will not really work long term as everything will think its an open tab in the IDE
+                // TODO: Also look at combining this with the other one that does the same thing
+                Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(path, support.languageId()), DocumentEvent.EventType.OPENED));
                 return;
             }
 
@@ -351,7 +355,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
             detachableTabPane.getSelectionModel().select(tab);
 
-            var document = new FileSystemDocument(fileName, path, support.languageId());
+            var document = new FileSystemDocument(path, support.languageId());
             Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.OPENED));
             Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.ACTIVATED));
 

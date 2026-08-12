@@ -201,15 +201,15 @@ public class PathTreeCell extends TreeCell<PathItem> {
     public void commitEdit(PathItem newValue) {
         if (editingPath != null) {
             try {
+                // TODO: This should really use the IDEStateService to rename the document rather than have manual handling
                 ProjectExplorerPane.disableFileChangeListener();
 
                 String oldName = editingPath.getFileName().toString();
                 String newName = newValue.getPath().getFileName().toString();
-                String languageId = LanguageSupportRegistry.resolveLanguageId(newValue.getPath());
 
                 Files.move(editingPath, newValue.getPath());
                 getItem().setPath(newValue.getPath());
-                Railroad.EVENT_BUS.publish(new DocumentRenamedEvent(new FileSystemDocument(newName, newValue.getPath(), languageId), oldName, newName));
+                Railroad.EVENT_BUS.publish(new DocumentRenamedEvent(new FileSystemDocument(newValue.getPath()), oldName, newName));
             } catch (IOException exception) {
                 cancelEdit();
                 messageProperty.setValue("Renaming %s failed".formatted(editingPath.getFileName()));
