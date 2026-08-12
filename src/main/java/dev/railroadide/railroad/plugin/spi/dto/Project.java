@@ -65,10 +65,15 @@ public interface Project extends JsonSerializable<JsonObject> {
 
     /**
      * Open the project in the IDE.
-     * 
+     *
      * @param stage The stage to use for the IDE, can be {@code null} if a new stage should be used
      */
     void open(@Nullable Stage stage);
+
+    /**
+     * Close the project in the IDE.
+     */
+    void close();
 
     /**
      * Get the unique identifier of the project.
@@ -191,6 +196,4 @@ public interface Project extends JsonSerializable<JsonObject> {
     default String getPathString() {
         return getPath().toAbsolutePath().toString();
     }
-
-
 }

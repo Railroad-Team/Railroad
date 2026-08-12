@@ -18,6 +18,7 @@ import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.settings.Settings;
+import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroad.vcs.Repository;
 import dev.railroadide.railroad.vcs.git.GitClient;
@@ -197,7 +198,12 @@ public class RailroadProject implements Project {
     }
 
     @Override
-    public void open(@Nullable Stage stage){
+    public void open(@Nullable Stage stage) {
+        Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
+        if (currentProject != null && !ProjectPathIdentity.matches(currentProject.getPath(), getPath())) {
+            currentProject.close();
+        }
+
         Railroad.LOGGER.debug("Opening project: {}", getPathString());
         setLastOpened(System.currentTimeMillis());
         Project project = Railroad.PROJECT_MANAGER.updateProjectInfo(this);
@@ -206,6 +212,21 @@ public class RailroadProject implements Project {
             railroadProject.discoverFacets();
         }
         project.getGitManager().detectRepository();
+
+        ShutdownHooks.addHook(() -> {
+            if (Railroad.PROJECT_MANAGER.getOpenProject() == project) {
+                project.close();
+            }
+        });
+    }
+
+    @Override
+    public void close() {
+        Railroad.LOGGER.debug("Closing project: {}", getPathString());
+        Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
+        if (currentProject != null && ProjectPathIdentity.matches(currentProject.getPath(), getPath())) {
+            Railroad.PROJECT_MANAGER.setCurrentProject(null);
+        }
     }
 
     @Override

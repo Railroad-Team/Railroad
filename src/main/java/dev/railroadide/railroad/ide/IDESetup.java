@@ -222,7 +222,6 @@ public class IDESetup {
 
                 try {
                     Railroad.PROJECT_MANAGER.setCurrentProject(project);
-                    Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.OPENED));
                 } finally {
                     isSwitchingToIDE = false;
                 }
