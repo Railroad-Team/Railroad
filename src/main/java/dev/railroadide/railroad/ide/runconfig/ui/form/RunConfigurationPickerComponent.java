@@ -51,7 +51,7 @@ public class RunConfigurationPickerComponent extends FormComponent<FormRunConfig
     @Override
     protected void applyListener(FormComponentChangeListener<FormRunConfigurationPicker, RunConfiguration<?>[]> listener) {
         AtomicReference<ChangeListener<RunConfiguration<?>[]>> listenerRef = new AtomicReference<>();
-        componentProperty().addListener((observable, oldValue, newValue) -> {
+        componentProperty().addListener((_, oldValue, newValue) -> {
             if (oldValue != null && listenerRef.get() != null) {
                 oldValue.valueProperty().removeListener(listenerRef.get());
             }
@@ -67,7 +67,7 @@ public class RunConfigurationPickerComponent extends FormComponent<FormRunConfig
 
     @Override
     protected void bindToFormData(FormData formData) {
-        componentProperty().addListener((observable, oldValue, newValue) -> {
+        componentProperty().addListener((_, _, newValue) -> {
             if (newValue != null) {
                 registerBinding(newValue, formData);
             }
@@ -88,7 +88,7 @@ public class RunConfigurationPickerComponent extends FormComponent<FormRunConfig
     }
 
     private void registerBinding(FormRunConfigurationPicker picker, FormData formData) {
-        picker.valueProperty().addListener((observable, oldValue, newValue) ->
+        picker.valueProperty().addListener((_, _, newValue) ->
             formData.add(dataKey, newValue == null ? new RunConfiguration[0] : newValue));
         formData.add(dataKey, picker.getValue());
     }

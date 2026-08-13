@@ -13,7 +13,7 @@ public class PathItem {
     private Path path;
     private int depthCount;
 
-    private BooleanProperty cutProperty = new SimpleBooleanProperty(false);
+    private final BooleanProperty cutProperty = new SimpleBooleanProperty(false);
 
     public PathItem(Path path) {
         this.path = path;

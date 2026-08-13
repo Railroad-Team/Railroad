@@ -54,7 +54,7 @@ public class DiagnosticPane extends BorderPane {
         setTop(locationText);
         setCenter(messageText);
         getStyleClass().add("diagnostic-pane");
-        if (diagnostics.stream().anyMatch(d -> d.getKind() == Diagnostic.Kind.ERROR)) {
+        if (diagnostics.stream().anyMatch(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR)) {
             getStyleClass().add("error");
         } else {
             getStyleClass().add("warning");

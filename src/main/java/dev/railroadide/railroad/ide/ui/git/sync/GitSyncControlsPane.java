@@ -1,9 +1,11 @@
 package dev.railroadide.railroad.ide.ui.git.sync;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.vcs.git.GitManager;
@@ -16,6 +18,7 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 public class GitSyncControlsPane extends RRVBox {
     public GitSyncControlsPane(GitManager gitManager) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_SYNC_CONTROLS, this);
         getStyleClass().add("git-sync-controls-pane-root");
 
         var remoteLabel = new LocalizedLabel("railroad.git.sync.controls.remote");
@@ -27,7 +30,7 @@ public class GitSyncControlsPane extends RRVBox {
         remoteComboBox.setConverter(new StringConverter<>() {
             @Override
             public String toString(GitRemote remote) {
-                if(remote == null)
+                if (remote == null)
                     return L18n.localize("railroad.git.sync.controls.remote.none");
 
                 return remote.name();
@@ -41,7 +44,7 @@ public class GitSyncControlsPane extends RRVBox {
                     .orElse(null);
             }
         });
-        remoteComboBox.setOnAction($ -> {
+        remoteComboBox.setOnAction(_ -> {
             GitRemote selectedRemote = remoteComboBox.getSelectionModel().getSelectedItem();
             if (selectedRemote != null) {
                 gitManager.setCurrentRemote(selectedRemote);
@@ -54,7 +57,7 @@ public class GitSyncControlsPane extends RRVBox {
         ComboBox<String> upstreamBranchComboBox = new ComboBox<>();
         upstreamBranchComboBox.getStyleClass().add("git-sync-controls-upstream-branch-combobox");
         upstreamBranchComboBox.setDisable(true);
-        upstreamBranchComboBox.setOnAction($ -> {
+        upstreamBranchComboBox.setOnAction(_ -> {
             String selectedBranch = upstreamBranchComboBox.getSelectionModel().getSelectedItem();
             if (selectedBranch != null) {
                 gitManager.setCurrentUpstreamBranch(selectedBranch);
@@ -68,16 +71,16 @@ public class GitSyncControlsPane extends RRVBox {
 
         var fetchButton = new RRButton("railroad.git.sync.controls.fetch", FontAwesomeSolid.SYNC);
         fetchButton.getStyleClass().add("git-sync-controls-fetch-button");
-        fetchButton.setOnAction($ -> gitManager.fetch());
+        fetchButton.setOnAction(_ -> gitManager.fetch());
 
         var pullButton = new RRButton("railroad.git.sync.controls.pull", FontAwesomeSolid.DOWNLOAD);
         pullButton.getStyleClass().add("git-sync-controls-pull-button");
-        pullButton.setOnAction($ -> gitManager.pull());
+        pullButton.setOnAction(_ -> gitManager.pull());
 
         var pushButton = new RRButton("railroad.git.sync.controls.push", FontAwesomeSolid.PAPER_PLANE);
         pushButton.setVariant(ButtonVariant.SECONDARY);
         pushButton.getStyleClass().add("git-sync-controls-push-button");
-        pushButton.setOnAction($ -> gitManager.push());
+        pushButton.setOnAction(_ -> gitManager.push());
 
         var buttonsHbox = new RRHBox(2, fetchButton, pullButton, pushButton);
         buttonsHbox.getStyleClass().add("git-sync-controls-buttons-hbox");
@@ -89,6 +92,6 @@ public class GitSyncControlsPane extends RRVBox {
             remoteComboBox.getSelectionModel().select(gitManager.getCurrentRemote());
         };
         refreshRemotes.run();
-        gitManager.repoStatusProperty().addListener((obs, oldStatus, newStatus) -> refreshRemotes.run());
+        gitManager.repoStatusProperty().addListener((_, _, _) -> refreshRemotes.run());
     }
 }

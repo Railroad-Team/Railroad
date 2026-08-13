@@ -1,15 +1,17 @@
 package dev.railroadide.railroad.ide.runconfig.ui;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.form.Form;
 import dev.railroadide.railroad.form.FormData;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
-import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
+import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.beans.property.ObjectProperty;
@@ -21,7 +23,6 @@ import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.control.ContextMenu;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -66,6 +67,8 @@ public class RunConfigurationEditorPane extends RRVBox {
         initializeBindings();
         updateEditorContent();
         updateDetailContent(selectedConfiguration.get());
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.RUN_CONFIGURATION_EDITOR, this);
     }
 
     private void initializeUI() {
@@ -90,7 +93,7 @@ public class RunConfigurationEditorPane extends RRVBox {
             updateEditorContent();
         });
 
-        selectedConfiguration.addListener((obs, oldValue, newValue) -> updateDetailContent(newValue));
+        selectedConfiguration.addListener((_, _, newValue) -> updateDetailContent(newValue));
     }
 
     private void updateDetailContent(RunConfiguration<?> configuration) {
@@ -190,7 +193,7 @@ public class RunConfigurationEditorPane extends RRVBox {
                 .orElse("unknown");
             graphic.getStyleClass().add("run-configuration-editor-add-menu-icon-" + runConfigTypeId);
 
-            var menuItem = new MenuItem(L18n.localize(runConfigurationType.getLocalizationKey()), graphic);
+            var menuItem = new LocalizedMenuItem(runConfigurationType.getLocalizationKey(), graphic);
             menuItem.setOnAction(event -> createRunConfiguration(project, runConfigurationType));
             contextMenu.getItems().add(menuItem);
         }

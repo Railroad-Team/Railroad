@@ -1,13 +1,14 @@
 package dev.railroadide.railroad.ide.ui.git.commit.list;
 
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
-import dev.railroadide.railroad.ide.IDESetup;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
-import dev.railroadide.railroad.utility.TimeFormatter;
 import dev.railroadide.railroad.utility.ShutdownHooks;
+import dev.railroadide.railroad.utility.TimeFormatter;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import javafx.animation.KeyFrame;
@@ -62,6 +63,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
 
     public GitCommitListViewPane(Project project) {
         super();
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT_LIST_VIEW, this);
 
         getStyleClass().add("git-commit-list-view-pane");
         enableSmoothScrolling();
@@ -187,7 +189,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
         Parent root = scene.getRoot();
         Optional<CommitDetailsTabLocation> existing = findExistingDetailsTab(root);
         DetachableTabPane tabPane = existing.map(CommitDetailsTabLocation::tabPane)
-            .or(() -> IDESetup.findBestPaneForFiles(root))
+            .or(() -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE_EDITOR_DOCK))
             .orElse(null);
         if (tabPane == null)
             return;
@@ -375,7 +377,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
         }
     }
 
-        private class GitCommitMiniDetailsPane extends RRVBox {
+    private class GitCommitMiniDetailsPane extends RRVBox {
         private final Text message = new Text();
         private final Text author = new Text();
         private final Text hash = new Text();

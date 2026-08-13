@@ -1,9 +1,11 @@
 package dev.railroadide.railroad.ide.ui.git.overview;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.TimeFormatter;
@@ -17,6 +19,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.WeakInvalidationListener;
 import javafx.beans.property.ReadOnlyLongProperty;
 import javafx.beans.property.SimpleLongProperty;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.Tooltip;
@@ -37,19 +40,20 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
     private final AtomicInteger requestedCount = new AtomicInteger(0);
     private final SimpleLongProperty elapsedTick = new SimpleLongProperty();
     private final Timeline elapsedTimeline = new Timeline(
-        new KeyFrame(Duration.seconds(1), $ -> elapsedTick.set(elapsedTick.get() + 1))
+        new KeyFrame(Duration.seconds(1), _ -> elapsedTick.set(elapsedTick.get() + 1))
     );
 
     public GitOverviewRecentCommitsPane(Project project) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_OVERVIEW_RECENT_COMMITS, this);
         getStyleClass().add("git-overview-recent-commits-pane");
         setPlaceholder(new LocalizedText("railroad.git.overview.recent_commits.placeholder"));
 
         GitManager gitManager = project.getGitManager();
         requestCommits(gitManager, FALLBACK_COMMIT_COUNT);
-        setCellFactory(listView -> new GitOverviewRecentCommitCell(elapsedTick));
+        setCellFactory(_ -> new GitOverviewRecentCommitCell(elapsedTick));
 
         elapsedTimeline.setCycleCount(Timeline.INDEFINITE);
-        sceneProperty().addListener((obs, oldScene, newScene) -> {
+        sceneProperty().addListener((_, _, newScene) -> {
             if (newScene == null) {
                 elapsedTimeline.stop();
             } else {
@@ -58,9 +62,8 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
             }
         });
 
-        heightProperty().addListener((obs, oldHeight, newHeight) ->
-            updateCommitLimitFromHeight(gitManager));
-        skinProperty().addListener((obs, oldSkin, newSkin) ->
+        heightProperty().addListener((_, _, _) -> updateCommitLimitFromHeight(gitManager));
+        skinProperty().addListener((_, _, _) ->
             Platform.runLater(() -> updateCommitLimitFromHeight(gitManager)));
 
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(runnable -> {
@@ -70,9 +73,9 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
         });
 
         AtomicReference<ScheduledFuture<?>> future = new AtomicReference<>();
-        sceneProperty().addListener((obs, oldScene, newScene) ->
+        sceneProperty().addListener((_, _, newScene) ->
             onSceneChanged(newScene, future, executor, gitManager));
-        gitManager.lastFetchTimestampProperty().addListener((observable, oldValue, newValue) ->
+        gitManager.lastFetchTimestampProperty().addListener((_, _, _) ->
             requestCommits(gitManager, Math.max(1, requestedCount.get())));
 
         ShutdownHooks.addHook(executor::shutdownNow);
@@ -116,7 +119,7 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
         if (fixed > 0)
             return fixed;
 
-        var cell = lookup(".list-cell");
+        Node cell = lookup(".list-cell");
         if (cell != null && cell.getBoundsInParent().getHeight() > 0)
             return cell.getBoundsInParent().getHeight();
 

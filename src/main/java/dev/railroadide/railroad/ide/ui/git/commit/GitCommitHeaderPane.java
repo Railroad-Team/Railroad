@@ -1,8 +1,10 @@
 package dev.railroadide.railroad.ide.ui.git.commit;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import org.kordamp.ikonli.Ikon;
@@ -10,6 +12,7 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 public class GitCommitHeaderPane extends RRHBox {
     public GitCommitHeaderPane(Project project, GitCommitChangesPane gitCommitChangesPane) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT_HEADER, this);
         RRButton refreshButton = createButton(FontAwesomeSolid.SYNC, new String[]{"git-commit-header-button", "sync-button"}, "git.commit.header.refresh.tooltip");
         RRButton rollbackButton = createButton(FontAwesomeSolid.UNDO, new String[]{"git-commit-header-button", "undo-button"}, "git.commit.header.rollback.tooltip");
         RRButton shelfButton = createButton(FontAwesomeSolid.BOX, new String[]{"git-commit-header-button", "shelf-button"}, "git.commit.header.shelf.tooltip");

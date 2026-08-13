@@ -28,6 +28,7 @@ import java.util.Set;
 /**
  * Settings pane for Java inspection rule overrides.
  */
+// TODO: Use LocalizedLabels
 public final class JavaInspectionRuleSettingsPane extends RRVBox {
     private final List<TagRow> tagRows = new ArrayList<>();
     private final List<RuleRow> ruleRows = new ArrayList<>();

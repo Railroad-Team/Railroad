@@ -54,7 +54,7 @@ public class CreateFileDialog {
         });
 
         var listView = new RRListView<TypeSelection>();
-        listView.setCellFactory(param -> new TypeSelectorCell());
+        listView.setCellFactory(_ -> new TypeSelectorCell());
         listView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 textField.setText(switch (type) {
@@ -75,7 +75,7 @@ public class CreateFileDialog {
         listView.getSelectionModel().selectFirst();
 
         var okButton = new RRButton("railroad.generic.ok");
-        okButton.setOnAction(event -> {
+        okButton.setOnAction(_ -> {
             dialog.hide();
 
             TypeSelection selectedItem = listView.getSelectionModel().getSelectedItem();

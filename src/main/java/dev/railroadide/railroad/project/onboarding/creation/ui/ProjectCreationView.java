@@ -120,7 +120,7 @@ public class ProjectCreationView extends RRBorderPane {
         fade.setInterpolator(Interpolator.EASE_OUT);
         fade.play();
 
-        logArea.textProperty().addListener((obs, ov, nv) -> logArea.setScrollTop(Double.MAX_VALUE));
+        logArea.textProperty().addListener((_, _, _) -> logArea.setScrollTop(Double.MAX_VALUE));
 
         setOnKeyPressed(event -> {
             if (Objects.requireNonNull(event.getCode()) == KeyCode.ESCAPE) {
@@ -128,7 +128,7 @@ public class ProjectCreationView extends RRBorderPane {
             }
         });
 
-        sceneProperty().addListener((obs, oldScene, newScene) -> {
+        sceneProperty().addListener((_, _, newScene) -> {
             if (newScene == null) {
                 stopTicker();
             } else if (elapsedTicker != null && startInstant.get() != null) {
@@ -151,29 +151,36 @@ public class ProjectCreationView extends RRBorderPane {
         }, service.messageProperty()));
 
         // Elapsed time ticker
-        service.setOnRunning(e -> startTicker());
-        service.setOnSucceeded(e -> {
+        service.setOnRunning(_ -> startTicker());
+        service.setOnSucceeded(_ -> {
             stopTicker();
-            if (onSuccess != null) onSuccess.run();
+            if (onSuccess != null) {
+                onSuccess.run();
+            }
         });
-        service.setOnFailed(e -> {
+        service.setOnFailed(_ -> {
             stopTicker();
-            if (onError != null) onError.accept(service.getException());
+            if (onError != null) {
+                onError.accept(service.getException());
+            }
         });
 
         // Cancel
         cancelBtn.disableProperty().bind(service.runningProperty().not());
-        cancelBtn.setOnAction(e -> {
-            if (onCancel != null) onCancel.run();
+        cancelBtn.setOnAction(_ -> {
+            if (onCancel != null) {
+                onCancel.run();
+            }
         });
     }
 
     private void startTicker() {
         startInstant.set(Instant.now());
         if (elapsedTicker != null) elapsedTicker.stop();
-        elapsedTicker = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+        elapsedTicker = new Timeline(new KeyFrame(Duration.seconds(1), _ -> {
             var start = startInstant.get();
-            if (start == null) return;
+            if (start == null)
+                return;
             long secs = java.time.Duration.between(start, Instant.now()).getSeconds();
             long h = secs / 3600;
             secs %= 3600;

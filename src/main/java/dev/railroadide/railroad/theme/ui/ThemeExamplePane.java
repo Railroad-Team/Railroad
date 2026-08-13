@@ -30,6 +30,7 @@ import java.util.Arrays;
  * A modernized theme preview pane that shows a live UI demonstration.
  * Features various components styled according to the selected theme.
  */
+// TODO: Refactor this, as creating the dialog in the constructor is disgusting. yuck.
 public class ThemeExamplePane {
     private final String themeName;
 
@@ -276,11 +277,11 @@ public class ThemeExamplePane {
 
         var applyButton = new RRButton("railroad.home.settings.appearance.preview.apply");
         applyButton.setVariant(ButtonVariant.PRIMARY);
-        applyButton.setOnAction(e -> {
+        applyButton.setOnAction(event -> {
             // Apply the theme to the main application
             ThemeManager.setTheme(themeName.replace(".css", ""));
 
-            var target = (Node) e.getTarget();
+            var target = (Node) event.getTarget();
             var stage = (Stage) target.sceneProperty().get().getWindow();
             stage.close();
 
@@ -299,15 +300,22 @@ public class ThemeExamplePane {
             .replace("_", " ");
     }
 
-    public class ProjectData {
-
+    public static class ProjectData {
         public final StringProperty name = new SimpleStringProperty(this, "name", null);
         public final StringProperty type = new SimpleStringProperty(this, "type", null);
         public final StringProperty status = new SimpleStringProperty(this, "status", null);
 
-        public String getName() { return name.get(); }
-        public String getType() { return type.get(); }
-        public String getStatus() { return status.get(); }
+        public String getName() {
+            return name.get();
+        }
+
+        public String getType() {
+            return type.get();
+        }
+
+        public String getStatus() {
+            return status.get();
+        }
 
         public ProjectData(String name, String type, String status) {
             this.name.set(name);

@@ -1,10 +1,12 @@
 package dev.railroadide.railroad.gradle.ui.deps;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.gradle.ui.GradleTreeBuilder;
 import dev.railroadide.railroad.gradle.ui.GradleTreeViewPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroadplugin.dto.RailroadConfiguration;
 import dev.railroadide.railroadplugin.dto.RailroadProject;
 
@@ -15,6 +17,8 @@ import java.util.stream.Stream;
 public class GradleDependenciesPane extends GradleTreeViewPane<RailroadConfiguration> {
     public GradleDependenciesPane(Project project) {
         super(project);
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Gradle.GRADLE_DEPENDENCIES, this);
     }
 
     @Override

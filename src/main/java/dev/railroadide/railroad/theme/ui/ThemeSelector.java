@@ -58,7 +58,7 @@ public class ThemeSelector extends VBox {
         previewButton.setIcon(FontAwesomeSolid.EYE);
         previewButton.setButtonSize(ButtonSize.SMALL);
         previewButton.setVariant(ButtonVariant.GHOST);
-        previewButton.setOnAction(e -> previewSelectedTheme());
+        previewButton.setOnAction(_ -> previewSelectedTheme());
 
         var selectionRow = new HBox();
         selectionRow.setAlignment(Pos.CENTER_LEFT);
@@ -70,7 +70,7 @@ public class ThemeSelector extends VBox {
         downloadButton = new RRButton("railroad.home.settings.appearance.downloadtheme");
         downloadButton.setIcon(FontAwesomeSolid.DOWNLOAD);
         downloadButton.setVariant(ButtonVariant.PRIMARY);
-        downloadButton.setOnAction(e -> new ThemeDownloadPane(getScene().getWindow()));
+        downloadButton.setOnAction(_ -> new ThemeDownloadPane(getScene().getWindow()));
 
         section.addContent(downloadButton);
 
@@ -92,15 +92,15 @@ public class ThemeSelector extends VBox {
 
         themeComboBox.setValue(selectedThemeProperty.get());
 
-        ThemeManager.getCurrentThemeProperty().addListener((observable, oldValue, newValue) -> {
+        ThemeManager.getCurrentThemeProperty().addListener((_, _, newValue) -> {
             themeComboBox.setValue(newValue);
         });
 
-        themeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+        themeComboBox.valueProperty().addListener((_, _, newValue) -> {
             selectedThemeProperty.set(newValue);
         });
 
-        selectedThemeProperty.addListener((observable, oldValue, newValue) -> {
+        selectedThemeProperty.addListener((_, _, newValue) -> {
             applyTheme(newValue);
         });
     }

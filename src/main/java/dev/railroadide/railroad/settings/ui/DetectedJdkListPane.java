@@ -53,14 +53,14 @@ public class DetectedJdkListPane extends RRVBox {
         refreshButton.setButtonSize(ButtonSize.SMALL);
         refreshButton.setVariant(ButtonVariant.SECONDARY);
         refreshButton.setTooltip(new LocalizedTooltip("railroad.settings.ide.jdk_management.detected.refresh.tooltip"));
-        refreshButton.setOnAction($ -> refresh());
+        refreshButton.setOnAction(_ -> refresh());
 
         header.getChildren().addAll(title, refreshButton);
 
         listView.setItems(items);
         listView.setFocusTraversable(false);
         listView.getStyleClass().add("detected-jdk-list-view");
-        listView.setCellFactory(view -> new JdkCell());
+        listView.setCellFactory(_ -> new JdkCell());
         listView.setPlaceholder(new LocalizedLabel("railroad.settings.ide.jdk_management.detected.empty"));
 
         getChildren().addAll(header, listView, countLabel);

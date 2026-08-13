@@ -1,10 +1,12 @@
 package dev.railroadide.railroad.ide.ui.git.commit;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.ui.git.commit.changes.*;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRBorderPane;
 import dev.railroadide.railroad.ui.RRCheckBoxTreeItem;
 import dev.railroadide.railroad.ui.RRCheckBoxTreeView;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import dev.railroadide.railroad.vcs.git.util.GitRepository;
@@ -22,6 +24,7 @@ public class GitCommitChangesPane extends RRBorderPane {
     private Path lastRepoRoot;
 
     public GitCommitChangesPane(Project project) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT_CHANGES, this);
         getStyleClass().add("git-commit-changes-pane-root");
 
         treeView.setShowRoot(false);

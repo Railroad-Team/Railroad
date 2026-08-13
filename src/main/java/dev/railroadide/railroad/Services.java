@@ -20,6 +20,7 @@ import dev.railroadide.railroad.project.creation.service.*;
 import dev.railroadide.railroad.project.onboarding.creation.DefaultProjectCreationPipelineService;
 import dev.railroadide.railroad.project.onboarding.creation.service.*;
 import dev.railroadide.railroad.registry.Registry;
+import dev.railroadide.railroad.ui.UIManager;
 import dev.railroadide.railroad.utility.DiscardingOutputStream;
 import javafx.application.HostServices;
 import javafx.beans.property.ObjectProperty;
@@ -103,7 +104,9 @@ public class Services {
     public static final DefaultProjectCreationPipelineService PROJECT_CREATION_PIPELINE = new DefaultProjectCreationPipelineService();
     public static final ProjectLanguageIndexService PROJECT_LANGUAGE_INDEX_SERVICE = new ProjectLanguageIndexService();
     public static final Registry<LanguageInspectionProvider> LANGUAGE_INSPECTION_PROVIDER_REGISTRY =
-            LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY;
+        LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY;
+
+    public static final UIManager UI_MANAGER = new UIManager();
 
     /**
      * Retrieves a service instance by its class type.
@@ -139,6 +142,8 @@ public class Services {
             return (T) PROJECT_CREATION_PIPELINE;
         } else if (serviceClass == ProjectLanguageIndexService.class) {
             return (T) PROJECT_LANGUAGE_INDEX_SERVICE;
+        } else if (serviceClass == UIManager.class) {
+            return (T) UI_MANAGER;
         }
 
         throw new IllegalArgumentException("Service " + serviceClass.getName() + " is not available.");

@@ -76,7 +76,7 @@ public class GitCommitCherryPickButton extends RRButton {
 
             abortButton.setOnAction($ -> {
                 gitManager.abortCherryPick();
-                if(stashedChanges) {
+                if (stashedChanges) {
                     gitManager.stashPop();
                 }
 
@@ -220,13 +220,13 @@ public class GitCommitCherryPickButton extends RRButton {
             Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.cherry_pick_dialog.title", dialogBuilder);
 
             cancelButton.setOnAction($ -> {
-                canContinueRef.complete(new boolean[] {false, false});
+                canContinueRef.complete(new boolean[]{false, false});
                 dialog.close();
             });
 
             stashAndContinueButton.setOnAction($ -> {
                 gitManager.stashChanges("Railroad: before cherry-pick " + currentCommit.map(GitCommit::shortHash).orElse("HEAD"), true);
-                canContinueRef.complete(new boolean[] {true, true});
+                canContinueRef.complete(new boolean[]{true, true});
                 dialog.close();
             });
 
