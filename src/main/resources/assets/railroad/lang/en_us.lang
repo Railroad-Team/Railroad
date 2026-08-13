@@ -272,8 +272,16 @@ railroad.settings.keybinds.recording=Recording...
 railroad.settings.keybinds.category.general=General
 
 # Keybinds
+railroad.settings.keybinds.open_project_explorer_item=Open selected project item
+railroad.settings.keybinds.delete_project_explorer_item=Delete selected project item
+railroad.settings.keybinds.cut=Cut
 railroad.settings.keybinds.copy=Copy
 railroad.settings.keybinds.paste=Paste
+railroad.settings.keybinds.create_file=Create file
+railroad.settings.keybinds.create_folder=Create folder
+railroad.settings.keybinds.rename_project_explorer_item=Rename selected project item
+railroad.settings.keybinds.open_in_file_explorer=Open in file explorer
+railroad.settings.keybinds.open_in_terminal=Open in terminal
 railroad.settings.keybinds.fullscreen=Fullscreen
 
 # Plugin settings

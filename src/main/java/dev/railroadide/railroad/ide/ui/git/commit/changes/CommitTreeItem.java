@@ -16,7 +16,7 @@ public class CommitTreeItem extends RRCheckBoxTreeItem<ChangeItem> {
 
         Consumer<Boolean> selectionHandler = item.getSelectionHandler();
         if (selectionHandler != null) {
-            selectedProperty().addListener((observable, oldValue, newValue) -> selectionHandler.accept(newValue));
+            selectedProperty().addListener((_, _, newValue) -> selectionHandler.accept(newValue));
         }
     }
 

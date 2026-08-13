@@ -1,13 +1,15 @@
 package dev.railroadide.railroad.ide.ui.git.remote;
 
-import dev.railroadide.railroad.utility.DesktopUtils;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRTextField;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
+import dev.railroadide.railroad.utility.DesktopUtils;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
@@ -32,6 +34,7 @@ public class GitRemoteActionsPane extends RRVBox {
     private GitRemote selectedRemote;
 
     public GitRemoteActionsPane(GitManager gitManager) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_REMOTE_ACTIONS, this);
         this.gitManager = gitManager;
 
         getStyleClass().add("git-remote-actions-pane");
@@ -59,27 +62,27 @@ public class GitRemoteActionsPane extends RRVBox {
         getChildren().addAll(primaryActionsBox, secondaryActionsBox);
         setAlignment(Pos.TOP_CENTER);
 
-        fetchAllButton.setOnAction(event -> gitManager.fetchAllRemotes());
-        pruneAllButton.setOnAction(event -> gitManager.pruneAllRemotes());
-        addRemoteButton.setOnAction(event -> openAddRemoteDialog());
+        fetchAllButton.setOnAction(_ -> gitManager.fetchAllRemotes());
+        pruneAllButton.setOnAction(_ -> gitManager.pruneAllRemotes());
+        addRemoteButton.setOnAction(_ -> openAddRemoteDialog());
 
-        editRemoteButton.setOnAction(event -> {
+        editRemoteButton.setOnAction(_ -> {
             GitRemote remote = resolveRemoteForAction();
             if (remote != null) {
                 openEditRemoteDialog(remote);
             }
         });
 
-        removeRemoteButton.setOnAction(event -> {
+        removeRemoteButton.setOnAction(_ -> {
             GitRemote remote = resolveRemoteForAction();
             if (remote != null) {
                 openRemoveRemoteDialog(remote);
             }
         });
 
-        fetchButton.setOnAction(event -> gitManager.fetch());
-        pruneButton.setOnAction(event -> gitManager.gc());
-        openInBrowserButton.setOnAction(event -> {
+        fetchButton.setOnAction(_ -> gitManager.fetch());
+        pruneButton.setOnAction(_ -> gitManager.gc());
+        openInBrowserButton.setOnAction(_ -> {
             GitRemote remote = resolveRemoteForAction();
             if (remote == null)
                 return;
@@ -155,9 +158,9 @@ public class GitRemoteActionsPane extends RRVBox {
 
         Runnable validator = () -> validateAddRemoteInput(nameField, fetchUrlField, pushUrlField, errorText, confirmButton);
         validator.run();
-        nameField.textProperty().addListener((obs, oldText, newText) -> validator.run());
-        fetchUrlField.textProperty().addListener((obs, oldText, newText) -> validator.run());
-        pushUrlField.textProperty().addListener((obs, oldText, newText) -> validator.run());
+        nameField.textProperty().addListener((_, _, _) -> validator.run());
+        fetchUrlField.textProperty().addListener((_, _, _) -> validator.run());
+        pushUrlField.textProperty().addListener((_, _, _) -> validator.run());
     }
 
     private void openEditRemoteDialog(GitRemote remote) {
@@ -206,9 +209,9 @@ public class GitRemoteActionsPane extends RRVBox {
 
         Runnable validator = () -> validateEditRemoteInput(remote.name(), nameField, fetchUrlField, pushUrlField, errorText, confirmButton);
         validator.run();
-        nameField.textProperty().addListener((obs, oldText, newText) -> validator.run());
-        fetchUrlField.textProperty().addListener((obs, oldText, newText) -> validator.run());
-        pushUrlField.textProperty().addListener((obs, oldText, newText) -> validator.run());
+        nameField.textProperty().addListener((_, _, _) -> validator.run());
+        fetchUrlField.textProperty().addListener((_, _, _) -> validator.run());
+        pushUrlField.textProperty().addListener((_, _, _) -> validator.run());
     }
 
     private void openRemoveRemoteDialog(GitRemote remote) {
@@ -235,15 +238,15 @@ public class GitRemoteActionsPane extends RRVBox {
             .buttons(cancelButton, confirmButton);
         Stage dialog = WindowBuilder.createDialog("railroad.git.remotes.actions.remove_dialog.title", dialogBuilder);
 
-        cancelButton.setOnAction($ -> dialog.close());
-        confirmButton.setOnAction($ -> {
+        cancelButton.setOnAction(_ -> dialog.close());
+        confirmButton.setOnAction(_ -> {
             if (remote.name().equals(confirmationField.getText())) {
                 gitManager.removeRemote(remote.name());
                 dialog.close();
             }
         });
 
-        confirmationField.textProperty().addListener((obs, oldText, newText) -> {
+        confirmationField.textProperty().addListener((_, _, newText) -> {
             boolean matches = remote.name().equals(newText);
             confirmButton.setDisable(!matches);
 

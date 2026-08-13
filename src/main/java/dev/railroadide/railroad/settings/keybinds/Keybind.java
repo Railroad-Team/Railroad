@@ -80,21 +80,8 @@ public class Keybind {
      */
     public boolean matches(KeyEvent keyEvent) {
         for (KeybindData key : keys) {
-            KeyCode keyCode = key.keyCode();
-            KeyCombination.Modifier[] modifiers = key.modifiers();
-
-            if (keyCode != keyEvent.getCode()) continue;
-
-            if (modifiers == null) return true;
-
-            for (KeyCombination.Modifier modifier : modifiers) {
-                if (!keyEvent.isShortcutDown() && modifier == KeyCombination.SHORTCUT_DOWN) continue;
-                if (!keyEvent.isControlDown() && modifier == KeyCombination.CONTROL_DOWN) continue;
-                if (!keyEvent.isShiftDown() && modifier == KeyCombination.SHIFT_DOWN) continue;
-                if (!keyEvent.isAltDown() && modifier == KeyCombination.ALT_DOWN) continue;
-            }
-
-            return true;
+            if (key.getKeyCodeCombination().match(keyEvent))
+                return true;
         }
 
         return false;

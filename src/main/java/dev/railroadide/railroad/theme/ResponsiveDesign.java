@@ -14,8 +14,7 @@ final class ResponsiveDesign {
     static final double COMPACT_BREAKPOINT = 768;
     static final String COMPACT_STYLE_CLASS = "compact-layout";
 
-    private static final Set<Scene> INSTALLED_SCENES =
-        Collections.newSetFromMap(new WeakHashMap<>());
+    private static final Set<Scene> INSTALLED_SCENES = Collections.newSetFromMap(new WeakHashMap<>());
 
     private ResponsiveDesign() {
     }
@@ -24,8 +23,8 @@ final class ResponsiveDesign {
         if (scene == null || !INSTALLED_SCENES.add(scene))
             return;
 
-        scene.widthProperty().addListener((observable, oldWidth, newWidth) -> update(scene));
-        scene.rootProperty().addListener((observable, oldRoot, newRoot) -> {
+        scene.widthProperty().addListener((_, _, _) -> update(scene));
+        scene.rootProperty().addListener((_, oldRoot, _) -> {
             removeCompactStyle(oldRoot);
             update(scene);
         });
@@ -39,15 +38,17 @@ final class ResponsiveDesign {
 
         boolean compact = scene.getWidth() <= COMPACT_BREAKPOINT;
         if (compact) {
-            if (!root.getStyleClass().contains(COMPACT_STYLE_CLASS))
+            if (!root.getStyleClass().contains(COMPACT_STYLE_CLASS)) {
                 root.getStyleClass().add(COMPACT_STYLE_CLASS);
+            }
         } else {
             removeCompactStyle(root);
         }
     }
 
     private static void removeCompactStyle(Parent root) {
-        if (root != null)
+        if (root != null) {
             root.getStyleClass().remove(COMPACT_STYLE_CLASS);
+        }
     }
 }

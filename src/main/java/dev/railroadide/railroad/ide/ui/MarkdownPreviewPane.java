@@ -51,7 +51,8 @@ public class MarkdownPreviewPane extends RRVBox {
     private static final String MARKDOWN_LAYOUT_LOCATION = "markdown.json";
 
     private final MarkdownWebView preview;
-    @Getter private final Path markdownFile;
+    @Getter
+    private final Path markdownFile;
 
     private TextEditorPane textEditorPane;
     private WebView webViewPane;
@@ -108,12 +109,11 @@ public class MarkdownPreviewPane extends RRVBox {
             return textEditorPane;
         }
 
-
         textEditorPane = new TextEditorPane(markdownFile, "markdown");
         textEditorPane.textProperty().addListener(
-            (observable, oldValue, newValue) -> preview.setContent(newValue));
+            (_, _, newValue) -> preview.setContent(newValue));
 
-        textEditorPane.addEventFilter(KeyEvent.KEY_PRESSED,event -> {
+        textEditorPane.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode().equals(KeyCode.ENTER)) {
                 int caret = textEditorPane.getCaretPosition();
                 String upToCaret = textEditorPane.getText(0, caret);
@@ -126,7 +126,7 @@ public class MarkdownPreviewPane extends RRVBox {
                     textEditorPane.insertText(caret, "\n" + (previousLineNumber + 1) + ". ");
                 }
 
-                if (BULLET_LIST_PATTERN.matcher(lastLine).matches()){
+                if (BULLET_LIST_PATTERN.matcher(lastLine).matches()) {
                     event.consume();
 
                     textEditorPane.insertText(caret, "\n* ");
@@ -148,7 +148,7 @@ public class MarkdownPreviewPane extends RRVBox {
             }
         });
 
-        textEditorPane.addEventFilter(ScrollEvent.SCROLL, event ->
+        textEditorPane.addEventFilter(ScrollEvent.SCROLL, _ ->
             scrollAmount = (int) textEditorPane.getEstimatedScrollY());
 
         restoreEditorScroll();
@@ -195,8 +195,9 @@ public class MarkdownPreviewPane extends RRVBox {
     }
 
     private void restoreEditorScroll() {
-        if (textEditorPane != null)
+        if (textEditorPane != null) {
             Platform.runLater(() -> textEditorPane.scrollToPixel(0, scrollAmount));
+        }
     }
 
     private HBox createViewButtons() {
@@ -207,19 +208,19 @@ public class MarkdownPreviewPane extends RRVBox {
         var switchButtons = new RRHBox(codeView, splitView, previewView);
         switchButtons.setAlignment(Pos.TOP_RIGHT);
 
-        codeView.setOnAction($ -> {
+        codeView.setOnAction(_ -> {
             switchLayout(MarkdownLayoutType.CODE);
             showContent(codeView(), topRow);
             project.getDataStore().writeJson(MARKDOWN_LAYOUT_LOCATION, new MarkdownLayout(MarkdownLayoutType.CODE));
         });
 
-        splitView.setOnAction($ -> {
+        splitView.setOnAction(_ -> {
             switchLayout(MarkdownLayoutType.SPLIT);
             showContent(splitView(), topRow);
             project.getDataStore().writeJson(MARKDOWN_LAYOUT_LOCATION, new MarkdownLayout(MarkdownLayoutType.SPLIT));
         });
 
-        previewView.setOnAction($ -> {
+        previewView.setOnAction(_ -> {
             // hide markdown buttons in preview-only mode
             switchLayout(MarkdownLayoutType.PREVIEW);
             showContent(previewView(), topRow);
@@ -242,7 +243,7 @@ public class MarkdownPreviewPane extends RRVBox {
             headingMenu.getItems().add(item);
         }
 
-        headingButton.setOnAction($ -> {
+        headingButton.setOnAction(_ -> {
             if (!headingMenu.isShowing()) {
                 headingMenu.show(headingButton, Side.BOTTOM, 0, 0);
             } else {
@@ -295,7 +296,7 @@ public class MarkdownPreviewPane extends RRVBox {
 
         var item = new CustomMenuItem(preview, true);
 
-        item.setOnAction($ -> {
+        item.setOnAction(_ -> {
             headingMenu.hide();
             TextEditorPane editor = editorForInsertion();
             editor.insertText(editor.getCaretPosition(), "#".repeat(level) + " ");
@@ -313,7 +314,7 @@ public class MarkdownPreviewPane extends RRVBox {
     }
 
     private void setButtonOnAction(Button button, String prefix) {
-        button.setOnAction($ -> {
+        button.setOnAction(_ -> {
             TextEditorPane editor = editorForInsertion();
             editor.insertText(editor.getCaretPosition(), prefix + " ");
             editor.requestFocus();
@@ -321,7 +322,7 @@ public class MarkdownPreviewPane extends RRVBox {
     }
 
     private void setButtonOnAction(Button button, String prefix, String postfix) {
-        button.setOnAction($ -> {
+        button.setOnAction(_ -> {
             TextEditorPane editor = editorForInsertion();
             int caretPosition = editor.getCaretPosition();
             editor.insertText(caretPosition, prefix + postfix);
@@ -373,23 +374,23 @@ public class MarkdownPreviewPane extends RRVBox {
     }
 
     private static void addNodeStyles(Stage dialog) {
-        var title = dialog.getScene().lookup(".alert-title");
+        Node title = dialog.getScene().lookup(".alert-title");
         if (title != null) {
             title.getStyleClass().add("markdown-image-dialog-title");
         }
 
-        var header = dialog.getScene().lookup(".alert-header");
+        Node header = dialog.getScene().lookup(".alert-header");
         if (header != null) {
             header.getStyleClass().add("markdown-image-dialog-header");
         }
 
-        var buttons = dialog.getScene().lookup(".alert-buttons");
+        Node buttons = dialog.getScene().lookup(".alert-buttons");
         if (buttons != null) {
             buttons.getStyleClass().add("markdown-image-dialog-buttons");
         }
     }
 
-    private void createDialogButtons(RRButton cancelButton, RRButton insertButton, RRTextField uriTextField, RRTextField altTextField){
+    private void createDialogButtons(RRButton cancelButton, RRButton insertButton, RRTextField uriTextField, RRTextField altTextField) {
         insertButton.setVariant(ButtonVariant.PRIMARY);
         insertButton.setButtonSize(ButtonSize.LARGE);
         insertButton.getStyleClass().add("markdown-image-dialog-button");
@@ -403,13 +404,13 @@ public class MarkdownPreviewPane extends RRVBox {
         cancelButton.setButtonSize(ButtonSize.LARGE);
         cancelButton.getStyleClass().add("markdown-image-dialog-button");
 
-        cancelButton.setOnAction(event -> {
+        cancelButton.setOnAction(_ -> {
             if (insertButton.getScene().getWindow() instanceof Stage stage) {
                 stage.close();
             }
         });
 
-        insertButton.setOnAction(event -> {
+        insertButton.setOnAction(_ -> {
             insertMarkdownImage(altTextField.getText(), uriTextField.getText());
             if (insertButton.getScene().getWindow() instanceof Stage stage) {
                 stage.close();
@@ -418,9 +419,8 @@ public class MarkdownPreviewPane extends RRVBox {
     }
 
     private void insertMarkdownImage(String altText, String uri) {
-        if (uri == null || uri.trim().isEmpty()) {
+        if (uri == null || uri.trim().isEmpty())
             return;
-        }
 
         uri = uri.trim()
             .replace("\\", "\\\\")
@@ -438,7 +438,8 @@ public class MarkdownPreviewPane extends RRVBox {
         editor.requestFocus();
     }
 
-    public record MarkdownLayout(MarkdownLayoutType layoutType) { }
+    public record MarkdownLayout(MarkdownLayoutType layoutType) {
+    }
 
     public enum MarkdownLayoutType {
         SPLIT,

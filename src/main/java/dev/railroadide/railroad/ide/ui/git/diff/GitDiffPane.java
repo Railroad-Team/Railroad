@@ -69,7 +69,7 @@ public class GitDiffPane extends RRBorderPane {
             showPlaceholder(PLACEHOLDER_NO_FILE_KEY);
         }
 
-        this.filePath.addListener((obs, oldPath, newPath) -> {
+        this.filePath.addListener((_, _, newPath) -> {
             title.set(resolveTitle(newPath));
             requestDiff(newPath);
         });

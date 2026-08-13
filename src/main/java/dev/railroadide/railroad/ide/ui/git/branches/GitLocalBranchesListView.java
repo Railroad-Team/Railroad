@@ -32,11 +32,11 @@ public class GitLocalBranchesListView extends AbstractGitBranchesListView<GitBra
             project,
             "git-local-branches-list-view",
             value -> value.getGitManager().getAllLocalBranches(),
-            listView -> new GitLocalBranchCell()
+            _ -> new GitLocalBranchCell()
         );
 
         elapsedRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
-        sceneProperty().addListener((obs, oldScene, newScene) -> {
+        sceneProperty().addListener((_, _, newScene) -> {
             if (newScene == null) {
                 elapsedRefreshTimeline.stop();
             } else {

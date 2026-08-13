@@ -1,12 +1,15 @@
 package dev.railroadide.railroad.ide.ui.git.branches;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRTextField;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -18,6 +21,7 @@ public class GitBranchesPane extends RRVBox {
     private final GitRemoteBranchesListView remoteBranchesListView;
 
     public GitBranchesPane(Project project) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_BRANCHES, this);
         searchBar = new RRTextField("railroad.git.branches.search.placeholder");
         searchBar.getStyleClass().add("git-branches-search-bar");
 
@@ -31,13 +35,13 @@ public class GitBranchesPane extends RRVBox {
         getStyleClass().add("git-branches-pane");
         setAlignment(Pos.TOP_LEFT);
 
-        searchBar.textProperty().addListener((observable, oldValue, newValue) -> {
+        searchBar.textProperty().addListener((_, _, newValue) -> {
             localBranchesListView.filterBranches(newValue);
             remoteBranchesListView.filterBranches(newValue);
         });
     }
 
-    private static HBox createSectionHeader(String localizationKey, javafx.scene.control.ListView<?> listView) {
+    private static HBox createSectionHeader(String localizationKey, ListView<?> listView) {
         HBox header = new HBox();
         header.getStyleClass().add("git-branches-section-header");
 

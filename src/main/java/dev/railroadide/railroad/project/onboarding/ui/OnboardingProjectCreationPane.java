@@ -27,7 +27,7 @@ public class OnboardingProjectCreationPane extends RRVBox {
         startOnboardingButton.setButtonSize(ButtonSize.LARGE);
         startOnboardingButton.setVariant(ButtonVariant.PRIMARY);
         startOnboardingButton.getStyleClass().add("start-onboarding-button");
-        startOnboardingButton.setOnAction(event -> startOnboarding());
+        startOnboardingButton.setOnAction(_ -> startOnboarding());
 
         getChildren().add(startOnboardingButton);
         VBox.setVgrow(startOnboardingButton, Priority.ALWAYS);

@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.gradle.ui;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.gradle.GradleSettings;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.model.GradleModelListener;
@@ -12,6 +13,7 @@ import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRToggleButton;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedTab;
 import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
@@ -49,8 +51,7 @@ public class GradleToolsPane extends RRVBox {
             "sync-button",
             false
         );
-        syncButton.setOnAction(event ->
-            gradleManager.getGradleModelService().refreshModel(true));
+        syncButton.setOnAction(_ -> gradleManager.getGradleModelService().refreshModel(true));
 
         var downloadSourcesButton = createButtonBarButton(
             FontAwesomeSolid.DOWNLOAD,
@@ -58,7 +59,7 @@ public class GradleToolsPane extends RRVBox {
             "download-sources-button",
             false
         );
-        downloadSourcesButton.setOnAction(event -> {
+        downloadSourcesButton.setOnAction(_ -> {
             Railroad.LOGGER.info("Downloading Gradle sources...");
             downloadSourcesButton.setDisable(true);
             gradleManager.downloadAllSources().whenComplete((ignored, throwable) -> {
@@ -80,7 +81,7 @@ public class GradleToolsPane extends RRVBox {
             "toggle-offline-button",
             true
         );
-        toggleOfflineButton.setOnAction(event -> {
+        toggleOfflineButton.setOnAction(_ -> {
             GradleSettings gradleSettings = gradleManager.getGradleSettings();
             boolean newOfflineMode = !gradleSettings.isOfflineMode();
             gradleSettings.setOfflineMode(newOfflineMode);
@@ -114,7 +115,7 @@ public class GradleToolsPane extends RRVBox {
         };
         var modelListenerRegistered = new AtomicBoolean(true);
         modelService.addListener(modelListener);
-        sceneProperty().addListener((observable, oldScene, newScene) -> {
+        sceneProperty().addListener((_, _, newScene) -> {
             if (newScene == null && modelListenerRegistered.compareAndSet(true, false)) {
                 modelService.removeListener(modelListener);
             } else if (newScene != null && modelListenerRegistered.compareAndSet(false, true)) {
@@ -137,6 +138,8 @@ public class GradleToolsPane extends RRVBox {
         VBox.setVgrow(tabPane, Priority.ALWAYS);
 
         modelService.refreshModel(false);
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Gradle.GRADLE_TOOLS, this);
     }
 
     private static ButtonBase createButtonBarButton(Ikon ikon, String tooltipKey, String styleClass, boolean toggle) {

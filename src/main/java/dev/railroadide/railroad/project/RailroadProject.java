@@ -5,12 +5,15 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
 import dev.railroadide.railroad.java.JDK;
+import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
+import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.ProjectAliasChangedEvent;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
@@ -18,6 +21,7 @@ import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.settings.Settings;
+import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroad.vcs.Repository;
 import dev.railroadide.railroad.vcs.git.GitClient;
@@ -45,6 +49,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class RailroadProject implements Project {
+    private static final String PROJECT_CONFIG_LOCATION = "project.json";
+
     private final ObjectProperty<Path> path = new ReadOnlyObjectWrapper<>();
     private final StringProperty alias = new SimpleStringProperty();
     private final ObjectProperty<Image> icon = new SimpleObjectProperty<>();
@@ -197,7 +203,12 @@ public class RailroadProject implements Project {
     }
 
     @Override
-    public void open(@Nullable Stage stage){
+    public void open(@Nullable Stage stage) {
+        Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
+        if (currentProject != null && !ProjectPathIdentity.matches(currentProject.getPath(), getPath())) {
+            currentProject.close();
+        }
+
         Railroad.LOGGER.debug("Opening project: {}", getPathString());
         setLastOpened(System.currentTimeMillis());
         Project project = Railroad.PROJECT_MANAGER.updateProjectInfo(this);
@@ -206,6 +217,46 @@ public class RailroadProject implements Project {
             railroadProject.discoverFacets();
         }
         project.getGitManager().detectRepository();
+
+        ProjectDataStore dataStore = project.getDataStore();
+        ProjectConfig projectConfig = dataStore.readJson(PROJECT_CONFIG_LOCATION, ProjectConfig.class)
+            .orElseGet(ProjectConfig::new);
+        List<Path> openDocumentPaths = projectConfig.getOpenDocuments();
+        Path activeDocumentPath = projectConfig.getActiveDocument();
+        if (openDocumentPaths != null) {
+            Services.IDE_STATE.setOpenDocuments(openDocumentPaths.stream()
+                .map(FileSystemDocument::new)
+                .map(Document.class::cast)
+                .toList());
+        }
+        if (activeDocumentPath != null) {
+            Services.IDE_STATE.setActiveDocument(new FileSystemDocument(activeDocumentPath));
+        }
+
+        ShutdownHooks.addHook(() -> {
+            if (Railroad.PROJECT_MANAGER.getOpenProject() == project) {
+                project.close();
+            }
+        });
+    }
+
+    @Override
+    public void close() {
+        Railroad.LOGGER.debug("Closing project: {}", getPathString());
+        Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
+        if (currentProject != null && ProjectPathIdentity.matches(currentProject.getPath(), getPath())) {
+            List<Document> openDocuments = Services.IDE_STATE.getOpenDocuments();
+            Document activeDocument = Services.IDE_STATE.getActiveDocument();
+
+            ProjectDataStore dataStore = getDataStore();
+            ProjectConfig projectConfig = dataStore.readJson(PROJECT_CONFIG_LOCATION, ProjectConfig.class)
+                .orElseGet(ProjectConfig::new);
+            projectConfig.setOpenDocuments(openDocuments.stream().map(Document::getPath).toList());
+            projectConfig.setActiveDocument(activeDocument != null ? activeDocument.getPath() : null);
+            dataStore.writeJson(PROJECT_CONFIG_LOCATION, projectConfig);
+
+            Railroad.PROJECT_MANAGER.setCurrentProject(null);
+        }
     }
 
     @Override

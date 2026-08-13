@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.remote;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
@@ -16,6 +18,7 @@ public class GitRemotesPane extends RRVBox {
     private final GitRemoteDetailsPane detailsPane;
 
     public GitRemotesPane(Project project) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_REMOTES, this);
         GitManager gitManager = project.getGitManager();
 
         actionsPane = new GitRemoteActionsPane(gitManager);
@@ -24,7 +27,7 @@ public class GitRemotesPane extends RRVBox {
 
         remotesList.setOnRemoteSelected(detailsPane::displayRemote);
         remotesList.setOnRemoteSelected(actionsPane::updateActions);
-        gitManager.repoStatusProperty().addListener((obs, oldStatus, newStatus) -> {
+        gitManager.repoStatusProperty().addListener((_, _, _) -> {
             if (detailsPane.remoteProperty().get() == null) {
                 GitRemote defaultRemote = findDefaultRemote(gitManager);
                 if (defaultRemote != null) {

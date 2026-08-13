@@ -3,17 +3,14 @@ package dev.railroadide.railroad.project;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Getter
 public final class ProjectManager {
@@ -87,6 +84,12 @@ public final class ProjectManager {
     }
 
     public void setCurrentProject(@Nullable Project project) {
+        Project beingClosed = this.openProject;
         this.openProject = project;
+
+        Railroad.EVENT_BUS.publish(new ProjectEvent(
+            beingClosed == null ? project : beingClosed,
+            project == null ? ProjectEvent.EventType.CLOSED : ProjectEvent.EventType.OPENED
+        ));
     }
 }

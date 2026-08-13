@@ -1,8 +1,10 @@
 package dev.railroadide.railroad.ide.ui.git.overview;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRGridPane;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.identity.GitIdentity;
@@ -21,6 +23,7 @@ public class GitOverviewIdentityPane extends RRVBox {
     private final Text gitVersionText = new Text();
 
     public GitOverviewIdentityPane(Project project) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_OVERVIEW_IDENTITY, this);
         getStyleClass().add("git-overview-identity-pane");
 
         configureGrid();
@@ -108,7 +111,6 @@ public class GitOverviewIdentityPane extends RRVBox {
     }
 
     private void listenForUpdates(GitManager gitManager) {
-        gitManager.gitIdentityProperty().addListener((obs, oldIdentity, newIdentity) ->
-            updateIdentityInfo(gitManager));
+        gitManager.gitIdentityProperty().addListener((_, _, _) -> updateIdentityInfo(gitManager));
     }
 }

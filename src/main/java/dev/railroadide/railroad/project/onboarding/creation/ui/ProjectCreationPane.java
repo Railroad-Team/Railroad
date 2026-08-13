@@ -1,10 +1,12 @@
 package dev.railroadide.railroad.project.onboarding.creation.ui;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.project.ProjectContext;
 import dev.railroadide.railroad.project.ProjectData;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.ui.RRBorderPane;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.utility.javafx.TextAreaOutputStream;
 import dev.railroadide.railroad.welcome.WelcomePane;
 import dev.railroadide.railroad.window.WindowBuilder;
@@ -29,6 +31,8 @@ public class ProjectCreationPane extends RRBorderPane {
 
         this.view = new ProjectCreationView(data);
         this.taos = new TextAreaOutputStream(view.getLogArea());
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.ProjectOnboarding.PROJECT_CREATION, this);
     }
 
     public void initService(Service<?> service) {

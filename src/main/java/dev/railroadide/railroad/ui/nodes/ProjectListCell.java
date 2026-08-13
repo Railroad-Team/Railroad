@@ -54,7 +54,7 @@ public class ProjectListCell extends ListCell<Project> {
     private final Label lastOpenedLabel = new Label();
     private final RRButton ellipsisButton = new RRButton();
     private final HBox facetTagsBox = new HBox();
-    private final InvalidationListener elapsedTickListener = $ -> refreshElapsedText();
+    private final InvalidationListener elapsedTickListener = _ -> refreshElapsedText();
 
     /**
      * Constructs a new ProjectListCell with modern styling and context menu functionality.
@@ -101,7 +101,7 @@ public class ProjectListCell extends ListCell<Project> {
 
         var dropdown = new ContextMenu();
         var openItem = new MenuItem("Open");
-        openItem.setOnAction($ -> {
+        openItem.setOnAction(_ -> {
             Project project = getItem();
             if (project != null) {
                 project.open(null);
@@ -109,7 +109,7 @@ public class ProjectListCell extends ListCell<Project> {
         });
 
         var removeItem = new MenuItem("Remove");
-        removeItem.setOnAction($ -> {
+        removeItem.setOnAction(_ -> {
             Project project = getItem();
             if (project != null) {
                 Railroad.PROJECT_MANAGER.removeProject(project);
@@ -117,10 +117,10 @@ public class ProjectListCell extends ListCell<Project> {
         });
 
         dropdown.getItems().addAll(openItem, removeItem);
-        ellipsisButton.setOnAction($ -> dropdown.show(ellipsisButton, Side.BOTTOM, 0, 0));
+        ellipsisButton.setOnAction(_ -> dropdown.show(ellipsisButton, Side.BOTTOM, 0, 0));
 
         ELAPSED_TICK.addListener(new WeakInvalidationListener(elapsedTickListener));
-        sceneProperty().addListener((obs, oldScene, newScene) -> {
+        sceneProperty().addListener((_, oldScene, newScene) -> {
             if (oldScene == null && newScene != null) {
                 if (ATTACHED_CELLS.incrementAndGet() == 1) {
                     ELAPSED_TIMELINE.play();
@@ -178,5 +178,4 @@ public class ProjectListCell extends ListCell<Project> {
 
         lastOpenedLabel.setText(TimeFormatter.formatElapsed(project.getLastOpened()));
     }
-
 }

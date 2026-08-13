@@ -1,8 +1,10 @@
 package dev.railroadide.railroad.ide.ui.git.remote;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.utility.TimeFormatter;
 import dev.railroadide.railroad.vcs.git.GitManager;
@@ -31,14 +33,15 @@ import java.util.function.Consumer;
 public class GitRemotesListPane extends RRListView<GitRemote> {
     private final LongProperty elapsedTick = new SimpleLongProperty();
     private final Timeline elapsedTimeline = new Timeline(
-        new KeyFrame(Duration.seconds(1), $ -> elapsedTick.set(elapsedTick.get() + 1))
+        new KeyFrame(Duration.seconds(1), _ -> elapsedTick.set(elapsedTick.get() + 1))
     );
 
     public GitRemotesListPane(GitManager gitManager) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_REMOTES_LIST, this);
         getStyleClass().add("git-remotes-list");
 
         elapsedTimeline.setCycleCount(Timeline.INDEFINITE);
-        sceneProperty().addListener((obs, oldScene, newScene) -> {
+        sceneProperty().addListener((_, _, newScene) -> {
             if (newScene == null) {
                 elapsedTimeline.stop();
             } else {
@@ -49,14 +52,14 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
 
         setCellFactory(ignored -> new GitRemoteListCell(gitManager, elapsedTick));
         setItems(FXCollections.observableArrayList(gitManager.getRemotes()));
-        gitManager.repoStatusProperty().addListener((observable, oldValue, newValue) -> {
+        gitManager.repoStatusProperty().addListener((_, _, _) -> {
             List<GitRemote> remotes = gitManager.getRemotes();
             Platform.runLater(() -> getItems().setAll(remotes));
         });
     }
 
     public void setOnRemoteSelected(Consumer<GitRemote> handler) {
-        getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+        getSelectionModel().selectedItemProperty().addListener((_, _, newVal) -> {
             if (newVal != null) {
                 handler.accept(newVal);
             }

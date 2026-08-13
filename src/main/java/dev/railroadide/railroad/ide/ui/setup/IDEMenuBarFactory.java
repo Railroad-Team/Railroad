@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.ui.setup;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.RailroadProcessLauncher;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
@@ -11,6 +12,7 @@ import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRMenuBar;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedCheckMenuItem;
 import dev.railroadide.railroad.ui.localized.LocalizedMenu;
 import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
@@ -26,7 +28,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -41,14 +42,15 @@ public final class IDEMenuBarFactory {
     private IDEMenuBarFactory() {
     }
 
-    public static MenuBar create(ProjectExplorerPane projectExplorerPane) {
+    public static MenuBar create(Project project) {
         var newFileItem = new LocalizedMenuItem("railroad.menu.file.new_file");
         newFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE));
         newFileItem.setKeybindData(new KeybindData(KeyCode.N, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
         newFileItem.setOnAction(_ -> {
-            Path directoryPath = projectExplorerPane.getSelectedDirectory();
-            Window window = projectExplorerPane.getScene().getWindow();
-            CreateFileDialog.open(window, directoryPath, FileCreateType.FILE);
+            Path directoryPath = Services.UI_MANAGER.lookup(UIIds.IDE.PROJECT_EXPLORER)
+                .map(ProjectExplorerPane::getSelectedDirectory)
+                .orElseGet(project::getPath);
+            CreateFileDialog.open(Railroad.WINDOW_MANAGER.getPrimaryStage(), directoryPath, FileCreateType.FILE);
         });
 
         var openFileItem = new LocalizedMenuItem("railroad.menu.file.open_file");
@@ -60,9 +62,9 @@ public final class IDEMenuBarFactory {
         recentProjects.getItems().addAll(Railroad.PROJECT_MANAGER.getProjects().stream()
             .sorted(Comparator.comparingLong(Project::getLastOpened).reversed())
             .limit(5)
-            .map(project -> {
-                MenuItem menuItem = new MenuItem(project.getAlias());
-                menuItem.setOnAction(_ -> showOpenProjectDialog(project));
+            .map(recentProject -> {
+                var menuItem = new MenuItem(recentProject.getAlias());
+                menuItem.setOnAction(_ -> showOpenProjectDialog(recentProject));
                 return menuItem;
             }).toList());
 
@@ -77,7 +79,7 @@ public final class IDEMenuBarFactory {
         var exitItem = new LocalizedMenuItem("railroad.menu.file.exit");
         exitItem.setGraphic(new FontIcon(FontAwesomeSolid.SIGN_OUT_ALT));
         exitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.SHORTCUT_DOWN));
-        exitItem.setOnAction(e -> Platform.exit());
+        exitItem.setOnAction(_ -> Platform.exit());
 
         var undoItem = new LocalizedMenuItem("railroad.menu.edit.undo");
         undoItem.setGraphic(new FontIcon(FontAwesomeSolid.UNDO));
@@ -121,7 +123,7 @@ public final class IDEMenuBarFactory {
 
         var fullScreenItem = new LocalizedMenuItem("railroad.menu.view.full_screen");
         fullScreenItem.setGraphic(new FontIcon(FontAwesomeSolid.EXPAND));
-        fullScreenItem.setOnAction($ -> WindowManager.toggleFullScreen());
+        fullScreenItem.setOnAction(_ -> WindowManager.toggleFullScreen());
 
         var runItem = new LocalizedMenuItem("railroad.menu.run.run");
         runItem.setGraphic(new FontIcon(FontAwesomeSolid.PLAY));
@@ -138,11 +140,11 @@ public final class IDEMenuBarFactory {
         var settingsItem = new LocalizedMenuItem("railroad.menu.tools.settings");
         settingsItem.setGraphic(new FontIcon(FontAwesomeSolid.COG));
         settingsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.SHORTCUT_DOWN));
-        settingsItem.setOnAction($ -> SettingsPane.openSettingsWindow());
+        settingsItem.setOnAction(_ -> SettingsPane.openSettingsWindow());
 
         var pluginsItem = new LocalizedMenuItem("railroad.menu.tools.plugins");
         pluginsItem.setGraphic(new FontIcon(FontAwesomeSolid.PUZZLE_PIECE));
-        pluginsItem.setOnAction($ -> SettingsPane.openPluginsWindow());
+        pluginsItem.setOnAction(_ -> SettingsPane.openPluginsWindow());
 
         var terminalItem = new LocalizedMenuItem("railroad.menu.tools.terminal");
         terminalItem.setGraphic(new FontIcon(FontAwesomeSolid.TERMINAL));
@@ -199,7 +201,7 @@ public final class IDEMenuBarFactory {
 
         Stage dialog = WindowBuilder.createDialog("railroad.recent_projects.dialog.title", new DialogBuilder()
             .title("railroad.recent_projects.dialog.title")
-            .content(L18n.localize("railroad.recent_projects.dialog.description", project.getAlias()))
+            .content(L18n.localize("railroad.recent_projects.dialog.description", project.getAlias()), false)
             .buttons(thisWindowButton, newWindowButton, cancelButton));
 
         thisWindowButton.setOnAction(_ -> {

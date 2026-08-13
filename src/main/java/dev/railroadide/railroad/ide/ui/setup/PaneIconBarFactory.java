@@ -63,8 +63,10 @@ public final class PaneIconBarFactory {
         };
 
         Consumer<Tab> removeButtonFor = tab -> {
-            var btn = btnMap.remove(tab);
-            if (btn != null) bar.getChildren().remove(btn);
+            Node btn = btnMap.remove(tab);
+            if (btn != null) {
+                bar.getChildren().remove(btn);
+            }
         };
 
         pane.getTabs().addListener((ListChangeListener<Tab>) change -> {
@@ -80,7 +82,7 @@ public final class PaneIconBarFactory {
 
         pane.getTabs().forEach(addButtonFor);
 
-        pane.getSelectionModel().selectedItemProperty().addListener((obs, oldT, newT) -> {
+        pane.getSelectionModel().selectedItemProperty().addListener((_, _, newT) -> {
             btnMap.forEach((tab, btn) -> btn.setSelected(tab == newT));
         });
 

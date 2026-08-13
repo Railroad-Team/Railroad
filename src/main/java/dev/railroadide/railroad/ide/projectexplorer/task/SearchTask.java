@@ -4,6 +4,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.Task;
 import lombok.Getter;
+import org.jspecify.annotations.NonNull;
 
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -32,7 +33,7 @@ public class SearchTask extends Task<Void> {
             private int count = 0;
 
             @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+            public @NonNull FileVisitResult visitFile(@NonNull Path file, @NonNull BasicFileAttributes attrs) {
                 if (matcher.matches(file.getFileName())) {
                     this.count++;
                     matchedPaths.add(file);

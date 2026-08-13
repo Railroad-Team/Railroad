@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.overview;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.utility.TimeFormatter;
@@ -48,6 +50,7 @@ public class GitOverviewHeaderPane extends RRVBox {
     private final GitManager gitManager;
 
     public GitOverviewHeaderPane(Project project) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_OVERVIEW_HEADER, this);
         getStyleClass().add("git-overview-header-pane");
 
         // Actions Box
@@ -55,17 +58,17 @@ public class GitOverviewHeaderPane extends RRVBox {
         actionsBox.setAlignment(Pos.CENTER);
         var fetchButton = new RRButton("railroad.git.overview.header.fetch.button", FontAwesomeSolid.SYNC_ALT);
         fetchButton.setVariant(ButtonVariant.PRIMARY);
-        fetchButton.setOnAction($ -> project.getGitManager().fetch());
+        fetchButton.setOnAction(_ -> project.getGitManager().fetch());
         actionsBox.getChildren().add(fetchButton);
 
         var pullButton = new RRButton("railroad.git.overview.header.pull.button", FontAwesomeSolid.DOWNLOAD);
         pullButton.setVariant(ButtonVariant.PRIMARY);
-        pullButton.setOnAction($ -> project.getGitManager().pull());
+        pullButton.setOnAction(_ -> project.getGitManager().pull());
         actionsBox.getChildren().add(pullButton);
 
         var pushButton = new RRButton("railroad.git.overview.header.push.button", FontAwesomeSolid.PAPER_PLANE);
         pushButton.setVariant(ButtonVariant.PRIMARY);
-        pushButton.setOnAction($ -> project.getGitManager().push());
+        pushButton.setOnAction(_ -> project.getGitManager().push());
         actionsBox.getChildren().add(pushButton);
 
         getChildren().add(actionsBox);
@@ -80,9 +83,9 @@ public class GitOverviewHeaderPane extends RRVBox {
         updateHeaderInfo(gitManager);
         listenForUpdates(gitManager);
 
-        upstreamElapsedTimeline = new Timeline(new KeyFrame(Duration.seconds(1), $ -> updateUpstreamRow(this.gitManager)));
+        upstreamElapsedTimeline = new Timeline(new KeyFrame(Duration.seconds(1), _ -> updateUpstreamRow(this.gitManager)));
         upstreamElapsedTimeline.setCycleCount(Timeline.INDEFINITE);
-        sceneProperty().addListener((obs, oldScene, newScene) -> {
+        sceneProperty().addListener((_, _, newScene) -> {
             if (newScene == null) {
                 upstreamElapsedTimeline.stop();
             } else {
@@ -224,8 +227,7 @@ public class GitOverviewHeaderPane extends RRVBox {
     }
 
     private void listenForUpdates(GitManager gitManager) {
-        gitManager.repoStatusProperty().addListener((obs, oldStatus, newStatus) ->
-            updateHeaderInfo(gitManager));
+        gitManager.repoStatusProperty().addListener((_, _, _) -> updateHeaderInfo(gitManager));
     }
 
     private void updateUpstreamRow(GitManager gitManager) {
