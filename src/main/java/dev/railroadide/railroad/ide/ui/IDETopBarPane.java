@@ -1,13 +1,12 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Services;
-import dev.railroadide.railroad.ide.IDEViewMode;
+import dev.railroadide.railroad.ide.IDEViewModeController;
 import dev.railroadide.railroad.ide.ui.setup.IDEMenuBarFactory;
 import dev.railroadide.railroad.ide.ui.setup.RunControlsPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.id.UIIds;
-import javafx.beans.property.ObjectProperty;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -15,15 +14,15 @@ import javafx.scene.layout.Region;
 import java.util.Objects;
 
 public final class IDETopBarPane extends RRHBox {
-    public IDETopBarPane(Project project, ObjectProperty<IDEViewMode> viewModeProperty) {
+    public IDETopBarPane(Project project, IDEViewModeController viewModeController) {
         Objects.requireNonNull(project, "Project cannot be null");
-        Objects.requireNonNull(viewModeProperty, "View mode property cannot be null");
+        Objects.requireNonNull(viewModeController, "View mode controller cannot be null");
 
         var spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         getChildren().addAll(
-            IDEMenuBarFactory.create(project, viewModeProperty),
+            IDEMenuBarFactory.create(project, viewModeController),
             spacer,
             RunControlsPane.create(project)
         );

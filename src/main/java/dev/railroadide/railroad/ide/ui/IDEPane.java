@@ -5,6 +5,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.gradle.ui.GradleToolsPane;
 import dev.railroadide.railroad.ide.IDEViewMode;
+import dev.railroadide.railroad.ide.IDEViewModeController;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.ui.git.branches.GitBranchesPane;
 import dev.railroadide.railroad.ide.ui.git.commit.GitCommitPane;
@@ -16,6 +17,7 @@ import dev.railroadide.railroad.ide.ui.git.sync.GitSyncPane;
 import dev.railroadide.railroad.ide.ui.setup.PaneIconBarFactory;
 import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.plugin.spi.event.EventListener;
 import dev.railroadide.railroad.project.FacetDetectedEvent;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
@@ -23,6 +25,7 @@ import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.ui.RRBorderPane;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIId;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.utility.icon.RailroadBrandsIcon;
 import javafx.application.Platform;
@@ -39,18 +42,21 @@ import java.util.Objects;
 
 public final class IDEPane extends RRBorderPane {
     private final Project project;
+    private final IDEPaneLifecycle lifecycle;
+    private final IDEViewModeController viewModeController;
 
     public IDEPane(Project project) {
         this.project = Objects.requireNonNull(project, "Project cannot be null");
+        this.lifecycle = new IDEPaneLifecycle(this);
+        this.viewModeController = new IDEViewModeController(Services.IDE_STATE.currentViewModeProperty());
+        this.lifecycle.onDispose(viewModeController::close);
+        this.viewModeController.setCurrentViewMode(IDEViewMode.CODE);
 
-        var viewModeProperty = Services.IDE_STATE.currentViewModeProperty();
-        viewModeProperty.set(IDEViewMode.CODE);
-
-        setTop(new IDETopBarPane(project, viewModeProperty));
+        setTop(new IDETopBarPane(project, viewModeController));
 
         var leftPane = createLeftPane();
         var rightPane = new DetachableTabPane();
-        Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.IDE_RIGHT_DOCK, rightPane);
+        assignWhileAttached(UIIds.IDE.IDE_RIGHT_DOCK, rightPane);
         var codeEditorPane = createCodeEditorPane();
         var gitEditorPane = createGitEditorPane();
         Map<IDEViewMode, DetachableTabPane> editorPanesByMode = Map.of(
@@ -59,11 +65,11 @@ public final class IDEPane extends RRBorderPane {
         );
         var consolePane = createBottomPane();
 
-        var centerBottomSplit = new SplitPane(editorPanesByMode.get(viewModeProperty.get()), consolePane);
+        var centerBottomSplit = new SplitPane(editorPanesByMode.get(viewModeController.getCurrentViewMode()), consolePane);
         centerBottomSplit.setOrientation(Orientation.VERTICAL);
         centerBottomSplit.setDividerPositions(0.75);
-        viewModeProperty.addListener((_, _, newValue) ->
-            swapEditorPaneForViewMode(centerBottomSplit, editorPanesByMode, newValue));
+        viewModeController.onViewModeChanged(viewMode ->
+            swapEditorPaneForViewMode(centerBottomSplit, editorPanesByMode, viewMode));
 
         var mainSplit = new SplitPane(leftPane, centerBottomSplit, rightPane);
         mainSplit.setOrientation(Orientation.HORIZONTAL);
@@ -76,7 +82,7 @@ public final class IDEPane extends RRBorderPane {
 
         KeybindHandler.registerCapture(KeybindContexts.of("railroad:ide"), this);
 
-        Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.IDE, this);
+        assignWhileAttached(UIIds.IDE.IDE, this);
     }
 
     private DetachableTabPane createLeftPane() {
@@ -102,11 +108,9 @@ public final class IDEPane extends RRBorderPane {
                 gitStashTab
             )
         );
-        var viewModeProperty = Services.IDE_STATE.currentViewModeProperty();
-        applyViewMode(pane, tabsByMode, viewModeProperty.get());
-        viewModeProperty.addListener((_, _, newValue) -> applyViewMode(pane, tabsByMode, newValue));
+        viewModeController.onViewModeChanged(viewMode -> applyViewMode(pane, tabsByMode, viewMode));
 
-        Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.IDE_LEFT_DOCK, pane);
+        assignWhileAttached(UIIds.IDE.IDE_LEFT_DOCK, pane);
         return pane;
     }
 
@@ -114,7 +118,7 @@ public final class IDEPane extends RRBorderPane {
         var pane = new DetachableTabPane();
         pane.addTab("Welcome", new IDEWelcomePane());
 
-        Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.IDE_EDITOR_DOCK, pane);
+        assignWhileAttached(UIIds.IDE.IDE_EDITOR_DOCK, pane);
         return pane;
     }
 
@@ -122,7 +126,7 @@ public final class IDEPane extends RRBorderPane {
         var pane = new DetachableTabPane();
         pane.addTab("Welcome", new IDEWelcomePane());
 
-        Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.IDE_EDITOR_DOCK, pane);
+        assignWhileAttached(UIIds.IDE.IDE_EDITOR_DOCK, pane);
         return pane;
     }
 
@@ -172,7 +176,7 @@ public final class IDEPane extends RRBorderPane {
         pane.addTab("Console", new ConsolePane());
         pane.addTab("Terminal", TerminalFactory.create(project.getPath()));
 
-        Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.IDE_BOTTOM_DOCK, pane);
+        assignWhileAttached(UIIds.IDE.IDE_BOTTOM_DOCK, pane);
         return pane;
     }
 
@@ -181,11 +185,13 @@ public final class IDEPane extends RRBorderPane {
             openGradleTab(project.getFacet(FacetManager.GRADLE).orElseThrow(), rightPane, mainSplit);
         }
 
-        Railroad.EVENT_BUS.subscribe(FacetDetectedEvent.class, event -> {
+        EventListener<FacetDetectedEvent> facetDetectedListener = event -> {
             if (event.project() == project) {
                 openGradleTab(event.facet(), rightPane, mainSplit);
             }
-        });
+        };
+        Railroad.EVENT_BUS.subscribe(FacetDetectedEvent.class, facetDetectedListener);
+        lifecycle.onDispose(() -> Railroad.EVENT_BUS.unsubscribe(FacetDetectedEvent.class, facetDetectedListener));
     }
 
     private void openGradleTab(Facet<?> facet, DetachableTabPane rightPane, SplitPane mainSplit) {
@@ -239,5 +245,10 @@ public final class IDEPane extends RRBorderPane {
         );
         bottomBar.getChildren().addAll(bottomIcons, new IDEStatusBarPane());
         return bottomBar;
+    }
+
+    private <T extends Node> void assignWhileAttached(UIId<T> id, T node) {
+        var registration = Services.UI_MANAGER.assignWhileAttached(id, node);
+        lifecycle.onDispose(registration::close);
     }
 }

@@ -4,6 +4,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.RailroadProcessLauncher;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.IDEViewMode;
+import dev.railroadide.railroad.ide.IDEViewModeController;
 import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
@@ -22,7 +23,6 @@ import dev.railroadide.railroad.window.DialogBuilder;
 import dev.railroadide.railroad.window.WindowBuilder;
 import dev.railroadide.railroad.window.WindowManager;
 import javafx.application.Platform;
-import javafx.beans.property.ObjectProperty;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
@@ -45,7 +45,7 @@ public final class IDEMenuBarFactory {
     private IDEMenuBarFactory() {
     }
 
-    public static MenuBar create(Project project, ObjectProperty<IDEViewMode> viewModeProperty) {
+    public static MenuBar create(Project project, IDEViewModeController viewModeController) {
         var newFileItem = new LocalizedMenuItem("railroad.menu.file.new_file");
         newFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE));
         newFileItem.setKeybindData(new KeybindData(KeyCode.N, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
@@ -130,11 +130,11 @@ public final class IDEMenuBarFactory {
 
         var codeModeItem = new LocalizedMenuItem("railroad.ide.view_mode.code");
         codeModeItem.setGraphic(new FontIcon(FontAwesomeSolid.CODE));
-        codeModeItem.setOnAction(event -> viewModeProperty.set(IDEViewMode.CODE));
+        codeModeItem.setOnAction(event -> viewModeController.setCurrentViewMode(IDEViewMode.CODE));
 
         var gitModeItem = new LocalizedMenuItem("railroad.ide.view_mode.git");
         gitModeItem.setGraphic(new FontIcon(FontAwesomeBrands.GIT_ALT));
-        gitModeItem.setOnAction(event -> viewModeProperty.set(IDEViewMode.GIT));
+        gitModeItem.setOnAction(event -> viewModeController.setCurrentViewMode(IDEViewMode.GIT));
 
         var viewModeMenu = new LocalizedMenu("railroad.menu.view.mode");
         viewModeMenu.getItems().addAll(codeModeItem, gitModeItem);
