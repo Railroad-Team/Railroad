@@ -15,6 +15,7 @@ import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import dev.railroadide.railroad.ide.projectexplorer.task.FileCopyTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.SearchTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
+import dev.railroadide.railroad.ide.ui.IDEContentRouter;
 import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
@@ -292,12 +293,13 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             return;
         }
 
-        Services.UI_MANAGER.lookup(UIIds.IDE.IDE_EDITOR_DOCK).ifPresent(detachableTabPane -> {
+        IDEContentRouter.routeActive(IDEContentRouter.Target.CODE_EDITOR, detachableTabPane -> {
             String fileName = path.getFileName().toString();
-            if (detachableTabPane.getTabs().stream().anyMatch(tab -> tab.getId().equals(path.toAbsolutePath().toString()))) {
+            String tabId = normalizedPath.toString();
+            if (detachableTabPane.getTabs().stream().anyMatch(tab -> tabId.equals(tab.getId()))) {
                 // If a tab with the same name is already open, select it and return
                 detachableTabPane.getTabs().stream()
-                    .filter(tab -> tab.getText().equals(fileName))
+                    .filter(tab -> tabId.equals(tab.getId()))
                     .findFirst().ifPresent(existingTab -> detachableTabPane.getSelectionModel().select(existingTab));
                 return;
             }
@@ -330,7 +332,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 tab = detachableTabPane.addTab(fileName, content);
             }
 
-            tab.setId(path.toAbsolutePath().toString());
+            tab.setId(tabId);
             detachableTabPane.getSelectionModel().select(tab);
 
             var document = new FileSystemDocument(path, support.languageId());

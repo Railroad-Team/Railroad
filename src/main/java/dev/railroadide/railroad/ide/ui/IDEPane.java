@@ -44,6 +44,7 @@ public final class IDEPane extends RRBorderPane {
     private final Project project;
     private final IDEPaneLifecycle lifecycle;
     private final IDEViewModeController viewModeController;
+    private final IDEContentRouter contentRouter;
 
     public IDEPane(Project project) {
         this.project = Objects.requireNonNull(project, "Project cannot be null");
@@ -59,6 +60,7 @@ public final class IDEPane extends RRBorderPane {
         assignWhileAttached(UIIds.IDE.IDE_RIGHT_DOCK, rightPane);
         var codeEditorPane = createCodeEditorPane();
         var gitEditorPane = createGitEditorPane();
+        this.contentRouter = new IDEContentRouter(viewModeController);
         Map<IDEViewMode, DetachableTabPane> editorPanesByMode = Map.of(
             IDEViewMode.CODE, codeEditorPane,
             IDEViewMode.GIT, gitEditorPane
@@ -118,7 +120,7 @@ public final class IDEPane extends RRBorderPane {
         var pane = new DetachableTabPane();
         pane.addTab("Welcome", new IDEWelcomePane());
 
-        assignWhileAttached(UIIds.IDE.IDE_EDITOR_DOCK, pane);
+        assignWhileIDEAttached(UIIds.IDE.IDE_CODE_EDITOR_DOCK, pane);
         return pane;
     }
 
@@ -126,8 +128,12 @@ public final class IDEPane extends RRBorderPane {
         var pane = new DetachableTabPane();
         pane.addTab("Welcome", new IDEWelcomePane());
 
-        assignWhileAttached(UIIds.IDE.IDE_EDITOR_DOCK, pane);
+        assignWhileIDEAttached(UIIds.IDE.IDE_GIT_EDITOR_DOCK, pane);
         return pane;
+    }
+
+    IDEContentRouter getContentRouter() {
+        return contentRouter;
     }
 
     private static Tab createTab(String title, Node content) {
@@ -249,6 +255,11 @@ public final class IDEPane extends RRBorderPane {
 
     private <T extends Node> void assignWhileAttached(UIId<T> id, T node) {
         var registration = Services.UI_MANAGER.assignWhileAttached(id, node);
+        lifecycle.onDispose(registration::close);
+    }
+
+    private <T extends Node> void assignWhileIDEAttached(UIId<T> id, T node) {
+        var registration = Services.UI_MANAGER.assignWhileAttached(id, this, node);
         lifecycle.onDispose(registration::close);
     }
 }

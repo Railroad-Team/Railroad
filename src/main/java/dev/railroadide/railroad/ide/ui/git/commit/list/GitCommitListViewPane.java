@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.ide.ui.git.commit.list;
 
-import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.ui.IDEContentRouter;
 import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
@@ -183,26 +183,24 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
     }
 
     private void openDetailsForCommit(Project project, GitCommit commit) {
-        DetachableTabPane tabPane = Services.UI_MANAGER.lookup(UIIds.IDE.IDE_EDITOR_DOCK).orElse(null);
-        if (tabPane == null)
-            return;
+        IDEContentRouter.routeActive(IDEContentRouter.Target.GIT_EDITOR, tabPane -> {
+            Tab detailsTab = tabPane.getTabs().stream()
+                .filter(tab -> tab.getContent() instanceof GitCommitDetailsPane)
+                .findFirst()
+                .orElseGet(() -> {
+                    var detailsPane = new GitCommitDetailsPane(project);
+                    Tab created = tabPane.addTab(GitCommitDetailsPane.DEFAULT_TITLE, detailsPane);
+                    created.textProperty().bind(detailsPane.titleProperty());
+                    return created;
+                });
 
-        Tab detailsTab = tabPane.getTabs().stream()
-            .filter(tab -> tab.getContent() instanceof GitCommitDetailsPane)
-            .findFirst()
-            .orElseGet(() -> {
-                var detailsPane = new GitCommitDetailsPane(project);
-                Tab created = tabPane.addTab(GitCommitDetailsPane.DEFAULT_TITLE, detailsPane);
-                created.textProperty().bind(detailsPane.titleProperty());
-                return created;
-            });
-
-        tabPane.getSelectionModel().select(detailsTab);
-        GitCommitDetailsPane detailsPane = (GitCommitDetailsPane) detailsTab.getContent();
-        if (!detailsTab.textProperty().isBound()) {
-            detailsTab.textProperty().bind(detailsPane.titleProperty());
-        }
-        detailsPane.setCommit(commit);
+            tabPane.getSelectionModel().select(detailsTab);
+            GitCommitDetailsPane detailsPane = (GitCommitDetailsPane) detailsTab.getContent();
+            if (!detailsTab.textProperty().isBound()) {
+                detailsTab.textProperty().bind(detailsPane.titleProperty());
+            }
+            detailsPane.setCommit(commit);
+        });
     }
 
     private class GitCommitListCell extends ListCell<GitCommit> {

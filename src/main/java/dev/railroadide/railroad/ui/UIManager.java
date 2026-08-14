@@ -38,6 +38,26 @@ public final class UIManager {
     }
 
     public <T extends Node> Registration assignWhileAttached(UIId<T> id, T node) {
+        return assignWhileAttached(id, node, node);
+    }
+
+    /**
+     * Assigns a node while a separate owner is attached to a scene.
+     * <p>
+     * This is useful for nodes that belong to an attached UI component but are temporarily absent from its scene
+     * graph, such as an inactive editor dock in a view-mode workspace.
+     *
+     * @param id    ID to assign
+     * @param owner node whose scene attachment controls the registration lifetime
+     * @param node  node exposed by the ID
+     * @param <T>   exposed node type
+     * @return a registration that can stop tracking the owner and remove the assignment
+     */
+    public <T extends Node> Registration assignWhileAttached(UIId<T> id, Node owner, T node) {
+        Objects.requireNonNull(id);
+        Objects.requireNonNull(owner);
+        Objects.requireNonNull(node);
+
         class SceneBinding {
             private Registration active;
             private boolean closed;
@@ -58,7 +78,7 @@ public final class UIManager {
 
             void close() {
                 closed = true;
-                node.sceneProperty().removeListener(listener);
+                owner.sceneProperty().removeListener(listener);
 
                 if (active != null) {
                     active.close();
@@ -70,8 +90,8 @@ public final class UIManager {
         }
 
         var binding = new SceneBinding();
-        node.sceneProperty().addListener(binding.listener);
-        binding.update(node.getScene());
+        owner.sceneProperty().addListener(binding.listener);
+        binding.update(owner.getScene());
         return new Registration(binding::close);
     }
 
