@@ -3,20 +3,10 @@ package dev.railroadide.railroad.ide.ui;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
-import dev.railroadide.railroad.gradle.ui.GradleToolsPane;
 import dev.railroadide.railroad.ide.IDELayoutState;
 import dev.railroadide.railroad.ide.IDEViewMode;
 import dev.railroadide.railroad.ide.IDEViewModeController;
-import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
-import dev.railroadide.railroad.ide.ui.git.branches.GitBranchesPane;
-import dev.railroadide.railroad.ide.ui.git.commit.GitCommitPane;
-import dev.railroadide.railroad.ide.ui.git.commit.list.GitCommitListPane;
-import dev.railroadide.railroad.ide.ui.git.overview.GitOverviewPane;
-import dev.railroadide.railroad.ide.ui.git.remote.GitRemotesPane;
-import dev.railroadide.railroad.ide.ui.git.stash.GitStashPane;
-import dev.railroadide.railroad.ide.ui.git.sync.GitSyncPane;
 import dev.railroadide.railroad.ide.ui.setup.PaneIconBarFactory;
-import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.event.EventListener;
 import dev.railroadide.railroad.project.FacetDetectedEvent;
@@ -28,7 +18,6 @@ import dev.railroadide.railroad.ui.RRBorderPane;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.id.UIId;
 import dev.railroadide.railroad.ui.id.UIIds;
-import dev.railroadide.railroad.utility.icon.RailroadBrandsIcon;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
@@ -36,21 +25,18 @@ import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
-import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
-import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 public final class IDEPane extends RRBorderPane {
     private final Project project;
     private final IDEPaneLifecycle lifecycle;
     private final IDEViewModeController viewModeController;
     private final IDEContentRouter contentRouter;
-    private final Map<IDEViewMode, List<Tab>> toolTabsByMode = new EnumMap<>(IDEViewMode.class);
+    private final Map<IDEViewMode, List<Tab>> dockTabsByMode = new EnumMap<>(IDEViewMode.class);
     private final Map<IDEViewMode, DetachableTabPane> editorPanesByMode = new EnumMap<>(IDEViewMode.class);
     private final Map<IDEViewMode, IDELayoutState.ModeLayout> layoutsByMode = new EnumMap<>(IDEViewMode.class);
 
@@ -103,22 +89,22 @@ public final class IDEPane extends RRBorderPane {
 
     private DetachableTabPane createLeftPane() {
         var pane = new DetachableTabPane();
-        var projectTab = createTab("tool:project", "Project", new ProjectExplorerPane(project));
-        toolTabsByMode.put(IDEViewMode.CODE, List.of(projectTab));
+        var projectTab = createDockTab(IDEDockItem.PROJECT, IDEDockItem.DockPosition.LEFT, false);
+        dockTabsByMode.put(IDEViewMode.CODE, List.of(projectTab));
 
         assignWhileAttached(UIIds.IDE.IDE_LEFT_DOCK, pane);
         return pane;
     }
 
-    private List<Tab> createGitToolTabs() {
+    private List<Tab> createGitDockTabs() {
         return List.of(
-            createLazyTab("tool:git-overview", "Git Overview", () -> new GitOverviewPane(project)),
-            createLazyTab("tool:git-commit", "Git Commit", () -> new GitCommitPane(project)),
-            createLazyTab("tool:git-commit-list", "Git Commit List", () -> new GitCommitListPane(project)),
-            createLazyTab("tool:git-branches", "Git Branches", () -> new GitBranchesPane(project)),
-            createLazyTab("tool:git-remotes", "Git Remotes", () -> new GitRemotesPane(project)),
-            createLazyTab("tool:git-sync", "Git Sync", () -> new GitSyncPane(project)),
-            createLazyTab("tool:git-stash", "Git Stash", () -> new GitStashPane(project))
+            createDockTab(IDEDockItem.GIT_OVERVIEW, IDEDockItem.DockPosition.LEFT, true),
+            createDockTab(IDEDockItem.GIT_COMMIT, IDEDockItem.DockPosition.LEFT, true),
+            createDockTab(IDEDockItem.GIT_COMMIT_LIST, IDEDockItem.DockPosition.LEFT, true),
+            createDockTab(IDEDockItem.GIT_BRANCHES, IDEDockItem.DockPosition.LEFT, true),
+            createDockTab(IDEDockItem.GIT_REMOTES, IDEDockItem.DockPosition.LEFT, true),
+            createDockTab(IDEDockItem.GIT_SYNC, IDEDockItem.DockPosition.LEFT, true),
+            createDockTab(IDEDockItem.GIT_STASH, IDEDockItem.DockPosition.LEFT, true)
         );
     }
 
@@ -162,19 +148,13 @@ public final class IDEPane extends RRBorderPane {
         return tab;
     }
 
-    private static Tab createLazyTab(String id, String title, Supplier<? extends Node> contentFactory) {
-        Objects.requireNonNull(contentFactory, "Content factory cannot be null");
-
-        var tab = new Tab(title);
-        tab.setId(id);
-        tab.setClosable(false);
-        tab.setOnSelectionChanged(_ -> {
-            if (tab.isSelected() && tab.getContent() == null) {
-                tab.setContent(contentFactory.get());
-                tab.setOnSelectionChanged(null);
-            }
-        });
-        return tab;
+    private IDEDockTab createDockTab(IDEDockItem dockItem, IDEDockItem.DockPosition dockPosition, boolean lazy) {
+        if (dockItem.preferredDockPosition() != dockPosition) {
+            throw new IllegalArgumentException(
+                "Dock item '" + dockItem.id() + "' belongs in the " + dockItem.preferredDockPosition() + " dock"
+            );
+        }
+        return new IDEDockTab(dockItem, project, lazy);
     }
 
     private void activateViewMode(IDEViewMode viewMode) {
@@ -186,11 +166,11 @@ public final class IDEPane extends RRBorderPane {
         layoutTransitioning = true;
         try {
             if (resolvedMode == IDEViewMode.GIT) {
-                toolTabsByMode.computeIfAbsent(IDEViewMode.GIT, _ -> createGitToolTabs());
+                dockTabsByMode.computeIfAbsent(IDEViewMode.GIT, _ -> createGitDockTabs());
             }
 
             DetachableTabPane editorPane = getOrCreateEditorPane(editorPanesByMode, resolvedMode);
-            leftPane.getTabs().setAll(toolTabsByMode.getOrDefault(resolvedMode, toolTabsByMode.get(IDEViewMode.CODE)));
+            leftPane.getTabs().setAll(dockTabsByMode.getOrDefault(resolvedMode, dockTabsByMode.get(IDEViewMode.CODE)));
             replaceEditorPane(editorPane);
 
             activeViewMode = resolvedMode;
@@ -410,8 +390,8 @@ public final class IDEPane extends RRBorderPane {
     private DetachableTabPane createBottomPane() {
         var pane = new DetachableTabPane();
         pane.getTabs().addAll(
-            createTab("bottom:console", "Console", new ConsolePane()),
-            createTab("bottom:terminal", "Terminal", TerminalFactory.create(project.getPath()))
+            createDockTab(IDEDockItem.CONSOLE, IDEDockItem.DockPosition.BOTTOM, false),
+            createDockTab(IDEDockItem.TERMINAL, IDEDockItem.DockPosition.BOTTOM, false)
         );
 
         assignWhileAttached(UIIds.IDE.IDE_BOTTOM_DOCK, pane);
@@ -435,17 +415,16 @@ public final class IDEPane extends RRBorderPane {
     private void openGradleTab(Facet<?> facet, DetachableTabPane rightPane, SplitPane mainSplit) {
         Platform.runLater(() -> {
             if (facet.getType() != FacetManager.GRADLE || rightPane.getTabs().stream()
-                .anyMatch(tab -> tab.getContent() instanceof GradleToolsPane)) {
+                .anyMatch(tab -> IDEDockItem.GRADLE.id().equals(tab.getId()))) {
                 return;
             }
 
-            rightPane.getTabs().add(createTab("right:gradle", "Gradle", new GradleToolsPane(project)));
+            rightPane.getTabs().add(createDockTab(IDEDockItem.GRADLE, IDEDockItem.DockPosition.RIGHT, false));
             setRight(PaneIconBarFactory.create(
                 rightPane,
                 mainSplit,
                 Orientation.VERTICAL,
-                2,
-                Map.of("Gradle", RailroadBrandsIcon.GRADLE.getDescription())
+                2
             ));
         });
     }
@@ -455,17 +434,7 @@ public final class IDEPane extends RRBorderPane {
             leftPane,
             mainSplit,
             Orientation.VERTICAL,
-            0,
-            Map.of(
-                "Project", FontAwesomeSolid.FOLDER.getDescription(),
-                "Git Commit", FontAwesomeBrands.USB.getDescription(),
-                "Git Overview", FontAwesomeSolid.HOME.getDescription(),
-                "Git Commit List", FontAwesomeSolid.LIST.getDescription(),
-                "Git Branches", FontAwesomeSolid.CODE_BRANCH.getDescription(),
-                "Git Remotes", FontAwesomeSolid.GLOBE.getDescription(),
-                "Git Sync", FontAwesomeSolid.SYNC.getDescription(),
-                "Git Stash", FontAwesomeSolid.BOX.getDescription()
-            )
+            0
         );
     }
 
@@ -475,11 +444,7 @@ public final class IDEPane extends RRBorderPane {
             consolePane,
             centerBottomSplit,
             Orientation.HORIZONTAL,
-            1,
-            Map.of(
-                "Console", FontAwesomeSolid.PLAY_CIRCLE.getDescription(),
-                "Terminal", FontAwesomeSolid.TERMINAL.getDescription()
-            )
+            1
         );
         bottomBar.getChildren().addAll(bottomIcons, new IDEStatusBarPane());
         return bottomBar;

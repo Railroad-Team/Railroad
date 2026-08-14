@@ -529,6 +529,17 @@ railroad.menu.view.console=Console
 railroad.menu.view.full_screen=Toggle Full Screen
 railroad.ide.view_mode.code=Code
 railroad.ide.view_mode.git=Git
+railroad.ide.dock_item.project=Project
+railroad.ide.dock_item.git_overview=Git Overview
+railroad.ide.dock_item.git_commit=Git Commit
+railroad.ide.dock_item.git_commit_list=Git Commit List
+railroad.ide.dock_item.git_branches=Git Branches
+railroad.ide.dock_item.git_remotes=Git Remotes
+railroad.ide.dock_item.git_sync=Git Sync
+railroad.ide.dock_item.git_stash=Git Stash
+railroad.ide.dock_item.gradle=Gradle
+railroad.ide.dock_item.console=Console
+railroad.ide.dock_item.terminal=Terminal
 
 railroad.menu.run=Run
 railroad.menu.run.run=Run

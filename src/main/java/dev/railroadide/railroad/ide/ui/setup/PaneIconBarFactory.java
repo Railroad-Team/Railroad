@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui.setup;
 
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
+import dev.railroadide.railroad.ide.ui.IDEDockTab;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
 import javafx.collections.ListChangeListener;
@@ -28,8 +29,7 @@ public final class PaneIconBarFactory {
         DetachableTabPane pane,
         SplitPane split,
         Orientation orientation,
-        int originalIndex,
-        Map<String, String> iconsByName
+        int originalIndex
     ) {
         var bar = orientation == Orientation.HORIZONTAL ? new RRHBox(4) : new RRVBox(4);
         bar.getStyleClass().add("icon-bar-" + orientation.name().toLowerCase(Locale.ROOT));
@@ -37,9 +37,11 @@ public final class PaneIconBarFactory {
         Map<Tab, ToggleButton> btnMap = new LinkedHashMap<>();
 
         Consumer<Tab> addButtonFor = tab -> {
-            String name = tab.getText();
-            String icon = iconsByName.getOrDefault(name, FontAwesomeSolid.EYE.getDescription());
+            var icon = tab instanceof IDEDockTab dockTab ? dockTab.getDockItem().icon() : FontAwesomeSolid.EYE;
             var btn = new ToggleButton("", new FontIcon(icon));
+            if (tab instanceof IDEDockTab dockTab) {
+                btn.setId("dock-item-button:" + dockTab.getDockItem().id());
+            }
             btn.getStyleClass().add("icon-button");
 
             btn.setOnAction(e -> {
