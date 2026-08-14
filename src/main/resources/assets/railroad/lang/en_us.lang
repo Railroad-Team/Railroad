@@ -529,7 +529,6 @@ railroad.menu.view.console=Console
 railroad.menu.view.full_screen=Toggle Full Screen
 railroad.ide.view_mode.code=Code
 railroad.ide.view_mode.git=Git
-railroad.ide.view_mode.tooltip=Switch between layout presets for coding and Git workflows.
 
 railroad.menu.run=Run
 railroad.menu.run.run=Run

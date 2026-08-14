@@ -138,7 +138,6 @@ public final class IDEMenuBarFactory {
 
         var viewModeMenu = new LocalizedMenu("railroad.menu.view.mode");
         viewModeMenu.getItems().addAll(codeModeItem, gitModeItem);
-        viewModeMenu.getStyleClass().add("rr-menu");
 
         var runItem = new LocalizedMenuItem("railroad.menu.run.run");
         runItem.setGraphic(new FontIcon(FontAwesomeSolid.PLAY));

@@ -19,8 +19,6 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.Tab;
@@ -34,7 +32,10 @@ import javafx.scene.shape.Polygon;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -71,19 +72,18 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
         var loadingContainer = new RRStackPane(loadingSpinner);
         loadingContainer.setAlignment(Pos.CENTER);
         setPlaceholder(loadingContainer);
-        setCellFactory(param -> new GitCommitListCell(event -> {
+        setCellFactory(_ -> new GitCommitListCell(event -> {
             if (event.getTarget() instanceof Node node) {
                 GitCommitListCell cell = traverseToParentOfType(node, GitCommitListCell.class);
                 if (cell == null || cell.getItem() == null)
                     return;
 
-                Scene scene = cell.getScene();
                 GitCommit commit = cell.getItem();
-                openDetailsForCommit(scene, project, commit);
+                openDetailsForCommit(project, commit);
             }
         }));
         reloadCommitMetadata(project);
-        project.getGitManager().commitMetadataRevisionProperty().addListener((obs, oldRevision, newRevision) -> reloadCommitMetadata(project));
+        project.getGitManager().commitMetadataRevisionProperty().addListener((_, _, _) -> reloadCommitMetadata(project));
         project.getGitManager().getAllCommits(this::handleCommitsPage, () -> Platform.runLater(this::handleCommitsDone), 200);
         ShutdownHooks.addHook(executorService::shutdownNow);
     }
@@ -154,7 +154,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
 
         for (GitCommit commit : commitsSnapshot) {
             if (!searchText.isEmpty()) {
-                String searchable = commitSearchCache.computeIfAbsent(commit.hash(), hash -> String.join("\n",
+                String searchable = commitSearchCache.computeIfAbsent(commit.hash(), _ -> String.join("\n",
                     commit.subject(),
                     commit.authorName(),
                     commit.authorEmail(),
@@ -182,24 +182,20 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
         return committerSeconds > 0L ? committerSeconds : commit.authorTimestampEpochSeconds();
     }
 
-    private void openDetailsForCommit(Scene scene, Project project, GitCommit commit) {
-        if (scene == null || scene.getRoot() == null)
-            return;
-
-        Parent root = scene.getRoot();
-        Optional<CommitDetailsTabLocation> existing = findExistingDetailsTab(root);
-        DetachableTabPane tabPane = existing.map(CommitDetailsTabLocation::tabPane)
-            .or(() -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE_EDITOR_DOCK))
-            .orElse(null);
+    private void openDetailsForCommit(Project project, GitCommit commit) {
+        DetachableTabPane tabPane = Services.UI_MANAGER.lookup(UIIds.IDE.IDE_EDITOR_DOCK).orElse(null);
         if (tabPane == null)
             return;
 
-        Tab detailsTab = existing.map(CommitDetailsTabLocation::tab).orElseGet(() -> {
-            var detailsPane = new GitCommitDetailsPane(project);
-            Tab created = tabPane.addTab(GitCommitDetailsPane.DEFAULT_TITLE, detailsPane);
-            created.textProperty().bind(detailsPane.titleProperty());
-            return created;
-        });
+        Tab detailsTab = tabPane.getTabs().stream()
+            .filter(tab -> tab.getContent() instanceof GitCommitDetailsPane)
+            .findFirst()
+            .orElseGet(() -> {
+                var detailsPane = new GitCommitDetailsPane(project);
+                Tab created = tabPane.addTab(GitCommitDetailsPane.DEFAULT_TITLE, detailsPane);
+                created.textProperty().bind(detailsPane.titleProperty());
+                return created;
+            });
 
         tabPane.getSelectionModel().select(detailsTab);
         GitCommitDetailsPane detailsPane = (GitCommitDetailsPane) detailsTab.getContent();
@@ -207,36 +203,6 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
             detailsTab.textProperty().bind(detailsPane.titleProperty());
         }
         detailsPane.setCommit(commit);
-    }
-
-    private Optional<CommitDetailsTabLocation> findExistingDetailsTab(Parent parent) {
-        for (DetachableTabPane pane : collectTabPanes(parent)) {
-            Optional<Tab> detailsTab = pane.getTabs().stream()
-                .filter(tab -> tab.getContent() instanceof GitCommitDetailsPane)
-                .findFirst();
-            if (detailsTab.isPresent())
-                return Optional.of(new CommitDetailsTabLocation(pane, detailsTab.get()));
-        }
-
-        return Optional.empty();
-    }
-
-    private List<DetachableTabPane> collectTabPanes(Parent parent) {
-        List<DetachableTabPane> panes = new ArrayList<>();
-        if (parent instanceof DetachableTabPane tabPane) {
-            panes.add(tabPane);
-        }
-
-        for (Node child : parent.getChildrenUnmodifiable()) {
-            if (child instanceof Parent childParent) {
-                panes.addAll(collectTabPanes(childParent));
-            }
-        }
-
-        return panes;
-    }
-
-    private record CommitDetailsTabLocation(DetachableTabPane tabPane, Tab tab) {
     }
 
     private class GitCommitListCell extends ListCell<GitCommit> {
@@ -453,7 +419,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
 
             getChildren().add(timestampText);
 
-            sceneProperty().addListener((obs, oldScene, newScene) -> {
+            sceneProperty().addListener((_, _, newScene) -> {
                 if (updateTimeline == null) {
                     return;
                 }
@@ -471,7 +437,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
             long timestampMillis = getCommitTimestampEpochSeconds(commit) * 1000L;
             timestampText.setText(TimeFormatter.formatElapsed(timestampMillis));
             tooltip.setText(TimeFormatter.formatDateTime(timestampMillis));
-            updateTimeline = new Timeline(new KeyFrame(Duration.seconds(1), $ -> {
+            updateTimeline = new Timeline(new KeyFrame(Duration.seconds(1), _ -> {
                 timestampText.setText(TimeFormatter.formatElapsed(timestampMillis));
                 tooltip.setText(TimeFormatter.formatDateTime(timestampMillis));
             }));

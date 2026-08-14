@@ -8,9 +8,7 @@ import dev.railroadide.railroad.ide.IDEViewMode;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.ui.git.branches.GitBranchesPane;
 import dev.railroadide.railroad.ide.ui.git.commit.GitCommitPane;
-import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
 import dev.railroadide.railroad.ide.ui.git.commit.list.GitCommitListPane;
-import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
 import dev.railroadide.railroad.ide.ui.git.overview.GitOverviewPane;
 import dev.railroadide.railroad.ide.ui.git.remote.GitRemotesPane;
 import dev.railroadide.railroad.ide.ui.git.stash.GitStashPane;
@@ -123,14 +121,6 @@ public final class IDEPane extends RRBorderPane {
     private DetachableTabPane createGitEditorPane() {
         var pane = new DetachableTabPane();
         pane.addTab("Welcome", new IDEWelcomePane());
-
-        var gitDiffPane = new GitDiffPane(project);
-        var gitDiffTab = pane.addTab("Git Diff", gitDiffPane);
-        gitDiffTab.textProperty().bind(gitDiffPane.titleProperty());
-
-        var gitCommitDetailsPane = new GitCommitDetailsPane(project);
-        var gitCommitDetailsTab = pane.addTab("Git Commit Details", gitCommitDetailsPane);
-        gitCommitDetailsTab.textProperty().bind(gitCommitDetailsPane.titleProperty());
 
         Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.IDE_EDITOR_DOCK, pane);
         return pane;
