@@ -4,6 +4,7 @@ import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.gradle.ui.GradleToolsPane;
+import dev.railroadide.railroad.ide.IDELayoutState;
 import dev.railroadide.railroad.ide.IDEViewMode;
 import dev.railroadide.railroad.ide.IDEViewModeController;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
@@ -29,6 +30,8 @@ import dev.railroadide.railroad.ui.id.UIId;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.utility.icon.RailroadBrandsIcon;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.collections.ListChangeListener;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.SplitPane;
@@ -47,6 +50,19 @@ public final class IDEPane extends RRBorderPane {
     private final IDEPaneLifecycle lifecycle;
     private final IDEViewModeController viewModeController;
     private final IDEContentRouter contentRouter;
+    private final Map<IDEViewMode, List<Tab>> toolTabsByMode = new EnumMap<>(IDEViewMode.class);
+    private final Map<IDEViewMode, DetachableTabPane> editorPanesByMode = new EnumMap<>(IDEViewMode.class);
+    private final Map<IDEViewMode, IDELayoutState.ModeLayout> layoutsByMode = new EnumMap<>(IDEViewMode.class);
+
+    private final DetachableTabPane leftPane;
+    private final DetachableTabPane rightPane;
+    private final DetachableTabPane bottomPane;
+    private final SplitPane centerBottomSplit;
+    private final SplitPane mainSplit;
+
+    private IDEViewMode activeViewMode;
+    private boolean layoutInitialized;
+    private boolean layoutTransitioning;
 
     public IDEPane(Project project) {
         this.project = Objects.requireNonNull(project, "Project cannot be null");
@@ -57,28 +73,28 @@ public final class IDEPane extends RRBorderPane {
 
         setTop(new IDETopBarPane(project, viewModeController));
 
-        var leftPane = createLeftPane();
-        var rightPane = new DetachableTabPane();
+        this.leftPane = createLeftPane();
+        this.rightPane = new DetachableTabPane();
         assignWhileAttached(UIIds.IDE.IDE_RIGHT_DOCK, rightPane);
-        Map<IDEViewMode, DetachableTabPane> editorPanesByMode = new EnumMap<>(IDEViewMode.class);
         var codeEditorPane = getOrCreateEditorPane(editorPanesByMode, IDEViewMode.CODE);
         this.contentRouter = new IDEContentRouter(viewModeController);
-        var consolePane = createBottomPane();
+        this.bottomPane = createBottomPane();
 
-        var centerBottomSplit = new SplitPane(codeEditorPane, consolePane);
+        this.centerBottomSplit = new SplitPane(codeEditorPane, bottomPane);
         centerBottomSplit.setOrientation(Orientation.VERTICAL);
         centerBottomSplit.setDividerPositions(0.75);
-        viewModeController.onViewModeChanged(viewMode ->
-            swapEditorPaneForViewMode(centerBottomSplit, editorPanesByMode, viewMode));
 
-        var mainSplit = new SplitPane(leftPane, centerBottomSplit, rightPane);
+        this.mainSplit = new SplitPane(leftPane, centerBottomSplit, rightPane);
         mainSplit.setOrientation(Orientation.HORIZONTAL);
         mainSplit.setDividerPositions(0.15, 0.85);
         setCenter(mainSplit);
 
         configureGradlePane(rightPane, mainSplit);
         setLeft(createLeftIconBar(leftPane, mainSplit));
-        setBottom(createBottomBar(consolePane, centerBottomSplit));
+        setBottom(createBottomBar(bottomPane, centerBottomSplit));
+        installLayoutTracking();
+
+        viewModeController.onViewModeChanged(this::activateViewMode);
 
         KeybindHandler.registerCapture(KeybindContexts.of("railroad:ide"), this);
 
@@ -87,15 +103,8 @@ public final class IDEPane extends RRBorderPane {
 
     private DetachableTabPane createLeftPane() {
         var pane = new DetachableTabPane();
-        var projectTab = createTab("Project", new ProjectExplorerPane(project));
-        Map<IDEViewMode, List<Tab>> tabsByMode = new EnumMap<>(IDEViewMode.class);
-        tabsByMode.put(IDEViewMode.CODE, List.of(projectTab));
-        viewModeController.onViewModeChanged(viewMode -> {
-            if (viewMode == IDEViewMode.GIT) {
-                tabsByMode.computeIfAbsent(IDEViewMode.GIT, _ -> createGitToolTabs());
-            }
-            applyViewMode(pane, tabsByMode, viewMode);
-        });
+        var projectTab = createTab("tool:project", "Project", new ProjectExplorerPane(project));
+        toolTabsByMode.put(IDEViewMode.CODE, List.of(projectTab));
 
         assignWhileAttached(UIIds.IDE.IDE_LEFT_DOCK, pane);
         return pane;
@@ -103,19 +112,20 @@ public final class IDEPane extends RRBorderPane {
 
     private List<Tab> createGitToolTabs() {
         return List.of(
-            createLazyTab("Git Overview", () -> new GitOverviewPane(project)),
-            createLazyTab("Git Commit", () -> new GitCommitPane(project)),
-            createLazyTab("Git Commit List", () -> new GitCommitListPane(project)),
-            createLazyTab("Git Branches", () -> new GitBranchesPane(project)),
-            createLazyTab("Git Remotes", () -> new GitRemotesPane(project)),
-            createLazyTab("Git Sync", () -> new GitSyncPane(project)),
-            createLazyTab("Git Stash", () -> new GitStashPane(project))
+            createLazyTab("tool:git-overview", "Git Overview", () -> new GitOverviewPane(project)),
+            createLazyTab("tool:git-commit", "Git Commit", () -> new GitCommitPane(project)),
+            createLazyTab("tool:git-commit-list", "Git Commit List", () -> new GitCommitListPane(project)),
+            createLazyTab("tool:git-branches", "Git Branches", () -> new GitBranchesPane(project)),
+            createLazyTab("tool:git-remotes", "Git Remotes", () -> new GitRemotesPane(project)),
+            createLazyTab("tool:git-sync", "Git Sync", () -> new GitSyncPane(project)),
+            createLazyTab("tool:git-stash", "Git Stash", () -> new GitStashPane(project))
         );
     }
 
     private DetachableTabPane createCodeEditorPane() {
         var pane = new DetachableTabPane();
-        pane.addTab("Welcome", new IDEWelcomePane());
+        pane.getTabs().add(createTab("editor:welcome", "Welcome", new IDEWelcomePane()));
+        trackSelectedTab(pane);
 
         assignWhileIDEAttached(UIIds.IDE.IDE_CODE_EDITOR_DOCK, pane);
         return pane;
@@ -123,7 +133,8 @@ public final class IDEPane extends RRBorderPane {
 
     private DetachableTabPane createGitEditorPane() {
         var pane = new DetachableTabPane();
-        pane.addTab("Welcome", new IDEWelcomePane());
+        pane.getTabs().add(createTab("editor:git-welcome", "Welcome", new IDEWelcomePane()));
+        trackSelectedTab(pane);
 
         assignWhileIDEAttached(UIIds.IDE.IDE_GIT_EDITOR_DOCK, pane);
         return pane;
@@ -144,16 +155,18 @@ public final class IDEPane extends RRBorderPane {
         });
     }
 
-    private static Tab createTab(String title, Node content) {
+    private static Tab createTab(String id, String title, Node content) {
         var tab = new Tab(title, content);
+        tab.setId(id);
         tab.setClosable(false);
         return tab;
     }
 
-    private static Tab createLazyTab(String title, Supplier<? extends Node> contentFactory) {
+    private static Tab createLazyTab(String id, String title, Supplier<? extends Node> contentFactory) {
         Objects.requireNonNull(contentFactory, "Content factory cannot be null");
 
         var tab = new Tab(title);
+        tab.setId(id);
         tab.setClosable(false);
         tab.setOnSelectionChanged(_ -> {
             if (tab.isSelected() && tab.getContent() == null) {
@@ -164,41 +177,242 @@ public final class IDEPane extends RRBorderPane {
         return tab;
     }
 
-    private static void applyViewMode(DetachableTabPane pane, Map<IDEViewMode, List<Tab>> tabsByMode, IDEViewMode viewMode) {
+    private void activateViewMode(IDEViewMode viewMode) {
         IDEViewMode resolvedMode = viewMode == null ? IDEViewMode.CODE : viewMode;
-        List<Tab> tabs = tabsByMode.getOrDefault(resolvedMode, tabsByMode.get(IDEViewMode.CODE));
-        pane.getTabs().setAll(tabs);
-        if (!tabs.isEmpty()) {
-            pane.getSelectionModel().select(tabs.getFirst());
+        if (layoutInitialized && activeViewMode != null && activeViewMode != resolvedMode) {
+            layoutsByMode.put(activeViewMode, captureModeLayout(activeViewMode));
+        }
+
+        layoutTransitioning = true;
+        try {
+            if (resolvedMode == IDEViewMode.GIT) {
+                toolTabsByMode.computeIfAbsent(IDEViewMode.GIT, _ -> createGitToolTabs());
+            }
+
+            DetachableTabPane editorPane = getOrCreateEditorPane(editorPanesByMode, resolvedMode);
+            leftPane.getTabs().setAll(toolTabsByMode.getOrDefault(resolvedMode, toolTabsByMode.get(IDEViewMode.CODE)));
+            replaceEditorPane(editorPane);
+
+            activeViewMode = resolvedMode;
+            restoreModeLayout(layoutsByMode.getOrDefault(resolvedMode, IDELayoutState.ModeLayout.defaults()), editorPane);
+            layoutInitialized = true;
+            layoutsByMode.put(resolvedMode, captureModeLayout(resolvedMode));
+        } finally {
+            layoutTransitioning = false;
         }
     }
 
-    private void swapEditorPaneForViewMode(
-        SplitPane splitPane,
-        Map<IDEViewMode, DetachableTabPane> editorPanesByMode,
-        IDEViewMode viewMode
-    ) {
-        DetachableTabPane editorPane = getOrCreateEditorPane(editorPanesByMode, viewMode);
+    private void replaceEditorPane(DetachableTabPane editorPane) {
+        if (centerBottomSplit.getItems().isEmpty()) {
+            centerBottomSplit.getItems().add(editorPane);
+        } else if (centerBottomSplit.getItems().getFirst() != editorPane) {
+            centerBottomSplit.getItems().set(0, editorPane);
+        }
+    }
 
-        if (splitPane.getItems().isEmpty()) {
-            splitPane.getItems().add(editorPane);
-            splitPane.setDividerPositions(0.75);
-            return;
+    private IDELayoutState.ModeLayout captureModeLayout(IDEViewMode viewMode) {
+        IDELayoutState.ModeLayout previous = layoutsByMode.getOrDefault(viewMode, IDELayoutState.ModeLayout.defaults());
+        boolean leftVisible = mainSplit.getItems().contains(leftPane);
+        boolean rightVisible = mainSplit.getItems().contains(rightPane);
+        boolean bottomVisible = centerBottomSplit.getItems().contains(bottomPane);
+
+        double leftDivider = previous.leftDividerPosition();
+        double rightDivider = previous.rightDividerPosition();
+        double bottomDivider = previous.bottomDividerPosition();
+        double[] mainDividers = mainSplit.getDividerPositions();
+        if (leftVisible && rightVisible && mainDividers.length >= 2) {
+            leftDivider = mainDividers[0];
+            rightDivider = mainDividers[1];
+        } else if (leftVisible && mainDividers.length >= 1) {
+            leftDivider = mainDividers[0];
+        } else if (rightVisible && mainDividers.length >= 1) {
+            rightDivider = mainDividers[0];
         }
 
-        if (splitPane.getItems().getFirst() != editorPane) {
-            double dividerPosition = splitPane.getDividerPositions().length > 0
-                ? splitPane.getDividerPositions()[0]
-                : 0.75;
-            splitPane.getItems().set(0, editorPane);
-            splitPane.setDividerPositions(dividerPosition);
+        double[] bottomDividers = centerBottomSplit.getDividerPositions();
+        if (bottomVisible && bottomDividers.length >= 1) {
+            bottomDivider = bottomDividers[0];
+        }
+
+        return new IDELayoutState.ModeLayout(
+            selectedTabIdentity(leftPane),
+            selectedTabIdentity(editorPanesByMode.get(viewMode)),
+            selectedTabIdentity(rightPane),
+            selectedTabIdentity(bottomPane),
+            leftDivider,
+            rightDivider,
+            bottomDivider,
+            leftVisible,
+            rightVisible,
+            bottomVisible
+        );
+    }
+
+    private void restoreModeLayout(IDELayoutState.ModeLayout layout, DetachableTabPane editorPane) {
+        setDockVisible(mainSplit, leftPane, layout.leftDockVisible(), 0);
+        setDockVisible(mainSplit, rightPane, layout.rightDockVisible(), 2);
+        setDockVisible(centerBottomSplit, bottomPane, layout.bottomDockVisible(), 1);
+
+        restoreMainDividerPositions(layout);
+        if (layout.bottomDockVisible()) {
+            centerBottomSplit.setDividerPositions(clampDivider(layout.bottomDividerPosition(), 0.75));
+        }
+
+        selectTab(leftPane, layout.selectedLeftTab());
+        selectTab(editorPane, layout.selectedEditorTab());
+        selectTab(rightPane, layout.selectedRightTab());
+        selectTab(bottomPane, layout.selectedBottomTab());
+    }
+
+    private void restoreMainDividerPositions(IDELayoutState.ModeLayout layout) {
+        boolean leftVisible = mainSplit.getItems().contains(leftPane);
+        boolean rightVisible = mainSplit.getItems().contains(rightPane);
+        double leftDivider = clampDivider(layout.leftDividerPosition(), 0.15);
+        double rightDivider = clampDivider(layout.rightDividerPosition(), 0.85);
+
+        if (leftVisible && rightVisible) {
+            if (leftDivider >= rightDivider) {
+                leftDivider = 0.15;
+                rightDivider = 0.85;
+            }
+            mainSplit.setDividerPositions(leftDivider, rightDivider);
+        } else if (leftVisible) {
+            mainSplit.setDividerPositions(leftDivider);
+        } else if (rightVisible) {
+            mainSplit.setDividerPositions(rightDivider);
+        }
+    }
+
+    private static void setDockVisible(SplitPane splitPane, Node dock, boolean visible, int preferredIndex) {
+        boolean currentlyVisible = splitPane.getItems().contains(dock);
+        if (visible && !currentlyVisible) {
+            splitPane.getItems().add(Math.min(preferredIndex, splitPane.getItems().size()), dock);
+        } else if (!visible && currentlyVisible) {
+            splitPane.getItems().remove(dock);
+        }
+    }
+
+    private static String selectedTabIdentity(DetachableTabPane pane) {
+        if (pane == null)
+            return null;
+
+        Tab selectedTab = pane.getSelectionModel().getSelectedItem();
+        return selectedTab == null ? null : tabIdentity(selectedTab);
+    }
+
+    private static String tabIdentity(Tab tab) {
+        String id = tab.getId();
+        if (id != null && !id.isBlank())
+            return "id:" + id;
+
+        Node content = tab.getContent();
+        if (content != null)
+            return "content:" + content.getClass().getName();
+
+        return "title:" + Objects.toString(tab.getText(), "");
+    }
+
+    private static void selectTab(DetachableTabPane pane, String identity) {
+        if (pane.getTabs().isEmpty())
+            return;
+
+        if (identity != null) {
+            pane.getTabs().stream()
+                .filter(tab -> identity.equals(tabIdentity(tab)))
+                .findFirst()
+                .ifPresentOrElse(
+                    pane.getSelectionModel()::select,
+                    () -> pane.getSelectionModel().selectFirst()
+                );
+        } else {
+            pane.getSelectionModel().selectFirst();
+        }
+    }
+
+    private static double clampDivider(double value, double fallback) {
+        return value > 0.0 && value < 1.0 ? value : fallback;
+    }
+
+    private void installLayoutTracking() {
+        trackSelectedTab(leftPane);
+        trackSelectedTab(rightPane);
+        trackSelectedTab(bottomPane);
+        trackSplitPane(mainSplit);
+        trackSplitPane(centerBottomSplit);
+    }
+
+    private void trackSelectedTab(DetachableTabPane pane) {
+        ChangeListener<Tab> listener = (_, _, _) -> snapshotActiveLayout();
+        pane.getSelectionModel().selectedItemProperty().addListener(listener);
+        lifecycle.onDispose(() -> pane.getSelectionModel().selectedItemProperty().removeListener(listener));
+    }
+
+    private void trackSplitPane(SplitPane splitPane) {
+        ChangeListener<Number> positionListener = (_, _, _) -> snapshotActiveLayout();
+        ListChangeListener<SplitPane.Divider> dividerListener = change -> {
+            while (change.next()) {
+                change.getRemoved().forEach(divider -> divider.positionProperty().removeListener(positionListener));
+                change.getAddedSubList().forEach(divider -> divider.positionProperty().addListener(positionListener));
+            }
+            snapshotActiveLayout();
+        };
+        ListChangeListener<Node> itemListener = _ -> snapshotActiveLayout();
+
+        splitPane.getDividers().forEach(divider -> divider.positionProperty().addListener(positionListener));
+        splitPane.getDividers().addListener(dividerListener);
+        splitPane.getItems().addListener(itemListener);
+        lifecycle.onDispose(() -> {
+            splitPane.getItems().removeListener(itemListener);
+            splitPane.getDividers().removeListener(dividerListener);
+            splitPane.getDividers().forEach(divider -> divider.positionProperty().removeListener(positionListener));
+        });
+    }
+
+    private void snapshotActiveLayout() {
+        if (!layoutTransitioning && layoutInitialized && activeViewMode != null) {
+            layoutsByMode.put(activeViewMode, captureModeLayout(activeViewMode));
+        }
+    }
+
+    public IDELayoutState captureLayoutState() {
+        if (Platform.isFxApplicationThread() && layoutInitialized && activeViewMode != null) {
+            layoutsByMode.put(activeViewMode, captureModeLayout(activeViewMode));
+        }
+        IDEViewMode currentMode = activeViewMode == null ? IDEViewMode.CODE : activeViewMode;
+        return new IDELayoutState(currentMode, layoutsByMode);
+    }
+
+    public void restoreLayoutState(IDELayoutState layoutState) {
+        if (layoutState == null)
+            return;
+
+        Runnable restoreAction = () -> {
+            layoutsByMode.clear();
+            layoutsByMode.putAll(layoutState.modes());
+            layoutInitialized = false;
+            activeViewMode = null;
+
+            IDEViewMode targetMode = layoutState.currentViewMode();
+            if (viewModeController.getCurrentViewMode() == targetMode) {
+                activateViewMode(targetMode);
+            } else {
+                viewModeController.setCurrentViewMode(targetMode);
+            }
+        };
+
+        if (Platform.isFxApplicationThread()) {
+            restoreAction.run();
+        } else {
+            Platform.runLater(restoreAction);
         }
     }
 
     private DetachableTabPane createBottomPane() {
         var pane = new DetachableTabPane();
-        pane.addTab("Console", new ConsolePane());
-        pane.addTab("Terminal", TerminalFactory.create(project.getPath()));
+        pane.getTabs().addAll(
+            createTab("bottom:console", "Console", new ConsolePane()),
+            createTab("bottom:terminal", "Terminal", TerminalFactory.create(project.getPath()))
+        );
 
         assignWhileAttached(UIIds.IDE.IDE_BOTTOM_DOCK, pane);
         return pane;
@@ -225,7 +439,7 @@ public final class IDEPane extends RRBorderPane {
                 return;
             }
 
-            rightPane.addTab("Gradle", new GradleToolsPane(project));
+            rightPane.getTabs().add(createTab("right:gradle", "Gradle", new GradleToolsPane(project)));
             setRight(PaneIconBarFactory.create(
                 rightPane,
                 mainSplit,

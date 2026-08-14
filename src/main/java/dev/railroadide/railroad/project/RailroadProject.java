@@ -11,6 +11,7 @@ import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
+import dev.railroadide.railroad.ide.ui.IDEPane;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
@@ -21,6 +22,7 @@ import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.settings.Settings;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroad.vcs.Repository;
@@ -232,6 +234,10 @@ public class RailroadProject implements Project {
         if (activeDocumentPath != null) {
             Services.IDE_STATE.setActiveDocument(new FileSystemDocument(activeDocumentPath));
         }
+        if (projectConfig.getIdeLayoutState() != null) {
+            Platform.runLater(() -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+                .ifPresent(idePane -> idePane.restoreLayoutState(projectConfig.getIdeLayoutState())));
+        }
 
         ShutdownHooks.addHook(() -> {
             if (Railroad.PROJECT_MANAGER.getOpenProject() == project) {
@@ -253,6 +259,9 @@ public class RailroadProject implements Project {
                 .orElseGet(ProjectConfig::new);
             projectConfig.setOpenDocuments(openDocuments.stream().map(Document::getPath).toList());
             projectConfig.setActiveDocument(activeDocument != null ? activeDocument.getPath() : null);
+            Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+                .map(IDEPane::captureLayoutState)
+                .ifPresent(projectConfig::setIdeLayoutState);
             dataStore.writeJson(PROJECT_CONFIG_LOCATION, projectConfig);
 
             Railroad.PROJECT_MANAGER.setCurrentProject(null);
