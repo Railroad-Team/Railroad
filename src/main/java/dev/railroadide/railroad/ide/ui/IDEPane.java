@@ -23,9 +23,11 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
 
+import java.lang.ref.WeakReference;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,7 @@ public final class IDEPane extends RRBorderPane {
     private final Map<IDEViewMode, List<Tab>> dockTabsByMode = new EnumMap<>(IDEViewMode.class);
     private final Map<IDEViewMode, DetachableTabPane> editorPanesByMode = new EnumMap<>(IDEViewMode.class);
     private final Map<IDEViewMode, IDELayoutState.ModeLayout> layoutsByMode = new EnumMap<>(IDEViewMode.class);
+    private final Map<IDEViewMode, WeakReference<Node>> focusOwnersByMode = new EnumMap<>(IDEViewMode.class);
 
     private final DetachableTabPane leftPane;
     private final DetachableTabPane rightPane;
@@ -47,6 +50,7 @@ public final class IDEPane extends RRBorderPane {
     private final SplitPane mainSplit;
 
     private IDEViewMode activeViewMode;
+    private IDEViewMode pendingViewModeAfterGitDetection;
     private boolean layoutInitialized;
     private boolean layoutTransitioning;
 
@@ -57,7 +61,7 @@ public final class IDEPane extends RRBorderPane {
         this.lifecycle.onDispose(viewModeController::close);
         this.viewModeController.setCurrentViewMode(IDEViewMode.CODE);
 
-        setTop(new IDETopBarPane(project, viewModeController));
+        setTop(new IDETopBarPane(project, viewModeController, this::requestViewMode));
 
         this.leftPane = createLeftPane();
         this.rightPane = new DetachableTabPane();
@@ -79,6 +83,8 @@ public final class IDEPane extends RRBorderPane {
         setLeft(createLeftIconBar(leftPane, mainSplit));
         setBottom(createBottomBar(bottomPane, centerBottomSplit));
         installLayoutTracking();
+        installFocusTracking();
+        installGitAvailabilityTracking();
 
         viewModeController.onViewModeChanged(this::activateViewMode);
 
@@ -130,6 +136,22 @@ public final class IDEPane extends RRBorderPane {
         return contentRouter;
     }
 
+    /**
+     * Requests a user-facing view-mode change, respecting mode availability.
+     *
+     * @param viewMode requested mode
+     * @return whether the request was accepted
+     */
+    public boolean requestViewMode(IDEViewMode viewMode) {
+        IDEViewMode resolvedMode = viewMode == null ? IDEViewMode.CODE : viewMode;
+        if (resolvedMode == IDEViewMode.GIT && !project.getGitManager().isActive())
+            return false;
+
+        pendingViewModeAfterGitDetection = null;
+        viewModeController.setCurrentViewMode(resolvedMode);
+        return true;
+    }
+
     private DetachableTabPane getOrCreateEditorPane(
         Map<IDEViewMode, DetachableTabPane> editorPanesByMode,
         IDEViewMode viewMode
@@ -149,11 +171,10 @@ public final class IDEPane extends RRBorderPane {
     }
 
     private IDEDockTab createDockTab(IDEDockItem dockItem, IDEDockItem.DockPosition dockPosition, boolean lazy) {
-        if (dockItem.preferredDockPosition() != dockPosition) {
+        if (dockItem.preferredDockPosition() != dockPosition)
             throw new IllegalArgumentException(
                 "Dock item '" + dockItem.id() + "' belongs in the " + dockItem.preferredDockPosition() + " dock"
             );
-        }
         return new IDEDockTab(dockItem, project, lazy);
     }
 
@@ -177,6 +198,7 @@ public final class IDEPane extends RRBorderPane {
             restoreModeLayout(layoutsByMode.getOrDefault(resolvedMode, IDELayoutState.ModeLayout.defaults()), editorPane);
             layoutInitialized = true;
             layoutsByMode.put(resolvedMode, captureModeLayout(resolvedMode));
+            restoreModeFocus(resolvedMode, editorPane);
         } finally {
             layoutTransitioning = false;
         }
@@ -321,6 +343,90 @@ public final class IDEPane extends RRBorderPane {
         trackSplitPane(centerBottomSplit);
     }
 
+    private void installFocusTracking() {
+        ChangeListener<Node> focusOwnerListener = (_, _, focusOwner) -> rememberModeFocus(focusOwner);
+        ChangeListener<Scene> sceneListener = (_, oldScene, newScene) -> {
+            if (oldScene != null) {
+                oldScene.focusOwnerProperty().removeListener(focusOwnerListener);
+            }
+            if (newScene != null) {
+                newScene.focusOwnerProperty().addListener(focusOwnerListener);
+                rememberModeFocus(newScene.getFocusOwner());
+            }
+        };
+
+        sceneProperty().addListener(sceneListener);
+        if (getScene() != null) {
+            getScene().focusOwnerProperty().addListener(focusOwnerListener);
+        }
+        lifecycle.onDispose(() -> {
+            sceneProperty().removeListener(sceneListener);
+            if (getScene() != null) {
+                getScene().focusOwnerProperty().removeListener(focusOwnerListener);
+            }
+            focusOwnersByMode.clear();
+        });
+    }
+
+    private void installGitAvailabilityTracking() {
+        ChangeListener<Boolean> listener = (_, _, available) -> {
+            if (available) {
+                if (pendingViewModeAfterGitDetection == IDEViewMode.GIT) {
+                    pendingViewModeAfterGitDetection = null;
+                    viewModeController.setCurrentViewMode(IDEViewMode.GIT);
+                }
+            } else if (viewModeController.getCurrentViewMode() == IDEViewMode.GIT) {
+                viewModeController.setCurrentViewMode(IDEViewMode.CODE);
+            }
+        };
+        project.getGitManager().activeProperty().addListener(listener);
+        lifecycle.onDispose(() -> project.getGitManager().activeProperty().removeListener(listener));
+    }
+
+    private void rememberModeFocus(Node focusOwner) {
+        if (focusOwner == null || activeViewMode == null || !isModeContent(focusOwner, activeViewMode))
+            return;
+
+        focusOwnersByMode.put(activeViewMode, new WeakReference<>(focusOwner));
+    }
+
+    private boolean isModeContent(Node node, IDEViewMode viewMode) {
+        return isDescendantOf(node, leftPane)
+            || isDescendantOf(node, editorPanesByMode.get(viewMode))
+            || isDescendantOf(node, rightPane)
+            || isDescendantOf(node, bottomPane);
+    }
+
+    private static boolean isDescendantOf(Node node, Node ancestor) {
+        if (ancestor == null)
+            return false;
+
+        for (Node current = node; current != null; current = current.getParent()) {
+            if (current == ancestor)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void restoreModeFocus(IDEViewMode viewMode, DetachableTabPane editorPane) {
+        Platform.runLater(() -> {
+            if (activeViewMode != viewMode || getScene() == null)
+                return;
+
+            WeakReference<Node> focusReference = focusOwnersByMode.get(viewMode);
+            Node focusOwner = focusReference == null ? null : focusReference.get();
+            if (focusOwner != null && focusOwner.getScene() == getScene() && focusOwner.isVisible() && !focusOwner.isDisabled()) {
+                focusOwner.requestFocus();
+                return;
+            }
+
+            Tab selectedTab = editorPane.getSelectionModel().getSelectedItem();
+            Node selectedContent = selectedTab == null ? null : selectedTab.getContent();
+            Objects.requireNonNullElse(selectedContent, editorPane).requestFocus();
+        });
+    }
+
     private void trackSelectedTab(DetachableTabPane pane) {
         ChangeListener<Tab> listener = (_, _, _) -> snapshotActiveLayout();
         pane.getSelectionModel().selectedItemProperty().addListener(listener);
@@ -358,6 +464,7 @@ public final class IDEPane extends RRBorderPane {
         if (Platform.isFxApplicationThread() && layoutInitialized && activeViewMode != null) {
             layoutsByMode.put(activeViewMode, captureModeLayout(activeViewMode));
         }
+
         IDEViewMode currentMode = activeViewMode == null ? IDEViewMode.CODE : activeViewMode;
         return new IDELayoutState(currentMode, layoutsByMode);
     }
@@ -373,6 +480,12 @@ public final class IDEPane extends RRBorderPane {
             activeViewMode = null;
 
             IDEViewMode targetMode = layoutState.currentViewMode();
+            if (targetMode == IDEViewMode.GIT && !project.getGitManager().isActive()) {
+                pendingViewModeAfterGitDetection = IDEViewMode.GIT;
+                targetMode = IDEViewMode.CODE;
+            } else {
+                pendingViewModeAfterGitDetection = null;
+            }
             if (viewModeController.getCurrentViewMode() == targetMode) {
                 activateViewMode(targetMode);
             } else {

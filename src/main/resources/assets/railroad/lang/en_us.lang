@@ -270,6 +270,7 @@ railroad.settings.keybinds.recording=Recording...
 
 # Keybinds categories
 railroad.settings.keybinds.category.general=General
+railroad.settings.keybinds.category.view_modes=View Modes
 
 # Keybinds
 railroad.settings.keybinds.open_project_explorer_item=Open selected project item
@@ -283,6 +284,8 @@ railroad.settings.keybinds.rename_project_explorer_item=Rename selected project 
 railroad.settings.keybinds.open_in_file_explorer=Open in file explorer
 railroad.settings.keybinds.open_in_terminal=Open in terminal
 railroad.settings.keybinds.fullscreen=Fullscreen
+railroad.settings.keybinds.view_mode_code=Switch to Code view mode
+railroad.settings.keybinds.view_mode_git=Switch to Git view mode
 
 # Plugin settings
 railroad.window.plugins.title=Plugins
@@ -529,6 +532,7 @@ railroad.menu.view.console=Console
 railroad.menu.view.full_screen=Toggle Full Screen
 railroad.ide.view_mode.code=Code
 railroad.ide.view_mode.git=Git
+railroad.ide.view_mode.git_unavailable=No Git repository detected
 railroad.ide.dock_item.project=Project
 railroad.ide.dock_item.git_overview=Git Overview
 railroad.ide.dock_item.git_commit=Git Commit

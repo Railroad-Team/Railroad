@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.settings.keybinds;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
@@ -20,7 +22,7 @@ public class Keybind {
     @Getter
     private final List<KeybindData> defaultKeys;
     @Getter
-    private final List<KeybindData> keys = new ArrayList<>();
+    private final ObservableList<KeybindData> keys = FXCollections.observableArrayList();
     @Getter
     private final List<KeybindContexts.KeybindContext> validContexts;
     @Getter
