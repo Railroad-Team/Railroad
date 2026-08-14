@@ -36,9 +36,11 @@ import javafx.scene.control.Tab;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
-import java.util.Map;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public final class IDEPane extends RRBorderPane {
     private final Project project;
@@ -58,16 +60,12 @@ public final class IDEPane extends RRBorderPane {
         var leftPane = createLeftPane();
         var rightPane = new DetachableTabPane();
         assignWhileAttached(UIIds.IDE.IDE_RIGHT_DOCK, rightPane);
-        var codeEditorPane = createCodeEditorPane();
-        var gitEditorPane = createGitEditorPane();
+        Map<IDEViewMode, DetachableTabPane> editorPanesByMode = new EnumMap<>(IDEViewMode.class);
+        var codeEditorPane = getOrCreateEditorPane(editorPanesByMode, IDEViewMode.CODE);
         this.contentRouter = new IDEContentRouter(viewModeController);
-        Map<IDEViewMode, DetachableTabPane> editorPanesByMode = Map.of(
-            IDEViewMode.CODE, codeEditorPane,
-            IDEViewMode.GIT, gitEditorPane
-        );
         var consolePane = createBottomPane();
 
-        var centerBottomSplit = new SplitPane(editorPanesByMode.get(viewModeController.getCurrentViewMode()), consolePane);
+        var centerBottomSplit = new SplitPane(codeEditorPane, consolePane);
         centerBottomSplit.setOrientation(Orientation.VERTICAL);
         centerBottomSplit.setDividerPositions(0.75);
         viewModeController.onViewModeChanged(viewMode ->
@@ -90,30 +88,29 @@ public final class IDEPane extends RRBorderPane {
     private DetachableTabPane createLeftPane() {
         var pane = new DetachableTabPane();
         var projectTab = createTab("Project", new ProjectExplorerPane(project));
-        var gitOverviewTab = createTab("Git Overview", new GitOverviewPane(project));
-        var gitCommitTab = createTab("Git Commit", new GitCommitPane(project));
-        var gitCommitListTab = createTab("Git Commit List", new GitCommitListPane(project));
-        var gitBranchesTab = createTab("Git Branches", new GitBranchesPane(project));
-        var gitRemotesTab = createTab("Git Remotes", new GitRemotesPane(project));
-        var gitSyncTab = createTab("Git Sync", new GitSyncPane(project));
-        var gitStashTab = createTab("Git Stash", new GitStashPane(project));
-
-        Map<IDEViewMode, List<Tab>> tabsByMode = Map.of(
-            IDEViewMode.CODE, List.of(projectTab),
-            IDEViewMode.GIT, List.of(
-                gitOverviewTab,
-                gitCommitTab,
-                gitCommitListTab,
-                gitBranchesTab,
-                gitRemotesTab,
-                gitSyncTab,
-                gitStashTab
-            )
-        );
-        viewModeController.onViewModeChanged(viewMode -> applyViewMode(pane, tabsByMode, viewMode));
+        Map<IDEViewMode, List<Tab>> tabsByMode = new EnumMap<>(IDEViewMode.class);
+        tabsByMode.put(IDEViewMode.CODE, List.of(projectTab));
+        viewModeController.onViewModeChanged(viewMode -> {
+            if (viewMode == IDEViewMode.GIT) {
+                tabsByMode.computeIfAbsent(IDEViewMode.GIT, _ -> createGitToolTabs());
+            }
+            applyViewMode(pane, tabsByMode, viewMode);
+        });
 
         assignWhileAttached(UIIds.IDE.IDE_LEFT_DOCK, pane);
         return pane;
+    }
+
+    private List<Tab> createGitToolTabs() {
+        return List.of(
+            createLazyTab("Git Overview", () -> new GitOverviewPane(project)),
+            createLazyTab("Git Commit", () -> new GitCommitPane(project)),
+            createLazyTab("Git Commit List", () -> new GitCommitListPane(project)),
+            createLazyTab("Git Branches", () -> new GitBranchesPane(project)),
+            createLazyTab("Git Remotes", () -> new GitRemotesPane(project)),
+            createLazyTab("Git Sync", () -> new GitSyncPane(project)),
+            createLazyTab("Git Stash", () -> new GitStashPane(project))
+        );
     }
 
     private DetachableTabPane createCodeEditorPane() {
@@ -136,9 +133,34 @@ public final class IDEPane extends RRBorderPane {
         return contentRouter;
     }
 
+    private DetachableTabPane getOrCreateEditorPane(
+        Map<IDEViewMode, DetachableTabPane> editorPanesByMode,
+        IDEViewMode viewMode
+    ) {
+        IDEViewMode resolvedMode = viewMode == null ? IDEViewMode.CODE : viewMode;
+        return editorPanesByMode.computeIfAbsent(resolvedMode, mode -> switch (mode) {
+            case CODE -> createCodeEditorPane();
+            case GIT -> createGitEditorPane();
+        });
+    }
+
     private static Tab createTab(String title, Node content) {
         var tab = new Tab(title, content);
         tab.setClosable(false);
+        return tab;
+    }
+
+    private static Tab createLazyTab(String title, Supplier<? extends Node> contentFactory) {
+        Objects.requireNonNull(contentFactory, "Content factory cannot be null");
+
+        var tab = new Tab(title);
+        tab.setClosable(false);
+        tab.setOnSelectionChanged(_ -> {
+            if (tab.isSelected() && tab.getContent() == null) {
+                tab.setContent(contentFactory.get());
+                tab.setOnSelectionChanged(null);
+            }
+        });
         return tab;
     }
 
@@ -151,16 +173,12 @@ public final class IDEPane extends RRBorderPane {
         }
     }
 
-    private static void swapEditorPaneForViewMode(
+    private void swapEditorPaneForViewMode(
         SplitPane splitPane,
         Map<IDEViewMode, DetachableTabPane> editorPanesByMode,
         IDEViewMode viewMode
     ) {
-        IDEViewMode resolvedMode = viewMode == null ? IDEViewMode.CODE : viewMode;
-        DetachableTabPane editorPane = editorPanesByMode.getOrDefault(
-            resolvedMode,
-            editorPanesByMode.get(IDEViewMode.CODE)
-        );
+        DetachableTabPane editorPane = getOrCreateEditorPane(editorPanesByMode, viewMode);
 
         if (splitPane.getItems().isEmpty()) {
             splitPane.getItems().add(editorPane);
