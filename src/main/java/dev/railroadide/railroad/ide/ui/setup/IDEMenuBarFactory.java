@@ -30,7 +30,6 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -64,14 +63,11 @@ public final class IDEMenuBarFactory {
             Path directoryPath = Services.UI_MANAGER.lookup(UIIds.IDE.PROJECT_EXPLORER)
                 .map(ProjectExplorerPane::getSelectedDirectory)
                 .orElseGet(project::getPath);
-            Window window = Railroad.WINDOW_MANAGER.getPrimaryStage();
-            FileChooser fileChooser = new FileChooser();
+            var fileChooser = new FileChooser();
             fileChooser.setInitialDirectory(directoryPath.toFile());
-            File file = fileChooser.showOpenDialog(window);
-
-            if(file == null){
+            File file = fileChooser.showOpenDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
+            if(file == null)
                 return;
-            }
 
             Services.IDE_STATE.openDocument(new FileSystemDocument(file.toPath()));
         });
