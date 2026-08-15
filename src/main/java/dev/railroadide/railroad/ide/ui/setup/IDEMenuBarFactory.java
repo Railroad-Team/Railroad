@@ -263,8 +263,8 @@ public final class IDEMenuBarFactory {
             .buttons(thisWindowButton, newWindowButton, cancelButton));
 
         thisWindowButton.setOnAction(_ -> {
-            project.open(Railroad.WINDOW_MANAGER.getPrimaryStage());
             dialog.close();
+            project.open(Railroad.WINDOW_MANAGER.getPrimaryStage());
         });
 
         newWindowButton.setOnAction(_ -> {

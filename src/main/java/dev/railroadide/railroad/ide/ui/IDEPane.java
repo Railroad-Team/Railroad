@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public final class IDEPane extends RRBorderPane {
+public final class IDEPane extends RRBorderPane implements AutoCloseable {
     private final Project project;
     private final IDEPaneLifecycle lifecycle;
     private final IDEViewModeController viewModeController;
@@ -498,6 +498,11 @@ public final class IDEPane extends RRBorderPane {
         } else {
             Platform.runLater(restoreAction);
         }
+    }
+
+    @Override
+    public void close() {
+        lifecycle.close();
     }
 
     private DetachableTabPane createBottomPane() {

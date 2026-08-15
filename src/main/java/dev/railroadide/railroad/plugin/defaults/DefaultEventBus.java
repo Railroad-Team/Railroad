@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.plugin.defaults;
 
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.plugin.spi.event.Event;
 import dev.railroadide.railroad.plugin.spi.event.EventBus;
 import dev.railroadide.railroad.plugin.spi.event.EventListener;
@@ -21,7 +22,11 @@ public class DefaultEventBus implements EventBus {
                     // Suppress unchecked cast warning, as we know the type is correct
                     @SuppressWarnings("unchecked")
                     EventListener<Event> typedListener = (EventListener<Event>) listener;
-                    typedListener.handle(event);
+                    try {
+                        typedListener.handle(event);
+                    } catch (RuntimeException exception) {
+                        Railroad.LOGGER.error("Event listener failed while handling {}", eventType.getName(), exception);
+                    }
                 }
             }
         }
