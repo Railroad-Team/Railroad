@@ -7,6 +7,7 @@ import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
@@ -27,10 +28,13 @@ import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -66,7 +70,29 @@ public final class IDEMenuBarFactory {
             if(file == null)
                 return;
 
+
             Services.IDE_STATE.openDocument(new FileSystemDocument(file.toPath()));
+        });
+
+        var openProjectItem = new LocalizedMenuItem("railroad.menu.file.open_project");
+        openProjectItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
+        openProjectItem.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN, KeyCombination.ALT_DOWN));
+        openProjectItem.setOnAction(_ -> {
+            Path directoryPath = Services.UI_MANAGER.lookup(UIIds.IDE.PROJECT_EXPLORER)
+                .map(ProjectExplorerPane::getSelectedDirectory)
+                .orElseGet(project::getPath);
+            Window window = Railroad.WINDOW_MANAGER.getPrimaryStage();
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            directoryChooser.setTitle("Open Project");
+            directoryChooser.setInitialDirectory(directoryPath.toFile());
+            File file = directoryChooser.showDialog(window);
+
+            if(file == null){
+                return;
+            }
+
+            Project createdProject = Railroad.PROJECT_MANAGER.newProject(new RailroadProject(Path.of(file.getPath())));
+            showOpenProjectDialog(createdProject);
         });
 
         var recentProjects = new LocalizedMenu("railroad.menu.file.recent_projects");
@@ -163,7 +189,7 @@ public final class IDEMenuBarFactory {
         terminalItem.setAccelerator(new KeyCodeCombination(KeyCode.T, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
 
         var fileMenu = new LocalizedMenu("railroad.menu.file");
-        fileMenu.getItems().addAll(newFileItem, openFileItem, recentProjects, saveItem, saveAsItem, new SeparatorMenuItem(), exitItem);
+        fileMenu.getItems().addAll(newFileItem, openFileItem, openProjectItem, recentProjects, saveItem, saveAsItem, new SeparatorMenuItem(), exitItem);
         fileMenu.getStyleClass().add("rr-menu");
 
         var editMenu = new LocalizedMenu("railroad.menu.edit");
