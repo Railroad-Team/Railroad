@@ -3,6 +3,7 @@ package dev.railroadide.railroad.vcs.git;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
 import dev.railroadide.railroad.utility.ShutdownHooks;
+import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
 import dev.railroadide.railroad.vcs.git.branch.GitBranch;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchLastCommit;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchStatus;
@@ -21,7 +22,6 @@ import dev.railroadide.railroad.vcs.git.stash.GitStashEntry;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import dev.railroadide.railroad.vcs.git.status.GitRepoStatus;
 import dev.railroadide.railroad.vcs.git.util.*;
-import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -99,7 +99,7 @@ public class GitManager {
      */
     public void detectRepository() {
         Path projectPath = this.project.getPath();
-        runOnFxThread(() -> beginRepositoryDetection());
+        JavaFXUtils.runOnApplicationThread(this::beginRepositoryDetection);
 
         try {
             this.executorService.submit(() -> {
@@ -108,17 +108,17 @@ public class GitManager {
                     detectedRepository = this.gitClient.detectRepository(projectPath);
                 } catch (Exception exception) {
                     GitLog.LOGGER.error("Failed to detect Git repository for project path: {}", projectPath, exception);
-                    runOnFxThread(() -> clearRepositoryState(GitRepositoryState.FAILED));
+                    JavaFXUtils.runOnApplicationThread(() -> clearRepositoryState(GitRepositoryState.FAILED));
                     return;
                 }
 
                 if (detectedRepository.isEmpty()) {
-                    runOnFxThread(() -> clearRepositoryState(GitRepositoryState.UNAVAILABLE));
+                    JavaFXUtils.runOnApplicationThread(() -> clearRepositoryState(GitRepositoryState.UNAVAILABLE));
                     return;
                 }
 
                 GitRepository repository = detectedRepository.orElseThrow();
-                runOnFxThread(() -> completeRepositoryDetection(repository));
+                JavaFXUtils.runOnApplicationThread(() -> completeRepositoryDetection(repository));
                 try {
                     refreshStatusInternal(repository);
                     loadIdentity();
@@ -133,7 +133,7 @@ public class GitManager {
             });
         } catch (RejectedExecutionException exception) {
             GitLog.LOGGER.error("Could not schedule Git repository detection for project path: {}", projectPath, exception);
-            runOnFxThread(() -> clearRepositoryState(GitRepositoryState.FAILED));
+            JavaFXUtils.runOnApplicationThread(() -> clearRepositoryState(GitRepositoryState.FAILED));
         }
     }
 
@@ -411,7 +411,7 @@ public class GitManager {
 
     private void refreshStatusInternal(@Nullable GitRepository repository) {
         if (repository == null) {
-            runOnFxThread(() -> {
+            JavaFXUtils.runOnApplicationThread(() -> {
                 this.repoStatus.set(null);
                 this.remotes.set(List.of());
                 this.upstream.set(null);
@@ -428,7 +428,7 @@ public class GitManager {
             ? this.gitClient.getPullStrategy(repository, status.branch())
             : null;
         GitPushStrategy currentPushStrategy = this.gitClient.getPushStrategy(repository);
-        runOnFxThread(() -> {
+        JavaFXUtils.runOnApplicationThread(() -> {
             this.repoStatus.set(status);
             this.remotes.set(currentRemotes);
             this.upstream.set(currentUpstream);
@@ -452,7 +452,7 @@ public class GitManager {
             }
         });
         String remoteName = this.gitClient.getUpstream(repository).map(GitUpstream::remoteName).orElse("");
-        runOnFxThread(() -> this.remoteFetchTimestamps.put(remoteName, System.currentTimeMillis()));
+        JavaFXUtils.runOnApplicationThread(() -> this.remoteFetchTimestamps.put(remoteName, System.currentTimeMillis()));
         refreshStatusInternal(repository);
     }
 
@@ -548,7 +548,7 @@ public class GitManager {
         this.executorService.submit(() -> {
             try {
                 GitIdentity identity = this.gitClient.getIdentity();
-                runOnFxThread(() -> this.gitIdentity.set(identity));
+                JavaFXUtils.runOnApplicationThread(() -> this.gitIdentity.set(identity));
                 GitLog.LOGGER.debug("Loaded Git identity: {}", identity);
             } catch (Exception exception) {
                 GitLog.LOGGER.warn("Failed to load Git identity", exception);
@@ -1498,7 +1498,7 @@ public class GitManager {
                 });
                 refreshStatusInternal();
                 for (GitRemote remote : getRemotes()) {
-                    runOnFxThread(() -> this.remoteFetchTimestamps.put(remote.name(), System.currentTimeMillis()));
+                    JavaFXUtils.runOnApplicationThread(() -> this.remoteFetchTimestamps.put(remote.name(), System.currentTimeMillis()));
                 }
             }
         });
@@ -1666,14 +1666,6 @@ public class GitManager {
             return remotes.getFirst();
 
         return null;
-    }
-
-    private void runOnFxThread(Runnable action) {
-        if (Platform.isFxApplicationThread()) {
-            action.run();
-        } else {
-            Platform.runLater(action);
-        }
     }
 
     /**

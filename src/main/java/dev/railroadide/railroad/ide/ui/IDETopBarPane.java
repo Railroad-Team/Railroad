@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Services;
-import dev.railroadide.railroad.ide.IDEViewMode;
-import dev.railroadide.railroad.ide.IDEViewModeController;
+import dev.railroadide.railroad.ide.WorkspaceMode;
+import dev.railroadide.railroad.ide.WorkspaceModeController;
 import dev.railroadide.railroad.ide.ui.setup.IDEMenuBarFactory;
 import dev.railroadide.railroad.ide.ui.setup.RunControlsPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -18,8 +18,8 @@ import java.util.function.Consumer;
 public final class IDETopBarPane extends RRHBox {
     public IDETopBarPane(
         Project project,
-        IDEViewModeController viewModeController,
-        Consumer<IDEViewMode> viewModeRequester,
+        WorkspaceModeController viewModeController,
+        Consumer<WorkspaceMode> viewModeRequester,
         IDEWorkspaceActions workspaceActions
     ) {
         Objects.requireNonNull(project, "Project cannot be null");

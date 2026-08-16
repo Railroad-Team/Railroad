@@ -1,7 +1,8 @@
 package dev.railroadide.railroad.settings.keybinds;
 
 import dev.railroadide.railroad.Services;
-import dev.railroadide.railroad.ide.IDEViewMode;
+import dev.railroadide.railroad.ide.WorkspaceMode;
+import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ui.id.UIIds;
@@ -99,13 +100,13 @@ public class Keybinds {
 
     public static final Keybind VIEW_MODE_CODE = registerViewModeKeybind(
         "railroad:view_mode_code",
-        IDEViewMode.CODE,
+        WorkspaceModes.CODE,
         KeyCode.DIGIT1
     );
 
     public static final Keybind VIEW_MODE_GIT = registerViewModeKeybind(
         "railroad:view_mode_git",
-        IDEViewMode.GIT,
+        WorkspaceModes.GIT,
         KeyCode.DIGIT2
     );
 
@@ -125,7 +126,7 @@ public class Keybinds {
         return keybind;
     }
 
-    private static Keybind registerViewModeKeybind(String id, IDEViewMode viewMode, KeyCode keyCode) {
+    private static Keybind registerViewModeKeybind(String id, WorkspaceMode viewMode, KeyCode keyCode) {
         Keybind keybind = KeybindHandler.registerKeybind(Keybind.builder()
             .id(id)
             .category(VIEW_MODES)

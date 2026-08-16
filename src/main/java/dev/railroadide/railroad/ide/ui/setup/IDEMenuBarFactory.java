@@ -3,8 +3,8 @@ package dev.railroadide.railroad.ide.ui.setup;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.RailroadProcessLauncher;
 import dev.railroadide.railroad.Services;
-import dev.railroadide.railroad.ide.IDEViewMode;
-import dev.railroadide.railroad.ide.IDEViewModeController;
+import dev.railroadide.railroad.ide.WorkspaceMode;
+import dev.railroadide.railroad.ide.WorkspaceModeController;
 import dev.railroadide.railroad.ide.ui.IDEDockItem;
 import dev.railroadide.railroad.ide.ui.IDEWorkspaceActions;
 import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
@@ -14,7 +14,7 @@ import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.settings.keybinds.Keybind;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
-import dev.railroadide.railroad.settings.keybinds.Keybinds;
+import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRMenuBar;
@@ -31,6 +31,7 @@ import dev.railroadide.railroad.window.WindowManager;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.collections.WeakListChangeListener;
+import javafx.beans.value.ObservableBooleanValue;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
@@ -39,7 +40,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
-import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -59,8 +60,8 @@ public final class IDEMenuBarFactory {
 
     public static MenuBar create(
         Project project,
-        IDEViewModeController viewModeController,
-        Consumer<IDEViewMode> viewModeRequester,
+        WorkspaceModeController viewModeController,
+        Consumer<WorkspaceMode> viewModeRequester,
         IDEWorkspaceActions workspaceActions
     ) {
         var newFileItem = new LocalizedMenuItem("railroad.menu.file.new_file");
@@ -144,20 +145,24 @@ public final class IDEMenuBarFactory {
         fullScreenItem.setOnAction(_ -> WindowManager.toggleFullScreen());
 
         var viewModeToggleGroup = new ToggleGroup();
-
-        var codeModeItem = new LocalizedRadioMenuItem("railroad.ide.view_mode.code");
-        codeModeItem.setGraphic(new FontIcon(FontAwesomeSolid.CODE));
-        codeModeItem.setToggleGroup(viewModeToggleGroup);
-        codeModeItem.setOnAction(_ -> viewModeRequester.accept(IDEViewMode.CODE));
-        bindConfiguredAccelerator(codeModeItem, Keybinds.VIEW_MODE_CODE);
-
-        var gitModeItem = new LocalizedRadioMenuItem("railroad.ide.view_mode.git");
-        gitModeItem.setGraphic(new FontIcon(FontAwesomeBrands.GIT_ALT));
-        gitModeItem.setToggleGroup(viewModeToggleGroup);
-        gitModeItem.setOnAction(_ -> viewModeRequester.accept(IDEViewMode.GIT));
-        gitModeItem.disableProperty().bind(project.getGitManager().repositoryStateProperty()
-            .isNotEqualTo(GitRepositoryState.AVAILABLE));
-        bindConfiguredAccelerator(gitModeItem, Keybinds.VIEW_MODE_GIT);
+        Map<WorkspaceMode, LocalizedRadioMenuItem> viewModeItems = new LinkedHashMap<>();
+        for (WorkspaceMode viewMode : WorkspaceMode.REGISTRY.values()) {
+            var item = new LocalizedRadioMenuItem(viewMode.getLocalizationKey());
+            item.setToggleGroup(viewModeToggleGroup);
+            item.setOnAction(_ -> viewModeRequester.accept(viewMode));
+            if (viewMode.getGraphic() != null) {
+                item.setGraphic(new FontIcon(viewMode.getGraphic()));
+            }
+            Keybind accelerator = KeybindHandler.getKeybind(viewMode.getAcceleratorId());
+            if (accelerator != null) {
+                bindConfiguredAccelerator(item, accelerator);
+            }
+            ObservableBooleanValue unavailable = viewMode.createUnavailableBinding(project);
+            if (unavailable != null) {
+                item.disableProperty().bind(unavailable);
+            }
+            viewModeItems.put(viewMode, item);
+        }
 
         var gitDetectingItem = new LocalizedMenuItem("railroad.ide.view_mode.git_detecting");
         gitDetectingItem.setDisable(true);
@@ -174,15 +179,11 @@ public final class IDEMenuBarFactory {
             .isEqualTo(GitRepositoryState.FAILED));
         gitDetectionFailedItem.setOnAction(_ -> project.getGitManager().detectRepository());
 
-        viewModeController.onViewModeChanged(viewMode -> viewModeToggleGroup.selectToggle(switch (viewMode) {
-            case CODE -> codeModeItem;
-            case GIT -> gitModeItem;
-        }));
+        viewModeController.onViewModeChanged(viewMode -> viewModeToggleGroup.selectToggle(viewModeItems.get(viewMode)));
 
         var viewModeMenu = new LocalizedMenu("railroad.menu.view.mode");
+        viewModeMenu.getItems().addAll(viewModeItems.values());
         viewModeMenu.getItems().addAll(
-            codeModeItem,
-            gitModeItem,
             gitDetectingItem,
             gitUnavailableItem,
             gitDetectionFailedItem

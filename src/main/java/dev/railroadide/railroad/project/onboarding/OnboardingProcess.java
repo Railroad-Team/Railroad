@@ -7,6 +7,7 @@ import dev.railroadide.railroad.project.onboarding.step.OnboardingStep;
 import dev.railroadide.railroad.project.onboarding.ui.BasicOnboardingUI;
 import dev.railroadide.railroad.project.onboarding.ui.OnboardingUI;
 import dev.railroadide.railroad.ui.RRBorderPane;
+import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
@@ -59,11 +60,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
         scene.setRoot(ui);
 
         Runnable runnable = () -> new Navigator(ui).showStep(firstStepId);
-        if (Platform.isFxApplicationThread()) {
-            runnable.run();
-        } else {
-            Platform.runLater(runnable);
-        }
+        JavaFXUtils.runOnApplicationThread(runnable);
     }
 
     private final class Navigator {

@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.ui.git.stash;
 
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.ui.IDEContentRouter;
+import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.ide.ui.git.commit.changes.*;
 import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -288,7 +289,7 @@ public class GitStashPane extends RRVBox {
         if (stashRef == null || change == null)
             return;
 
-        IDEContentRouter.routeActive(IDEContentRouter.Target.GIT_EDITOR, tabPane -> {
+        IDEContentRouter.routeActive(WorkspaceContentTargets.GIT_EDITOR, tabPane -> {
             Tab diffTab = tabPane.getTabs().stream()
                 .filter(tab -> tab.getContent() instanceof GitDiffPane)
                 .findFirst()

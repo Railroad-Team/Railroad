@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.plugin.spi.services;
 
-import dev.railroadide.railroad.ide.IDEViewMode;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 
@@ -34,13 +33,6 @@ public interface IDEStateService {
     Document getActiveDocument();
 
     /**
-     * Gets the current IDE view mode preset.
-     *
-     * @return the current view mode
-     */
-    IDEViewMode getCurrentViewMode();
-
-    /**
      * Sets the current project in the IDE.
      *
      * @param project the project to set as current
@@ -67,13 +59,6 @@ public interface IDEStateService {
      * @param document the document to set as active
      */
     void setActiveDocument(Document document);
-
-    /**
-     * Sets the current IDE view mode preset.
-     *
-     * @param viewMode the view mode to activate
-     */
-    void setCurrentViewMode(IDEViewMode viewMode);
 
     /**
      * Sets the list of open documents in the IDE.

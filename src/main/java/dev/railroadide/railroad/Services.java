@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import dev.railroadide.logger.Logger;
 import dev.railroadide.railroad.ide.DefaultDocumentEditorStateService;
 import dev.railroadide.railroad.ide.DefaultIDEStateService;
+import dev.railroadide.railroad.ide.DefaultWorkspaceService;
 import dev.railroadide.railroad.ide.diagnostics.LanguageInspectionRegistries;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
 import dev.railroadide.railroad.localization.L18n;
@@ -14,6 +15,7 @@ import dev.railroadide.railroad.plugin.spi.services.ApplicationInfoService;
 import dev.railroadide.railroad.plugin.spi.services.DocumentEditorStateService;
 import dev.railroadide.railroad.plugin.spi.services.IDEStateService;
 import dev.railroadide.railroad.plugin.spi.services.VCSService;
+import dev.railroadide.railroad.plugin.spi.services.WorkspaceService;
 import dev.railroadide.railroad.project.creation.ProjectCreationPipelineService;
 import dev.railroadide.railroad.project.creation.ProjectServiceRegistry;
 import dev.railroadide.railroad.project.creation.service.*;
@@ -72,6 +74,8 @@ public class Services {
 
     public static final DefaultIDEStateService IDE_STATE = DefaultIDEStateService.getInstance();
 
+    public static final DefaultWorkspaceService WORKSPACE = new DefaultWorkspaceService();
+
     public static final DefaultDocumentEditorStateService DOCUMENT_EDITOR_STATE = new DefaultDocumentEditorStateService();
 
     public static final LocalizationService LOCALIZATION_SERVICE = new LocalizationService() {
@@ -124,6 +128,8 @@ public class Services {
             return (T) APPLICATION_INFO;
         } else if (serviceClass == IDEStateService.class) {
             return (T) IDE_STATE;
+        } else if (serviceClass == WorkspaceService.class) {
+            return (T) WORKSPACE;
         } else if (serviceClass == VCSService.class) {
             return (T) Railroad.REPOSITORY_MANAGER;
         } else if (serviceClass == HostServices.class) {

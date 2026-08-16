@@ -1,6 +1,6 @@
 package dev.railroadide.railroad.ide;
 
-import javafx.application.Platform;
+import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -16,54 +16,54 @@ import java.util.function.Predicate;
 /**
  * Coordinates view-mode changes for a single IDE pane.
  * <p>
- * The shared state property remains the integration point for {@link DefaultIDEStateService}, while consumers of this
- * controller receive a read-only property and lifecycle-bound callbacks.
+ * The workspace service owns the shared state property, while consumers of this controller receive a read-only
+ * property and lifecycle-bound callbacks.
  */
-public final class IDEViewModeController implements AutoCloseable {
-    private final ObjectProperty<IDEViewMode> stateProperty;
-    private final ReadOnlyObjectWrapper<IDEViewMode> currentViewMode;
+public final class WorkspaceModeController implements AutoCloseable {
+    private final ObjectProperty<WorkspaceMode> stateProperty;
+    private final ReadOnlyObjectWrapper<WorkspaceMode> currentViewMode;
     private final Executor applicationThreadExecutor;
-    private final Predicate<IDEViewMode> availability;
-    private final List<Consumer<IDEViewMode>> listeners = new ArrayList<>();
-    private final ChangeListener<IDEViewMode> stateListener = (_, _, newMode) -> acceptExternalState(newMode);
+    private final Predicate<WorkspaceMode> availability;
+    private final List<Consumer<WorkspaceMode>> listeners = new ArrayList<>();
+    private final ChangeListener<WorkspaceMode> stateListener = (_, _, newMode) -> acceptExternalState(newMode);
 
     private boolean closed;
     private boolean updatingState;
 
-    public IDEViewModeController(ObjectProperty<IDEViewMode> stateProperty) {
+    public WorkspaceModeController(ObjectProperty<WorkspaceMode> stateProperty) {
         this(stateProperty, _ -> true);
     }
 
-    public IDEViewModeController(ObjectProperty<IDEViewMode> stateProperty, Predicate<IDEViewMode> availability) {
-        this(stateProperty, availability, IDEViewModeController::runOnApplicationThread);
+    public WorkspaceModeController(ObjectProperty<WorkspaceMode> stateProperty, Predicate<WorkspaceMode> availability) {
+        this(stateProperty, availability, JavaFXUtils::runOnApplicationThread);
     }
 
-    IDEViewModeController(ObjectProperty<IDEViewMode> stateProperty, Executor applicationThreadExecutor) {
+    WorkspaceModeController(ObjectProperty<WorkspaceMode> stateProperty, Executor applicationThreadExecutor) {
         this(stateProperty, _ -> true, applicationThreadExecutor);
     }
 
-    IDEViewModeController(
-        ObjectProperty<IDEViewMode> stateProperty,
-        Predicate<IDEViewMode> availability,
+    WorkspaceModeController(
+        ObjectProperty<WorkspaceMode> stateProperty,
+        Predicate<WorkspaceMode> availability,
         Executor applicationThreadExecutor
     ) {
         this.stateProperty = Objects.requireNonNull(stateProperty, "State property cannot be null");
         this.availability = Objects.requireNonNull(availability, "Availability predicate cannot be null");
         this.applicationThreadExecutor = Objects.requireNonNull(applicationThreadExecutor, "Application thread executor cannot be null");
-        IDEViewMode initialMode = resolve(stateProperty.get());
+        WorkspaceMode initialMode = resolve(stateProperty.get());
         if (!availability.test(initialMode)) {
-            initialMode = IDEViewMode.CODE;
+            initialMode = WorkspaceMode.defaultMode();
         }
         this.currentViewMode = new ReadOnlyObjectWrapper<>(initialMode);
         stateProperty.addListener(stateListener);
         restoreStateProperty(initialMode);
     }
 
-    public IDEViewMode getCurrentViewMode() {
+    public WorkspaceMode getCurrentViewMode() {
         return currentViewMode.get();
     }
 
-    public ReadOnlyObjectProperty<IDEViewMode> currentViewModeProperty() {
+    public ReadOnlyObjectProperty<WorkspaceMode> currentViewModeProperty() {
         return currentViewMode.getReadOnlyProperty();
     }
 
@@ -72,8 +72,8 @@ public final class IDEViewModeController implements AutoCloseable {
      *
      * @return whether the request was accepted for delivery to the application thread
      */
-    public boolean requestViewMode(IDEViewMode viewMode) {
-        IDEViewMode resolvedMode = resolve(viewMode);
+    public boolean requestViewMode(WorkspaceMode viewMode) {
+        WorkspaceMode resolvedMode = resolve(viewMode);
         if (closed || !availability.test(resolvedMode))
             return false;
 
@@ -91,7 +91,7 @@ public final class IDEViewModeController implements AutoCloseable {
      * @param listener callback to invoke for view-mode changes
      * @return a registration that can remove the callback early
      */
-    public Registration onViewModeChanged(Consumer<IDEViewMode> listener) {
+    public Registration onViewModeChanged(Consumer<WorkspaceMode> listener) {
         Objects.requireNonNull(listener, "Listener cannot be null");
         if (closed)
             throw new IllegalStateException("View mode controller is closed");
@@ -105,11 +105,11 @@ public final class IDEViewModeController implements AutoCloseable {
         return new Registration(() -> listeners.remove(listener));
     }
 
-    private void acceptExternalState(IDEViewMode viewMode) {
+    private void acceptExternalState(WorkspaceMode viewMode) {
         if (updatingState)
             return;
 
-        IDEViewMode resolvedMode = resolve(viewMode);
+        WorkspaceMode resolvedMode = resolve(viewMode);
         applicationThreadExecutor.execute(() -> {
             if (closed)
                 return;
@@ -123,7 +123,7 @@ public final class IDEViewModeController implements AutoCloseable {
         });
     }
 
-    private void transitionTo(IDEViewMode viewMode) {
+    private void transitionTo(WorkspaceMode viewMode) {
         if (stateProperty.get() != viewMode) {
             restoreStateProperty(viewMode);
         }
@@ -134,7 +134,7 @@ public final class IDEViewModeController implements AutoCloseable {
         List.copyOf(listeners).forEach(listener -> listener.accept(viewMode));
     }
 
-    private void restoreStateProperty(IDEViewMode viewMode) {
+    private void restoreStateProperty(WorkspaceMode viewMode) {
         if (stateProperty.get() == viewMode)
             return;
 
@@ -146,16 +146,8 @@ public final class IDEViewModeController implements AutoCloseable {
         }
     }
 
-    private static IDEViewMode resolve(IDEViewMode viewMode) {
-        return viewMode == null ? IDEViewMode.CODE : viewMode;
-    }
-
-    private static void runOnApplicationThread(Runnable action) {
-        if (Platform.isFxApplicationThread()) {
-            action.run();
-        } else {
-            Platform.runLater(action);
-        }
+    private static WorkspaceMode resolve(WorkspaceMode viewMode) {
+        return viewMode == null ? WorkspaceMode.defaultMode() : viewMode;
     }
 
     @Override

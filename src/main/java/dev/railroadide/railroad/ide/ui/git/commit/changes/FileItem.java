@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui.git.commit.changes;
 
 import dev.railroadide.railroad.ide.ui.IDEContentRouter;
+import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
@@ -91,7 +92,7 @@ public record FileItem(Project project, GitFileChange change) implements ChangeI
     }
 
     private void openDiffForFile(FileItem fileItem) {
-        IDEContentRouter.routeActive(IDEContentRouter.Target.GIT_EDITOR, tabPane -> {
+        IDEContentRouter.routeActive(WorkspaceContentTargets.GIT_EDITOR, tabPane -> {
             String tabId = fileItem.change().path().toAbsolutePath().normalize().toString();
             if (tabPane.getTabs().stream().anyMatch(tab -> tabId.equals(tab.getId()))) {
                 tabPane.getTabs().stream()

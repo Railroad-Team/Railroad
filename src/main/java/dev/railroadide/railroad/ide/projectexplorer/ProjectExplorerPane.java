@@ -16,6 +16,7 @@ import dev.railroadide.railroad.ide.projectexplorer.task.FileCopyTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.SearchTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
 import dev.railroadide.railroad.ide.ui.IDEContentRouter;
+import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
@@ -305,7 +306,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             return;
         }
 
-        IDEContentRouter.routeActive(IDEContentRouter.Target.CODE_EDITOR, detachableTabPane -> {
+        IDEContentRouter.routeActive(WorkspaceContentTargets.CODE_EDITOR, detachableTabPane -> {
             String fileName = path.getFileName().toString();
             String tabId = normalizedPath.toString();
             if (detachableTabPane.getTabs().stream().anyMatch(tab -> tabId.equals(tab.getId()))) {

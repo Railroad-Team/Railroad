@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.ui.git.commit.list;
 
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.ui.IDEContentRouter;
+import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
@@ -208,7 +209,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> implements Auto
     }
 
     private void openDetailsForCommit(Project project, GitCommit commit) {
-        IDEContentRouter.routeActive(IDEContentRouter.Target.GIT_EDITOR, tabPane -> {
+        IDEContentRouter.routeActive(WorkspaceContentTargets.GIT_EDITOR, tabPane -> {
             Tab detailsTab = tabPane.getTabs().stream()
                 .filter(tab -> tab.getContent() instanceof GitCommitDetailsPane)
                 .findFirst()

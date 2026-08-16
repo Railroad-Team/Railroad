@@ -8,7 +8,7 @@ import dev.railroadide.railroad.ide.ui.IDEPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.window.WindowBuilder;
-import javafx.application.Platform;
+import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
@@ -89,11 +89,7 @@ public class IDESetup {
             }
         };
 
-        if (Platform.isFxApplicationThread()) {
-            switchAction.run();
-        } else {
-            Platform.runLater(switchAction);
-        }
+        JavaFXUtils.runOnApplicationThread(switchAction);
     }
 
     private static void disposePreviousScene(@Nullable Scene previousScene) {
