@@ -9,13 +9,13 @@ import java.util.Objects;
 public final class IDEDockTab extends LocalizedTab {
     private final IDEDockItem dockItem;
 
-    public IDEDockTab(IDEDockItem dockItem, Project project, boolean lazy) {
+    public IDEDockTab(IDEDockItem dockItem, Project project) {
         super(Objects.requireNonNull(dockItem, "Dock item cannot be null").localizationKey());
         this.dockItem = dockItem;
         setId(dockItem.id());
         setClosable(false);
 
-        if (lazy) {
+        if (dockItem.initializationPolicy() == IDEDockItem.InitializationPolicy.ON_FIRST_SELECTION) {
             setOnSelectionChanged(_ -> {
                 if (isSelected() && getContent() == null) {
                     setContent(dockItem.createContent(project));

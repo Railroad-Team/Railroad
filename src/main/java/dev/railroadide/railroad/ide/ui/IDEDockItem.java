@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.gradle.ui.GradleToolsPane;
+import dev.railroadide.railroad.ide.IDEViewMode;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.ui.git.branches.GitBranchesPane;
 import dev.railroadide.railroad.ide.ui.git.commit.GitCommitPane;
@@ -16,6 +17,7 @@ import javafx.scene.Node;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -32,6 +34,8 @@ public enum IDEDockItem {
         "railroad.ide.dock_item.project",
         FontAwesomeSolid.FOLDER,
         DockPosition.LEFT,
+        IDEViewMode.CODE,
+        InitializationPolicy.EAGER,
         ProjectExplorerPane::new
     ),
     GIT_OVERVIEW(
@@ -39,6 +43,8 @@ public enum IDEDockItem {
         "railroad.ide.dock_item.git_overview",
         FontAwesomeSolid.HOME,
         DockPosition.LEFT,
+        IDEViewMode.GIT,
+        InitializationPolicy.ON_FIRST_SELECTION,
         GitOverviewPane::new
     ),
     GIT_COMMIT(
@@ -46,6 +52,8 @@ public enum IDEDockItem {
         "railroad.ide.dock_item.git_commit",
         FontAwesomeBrands.USB,
         DockPosition.LEFT,
+        IDEViewMode.GIT,
+        InitializationPolicy.ON_FIRST_SELECTION,
         GitCommitPane::new
     ),
     GIT_COMMIT_LIST(
@@ -53,6 +61,8 @@ public enum IDEDockItem {
         "railroad.ide.dock_item.git_commit_list",
         FontAwesomeSolid.LIST,
         DockPosition.LEFT,
+        IDEViewMode.GIT,
+        InitializationPolicy.ON_FIRST_SELECTION,
         GitCommitListPane::new
     ),
     GIT_BRANCHES(
@@ -60,6 +70,8 @@ public enum IDEDockItem {
         "railroad.ide.dock_item.git_branches",
         FontAwesomeSolid.CODE_BRANCH,
         DockPosition.LEFT,
+        IDEViewMode.GIT,
+        InitializationPolicy.ON_FIRST_SELECTION,
         GitBranchesPane::new
     ),
     GIT_REMOTES(
@@ -67,6 +79,8 @@ public enum IDEDockItem {
         "railroad.ide.dock_item.git_remotes",
         FontAwesomeSolid.GLOBE,
         DockPosition.LEFT,
+        IDEViewMode.GIT,
+        InitializationPolicy.ON_FIRST_SELECTION,
         GitRemotesPane::new
     ),
     GIT_SYNC(
@@ -74,6 +88,8 @@ public enum IDEDockItem {
         "railroad.ide.dock_item.git_sync",
         FontAwesomeSolid.SYNC,
         DockPosition.LEFT,
+        IDEViewMode.GIT,
+        InitializationPolicy.ON_FIRST_SELECTION,
         GitSyncPane::new
     ),
     GIT_STASH(
@@ -81,6 +97,8 @@ public enum IDEDockItem {
         "railroad.ide.dock_item.git_stash",
         FontAwesomeSolid.BOX,
         DockPosition.LEFT,
+        IDEViewMode.GIT,
+        InitializationPolicy.ON_FIRST_SELECTION,
         GitStashPane::new
     ),
     GRADLE(
@@ -88,6 +106,8 @@ public enum IDEDockItem {
         "railroad.ide.dock_item.gradle",
         RailroadBrandsIcon.GRADLE,
         DockPosition.RIGHT,
+        null,
+        InitializationPolicy.EAGER,
         GradleToolsPane::new
     ),
     CONSOLE(
@@ -95,6 +115,8 @@ public enum IDEDockItem {
         "railroad.ide.dock_item.console",
         FontAwesomeSolid.PLAY_CIRCLE,
         DockPosition.BOTTOM,
+        null,
+        InitializationPolicy.EAGER,
         _ -> new ConsolePane()
     ),
     TERMINAL(
@@ -102,6 +124,8 @@ public enum IDEDockItem {
         "railroad.ide.dock_item.terminal",
         FontAwesomeSolid.TERMINAL,
         DockPosition.BOTTOM,
+        null,
+        InitializationPolicy.ON_FIRST_SELECTION,
         project -> TerminalFactory.create(project.getPath())
     );
 
@@ -109,6 +133,8 @@ public enum IDEDockItem {
     private final String localizationKey;
     private final Ikon icon;
     private final DockPosition preferredDockPosition;
+    private final @Nullable IDEViewMode owningViewMode;
+    private final InitializationPolicy initializationPolicy;
     private final Function<Project, ? extends Node> contentFactory;
 
     IDEDockItem(
@@ -116,12 +142,16 @@ public enum IDEDockItem {
         String localizationKey,
         Ikon icon,
         DockPosition preferredDockPosition,
+        @Nullable IDEViewMode owningViewMode,
+        InitializationPolicy initializationPolicy,
         Function<Project, ? extends Node> contentFactory
     ) {
         this.id = Objects.requireNonNull(id, "Dock-item ID cannot be null");
         this.localizationKey = Objects.requireNonNull(localizationKey, "Localization key cannot be null");
         this.icon = Objects.requireNonNull(icon, "Dock-item icon cannot be null");
         this.preferredDockPosition = Objects.requireNonNull(preferredDockPosition, "Preferred dock position cannot be null");
+        this.owningViewMode = owningViewMode;
+        this.initializationPolicy = Objects.requireNonNull(initializationPolicy, "Initialization policy cannot be null");
         this.contentFactory = Objects.requireNonNull(contentFactory, "Content factory cannot be null");
     }
 
@@ -141,6 +171,15 @@ public enum IDEDockItem {
         return preferredDockPosition;
     }
 
+    /** Returns the mode that owns this item, or {@code null} when the item is shared between modes. */
+    public @Nullable IDEViewMode owningViewMode() {
+        return owningViewMode;
+    }
+
+    public InitializationPolicy initializationPolicy() {
+        return initializationPolicy;
+    }
+
     public Node createContent(Project project) {
         return contentFactory.apply(Objects.requireNonNull(project, "Project cannot be null"));
     }
@@ -149,5 +188,10 @@ public enum IDEDockItem {
         LEFT,
         RIGHT,
         BOTTOM
+    }
+
+    public enum InitializationPolicy {
+        EAGER,
+        ON_FIRST_SELECTION
     }
 }

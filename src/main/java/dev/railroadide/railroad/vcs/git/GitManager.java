@@ -50,6 +50,8 @@ public class GitManager {
 
     private final ObjectProperty<GitRepoStatus> repoStatus = new SimpleObjectProperty<>();
     private final BooleanProperty active = new SimpleBooleanProperty(false);
+    private final ObjectProperty<GitRepositoryState> repositoryState =
+        new SimpleObjectProperty<>(GitRepositoryState.DETECTING);
     private final ObjectProperty<GitRepository> gitRepository = new SimpleObjectProperty<>();
     private final ObjectProperty<GitIdentity> gitIdentity = new SimpleObjectProperty<>();
     private final ObjectProperty<List<GitRemote>> remotes = new SimpleObjectProperty<>(List.of());
@@ -96,27 +98,70 @@ public class GitManager {
      * Detects repository for the current project path and updates manager state.
      */
     public void detectRepository() {
-        this.executorService.submit(() -> this.gitClient.detectRepository(this.project.getPath()).ifPresentOrElse(repository -> {
-            runOnFxThread(() -> {
-                this.gitRepository.set(repository);
-                this.active.set(true);
-                startAutoRefresh();
+        Path projectPath = this.project.getPath();
+        runOnFxThread(() -> beginRepositoryDetection());
+
+        try {
+            this.executorService.submit(() -> {
+                Optional<GitRepository> detectedRepository;
+                try {
+                    detectedRepository = this.gitClient.detectRepository(projectPath);
+                } catch (Exception exception) {
+                    GitLog.LOGGER.error("Failed to detect Git repository for project path: {}", projectPath, exception);
+                    runOnFxThread(() -> clearRepositoryState(GitRepositoryState.FAILED));
+                    return;
+                }
+
+                if (detectedRepository.isEmpty()) {
+                    runOnFxThread(() -> clearRepositoryState(GitRepositoryState.UNAVAILABLE));
+                    return;
+                }
+
+                GitRepository repository = detectedRepository.orElseThrow();
+                runOnFxThread(() -> completeRepositoryDetection(repository));
+                try {
+                    refreshStatusInternal(repository);
+                    loadIdentity();
+                    fetch(repository);
+                } catch (Exception exception) {
+                    GitLog.LOGGER.warn(
+                        "Git repository was detected, but its initial data could not be refreshed: {}",
+                        repository.root(),
+                        exception
+                    );
+                }
             });
-            refreshStatusInternal(repository);
-            loadIdentity();
-            fetch(repository);
-        }, () -> runOnFxThread(() -> {
-            this.gitRepository.set(null);
-            this.active.set(false);
-            this.repoStatus.set(null);
-            this.gitIdentity.set(null);
-            this.remotes.set(List.of());
-            this.upstream.set(null);
-            this.pullStrategy.set(null);
-            this.pushStrategy.set(null);
-            this.remoteFetchTimestamps.clear();
-            stopAutoRefresh();
-        })));
+        } catch (RejectedExecutionException exception) {
+            GitLog.LOGGER.error("Could not schedule Git repository detection for project path: {}", projectPath, exception);
+            runOnFxThread(() -> clearRepositoryState(GitRepositoryState.FAILED));
+        }
+    }
+
+    private void beginRepositoryDetection() {
+        stopAutoRefresh();
+        active.set(false);
+        repositoryState.set(GitRepositoryState.DETECTING);
+    }
+
+    private void completeRepositoryDetection(GitRepository repository) {
+        gitRepository.set(repository);
+        active.set(true);
+        repositoryState.set(GitRepositoryState.AVAILABLE);
+        startAutoRefresh();
+    }
+
+    private void clearRepositoryState(GitRepositoryState state) {
+        gitRepository.set(null);
+        active.set(false);
+        repoStatus.set(null);
+        gitIdentity.set(null);
+        remotes.set(List.of());
+        upstream.set(null);
+        pullStrategy.set(null);
+        pushStrategy.set(null);
+        remoteFetchTimestamps.clear();
+        stopAutoRefresh();
+        repositoryState.set(state);
     }
 
     /**
@@ -186,6 +231,24 @@ public class GitManager {
      */
     public BooleanProperty activeProperty() {
         return active;
+    }
+
+    /**
+     * Exposes repository detection state.
+     *
+     * @return observable detection state property
+     */
+    public ReadOnlyObjectProperty<GitRepositoryState> repositoryStateProperty() {
+        return repositoryState;
+    }
+
+    /**
+     * Gets the current repository detection state.
+     *
+     * @return current detection state
+     */
+    public GitRepositoryState getRepositoryState() {
+        return repositoryState.get();
     }
 
     /**

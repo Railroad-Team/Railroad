@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public final class IDEPane extends RRBorderPane implements AutoCloseable {
+public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWorkspaceActions {
     private final Project project;
     private final IDEPaneLifecycle lifecycle;
     private final IDEViewModeController viewModeController;
@@ -69,7 +69,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
         this.lifecycle.onDispose(viewModeController::close);
         this.viewModeController.requestViewMode(IDEViewMode.CODE);
 
-        setTop(new IDETopBarPane(project, viewModeController, this::requestViewMode));
+        setTop(new IDETopBarPane(project, viewModeController, this::requestViewMode, this));
 
         this.leftPane = createLeftPane();
         this.rightPane = new DetachableTabPane();
@@ -83,9 +83,9 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
         centerBottomSplit.setOrientation(Orientation.VERTICAL);
         centerBottomSplit.setDividerPositions(0.75);
 
-        this.mainSplit = new SplitPane(leftPane, centerBottomSplit, rightPane);
+        this.mainSplit = new SplitPane(leftPane, centerBottomSplit);
         mainSplit.setOrientation(Orientation.HORIZONTAL);
-        mainSplit.setDividerPositions(0.15, 0.85);
+        mainSplit.setDividerPositions(0.15);
         setCenter(mainSplit);
 
         configureGradlePane(rightPane, mainSplit);
@@ -106,7 +106,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
     private DetachableTabPane createLeftPane() {
         var pane = new DetachableTabPane();
         trackOwnedTabs(pane);
-        var projectTab = createDockTab(IDEDockItem.PROJECT, IDEDockItem.DockPosition.LEFT, false);
+        var projectTab = createDockTab(IDEDockItem.PROJECT, IDEDockItem.DockPosition.LEFT);
         dockTabsByMode.put(IDEViewMode.CODE, List.of(projectTab));
 
         assignWhileAttached(UIIds.IDE.IDE_LEFT_DOCK, pane);
@@ -115,13 +115,13 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
 
     private List<Tab> createGitDockTabs() {
         return List.of(
-            createDockTab(IDEDockItem.GIT_OVERVIEW, IDEDockItem.DockPosition.LEFT, true),
-            createDockTab(IDEDockItem.GIT_COMMIT, IDEDockItem.DockPosition.LEFT, true),
-            createDockTab(IDEDockItem.GIT_COMMIT_LIST, IDEDockItem.DockPosition.LEFT, true),
-            createDockTab(IDEDockItem.GIT_BRANCHES, IDEDockItem.DockPosition.LEFT, true),
-            createDockTab(IDEDockItem.GIT_REMOTES, IDEDockItem.DockPosition.LEFT, true),
-            createDockTab(IDEDockItem.GIT_SYNC, IDEDockItem.DockPosition.LEFT, true),
-            createDockTab(IDEDockItem.GIT_STASH, IDEDockItem.DockPosition.LEFT, true)
+            createDockTab(IDEDockItem.GIT_OVERVIEW, IDEDockItem.DockPosition.LEFT),
+            createDockTab(IDEDockItem.GIT_COMMIT, IDEDockItem.DockPosition.LEFT),
+            createDockTab(IDEDockItem.GIT_COMMIT_LIST, IDEDockItem.DockPosition.LEFT),
+            createDockTab(IDEDockItem.GIT_BRANCHES, IDEDockItem.DockPosition.LEFT),
+            createDockTab(IDEDockItem.GIT_REMOTES, IDEDockItem.DockPosition.LEFT),
+            createDockTab(IDEDockItem.GIT_SYNC, IDEDockItem.DockPosition.LEFT),
+            createDockTab(IDEDockItem.GIT_STASH, IDEDockItem.DockPosition.LEFT)
         );
     }
 
@@ -185,12 +185,12 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
         return tab;
     }
 
-    private IDEDockTab createDockTab(IDEDockItem dockItem, IDEDockItem.DockPosition dockPosition, boolean lazy) {
+    private IDEDockTab createDockTab(IDEDockItem dockItem, IDEDockItem.DockPosition dockPosition) {
         if (dockItem.preferredDockPosition() != dockPosition)
             throw new IllegalArgumentException(
                 "Dock item '" + dockItem.id() + "' belongs in the " + dockItem.preferredDockPosition() + " dock"
             );
-        return new IDEDockTab(dockItem, project, lazy);
+        return new IDEDockTab(dockItem, project);
     }
 
     private void activateViewMode(IDEViewMode viewMode) {
@@ -230,19 +230,20 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
     private IDELayoutState.ModeLayout captureModeLayout(IDEViewMode viewMode) {
         IDELayoutState.ModeLayout previous = layoutsByMode.getOrDefault(viewMode, IDELayoutState.ModeLayout.defaults());
         boolean leftVisible = mainSplit.getItems().contains(leftPane);
-        boolean rightVisible = mainSplit.getItems().contains(rightPane);
+        boolean rightDockPresent = mainSplit.getItems().contains(rightPane);
+        boolean rightVisible = rightPane.getTabs().isEmpty() ? previous.rightDockVisible() : rightDockPresent;
         boolean bottomVisible = centerBottomSplit.getItems().contains(bottomPane);
 
         double leftDivider = previous.leftDividerPosition();
         double rightDivider = previous.rightDividerPosition();
         double bottomDivider = previous.bottomDividerPosition();
         double[] mainDividers = mainSplit.getDividerPositions();
-        if (leftVisible && rightVisible && mainDividers.length >= 2) {
+        if (leftVisible && rightDockPresent && mainDividers.length >= 2) {
             leftDivider = mainDividers[0];
             rightDivider = mainDividers[1];
         } else if (leftVisible && mainDividers.length >= 1) {
             leftDivider = mainDividers[0];
-        } else if (rightVisible && mainDividers.length >= 1) {
+        } else if (rightDockPresent && mainDividers.length >= 1) {
             rightDivider = mainDividers[0];
         }
 
@@ -267,7 +268,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
 
     private void restoreModeLayout(IDELayoutState.ModeLayout layout, DetachableTabPane editorPane) {
         setDockVisible(mainSplit, leftPane, layout.leftDockVisible(), 0);
-        setDockVisible(mainSplit, rightPane, layout.rightDockVisible(), 2);
+        setDockVisible(mainSplit, rightPane, layout.rightDockVisible() && !rightPane.getTabs().isEmpty(), 2);
         setDockVisible(centerBottomSplit, bottomPane, layout.bottomDockVisible(), 1);
 
         restoreMainDividerPositions(layout);
@@ -475,6 +476,138 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
         }
     }
 
+    @Override
+    public boolean isDockItemAvailable(IDEDockItem dockItem) {
+        Objects.requireNonNull(dockItem, "Dock item cannot be null");
+        if (dockItem.owningViewMode() == IDEViewMode.GIT && !project.getGitManager().isActive()) {
+            return false;
+        }
+        if (dockItem == IDEDockItem.GRADLE) {
+            return findDockTab(rightPane, dockItem) != null;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean isDockItemActive(IDEDockItem dockItem) {
+        Objects.requireNonNull(dockItem, "Dock item cannot be null");
+        if (dockItem.owningViewMode() != null && dockItem.owningViewMode() != activeViewMode) {
+            return false;
+        }
+
+        DetachableTabPane dockPane = dockPane(dockItem.preferredDockPosition());
+        Tab dockTab = findDockTab(dockPane, dockItem);
+        return dockTab != null
+            && splitPane(dockItem.preferredDockPosition()).getItems().contains(dockPane)
+            && dockPane.getSelectionModel().getSelectedItem() == dockTab;
+    }
+
+    @Override
+    public void toggleDockItem(IDEDockItem dockItem) {
+        Objects.requireNonNull(dockItem, "Dock item cannot be null");
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(() -> toggleDockItem(dockItem));
+            return;
+        }
+        if (!isDockItemAvailable(dockItem)) {
+            return;
+        }
+
+        IDEViewMode owningMode = dockItem.owningViewMode();
+        if (owningMode != null && owningMode != activeViewMode && !requestViewMode(owningMode)) {
+            return;
+        }
+
+        DetachableTabPane dockPane = dockPane(dockItem.preferredDockPosition());
+        Tab dockTab = findDockTab(dockPane, dockItem);
+        if (dockTab == null) {
+            return;
+        }
+
+        SplitPane splitPane = splitPane(dockItem.preferredDockPosition());
+        if (isDockItemActive(dockItem)) {
+            splitPane.getItems().remove(dockPane);
+        } else {
+            setDockVisible(splitPane, dockPane, true, preferredDockIndex(dockItem.preferredDockPosition()));
+            dockPane.getSelectionModel().select(dockTab);
+            IDELayoutState.ModeLayout layout = layoutsByMode.getOrDefault(activeViewMode, IDELayoutState.ModeLayout.defaults());
+            if (dockItem.preferredDockPosition() == IDEDockItem.DockPosition.BOTTOM) {
+                centerBottomSplit.setDividerPositions(clampDivider(layout.bottomDividerPosition(), 0.75));
+            } else {
+                restoreMainDividerPositions(layout);
+            }
+        }
+        snapshotActiveLayout();
+    }
+
+    @Override
+    public void resetCurrentLayout() {
+        runOnApplicationThread(() -> resetLayouts(false));
+    }
+
+    @Override
+    public void resetAllLayouts() {
+        runOnApplicationThread(() -> resetLayouts(true));
+    }
+
+    private void resetLayouts(boolean allModes) {
+        if (activeViewMode == null) {
+            return;
+        }
+
+        layoutTransitioning = true;
+        try {
+            if (allModes) {
+                layoutsByMode.clear();
+                focusOwnersByMode.clear();
+            } else {
+                layoutsByMode.remove(activeViewMode);
+                focusOwnersByMode.remove(activeViewMode);
+            }
+
+            IDELayoutState.ModeLayout defaults = IDELayoutState.ModeLayout.defaults();
+            restoreModeLayout(defaults, getOrCreateEditorPane(editorPanesByMode, activeViewMode));
+            layoutsByMode.put(activeViewMode, captureModeLayout(activeViewMode));
+        } finally {
+            layoutTransitioning = false;
+        }
+    }
+
+    private DetachableTabPane dockPane(IDEDockItem.DockPosition position) {
+        return switch (position) {
+            case LEFT -> leftPane;
+            case RIGHT -> rightPane;
+            case BOTTOM -> bottomPane;
+        };
+    }
+
+    private SplitPane splitPane(IDEDockItem.DockPosition position) {
+        return position == IDEDockItem.DockPosition.BOTTOM ? centerBottomSplit : mainSplit;
+    }
+
+    private static int preferredDockIndex(IDEDockItem.DockPosition position) {
+        return switch (position) {
+            case LEFT -> 0;
+            case RIGHT -> 2;
+            case BOTTOM -> 1;
+        };
+    }
+
+    private static Tab findDockTab(DetachableTabPane pane, IDEDockItem dockItem) {
+        return pane.getTabs().stream()
+            .filter(tab -> dockItem.id().equals(tab.getId()))
+            .findFirst()
+            .orElse(null);
+    }
+
+    private static void runOnApplicationThread(Runnable action) {
+        if (Platform.isFxApplicationThread()) {
+            action.run();
+        } else {
+            Platform.runLater(action);
+        }
+    }
+
     public IDELayoutState captureLayoutState() {
         if (Platform.isFxApplicationThread() && layoutInitialized && activeViewMode != null) {
             layoutsByMode.put(activeViewMode, captureModeLayout(activeViewMode));
@@ -567,8 +700,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
         var pane = new DetachableTabPane();
         trackOwnedTabs(pane);
         pane.getTabs().addAll(
-            createDockTab(IDEDockItem.CONSOLE, IDEDockItem.DockPosition.BOTTOM, false),
-            createDockTab(IDEDockItem.TERMINAL, IDEDockItem.DockPosition.BOTTOM, false)
+            createDockTab(IDEDockItem.CONSOLE, IDEDockItem.DockPosition.BOTTOM),
+            createDockTab(IDEDockItem.TERMINAL, IDEDockItem.DockPosition.BOTTOM)
         );
 
         assignWhileAttached(UIIds.IDE.IDE_BOTTOM_DOCK, pane);
@@ -596,13 +729,21 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
                 return;
             }
 
-            rightPane.getTabs().add(createDockTab(IDEDockItem.GRADLE, IDEDockItem.DockPosition.RIGHT, false));
+            rightPane.getTabs().add(createDockTab(IDEDockItem.GRADLE, IDEDockItem.DockPosition.RIGHT));
             setRight(PaneIconBarFactory.create(
                 rightPane,
                 mainSplit,
                 Orientation.VERTICAL,
                 2
             ));
+
+            if (activeViewMode != null && layoutsByMode
+                .getOrDefault(activeViewMode, IDELayoutState.ModeLayout.defaults())
+                .rightDockVisible()) {
+                setDockVisible(mainSplit, rightPane, true, 2);
+                restoreMainDividerPositions(layoutsByMode.getOrDefault(activeViewMode, IDELayoutState.ModeLayout.defaults()));
+                snapshotActiveLayout();
+            }
         });
     }
 

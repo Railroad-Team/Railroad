@@ -19,17 +19,19 @@ public final class IDETopBarPane extends RRHBox {
     public IDETopBarPane(
         Project project,
         IDEViewModeController viewModeController,
-        Consumer<IDEViewMode> viewModeRequester
+        Consumer<IDEViewMode> viewModeRequester,
+        IDEWorkspaceActions workspaceActions
     ) {
         Objects.requireNonNull(project, "Project cannot be null");
         Objects.requireNonNull(viewModeController, "View mode controller cannot be null");
         Objects.requireNonNull(viewModeRequester, "View mode requester cannot be null");
+        Objects.requireNonNull(workspaceActions, "Workspace actions cannot be null");
 
         var spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         getChildren().addAll(
-            IDEMenuBarFactory.create(project, viewModeController, viewModeRequester),
+            IDEMenuBarFactory.create(project, viewModeController, viewModeRequester, workspaceActions),
             spacer,
             RunControlsPane.create(project)
         );

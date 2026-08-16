@@ -214,11 +214,11 @@ public class RailroadProject implements Project {
         Railroad.LOGGER.debug("Opening project: {}", getPathString());
         setLastOpened(System.currentTimeMillis());
         Project project = Railroad.PROJECT_MANAGER.updateProjectInfo(this);
+        project.getGitManager().detectRepository();
         IDESetup.switchToIDE(project, stage);
         if (project instanceof RailroadProject railroadProject) {
             railroadProject.discoverFacets();
         }
-        project.getGitManager().detectRepository();
 
         ProjectDataStore dataStore = project.getDataStore();
         ProjectConfig projectConfig = dataStore.readJson(PROJECT_CONFIG_LOCATION, ProjectConfig.class)

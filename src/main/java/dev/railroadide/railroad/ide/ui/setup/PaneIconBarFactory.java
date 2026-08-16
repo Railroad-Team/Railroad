@@ -35,6 +35,11 @@ public final class PaneIconBarFactory {
         bar.getStyleClass().add("icon-bar-" + orientation.name().toLowerCase(Locale.ROOT));
 
         Map<Tab, ToggleButton> btnMap = new LinkedHashMap<>();
+        Runnable updateButtonStates = () -> {
+            boolean paneVisible = split.getItems().contains(pane);
+            Tab selectedTab = pane.getSelectionModel().getSelectedItem();
+            btnMap.forEach((tab, button) -> button.setSelected(paneVisible && tab == selectedTab));
+        };
 
         Consumer<Tab> addButtonFor = tab -> {
             var icon = tab instanceof IDEDockTab dockTab ? dockTab.getDockItem().icon() : FontAwesomeSolid.EYE;
@@ -50,18 +55,18 @@ public final class PaneIconBarFactory {
 
                 if (isVisible && selected == tab) {
                     split.getItems().remove(pane);
-                    btnMap.values().forEach(b -> b.setSelected(false));
                 } else {
                     if (!isVisible) {
                         split.getItems().add(Math.min(originalIndex, split.getItems().size()), pane);
                     }
                     pane.getSelectionModel().select(tab);
-                    btnMap.values().forEach(b -> b.setSelected(b == btn));
                 }
+                updateButtonStates.run();
             });
 
             btnMap.put(tab, btn);
             bar.getChildren().add(btn);
+            updateButtonStates.run();
         };
 
         Consumer<Tab> removeButtonFor = tab -> {
@@ -84,14 +89,9 @@ public final class PaneIconBarFactory {
 
         pane.getTabs().forEach(addButtonFor);
 
-        pane.getSelectionModel().selectedItemProperty().addListener((_, _, newT) -> {
-            btnMap.forEach((tab, btn) -> btn.setSelected(tab == newT));
-        });
-
-        Tab init = pane.getSelectionModel().getSelectedItem();
-        if (init != null) {
-            btnMap.get(init).setSelected(true);
-        }
+        pane.getSelectionModel().selectedItemProperty().addListener((_, _, _) -> updateButtonStates.run());
+        split.getItems().addListener((ListChangeListener<Node>) _ -> updateButtonStates.run());
+        updateButtonStates.run();
 
         return bar;
     }
