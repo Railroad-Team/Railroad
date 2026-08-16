@@ -28,10 +28,14 @@ import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
 
 import java.lang.ref.WeakReference;
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public final class IDEPane extends RRBorderPane implements AutoCloseable {
     private final Project project;
@@ -42,6 +46,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
     private final Map<IDEViewMode, DetachableTabPane> editorPanesByMode = new EnumMap<>(IDEViewMode.class);
     private final Map<IDEViewMode, IDELayoutState.ModeLayout> layoutsByMode = new EnumMap<>(IDEViewMode.class);
     private final Map<IDEViewMode, WeakReference<Node>> focusOwnersByMode = new EnumMap<>(IDEViewMode.class);
+    private final Set<Tab> ownedTabs = Collections.newSetFromMap(new IdentityHashMap<>());
 
     private final DetachableTabPane leftPane;
     private final DetachableTabPane rightPane;
@@ -57,17 +62,21 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
     public IDEPane(Project project) {
         this.project = Objects.requireNonNull(project, "Project cannot be null");
         this.lifecycle = new IDEPaneLifecycle(this);
-        this.viewModeController = new IDEViewModeController(Services.IDE_STATE.currentViewModeProperty());
+        this.viewModeController = new IDEViewModeController(
+            Services.IDE_STATE.currentViewModeProperty(),
+            mode -> mode != IDEViewMode.GIT || project.getGitManager().isActive()
+        );
         this.lifecycle.onDispose(viewModeController::close);
-        this.viewModeController.setCurrentViewMode(IDEViewMode.CODE);
+        this.viewModeController.requestViewMode(IDEViewMode.CODE);
 
         setTop(new IDETopBarPane(project, viewModeController, this::requestViewMode));
 
         this.leftPane = createLeftPane();
         this.rightPane = new DetachableTabPane();
+        trackOwnedTabs(rightPane);
         assignWhileAttached(UIIds.IDE.IDE_RIGHT_DOCK, rightPane);
         var codeEditorPane = getOrCreateEditorPane(editorPanesByMode, IDEViewMode.CODE);
-        this.contentRouter = new IDEContentRouter(viewModeController);
+        this.contentRouter = new IDEContentRouter(this);
         this.bottomPane = createBottomPane();
 
         this.centerBottomSplit = new SplitPane(codeEditorPane, bottomPane);
@@ -91,10 +100,12 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
         KeybindHandler.registerCapture(KeybindContexts.of("railroad:ide"), this);
 
         assignWhileAttached(UIIds.IDE.IDE, this);
+        lifecycle.onDispose(this::disposeOwnedContent);
     }
 
     private DetachableTabPane createLeftPane() {
         var pane = new DetachableTabPane();
+        trackOwnedTabs(pane);
         var projectTab = createDockTab(IDEDockItem.PROJECT, IDEDockItem.DockPosition.LEFT, false);
         dockTabsByMode.put(IDEViewMode.CODE, List.of(projectTab));
 
@@ -116,6 +127,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
 
     private DetachableTabPane createCodeEditorPane() {
         var pane = new DetachableTabPane();
+        trackOwnedTabs(pane);
         pane.getTabs().add(createTab("editor:welcome", "Welcome", new IDEWelcomePane()));
         trackSelectedTab(pane);
 
@@ -125,6 +137,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
 
     private DetachableTabPane createGitEditorPane() {
         var pane = new DetachableTabPane();
+        trackOwnedTabs(pane);
         pane.getTabs().add(createTab("editor:git-welcome", "Welcome", new IDEWelcomePane()));
         trackSelectedTab(pane);
 
@@ -143,13 +156,15 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
      * @return whether the request was accepted
      */
     public boolean requestViewMode(IDEViewMode viewMode) {
-        IDEViewMode resolvedMode = viewMode == null ? IDEViewMode.CODE : viewMode;
-        if (resolvedMode == IDEViewMode.GIT && !project.getGitManager().isActive())
-            return false;
+        return requestViewMode(viewMode, true);
+    }
 
-        pendingViewModeAfterGitDetection = null;
-        viewModeController.setCurrentViewMode(resolvedMode);
-        return true;
+    private boolean requestViewMode(IDEViewMode viewMode, boolean clearPendingMode) {
+        boolean accepted = viewModeController.requestViewMode(viewMode);
+        if (accepted && clearPendingMode) {
+            pendingViewModeAfterGitDetection = null;
+        }
+        return accepted;
     }
 
     private DetachableTabPane getOrCreateEditorPane(
@@ -373,10 +388,10 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
             if (available) {
                 if (pendingViewModeAfterGitDetection == IDEViewMode.GIT) {
                     pendingViewModeAfterGitDetection = null;
-                    viewModeController.setCurrentViewMode(IDEViewMode.GIT);
+                    requestViewMode(IDEViewMode.GIT, false);
                 }
             } else if (viewModeController.getCurrentViewMode() == IDEViewMode.GIT) {
-                viewModeController.setCurrentViewMode(IDEViewMode.CODE);
+                requestViewMode(IDEViewMode.CODE, false);
             }
         };
         project.getGitManager().activeProperty().addListener(listener);
@@ -489,7 +504,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
             if (viewModeController.getCurrentViewMode() == targetMode) {
                 activateViewMode(targetMode);
             } else {
-                viewModeController.setCurrentViewMode(targetMode);
+                requestViewMode(targetMode, false);
             }
         };
 
@@ -505,8 +520,52 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable {
         lifecycle.close();
     }
 
+    private void trackOwnedTabs(DetachableTabPane pane) {
+        pane.getTabs().forEach(this::trackOwnedTab);
+        ListChangeListener<Tab> listener = change -> {
+            while (change.next()) {
+                change.getAddedSubList().forEach(this::trackOwnedTab);
+            }
+        };
+        pane.getTabs().addListener(listener);
+        lifecycle.onDispose(() -> pane.getTabs().removeListener(listener));
+    }
+
+    private void trackOwnedTab(Tab tab) {
+        if (!ownedTabs.add(tab))
+            return;
+
+        tab.addEventHandler(Tab.CLOSED_EVENT, _ -> {
+            IDEContentDisposer.dispose(tab, Collections.newSetFromMap(new IdentityHashMap<>()));
+            ownedTabs.remove(tab);
+        });
+    }
+
+    private void disposeOwnedContent() {
+        Set<Tab> tabsToDispose = new LinkedHashSet<>(ownedTabs);
+        dockTabsByMode.values().forEach(tabsToDispose::addAll);
+        editorPanesByMode.values().forEach(pane -> tabsToDispose.addAll(pane.getTabs()));
+        tabsToDispose.addAll(leftPane.getTabs());
+        tabsToDispose.addAll(rightPane.getTabs());
+        tabsToDispose.addAll(bottomPane.getTabs());
+
+        Set<Object> disposed = Collections.newSetFromMap(new IdentityHashMap<>());
+        tabsToDispose.forEach(tab -> IDEContentDisposer.dispose(tab, disposed));
+        IDEContentDisposer.dispose(getTop(), disposed);
+        IDEContentDisposer.dispose(getLeft(), disposed);
+        IDEContentDisposer.dispose(getRight(), disposed);
+        IDEContentDisposer.dispose(getBottom(), disposed);
+        IDEContentDisposer.dispose(getCenter(), disposed);
+        ownedTabs.clear();
+        dockTabsByMode.clear();
+        editorPanesByMode.clear();
+        layoutsByMode.clear();
+        focusOwnersByMode.clear();
+    }
+
     private DetachableTabPane createBottomPane() {
         var pane = new DetachableTabPane();
+        trackOwnedTabs(pane);
         pane.getTabs().addAll(
             createDockTab(IDEDockItem.CONSOLE, IDEDockItem.DockPosition.BOTTOM, false),
             createDockTab(IDEDockItem.TERMINAL, IDEDockItem.DockPosition.BOTTOM, false)

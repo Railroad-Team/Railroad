@@ -64,6 +64,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
         Math.max(2, Runtime.getRuntime().availableProcessors() / 2),
         namedThreadFactory("railroad-code-editor-worker-%d")
     );
+    private final ShutdownHooks.Registration workerShutdownRegistration;
+    private boolean codeEditorClosed;
 
     // region Diagnostics state
     protected static final Duration DIAGNOSTIC_DEBOUNCE = Duration.ofMillis(300);
@@ -148,7 +150,24 @@ public abstract class CodeEditorPane extends TextEditorPane {
         installBracketHighlighting();
         installDiagnosticPopupHandlers();
 
-        ShutdownHooks.addHook(worker::shutdownNow);
+        workerShutdownRegistration = ShutdownHooks.registerHook(worker::shutdownNow);
+    }
+
+    @Override
+    public void close() {
+        if (codeEditorClosed)
+            return;
+
+        codeEditorClosed = true;
+        workerShutdownRegistration.close();
+        worker.shutdownNow();
+        diagnosticPopup.hide();
+        signaturePopup.hide();
+        Popup completionPopup = activeCompletionPopup.getAndSet(null);
+        if (completionPopup != null) {
+            completionPopup.hide();
+        }
+        super.close();
     }
 
     // region Paragraph Graphics

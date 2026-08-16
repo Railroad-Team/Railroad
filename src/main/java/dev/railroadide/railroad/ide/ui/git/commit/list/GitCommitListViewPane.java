@@ -9,11 +9,13 @@ import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
@@ -42,7 +44,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-public class GitCommitListViewPane extends RRListView<GitCommit> {
+public class GitCommitListViewPane extends RRListView<GitCommit> implements AutoCloseable {
     private static final String PLACEHOLDER_EMPTY_KEY = "railroad.git.commit.list.placeholder.empty";
 
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(runnable -> {
@@ -61,9 +63,15 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
     private volatile String headCommitHash = null;
     private volatile String searchFilter = "";
     private volatile boolean loadingCommits = true;
+    private final GitManager gitManager;
+    private final ChangeListener<Number> metadataRevisionListener;
+    private final ShutdownHooks.Registration shutdownRegistration;
+    private boolean closed;
 
     public GitCommitListViewPane(Project project) {
         super();
+        this.gitManager = project.getGitManager();
+        this.metadataRevisionListener = (_, _, _) -> reloadCommitMetadata(project);
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT_LIST_VIEW, this);
 
         getStyleClass().add("git-commit-list-view-pane");
@@ -83,9 +91,26 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
             }
         }));
         reloadCommitMetadata(project);
-        project.getGitManager().commitMetadataRevisionProperty().addListener((_, _, _) -> reloadCommitMetadata(project));
-        project.getGitManager().getAllCommits(this::handleCommitsPage, () -> Platform.runLater(this::handleCommitsDone), 200);
-        ShutdownHooks.addHook(executorService::shutdownNow);
+        gitManager.commitMetadataRevisionProperty().addListener(metadataRevisionListener);
+        gitManager.getAllCommits(this::handleCommitsPage, () -> Platform.runLater(this::handleCommitsDone), 200);
+        shutdownRegistration = ShutdownHooks.registerHook(executorService::shutdownNow);
+    }
+
+    @Override
+    public void close() {
+        if (closed)
+            return;
+
+        closed = true;
+        gitManager.commitMetadataRevisionProperty().removeListener(metadataRevisionListener);
+        synchronized (filterLock) {
+            if (pendingFilterTask != null) {
+                pendingFilterTask.cancel(false);
+                pendingFilterTask = null;
+            }
+        }
+        shutdownRegistration.close();
+        executorService.shutdownNow();
     }
 
     private void reloadCommitMetadata(Project project) {

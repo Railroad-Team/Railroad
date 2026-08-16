@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Coordinates view-mode changes for a single IDE pane.
@@ -22,20 +23,40 @@ public final class IDEViewModeController implements AutoCloseable {
     private final ObjectProperty<IDEViewMode> stateProperty;
     private final ReadOnlyObjectWrapper<IDEViewMode> currentViewMode;
     private final Executor applicationThreadExecutor;
+    private final Predicate<IDEViewMode> availability;
     private final List<Consumer<IDEViewMode>> listeners = new ArrayList<>();
-    private final ChangeListener<IDEViewMode> stateListener = (_, _, newMode) -> applyViewMode(newMode);
+    private final ChangeListener<IDEViewMode> stateListener = (_, _, newMode) -> acceptExternalState(newMode);
 
     private boolean closed;
+    private boolean updatingState;
 
     public IDEViewModeController(ObjectProperty<IDEViewMode> stateProperty) {
-        this(stateProperty, IDEViewModeController::runOnApplicationThread);
+        this(stateProperty, _ -> true);
+    }
+
+    public IDEViewModeController(ObjectProperty<IDEViewMode> stateProperty, Predicate<IDEViewMode> availability) {
+        this(stateProperty, availability, IDEViewModeController::runOnApplicationThread);
     }
 
     IDEViewModeController(ObjectProperty<IDEViewMode> stateProperty, Executor applicationThreadExecutor) {
+        this(stateProperty, _ -> true, applicationThreadExecutor);
+    }
+
+    IDEViewModeController(
+        ObjectProperty<IDEViewMode> stateProperty,
+        Predicate<IDEViewMode> availability,
+        Executor applicationThreadExecutor
+    ) {
         this.stateProperty = Objects.requireNonNull(stateProperty, "State property cannot be null");
+        this.availability = Objects.requireNonNull(availability, "Availability predicate cannot be null");
         this.applicationThreadExecutor = Objects.requireNonNull(applicationThreadExecutor, "Application thread executor cannot be null");
-        this.currentViewMode = new ReadOnlyObjectWrapper<>(resolve(stateProperty.get()));
+        IDEViewMode initialMode = resolve(stateProperty.get());
+        if (!availability.test(initialMode)) {
+            initialMode = IDEViewMode.CODE;
+        }
+        this.currentViewMode = new ReadOnlyObjectWrapper<>(initialMode);
         stateProperty.addListener(stateListener);
+        restoreStateProperty(initialMode);
     }
 
     public IDEViewMode getCurrentViewMode() {
@@ -46,13 +67,22 @@ public final class IDEViewModeController implements AutoCloseable {
         return currentViewMode.getReadOnlyProperty();
     }
 
-    public void setCurrentViewMode(IDEViewMode viewMode) {
+    /**
+     * Requests a transition through this controller's availability policy.
+     *
+     * @return whether the request was accepted for delivery to the application thread
+     */
+    public boolean requestViewMode(IDEViewMode viewMode) {
         IDEViewMode resolvedMode = resolve(viewMode);
+        if (closed || !availability.test(resolvedMode))
+            return false;
+
         applicationThreadExecutor.execute(() -> {
-            if (!closed) {
-                stateProperty.set(resolvedMode);
+            if (!closed && availability.test(resolvedMode)) {
+                transitionTo(resolvedMode);
             }
         });
+        return true;
     }
 
     /**
@@ -75,15 +105,45 @@ public final class IDEViewModeController implements AutoCloseable {
         return new Registration(() -> listeners.remove(listener));
     }
 
-    private void applyViewMode(IDEViewMode viewMode) {
+    private void acceptExternalState(IDEViewMode viewMode) {
+        if (updatingState)
+            return;
+
         IDEViewMode resolvedMode = resolve(viewMode);
         applicationThreadExecutor.execute(() -> {
-            if (closed || currentViewMode.get() == resolvedMode)
+            if (closed)
                 return;
 
-            currentViewMode.set(resolvedMode);
-            List.copyOf(listeners).forEach(listener -> listener.accept(resolvedMode));
+            if (!availability.test(resolvedMode)) {
+                restoreStateProperty(currentViewMode.get());
+                return;
+            }
+
+            transitionTo(resolvedMode);
         });
+    }
+
+    private void transitionTo(IDEViewMode viewMode) {
+        if (stateProperty.get() != viewMode) {
+            restoreStateProperty(viewMode);
+        }
+        if (currentViewMode.get() == viewMode)
+            return;
+
+        currentViewMode.set(viewMode);
+        List.copyOf(listeners).forEach(listener -> listener.accept(viewMode));
+    }
+
+    private void restoreStateProperty(IDEViewMode viewMode) {
+        if (stateProperty.get() == viewMode)
+            return;
+
+        updatingState = true;
+        try {
+            stateProperty.set(viewMode);
+        } finally {
+            updatingState = false;
+        }
     }
 
     private static IDEViewMode resolve(IDEViewMode viewMode) {

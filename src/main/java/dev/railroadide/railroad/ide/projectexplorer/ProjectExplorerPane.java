@@ -64,7 +64,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeListener {
+public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeListener, AutoCloseable {
     private static boolean fileChangeListenerEnabled = true;
     private final Project project;
     private final ExecutorService executorService = Executors.newFixedThreadPool(3);
@@ -75,6 +75,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private final ObservableList<String> searchListItems = FXCollections.observableArrayList();
     private final StringProperty searchProperty = new SimpleStringProperty();
     private final List<String> searchList = new ArrayList<>();
+    private final ShutdownHooks.Registration shutdownRegistration;
+    private boolean closed;
 
     public ProjectExplorerPane(Project project) {
         this.project = project;
@@ -111,8 +113,18 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         KeybindHandler.registerCapture(KeybindContexts.of("railroad:project_explorer"), this.treeView);
 
-        ShutdownHooks.addHook(this.executorService::shutdownNow);
+        shutdownRegistration = ShutdownHooks.registerHook(this.executorService::shutdownNow);
         Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.PROJECT_EXPLORER, this);
+    }
+
+    @Override
+    public void close() {
+        if (closed)
+            return;
+
+        closed = true;
+        shutdownRegistration.close();
+        executorService.shutdownNow();
     }
 
     public void openSelectedItem() {

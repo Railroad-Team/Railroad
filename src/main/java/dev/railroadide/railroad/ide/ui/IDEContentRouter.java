@@ -3,7 +3,6 @@ package dev.railroadide.railroad.ide.ui;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.IDEViewMode;
-import dev.railroadide.railroad.ide.IDEViewModeController;
 import dev.railroadide.railroad.ui.id.UIId;
 import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.application.Platform;
@@ -15,10 +14,10 @@ import java.util.function.Consumer;
  * Routes editor content to a stable, mode-specific dock and activates the owning view mode.
  */
 public final class IDEContentRouter {
-    private final IDEViewModeController viewModeController;
+    private final IDEPane idePane;
 
-    IDEContentRouter(IDEViewModeController viewModeController) {
-        this.viewModeController = Objects.requireNonNull(viewModeController, "View mode controller cannot be null");
+    IDEContentRouter(IDEPane idePane) {
+        this.idePane = Objects.requireNonNull(idePane, "IDE pane cannot be null");
     }
 
     /**
@@ -43,8 +42,9 @@ public final class IDEContentRouter {
     }
 
     private void routeOnApplicationThread(Target target, Consumer<DetachableTabPane> action) {
-        viewModeController.setCurrentViewMode(target.viewMode);
-        Services.UI_MANAGER.lookup(target.dockId).ifPresent(action);
+        if (idePane.requestViewMode(target.viewMode)) {
+            Services.UI_MANAGER.lookup(target.dockId).ifPresent(action);
+        }
     }
 
     private static void runOnApplicationThread(Runnable action) {
