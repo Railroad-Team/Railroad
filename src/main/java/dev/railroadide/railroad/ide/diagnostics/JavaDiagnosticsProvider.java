@@ -29,17 +29,17 @@ import java.util.Optional;
 /**
  * Diagnostics provider backed by the SST semantic analyzer.
  */
-public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable JavaSymbolIndex projectIndex) implements DiagnosticsProvider<TextEditorDiagnostic> {
-    public JavaDiagnosticsProvider(Path filePath) {
-        this(null, filePath, null);
+public record JavaDiagnosticsProvider(Project project, @Nullable JavaSymbolIndex projectIndex) implements DiagnosticsProvider<TextEditorDiagnostic> {
+    public JavaDiagnosticsProvider() {
+        this(null, null);
     }
 
-    public JavaDiagnosticsProvider(Project project, Path filePath) {
-        this(project, filePath, null);
+    public JavaDiagnosticsProvider(Project project) {
+        this(project, null);
     }
 
-    public JavaDiagnosticsProvider(ProjectDiagnosticsContext context, Path filePath) {
-        this(context.project(), filePath, context.javaSymbolIndex());
+    public JavaDiagnosticsProvider(ProjectDiagnosticsContext context) {
+        this(context.project(), context.javaSymbolIndex());
     }
 
     @Override
@@ -65,7 +65,7 @@ public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable 
             semanticModel = JavaSemanticAnalyzer.analyzeFacts(document);
         }
 
-        List<SemanticDiagnostic> semanticDiagnostics = runRegisteredInspections(document, semanticModel, symbolIndex);
+        List<SemanticDiagnostic> semanticDiagnostics = runRegisteredInspections(snapshot.uri().filePath().get(), document, semanticModel, symbolIndex);
         char[] source = document.toCharArray();
 
         List<TextEditorDiagnostic> diagnostics = new ArrayList<>();
@@ -91,7 +91,7 @@ public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable 
         return List.copyOf(diagnostics);
     }
 
-    private List<SemanticDiagnostic> runRegisteredInspections(String document, SemanticModel semanticModel, JavaSymbolIndex symbolIndex) {
+    private List<SemanticDiagnostic> runRegisteredInspections(Path filePath, String document, SemanticModel semanticModel, JavaSymbolIndex symbolIndex) {
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
         JavaRuleContext context = new JavaRuleContext(filePath, document, semanticModel, symbolIndex);
         JavaInspectionReporter reporter = diagnostic -> diagnostics.add(Objects.requireNonNull(diagnostic, "diagnostic"));

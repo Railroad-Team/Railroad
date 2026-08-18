@@ -15,7 +15,6 @@ import dev.railroadide.railroad.ide.sst.document.api.Location.TextLocation;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 
 import javax.tools.Diagnostic;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +23,7 @@ import java.util.Optional;
 /**
  * Diagnostics provider backed by Eclipse JDT's parser.
  */
-public record JdtDiagnosticsProvider(Path filePath) implements DiagnosticsProvider<TextEditorDiagnostic> {
+public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditorDiagnostic> {
     @Override
     public @NotNull List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
         Optional<String> snapshotText = TextDocumentSnapshot.unwrap(
@@ -41,7 +40,9 @@ public record JdtDiagnosticsProvider(Path filePath) implements DiagnosticsProvid
         parser.setBindingsRecovery(false);
         parser.setStatementsRecovery(true);
         parser.setSource(source);
-        parser.setUnitName(filePath.getFileName().toString());
+        parser.setUnitName(
+            snapshot.uri().filePath().get().getFileName().toString()
+        );
 
         Map<String, String> options = JavaCore.getOptions();
         JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);

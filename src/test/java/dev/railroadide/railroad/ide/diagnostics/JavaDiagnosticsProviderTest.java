@@ -4,10 +4,15 @@ import com.google.gson.JsonObject;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
+import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
 import dev.railroadide.railroad.ide.diagnostics.inspections.CoreNameResolutionInspection;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -24,6 +29,8 @@ import javafx.scene.image.Image;
 import org.junit.jupiter.api.Test;
 
 import javax.tools.Diagnostic;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -42,14 +49,22 @@ class JavaDiagnosticsProviderTest {
         JavaInspectionRuleProvider core = JavaInspectionRegistries.getRuleProvider(CoreNameResolutionInspection.ID);
         assertNotNull(core);
 
-        JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
-        List<EditorDiagnostic> diagnostics = provider.compute("""
+        JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider();
+        TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+            DocumentId.create(),
+            DocumentUri.fromPath(Path.of("Example.java")),
+            DocumentVersion.initial(),
+            JavaLanguageSupport.LANGUAGE_ID,
+            """
                 class Example {
                     void run() {
                         missing = 1;
                     }
                 }
-                """);
+            """,
+            StandardCharsets.UTF_8);
+
+        List<TextEditorDiagnostic> diagnostics = provider.compute(snapshot);
 
         assertTrue(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code())));
     }
@@ -61,8 +76,16 @@ class JavaDiagnosticsProviderTest {
 
         try {
             JavaInspectionRegistries.registerRuleProvider(id, provider);
-            JavaDiagnosticsProvider providerRunner = new JavaDiagnosticsProvider(Path.of("Example.java"));
-            List<EditorDiagnostic> diagnostics = providerRunner.compute("class Example {}");
+            JavaDiagnosticsProvider providerRunner = new JavaDiagnosticsProvider();
+            TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+                DocumentId.create(),
+                DocumentUri.fromPath(Path.of("Example.java")),
+                DocumentVersion.initial(),
+                JavaLanguageSupport.LANGUAGE_ID,
+                "class Example {}",
+                StandardCharsets.UTF_8);
+
+            List<EditorDiagnostic.TextEditorDiagnostic> diagnostics = providerRunner.compute(snapshot);
             assertTrue(diagnostics.stream().anyMatch(diagnostic -> PLUGIN_RULE_ID.equals(diagnostic.code())));
             assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.WARNING));
         } finally {
@@ -75,14 +98,22 @@ class JavaDiagnosticsProviderTest {
     void supportsRuleSettingsOverridesAndDisabling() {
         try {
             JavaInspectionRuleSettings.setRuleEnabled("SEM_UNRESOLVED_NAME", false);
-            JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
-            List<EditorDiagnostic> disabledDiagnostics = provider.compute("""
+            JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider();
+            TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+                DocumentId.create(),
+                DocumentUri.fromPath(Path.of("Example.java")),
+                DocumentVersion.initial(),
+                JavaLanguageSupport.LANGUAGE_ID,
+                """
                     class Example {
                         void run() {
                             missing = 1;
                         }
                     }
-                    """);
+                """,
+                StandardCharsets.UTF_8);
+
+            List<EditorDiagnostic.TextEditorDiagnostic> disabledDiagnostics = provider.compute(snapshot);
             assertFalse(disabledDiagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code())));
         } finally {
             JavaInspectionRuleSettings.resetAll();
@@ -91,15 +122,23 @@ class JavaDiagnosticsProviderTest {
         try {
             JavaInspectionRuleSettings.setSeverityOverride("SEM_UNRESOLVED_NAME",
                     SemanticDiagnostic.Severity.INFO);
-            JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
-            List<EditorDiagnostic> overriddenDiagnostics = provider.compute("""
+            JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider();
+            TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+                DocumentId.create(),
+                DocumentUri.fromPath(Path.of("Example.java")),
+                DocumentVersion.initial(),
+                JavaLanguageSupport.LANGUAGE_ID,
+                """
                     class Example {
                         void run() {
                             missing = 1;
                         }
                     }
-                    """);
-            EditorDiagnostic unresolved = overriddenDiagnostics.stream()
+                """,
+                StandardCharsets.UTF_8);
+
+            List<EditorDiagnostic.TextEditorDiagnostic> overriddenDiagnostics = provider.compute(snapshot);
+            EditorDiagnostic.TextEditorDiagnostic unresolved = overriddenDiagnostics.stream()
                     .filter(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code()))
                     .findFirst()
                     .orElse(null);
@@ -116,13 +155,20 @@ class JavaDiagnosticsProviderTest {
         Path projectRoot = Path.of(".").toAbsolutePath().normalize();
         Path file = projectRoot.resolve("src/main/java/dev/railroadide/railroad/vcs/git/GitCommands.java");
         ProjectDiagnosticsContext context = ProjectDiagnosticsContext.create(new TestProject(projectRoot));
-        JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(context, file);
+        JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(context);
+        TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+            DocumentId.create(),
+            DocumentUri.fromPath(file),
+            DocumentVersion.initial(),
+            JavaLanguageSupport.LANGUAGE_ID,
+            Files.readString(file),
+            StandardCharsets.UTF_8);
 
-        List<String> unresolved = provider.compute(Files.readString(file)).stream()
+        List<String> unresolved = provider.compute(snapshot).stream()
                 .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code()))
-                .filter(diagnostic -> diagnostic.getMessage(null).contains("'addArgs'")
-                        || diagnostic.getMessage(null).contains("'build'"))
-                .map(diagnostic -> "line " + diagnostic.getLineNumber() + ": " + diagnostic.getMessage(null))
+                .filter(diagnostic -> diagnostic.message(null).contains("'addArgs'")
+                        || diagnostic.message(null).contains("'build'"))
+                .map(diagnostic -> "line " + diagnostic.location().line() + ": " + diagnostic.location().column())
                 .toList();
 
         assertTrue(unresolved.isEmpty(), () -> String.join(System.lineSeparator(), unresolved));
