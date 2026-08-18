@@ -102,7 +102,7 @@ Incremental semantic sessions and broader IDE features
 - [ ] **SST-P0-035** Add `RelatedLocation` with a human-readable relationship/message.
 - [ ] **SST-P0-036** Add source-map support for generated and decompiled locations.
 - [ ] **SST-P0-037** Add a location resolver that can open physical, virtual, archive, binary, and generated targets.
-- [ ] **SST-P0-038** Replace raw diagnostic offsets with locations or snapshot-bound ranges.
+- [x] **SST-P0-038** Replace raw diagnostic offsets with locations or snapshot-bound ranges.
 - [ ] **SST-P0-039** Add conversion adapters for existing `SyntaxNode.start/end` ranges.
 - [ ] **SST-P0-040** Add validation preventing a location from being used against the wrong snapshot version.
 

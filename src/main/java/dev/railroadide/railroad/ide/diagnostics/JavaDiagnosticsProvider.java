@@ -1,7 +1,11 @@
 package dev.railroadide.railroad.ide.diagnostics;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.Location.TextLocation;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
@@ -10,21 +14,21 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
+
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 
 import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
-import javax.tools.SimpleJavaFileObject;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Diagnostics provider backed by the SST semantic analyzer.
  */
-public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable JavaSymbolIndex projectIndex) implements DiagnosticsProvider {
+public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable JavaSymbolIndex projectIndex) implements DiagnosticsProvider<TextEditorDiagnostic> {
     public JavaDiagnosticsProvider(Path filePath) {
         this(null, filePath, null);
     }
@@ -38,9 +42,12 @@ public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable 
     }
 
     @Override
-    public @NotNull List<EditorDiagnostic> compute(String document) {
-        if (document == null || document.isEmpty())
+    public @NotNull List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
+        Optional<String> snapshotText = TextDocumentSnapshot.unwrap(snapshot, new JavaLanguageSupport());
+        if (snapshotText.isEmpty())
             return List.of();
+
+        String document = snapshotText.get();
 
         SemanticModel semanticModel;
         JavaSymbolIndex symbolIndex = projectIndex;
@@ -57,14 +64,8 @@ public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable 
 
         List<SemanticDiagnostic> semanticDiagnostics = runRegisteredInspections(document, semanticModel, symbolIndex);
         char[] source = document.toCharArray();
-        JavaFileObject sourceFile = new SimpleJavaFileObject(filePath.toUri(), JavaFileObject.Kind.SOURCE) {
-            @Override
-            public CharSequence getCharContent(boolean ignoreEncodingErrors) {
-                return document;
-            }
-        };
 
-        List<EditorDiagnostic> diagnostics = new ArrayList<>();
+        List<TextEditorDiagnostic> diagnostics = new ArrayList<>();
         for (SemanticDiagnostic diagnostic : semanticDiagnostics) {
             Diagnostic.Kind kind = switch (diagnostic.severity()) {
                 case ERROR -> Diagnostic.Kind.ERROR;
@@ -74,18 +75,14 @@ public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable 
 
             int start = Math.clamp(diagnostic.startOffset(), 0, source.length);
             int end = Math.clamp(diagnostic.endOffset(), start, source.length);
-            long line = computeLine(source, start);
-            long column = computeColumn(source, start);
-            diagnostics.add(new EditorDiagnostic(
-                kind,
-                start,
-                end,
-                line,
-                column,
-                diagnostic.message(),
-                diagnostic.code(),
-                sourceFile
-            ));
+            diagnostics.add(
+                new TextEditorDiagnostic(
+                    TextLocation.from((TextDocumentSnapshot) snapshot, start, end),
+                    kind,
+                    diagnostic.code(),
+                    diagnostic.message()
+                )
+            );
         }
 
         return List.copyOf(diagnostics);
@@ -115,27 +112,5 @@ public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable 
                 .sorted(java.util.Map.Entry.comparingByKey())
                 .map(java.util.Map.Entry::getValue)
                 .toList();
-    }
-
-    private static long computeLine(char[] source, int position) {
-        long line = 1;
-        int bound = Math.clamp(source.length, 0, position);
-        for (int index = 0; index < bound; index++) {
-            if (source[index] == '\n')
-                line++;
-        }
-        return line;
-    }
-
-    private static long computeColumn(char[] source, int position) {
-        int column = 1;
-        int index = Math.clamp(source.length, 0, position) - 1;
-        for (; index >= 0; index--) {
-            char ch = source[index];
-            if (ch == '\n' || ch == '\r')
-                break;
-            column++;
-        }
-        return column;
     }
 }

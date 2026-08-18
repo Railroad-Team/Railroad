@@ -1,7 +1,11 @@
 package dev.railroadide.railroad.ide.sst.document.api;
 
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
+
+import dev.railroadide.railroad.ide.language.LanguageSupport;
 
 /**
  * Immutable snapshot of text document content.
@@ -89,5 +93,25 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
         if (languageId.isBlank())
             throw new IllegalArgumentException("languageId cannot be blank");
         return languageId;
+    }
+
+    /**
+     * Safely returns the content of a {@link DocumentSnapshot}, only if it is an
+     * instance of {@link TextDocumentSnapshot} and is supported by the provided {@link LanguageSupport}.
+     *
+     * @param snapshot Snapshot to unwrap
+     * @param language Required language
+     * @return content of the snapshot
+     */
+    public static Optional<String> unwrap(DocumentSnapshot snapshot, LanguageSupport language)
+    {
+        Optional<Path> filePath = snapshot.uri().filePath();
+        if (!filePath.isPresent() || !language.supports(filePath.get()))
+            Optional.empty();
+
+        if (snapshot instanceof TextDocumentSnapshot textDocumentSnapshot)
+            return Optional.of(textDocumentSnapshot.text());
+
+        return Optional.empty();
     }
 }

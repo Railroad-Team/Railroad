@@ -1,13 +1,18 @@
 package dev.railroadide.railroad.ide.ui;
 
+import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic;
+import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ui.RRTextArea;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
 
-import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
 import java.util.Collection;
 import java.util.List;
+
+import javax.tools.Diagnostic;
+import javax.tools.JavaFileObject;
 
 /**
  * A pane component for displaying Java compilation diagnostics (errors and warnings).
@@ -20,10 +25,17 @@ public class DiagnosticPane extends BorderPane {
      *
      * @param diagnostic the diagnostic to display
      */
-    public DiagnosticPane(Diagnostic<? extends JavaFileObject> diagnostic) {
-        var message = diagnostic.getMessage(null);
-        var line = diagnostic.getLineNumber();
-        var column = diagnostic.getColumnNumber();
+    public DiagnosticPane(EditorDiagnostic diagnostic) {
+        var message = diagnostic.message(null);
+
+        var line = 0;
+        var column = diagnostic.location().range().start;
+
+        if (diagnostic instanceof TextEditorDiagnostic textDiagnostic)
+        {
+            line = (int) textDiagnostic.location().line();
+            column = (int) textDiagnostic.location().column();
+        }
 
         var messageText = createMessageArea(message);
         var locationText = new Text("Line " + line + ", Column " + column);
@@ -31,7 +43,7 @@ public class DiagnosticPane extends BorderPane {
         setTop(locationText);
         setCenter(messageText);
         getStyleClass().add("diagnostic-pane");
-        if (diagnostic.getKind() == Diagnostic.Kind.ERROR) {
+        if (diagnostic.kind() == Diagnostic.Kind.ERROR) {
             getStyleClass().add("error");
         } else {
             getStyleClass().add("warning");
