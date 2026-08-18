@@ -137,10 +137,6 @@ public final class ProjectDiagnosticsScanner {
     private static FileScanResult scanOne(ProjectDiagnosticsContext diagnosticsContext, ScanTarget target) {
         long fileStartedAt = System.nanoTime();
         try {
-            // TODO: SST-P0-043 ?
-            // -> Context aware file reader (document identity, language support)
-            // -> Provides either an immutable Snaphot or mutable FileHandle
-
             String source = Files.readString(target.path());
             TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
                 DocumentId.create(),

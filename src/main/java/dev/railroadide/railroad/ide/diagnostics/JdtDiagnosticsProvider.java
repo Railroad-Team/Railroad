@@ -8,6 +8,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.jetbrains.annotations.NotNull;
 
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.Location.TextLocation;
@@ -26,7 +27,9 @@ import java.util.Optional;
 public record JdtDiagnosticsProvider(Path filePath) implements DiagnosticsProvider<TextEditorDiagnostic> {
     @Override
     public @NotNull List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
-        Optional<String> snapshotText = TextDocumentSnapshot.unwrap(snapshot, new JavaLanguageSupport());
+        Optional<String> snapshotText = TextDocumentSnapshot.unwrap(
+            snapshot, LanguageSupportRegistry.get(JavaLanguageSupport.LANGUAGE_ID).get()
+        );
         if (snapshotText.isEmpty())
             return List.of();
 
