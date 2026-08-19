@@ -97,6 +97,39 @@ Run the `shadowJar` task.
 
 The compiled JAR will be available in `build/libs/`.
 
+## Formatting Java code
+
+Run the formatter before committing Java changes:
+
+```sh
+./gradlew format
+```
+
+This applies Railroad's syntax-aware style rules first, followed by the Eclipse JDT formatter. By default, formatting is
+ratcheted from `HEAD`, so only changed and untracked Java files are touched. In particular, a control-flow block whose
+only statement is `return`, `throw`, `break`, `continue`, or `yield` is written without braces; every non-terminal
+control-flow body uses braces. `else if` chains remain compact. An exact local construction such as
+`Widget widget = new Widget()` uses `var`; declarations involving target-type inference, a different declared type,
+anonymous classes, fields, or multiple variables retain their explicit type. Unused-variable conventions named
+`ignored`, `$`, or `$` followed by digits use Java 25's unnamed variable `_` where the declaration context permits it;
+the original name is retained if it is referenced or cannot legally be unnamed.
+
+To check formatting without modifying files, run:
+
+```sh
+./gradlew formatCheck
+```
+
+To intentionally reformat every Java source file instead of only current changes, pass the `formatAll` property:
+
+```sh
+./gradlew format -PformatAll
+```
+
+The canonical whitespace and wrapping settings are stored in
+`config/format/railroad-eclipse-formatter.xml`. Structural rules and their tests live under `src/formatter/java` and
+`src/test/java/dev/railroadide/railroad/formatter`, respectively.
+
 ## Running
 
 Run the `runShadow` task:
