@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.settings.keybinds;
 
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.WorkspaceMode;
+import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ui.id.UIIds;
@@ -13,8 +15,11 @@ import java.util.function.Consumer;
 public class Keybinds {
     private static final KeybindCategory GENERAL =
         new KeybindCategory("railroad:general", "railroad.settings.keybinds.category.general");
+    private static final KeybindCategory VIEW_MODES =
+        new KeybindCategory("railroad:view_modes", "railroad.settings.keybinds.category.view_modes");
     private static final KeybindContexts.KeybindContext PROJECT_EXPLORER =
         KeybindContexts.of("railroad:project_explorer");
+    private static final KeybindContexts.KeybindContext IDE = KeybindContexts.of("railroad:ide");
 
     public static final Keybind OPEN_PROJECT_EXPLORER_ITEM = registerProjectExplorerKeybind(
         "railroad:open_project_explorer_item",
@@ -90,8 +95,20 @@ public class Keybinds {
         .id("railroad:fullscreen")
         .category(GENERAL)
         .addDefaultKey(KeyCode.F11)
-        .addAction(KeybindContexts.of("railroad:ide"), _ -> WindowManager.toggleFullScreen())
+        .addAction(IDE, _ -> WindowManager.toggleFullScreen())
         .build());
+
+    public static final Keybind VIEW_MODE_CODE = registerViewModeKeybind(
+        "railroad:view_mode_code",
+        WorkspaceModes.CODE,
+        KeyCode.DIGIT1
+    );
+
+    public static final Keybind VIEW_MODE_GIT = registerViewModeKeybind(
+        "railroad:view_mode_git",
+        WorkspaceModes.GIT,
+        KeyCode.DIGIT2
+    );
 
     public static void initialize() {
     }
@@ -104,6 +121,18 @@ public class Keybinds {
             .category(GENERAL)
             .addDefaultKey(keyCode, modifiers)
             .addAction(PROJECT_EXPLORER, _ -> action.accept(projectExplorer()))
+            .build());
+        keybind.resetKeys();
+        return keybind;
+    }
+
+    private static Keybind registerViewModeKeybind(String id, WorkspaceMode viewMode, KeyCode keyCode) {
+        Keybind keybind = KeybindHandler.registerKeybind(Keybind.builder()
+            .id(id)
+            .category(VIEW_MODES)
+            .addDefaultKey(keyCode, KeyCombination.SHORTCUT_DOWN, KeyCombination.ALT_DOWN)
+            .addAction(IDE, _ -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+                .ifPresent(idePane -> idePane.requestViewMode(viewMode)))
             .build());
         keybind.resetKeys();
         return keybind;

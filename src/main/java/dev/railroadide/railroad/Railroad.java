@@ -9,6 +9,8 @@ import dev.railroadide.logger.LoggerManager;
 import dev.railroadide.logger.LoggerService;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
+import dev.railroadide.railroad.ide.WorkspaceModes;
+import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.java.JDKManager;
 import dev.railroadide.railroad.localization.L18n;
@@ -106,6 +108,8 @@ public class Railroad extends Application {
             new InitializationStep("Initializing logger", LoggerManager::init),
             new InitializationStep("Initializing Git logger", GitLog::initialize),
             new InitializationStep("Initializing run configuration types", RunConfigurationTypes::initialize),
+            new InitializationStep("Registering workspace modes", WorkspaceModes::initialize),
+            new InitializationStep("Registering workspace content targets", WorkspaceContentTargets::initialize),
             new InitializationStep("Loading configuration", ConfigHandler::initConfig),
             new InitializationStep("Scanning plugins", () -> PluginManager.loadPlugins(ConfigHandler.getConfigDirectory().resolve("plugins"))),
             new InitializationStep("Registering keybinds", Keybinds::initialize),

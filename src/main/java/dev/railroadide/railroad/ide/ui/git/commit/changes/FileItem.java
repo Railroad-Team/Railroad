@@ -1,13 +1,11 @@
 package dev.railroadide.railroad.ide.ui.git.commit.changes;
 
-import com.panemu.tiwulfx.control.dock.DetachableTabPane;
-import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.ui.IDEContentRouter;
+import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
-import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import javafx.scene.Node;
-import javafx.scene.Scene;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Tab;
 import javafx.scene.input.MouseEvent;
@@ -53,9 +51,8 @@ public record FileItem(Project project, GitFileChange change) implements ChangeI
     @Override
     public Consumer<MouseEvent> getDoubleClickHandler() {
         return event -> {
-            if (event.getTarget() instanceof Node node) {
-                Scene scene = node.getScene();
-                openDiffForFile(scene, this);
+            if (event.getTarget() instanceof Node) {
+                openDiffForFile(this);
             }
         };
     }
@@ -94,23 +91,22 @@ public record FileItem(Project project, GitFileChange change) implements ChangeI
         return ChangeItem.formatTitle(getTitle(), getSubtitle());
     }
 
-    private void openDiffForFile(Scene scene, FileItem fileItem) {
-        if (scene == null || scene.getRoot() == null)
-            return;
+    private void openDiffForFile(FileItem fileItem) {
+        IDEContentRouter.routeActive(WorkspaceContentTargets.GIT_EDITOR, tabPane -> {
+            String tabId = fileItem.change().path().toAbsolutePath().normalize().toString();
+            if (tabPane.getTabs().stream().anyMatch(tab -> tabId.equals(tab.getId()))) {
+                tabPane.getTabs().stream()
+                    .filter(tab -> tabId.equals(tab.getId()))
+                    .findFirst()
+                    .ifPresent(tab -> tabPane.getSelectionModel().select(tab));
+                return;
+            }
 
-        DetachableTabPane tabPane = Services.UI_MANAGER.lookupOrThrow(UIIds.IDE.IDE_EDITOR_DOCK);
-        if (tabPane.getTabs().stream().anyMatch(tab -> tab.getId() != null && tab.getId().equals(fileItem.change().path().toString()))) {
-            tabPane.getTabs().stream()
-                .filter(tab -> tab.getId() != null && tab.getId().equals(fileItem.change().path().toAbsolutePath().toString()))
-                .findFirst()
-                .ifPresent(tab -> tabPane.getSelectionModel().select(tab));
-            return;
-        }
-
-        var diffPane = new GitDiffPane(fileItem.project(), fileItem.change.path());
-        var tab = new Tab("Diff " + fileItem.change().path().getFileName().toString(), diffPane);
-        tab.setId(fileItem.change().path().toAbsolutePath().toString());
-        tabPane.getTabs().add(tab);
-        tabPane.getSelectionModel().select(tab);
+            var diffPane = new GitDiffPane(fileItem.project(), fileItem.change.path());
+            var tab = new Tab("Diff " + fileItem.change().path().getFileName().toString(), diffPane);
+            tab.setId(tabId);
+            tabPane.getTabs().add(tab);
+            tabPane.getSelectionModel().select(tab);
+        });
     }
 }

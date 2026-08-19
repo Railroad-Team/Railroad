@@ -39,9 +39,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
-public class MarkdownPreviewPane extends RRVBox {
+public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     public static final Pattern NUMBERED_LIST_PATTERN = Pattern.compile("\\d+\\. \\w+");
     public static final Pattern BULLET_LIST_PATTERN = Pattern.compile("\\* .+");
     public static final Pattern DASH_LIST_PATTERN = Pattern.compile("- .+");
@@ -62,8 +63,18 @@ public class MarkdownPreviewPane extends RRVBox {
     private final HBox switchButtons;
 
     private final Project project;
+    private final BiConsumer<String, String> themeListener;
 
     private int scrollAmount;
+
+    @Override
+    public void close() {
+        if (textEditorPane != null) {
+            textEditorPane.close();
+            textEditorPane = null;
+        }
+        Settings.THEME.removeListener(themeListener);
+    }
 
     public MarkdownPreviewPane(Path markdownFile, Project project) {
         this.markdownFile = markdownFile;
@@ -84,8 +95,8 @@ public class MarkdownPreviewPane extends RRVBox {
 
         preview.setDarkMode(ThemeManager.getTheme().contains("dark"));
 
-        Settings.THEME.addListener((ignored, newThemeName) ->
-            preview.setDarkMode(newThemeName.contains("dark")));
+        themeListener = (_, newThemeName) -> preview.setDarkMode(newThemeName.contains("dark"));
+        Settings.THEME.addListener(themeListener);
 
         ProjectDataStore dataStore = project.getDataStore();
 

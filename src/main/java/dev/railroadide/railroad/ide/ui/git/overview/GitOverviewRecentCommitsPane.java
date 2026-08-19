@@ -19,6 +19,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.WeakInvalidationListener;
 import javafx.beans.property.ReadOnlyLongProperty;
 import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ListCell;
@@ -35,20 +36,28 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
+public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> implements AutoCloseable {
     private static final int FALLBACK_COMMIT_COUNT = 5;
     private final AtomicInteger requestedCount = new AtomicInteger(0);
     private final SimpleLongProperty elapsedTick = new SimpleLongProperty();
     private final Timeline elapsedTimeline = new Timeline(
         new KeyFrame(Duration.seconds(1), _ -> elapsedTick.set(elapsedTick.get() + 1))
     );
+    private final GitManager gitManager;
+    private final ScheduledExecutorService executor;
+    private final AtomicReference<ScheduledFuture<?>> scheduledRefresh = new AtomicReference<>();
+    private final ChangeListener<Long> fetchTimestampListener;
+    private final ShutdownHooks.Registration shutdownRegistration;
+    private boolean closed;
 
     public GitOverviewRecentCommitsPane(Project project) {
+        this.gitManager = project.getGitManager();
+        this.fetchTimestampListener = (_, _, _) ->
+            requestCommits(gitManager, Math.max(1, requestedCount.get()));
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_OVERVIEW_RECENT_COMMITS, this);
         getStyleClass().add("git-overview-recent-commits-pane");
         setPlaceholder(new LocalizedText("railroad.git.overview.recent_commits.placeholder"));
 
-        GitManager gitManager = project.getGitManager();
         requestCommits(gitManager, FALLBACK_COMMIT_COUNT);
         setCellFactory(_ -> new GitOverviewRecentCommitCell(elapsedTick));
 
@@ -66,26 +75,21 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
         skinProperty().addListener((_, _, _) ->
             Platform.runLater(() -> updateCommitLimitFromHeight(gitManager)));
 
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(runnable -> {
+        executor = Executors.newSingleThreadScheduledExecutor(runnable -> {
             var thread = new Thread(runnable, "GitOverviewRecentCommitsPane-Commits-Fetcher");
             thread.setDaemon(true);
             return thread;
         });
 
-        AtomicReference<ScheduledFuture<?>> future = new AtomicReference<>();
         sceneProperty().addListener((_, _, newScene) ->
-            onSceneChanged(newScene, future, executor, gitManager));
-        gitManager.lastFetchTimestampProperty().addListener((_, _, _) ->
-            requestCommits(gitManager, Math.max(1, requestedCount.get())));
+            onSceneChanged(newScene));
+        gitManager.lastFetchTimestampProperty().addListener(fetchTimestampListener);
 
-        ShutdownHooks.addHook(executor::shutdownNow);
+        shutdownRegistration = ShutdownHooks.registerHook(executor::shutdownNow);
     }
 
-    private void onSceneChanged(Scene newScene,
-                                AtomicReference<ScheduledFuture<?>> futureRef,
-                                ScheduledExecutorService executor,
-                                GitManager gitManager) {
-        ScheduledFuture<?> previousFuture = futureRef.getAndSet(null);
+    private void onSceneChanged(Scene newScene) {
+        ScheduledFuture<?> previousFuture = scheduledRefresh.getAndSet(null);
         if (previousFuture != null) {
             previousFuture.cancel(false);
         }
@@ -93,8 +97,24 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
         if (newScene != null) {
             ScheduledFuture<?> newFuture = executor.scheduleAtFixedRate(() ->
                 requestCommits(gitManager, Math.max(1, requestedCount.get())), 0, 1, TimeUnit.MINUTES);
-            futureRef.set(newFuture);
+            scheduledRefresh.set(newFuture);
         }
+    }
+
+    @Override
+    public void close() {
+        if (closed)
+            return;
+
+        closed = true;
+        elapsedTimeline.stop();
+        gitManager.lastFetchTimestampProperty().removeListener(fetchTimestampListener);
+        ScheduledFuture<?> future = scheduledRefresh.getAndSet(null);
+        if (future != null) {
+            future.cancel(false);
+        }
+        shutdownRegistration.close();
+        executor.shutdownNow();
     }
 
     private void updateCommitLimitFromHeight(GitManager gitManager) {

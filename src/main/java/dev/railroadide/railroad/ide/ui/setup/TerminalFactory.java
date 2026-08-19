@@ -150,7 +150,7 @@ public final class TerminalFactory {
 
         window.showingProperty().addListener((_, _, isShowing) -> {
             if (!isShowing) {
-                closeTerminal(terminal);
+                close(terminal);
             }
         });
     }
@@ -165,7 +165,7 @@ public final class TerminalFactory {
         }
     }
 
-    private static void closeTerminal(Terminal terminal) {
+    public static void close(Terminal terminal) {
         if (terminal == null)
             return;
 

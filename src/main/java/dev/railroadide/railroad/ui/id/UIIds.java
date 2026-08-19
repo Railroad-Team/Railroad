@@ -61,7 +61,8 @@ public final class UIIds {
     public static class IDE {
         public static final UIId<IDEPane> IDE = internal("ide_pane", IDEPane.class);
         public static final UIId<DetachableTabPane> IDE_LEFT_DOCK = internal("ide_left_dock", DetachableTabPane.class);
-        public static final UIId<DetachableTabPane> IDE_EDITOR_DOCK = internal("ide_editor_dock", DetachableTabPane.class);
+        public static final UIId<DetachableTabPane> IDE_CODE_EDITOR_DOCK = internal("ide_code_editor_dock", DetachableTabPane.class);
+        public static final UIId<DetachableTabPane> IDE_GIT_EDITOR_DOCK = internal("ide_git_editor_dock", DetachableTabPane.class);
         public static final UIId<DetachableTabPane> IDE_RIGHT_DOCK = internal("ide_right_dock", DetachableTabPane.class);
         public static final UIId<DetachableTabPane> IDE_BOTTOM_DOCK = internal("ide_bottom_dock", DetachableTabPane.class);
         public static final UIId<ProjectExplorerPane> PROJECT_EXPLORER = internal("project_explorer", ProjectExplorerPane.class);

@@ -1,7 +1,8 @@
 package dev.railroadide.railroad.ide.ui.git.stash;
 
-import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.ui.IDEContentRouter;
+import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.ide.ui.git.commit.changes.*;
 import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -288,33 +289,31 @@ public class GitStashPane extends RRVBox {
         if (stashRef == null || change == null)
             return;
 
-        DetachableTabPane tabPane = Services.UI_MANAGER.lookup(UIIds.IDE.IDE_EDITOR_DOCK).orElse(null);
-        if (tabPane == null)
-            return;
+        IDEContentRouter.routeActive(WorkspaceContentTargets.GIT_EDITOR, tabPane -> {
+            Tab diffTab = tabPane.getTabs().stream()
+                .filter(tab -> tab.getContent() instanceof GitDiffPane)
+                .findFirst()
+                .orElseGet(() -> {
+                    var diffPane = new GitDiffPane(project);
+                    Tab created = tabPane.addTab("Git Diff", diffPane);
+                    created.textProperty().bind(diffPane.titleProperty());
+                    return created;
+                });
 
-        Tab diffTab = tabPane.getTabs().stream()
-            .filter(tab -> tab.getContent() instanceof GitDiffPane)
-            .findFirst()
-            .orElseGet(() -> {
-                var diffPane = new GitDiffPane(project);
-                Tab created = tabPane.addTab("Git Diff", diffPane);
-                created.textProperty().bind(diffPane.titleProperty());
-                return created;
-            });
+            tabPane.getSelectionModel().select(diffTab);
+            var diffPane = (GitDiffPane) diffTab.getContent();
+            String title = "Git Diff: " + change.path().getFileName();
+            diffPane.setExternalDiff(title, "");
 
-        tabPane.getSelectionModel().select(diffTab);
-        var diffPane = (GitDiffPane) diffTab.getContent();
-        String title = "Git Diff: " + change.path().getFileName();
-        diffPane.setExternalDiff(title, "");
+            CompletableFuture
+                .supplyAsync(() -> gitManager.getStashDiff(stashRef, change.path()).orElse(""))
+                .thenAccept(diffText -> Platform.runLater(() -> {
+                    if (!Objects.equals(selectedStashRef, stashRef))
+                        return;
 
-        CompletableFuture
-            .supplyAsync(() -> gitManager.getStashDiff(stashRef, change.path()).orElse(""))
-            .thenAccept(diffText -> Platform.runLater(() -> {
-                if (!Objects.equals(selectedStashRef, stashRef))
-                    return;
-
-                diffPane.setExternalDiff(title, diffText);
-            }));
+                    diffPane.setExternalDiff(title, diffText);
+                }));
+        });
     }
 
     private static class GitStashEntryCell extends ListCell<GitStashEntry> {

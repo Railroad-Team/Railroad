@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class GitDiffPane extends RRBorderPane {
+public class GitDiffPane extends RRBorderPane implements AutoCloseable {
     private static final String DEFAULT_TITLE = "Git Diff";
     private static final String PLACEHOLDER_NO_FILE_KEY = "railroad.git.diff.placeholder.no_file";
     private static final String PLACEHOLDER_NO_REPO_KEY = "railroad.git.diff.placeholder.no_repo";
@@ -48,6 +48,7 @@ public class GitDiffPane extends RRBorderPane {
         return thread;
     });
     private final AtomicInteger generation = new AtomicInteger();
+    private final ShutdownHooks.Registration shutdownRegistration;
     private List<RenderLine> renderLines = List.of();
     private int oldNumberDigits = 1;
     private int newNumberDigits = 1;
@@ -74,11 +75,18 @@ public class GitDiffPane extends RRBorderPane {
             requestDiff(newPath);
         });
 
-        ShutdownHooks.addHook(executor::shutdownNow);
+        shutdownRegistration = ShutdownHooks.registerHook(executor::shutdownNow);
     }
 
     public GitDiffPane(Project project) {
         this(project, null);
+    }
+
+    @Override
+    public void close() {
+        generation.incrementAndGet();
+        shutdownRegistration.close();
+        executor.shutdownNow();
     }
 
     public ObjectProperty<Path> filePathProperty() {
