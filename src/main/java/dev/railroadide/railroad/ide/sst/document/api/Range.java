@@ -15,8 +15,8 @@ public abstract sealed class Range<S extends DocumentSnapshot>
 
     public Range(int start, int end)
     {
-        this.start = 0;
-        this.end = 0;
+        this.start = start;
+        this.end = end;
 
         if (start < 0) {
             throw new IllegalArgumentException("start must be non-negative");
@@ -24,6 +24,11 @@ public abstract sealed class Range<S extends DocumentSnapshot>
         if (end < start) {
             throw new IllegalArgumentException("end must be >= start");
         }
+    }
+
+    public boolean contains(int index)
+    {
+        return index >= start && index < end;
     }
 
     public final int length() {

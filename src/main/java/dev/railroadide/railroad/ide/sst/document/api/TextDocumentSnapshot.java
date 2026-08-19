@@ -107,7 +107,7 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
     {
         Optional<Path> filePath = snapshot.uri().filePath();
         if (!filePath.isPresent() || !language.supports(filePath.get()))
-            Optional.empty();
+            return Optional.empty();
 
         if (snapshot instanceof TextDocumentSnapshot textDocumentSnapshot)
             return Optional.of(textDocumentSnapshot.text());

@@ -13,7 +13,7 @@ public final class TextRange extends Range<TextDocumentSnapshot>
     }
 
     /**
-     * Returns a read-only view of the complete content.
+     *  Returns a read-only view over this range within the snapshot.
      */
     public CharBuffer content(TextDocumentSnapshot snapshot) {
         return CharBuffer.wrap(snapshot.text())

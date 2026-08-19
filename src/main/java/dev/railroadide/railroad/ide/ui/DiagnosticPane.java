@@ -2,8 +2,6 @@ package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
-import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ui.RRTextArea;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;

@@ -13,7 +13,7 @@ public final class BinaryRange extends Range<BinaryDocumentSnapshot>
     }
 
     /**
-     * Returns a read-only view of the complete content.
+     *  Returns a read-only view over this range within the snapshot.
      */
     public ByteBuffer content(BinaryDocumentSnapshot snapshot) {
         return snapshot.bytes().slice(start, length());

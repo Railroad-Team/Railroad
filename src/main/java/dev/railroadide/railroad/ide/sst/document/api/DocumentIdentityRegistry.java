@@ -189,7 +189,7 @@ public final class DocumentIdentityRegistry {
         Objects.requireNonNull(id, "id");
 
         return idsByUri.entrySet().stream()
-            .filter(entry -> entry.getValue() == id)
+            .filter(entry -> entry.getValue().equals(id))
             .findFirst()
             .map(entry -> entry.getKey());
     }

@@ -342,7 +342,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             return null;
 
         for (EditorDiagnostic diagnostic : visibleDiagnostics) {
-            if (index >= diagnostic.location().range().start && index <= diagnostic.location().range().end)
+            if (diagnostic.location().range().contains(index))
                 return diagnostic;
         }
 
@@ -879,8 +879,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         TreeMap<Integer, int[]> events = new TreeMap<>();
         for (TextEditorDiagnostic diagnostic : diagnostics) {
-            int start = Math.clamp((int) diagnostic.location().range().start, 0, documentLength);
-            int end = Math.clamp((int) diagnostic.location().range().end, start, documentLength);
+            int start = Math.clamp(diagnostic.location().range().start, 0, documentLength);
+            int end = Math.clamp(diagnostic.location().range().end, start, documentLength);
             if (end <= start)
                 continue;
 

@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Provides language diagnostics for a document snapshot.
  */
-public interface DiagnosticsProvider<D extends EditorDiagnostic> {
+public interface DiagnosticsProvider<D extends EditorDiagnostic<?>> {
     /**
      * Computes diagnostics for the supplied {@link DocumentSnapshot}.
      *
