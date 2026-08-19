@@ -32,13 +32,15 @@ public final class JavaProjectSemanticExtractor {
         return new JavaProjectSemanticIndex.SourceFileIndex(path, packageName, imports, symbols);
     }
 
-    private List<JavaProjectSemanticIndex.SymbolDescriptor> extractSymbols(Path path, SyntaxNode root, SemanticModel model) {
+    private List<JavaProjectSemanticIndex.SymbolDescriptor> extractSymbols(Path path, SyntaxNode root,
+        SemanticModel model) {
         List<JavaProjectSemanticIndex.SymbolDescriptor> symbols = new ArrayList<>();
         collectSymbols(path, root, model, symbols);
         return List.copyOf(symbols);
     }
 
-    private void collectSymbols(Path path, SyntaxNode node, SemanticModel model, List<JavaProjectSemanticIndex.SymbolDescriptor> symbols) {
+    private void collectSymbols(Path path, SyntaxNode node, SemanticModel model,
+        List<JavaProjectSemanticIndex.SymbolDescriptor> symbols) {
         model.declaredSymbol(node)
             .filter(symbol -> isIndexedKind(symbol.kind()))
             .ifPresent(symbol -> symbols.add(toDescriptor(path, node, symbol)));
@@ -51,7 +53,7 @@ public final class JavaProjectSemanticExtractor {
     private boolean isIndexedKind(SymbolKind symbolKind) {
         return switch (symbolKind) {
             case CLASS, INTERFACE, ENUM, ANNOTATION, RECORD,
-                 METHOD, FIELD, CONSTRUCTOR -> true;
+                METHOD, FIELD, CONSTRUCTOR -> true;
             default -> false;
         };
     }
@@ -68,8 +70,7 @@ public final class JavaProjectSemanticExtractor {
             extractSignature(container, symbol.kind()),
             path,
             isStaticDeclaration(container),
-            isTopLevelType(container, symbol.kind())
-        );
+            isTopLevelType(container, symbol.kind()));
     }
 
     private @Nullable String extractSignature(SyntaxNode node, SymbolKind kind) {
@@ -148,10 +149,10 @@ public final class JavaProjectSemanticExtractor {
     private boolean isTypeDeclaration(SyntaxNode node) {
         return switch (node.kind().id()) {
             case "JAVA_CLASS_DECLARATION",
-                 "JAVA_INTERFACE_DECLARATION",
-                 "JAVA_ENUM_DECLARATION",
-                 "JAVA_ANNOTATION_TYPE_DECLARATION",
-                 "JAVA_RECORD_DECLARATION" -> true;
+                "JAVA_INTERFACE_DECLARATION",
+                "JAVA_ENUM_DECLARATION",
+                "JAVA_ANNOTATION_TYPE_DECLARATION",
+                "JAVA_RECORD_DECLARATION" -> true;
             default -> false;
         };
     }
@@ -177,8 +178,7 @@ public final class JavaProjectSemanticExtractor {
             imports.add(new JavaProjectSemanticIndex.ImportDescriptor(
                 qualifiedName,
                 isStatic,
-                isWildcard
-            ));
+                isWildcard));
         }
 
         return List.copyOf(imports);

@@ -302,7 +302,8 @@ public class JdepsCLIBuilder implements CLIBuilder<Process, JdepsCLIBuilder> {
     }
 
     /**
-     * Generates a {@code module-info.java} file in the specified directory. Corresponds to the {@code --generate-module-info} option.
+     * Generates a {@code module-info.java} file in the specified directory. Corresponds to the
+     * {@code --generate-module-info} option.
      *
      * @param directory The output directory.
      * @return This builder instance.
@@ -314,7 +315,8 @@ public class JdepsCLIBuilder implements CLIBuilder<Process, JdepsCLIBuilder> {
     }
 
     /**
-     * Generates an {@code open module} declaration in the specified directory. Corresponds to the {@code --generate-open-module} option.
+     * Generates an {@code open module} declaration in the specified directory. Corresponds to the
+     * {@code --generate-open-module} option.
      *
      * @param directory The output directory.
      * @return This builder instance.

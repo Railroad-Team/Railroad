@@ -12,7 +12,7 @@ public record FileEvent(Document file, EventType eventType) implements Event {
     /**
      * Constructs a new FileEvent.
      *
-     * @param file  The file associated with this event. Must not be null.
+     * @param file The file associated with this event. Must not be null.
      * @param eventType The type of file event (e.g., OPENED, CLOSED, SAVED, etc.). Must not be null.
      * @throws IllegalArgumentException if file or eventType is null.
      */
@@ -82,11 +82,6 @@ public record FileEvent(Document file, EventType eventType) implements Event {
      * Enum representing the different types of file events.
      */
     public enum EventType {
-        OPENED,
-        CLOSED,
-        SAVED,
-        DELETED,
-        ACTIVATED,
-        DEACTIVATED
+        OPENED, CLOSED, SAVED, DELETED, ACTIVATED, DEACTIVATED
     }
 }

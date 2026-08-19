@@ -244,8 +244,9 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             } else if (current == '\r') {
                 consume();
 
-                if (match('\n'))
+                if (match('\n')) {
                     consume();
+                }
 
                 newline();
                 foundWhitespace = true;
@@ -256,13 +257,14 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             } else
                 break;
 
-            if (pos < length)
+            if (pos < length) {
                 current = charAt(pos);
+            }
         }
 
-        return !foundWhitespace ?
-                null :
-                token(JavaTokenType.WHITESPACE, startOffset, startLine, startCol, TokenChannel.TRIVIA);
+        return !foundWhitespace
+            ? null
+            : token(JavaTokenType.WHITESPACE, startOffset, startLine, startCol, TokenChannel.TRIVIA);
     }
 
     private Token<JavaTokenType> readDefault() {
@@ -270,9 +272,9 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         char current = charAt(pos);
 
         if (current == '/') {
-            if (peek(1) == '/' || peek(1) == '*') {
+            if (peek(1) == '/' || peek(1) == '*')
                 return readComment();
-            } else if (peek(1) == '=') {
+            else if (peek(1) == '=') {
                 consume(2);
                 return token(JavaTokenType.SLASH_EQUALS, startOffset, startLine, startCol);
             } else {
@@ -301,11 +303,10 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         }
 
         if (JavaTokenType.SINGLE_CHAR_TOKENS.containsKey(current)) {
-            if(current == '@') {
+            if (current == '@') {
                 for (int i = 0; i < "interface ".length(); i++) {
-                    if (peek(i + 1) != "interface ".charAt(i)) {
+                    if (peek(i + 1) != "interface ".charAt(i))
                         break;
-                    }
 
                     if (i == "interface ".length() - 1) {
                         consume("interface ".length() + 1);
@@ -324,9 +325,9 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
             String lexeme = slice(startOffset, pos);
             JavaTokenType type = JavaTokenType.listKeywords().getOrDefault(lexeme, JavaTokenType.IDENTIFIER);
-            if("true".equals(lexeme) || "false".equals(lexeme)) {
+            if ("true".equals(lexeme) || "false".equals(lexeme)) {
                 type = JavaTokenType.BOOLEAN_LITERAL;
-            } else if("null".equals(lexeme)) {
+            } else if ("null".equals(lexeme)) {
                 type = JavaTokenType.NULL_LITERAL;
             }
 
@@ -338,7 +339,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
         consume();
         diagnostics.add(new LexError("Unexpected character: '" + current + "'", startOffset, startLine, startCol));
-        return token(JavaTokenType.UNKNOWN, startOffset, startLine, startCol, TokenChannel.DEFAULT, EnumSet.of(TokenFlag.ERROR));
+        return token(JavaTokenType.UNKNOWN, startOffset, startLine, startCol, TokenChannel.DEFAULT,
+            EnumSet.of(TokenFlag.ERROR));
     }
 
     private Token<JavaTokenType> readComment() {
@@ -361,7 +363,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                     char nextChar = charAt(pos);
                     if (nextChar == '*' && peek(1) == '/') {
                         consume(2);
-                        return token(isJavadoc ? JavaTokenType.JAVADOC_COMMENT : JavaTokenType.BLOCK_COMMENT, startOffset, startLine, startCol, TokenChannel.TRIVIA);
+                        return token(isJavadoc ? JavaTokenType.JAVADOC_COMMENT : JavaTokenType.BLOCK_COMMENT,
+                            startOffset, startLine, startCol, TokenChannel.TRIVIA);
                     }
 
                     if (nextChar == '\n') {
@@ -410,9 +413,9 @@ public class JavaLexer implements Lexer<JavaTokenType> {
     private Optional<Token<JavaTokenType>> readMulticharToken(char current) {
         int startOffset = pos, line = this.line, column = this.column;
         List<Map.Entry<CharSequence, JavaTokenType>> possibleTokens = JavaTokenType.MULTI_CHAR_TOKENS.get(current)
-                .stream()
-                .sorted((a, b) -> Integer.compare(b.getKey().length(), a.getKey().length()))
-                .toList();
+            .stream()
+            .sorted((a, b) -> Integer.compare(b.getKey().length(), a.getKey().length()))
+            .toList();
 
         CharSequence longestMatch = null;
         JavaTokenType matchType = null;
@@ -456,12 +459,14 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                 case 'x' -> {
                     consume();
                     number.append(next);
-                    return readIntegerLiteral(number, JavaTokenType.NUMBER_HEXADECIMAL_LITERAL, JavaLexer::isHexadecimal, startOffset, startLine, startColumn);
+                    return readIntegerLiteral(number, JavaTokenType.NUMBER_HEXADECIMAL_LITERAL,
+                        JavaLexer::isHexadecimal, startOffset, startLine, startColumn);
                 }
                 case 'b' -> {
                     consume();
                     number.append(next);
-                    return readIntegerLiteral(number, JavaTokenType.NUMBER_BINARY_LITERAL, ch -> ch == '0' || ch == '1', startOffset, startLine, startColumn);
+                    return readIntegerLiteral(number, JavaTokenType.NUMBER_BINARY_LITERAL, ch -> ch == '0' || ch == '1',
+                        startOffset, startLine, startColumn);
                 }
                 case '.' -> {
                     consume();
@@ -472,7 +477,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                     if (next >= '0' && next <= '7') {
                         type = JavaTokenType.NUMBER_OCTAL_LITERAL;
                         number.append(next);
-                        return readIntegerLiteral(number, type, ch -> ch >= '0' && ch <= '7', startOffset, startLine, startColumn);
+                        return readIntegerLiteral(number, type, ch -> ch >= '0' && ch <= '7', startOffset, startLine,
+                            startColumn);
                     }
                 }
             }
@@ -499,9 +505,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                 consume();
                 number.append(nextChar);
                 lastWasUnderscore = true;
-            } else {
+            } else
                 break;
-            }
         }
 
         if (lastWasUnderscore)
@@ -531,7 +536,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return token(type, startOffset, startLine, startColumn);
     }
 
-    private Token<JavaTokenType> readIntegerLiteral(StringBuilder text, JavaTokenType type, Predicate<Character> isCharValid, int startOffset, int startLine, int startColumn) {
+    private Token<JavaTokenType> readIntegerLiteral(StringBuilder text, JavaTokenType type,
+        Predicate<Character> isCharValid, int startOffset, int startLine, int startColumn) {
         boolean seenDigit = false, lastUnderscore = false;
         while (hasNext()) {
             char current = peek(0);
@@ -550,7 +556,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                 consume();
                 text.append(current);
                 lastUnderscore = true;
-            } else break;
+            } else
+                break;
         }
 
         if (!seenDigit)
@@ -561,9 +568,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         char current = peek(0);
         if (hasNext() && Character.toLowerCase(current) == 'l') {
             text.append(consume());
-        } else if (hasNext() && (current == 'f' || current == 'd')) {
+        } else if (hasNext() && (current == 'f' || current == 'd'))
             return errorToken("Floating suffix not allowed on non-decimal integer literal: " + text + current);
-        }
 
         if (!doesCharacterTerminateNumber(current))
             return errorToken("Invalid trailing characters after literal: " + text + current);
@@ -571,7 +577,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return token(type, startOffset, startLine, startColumn);
     }
 
-    private Token<JavaTokenType> readDecimalLiteral(StringBuilder text, int startOffset, int startLine, int startColumn) {
+    private Token<JavaTokenType> readDecimalLiteral(StringBuilder text, int startOffset, int startLine,
+        int startColumn) {
         boolean sawFracDigits = false, lastUnderscore = false;
         while (hasNext()) {
             char current = peek(0);
@@ -590,7 +597,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                 consume();
                 text.append(current);
                 lastUnderscore = true;
-            } else break;
+            } else
+                break;
         }
 
         if (lastUnderscore)
@@ -612,7 +620,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return token(JavaTokenType.NUMBER_FLOATING_POINT_LITERAL, startOffset, startLine, startColumn);
     }
 
-    private Token<JavaTokenType> readDecimalExponent(StringBuilder text, int startOffset, int startLine, int startColumn) {
+    private Token<JavaTokenType> readDecimalExponent(StringBuilder text, int startOffset, int startLine,
+        int startColumn) {
         char current = consume();
         text.append(current);
 
@@ -640,9 +649,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                 consume();
                 text.append(current);
                 lastUnderscore = true;
-            } else {
+            } else
                 break;
-            }
         }
 
         if (lastUnderscore)
@@ -692,9 +700,11 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                     int count = 1;
                     while (count < 3 && pos < length) {
                         char d = peek(0);
-                        if (d < '0' || d > '7') break;
+                        if (d < '0' || d > '7')
+                            break;
                         int next = val * 8 + (d - '0');
-                        if (next > 255) break; // cap at 255; stop before overflow
+                        if (next > 255)
+                            break; // cap at 255; stop before overflow
                         consume();
                         val = next;
                         count++;
@@ -713,7 +723,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
     }
 
     private static boolean isHexadecimal(char character) {
-        return Character.isDigit(character) || (character >= 'A' && character <= 'F') || (character >= 'a' && character <= 'f');
+        return Character.isDigit(character) || (character >= 'A' && character <= 'F')
+            || (character >= 'a' && character <= 'f');
     }
 
     private boolean hasNext() {
@@ -735,10 +746,11 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     private char consume() {
         char c = charAt(this.pos++);
-        if (c == '\n')
+        if (c == '\n') {
             newline();
-        else
+        } else {
             column++;
+        }
 
         return c;
     }
@@ -767,30 +779,35 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return token(type, startOff, startLine, startCol, TokenChannel.DEFAULT);
     }
 
-    private Token<JavaTokenType> token(JavaTokenType type, int startOff, int startLine, int startCol, TokenChannel channel) {
+    private Token<JavaTokenType> token(JavaTokenType type, int startOff, int startLine, int startCol,
+        TokenChannel channel) {
         return token(type, startOff, startLine, startCol, channel, EnumSet.noneOf(TokenFlag.class));
     }
 
-    private Token<JavaTokenType> token(JavaTokenType type, int startOff, int startLine, int startCol, TokenChannel channel, TokenFlag... flags) {
+    private Token<JavaTokenType> token(JavaTokenType type, int startOff, int startLine, int startCol,
+        TokenChannel channel, TokenFlag... flags) {
         return token(type, startOff, startLine, startCol, channel, EnumSet.copyOf(Arrays.asList(flags)));
     }
 
-    private Token<JavaTokenType> token(JavaTokenType type, int startOff, int startLine, int startCol, TokenChannel channel, Set<TokenFlag> flags) {
+    private Token<JavaTokenType> token(JavaTokenType type, int startOff, int startLine, int startCol,
+        TokenChannel channel, Set<TokenFlag> flags) {
         return new Token.SimpleToken<>(type, slice(startOff, pos), startOff, pos, startLine, startCol, channel, flags);
     }
 
-
     private Token<JavaTokenType> errorToken(String message) {
         diagnostics.add(new LexError(message, pos, line, column));
-        return new Token.SimpleToken<>(JavaTokenType.IDENTIFIER, "", pos, pos, line, column, TokenChannel.DEFAULT, EnumSet.of(TokenFlag.ERROR));
+        return new Token.SimpleToken<>(JavaTokenType.IDENTIFIER, "", pos, pos, line, column, TokenChannel.DEFAULT,
+            EnumSet.of(TokenFlag.ERROR));
     }
 
     private Token<JavaTokenType> unterminated(int startOff, int startLine, int startCol, String message) {
         diagnostics.add(new LexError(message, startOff, startLine, startCol));
-        return new Token.SimpleToken<>(JavaTokenType.STRING_LITERAL, slice(startOff, pos), startOff, pos, startLine, startCol, TokenChannel.DEFAULT, EnumSet.of(TokenFlag.INCOMPLETE, TokenFlag.ERROR));
+        return new Token.SimpleToken<>(JavaTokenType.STRING_LITERAL, slice(startOff, pos), startOff, pos, startLine,
+            startCol, TokenChannel.DEFAULT, EnumSet.of(TokenFlag.INCOMPLETE, TokenFlag.ERROR));
     }
 
     private Token<JavaTokenType> createEofToken() {
-        return new Token.SimpleToken<>(JavaTokenType.EOF, "", pos, pos, line, column, TokenChannel.DEFAULT, EnumSet.of(TokenFlag.EOF));
+        return new Token.SimpleToken<>(JavaTokenType.EOF, "", pos, pos, line, column, TokenChannel.DEFAULT,
+            EnumSet.of(TokenFlag.EOF));
     }
 }

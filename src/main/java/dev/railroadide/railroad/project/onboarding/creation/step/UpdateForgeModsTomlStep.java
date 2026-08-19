@@ -38,7 +38,8 @@ public record UpdateForgeModsTomlStep(FilesService files) implements CreationSte
         boolean hasUpdateJson = ctx.data().contains(ForgeProjectKeys.UPDATE_JSON_URL);
         boolean hasDisplayUrl = ctx.data().contains(ForgeProjectKeys.DISPLAY_URL);
         boolean hasCredits = ctx.data().contains(ProjectData.DefaultKeys.CREDITS);
-        DisplayTest displayTest = ctx.data().getAsEnum(ForgeProjectKeys.DISPLAY_TEST, DisplayTest.class, DisplayTest.MATCH_VERSION);
+        DisplayTest displayTest = ctx.data().getAsEnum(ForgeProjectKeys.DISPLAY_TEST, DisplayTest.class,
+            DisplayTest.MATCH_VERSION);
         boolean clientSideOnly = ctx.data().getAsBoolean(ForgeProjectKeys.CLIENT_SIDE_ONLY, false);
 
         List<String> lines = files.readLines(modsTomlPath);
@@ -48,7 +49,8 @@ public record UpdateForgeModsTomlStep(FilesService files) implements CreationSte
         for (int index = 0; index < lines.size(); index++) {
             String line = lines.get(index);
             if (line.startsWith("#issueTrackerURL=") && hasIssues) {
-                lines.set(index, "issueTrackerURL=\"" + ctx.data().getAsString(ProjectData.DefaultKeys.ISSUES_URL) + "\"");
+                lines.set(index,
+                    "issueTrackerURL=\"" + ctx.data().getAsString(ProjectData.DefaultKeys.ISSUES_URL) + "\"");
             } else if (line.startsWith("#updateJSONURL=") && hasUpdateJson) {
                 lines.set(index, "updateJSONURL=\"" + ctx.data().getAsString(ForgeProjectKeys.UPDATE_JSON_URL) + "\"");
             } else if (line.startsWith("#displayURL=") && hasDisplayUrl) {

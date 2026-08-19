@@ -30,15 +30,24 @@ public final class SwitchboardRepositories {
         CACHE_MANAGER = cacheManager;
     }
 
-    public static final MinecraftVersionRepository MINECRAFT = register("railroad:switchboard/minecraft", new MinecraftVersionRepository(CLIENT, CACHE_MANAGER));
-    public static final ForgeVersionRepository FORGE = register("railroad:switchboard/forge", new ForgeVersionRepository(CLIENT, CACHE_MANAGER));
-    public static final NeoforgeVersionRepository NEOFORGE = register("railroad:switchboard/neoforge", new NeoforgeVersionRepository(CLIENT, CACHE_MANAGER));
-    public static final FabricApiVersionRepository FABRIC_API = register("railroad:switchboard/fabric_api", new FabricApiVersionRepository(CLIENT, CACHE_MANAGER));
-    public static final FabricLoaderVersionRepository FABRIC_LOADER = register("railroad:switchboard/fabric_loader", new FabricLoaderVersionRepository(CLIENT, CACHE_MANAGER));
-    public static final YarnVersionRepository YARN = register("railroad:switchboard/yarn", new YarnVersionRepository(CLIENT, CACHE_MANAGER));
-    public static final MojmapVersionRepository MOJMAP = register("railroad:switchboard/mojmap", new MojmapVersionRepository(CLIENT, CACHE_MANAGER));
-    public static final McpVersionRepository MCP = register("railroad:switchboard/mcp", new McpVersionRepository(CLIENT, CACHE_MANAGER));
-    public static final ParchmentVersionRepository PARCHMENT = register("railroad:switchboard/parchment", new ParchmentVersionRepository(CLIENT, CACHE_MANAGER));
+    public static final MinecraftVersionRepository MINECRAFT = register("railroad:switchboard/minecraft",
+        new MinecraftVersionRepository(CLIENT, CACHE_MANAGER));
+    public static final ForgeVersionRepository FORGE = register("railroad:switchboard/forge",
+        new ForgeVersionRepository(CLIENT, CACHE_MANAGER));
+    public static final NeoforgeVersionRepository NEOFORGE = register("railroad:switchboard/neoforge",
+        new NeoforgeVersionRepository(CLIENT, CACHE_MANAGER));
+    public static final FabricApiVersionRepository FABRIC_API = register("railroad:switchboard/fabric_api",
+        new FabricApiVersionRepository(CLIENT, CACHE_MANAGER));
+    public static final FabricLoaderVersionRepository FABRIC_LOADER = register("railroad:switchboard/fabric_loader",
+        new FabricLoaderVersionRepository(CLIENT, CACHE_MANAGER));
+    public static final YarnVersionRepository YARN = register("railroad:switchboard/yarn",
+        new YarnVersionRepository(CLIENT, CACHE_MANAGER));
+    public static final MojmapVersionRepository MOJMAP = register("railroad:switchboard/mojmap",
+        new MojmapVersionRepository(CLIENT, CACHE_MANAGER));
+    public static final McpVersionRepository MCP = register("railroad:switchboard/mcp",
+        new McpVersionRepository(CLIENT, CACHE_MANAGER));
+    public static final ParchmentVersionRepository PARCHMENT = register("railroad:switchboard/parchment",
+        new ParchmentVersionRepository(CLIENT, CACHE_MANAGER));
 
     private SwitchboardRepositories() {
     }

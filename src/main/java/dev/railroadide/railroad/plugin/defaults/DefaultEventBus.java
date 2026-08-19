@@ -15,7 +15,8 @@ public class DefaultEventBus implements EventBus {
     @Override
     public void publish(Event event) {
         Class<?> eventType = event.getClass();
-        for (Map.Entry<Class<? extends Event>, CopyOnWriteArrayList<EventListener<? extends Event>>> entry : subscribers.entrySet()) {
+        for (Map.Entry<Class<? extends Event>, CopyOnWriteArrayList<EventListener<? extends Event>>> entry : subscribers
+            .entrySet()) {
             if (entry.getKey().isAssignableFrom(eventType)) {
                 CopyOnWriteArrayList<EventListener<? extends Event>> listeners = entry.getValue();
                 for (EventListener<? extends Event> listener : listeners) {
@@ -25,7 +26,8 @@ public class DefaultEventBus implements EventBus {
                     try {
                         typedListener.handle(event);
                     } catch (RuntimeException exception) {
-                        Railroad.LOGGER.error("Event listener failed while handling {}", eventType.getName(), exception);
+                        Railroad.LOGGER.error("Event listener failed while handling {}", eventType.getName(),
+                            exception);
                     }
                 }
             }

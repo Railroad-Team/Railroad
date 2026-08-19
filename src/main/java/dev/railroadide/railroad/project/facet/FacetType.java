@@ -1,7 +1,8 @@
 package dev.railroadide.railroad.project.facet;
 
 /**
- * Describes the type of a project facet, including its unique ID, display name, description, icon, and associated data class.
+ * Describes the type of a project facet, including its unique ID, display name, description, icon, and associated data
+ * class.
  * Used to distinguish between different kinds of facets (e.g., Java, Gradle, Fabric).
  *
  * @param <D> the type of data associated with this facet type
@@ -13,25 +14,21 @@ public record FacetType<D>(
     String iconPath,
     Class<D> dataClass) {
     public FacetType {
-        if (id == null || id.isBlank()) {
+        if (id == null || id.isBlank())
             throw new IllegalArgumentException("Facet ID cannot be null or blank");
-        }
 
-        if (name == null || name.isBlank()) {
+        if (name == null || name.isBlank())
             throw new IllegalArgumentException("Facet name cannot be null or blank");
-        }
 
         if (description == null) {
             description = "";
         }
 
-        if (iconPath != null && iconPath.isBlank()) {
+        if (iconPath != null && iconPath.isBlank())
             throw new IllegalArgumentException("Icon path cannot be blank if provided");
-        }
 
-        if (dataClass == null) {
+        if (dataClass == null)
             throw new IllegalArgumentException("Data class cannot be null");
-        }
     }
 
     /**

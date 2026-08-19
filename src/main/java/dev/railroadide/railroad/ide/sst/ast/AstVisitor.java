@@ -32,25 +32,29 @@ import dev.railroadide.railroad.ide.sst.ast.typeref.*;
  * the matching visit method.
  * <p>
  * Typical usage:
- * <pre>{@code
- * AstVisitor<Void> visitor = new AstVisitor<>() {
- *     @Override
- *     public Void visitMethodDeclaration(MethodDeclaration node) {
- *         // inspect node
- *         return null;
- *     }
  *
- *     @Override
- *     public Void visitCompilationUnit(CompilationUnit node) {
- *         for (AstNode child : node.children()) {
- *             child.accept(this);
+ * <pre>
+ * {
+ *     &#64;code
+ *     AstVisitor<Void> visitor = new AstVisitor<>() {
+ *         &#64;Override
+ *         public Void visitMethodDeclaration(MethodDeclaration node) {
+ *             // inspect node
+ *             return null;
  *         }
- *         return null;
- *     }
  *
- *     // implement remaining methods
- * };
- * }</pre>
+ *         @Override
+ *         public Void visitCompilationUnit(CompilationUnit node) {
+ *             for (AstNode child : node.children()) {
+ *                 child.accept(this);
+ *             }
+ *             return null;
+ *         }
+ *
+ *         // implement remaining methods
+ *     };
+ * }
+ * </pre>
  *
  * @param <R> result type returned by each visit method
  */

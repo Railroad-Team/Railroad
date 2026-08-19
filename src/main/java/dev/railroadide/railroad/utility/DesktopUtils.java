@@ -16,7 +16,7 @@ public class DesktopUtils {
             throw new IllegalArgumentException(url + " is not a valid URL");
 
         try {
-            URI uri = new URI(url);
+            var uri = new URI(url);
             Railroad.getHostServicess().showDocument(uri.toString());
         } catch (URISyntaxException exception) {
             throw new RuntimeException("Failed to open URL: " + url, exception);

@@ -18,11 +18,10 @@ import java.util.Optional;
  * zero or more top-level type declarations. Start AST-based analysis here.
  */
 public record CompilationUnit(
-        Span span,
-        Optional<PackageDeclaration> packageDeclaration,
-        List<ImportDeclaration> importDeclarations,
-        List<TypeDeclaration> typeDeclarations
-) implements AstNode {
+    Span span,
+    Optional<PackageDeclaration> packageDeclaration,
+    List<ImportDeclaration> importDeclarations,
+    List<TypeDeclaration> typeDeclarations) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.COMPILATION_UNIT;

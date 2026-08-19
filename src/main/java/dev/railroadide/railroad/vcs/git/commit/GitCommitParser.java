@@ -84,8 +84,7 @@ public final class GitCommitParser {
                 committerEmail,
                 committerTimestamp,
                 List.of(parentHashes),
-                null
-            );
+                null);
         }
 
         String parentHashesRaw = fields[6];

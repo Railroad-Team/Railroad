@@ -187,7 +187,7 @@ public class PluginManager {
         Path pluginPath = loadResult.pluginPath();
         PluginClassLoader classLoader = null;
         Plugin plugin = null;
-        DefaultPluginContext context = new DefaultPluginContext(descriptor, Railroad.EVENT_BUS);
+        var context = new DefaultPluginContext(descriptor, Railroad.EVENT_BUS);
         boolean pluginEnabled = false;
         List<String> registeredProviderIds = List.of();
 
@@ -195,13 +195,15 @@ public class PluginManager {
             classLoader = new PluginClassLoader(pluginPath, descriptor.getDependencies());
             Class<?> pluginClass = classLoader.loadClass(descriptor.getMainClass());
             if (!Plugin.class.isAssignableFrom(pluginClass))
-                throw new IllegalArgumentException("Main class does not implement Plugin interface: " + descriptor.getMainClass());
+                throw new IllegalArgumentException(
+                    "Main class does not implement Plugin interface: " + descriptor.getMainClass());
 
             plugin = (Plugin) pluginClass.getDeclaredConstructor().newInstance();
             plugin.onEnable(context);
             pluginEnabled = true;
 
-            registeredProviderIds = registerJavaInspectionRuleProviders(descriptor, loadJavaInspectionRuleProviders(classLoader));
+            registeredProviderIds = registerJavaInspectionRuleProviders(descriptor,
+                loadJavaInspectionRuleProviders(classLoader));
 
             loadResult.setPlugin(plugin, classLoader);
             loadResult.setJavaInspectionRuleProviderRegistrationIds(registeredProviderIds);
@@ -331,10 +333,9 @@ public class PluginManager {
             throw new IllegalArgumentException("PluginDescriptor cannot be null");
 
         return LOADED_PLUGINS.stream()
-            .anyMatch(result ->
-                result.descriptor().equals(descriptor) &&
-                    result.pluginInstance() != null &&
-                    result.classLoader() != null);
+            .anyMatch(result -> result.descriptor().equals(descriptor) &&
+                result.pluginInstance() != null &&
+                result.classLoader() != null);
     }
 
     /**
@@ -441,7 +442,7 @@ public class PluginManager {
      * Loads a resource from the specified plugin's class loader.
      * The resource path should be relative to the plugin's root.
      *
-     * @param descriptor   The PluginDescriptor of the plugin from which to load the resource.
+     * @param descriptor The PluginDescriptor of the plugin from which to load the resource.
      * @param resourcePath The path to the resource within the plugin.
      * @return An InputStream for the resource, or null if the resource is not found.
      * @throws IllegalArgumentException if the plugin or resource path is null or empty.
@@ -451,7 +452,8 @@ public class PluginManager {
             throw new IllegalArgumentException("Plugin and resource path cannot be null or empty");
 
         if (!PluginManager.isPluginEnabled(descriptor)) {
-            Railroad.LOGGER.warn("Plugin {} is not enabled, cannot load resource: {}", descriptor.getName(), resourcePath);
+            Railroad.LOGGER.warn("Plugin {} is not enabled, cannot load resource: {}", descriptor.getName(),
+                resourcePath);
             return null;
         }
 
@@ -479,7 +481,8 @@ public class PluginManager {
 
             PluginClassLoader classLoader = loadResult.classLoader();
             if (classLoader != null) {
-                InputStream resourceStream = classLoader.getResourceAsStream("assets/" + descriptor.getId() + "/" + resourcePath);
+                InputStream resourceStream = classLoader
+                    .getResourceAsStream("assets/" + descriptor.getId() + "/" + resourcePath);
                 if (resourceStream != null) {
                     resources.add(resourceStream);
                 }
@@ -504,9 +507,8 @@ public class PluginManager {
     }
 
     static List<String> registerJavaInspectionRuleProviders(
-            PluginDescriptor descriptor,
-            List<JavaInspectionRuleProvider> providers
-    ) {
+        PluginDescriptor descriptor,
+        List<JavaInspectionRuleProvider> providers) {
         Objects.requireNonNull(descriptor, "descriptor");
         if (providers == null || providers.isEmpty())
             return List.of();
@@ -519,7 +521,8 @@ public class PluginManager {
 
                 String registrationId = javaInspectionRuleProviderRegistrationId(descriptor, provider);
                 if (!registrationIds.add(registrationId))
-                    throw new IllegalArgumentException("Duplicate Java inspection rule provider registration id: " + registrationId);
+                    throw new IllegalArgumentException(
+                        "Duplicate Java inspection rule provider registration id: " + registrationId);
 
                 JavaInspectionRegistries.registerRuleProvider(registrationId, provider);
             }
@@ -537,9 +540,8 @@ public class PluginManager {
     }
 
     static String javaInspectionRuleProviderRegistrationId(
-            PluginDescriptor descriptor,
-            JavaInspectionRuleProvider provider
-    ) {
+        PluginDescriptor descriptor,
+        JavaInspectionRuleProvider provider) {
         Objects.requireNonNull(descriptor, "descriptor");
         Objects.requireNonNull(provider, "provider");
 
@@ -560,8 +562,9 @@ public class PluginManager {
         for (String registrationId : registrationIds) {
             if (registrationId == null || registrationId.isBlank())
                 continue;
-            if (JavaInspectionRegistries.containsRuleProvider(registrationId))
+            if (JavaInspectionRegistries.containsRuleProvider(registrationId)) {
                 JavaInspectionRegistries.unregisterRuleProvider(registrationId);
+            }
         }
     }
 
@@ -570,7 +573,8 @@ public class PluginManager {
 
         PluginClassLoader classLoader = loadResult.classLoader();
         loadResult.setPlugin(null, null);
-        if (classLoader != null)
+        if (classLoader != null) {
             classLoader.close();
+        }
     }
 }

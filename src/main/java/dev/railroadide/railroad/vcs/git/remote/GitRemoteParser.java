@@ -18,7 +18,9 @@ public class GitRemoteParser {
      * @return parsed remotes
      */
     public static List<GitRemote> parseRemoteUrls(List<String> lines) {
-        List<String> mutableLines = (lines == null || lines.isEmpty()) ? Collections.emptyList() : new ArrayList<>(lines);
+        List<String> mutableLines = (lines == null || lines.isEmpty())
+            ? Collections.emptyList()
+            : new ArrayList<>(lines);
         return parseRemoteUrlsInternal(mutableLines);
     }
 

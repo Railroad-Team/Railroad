@@ -38,10 +38,10 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
         setPadding(new Insets(0));
         getStyleClass().remove("background-2");
 
-        Label title = new Label("Java Inspection Rules");
+        var title = new Label("Java Inspection Rules");
         title.getStyleClass().add("section-label");
 
-        Label subtitle = new Label("Override individual rule enablement and severity, or set defaults by tag.");
+        var subtitle = new Label("Override individual rule enablement and severity, or set defaults by tag.");
         subtitle.getStyleClass().add("section-description-label");
         subtitle.setWrapText(true);
 
@@ -57,20 +57,25 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
         for (TagRow row : tagRows) {
             EnabledOverride selected = row.enabledOverride.getValue();
             Boolean value = selected == null ? null : selected.selectedValue();
-            if (value != null)
+            if (value != null) {
                 tagEnabled.put(row.tag, value);
+            }
         }
 
         for (RuleRow row : ruleRows) {
             EnabledOverride enabledSelection = row.enabledOverride.getValue();
             Boolean enabled = enabledSelection == null ? null : enabledSelection.selectedValue();
-            if (enabled != null)
+            if (enabled != null) {
                 ruleEnabled.put(row.rule.rule().id(), enabled);
+            }
 
             SeverityOverride severitySelection = row.severityOverride.getValue();
-            SemanticDiagnostic.Severity severityValue = severitySelection == null ? null : severitySelection.selectedValue();
-            if (severityValue != null)
+            SemanticDiagnostic.Severity severityValue = severitySelection == null
+                ? null
+                : severitySelection.selectedValue();
+            if (severityValue != null) {
                 severity.put(row.rule.rule().id(), severityValue);
+            }
         }
 
         return new JavaInspectionRuleSettingsState(ruleEnabled, tagEnabled, severity);
@@ -81,8 +86,9 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
         Map<String, Boolean> tagEnabled = state.tagEnabledOverrides();
         Map<String, SemanticDiagnostic.Severity> severity = state.severityOverrides();
 
-        for (TagRow row : tagRows)
+        for (TagRow row : tagRows) {
             row.enabledOverride.setValue(EnabledOverride.from(tagEnabled.get(row.tag)));
+        }
 
         for (RuleRow row : ruleRows) {
             row.enabledOverride.setValue(EnabledOverride.from(ruleEnabled.get(row.rule.rule().id())));
@@ -91,21 +97,21 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
     }
 
     private VBox buildTagsSection() {
-        RRVBox section = new RRVBox(8);
+        var section = new RRVBox(8);
         section.getStyleClass().remove("background-2");
 
-        Label header = new Label("Tag Overrides");
+        var header = new Label("Tag Overrides");
         header.getStyleClass().add("section-label");
         section.getChildren().add(header);
 
         for (String tag : collectTags()) {
-            TagRow row = new TagRow(tag);
+            var row = new TagRow(tag);
             tagRows.add(row);
             section.getChildren().add(row.container);
         }
 
         if (tagRows.isEmpty()) {
-            Label empty = new Label("No rule tags are currently registered.");
+            var empty = new Label("No rule tags are currently registered.");
             empty.getStyleClass().add("section-description-label");
             section.getChildren().add(empty);
         }
@@ -114,21 +120,21 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
     }
 
     private VBox buildRulesSection() {
-        RRVBox section = new RRVBox(8);
+        var section = new RRVBox(8);
         section.getStyleClass().remove("background-2");
 
-        Label header = new Label("Rule Overrides");
+        var header = new Label("Rule Overrides");
         header.getStyleClass().add("section-label");
 
-        RRVBox rows = new RRVBox(10);
+        var rows = new RRVBox(10);
         rows.getStyleClass().remove("background-2");
         for (RuleDescriptor rule : collectRules()) {
-            RuleRow row = new RuleRow(rule);
+            var row = new RuleRow(rule);
             ruleRows.add(row);
             rows.getChildren().add(row.container);
         }
 
-        ScrollPane scrollPane = new ScrollPane(rows);
+        var scrollPane = new ScrollPane(rows);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setPrefViewportHeight(520);
@@ -140,16 +146,16 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
 
     private static List<String> collectTags() {
         Set<String> tags = new LinkedHashSet<>();
-        for (RuleDescriptor rule : collectRules())
+        for (RuleDescriptor rule : collectRules()) {
             tags.addAll(rule.tags());
+        }
         return tags.stream().sorted().toList();
     }
 
     private static List<RuleDescriptor> collectRules() {
         List<RuleDescriptor> rules = new ArrayList<>();
         List<Map.Entry<String, JavaInspectionRuleProvider>> providers = new ArrayList<>(
-                JavaInspectionRegistries.ruleProviderEntries().entrySet()
-        );
+            JavaInspectionRegistries.ruleProviderEntries().entrySet());
         providers.sort(Map.Entry.comparingByKey());
 
         for (Map.Entry<String, JavaInspectionRuleProvider> entry : providers) {
@@ -162,8 +168,8 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
         }
 
         rules.sort(Comparator
-                .comparing(RuleDescriptor::providerId)
-                .thenComparing(rule -> rule.rule().id()));
+            .comparing(RuleDescriptor::providerId)
+            .thenComparing(rule -> rule.rule().id()));
         return List.copyOf(rules);
     }
 
@@ -183,7 +189,7 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
             this.container = new RRHBox(12);
             container.getStyleClass().remove("background-2");
 
-            Label name = new Label(tag);
+            var name = new Label(tag);
             name.getStyleClass().add("section-label");
             HBox.setHgrow(name, Priority.ALWAYS);
 
@@ -206,15 +212,16 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
             this.container = new RRVBox(6);
             container.setPadding(new Insets(12));
 
-            Label idLabel = new Label(rule.rule().id());
+            var idLabel = new Label(rule.rule().id());
             idLabel.getStyleClass().add("section-label");
 
             String providerText = "Provider: " + rule.providerId();
-            if (!rule.tags().isEmpty())
+            if (!rule.tags().isEmpty()) {
                 providerText += " | Tags: " + String.join(", ", rule.tags());
+            }
             providerText += " | Default severity: " + rule.rule().defaultSeverity().name();
 
-            Label metaLabel = new Label(providerText);
+            var metaLabel = new Label(providerText);
             metaLabel.getStyleClass().add("section-description-label");
             metaLabel.setWrapText(true);
 
@@ -226,36 +233,33 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
             severityOverride.setValue(SeverityOverride.DEFAULT);
             severityOverride.setPrefWidth(160);
 
-            RRHBox controls = new RRHBox(12);
+            var controls = new RRHBox(12);
             controls.getStyleClass().remove("background-2");
             controls.getChildren().addAll(
-                    labeledBox("Enabled", enabledOverride),
-                    labeledBox("Severity", severityOverride)
-            );
+                labeledBox("Enabled", enabledOverride),
+                labeledBox("Severity", severityOverride));
 
             container.getChildren().addAll(idLabel, metaLabel, controls, new Separator());
         }
     }
 
     private static VBox labeledBox(String labelText, Region node) {
-        Label label = new Label(labelText);
+        var label = new Label(labelText);
         label.getStyleClass().add("section-description-label");
 
-        RRVBox box = new RRVBox(4, label, node);
+        var box = new RRVBox(4, label, node);
         box.getStyleClass().remove("background-2");
         return box;
     }
 
     private static Region spacer() {
-        Region region = new Region();
+        var region = new Region();
         HBox.setHgrow(region, Priority.ALWAYS);
         return region;
     }
 
     private enum EnabledOverride {
-        DEFAULT("Default", null),
-        ENABLED("Enabled", true),
-        DISABLED("Disabled", false);
+        DEFAULT("Default", null), ENABLED("Enabled", true), DISABLED("Disabled", false);
 
         private final String label;
         private final Boolean value;
@@ -281,10 +285,8 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
     }
 
     private enum SeverityOverride {
-        DEFAULT("Default", null),
-        ERROR("Error", SemanticDiagnostic.Severity.ERROR),
-        WARNING("Warning", SemanticDiagnostic.Severity.WARNING),
-        INFO("Info", SemanticDiagnostic.Severity.INFO);
+        DEFAULT("Default", null), ERROR("Error", SemanticDiagnostic.Severity.ERROR), WARNING("Warning",
+            SemanticDiagnostic.Severity.WARNING), INFO("Info", SemanticDiagnostic.Severity.INFO);
 
         private final String label;
         private final SemanticDiagnostic.Severity value;

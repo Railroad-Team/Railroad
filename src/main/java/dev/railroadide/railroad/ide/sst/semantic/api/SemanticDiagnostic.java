@@ -10,13 +10,12 @@ import java.util.Optional;
  * Semantic-level diagnostic emitted by name resolution, type analysis, or inspections.
  */
 public record SemanticDiagnostic(
-        Severity severity,
-        String code,
-        String message,
-        int startOffset,
-        int endOffset,
-        @Nullable SyntaxNode node
-) {
+    Severity severity,
+    String code,
+    String message,
+    int startOffset,
+    int endOffset,
+    @Nullable SyntaxNode node) {
     public SemanticDiagnostic {
         severity = Objects.requireNonNull(severity, "severity");
         code = Objects.requireNonNull(code, "code");
@@ -42,8 +41,6 @@ public record SemanticDiagnostic(
      * Diagnostic severity used by the editor and inspection pipeline.
      */
     public enum Severity {
-        ERROR,
-        WARNING,
-        INFO
+        ERROR, WARNING, INFO
     }
 }

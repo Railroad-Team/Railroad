@@ -21,12 +21,11 @@ final class SimpleJavaInspectionRule implements JavaInspectionRule {
     private final Evaluator evaluator;
 
     SimpleJavaInspectionRule(
-            String id,
-            SemanticDiagnostic.Severity severity,
-            String template,
-            Set<String> tags,
-            Evaluator evaluator
-    ) {
+        String id,
+        SemanticDiagnostic.Severity severity,
+        String template,
+        Set<String> tags,
+        Evaluator evaluator) {
         this.id = Objects.requireNonNull(id, "id");
         this.severity = Objects.requireNonNull(severity, "severity");
         this.template = Objects.requireNonNull(template, "template");

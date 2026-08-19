@@ -13,7 +13,7 @@ import java.net.URI;
 import java.nio.file.Path;
 
 public record DownloadForgeMdkStep(HttpService http, FilesService files, ZipService zip,
-                                   ChecksumService checksum) implements CreationStep {
+    ChecksumService checksum) implements CreationStep {
     @Override
     public String id() {
         return "railroad:download_forge_mdk";
@@ -34,7 +34,8 @@ public record DownloadForgeMdkStep(HttpService http, FilesService files, ZipServ
 
         Path projectDir = ctx.projectDir();
 
-        String mdkUrl = "https://maven.minecraftforge.net/net/minecraftforge/forge/" + forgeVersion + "/forge-" + forgeVersion + "-mdk.zip";
+        String mdkUrl = "https://maven.minecraftforge.net/net/minecraftforge/forge/" + forgeVersion + "/forge-"
+            + forgeVersion + "-mdk.zip";
         String sha256Url = mdkUrl + ".sha256";
         Path mdkPath = projectDir.resolve("forge-mdk.zip");
         http.download(new URI(mdkUrl), mdkPath);

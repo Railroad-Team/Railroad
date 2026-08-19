@@ -30,16 +30,15 @@ public final class ImageUtils {
         PixelFormat<?> pixelFormat = image.getPixelReader().getPixelFormat();
 
         // Estimate color depth based on the PixelFormat
-        if (pixelFormat.getType() == PixelFormat.Type.INT_ARGB) {
+        if (pixelFormat.getType() == PixelFormat.Type.INT_ARGB)
             return 32; // 8 bits per channel + alpha channel
-        } else if (pixelFormat.getType() == PixelFormat.Type.BYTE_BGRA ||
-            pixelFormat.getType() == PixelFormat.Type.BYTE_BGRA_PRE) {
+        else if (pixelFormat.getType() == PixelFormat.Type.BYTE_BGRA ||
+            pixelFormat.getType() == PixelFormat.Type.BYTE_BGRA_PRE)
             return 32; // 8 bits per channel + alpha channel
-        } else if (pixelFormat.getType() == PixelFormat.Type.BYTE_RGB) {
+        else if (pixelFormat.getType() == PixelFormat.Type.BYTE_RGB)
             return 24; // 8 bits per channel, no alpha channel
-        } else if (pixelFormat.getType() == PixelFormat.Type.BYTE_INDEXED) {
-            return 8;  // Typically 8 bits for indexed color (palette-based)
-        }
+        else if (pixelFormat.getType() == PixelFormat.Type.BYTE_INDEXED)
+            return 8; // Typically 8 bits for indexed color (palette-based)
 
         // If the format is unknown or not covered above, return -1 (or any indication of unknown depth)
         return -1;
@@ -53,8 +52,10 @@ public final class ImageUtils {
      */
     public static String getColorSpace(Image image) {
         try {
-            ImageReader reader = ImageIO.getImageReadersByFormatName(image.getUrl().substring(image.getUrl().lastIndexOf('.') + 1)).next();
-            reader.setInput(ImageIO.createImageInputStream(Files.newInputStream(Path.of(URLDecoder.decode(image.getUrl().substring("file:/".length()), StandardCharsets.ISO_8859_1)))));
+            ImageReader reader = ImageIO
+                .getImageReadersByFormatName(image.getUrl().substring(image.getUrl().lastIndexOf('.') + 1)).next();
+            reader.setInput(ImageIO.createImageInputStream(Files.newInputStream(
+                Path.of(URLDecoder.decode(image.getUrl().substring("file:/".length()), StandardCharsets.ISO_8859_1)))));
             return switch (reader.getImageTypes(0).next().getColorModel().getColorSpace().getType()) {
                 case ColorSpace.TYPE_XYZ -> "XYZ";
                 case ColorSpace.TYPE_Lab -> "Lab";
@@ -130,11 +131,11 @@ public final class ImageUtils {
     /**
      * Creates a checkerboard image.
      *
-     * @param width      The width of the image.
-     * @param height     The height of the image.
+     * @param width The width of the image.
+     * @param height The height of the image.
      * @param squareSize The size of each square in the checkerboard.
-     * @param color1     The first color for the checkerboard squares.
-     * @param color2     The second color for the checkerboard squares.
+     * @param color1 The first color for the checkerboard squares.
+     * @param color2 The second color for the checkerboard squares.
      * @return A WritableImage representing the checkerboard pattern.
      */
     public static Image createCheckerboard(int width, int height, int squareSize, Color color1, Color color2) {
@@ -143,7 +144,8 @@ public final class ImageUtils {
             for (int y = 0; y < height; y += squareSize) {
                 int squareSizeX = Math.min(squareSize, width - x);
                 int squareSizeY = Math.min(squareSize, height - y);
-                fillArea(image.getPixelWriter(), x, y, x + squareSizeX, y + squareSizeY, (x / squareSize + y / squareSize) % 2 == 0 ? color1 : color2);
+                fillArea(image.getPixelWriter(), x, y, x + squareSizeX, y + squareSizeY,
+                    (x / squareSize + y / squareSize) % 2 == 0 ? color1 : color2);
             }
         }
 
@@ -168,9 +170,8 @@ public final class ImageUtils {
         PixelReader pixelReader = image.getPixelReader();
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
-                if (pixelReader.getColor(x, y).getOpacity() < 1) {
+                if (pixelReader.getColor(x, y).getOpacity() < 1)
                     return true;
-                }
             }
         }
 

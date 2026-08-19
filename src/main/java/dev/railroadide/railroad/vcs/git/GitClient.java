@@ -90,32 +90,26 @@ public class GitClient {
     public Optional<GitRepository> detectRepository(Path path) {
         GitCommand isInsideCmd = GitCommands.revParseIsInsideWorkTree(path);
         GitResult isInsideResult = runner.run(isInsideCmd, null, null, GitResultCaptureMode.TEXT_LINES);
-        if (isInsideResult.timedOut()) {
+        if (isInsideResult.timedOut())
             throw new GitExecutionException("git " + isInsideCmd.argsString() + " timed out for path: " + path);
-        }
 
-        if (isInsideResult.cancelled()) {
+        if (isInsideResult.cancelled())
             throw new GitExecutionException("git " + isInsideCmd.argsString() + " was cancelled for path: " + path);
-        }
 
         if (isInsideResult.exitCode() != 0 || !"true".equalsIgnoreCase(isInsideResult.readFirstStdoutLine()))
             return Optional.empty();
 
         GitCommand topLevelCmd = GitCommands.revParseShowTopLevel(path);
         GitResult topLevelResult = runner.run(topLevelCmd, null, null, GitResultCaptureMode.TEXT_LINES);
-        if (topLevelResult.timedOut()) {
+        if (topLevelResult.timedOut())
             throw new GitExecutionException("git " + topLevelCmd.argsString() + " timed out for path: " + path);
-        }
 
-        if (topLevelResult.cancelled()) {
+        if (topLevelResult.cancelled())
             throw new GitExecutionException("git " + topLevelCmd.argsString() + " was cancelled for path: " + path);
-        }
 
-        if (topLevelResult.exitCode() != 0) {
+        if (topLevelResult.exitCode() != 0)
             throw new GitExecutionException(
-                "git " + topLevelCmd.argsString() + " failed: " + String.join("\n", topLevelResult.stderr())
-            );
-        }
+                "git " + topLevelCmd.argsString() + " failed: " + String.join("\n", topLevelResult.stderr()));
 
         String topLevelPathStr = String.join("", topLevelResult.stdout()).trim();
         try {
@@ -252,7 +246,8 @@ public class GitClient {
      * @param progressListener consumer for parsed progress events
      * @throws GitExecutionException when command execution fails
      */
-    public void push(GitRepository repo, GitOutputListener outputListener, Consumer<GitProgressEvent> progressListener) {
+    public void push(GitRepository repo, GitOutputListener outputListener,
+        Consumer<GitProgressEvent> progressListener) {
         GitCommand cmd = GitCommands.push(repo);
 
         GitOutputListener listener = GitListeners.withProgress(outputListener, progressListener, "Push");
@@ -276,7 +271,8 @@ public class GitClient {
      * @param progressListener consumer for parsed progress events
      * @throws GitExecutionException when command execution fails
      */
-    public void pull(GitRepository repo, GitOutputListener outputListener, Consumer<GitProgressEvent> progressListener) {
+    public void pull(GitRepository repo, GitOutputListener outputListener,
+        Consumer<GitProgressEvent> progressListener) {
         GitCommand cmd = GitCommands.pull(repo);
 
         GitOutputListener listener = GitListeners.withProgress(outputListener, progressListener, "Pull");
@@ -466,7 +462,8 @@ public class GitClient {
         String userSigningKey = getUserSigningKey();
         String gpgProgram = getGpgProgramSetting();
 
-        GitSigningStatus signingStatus = GitSigningStatus.fromGitConfigValues(gpgSignSetting, gpgFormatSetting, userSigningKey, gpgProgram);
+        GitSigningStatus signingStatus = GitSigningStatus.fromGitConfigValues(gpgSignSetting, gpgFormatSetting,
+            userSigningKey, gpgProgram);
 
         String gitVersion = getGitVersion();
 
@@ -599,7 +596,8 @@ public class GitClient {
         }
 
         if (result.exitCode() != 0) {
-            GitLog.LOGGER.warn("git rev-parse failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git rev-parse failed for repository at {}: {}", repo.root(),
+                String.join("\n", result.stderr()));
             return null;
         }
 
@@ -629,16 +627,16 @@ public class GitClient {
         }
 
         if (result.exitCode() != 0) {
-            GitLog.LOGGER.warn("git tag failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git tag failed for repository at {}: {}", repo.root(),
+                String.join("\n", result.stderr()));
             return List.of();
         }
 
         String stdout = result.readAllStdout().trim();
-        if (stdout.isEmpty()) {
+        if (stdout.isEmpty())
             return List.of();
-        } else {
+        else
             return List.of(stdout.split("\n"));
-        }
     }
 
     /**
@@ -662,7 +660,8 @@ public class GitClient {
         }
 
         if (result.exitCode() != 0) {
-            GitLog.LOGGER.warn("git show-ref failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git show-ref failed for repository at {}: {}", repo.root(),
+                String.join("\n", result.stderr()));
             return Map.of();
         }
 
@@ -701,16 +700,16 @@ public class GitClient {
         }
 
         if (result.exitCode() != 0) {
-            GitLog.LOGGER.warn("git branch failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git branch failed for repository at {}: {}", repo.root(),
+                String.join("\n", result.stderr()));
             return List.of();
         }
 
         String stdout = result.readAllStdout().trim();
-        if (stdout.isEmpty()) {
+        if (stdout.isEmpty())
             return List.of();
-        } else {
+        else
             return List.of(stdout.split("\n"));
-        }
     }
 
     /**
@@ -734,16 +733,16 @@ public class GitClient {
         }
 
         if (result.exitCode() != 0) {
-            GitLog.LOGGER.warn("git branch --list failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git branch --list failed for repository at {}: {}", repo.root(),
+                String.join("\n", result.stderr()));
             return List.of();
         }
 
         String stdout = result.readAllStdout().trim();
-        if (stdout.isEmpty()) {
+        if (stdout.isEmpty())
             return List.of();
-        } else {
+        else
             return List.of(stdout.split("\n"));
-        }
     }
 
     /**
@@ -767,16 +766,16 @@ public class GitClient {
         }
 
         if (result.exitCode() != 0) {
-            GitLog.LOGGER.warn("git branch -r failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git branch -r failed for repository at {}: {}", repo.root(),
+                String.join("\n", result.stderr()));
             return List.of();
         }
 
         String stdout = result.readAllStdout().trim();
-        if (stdout.isEmpty()) {
+        if (stdout.isEmpty())
             return List.of();
-        } else {
+        else
             return List.of(stdout.split("\n"));
-        }
     }
 
     /**
@@ -801,14 +800,15 @@ public class GitClient {
         }
 
         if (result.exitCode() != 0) {
-            GitLog.LOGGER.warn("git shortlog failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git shortlog failed for repository at {}: {}", repo.root(),
+                String.join("\n", result.stderr()));
             return List.of();
         }
 
         String stdout = result.readAllStdout().trim();
-        if (stdout.isEmpty()) {
+        if (stdout.isEmpty())
             return List.of();
-        } else {
+        else {
             String[] lines = stdout.split("\n");
             return GitAuthor.parseAuthorsFromShortlogLines(lines, includeEmail);
         }
@@ -835,7 +835,8 @@ public class GitClient {
         }
 
         if (result.exitCode() != 0) {
-            GitLog.LOGGER.warn("git rev-list failed for repository at {}: {}", repo.root(), String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git rev-list failed for repository at {}: {}", repo.root(),
+                String.join("\n", result.stderr()));
             return 0L;
         }
 
@@ -993,7 +994,7 @@ public class GitClient {
             long createdAtEpochSeconds = 0L;
             try {
                 createdAtEpochSeconds = Long.parseLong(parts[2]);
-            } catch (NumberFormatException ignored) {
+            } catch (NumberFormatException _) {
             }
 
             String branch = "";
@@ -1017,7 +1018,8 @@ public class GitClient {
                 GitLog.LOGGER.debug("Failed to load stash additions/deletions for {}", parts[0], exception);
             }
 
-            stashes.add(new GitStashEntry(parts[0], branch, parts[1], createdAtEpochSeconds, message, additions, deletions));
+            stashes.add(
+                new GitStashEntry(parts[0], branch, parts[1], createdAtEpochSeconds, message, additions, deletions));
         }
 
         return stashes;
@@ -1088,7 +1090,7 @@ public class GitClient {
 
         List<String> records = result.stdout();
         List<GitFileChange> changes = new ArrayList<>();
-        for (int i = 0; i < records.size(); ) {
+        for (int i = 0; i < records.size();) {
             String statusToken = records.get(i++);
             if (statusToken == null || statusToken.isBlank())
                 continue;
@@ -1107,8 +1109,7 @@ public class GitClient {
                     repo.root().resolve(newPath).normalize(),
                     oldPath == null || oldPath.isBlank() ? null : repo.root().resolve(oldPath).normalize(),
                     status,
-                    ' '
-                ));
+                    ' '));
                 continue;
             }
 
@@ -1122,8 +1123,7 @@ public class GitClient {
             changes.add(new GitFileChange(
                 repo.root().resolve(path).normalize(),
                 status,
-                ' '
-            ));
+                ' '));
         }
 
         return changes;
@@ -1152,7 +1152,8 @@ public class GitClient {
         }
 
         if (result.exitCode() != 0) {
-            GitLog.LOGGER.warn("git stash diff failed for {} in {}: {}", filePath, stashRef, String.join("\n", result.stderr()));
+            GitLog.LOGGER.warn("git stash diff failed for {} in {}: {}", filePath, stashRef,
+                String.join("\n", result.stderr()));
             return Optional.empty();
         }
 
@@ -1370,7 +1371,8 @@ public class GitClient {
      * @param overwrite whether overwrite is allowed
      * @throws GitExecutionException when command execution fails
      */
-    public void createTag(GitRepository repo, String tagName, String hash, @Nullable String message, boolean overwrite) {
+    public void createTag(GitRepository repo, String tagName, String hash, @Nullable String message,
+        boolean overwrite) {
         GitCommand cmd = GitCommands.createTag(repo, tagName, hash, message, overwrite);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
         if (result.timedOut())
@@ -1419,15 +1421,14 @@ public class GitClient {
         if (result.cancelled())
             throw new GitExecutionException("git cherry-pick was cancelled");
 
-        if (result.exitCode() == 0) {
+        if (result.exitCode() == 0)
             return CherryPickResult.SUCCESS;
-        } else {
+        else {
             String stderr = String.join("\n", result.stderr());
-            if (stderr.contains("could not apply")) {
+            if (stderr.contains("could not apply"))
                 return CherryPickResult.CONFLICTS;
-            } else {
+            else
                 throw new GitExecutionException("git cherry-pick failed: " + stderr);
-            }
         }
     }
 
@@ -1700,7 +1701,8 @@ public class GitClient {
             throw new GitExecutionException("git branch --set-upstream-to was cancelled");
 
         if (result.exitCode() != 0)
-            throw new GitExecutionException("git branch --set-upstream-to failed: " + String.join("\n", result.stderr()));
+            throw new GitExecutionException(
+                "git branch --set-upstream-to failed: " + String.join("\n", result.stderr()));
     }
 
     /**
@@ -1720,7 +1722,8 @@ public class GitClient {
             throw new GitExecutionException("git branch --unset-upstream was cancelled");
 
         if (result.exitCode() != 0)
-            throw new GitExecutionException("git branch --unset-upstream failed: " + String.join("\n", result.stderr()));
+            throw new GitExecutionException(
+                "git branch --unset-upstream failed: " + String.join("\n", result.stderr()));
     }
 
     /**
@@ -1788,11 +1791,10 @@ public class GitClient {
             throw new GitExecutionException("git remote get-url failed: " + String.join("\n", result.stderr()));
 
         String stdout = result.readAllStdout().trim();
-        if (stdout.isEmpty()) {
+        if (stdout.isEmpty())
             return List.of();
-        } else {
+        else
             return List.of(stdout.split("\n"));
-        }
     }
 
     /**
@@ -1845,7 +1847,8 @@ public class GitClient {
                 throw new GitExecutionException("git remote rename was cancelled");
 
             if (renameRemoteResult.exitCode() != 0)
-                throw new GitExecutionException("git remote rename failed: " + String.join("\n", renameRemoteResult.stderr()));
+                throw new GitExecutionException(
+                    "git remote rename failed: " + String.join("\n", renameRemoteResult.stderr()));
 
             effectiveName = newName;
         }
@@ -1872,7 +1875,8 @@ public class GitClient {
             throw new GitExecutionException("git remote remove was cancelled");
 
         if (removeRemoteResult.exitCode() != 0)
-            throw new GitExecutionException("git remote remove failed: " + String.join("\n", removeRemoteResult.stderr()));
+            throw new GitExecutionException(
+                "git remote remove failed: " + String.join("\n", removeRemoteResult.stderr()));
     }
 
     private void setRemoteFetchUrl(GitRepository repo, String name, String fetchUrl) {
@@ -1886,7 +1890,8 @@ public class GitClient {
             throw new GitExecutionException("git remote set-url was cancelled");
 
         if (setFetchUrlResult.exitCode() != 0)
-            throw new GitExecutionException("git remote set-url failed: " + String.join("\n", setFetchUrlResult.stderr()));
+            throw new GitExecutionException(
+                "git remote set-url failed: " + String.join("\n", setFetchUrlResult.stderr()));
     }
 
     private void setRemotePushUrl(GitRepository repo, String name, String pushUrl) {
@@ -1900,7 +1905,8 @@ public class GitClient {
             throw new GitExecutionException("git remote set-url --push was cancelled");
 
         if (setPushUrlResult.exitCode() != 0)
-            throw new GitExecutionException("git remote set-url --push failed: " + String.join("\n", setPushUrlResult.stderr()));
+            throw new GitExecutionException(
+                "git remote set-url --push failed: " + String.join("\n", setPushUrlResult.stderr()));
     }
 
     /**
@@ -1936,7 +1942,8 @@ public class GitClient {
      * @param progressListener parsed progress listener
      * @throws GitExecutionException when command execution fails
      */
-    public void fetchAllRemotes(GitRepository repo, GitOutputListener rawListener, Consumer<GitProgressEvent> progressListener) {
+    public void fetchAllRemotes(GitRepository repo, GitOutputListener rawListener,
+        Consumer<GitProgressEvent> progressListener) {
         GitCommand cmd = GitCommands.fetchAllRemotes(repo);
 
         GitOutputListener listener = GitListeners.withProgress(rawListener, progressListener, "Fetch");
@@ -1960,7 +1967,8 @@ public class GitClient {
      * @param progressListener parsed progress listener
      * @throws GitExecutionException when command execution fails
      */
-    public void pruneAllRemotes(GitRepository repo, GitOutputListener rawListener, Consumer<GitProgressEvent> progressListener) {
+    public void pruneAllRemotes(GitRepository repo, GitOutputListener rawListener,
+        Consumer<GitProgressEvent> progressListener) {
         GitCommand cmd = GitCommands.pruneAllRemotes(repo);
 
         GitOutputListener listener = GitListeners.withProgress(rawListener, progressListener, "Prune");
@@ -2172,9 +2180,8 @@ public class GitClient {
             cmd = GitCommands.setPullRebase(repository, true);
         } else if (strategy == GitPullStrategy.FAST_FORWARD_ONLY) {
             cmd = GitCommands.setPullFastForwardOnly(repository, true);
-        } else {
+        } else
             throw new IllegalArgumentException("Unsupported pull strategy: " + strategy);
-        }
 
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
 

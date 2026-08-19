@@ -14,13 +14,13 @@ class JavaSyntaxParserTest {
     @Test
     void roundTripsSourceTextFromSyntaxTree() {
         String source = """
-                package demo;
-                import java.util.List;
-                // keep this comment
-                class A {
-                    int x = 1;
-                }
-                """;
+            package demo;
+            import java.util.List;
+            // keep this comment
+            class A {
+                int x = 1;
+            }
+            """;
 
         SyntaxTree tree = JavaSyntaxParser.parse(source);
         assertEquals(source, JavaParserTestSupport.syntaxText(tree));
@@ -29,11 +29,11 @@ class JavaSyntaxParserTest {
     @Test
     void includesExpectedTopLevelStructureKinds() {
         String source = """
-                package demo;
-                import java.util.List;
-                class A {}
-                record R(int x) {}
-                """;
+            package demo;
+            import java.util.List;
+            class A {}
+            record R(int x) {}
+            """;
 
         SyntaxTree tree = JavaSyntaxParser.parse(source);
         List<String> topLevelKinds = tree.root().children().stream().map(node -> node.kind().id()).toList();
@@ -57,28 +57,28 @@ class JavaSyntaxParserTest {
     @Test
     void incrementalParseReusesTailForInTypeEdit() {
         String oldSource = """
-                package demo;
-                import java.util.List;
-                class A {
-                    int x = 1;
-                }
-                class B {}
-                """;
+            package demo;
+            import java.util.List;
+            class A {
+                int x = 1;
+            }
+            class B {}
+            """;
         String newSource = """
-                package demo;
-                import java.util.List;
-                class A {
-                    int x = 12;
-                }
-                class B {}
-                """;
+            package demo;
+            import java.util.List;
+            class A {
+                int x = 12;
+            }
+            class B {}
+            """;
 
         int editStart = oldSource.indexOf("1;");
-        JavaSyntaxParser.TextEdit edit = new JavaSyntaxParser.TextEdit(editStart, 1, "12");
+        var edit = new JavaSyntaxParser.TextEdit(editStart, 1, "12");
         SyntaxTree previousTree = JavaSyntaxParser.parse(oldSource);
 
-        JavaSyntaxParser.IncrementalParseResult result =
-                JavaSyntaxParser.parseIncremental(previousTree, oldSource, newSource, edit);
+        JavaSyntaxParser.IncrementalParseResult result = JavaSyntaxParser.parseIncremental(previousTree, oldSource,
+            newSource, edit);
 
         assertFalse(result.fullReparse());
         assertTrue(result.reusePlan().candidates().size() > 0);
@@ -88,22 +88,22 @@ class JavaSyntaxParserTest {
     @Test
     void incrementalParseFallsBackForImportEdit() {
         String oldSource = """
-                package demo;
-                import java.util.List;
-                class A {}
-                """;
+            package demo;
+            import java.util.List;
+            class A {}
+            """;
         String newSource = """
-                package demo;
-                import java.util.ArrayList;
-                class A {}
-                """;
+            package demo;
+            import java.util.ArrayList;
+            class A {}
+            """;
 
         int editStart = oldSource.indexOf("List");
-        JavaSyntaxParser.TextEdit edit = new JavaSyntaxParser.TextEdit(editStart, 4, "ArrayList");
+        var edit = new JavaSyntaxParser.TextEdit(editStart, 4, "ArrayList");
         SyntaxTree previousTree = JavaSyntaxParser.parse(oldSource);
 
-        JavaSyntaxParser.IncrementalParseResult result =
-                JavaSyntaxParser.parseIncremental(previousTree, oldSource, newSource, edit);
+        JavaSyntaxParser.IncrementalParseResult result = JavaSyntaxParser.parseIncremental(previousTree, oldSource,
+            newSource, edit);
 
         assertTrue(result.fullReparse());
         assertEquals(newSource, JavaParserTestSupport.syntaxText(result.tree()));

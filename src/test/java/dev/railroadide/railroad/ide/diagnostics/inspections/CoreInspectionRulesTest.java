@@ -23,12 +23,14 @@ class CoreInspectionRulesTest {
     @Test
     void coreProvidersExposeExpectedRuleIds() {
         assertRuleIds(new CoreDuplicateDeclarationInspection(), Set.of("SEM_DUPLICATE_DECLARATION"));
-        assertRuleIds(new CoreImportInspection(), Set.of("SEM_DUPLICATE_IMPORT", "SEM_AMBIGUOUS_IMPORT", "SEM_UNRESOLVED_IMPORT"));
+        assertRuleIds(new CoreImportInspection(),
+            Set.of("SEM_DUPLICATE_IMPORT", "SEM_AMBIGUOUS_IMPORT", "SEM_UNRESOLVED_IMPORT"));
         assertRuleIds(new CoreNameResolutionInspection(), Set.of("SEM_UNRESOLVED_NAME", "SEM_AMBIGUOUS_NAME"));
         assertRuleIds(new CoreTypeResolutionInspection(), Set.of("SEM_UNRESOLVED_TYPE"));
         assertRuleIds(new CoreMemberResolutionInspection(), Set.of("SEM_UNRESOLVED_MEMBER"));
         assertRuleIds(new CoreCallResolutionInspection(), Set.of("SEM_UNRESOLVED_CALL"));
-        assertRuleIds(new CoreAccessibilityInspection(), Set.of("SEM_INACCESSIBLE_TYPE", "SEM_INACCESSIBLE_MEMBER", "SEM_INACCESSIBLE_CALL"));
+        assertRuleIds(new CoreAccessibilityInspection(),
+            Set.of("SEM_INACCESSIBLE_TYPE", "SEM_INACCESSIBLE_MEMBER", "SEM_INACCESSIBLE_CALL"));
         assertRuleIds(new CoreInheritanceInspection(), Set.of(
             "SEM_INVALID_INHERITANCE",
             "SEM_MISSING_IMPLEMENTATION",
@@ -42,14 +44,17 @@ class CoreInspectionRulesTest {
             "SEM_UNREACHABLE_CATCH",
             "SEM_INVALID_EXCEPTION_TYPE",
             "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE"));
-        assertRuleIds(new CoreDefiniteAssignmentInspection(), Set.of("SEM_UNASSIGNED_VARIABLE", "SEM_ILLEGAL_FINAL_ASSIGNMENT", "SEM_UNINITIALIZED_FINAL_FIELD"));
+        assertRuleIds(new CoreDefiniteAssignmentInspection(),
+            Set.of("SEM_UNASSIGNED_VARIABLE", "SEM_ILLEGAL_FINAL_ASSIGNMENT", "SEM_UNINITIALIZED_FINAL_FIELD"));
         assertRuleIds(new CoreAssignmentInspection(), Set.of("SEM_INCOMPATIBLE_ASSIGNMENT"));
         assertRuleIds(new CoreNegativeHexIntInLongContextInspection(), Set.of("SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT"));
         assertRuleIds(new CoreOverlyStrongTypeCastInspection(), Set.of("SEM_OVERLY_STRONG_TYPE_CAST"));
-        assertRuleIds(new CoreCastConflictingWithInstanceofInspection(), Set.of("SEM_CAST_CONFLICTING_WITH_INSTANCEOF"));
+        assertRuleIds(new CoreCastConflictingWithInstanceofInspection(),
+            Set.of("SEM_CAST_CONFLICTING_WITH_INSTANCEOF"));
         assertRuleIds(new CoreWildcardImportInspection(), Set.of("SEM_WILDCARD_IMPORT"));
         assertRuleIds(new CoreEmptyCatchInspection(), Set.of("SEM_EMPTY_CATCH"));
-        assertRuleIds(new CorePublicClassNotNamedAfterFileInspection(), Set.of("SEM_PUBLIC_CLASS_NOT_NAMED_AFTER_FILE"));
+        assertRuleIds(new CorePublicClassNotNamedAfterFileInspection(),
+            Set.of("SEM_PUBLIC_CLASS_NOT_NAMED_AFTER_FILE"));
         assertRuleIds(new CoreLowerCaseClassNameInspection(), Set.of("SEM_LOWERCASE_CLASS_NAME"));
         assertRuleIds(new CoreMethodNamedTODOInspection(), Set.of("SEM_METHOD_NAMED_TODO"));
         assertRuleIds(new CoreMethodNamedUnderscoreInspection(), Set.of("SEM_METHOD_NAMED_UNDERSCORE"));
@@ -61,20 +66,26 @@ class CoreInspectionRulesTest {
         assertRuleIds(new CoreFieldNameSameAsClassInspection(), Set.of("SEM_FIELD_NAME_SAME_AS_CLASS_NAME"));
         assertRuleIds(new CoreParameterNamedUnderscoreInspection(), Set.of("SEM_PARAMETER_NAME_UNDERSCORE"));
         assertRuleIds(new CoreUnreachableCodeInspection(), Set.of("SEM_UNREACHABLE_CODE"));
-        assertRuleIds(new CoreAssertionCanBeReplacedWithIfStatementInspection(), Set.of("SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT"));
+        assertRuleIds(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            Set.of("SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT"));
         assertRuleIds(new CoreAssertionWithSideEffectsInspection(), Set.of("SEM_ASSERTION_WITH_SIDE_EFFECTS"));
-        assertRuleIds(new CoreFeatureEnvyInspection(), Set.of("SEM_FEATURE_ENVY_MANIPULATE", "SEM_FEATURE_ENVY_TIGHTLY_COUPLED"));
+        assertRuleIds(new CoreFeatureEnvyInspection(),
+            Set.of("SEM_FEATURE_ENVY_MANIPULATE", "SEM_FEATURE_ENVY_TIGHTLY_COUPLED"));
         assertRuleIds(new CoreInitializationInspection(), Set.of(
             "SEM_OVERRIDABLE_METHOD_DURING_CONSTRUCTION",
             "SEM_OVERRIDDEN_METHOD_DURING_CONSTRUCTION"));
-        assertRuleIds(new CoreThisReferenceEscapedObjectConstructionInspection(), Set.of("SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION"));
+        assertRuleIds(new CoreThisReferenceEscapedObjectConstructionInspection(),
+            Set.of("SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION"));
         assertRuleIds(new CoreFieldCanBeLocalVariableInspection(), Set.of("SEM_FIELD_CAN_BE_LOCAL_VARIABLE"));
         assertRuleIds(new CoreFunctionalInterfaceInspection(), Set.of("SEM_INTERFACE_SHOULD_BE_FUNCTIONAL"));
-        assertRuleIds(new CoreOptionalGetWithoutIsPresentCheckInspection(), Set.of("SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK"));
-        assertRuleIds(new CoreAutoCloseableWithoutTryWithResourcesInspection(), Set.of("SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES"));
+        assertRuleIds(new CoreOptionalGetWithoutIsPresentCheckInspection(),
+            Set.of("SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK"));
+        assertRuleIds(new CoreAutoCloseableWithoutTryWithResourcesInspection(),
+            Set.of("SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES"));
         assertRuleIds(new CoreInfiniteRecursionInspection(), Set.of("SEM_INFINITE_RECURSION"));
         assertRuleIds(new CoreBigDecimalEqualsInspection(), Set.of("SEM_BIG_DECIMAL_EQUALS"));
-        assertRuleIds(new CoreSerializableClassWithUnconstructableAncestorInspection(), Set.of("SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR"));
+        assertRuleIds(new CoreSerializableClassWithUnconstructableAncestorInspection(),
+            Set.of("SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR"));
         assertRuleIds(new CoreRedundantInterfaceDeclarationInspection(), Set.of("SEM_REDUNDANT_INTERFACE_DECLARATION"));
     }
 
@@ -129,13 +140,15 @@ class CoreInspectionRulesTest {
 
     @Test
     void corePublicClassNotNamedAfterFileRuleEmitsDiagnostic() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CorePublicClassNotNamedAfterFileInspection(), Path.of("Example.java"), """
-            public class Wrong {
-            }
-            """);
+        List<SemanticDiagnostic> diagnostics = runProvider(new CorePublicClassNotNamedAfterFileInspection(),
+            Path.of("Example.java"), """
+                public class Wrong {
+                }
+                """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_PUBLIC_CLASS_NOT_NAMED_AFTER_FILE".equals(d.code())));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("Public class 'Wrong' must be declared in a file named 'Example.java'")));
+        assertTrue(diagnostics.stream().anyMatch(
+            d -> d.message().contains("Public class 'Wrong' must be declared in a file named 'Example.java'")));
     }
 
     @Test
@@ -555,93 +568,107 @@ class CoreInspectionRulesTest {
 
     @Test
     void coreAssertionRuleEmitsDiagnosticForPublicMethod() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            class Example {
-                public void run(int value) {
-                    assert value > 0;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                class Example {
+                    public void run(int value) {
+                        assert value > 0;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
     void coreAssertionRuleEmitsDiagnosticWhenMessagePresent() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            class Example {
-                private void validate(int value) {
-                    assert value > 0 : "value must be positive";
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                class Example {
+                    private void validate(int value) {
+                        assert value > 0 : "value must be positive";
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
     void coreAssertionRuleEmitsDiagnosticForProtectedMethod() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            class Example {
-                protected void run(int value) {
-                    assert value > 0;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                class Example {
+                    protected void run(int value) {
+                        assert value > 0;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
     void coreAssertionRuleEmitsDiagnosticForInterfaceMethod() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            interface Example {
-                default void run(int value) {
-                    assert value > 0;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                interface Example {
+                    default void run(int value) {
+                        assert value > 0;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
     void coreAssertionRuleEmitsDiagnosticForPublicConstructor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            class Example {
-                public Example(int value) {
-                    assert value > 0;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                class Example {
+                    public Example(int value) {
+                        assert value > 0;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
     void coreAssertionRuleDoesNotEmitDiagnosticForPrivateHelperWithoutMessage() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            class Example {
-                private void validate(int value) {
-                    assert value > 0;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                class Example {
+                    private void validate(int value) {
+                        assert value > 0;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
     void coreAssertionRuleDoesNotEmitDiagnosticForPackagePrivateMethodWithoutMessage() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            class Example {
-                void validate(int value) {
-                    assert value > 0;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                class Example {
+                    void validate(int value) {
+                        assert value > 0;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
@@ -961,7 +988,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INVALID_OVERRIDE".equals(d.code()) && d.message().contains("value")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_INVALID_OVERRIDE".equals(d.code()) && d.message().contains("value")));
     }
 
     @Test
@@ -972,9 +1000,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())
-                && d.message().contains("clone()")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())
+            && d.message().contains("clone()")));
     }
 
     @Test
@@ -985,8 +1012,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())));
     }
 
     @Test
@@ -997,9 +1024,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())
-                && d.message().contains("finalize()")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())
+            && d.message().contains("finalize()")));
     }
 
     @Test
@@ -1010,8 +1036,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())));
     }
 
     @Test
@@ -1026,10 +1052,9 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_OVERLY_STRONG_TYPE_CAST".equals(d.code())
-                && d.message().contains("ArrayList")
-                && d.message().contains("List")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_OVERLY_STRONG_TYPE_CAST".equals(d.code())
+            && d.message().contains("ArrayList")
+            && d.message().contains("List")));
     }
 
     @Test
@@ -1044,8 +1069,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_OVERLY_STRONG_TYPE_CAST".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_OVERLY_STRONG_TYPE_CAST".equals(d.code())));
     }
 
     @Test
@@ -1064,9 +1088,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE".equals(d.code())
-                && d.message().contains("reset()")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE".equals(d.code())
+            && d.message().contains("reset()")));
     }
 
     @Test
@@ -1086,8 +1109,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE".equals(d.code())));
     }
 
     @Test
@@ -1111,8 +1133,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE".equals(d.code())));
     }
 
     @Test
@@ -1127,10 +1148,9 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -1145,8 +1165,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -1161,8 +1180,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -1177,8 +1195,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -1193,8 +1210,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -1209,8 +1225,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -1229,8 +1244,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -1246,8 +1260,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -1264,8 +1277,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -1281,8 +1293,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -1297,10 +1308,9 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -1315,8 +1325,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -1333,10 +1342,9 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -1352,10 +1360,9 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -1371,10 +1378,9 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -1389,8 +1395,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -1405,8 +1410,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -1423,10 +1427,9 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -1441,10 +1444,9 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -1459,10 +1461,9 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -1477,8 +1478,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -1495,10 +1495,9 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -1511,7 +1510,8 @@ class CoreInspectionRulesTest {
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ILLEGAL_MODIFIER".equals(d.code())));
         assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("top-level type declarations")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'final' cannot be combined with 'volatile'")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'final' cannot be combined with 'volatile'")));
     }
 
     @Test
@@ -1526,8 +1526,10 @@ class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ILLEGAL_MODIFIER".equals(d.code())));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'abstract' cannot be combined with 'final'")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'default' is only allowed on interface methods")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'abstract' cannot be combined with 'final'")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'default' is only allowed on interface methods")));
     }
 
     @Test
@@ -1579,12 +1581,18 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'private' is not allowed on interface fields")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'protected' is not allowed on interface methods")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'final' is not allowed on interface methods")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'static' interface methods must have a body")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'private' is not allowed on annotation type elements")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on enum constructors")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'private' is not allowed on interface fields")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'protected' is not allowed on interface methods")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'final' is not allowed on interface methods")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'static' interface methods must have a body")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'private' is not allowed on annotation type elements")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on enum constructors")));
     }
 
     @Test
@@ -1597,11 +1605,14 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on record components")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'final' is not allowed on record components")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on record components")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'final' is not allowed on record components")));
         assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on parameters")));
         assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("duplicate modifier 'final'")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on local variables")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on local variables")));
     }
 
     @Test
@@ -1621,9 +1632,12 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'private' is not allowed on interface member types")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'abstract' methods are only allowed in abstract classes and interfaces")));
-        assertFalse(diagnostics.stream().anyMatch(d -> d.message().contains("'default' is only allowed on interface methods")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'private' is not allowed on interface member types")));
+        assertTrue(diagnostics.stream().anyMatch(
+            d -> d.message().contains("'abstract' methods are only allowed in abstract classes and interfaces")));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'default' is only allowed on interface methods")));
     }
 
     @Test
@@ -1650,10 +1664,13 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'break' is only allowed inside loops or switch statements")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("continue label 'outer' must target a loop")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'break' is only allowed inside loops or switch statements")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("continue label 'outer' must target a loop")));
         assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("void methods cannot return a value")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("non-void method 'value' must return a value")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("non-void method 'value' must return a value")));
     }
 
     @Test
@@ -1669,7 +1686,8 @@ class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_MISSING_RETURN".equals(d.code())));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("method 'run' must return 'int' on all paths")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("method 'run' must return 'int' on all paths")));
     }
 
     @Test
@@ -1775,9 +1793,12 @@ class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INVALID_EXCEPTION_TYPE".equals(d.code())));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("declared thrown type 'java.lang.String' must extend Throwable")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("caught type 'java.lang.String' must extend Throwable")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("Unhandled checked exception 'java.io.IOException'")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("declared thrown type 'java.lang.String' must extend Throwable")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("caught type 'java.lang.String' must extend Throwable")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("Unhandled checked exception 'java.io.IOException'")));
     }
 
     @Test
@@ -1790,7 +1811,8 @@ class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("declares disallowed exception 'java.lang.Exception'")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("declares disallowed exception 'java.lang.Exception'")));
     }
 
     @Test
@@ -1803,7 +1825,8 @@ class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("declares disallowed exception 'java.lang.RuntimeException'")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("declares disallowed exception 'java.lang.RuntimeException'")));
     }
 
     @Test
@@ -1815,7 +1838,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
     }
 
     @Test
@@ -1847,9 +1871,12 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("value")));
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(d.code()) && d.message().contains("once")));
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(d.code()) && d.message().contains("parameter")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("value")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(d.code()) && d.message().contains("once")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(d.code()) && d.message().contains("parameter")));
         assertFalse(diagnostics.stream().anyMatch(d -> d.message().contains("assignedInBranches")));
     }
 
@@ -1877,8 +1904,10 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromWhile")));
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromDoWhile")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromWhile")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromDoWhile")));
     }
 
     @Test
@@ -1906,8 +1935,10 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromLabeledBlock")));
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromLabeledLoop")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromLabeledBlock")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromLabeledLoop")));
     }
 
     @Test
@@ -1953,9 +1984,12 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("assignedValue")));
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fallthroughValue")));
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("missingDefaultValue")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("assignedValue")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fallthroughValue")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("missingDefaultValue")));
     }
 
     @Test
@@ -1980,7 +2014,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("updatedValue")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("updatedValue")));
         assertEquals(1, diagnostics.stream()
             .filter(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("updatedValue"))
             .count());
@@ -2005,7 +2040,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_UNINITIALIZED_FINAL_FIELD".equals(d.code()) && d.message().contains("value")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNINITIALIZED_FINAL_FIELD".equals(d.code()) && d.message().contains("value")));
         assertFalse(diagnostics.stream().anyMatch(d -> d.message().contains("'initialized'")));
     }
 
@@ -2021,7 +2057,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(d.code()) && d.message().contains("value")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(d.code()) && d.message().contains("value")));
     }
 
     @Test
@@ -2043,7 +2080,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNINITIALIZED_FINAL_FIELD".equals(d.code()) && d.message().contains("value")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNINITIALIZED_FINAL_FIELD".equals(d.code()) && d.message().contains("value")));
     }
 
     @Test
@@ -2061,7 +2099,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FEATURE_ENVY_MANIPULATE".equals(d.code())), "Expected SEM_FEATURE_ENVY_MANIPULATE diagnostic");
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FEATURE_ENVY_MANIPULATE".equals(d.code())),
+            "Expected SEM_FEATURE_ENVY_MANIPULATE diagnostic");
     }
 
     @Test
@@ -2081,7 +2120,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FEATURE_ENVY_TIGHTLY_COUPLED".equals(d.code())), "Expected SEM_FEATURE_ENVY_TIGHTLY_COUPLED diagnostic");
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FEATURE_ENVY_TIGHTLY_COUPLED".equals(d.code())),
+            "Expected SEM_FEATURE_ENVY_TIGHTLY_COUPLED diagnostic");
     }
 
     @Test
@@ -2252,139 +2292,156 @@ class CoreInspectionRulesTest {
 
     @Test
     void coreThisReferenceEscapedRuleEmitsDiagnosticForPassingThisToCollectionPublisher() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
-            import java.util.ArrayList;
-            import java.util.List;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
+            """
+                import java.util.ArrayList;
+                import java.util.List;
 
-            class Example {
-                private final List<Object> items = new ArrayList<>();
+                class Example {
+                    private final List<Object> items = new ArrayList<>();
 
-                Example() {
-                    items.add(this);
+                    Example() {
+                        items.add(this);
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
     }
 
     @Test
     void coreThisReferenceEscapedRuleEmitsDiagnosticForPassingThisToPublishingMethod() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
-            class Example {
-                void register(Object value) {
-                }
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
+            """
+                class Example {
+                    void register(Object value) {
+                    }
 
-                Example() {
-                    register(this);
+                    Example() {
+                        register(this);
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
     }
 
     @Test
     void coreThisReferenceEscapedRuleEmitsDiagnosticForLambdaPassedToPublishingMethod() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
-            class Example {
-                void execute(Runnable runnable) {
-                }
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
+            """
+                class Example {
+                    void execute(Runnable runnable) {
+                    }
 
-                Example() {
-                    execute(() -> System.out.println(this));
+                    Example() {
+                        execute(() -> System.out.println(this));
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
     }
 
     @Test
     void coreThisReferenceEscapedRuleEmitsDiagnosticForLambdaPassedToThreadConstructor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
-            class Example {
-                Example() {
-                    new Thread(() -> System.out.println(this));
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
+            """
+                class Example {
+                    Example() {
+                        new Thread(() -> System.out.println(this));
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
     }
 
     @Test
     void coreThisReferenceEscapedRuleEmitsDiagnosticForThisAssignedToField() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
-            class Example {
-                private static Example leaked;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
+            """
+                class Example {
+                    private static Example leaked;
 
-                Example() {
-                    leaked = this;
+                    Example() {
+                        leaked = this;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
     }
 
     @Test
     void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForPlainThisUse() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
-            class Example {
-                Example() {
-                    this.hashCode();
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
+            """
+                class Example {
+                    Example() {
+                        this.hashCode();
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
     }
 
     @Test
     void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForLocalVariableInitialization() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
-            class Example {
-                Example() {
-                    Object local = this;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
+            """
+                class Example {
+                    Example() {
+                        Object local = this;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
     }
 
     @Test
     void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForLocalMethodCall() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
-            class Example {
-                void use(Object value) {
-                }
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
+            """
+                class Example {
+                    void use(Object value) {
+                    }
 
-                Example() {
-                    use(this);
+                    Example() {
+                        use(this);
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
     }
 
     @Test
     void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForNestedLambdaThatDoesNotEscape() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(), """
-            class Example {
-                Example() {
-                    Runnable outer = () -> {
-                        Runnable inner = () -> System.out.println(this);
-                    };
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
+            """
+                class Example {
+                    Example() {
+                        Runnable outer = () -> {
+                            Runnable inner = () -> System.out.println(this);
+                        };
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION".equals(d.code())));
     }
-
 
     @Test
     void coreFieldCanBeLocalVariableRuleEmitsDiagnosticForPrivateFieldUsedOnlyInOneMethod() {
@@ -2599,9 +2656,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
-                && d.message().contains("Child")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
+            && d.message().contains("Child")));
     }
 
     @Test
@@ -2616,9 +2672,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
-                && d.message().contains("Child")));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
+            && d.message().contains("Child")));
     }
 
     @Test
@@ -2636,9 +2691,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
-                && d.message().contains("Child")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
+            && d.message().contains("Child")));
     }
 
     @Test
@@ -2654,9 +2708,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
-                && d.message().contains("Child")));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
+            && d.message().contains("Child")));
     }
 
     @Test
@@ -2669,8 +2722,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
     }
 
     @Test
@@ -2683,8 +2736,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
     }
 
     @Test
@@ -2697,8 +2750,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
     }
 
     @Test
@@ -2711,8 +2764,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
     }
 
     @Test
@@ -2725,8 +2778,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
     }
 
     @Test
@@ -2739,8 +2792,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -2753,8 +2806,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -2769,8 +2822,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -2784,8 +2837,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -2800,8 +2853,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -2817,8 +2870,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -2833,8 +2886,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -2886,8 +2939,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -2921,8 +2974,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -2941,14 +2994,14 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())
                 && d.message().contains("'if' condition is always 'true'")));
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())
                 && d.message().contains("'if' condition is always 'false'")));
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())
                 && d.message().contains("'p' is known to be 'true'")
                 && d.message().contains("always 'true'")));
     }
@@ -2981,7 +3034,9 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().noneMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())),
+        assertTrue(
+            diagnostics.stream()
+                .noneMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())),
             "while(true) should be ignored as an intentional infinite loop idiom");
     }
 
@@ -3223,7 +3278,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -3241,7 +3297,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -3261,7 +3318,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -3280,7 +3338,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -3296,7 +3355,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -3314,7 +3374,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -3334,7 +3395,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -3356,7 +3418,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -3378,7 +3441,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -3395,7 +3459,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -3417,7 +3482,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -3435,7 +3501,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -3453,7 +3520,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -3675,127 +3743,134 @@ class CoreInspectionRulesTest {
 
     @Test
     void coreSerializationRuleEmitsDiagnosticForDirectAncestorWithoutNoArgConstructor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            import java.io.Serializable;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                import java.io.Serializable;
 
-            class Base {
-                Base(int value) {}
-            }
+                class Base {
+                    Base(int value) {}
+                }
 
-            class Child extends Base implements Serializable {
-                Child() { super(1); }
-            }
-            """);
+                class Child extends Base implements Serializable {
+                    Child() { super(1); }
+                }
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
 
     @Test
     void coreSerializationRuleEmitsDiagnosticForIndirectNonSerializableAncestor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            import java.io.Serializable;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                import java.io.Serializable;
 
-            class Base {
-                Base(String value) {}
-            }
+                class Base {
+                    Base(String value) {}
+                }
 
-            class Mid extends Base implements Serializable {
-                Mid() { super("x"); }
-            }
+                class Mid extends Base implements Serializable {
+                    Mid() { super("x"); }
+                }
 
-            class Leaf extends Mid implements Serializable {
-                Leaf() {}
-            }
-            """);
+                class Leaf extends Mid implements Serializable {
+                    Leaf() {}
+                }
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
 
     @Test
     void coreSerializationRuleEmitsDiagnosticForPrivateNoArgConstructor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            import java.io.Serializable;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                import java.io.Serializable;
 
-            class Base {
-                private Base() {}
-            }
+                class Base {
+                    private Base() {}
+                }
 
-            class Child extends Base implements Serializable {
-                Child() { super(); }
-            }
-            """);
+                class Child extends Base implements Serializable {
+                    Child() { super(); }
+                }
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
 
     @Test
     void coreSerializationRuleDoesNotEmitDiagnosticForImplicitDefaultConstructor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            import java.io.Serializable;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                import java.io.Serializable;
 
-            class Base {
-            }
+                class Base {
+                }
 
-            class Child extends Base implements Serializable {
-            }
-            """);
+                class Child extends Base implements Serializable {
+                }
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
 
     @Test
     void coreSerializationRuleDoesNotEmitDiagnosticForAccessibleProtectedNoArgConstructor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            import java.io.Serializable;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                import java.io.Serializable;
 
-            class Base {
-                protected Base() {}
-            }
+                class Base {
+                    protected Base() {}
+                }
 
-            class Child extends Base implements Serializable {
-            }
-            """);
+                class Child extends Base implements Serializable {
+                }
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
 
     @Test
     void coreSerializationRuleDoesNotEmitDiagnosticForNestedAncestorImplicitPackagePrivateNoArgConstructor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            import java.io.Serializable;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                import java.io.Serializable;
 
-            class Outer {
-                static class Base {
+                class Outer {
+                    static class Base {
+                    }
                 }
-            }
 
-            class Child extends Outer.Base implements Serializable {
-            }
-            """);
+                class Child extends Outer.Base implements Serializable {
+                }
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
 
     @Test
     void coreSerializationRuleDoesNotEmitDiagnosticForNonSerializableClass() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            class Base {
-                Base(int value) {}
-            }
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                class Base {
+                    Base(int value) {}
+                }
 
-            class Child extends Base {
-                Child() { super(1); }
-            }
-            """);
+                class Child extends Base {
+                    Child() { super(1); }
+                }
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
 
     @Test
@@ -3850,7 +3925,6 @@ class CoreInspectionRulesTest {
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_REDUNDANT_INTERFACE_DECLARATION".equals(d.code())));
     }
-
 
     @Test
     void coreInheritanceRuleDoesNotEmitDiagnosticForIndependentInterfaces() {
@@ -3917,37 +3991,42 @@ class CoreInspectionRulesTest {
 
     @Test
     void coreConditionalExpressionWithIdenticalBranchesEmitsDiagnosticWhenTernaryHasSameBranch() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
-            class Example {
-                int run(boolean flag, int value) {
-                    return flag ? value : value;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
+                class Example {
+                    int run(boolean flag, int value) {
+                        return flag ? value : value;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
     }
 
     @Test
     void coreConditionalExpressionWithIdenticalBranchesDoesNotEmitDiagnosticWhenTernaryHasDifferentBranch() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
-            class Example {
-                int run(boolean flag, int valueA, int valueB) {
-                    return flag ? valueA : valueB;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
+                class Example {
+                    int run(boolean flag, int valueA, int valueB) {
+                        return flag ? valueA : valueB;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
     }
     private static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, String document) {
         return runProvider(provider, Path.of("Example.java"), document);
     }
 
-    private static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, Path filePath, String document) {
+    private static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, Path filePath,
+        String document) {
         JavaInspectionRuleSettings.resetAll();
         var model = JavaSemanticAnalyzer.analyzeFacts(document);
-        JavaRuleContext context = new JavaRuleContext(filePath, document, model);
+        var context = new JavaRuleContext(filePath, document, model);
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
         JavaInspectionReporter reporter = diagnostics::add;
         JavaInspectionRuleEngine.runRules(provider, context, reporter);

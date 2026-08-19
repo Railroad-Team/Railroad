@@ -99,7 +99,7 @@ public class JshellCLIBuilder implements CLIBuilder<Process, JshellCLIBuilder> {
     /**
      * Adds an {@code --add-exports} directive by splitting module and package arguments.
      *
-     * @param moduleName  module name
+     * @param moduleName module name
      * @param packageName package name
      * @return this builder
      */
@@ -167,7 +167,9 @@ public class JshellCLIBuilder implements CLIBuilder<Process, JshellCLIBuilder> {
      */
     public JshellCLIBuilder classPath(Path... entries) {
         Objects.requireNonNull(entries, "Classpath entries cannot be null");
-        String[] entryStrings = Arrays.stream(entries).map(path -> Objects.requireNonNull(path, "Classpath path cannot be null").toString()).toArray(String[]::new);
+        String[] entryStrings = Arrays.stream(entries)
+            .map(path -> Objects.requireNonNull(path, "Classpath path cannot be null").toString())
+            .toArray(String[]::new);
         return classPath(entryStrings);
     }
 
@@ -275,7 +277,8 @@ public class JshellCLIBuilder implements CLIBuilder<Process, JshellCLIBuilder> {
      */
     public JshellCLIBuilder modulePath(Path... modulePaths) {
         Objects.requireNonNull(modulePaths, "Module paths cannot be null");
-        String[] pathStrings = Arrays.stream(modulePaths).map(path -> Objects.requireNonNull(path, "Module path cannot be null").toString()).toArray(String[]::new);
+        String[] pathStrings = Arrays.stream(modulePaths)
+            .map(path -> Objects.requireNonNull(path, "Module path cannot be null").toString()).toArray(String[]::new);
         return modulePath(pathStrings);
     }
 
@@ -447,11 +450,7 @@ public class JshellCLIBuilder implements CLIBuilder<Process, JshellCLIBuilder> {
      */
     @Getter
     public enum FeedbackMode {
-        VERBOSE("verbose"),
-        NORMAL("normal"),
-        CONCISE("concise"),
-        SILENT("silent"),
-        CUSTOM("custom");
+        VERBOSE("verbose"), NORMAL("normal"), CONCISE("concise"), SILENT("silent"), CUSTOM("custom");
 
         private final String mode;
 

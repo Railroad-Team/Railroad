@@ -15,10 +15,13 @@ import java.util.concurrent.TimeUnit;
  * Builder that constructs {@code keytool} invocations used to create and manage keystores,
  * certificates, and related trust material.
  *
- * <p>Each helper method adds the appropriate flag to the argument list and validates
- * required data before execution.</p>
+ * <p>
+ * Each helper method adds the appropriate flag to the argument list and validates
+ * required data before execution.
+ * </p>
  *
- * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/keytool.html">keytool command documentation</a>
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/keytool.html">keytool command
+ *      documentation</a>
  */
 public class KeytoolCLIBuilder implements CLIBuilder<Process, KeytoolCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "keytool.exe" : "keytool";
@@ -1012,24 +1015,11 @@ public class KeytoolCLIBuilder implements CLIBuilder<Process, KeytoolCLIBuilder>
      */
     @Getter
     public enum KeytoolCommand {
-        CERTREQ("-certreq"),
-        CHANGE_ALIAS("-changealias"),
-        DELETE("-delete"),
-        EXPORT_CERT("-exportcert"),
-        GEN_CERT("-gencert"),
-        GEN_KEYPAIR("-genkeypair"),
-        GEN_SECKEY("-genseckey"),
-        IMPORT_CERT("-importcert"),
-        IMPORT_PASS("-importpass"),
-        IMPORT_KEYSTORE("-importkeystore"),
-        KEY_PASSWD("-keypasswd"),
-        LIST("-list"),
-        PRINT_CERT("-printcert"),
-        PRINT_CERT_REQ("-printcertreq"),
-        PRINT_CRL("-printcrl"),
-        STORE_PASSWD("-storepasswd"),
-        SHOW_INFO("-showinfo"),
-        VERSION("-version");
+        CERTREQ("-certreq"), CHANGE_ALIAS("-changealias"), DELETE("-delete"), EXPORT_CERT("-exportcert"), GEN_CERT(
+            "-gencert"), GEN_KEYPAIR("-genkeypair"), GEN_SECKEY("-genseckey"), IMPORT_CERT("-importcert"), IMPORT_PASS(
+                "-importpass"), IMPORT_KEYSTORE("-importkeystore"), KEY_PASSWD("-keypasswd"), LIST("-list"), PRINT_CERT(
+                    "-printcert"), PRINT_CERT_REQ("-printcertreq"), PRINT_CRL(
+                        "-printcrl"), STORE_PASSWD("-storepasswd"), SHOW_INFO("-showinfo"), VERSION("-version");
 
         private final String flag;
 

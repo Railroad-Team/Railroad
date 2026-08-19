@@ -46,7 +46,8 @@ public final class RunControlsPane extends RRHBox {
     private final LocalizedTooltip runButtonTooltip = new LocalizedTooltip("railroad.ide.toolbar.run.tooltip");
     private final LocalizedTooltip restartButtonTooltip = new LocalizedTooltip("railroad.ide.toolbar.restart.tooltip");
     private final LocalizedTooltip debugButtonTooltip = new LocalizedTooltip("railroad.ide.toolbar.debug.tooltip");
-    private final LocalizedTooltip debugRestartTooltip = new LocalizedTooltip("railroad.ide.toolbar.debug.restart.tooltip");
+    private final LocalizedTooltip debugRestartTooltip = new LocalizedTooltip(
+        "railroad.ide.toolbar.debug.restart.tooltip");
 
     public static Node create(Project project) {
         return new RunControlsPane(project);
@@ -65,8 +66,7 @@ public final class RunControlsPane extends RRHBox {
             runButton,
             debugButton,
             stopButton,
-            moreActionsButton
-        );
+            moreActionsButton);
     }
 
     private LocalizedComboBox<RunConfiguration<?>> createRunConfigurationsComboBox() {
@@ -90,7 +90,8 @@ public final class RunControlsPane extends RRHBox {
                 comboBox.getItems().add(null); // For "Edit Run Configurations" option
 
                 if (selectedUuid != null) {
-                    RunConfiguration<?> updatedSelection = project.getRunConfigManager().getConfigurationByUUID(selectedUuid);
+                    RunConfiguration<?> updatedSelection = project.getRunConfigManager()
+                        .getConfigurationByUUID(selectedUuid);
                     if (updatedSelection != null) {
                         comboBox.setValue(updatedSelection);
                         return;
@@ -189,7 +190,8 @@ public final class RunControlsPane extends RRHBox {
         moreActionsButton.setSquare(true);
         moreActionsButton.setButtonSize(ButtonSize.SMALL);
         moreActionsButton.setVariant(ButtonVariant.GHOST);
-        moreActionsButton.setTooltip(new LocalizedTooltip("railroad.ide.toolbar.run_configurations.more_actions.tooltip"));
+        moreActionsButton
+            .setTooltip(new LocalizedTooltip("railroad.ide.toolbar.run_configurations.more_actions.tooltip"));
         moreActionsButton.getStyleClass().addAll("toolbar-button", "more-actions-button");
         moreActionsButton.setFocusTraversable(false);
         moreActionsButton.setOnAction(_ -> {
@@ -222,9 +224,7 @@ public final class RunControlsPane extends RRHBox {
         incrementRunningConfiguration(configuration);
         updateRunControls();
 
-        var execution = debug ?
-            configuration.debug(project) :
-            configuration.run(project);
+        var execution = debug ? configuration.debug(project) : configuration.run(project);
 
         execution.whenComplete((_, throwable) -> Platform.runLater(() -> {
             if (throwable != null) {
@@ -292,8 +292,7 @@ public final class RunControlsPane extends RRHBox {
     }
 
     private void restartConfiguration(RunConfiguration<?> configuration, boolean debug) {
-        stopConfiguration(configuration).thenAccept(ignored ->
-            startConfigurationExecution(configuration, debug));
+        stopConfiguration(configuration).thenAccept(_ -> startConfigurationExecution(configuration, debug));
     }
 
     private void updateRunControls() {

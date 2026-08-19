@@ -9,10 +9,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record FieldAccessExpression(
-        Span span,
-        Expression expression,
-        NameExpression name
-) implements Expression {
+    Span span,
+    Expression expression,
+    NameExpression name) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.FIELD_ACCESS_EXPRESSION;

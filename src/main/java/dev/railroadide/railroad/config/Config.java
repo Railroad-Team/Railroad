@@ -91,7 +91,7 @@ public class Config implements JsonSerializable<JsonObject> {
 
         json.add("EnabledPlugins", enabledPluginsJson);
 
-        JsonObject inspectionRuleEnabledJson = new JsonObject();
+        var inspectionRuleEnabledJson = new JsonObject();
         for (Map.Entry<String, Boolean> entry : inspectionRuleEnabledOverrides.entrySet()) {
             if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null)
                 continue;
@@ -99,7 +99,7 @@ public class Config implements JsonSerializable<JsonObject> {
         }
         json.add("InspectionRuleEnabledOverrides", inspectionRuleEnabledJson);
 
-        JsonObject inspectionRuleTagEnabledJson = new JsonObject();
+        var inspectionRuleTagEnabledJson = new JsonObject();
         for (Map.Entry<String, Boolean> entry : inspectionRuleTagEnabledOverrides.entrySet()) {
             if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null)
                 continue;
@@ -107,9 +107,10 @@ public class Config implements JsonSerializable<JsonObject> {
         }
         json.add("InspectionRuleTagEnabledOverrides", inspectionRuleTagEnabledJson);
 
-        JsonObject inspectionRuleSeverityJson = new JsonObject();
+        var inspectionRuleSeverityJson = new JsonObject();
         for (Map.Entry<String, String> entry : inspectionRuleSeverityOverrides.entrySet()) {
-            if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null || entry.getValue().isBlank())
+            if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null
+                || entry.getValue().isBlank())
                 continue;
             inspectionRuleSeverityJson.addProperty(entry.getKey(), entry.getValue());
         }
@@ -143,8 +144,7 @@ public class Config implements JsonSerializable<JsonObject> {
         if (loadedProjects.size() != Railroad.PROJECT_MANAGER.getProjects().size()) {
             Railroad.LOGGER.warn(
                 "Removed {} duplicate project entries while loading configuration",
-                loadedProjects.size() - Railroad.PROJECT_MANAGER.getProjects().size()
-            );
+                loadedProjects.size() - Railroad.PROJECT_MANAGER.getProjects().size());
         }
 
         if (json.has("EnabledPlugins")) {
@@ -167,7 +167,8 @@ public class Config implements JsonSerializable<JsonObject> {
             if (enabledRulesElement.isJsonObject()) {
                 JsonObject enabledRulesJson = enabledRulesElement.getAsJsonObject();
                 for (Map.Entry<String, JsonElement> entry : enabledRulesJson.entrySet()) {
-                    if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null || !entry.getValue().isJsonPrimitive())
+                    if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null
+                        || !entry.getValue().isJsonPrimitive())
                         continue;
                     inspectionRuleEnabledOverrides.put(entry.getKey(), entry.getValue().getAsBoolean());
                 }
@@ -179,7 +180,8 @@ public class Config implements JsonSerializable<JsonObject> {
             if (enabledTagsElement.isJsonObject()) {
                 JsonObject enabledTagsJson = enabledTagsElement.getAsJsonObject();
                 for (Map.Entry<String, JsonElement> entry : enabledTagsJson.entrySet()) {
-                    if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null || !entry.getValue().isJsonPrimitive())
+                    if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null
+                        || !entry.getValue().isJsonPrimitive())
                         continue;
                     inspectionRuleTagEnabledOverrides.put(entry.getKey(), entry.getValue().getAsBoolean());
                 }
@@ -191,7 +193,8 @@ public class Config implements JsonSerializable<JsonObject> {
             if (severityElement.isJsonObject()) {
                 JsonObject severityJson = severityElement.getAsJsonObject();
                 for (Map.Entry<String, JsonElement> entry : severityJson.entrySet()) {
-                    if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null || !entry.getValue().isJsonPrimitive())
+                    if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null
+                        || !entry.getValue().isJsonPrimitive())
                         continue;
                     inspectionRuleSeverityOverrides.put(entry.getKey(), entry.getValue().getAsString());
                 }

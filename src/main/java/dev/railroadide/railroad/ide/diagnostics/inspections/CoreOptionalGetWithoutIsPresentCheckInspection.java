@@ -21,8 +21,7 @@ public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspe
         "java.util.Optional", "get",
         "java.util.OptionalDouble", "getAsDouble",
         "java.util.OptionalInt", "getAsInt",
-        "java.util.OptionalLong", "getAsLong"
-    );
+        "java.util.OptionalLong", "getAsLong");
 
     @Override
     public String id() {
@@ -37,12 +36,11 @@ public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspe
                 JavaSemanticRules.OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK.defaultSeverity(),
                 JavaSemanticRules.OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK.messageTemplate(),
                 Set.of("core", "optional", "null-safety"),
-                CoreOptionalGetWithoutIsPresentCheckInspection::reportOptionalGetWithoutIsPresentCheck
-            )
-        );
+                CoreOptionalGetWithoutIsPresentCheckInspection::reportOptionalGetWithoutIsPresentCheck));
     }
 
-    private static void reportOptionalGetWithoutIsPresentCheck(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportOptionalGetWithoutIsPresentCheck(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         Set<SyntaxNode> guardedGets = new HashSet<>();
         collectGuardedGetsFromIfStatements(context, guardedGets);
         collectGuardedGetsFromWhileStatements(context, guardedGets);
@@ -150,14 +148,16 @@ public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspe
         return null;
     }
 
-    private static void collectMatchingGetsInBranch(JavaRuleContext context, SyntaxNode body, OptionalPresenceFact fact, Set<SyntaxNode> guardedGets) {
+    private static void collectMatchingGetsInBranch(JavaRuleContext context, SyntaxNode body, OptionalPresenceFact fact,
+        Set<SyntaxNode> guardedGets) {
         if (body == null)
             return;
 
         collectMatchingGetsInBranchRecursive(context, body, fact, guardedGets);
     }
 
-    private static void collectMatchingGetsInBranchRecursive(JavaRuleContext context, SyntaxNode node, OptionalPresenceFact fact, Set<SyntaxNode> guardedGets) {
+    private static void collectMatchingGetsInBranchRecursive(JavaRuleContext context, SyntaxNode node,
+        OptionalPresenceFact fact, Set<SyntaxNode> guardedGets) {
         if (isOptionalGetInvocation(context, node)) {
             String receiverName = context.simpleReceiverName(node);
             if (fact.receiverName().equals(receiverName)) {
@@ -273,9 +273,8 @@ public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspe
         if (declaration == null)
             return null;
 
-        if (Objects.equals(JavaSyntaxKinds.VARIABLE_DECLARATOR.id(), declaration.kind().id())) {
+        if (Objects.equals(JavaSyntaxKinds.VARIABLE_DECLARATOR.id(), declaration.kind().id()))
             return normalizeOptionalTypeName(context.declaredTypeOfVariable(declaration).displayName());
-        }
 
         SyntaxNode typeReference = context.directChild(declaration, JavaSyntaxKinds.TYPE_REFERENCE.id());
         if (typeReference != null)

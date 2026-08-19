@@ -13,12 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record AnnotationTypeDeclaration(
-        Span span,
-        List<Modifier> modifiers,
-        List<Annotation> annotations,
-        NameExpression name,
-        List<AnnotationBodyDeclaration> declarations
-) implements TypeDeclaration {
+    Span span,
+    List<Modifier> modifiers,
+    List<Annotation> annotations,
+    NameExpression name,
+    List<AnnotationBodyDeclaration> declarations) implements TypeDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.ANNOTATION_TYPE_DECLARATION;

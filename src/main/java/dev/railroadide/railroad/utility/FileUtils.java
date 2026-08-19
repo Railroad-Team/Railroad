@@ -48,7 +48,7 @@ public final class FileUtils {
     /**
      * Copies the content of a URL to a file.
      *
-     * @param url  the URL to copy from
+     * @param url the URL to copy from
      * @param path the path to the file to copy to
      * @throws RuntimeException if an error occurs during copying
      */
@@ -63,9 +63,9 @@ public final class FileUtils {
     /**
      * Updates a key-value pair in a properties file.
      *
-     * @param key   the key to update
+     * @param key the key to update
      * @param value the new value for the key
-     * @param file  the properties file to update
+     * @param file the properties file to update
      * @throws IOException if an error occurs during file operations
      */
     public static void updateKeyValuePair(String key, String value, Path file) throws IOException {
@@ -87,7 +87,7 @@ public final class FileUtils {
      * Unzips a ZIP file to a specified directory.
      *
      * @param fileZip the path to the ZIP file
-     * @param dstDir  the destination directory where the contents will be extracted
+     * @param dstDir the destination directory where the contents will be extracted
      * @throws IOException if an error occurs during unzipping
      */
     public static void unzipFile(Path fileZip, Path dstDir) throws IOException {
@@ -119,7 +119,7 @@ public final class FileUtils {
      * Resolves the path for a ZIP entry to ensure it does not escape the destination directory.
      *
      * @param destinationDir the destination directory
-     * @param zipEntry       the ZIP entry to resolve
+     * @param zipEntry the ZIP entry to resolve
      * @return the resolved path for the ZIP entry
      * @throws IOException if the resolved path is outside the destination directory
      */
@@ -194,15 +194,16 @@ public final class FileUtils {
     /**
      * Checks if a directory is empty, including its subdirectories.
      *
-     * @param directory  the directory to check
-     * @param onEmpty    action to perform if the directory is empty
+     * @param directory the directory to check
+     * @param onEmpty action to perform if the directory is empty
      * @param onNotEmpty action to perform if the directory is not empty
      * @return true if the directory is empty, false otherwise
      */
     public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty, Runnable onNotEmpty) {
         try {
             if (Files.notExists(directory)) {
-                if (directory.toFile().mkdirs()) { // We use IO instead of NIO so that we block the thread until it's created
+                if (directory.toFile().mkdirs()) { // We use IO instead of NIO so that we block the thread until it's
+                                                   // created
                     onEmpty.run();
                     return true;
                 }
@@ -241,7 +242,7 @@ public final class FileUtils {
      * Checks if a directory is empty, including its subdirectories.
      *
      * @param directory the directory to check
-     * @param onEmpty   action to perform if the directory is empty
+     * @param onEmpty action to perform if the directory is empty
      * @return true if the directory is empty, false otherwise
      */
     public static boolean isDirectoryEmpty(Path directory, Runnable onEmpty) {
@@ -285,7 +286,7 @@ public final class FileUtils {
             case "doc", "docx", "odt", "rtf", "txt", "md" -> new FontIcon(FontAwesomeRegular.FILE_WORD);
             case "ppt", "pptx", "odp" -> new FontIcon(FontAwesomeRegular.FILE_POWERPOINT);
             case "html", "htm", "css", "js", "ts", "java", "py", "c", "cpp", "h", "hpp", "cs", "php", "rb", "go", "rs",
-                 "kt", "swift", "dart", "groovy", "gradle", "kts", "sh", "bat", "cmd", "ps1" ->
+                "kt", "swift", "dart", "groovy", "gradle", "kts", "sh", "bat", "cmd", "ps1" ->
                 new FontIcon(FontAwesomeRegular.FILE_CODE);
             default -> new FontIcon(FontAwesomeRegular.FILE_ALT);
         };
@@ -303,9 +304,8 @@ public final class FileUtils {
             byte[] buffer = new byte[1024];
             int read = stream.read(buffer);
             for (int i = 0; i < read; i++) {
-                if (buffer[i] == 0) {
+                if (buffer[i] == 0)
                     return true;
-                }
             }
 
             return false;
@@ -383,7 +383,6 @@ public final class FileUtils {
     private static String humanReadableByteCount(long size) {
         if (size <= 0)
             return "0 B";
-
 
         int unit = 1024;
         int exp = (int) (Math.log(size) / Math.log(unit));

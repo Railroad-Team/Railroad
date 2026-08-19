@@ -21,19 +21,22 @@ public final class JavaInspectionRegistries {
         loadInspections(ClassLoader.getSystemClassLoader(), "dev.railroadide.railroad.ide.diagnostics.inspections");
     }
 
-    // TODO: Plugins need to be able to register their own inspections, so we need to load inspections from plugin class loaders as well.
+    // TODO: Plugins need to be able to register their own inspections, so we need to load inspections from plugin class
+    // loaders as well.
     private static void loadInspections(ClassLoader classLoader, String packageName) {
         var reflections = new Reflections(
             new ConfigurationBuilder()
                 .addClassLoaders(classLoader)
                 .forPackage(packageName)
-                .setScanners(Scanners.TypesAnnotated)
-        );
+                .setScanners(Scanners.TypesAnnotated));
 
-        List<JavaInspectionRuleProvider> registeredInspections = reflections.get(Scanners.TypesAnnotated.with(RegisteredInspection.class).asClass()).stream()
+        List<JavaInspectionRuleProvider> registeredInspections = reflections
+            .get(Scanners.TypesAnnotated.with(RegisteredInspection.class).asClass()).stream()
             .filter(clazz -> {
                 if (!JavaInspectionRuleProvider.class.isAssignableFrom(clazz)) {
-                    Railroad.LOGGER.error("Class {} is annotated with @RegisteredInspection but does not implement JavaInspectionRuleProvider", clazz.getName());
+                    Railroad.LOGGER.error(
+                        "Class {} is annotated with @RegisteredInspection but does not implement JavaInspectionRuleProvider",
+                        clazz.getName());
                     return false;
                 }
 
@@ -43,8 +46,10 @@ public final class JavaInspectionRegistries {
                 try {
                     clazz.getConstructor();
                     return true;
-                } catch (NoSuchMethodException ignored) {
-                    Railroad.LOGGER.error("Class {} is annotated with @RegisteredInspection but does not have a no-arg constructor", clazz.getName());
+                } catch (NoSuchMethodException _) {
+                    Railroad.LOGGER.error(
+                        "Class {} is annotated with @RegisteredInspection but does not have a no-arg constructor",
+                        clazz.getName());
                     return false;
                 }
             })
@@ -52,7 +57,8 @@ public final class JavaInspectionRegistries {
                 try {
                     return (JavaInspectionRuleProvider) clazz.getConstructor().newInstance();
                 } catch (Exception exception) {
-                    Railroad.LOGGER.error("Failed to instantiate JavaInspectionRuleProvider class {}", clazz.getName(), exception);
+                    Railroad.LOGGER.error("Failed to instantiate JavaInspectionRuleProvider class {}", clazz.getName(),
+                        exception);
                     return null;
                 }
             })
@@ -63,7 +69,8 @@ public final class JavaInspectionRegistries {
             if (containsRuleProvider(provider.id())) {
                 JavaInspectionRuleProvider existing = getRuleProvider(provider.id());
                 String existingClassName = existing != null ? existing.getClass().getName() : "null";
-                Railroad.LOGGER.error("Duplicate JavaInspectionRuleProvider with id {}: {} and {}", provider.id(), provider.getClass().getName(), existingClassName);
+                Railroad.LOGGER.error("Duplicate JavaInspectionRuleProvider with id {}: {} and {}", provider.id(),
+                    provider.getClass().getName(), existingClassName);
                 continue;
             }
 
@@ -95,7 +102,8 @@ public final class JavaInspectionRegistries {
     }
 
     public static boolean containsRuleProvider(String id) {
-        LanguageInspectionProvider provider = LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.get(id);
+        LanguageInspectionProvider provider = LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY
+            .get(id);
         return provider instanceof JavaInspectionRuleProvider javaProvider
             && JavaLanguageSupport.LANGUAGE_ID.equals(javaProvider.languageId());
     }
@@ -112,8 +120,7 @@ public final class JavaInspectionRegistries {
                 Map.Entry::getKey,
                 entry -> (JavaInspectionRuleProvider) entry.getValue(),
                 (left, right) -> left,
-                java.util.LinkedHashMap::new
-            ));
+                java.util.LinkedHashMap::new));
     }
 
     private static JavaInspectionRuleProvider asJavaProvider(LanguageInspectionProvider provider) {

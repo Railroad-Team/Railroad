@@ -13,22 +13,22 @@ class JavaParserComparisonTest {
     @Test
     void lexerAndSyntaxTreeExposeSameTokenTextSequence() {
         String source = """
-                package demo;
-                // a comment
-                class A {
-                    int x = 1 + 2;
-                }
-                """;
+            package demo;
+            // a comment
+            class A {
+                int x = 1 + 2;
+            }
+            """;
 
         List<String> lexerLexemes = JavaParserTestSupport.lexAll(source).stream()
-                .filter(token -> !JavaParserTestSupport.isEofToken(token))
-                .map(Token::lexeme)
-                .toList();
+            .filter(token -> !JavaParserTestSupport.isEofToken(token))
+            .map(Token::lexeme)
+            .toList();
 
         List<String> syntaxLexemes = JavaParserTestSupport.collectSyntaxTokens(JavaSyntaxParser.parse(source)).stream()
-                .filter(token -> !JavaParserTestSupport.isSyntaxEofToken(token))
-                .map(SyntaxToken::text)
-                .toList();
+            .filter(token -> !JavaParserTestSupport.isSyntaxEofToken(token))
+            .map(SyntaxToken::text)
+            .toList();
 
         assertIterableEquals(lexerLexemes, syntaxLexemes);
     }

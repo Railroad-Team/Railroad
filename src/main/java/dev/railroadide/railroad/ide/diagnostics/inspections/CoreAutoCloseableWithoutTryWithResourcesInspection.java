@@ -32,15 +32,15 @@ public class CoreAutoCloseableWithoutTryWithResourcesInspection implements JavaI
                 JavaSemanticRules.AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES.defaultSeverity(),
                 JavaSemanticRules.AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES.messageTemplate(),
                 Set.of("core", "resource-management"),
-                CoreAutoCloseableWithoutTryWithResourcesInspection::reportAutoCloseableWithoutTryWithResources
-            )
-        );
+                CoreAutoCloseableWithoutTryWithResourcesInspection::reportAutoCloseableWithoutTryWithResources));
     }
 
-    private static void reportAutoCloseableWithoutTryWithResources(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportAutoCloseableWithoutTryWithResources(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         for (SyntaxNode declarator : context.nodesOfKind(JavaSyntaxKinds.VARIABLE_DECLARATOR.id())) {
             SyntaxNode declaration = declarator.parent().orElse(null);
-            if (declaration == null || !Objects.equals(declaration.kind().id(), JavaSyntaxKinds.LOCAL_VARIABLE_DECLARATION_STATEMENT.id()))
+            if (declaration == null
+                || !Objects.equals(declaration.kind().id(), JavaSyntaxKinds.LOCAL_VARIABLE_DECLARATION_STATEMENT.id()))
                 continue;
 
             if (isManagedByTryWithResources(declaration))
@@ -73,7 +73,8 @@ public class CoreAutoCloseableWithoutTryWithResourcesInspection implements JavaI
         return false;
     }
 
-    private static String autoCloseableQualifiedTypeName(JavaRuleContext context, SyntaxNode declarator, SyntaxNode initializer) {
+    private static String autoCloseableQualifiedTypeName(JavaRuleContext context, SyntaxNode declarator,
+        SyntaxNode initializer) {
         SyntaxNode declaration = declarator.parent().orElse(null);
         if (declaration != null) {
             SyntaxNode typeRef = context.directChild(declaration, JavaSyntaxKinds.TYPE_REFERENCE.id());
@@ -133,8 +134,10 @@ public class CoreAutoCloseableWithoutTryWithResourcesInspection implements JavaI
             if (methodName == null)
                 return false;
 
-            // This is a very rough heuristic and can easily produce false positives and false negatives, but it's better than nothing
-            return methodName.toLowerCase().contains("open") || methodName.toLowerCase().contains("create") || methodName.toLowerCase().contains("new") || methodName.toLowerCase().contains("get");
+            // This is a very rough heuristic and can easily produce false positives and false negatives, but it's
+            // better than nothing
+            return methodName.toLowerCase().contains("open") || methodName.toLowerCase().contains("create")
+                || methodName.toLowerCase().contains("new") || methodName.toLowerCase().contains("get");
         }
 
         if (Objects.equals(expression.kind().id(), JavaSyntaxKinds.METHOD_REFERENCE_EXPRESSION.id()) ||

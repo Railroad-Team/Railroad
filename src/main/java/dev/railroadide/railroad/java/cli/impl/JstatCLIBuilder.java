@@ -228,7 +228,7 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
      * Sets the sampling interval via {@code <value><unit>}.
      *
      * @param interval interval value
-     * @param unit     time unit
+     * @param unit time unit
      * @return this builder
      */
     public JstatCLIBuilder samplingInterval(long interval, TimeUnit unit) {
@@ -277,8 +277,9 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
 
             if (intervalExpression != null) {
                 command.add(intervalExpression);
-                if (sampleCount != null)
+                if (sampleCount != null) {
                     command.add(Integer.toString(sampleCount));
+                }
             }
         }
 
@@ -310,7 +311,8 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
         if (this.generalOption != null)
             throw new IllegalStateException("Only one jstat general option can be specified.");
 
-        if (statOption != null || vmId != null || intervalExpression != null || sampleCount != null || !arguments.isEmpty())
+        if (statOption != null || vmId != null || intervalExpression != null || sampleCount != null
+            || !arguments.isEmpty())
             throw new IllegalStateException("General options cannot be combined with other jstat configuration.");
 
         this.generalOption = optionFlag;
@@ -330,18 +332,10 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
     }
 
     public enum StatOption {
-        CLASS("class"),
-        COMPILER("compiler"),
-        GC("gc"),
-        GC_CAPACITY("gccapacity"),
-        GC_CAUSE("gccause"),
-        GC_NEW("gcnew"),
-        GC_NEW_CAPACITY("gcnewcapacity"),
-        GC_OLD("gcold"),
-        GC_OLD_CAPACITY("gcoldcapacity"),
-        GC_META_CAPACITY("gcmetacapacity"),
-        GC_UTIL("gcutil"),
-        PRINT_COMPILATION("printcompilation");
+        CLASS("class"), COMPILER("compiler"), GC("gc"), GC_CAPACITY("gccapacity"), GC_CAUSE("gccause"), GC_NEW(
+            "gcnew"), GC_NEW_CAPACITY("gcnewcapacity"), GC_OLD("gcold"), GC_OLD_CAPACITY(
+                "gcoldcapacity"), GC_META_CAPACITY(
+                    "gcmetacapacity"), GC_UTIL("gcutil"), PRINT_COMPILATION("printcompilation");
 
         private final String flag;
 

@@ -35,17 +35,20 @@ public record CreateMixinsJsonStep(FilesService files) implements CreationStep {
 
         reporter.info("Creating mixins.json...");
 
-        Path mixinsPath = ctx.projectDir().resolve("src/main/resources").resolve(ctx.data().getAsString(MinecraftProjectKeys.MOD_ID) + ".mixins.json");
+        Path mixinsPath = ctx.projectDir().resolve("src/main/resources")
+            .resolve(ctx.data().getAsString(MinecraftProjectKeys.MOD_ID) + ".mixins.json");
 
         var config = new MixinConfig();
         config.setRequired(true);
         config.setMinVersion("0.8");
-        config.setPackageName(ctx.data().getAsString(MavenProjectKeys.GROUP_ID) + "." + ctx.data().getAsString(MavenProjectKeys.ARTIFACT_ID) + ".mixins");
+        config.setPackageName(ctx.data().getAsString(MavenProjectKeys.GROUP_ID) + "."
+            + ctx.data().getAsString(MavenProjectKeys.ARTIFACT_ID) + ".mixins");
         config.setCompatibilityLevel("JAVA_21"); // TODO: Grab from project data
         config.setMixins(new ArrayList<>());
         config.setClient(new ArrayList<>());
-        if (!ctx.data().getAsBoolean(ForgeProjectKeys.CLIENT_SIDE_ONLY, false))
+        if (!ctx.data().getAsBoolean(ForgeProjectKeys.CLIENT_SIDE_ONLY, false)) {
             config.setServer(new ArrayList<>());
+        }
 
         config.setInjectors(Map.of("defaultRequire", 1));
         var json = Railroad.GSON.toJson(config);

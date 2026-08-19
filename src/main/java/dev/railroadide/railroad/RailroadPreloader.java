@@ -79,7 +79,8 @@ public class RailroadPreloader extends Preloader {
     }
 
     private void centerStage() {
-        if (stage == null) return;
+        if (stage == null)
+            return;
 
         var bounds = Screen.getPrimary().getVisualBounds();
         stage.setX(bounds.getMinX() + Math.max(0, (bounds.getWidth() - stage.getWidth()) / 2));

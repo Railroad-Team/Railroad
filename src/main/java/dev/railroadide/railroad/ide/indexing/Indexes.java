@@ -110,7 +110,7 @@ public class Indexes {
 
         try {
             return Path.of(home).toAbsolutePath().normalize();
-        } catch (Exception ignored) {
+        } catch (Exception _) {
             return null;
         }
     }

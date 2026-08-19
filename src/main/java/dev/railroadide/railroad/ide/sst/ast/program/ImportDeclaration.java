@@ -10,11 +10,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record ImportDeclaration(
-        Span span,
-        NameExpression name,
-        boolean isStatic,
-        boolean isWildcard
-) implements AstNode {
+    Span span,
+    NameExpression name,
+    boolean isStatic,
+    boolean isWildcard) implements AstNode {
 
     @Override
     public AstKind kind() {

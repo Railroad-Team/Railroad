@@ -34,7 +34,8 @@ public class OnboardingFlowBuilder {
         return this;
     }
 
-    public OnboardingFlowBuilder addConditionalTransition(String from, String to, Predicate<OnboardingContext> condition) {
+    public OnboardingFlowBuilder addConditionalTransition(String from, String to,
+        Predicate<OnboardingContext> condition) {
         transitions.add(new OnboardingTransition(from, to, condition));
         return this;
     }

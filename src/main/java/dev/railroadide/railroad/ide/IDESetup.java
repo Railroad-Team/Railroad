@@ -27,7 +27,8 @@ public class IDESetup {
         return new Scene(new IDEPane(project));
     }
 
-    public static void showEditRunConfigurationsWindow(@NotNull Project project, @Nullable RunConfiguration<?> runConfiguration) {
+    public static void showEditRunConfigurationsWindow(@NotNull Project project,
+        @Nullable RunConfiguration<?> runConfiguration) {
         var editorPane = new RunConfigurationEditorPane(project);
         WindowBuilder.create()
             .owner(Railroad.WINDOW_MANAGER.getPrimaryStage())
@@ -46,7 +47,7 @@ public class IDESetup {
      * and notifies the plugins of the activity
      *
      * @param project The project to switch to
-     * @param stage   The stage to switch to. Set to {@code null} if a new stage with a transition is required
+     * @param stage The stage to switch to. Set to {@code null} if a new stage with a transition is required
      */
     public static void switchToIDE(Project project, @Nullable Stage stage) {
         if (isSwitchingToIDE)
@@ -61,9 +62,10 @@ public class IDESetup {
                 var idePane = new IDEPane(project);
 
                 disposePreviousScene(previousScene);
-                Scene ideScene = new Scene(idePane);
+                var ideScene = new Scene(idePane);
 
-                ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion() + " - " + project.getAlias());
+                ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()
+                    + " - " + project.getAlias());
                 ideStage.setResizable(true);
                 ideStage.setMaximized(true);
 

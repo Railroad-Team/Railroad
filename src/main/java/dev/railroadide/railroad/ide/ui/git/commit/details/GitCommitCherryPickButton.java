@@ -27,7 +27,8 @@ public class GitCommitCherryPickButton extends RRButton {
         setOnAction(event -> {
             GitManager gitManager = project.getGitManager();
             if (!gitManager.getRepoStatus().changes().isEmpty()) {
-                CompletableFuture<boolean[]> canContinue = confirmCherryPickWithUncommittedChanges(gitManager, gitManager.getCurrentCommit(), commit);
+                CompletableFuture<boolean[]> canContinue = confirmCherryPickWithUncommittedChanges(gitManager,
+                    gitManager.getCurrentCommit(), commit);
                 canContinue.thenAccept(canContinueResult -> {
                     boolean canContinueCherryPick = canContinueResult[0];
                     boolean shouldStash = canContinueResult[1];
@@ -48,11 +49,13 @@ public class GitCommitCherryPickButton extends RRButton {
             var content = new LocalizedText("railroad.git.commit.details.cherry_pick.error.already_cherry_picking");
             content.getStyleClass().add("git-commit-cherry-pick-already-cherry-picking-content");
 
-            var continueButton = new RRButton("railroad.git.commit.details.cherry_pick.error.already_cherry_picking_continue");
+            var continueButton = new RRButton(
+                "railroad.git.commit.details.cherry_pick.error.already_cherry_picking_continue");
             continueButton.setVariant(ButtonVariant.PRIMARY);
             continueButton.getStyleClass().add("git-commit-cherry-pick-already-cherry-picking-continue-button");
 
-            var abortButton = new RRButton("railroad.git.commit.details.cherry_pick.error.already_cherry_picking_abort");
+            var abortButton = new RRButton(
+                "railroad.git.commit.details.cherry_pick.error.already_cherry_picking_abort");
             abortButton.setVariant(ButtonVariant.SECONDARY);
             abortButton.getStyleClass().add("git-commit-cherry-pick-already-cherry-picking-abort-button");
 
@@ -64,9 +67,10 @@ public class GitCommitCherryPickButton extends RRButton {
                 .title("railroad.git.commit.details.cherry_pick.error.already_cherry_picking_title")
                 .contentNode(content)
                 .buttons(continueButton, abortButton, cancelButton);
-            Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.cherry_pick.error.already_cherry_picking_title", dialogBuilder);
+            Stage dialog = WindowBuilder.createDialog(
+                "railroad.git.commit.details.cherry_pick.error.already_cherry_picking_title", dialogBuilder);
 
-            continueButton.setOnAction($ -> {
+            continueButton.setOnAction(_ -> {
                 if (!canContinueCherryPick(gitManager))
                     return;
 
@@ -74,7 +78,7 @@ public class GitCommitCherryPickButton extends RRButton {
                 dialog.close();
             });
 
-            abortButton.setOnAction($ -> {
+            abortButton.setOnAction(_ -> {
                 gitManager.abortCherryPick();
                 if (stashedChanges) {
                     gitManager.stashPop();
@@ -83,7 +87,7 @@ public class GitCommitCherryPickButton extends RRButton {
                 dialog.close();
             });
 
-            cancelButton.setOnAction($ -> dialog.close());
+            cancelButton.setOnAction(_ -> dialog.close());
 
             return;
         }
@@ -97,11 +101,10 @@ public class GitCommitCherryPickButton extends RRButton {
 
             if (result == CherryPickResult.FAILED) {
                 Platform.runLater(() -> WindowBuilder.createAlert(
-                        AlertType.ERROR,
-                        "railroad.git.commit.details.cherry_pick.error.title",
-                        "railroad.git.commit.details.cherry_pick.error.subtitle",
-                        "railroad.git.commit.details.cherry_pick.error.content"
-                    )
+                    AlertType.ERROR,
+                    "railroad.git.commit.details.cherry_pick.error.title",
+                    "railroad.git.commit.details.cherry_pick.error.subtitle",
+                    "railroad.git.commit.details.cherry_pick.error.content")
                     .build());
                 return;
             }
@@ -130,9 +133,10 @@ public class GitCommitCherryPickButton extends RRButton {
             .title("railroad.git.commit.details.cherry_pick.conflicts.title")
             .contentNode(content)
             .buttons(continueButton, abortButton, cancelButton);
-        Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.cherry_pick.conflicts.title", dialogBuilder);
+        Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.cherry_pick.conflicts.title",
+            dialogBuilder);
 
-        continueButton.setOnAction($ -> {
+        continueButton.setOnAction(_ -> {
             if (!canContinueCherryPick(gitManager))
                 return;
 
@@ -140,12 +144,12 @@ public class GitCommitCherryPickButton extends RRButton {
             dialog.close();
         });
 
-        abortButton.setOnAction($ -> {
+        abortButton.setOnAction(_ -> {
             gitManager.abortCherryPick();
             dialog.close();
         });
 
-        cancelButton.setOnAction($ -> dialog.close());
+        cancelButton.setOnAction(_ -> dialog.close());
 
     }
 
@@ -159,11 +163,10 @@ public class GitCommitCherryPickButton extends RRButton {
             return true;
 
         WindowBuilder.createAlert(
-                AlertType.WARNING,
-                "railroad.git.commit.details.cherry_pick.unresolved.title",
-                "railroad.git.commit.details.cherry_pick.unresolved.subtitle",
-                "railroad.git.commit.details.cherry_pick.unresolved.content"
-            )
+            AlertType.WARNING,
+            "railroad.git.commit.details.cherry_pick.unresolved.title",
+            "railroad.git.commit.details.cherry_pick.unresolved.subtitle",
+            "railroad.git.commit.details.cherry_pick.unresolved.content")
             .build();
         return false;
     }
@@ -171,8 +174,7 @@ public class GitCommitCherryPickButton extends RRButton {
     private static CompletableFuture<boolean[]> confirmCherryPickWithUncommittedChanges(
         GitManager gitManager,
         Optional<GitCommit> currentCommit,
-        GitCommit commit
-    ) {
+        GitCommit commit) {
         CompletableFuture<boolean[]> canContinueRef = new CompletableFuture<>();
         GitRepoStatus repoStatus = gitManager.getRepoStatus();
 
@@ -186,22 +188,19 @@ public class GitCommitCherryPickButton extends RRButton {
 
             var unstagedChangesText = new LocalizedText(
                 "railroad.git.commit.details.cherry_pick_dialog.unstaged_changes",
-                repoStatus.changes().stream().filter(GitFileChange::isUnstaged).count()
-            );
+                repoStatus.changes().stream().filter(GitFileChange::isUnstaged).count());
             unstagedChangesText.getStyleClass().add("git-commit-cherry-pick-unstaged-changes-text");
             content.getChildren().add(unstagedChangesText);
 
             var stagedChangesText = new LocalizedText(
                 "railroad.git.commit.details.cherry_pick_dialog.staged_changes",
-                repoStatus.changes().stream().filter(GitFileChange::isStaged).count()
-            );
+                repoStatus.changes().stream().filter(GitFileChange::isStaged).count());
             stagedChangesText.getStyleClass().add("git-commit-cherry-pick-staged-changes-text");
             content.getChildren().add(stagedChangesText);
 
             var untrackedChangesText = new LocalizedText(
                 "railroad.git.commit.details.cherry_pick_dialog.untracked_changes",
-                repoStatus.changes().stream().filter(GitFileChange::isUntracked).count()
-            );
+                repoStatus.changes().stream().filter(GitFileChange::isUntracked).count());
             untrackedChangesText.getStyleClass().add("git-commit-cherry-pick-untracked-changes-text");
             content.getChildren().add(untrackedChangesText);
 
@@ -209,23 +208,27 @@ public class GitCommitCherryPickButton extends RRButton {
             cancelButton.setVariant(ButtonVariant.SECONDARY);
             cancelButton.getStyleClass().add("git-commit-cherry-pick-uncommitted-changes-cancel-button");
 
-            var stashAndContinueButton = new RRButton("railroad.git.commit.details.cherry_pick_dialog.stash_and_continue");
+            var stashAndContinueButton = new RRButton(
+                "railroad.git.commit.details.cherry_pick_dialog.stash_and_continue");
             stashAndContinueButton.setVariant(ButtonVariant.PRIMARY);
-            stashAndContinueButton.getStyleClass().add("git-commit-cherry-pick-uncommitted-changes-stash-and-continue-button");
+            stashAndContinueButton.getStyleClass()
+                .add("git-commit-cherry-pick-uncommitted-changes-stash-and-continue-button");
 
             DialogBuilder dialogBuilder = DialogBuilder.create()
                 .title("railroad.git.commit.details.cherry_pick_dialog.subtitle")
                 .contentNode(content)
                 .buttons(cancelButton, stashAndContinueButton);
-            Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.cherry_pick_dialog.title", dialogBuilder);
+            Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.cherry_pick_dialog.title",
+                dialogBuilder);
 
-            cancelButton.setOnAction($ -> {
+            cancelButton.setOnAction(_ -> {
                 canContinueRef.complete(new boolean[]{false, false});
                 dialog.close();
             });
 
-            stashAndContinueButton.setOnAction($ -> {
-                gitManager.stashChanges("Railroad: before cherry-pick " + currentCommit.map(GitCommit::shortHash).orElse("HEAD"), true);
+            stashAndContinueButton.setOnAction(_ -> {
+                gitManager.stashChanges(
+                    "Railroad: before cherry-pick " + currentCommit.map(GitCommit::shortHash).orElse("HEAD"), true);
                 canContinueRef.complete(new boolean[]{true, true});
                 dialog.close();
             });

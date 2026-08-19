@@ -16,7 +16,8 @@ import java.util.function.Function;
 @EqualsAndHashCode
 @AllArgsConstructor
 public class MappingChannel {
-    public static final Registry<MappingChannel> REGISTRY = RegistryManager.createOrderedRegistry("railroad:mapping_channel", MappingChannel.class);
+    public static final Registry<MappingChannel> REGISTRY = RegistryManager
+        .createOrderedRegistry("railroad:mapping_channel", MappingChannel.class);
 
     private final String id;
     private final String translationKey;
@@ -34,7 +35,8 @@ public class MappingChannel {
         try {
             return versionLister.apply(minecraftVersion);
         } catch (Exception exception) {
-            Railroad.LOGGER.error("Failed to list versions for mapping channel {} and Minecraft version {}", id, minecraftVersion.id(), exception);
+            Railroad.LOGGER.error("Failed to list versions for mapping channel {} and Minecraft version {}", id,
+                minecraftVersion.id(), exception);
             return Collections.emptyList();
         }
     }

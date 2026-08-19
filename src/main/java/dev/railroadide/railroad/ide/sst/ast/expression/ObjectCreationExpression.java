@@ -14,14 +14,13 @@ import java.util.List;
 import java.util.Optional;
 
 public record ObjectCreationExpression(
-        Span span,
-        Optional<Expression> scope,
-        List<TypeRef> typeArguments,
-        TypeRef type,
-        List<TypeRef> constructorTypeArguments,
-        List<Expression> arguments,
-        Optional<AnonymousClassDeclaration> anonymousClassDeclaration
-) implements Expression {
+    Span span,
+    Optional<Expression> scope,
+    List<TypeRef> typeArguments,
+    TypeRef type,
+    List<TypeRef> constructorTypeArguments,
+    List<Expression> arguments,
+    Optional<AnonymousClassDeclaration> anonymousClassDeclaration) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.OBJECT_CREATION_EXPRESSION;

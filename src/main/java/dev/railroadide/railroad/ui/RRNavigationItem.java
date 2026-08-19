@@ -50,8 +50,8 @@ public class RRNavigationItem extends VBox {
      * Constructs a new navigation item with localized text and an icon.
      *
      * @param localizationKey the localization key for the text
-     * @param iconCode        the icon to display
-     * @param args            optional formatting arguments for the localized text
+     * @param iconCode the icon to display
+     * @param args optional formatting arguments for the localized text
      */
     public RRNavigationItem(String localizationKey, Ikon iconCode, Object... args) {
         initialize();
@@ -63,7 +63,7 @@ public class RRNavigationItem extends VBox {
      * Constructs a new navigation item with localized text.
      *
      * @param localizationKey the localization key for the text
-     * @param args            optional formatting arguments for the localized text
+     * @param args optional formatting arguments for the localized text
      */
     public RRNavigationItem(String localizationKey, Object... args) {
         this(localizationKey, null, args);
@@ -110,7 +110,7 @@ public class RRNavigationItem extends VBox {
 
         getChildren().add(content);
 
-        setOnMouseEntered($ -> {
+        setOnMouseEntered(_ -> {
             if (state != NavigationItemState.DISABLED) {
                 var scale = new ScaleTransition(Duration.millis(150), this);
                 scale.setToX(1.02);
@@ -123,7 +123,7 @@ public class RRNavigationItem extends VBox {
             }
         });
 
-        setOnMouseExited($ -> {
+        setOnMouseExited(_ -> {
             if (state != NavigationItemState.DISABLED) {
                 var scale = new ScaleTransition(Duration.millis(150), this);
                 scale.setToX(1.0);

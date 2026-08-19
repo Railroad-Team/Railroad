@@ -14,15 +14,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public record MinecraftVersionRepository(SwitchboardClient client, CacheManager cache)
-    implements SwitchboardRepository {
+    implements
+        SwitchboardRepository {
     public CompletableFuture<List<MinecraftVersion>> getAllVersions() {
         return cache.getOrFetch(
             "mc:versions",
             new TypeToken<List<MinecraftVersion>>() {
             },
             Duration.ofHours(12),
-            client::fetchMinecraftVersions
-        );
+            client::fetchMinecraftVersions);
     }
 
     public List<MinecraftVersion> getAllVersionsSync() throws ExecutionException, InterruptedException {
@@ -35,8 +35,7 @@ public record MinecraftVersionRepository(SwitchboardClient client, CacheManager 
             key,
             MinecraftVersion.class,
             Duration.ofDays(7),
-            () -> client.fetchMinecraftVersionById(id)
-        );
+            () -> client.fetchMinecraftVersionById(id));
     }
 
     public Optional<MinecraftVersion> getVersionSync(String id) throws ExecutionException, InterruptedException {
@@ -48,8 +47,7 @@ public record MinecraftVersionRepository(SwitchboardClient client, CacheManager 
             "mc:latest",
             MinecraftVersion.class,
             Duration.ofHours(1),
-            client::fetchLatestMinecraftVersion
-        );
+            client::fetchLatestMinecraftVersion);
     }
 
     public MinecraftVersion getLatestVersionSync() throws ExecutionException, InterruptedException {
@@ -62,8 +60,7 @@ public record MinecraftVersionRepository(SwitchboardClient client, CacheManager 
             key,
             MinecraftVersion.class,
             Duration.ofHours(1),
-            () -> client.fetchLatestMinecraftVersionOfType(type)
-        );
+            () -> client.fetchLatestMinecraftVersionOfType(type));
     }
 
     public MinecraftVersion getLatestSync(MinecraftVersion.Type type) throws ExecutionException, InterruptedException {

@@ -84,8 +84,7 @@ public class FabricProjectOnboarding {
         var process = OnboardingProcess.createBasic(
             flow,
             new OnboardingContext(executor),
-            ctx -> onFinish(ctx, scene)
-        );
+            ctx -> onFinish(ctx, scene));
 
         process.run(scene);
     }
@@ -101,14 +100,16 @@ public class FabricProjectOnboarding {
 
         data.set(ProjectData.DefaultKeys.LICENSE, ctx.get(ProjectData.DefaultKeys.LICENSE));
         // TODO: Get rid of this and move into CustomLicense
-        if (ctx.contains(ProjectData.DefaultKeys.LICENSE_CUSTOM))
+        if (ctx.contains(ProjectData.DefaultKeys.LICENSE_CUSTOM)) {
             data.set(ProjectData.DefaultKeys.LICENSE_CUSTOM, ctx.get(ProjectData.DefaultKeys.LICENSE_CUSTOM));
+        }
 
         data.set(MinecraftProjectKeys.MINECRAFT_VERSION, ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION));
         data.set(FabricProjectKeys.FABRIC_LOADER_VERSION, ctx.get(FabricProjectKeys.FABRIC_LOADER_VERSION));
 
-        if (ctx.contains(FabricProjectKeys.FABRIC_API_VERSION))
+        if (ctx.contains(FabricProjectKeys.FABRIC_API_VERSION)) {
             data.set(FabricProjectKeys.FABRIC_API_VERSION, ctx.get(FabricProjectKeys.FABRIC_API_VERSION));
+        }
 
         data.set(MinecraftProjectKeys.MOD_ID, ctx.get(MinecraftProjectKeys.MOD_ID));
         data.set(MinecraftProjectKeys.MOD_NAME, ctx.get(MinecraftProjectKeys.MOD_NAME));
@@ -118,16 +119,21 @@ public class FabricProjectOnboarding {
         data.set(MinecraftProjectKeys.MAPPING_CHANNEL, ctx.get(MinecraftProjectKeys.MAPPING_CHANNEL));
         data.set(MinecraftProjectKeys.MAPPING_VERSION, ctx.get(MinecraftProjectKeys.MAPPING_VERSION));
 
-        if (ctx.contains(ProjectData.DefaultKeys.AUTHOR))
+        if (ctx.contains(ProjectData.DefaultKeys.AUTHOR)) {
             data.set(ProjectData.DefaultKeys.AUTHOR, ctx.get(ProjectData.DefaultKeys.AUTHOR));
-        if (ctx.contains(ProjectData.DefaultKeys.DESCRIPTION))
+        }
+        if (ctx.contains(ProjectData.DefaultKeys.DESCRIPTION)) {
             data.set(ProjectData.DefaultKeys.DESCRIPTION, ctx.get(ProjectData.DefaultKeys.DESCRIPTION));
-        if (ctx.contains(ProjectData.DefaultKeys.ISSUES_URL))
+        }
+        if (ctx.contains(ProjectData.DefaultKeys.ISSUES_URL)) {
             data.set(ProjectData.DefaultKeys.ISSUES_URL, ctx.get(ProjectData.DefaultKeys.ISSUES_URL));
-        if (ctx.contains(ProjectData.DefaultKeys.HOMEPAGE_URL))
+        }
+        if (ctx.contains(ProjectData.DefaultKeys.HOMEPAGE_URL)) {
             data.set(ProjectData.DefaultKeys.HOMEPAGE_URL, ctx.get(ProjectData.DefaultKeys.HOMEPAGE_URL));
-        if (ctx.contains(ProjectData.DefaultKeys.SOURCES_URL))
+        }
+        if (ctx.contains(ProjectData.DefaultKeys.SOURCES_URL)) {
             data.set(ProjectData.DefaultKeys.SOURCES_URL, ctx.get(ProjectData.DefaultKeys.SOURCES_URL));
+        }
 
         data.set(MavenProjectKeys.GROUP_ID, ctx.get(MavenProjectKeys.GROUP_ID));
         data.set(MavenProjectKeys.ARTIFACT_ID, ctx.get(MavenProjectKeys.ARTIFACT_ID));
@@ -139,8 +145,7 @@ public class FabricProjectOnboarding {
         serviceRegistry.get(GradleService.class).setOutputStream(creationPane.getTaos());
         creationPane.initService(new ProjectCreationService(Services.PROJECT_CREATION_PIPELINE.createProject(
             ProjectTypeRegistry.FABRIC,
-            serviceRegistry
-        ), creationPane.getContext()));
+            serviceRegistry), creationPane.getContext()));
 
         scene.setRoot(creationPane);
     }
@@ -234,7 +239,9 @@ public class FabricProjectOnboarding {
             .description("railroad.project.creation.minecraft_version.description")
             .appendSection("railroad.project.creation.section.minecraft_version",
                 described(
-                    FormComponent.comboBox(MinecraftProjectKeys.MINECRAFT_VERSION, "railroad.project.creation.minecraft_version", MinecraftVersion.class)
+                    FormComponent
+                        .comboBox(MinecraftProjectKeys.MINECRAFT_VERSION, "railroad.project.creation.minecraft_version",
+                            MinecraftVersion.class)
                         .items(() -> availableVersions)
                         .defaultValue(() -> MinecraftVersion.determineDefaultMinecraftVersion(availableVersions))
                         .keyFunction(MinecraftVersion::id)
@@ -261,7 +268,9 @@ public class FabricProjectOnboarding {
             .description("railroad.project.creation.mapping_channel.description")
             .appendSection("railroad.project.creation.section.mapping_channel",
                 described(
-                    FormComponent.comboBox(MinecraftProjectKeys.MAPPING_CHANNEL, "railroad.project.creation.mapping_channel", MappingChannel.class)
+                    FormComponent
+                        .comboBox(MinecraftProjectKeys.MAPPING_CHANNEL, "railroad.project.creation.mapping_channel",
+                            MappingChannel.class)
                         .required()
                         .items(() -> availableChannels)
                         .defaultValue(() -> MappingChannelRegistry.YARN)
@@ -289,7 +298,9 @@ public class FabricProjectOnboarding {
             .description("railroad.project.creation.mapping_version.description")
             .appendSection("railroad.project.creation.section.mapping_version",
                 described(
-                    FormComponent.comboBox(MinecraftProjectKeys.MAPPING_VERSION, "railroad.project.creation.mapping_version", String.class)
+                    FormComponent
+                        .comboBox(MinecraftProjectKeys.MAPPING_VERSION, "railroad.project.creation.mapping_version",
+                            String.class)
                         .required()
                         .items(() -> availableVersions)
                         .defaultValue(() -> {
@@ -322,7 +333,9 @@ public class FabricProjectOnboarding {
             .description("railroad.project.creation.fabric_loader.description")
             .appendSection("railroad.project.creation.section.fabric_loader",
                 described(
-                    FormComponent.comboBox(FabricProjectKeys.FABRIC_LOADER_VERSION, "railroad.project.creation.fabric_loader", FabricLoaderVersion.class)
+                    FormComponent
+                        .comboBox(FabricProjectKeys.FABRIC_LOADER_VERSION, "railroad.project.creation.fabric_loader",
+                            FabricLoaderVersion.class)
                         .required()
                         .items(() -> availableVersions)
                         .keyFunction(FabricLoaderVersion::version)
@@ -341,8 +354,10 @@ public class FabricProjectOnboarding {
                 MinecraftVersion mcVersion = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
                 if (mcVersion != null) {
                     try {
-                        CompletableFuture<List<FabricLoaderVersion>> versionsFuture = SwitchboardRepositories.FABRIC_LOADER.getVersionsFor(mcVersion.id());
-                        CompletableFuture<FabricLoaderVersion> latestFuture = SwitchboardRepositories.FABRIC_LOADER.getLatestVersionFor(mcVersion.id());
+                        CompletableFuture<List<FabricLoaderVersion>> versionsFuture = SwitchboardRepositories.FABRIC_LOADER
+                            .getVersionsFor(mcVersion.id());
+                        CompletableFuture<FabricLoaderVersion> latestFuture = SwitchboardRepositories.FABRIC_LOADER
+                            .getLatestVersionFor(mcVersion.id());
 
                         List<FabricLoaderVersion> versions = versionsFuture.get();
                         FabricLoaderVersion latest = latestFuture.get();
@@ -351,7 +366,8 @@ public class FabricProjectOnboarding {
                         latestVersionProperty.set(latest);
                         ctx.markForRefresh(FabricProjectKeys.FABRIC_LOADER_VERSION);
                     } catch (ExecutionException | InterruptedException exception) {
-                        Railroad.LOGGER.error("Failed to fetch Fabric Loader versions for Minecraft {}", mcVersion.id(), exception);
+                        Railroad.LOGGER.error("Failed to fetch Fabric Loader versions for Minecraft {}", mcVersion.id(),
+                            exception);
                     }
                 }
             })
@@ -366,7 +382,9 @@ public class FabricProjectOnboarding {
             .description("railroad.project.creation.fabric_api.description")
             .appendSection("railroad.project.creation.section.fabric_api",
                 described(
-                    FormComponent.comboBox(FabricProjectKeys.FABRIC_API_VERSION, "railroad.project.creation.fabric_api", String.class)
+                    FormComponent
+                        .comboBox(FabricProjectKeys.FABRIC_API_VERSION, "railroad.project.creation.fabric_api",
+                            String.class)
                         .items(() -> availableVersions)
                         .defaultValue(() -> {
                             if (!availableVersions.isEmpty())
@@ -380,13 +398,15 @@ public class FabricProjectOnboarding {
                 MinecraftVersion mcVersion = ctx.get(MinecraftProjectKeys.MINECRAFT_VERSION);
                 if (mcVersion != null) {
                     try {
-                        CompletableFuture<List<String>> versionsFuture = SwitchboardRepositories.FABRIC_API.getVersionsFor(mcVersion.id());
+                        CompletableFuture<List<String>> versionsFuture = SwitchboardRepositories.FABRIC_API
+                            .getVersionsFor(mcVersion.id());
                         List<String> versions = versionsFuture.get();
                         availableVersions.clear();
                         availableVersions.addAll(versions);
                         ctx.markForRefresh(FabricProjectKeys.FABRIC_API_VERSION);
                     } catch (ExecutionException | InterruptedException exception) {
-                        Railroad.LOGGER.error("Failed to fetch Fabric API versions for Minecraft {}", mcVersion.id(), exception);
+                        Railroad.LOGGER.error("Failed to fetch Fabric API versions for Minecraft {}", mcVersion.id(),
+                            exception);
                     }
                 }
             })
@@ -458,8 +478,8 @@ public class FabricProjectOnboarding {
         ObservableList<License> availableLicenses = FXCollections.observableArrayList();
         ObjectProperty<ComboBox<License>> licenseComboBox = new SimpleObjectProperty<>();
         BooleanProperty showCustomLicense = new SimpleBooleanProperty(false);
-        ChangeListener<License> licenseSelectionListener = (observable, oldValue, newValue) ->
-            showCustomLicense.set(newValue == LicenseRegistry.CUSTOM);
+        ChangeListener<License> licenseSelectionListener = (observable, oldValue, newValue) -> showCustomLicense
+            .set(newValue == LicenseRegistry.CUSTOM);
 
         licenseComboBox.addListener((observable, oldValue, newValue) -> {
             if (oldValue != null) {
@@ -482,7 +502,8 @@ public class FabricProjectOnboarding {
             .description("railroad.project.creation.license.description")
             .appendSection("railroad.project.creation.section.license",
                 described(
-                    FormComponent.comboBox(ProjectData.DefaultKeys.LICENSE, "railroad.project.creation.license", License.class)
+                    FormComponent
+                        .comboBox(ProjectData.DefaultKeys.LICENSE, "railroad.project.creation.license", License.class)
                         .required()
                         .bindComboBoxTo(licenseComboBox)
                         .keyFunction(License::getSpdxId)
@@ -501,7 +522,8 @@ public class FabricProjectOnboarding {
                         }),
                     "railroad.project.creation.license.info"),
                 described(
-                    FormComponent.textField(ProjectData.DefaultKeys.LICENSE_CUSTOM, "railroad.project.creation.license.custom")
+                    FormComponent
+                        .textField(ProjectData.DefaultKeys.LICENSE_CUSTOM, "railroad.project.creation.license.custom")
                         .visible(customLicenseVisible)
                         .promptText("railroad.project.creation.license.custom.prompt")
                         .validator(ProjectValidators::validateCustomLicense),
@@ -512,7 +534,8 @@ public class FabricProjectOnboarding {
                     .sorted(Comparator.comparing(License::getName))
                     .toList();
 
-                if (availableLicenses.size() != newValues.size() || !ListUtils.isEqualList(availableLicenses, newValues)) {
+                if (availableLicenses.size() != newValues.size()
+                    || !ListUtils.isEqualList(availableLicenses, newValues)) {
                     availableLicenses.clear();
                     availableLicenses.addAll(newValues);
                     ctx.markForRefresh(ProjectData.DefaultKeys.LICENSE);
@@ -538,8 +561,8 @@ public class FabricProjectOnboarding {
     private OnboardingStep createAccessWidenerStep() {
         ObjectProperty<CheckBox> useAccessWidenerCheckBox = new SimpleObjectProperty<>();
         BooleanProperty accessWidenerEnabled = new SimpleBooleanProperty(true);
-        ChangeListener<Boolean> useAccessWidenerListener = (observable, oldValue, newValue) ->
-            accessWidenerEnabled.set(Boolean.TRUE.equals(newValue));
+        ChangeListener<Boolean> useAccessWidenerListener = (observable, oldValue, newValue) -> accessWidenerEnabled
+            .set(Boolean.TRUE.equals(newValue));
 
         useAccessWidenerCheckBox.addListener((observable, oldValue, newValue) -> {
             if (oldValue != null) {
@@ -556,8 +579,7 @@ public class FabricProjectOnboarding {
 
         BooleanBinding accessWidenerPathVisible = Bindings.createBooleanBinding(
             accessWidenerEnabled::get,
-            accessWidenerEnabled
-        );
+            accessWidenerEnabled);
 
         return OnboardingFormStep.builder()
             .id("access_widener")
@@ -565,12 +587,15 @@ public class FabricProjectOnboarding {
             .description("railroad.project.creation.access_widener.description")
             .appendSection("railroad.project.creation.section.access_widener",
                 described(
-                    FormComponent.checkBox(FabricProjectKeys.USE_ACCESS_WIDENER, "railroad.project.creation.use_access_widener")
+                    FormComponent
+                        .checkBox(FabricProjectKeys.USE_ACCESS_WIDENER, "railroad.project.creation.use_access_widener")
                         .selected(true)
                         .bindCheckBoxTo(useAccessWidenerCheckBox),
                     "railroad.project.creation.use_access_widener.info"),
                 described(
-                    FormComponent.textField(FabricProjectKeys.ACCESS_WIDENER_PATH, "railroad.project.creation.access_widener.path")
+                    FormComponent
+                        .textField(FabricProjectKeys.ACCESS_WIDENER_PATH,
+                            "railroad.project.creation.access_widener.path")
                         .text("${modid}.accesswidener")
                         .promptText("railroad.project.creation.access_widener.path.prompt")
                         .visible(accessWidenerPathVisible)
@@ -580,7 +605,8 @@ public class FabricProjectOnboarding {
 
                             String text = field.getText();
                             if (text == null || text.isBlank())
-                                return ValidationResult.error("railroad.project.creation.access_widener.path.error.required");
+                                return ValidationResult
+                                    .error("railroad.project.creation.access_widener.path.error.required");
 
                             return ValidationResult.ok();
                         }),
@@ -611,8 +637,8 @@ public class FabricProjectOnboarding {
         String defaultAuthor = !isNullOrBlank(configuredAuthor)
             ? configuredAuthor
             : Optional.ofNullable(System.getProperty("user.name"))
-            .filter(name -> !isNullOrBlank(name))
-            .orElse("");
+                .filter(name -> !isNullOrBlank(name))
+                .orElse("");
 
         return OnboardingFormStep.builder()
             .id("optional_details")
@@ -636,24 +662,29 @@ public class FabricProjectOnboarding {
                         .validator(ProjectValidators::validateIssues),
                     "railroad.project.creation.issues_url.info"),
                 described(
-                    FormComponent.textField(ProjectData.DefaultKeys.HOMEPAGE_URL, "railroad.project.creation.homepage_url")
+                    FormComponent
+                        .textField(ProjectData.DefaultKeys.HOMEPAGE_URL, "railroad.project.creation.homepage_url")
                         .promptText("railroad.project.creation.homepage_url.prompt")
                         .validator(textField -> ProjectValidators.validateGenericUrl(textField, "homepage")),
                     "railroad.project.creation.homepage_url.info"),
                 described(
-                    FormComponent.textField(ProjectData.DefaultKeys.SOURCES_URL, "railroad.project.creation.sources_url")
+                    FormComponent
+                        .textField(ProjectData.DefaultKeys.SOURCES_URL, "railroad.project.creation.sources_url")
                         .promptText("railroad.project.creation.sources_url.prompt")
                         .validator(textField -> ProjectValidators.validateGenericUrl(textField, "sources")),
                     "railroad.project.creation.sources_url.info"))
             .build();
     }
 
-    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder, String descriptionKey) {
+    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder,
+        String descriptionKey) {
         return OnboardingFormStep.component(builder, createDescriptionCustomizer(descriptionKey));
     }
 
-    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, String descriptionKey) {
-        return OnboardingFormStep.component(builder, builder != null ? builder.dataKey() : null, transformer, reverseTransformer, createDescriptionCustomizer(descriptionKey));
+    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder,
+        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, String descriptionKey) {
+        return OnboardingFormStep.component(builder, builder != null ? builder.dataKey() : null, transformer,
+            reverseTransformer, createDescriptionCustomizer(descriptionKey));
     }
 
     private static Consumer<FormComponent<?, ?, ?, ?>> createDescriptionCustomizer(String descriptionKey) {

@@ -26,10 +26,10 @@ public class SecureTokenStore {
     /**
      * Saves a token associated with the specified account name.
      *
-     * @param token       the token to save
+     * @param token the token to save
      * @param accountName the name of the account associated with the token
      * @throws IllegalArgumentException if the token or account name is null or empty
-     * @throws RuntimeException         if there is an error saving the token
+     * @throws RuntimeException if there is an error saving the token
      */
     public void saveToken(String token, String accountName) {
         if (token == null || token.isEmpty())
@@ -48,7 +48,7 @@ public class SecureTokenStore {
      * @param accountName the name of the account for which to retrieve the token
      * @return the token associated with the account name
      * @throws IllegalArgumentException if the account name is null or empty
-     * @throws RuntimeException         if there is an error retrieving the token
+     * @throws RuntimeException if there is an error retrieving the token
      */
     public String getToken(String accountName) {
         if (accountName == null || accountName.isEmpty())
@@ -66,7 +66,7 @@ public class SecureTokenStore {
      *
      * @param accountName the name of the account for which to clear the token
      * @throws IllegalArgumentException if the account name is null or empty
-     * @throws RuntimeException         if there is an error clearing the token
+     * @throws RuntimeException if there is an error clearing the token
      */
     public void clearToken(String accountName) {
         if (accountName == null || accountName.isEmpty())

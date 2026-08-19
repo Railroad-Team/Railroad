@@ -27,9 +27,7 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
             JavaSemanticRules.CAST_CONFLICTING_WITH_INSTANCEOF.defaultSeverity(),
             JavaSemanticRules.CAST_CONFLICTING_WITH_INSTANCEOF.messageTemplate(),
             Set.of("core", "casting"),
-            CoreCastConflictingWithInstanceofInspection::reportCastConflictingWithInstanceof
-        )
-    );
+            CoreCastConflictingWithInstanceofInspection::reportCastConflictingWithInstanceof));
 
     @Override
     public String id() {
@@ -41,13 +39,15 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         return RULES;
     }
 
-    private static void reportCastConflictingWithInstanceof(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportCastConflictingWithInstanceof(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         reportCastConflictingWithInstanceofIfStatement(context, reporter);
         reportCastConflictingWithInstanceofWhileStatement(context, reporter);
         reportCastConflictingWithInstanceofForStatement(context, reporter);
     }
 
-    private static void reportCastConflictingWithInstanceofIfStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportCastConflictingWithInstanceofIfStatement(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         for (SyntaxNode ifNode : context.nodesOfKind(JavaSyntaxKinds.IF_STATEMENT.id())) {
             SyntaxNode condition = context.firstDirectExpressionChild(ifNode);
             if (condition == null)
@@ -58,13 +58,15 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
             InstanceofFact negatedFact = extractNegatedInstanceofFact(context, condition);
             if (negatedFact != null) {
                 SyntaxNode elseBranch = context.elseBranchOf(ifNode);
-                if (elseBranch != null)
+                if (elseBranch != null) {
                     analyzeGuardedBody(context, reporter, negatedFact, elseBranch);
+                }
             }
         }
     }
 
-    private static void reportCastConflictingWithInstanceofWhileStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportCastConflictingWithInstanceofWhileStatement(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         for (SyntaxNode whileNode : context.nodesOfKind(JavaSyntaxKinds.WHILE_STATEMENT.id())) {
             SyntaxNode condition = context.firstDirectExpressionChild(whileNode);
             if (condition == null)
@@ -74,7 +76,8 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         }
     }
 
-    private static void reportCastConflictingWithInstanceofForStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportCastConflictingWithInstanceofForStatement(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         for (SyntaxNode forNode : context.nodesOfKind(JavaSyntaxKinds.FOR_STATEMENT.id())) {
             SyntaxNode condition = basicForConditionOf(forNode);
             SyntaxNode body = context.forBodyOf(forNode);
@@ -82,7 +85,8 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         }
     }
 
-    private static void analyzeGuardedBody(JavaRuleContext context, JavaInspectionRuleReporter reporter, SyntaxNode condition, SyntaxNode body) {
+    private static void analyzeGuardedBody(JavaRuleContext context, JavaInspectionRuleReporter reporter,
+        SyntaxNode condition, SyntaxNode body) {
         InstanceofFact fact = extractPositiveInstanceofFact(context, condition);
         if (fact == null || body == null)
             return;
@@ -90,7 +94,8 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         analyzeGuardedBody(context, reporter, fact, body);
     }
 
-    private static void analyzeGuardedBody(JavaRuleContext context, JavaInspectionRuleReporter reporter, InstanceofFact fact, SyntaxNode body) {
+    private static void analyzeGuardedBody(JavaRuleContext context, JavaInspectionRuleReporter reporter,
+        InstanceofFact fact, SyntaxNode body) {
         if (body == null)
             return;
 
@@ -110,13 +115,13 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
                 reporter.report(
                     castNode,
                     context.simpleTypeName(castTypeName),
-                    context.simpleTypeName(fact.testedTypeName())
-                );
+                    context.simpleTypeName(fact.testedTypeName()));
             }
         }
     }
 
-    private static @Nullable InstanceofFact extractPositiveInstanceofFact(JavaRuleContext context, SyntaxNode condition) {
+    private static @Nullable InstanceofFact extractPositiveInstanceofFact(JavaRuleContext context,
+        SyntaxNode condition) {
         condition = context.unwrapTransparentExpression(condition);
         if (condition == null)
             return null;
@@ -157,7 +162,8 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         return new InstanceofFact(variableName, testedTypeName);
     }
 
-    private static @Nullable InstanceofFact extractNegatedInstanceofFact(JavaRuleContext context, SyntaxNode condition) {
+    private static @Nullable InstanceofFact extractNegatedInstanceofFact(JavaRuleContext context,
+        SyntaxNode condition) {
         condition = context.unwrapTransparentExpression(condition);
         if (condition == null || !JavaSyntaxKinds.UNARY_EXPRESSION.id().equals(condition.kind().id()))
             return null;
@@ -256,7 +262,7 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         if (context.isSubtype(castType, instanceofType))
             return false;
 
-        //noinspection RedundantIfStatement - we want to be explicit about the logic here for readability
+        // noinspection RedundantIfStatement - we want to be explicit about the logic here for readability
         if (context.isSubtype(instanceofType, castType))
             return false;
 

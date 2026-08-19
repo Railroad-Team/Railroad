@@ -12,9 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 public record ContinueStatement(
-        Span span,
-        Optional<NameExpression> label
-) implements Statement {
+    Span span,
+    Optional<NameExpression> label) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.CONTINUE_STATEMENT;

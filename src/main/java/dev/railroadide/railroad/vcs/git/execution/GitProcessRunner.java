@@ -52,7 +52,8 @@ public class GitProcessRunner {
      * @return execution result containing exit status and captured output
      * @throws GitExecutionException when process startup or IO handling fails
      */
-    public GitResult run(GitCommand command, GitOutputListener listener, GitCancellationToken token, GitResultCaptureMode captureMode) throws GitExecutionException {
+    public GitResult run(GitCommand command, GitOutputListener listener, GitCancellationToken token,
+        GitResultCaptureMode captureMode) throws GitExecutionException {
         List<String> stdoutChunks = Collections.synchronizedList(new ArrayList<>());
         List<String> stderrChunks = Collections.synchronizedList(new ArrayList<>());
 
@@ -91,18 +92,15 @@ public class GitProcessRunner {
                 }
             };
 
-            Future<?> stdoutTask = ioPool.submit(() ->
-                readOutput(process.getInputStream(), captureMode, stdoutSink)
-            );
+            Future<?> stdoutTask = ioPool.submit(() -> readOutput(process.getInputStream(), captureMode, stdoutSink));
 
-            Future<?> stderrTask = ioPool.submit(() ->
-                readOutput(process.getErrorStream(), GitResultCaptureMode.TEXT_LINES, line -> {
+            Future<?> stderrTask = ioPool
+                .submit(() -> readOutput(process.getErrorStream(), GitResultCaptureMode.TEXT_LINES, line -> {
                     stderrChunks.add(line);
                     if (listener != null) {
                         listener.onStderr(line);
                     }
-                })
-            );
+                }));
 
             boolean cancelled = false;
             boolean timedOut = false;
@@ -145,12 +143,12 @@ public class GitProcessRunner {
 
             try {
                 stdoutTask.get(2, TimeUnit.SECONDS);
-            } catch (Exception ignored) {
+            } catch (Exception _) {
             }
 
             try {
                 stderrTask.get(2, TimeUnit.SECONDS);
-            } catch (Exception ignored) {
+            } catch (Exception _) {
             }
 
             Duration duration = Duration.ofNanos(System.nanoTime() - startNanos);
@@ -160,8 +158,7 @@ public class GitProcessRunner {
                 List.copyOf(stderrChunks),
                 timedOut,
                 cancelled,
-                duration
-            );
+                duration);
         } catch (Exception exception) {
             throw new GitExecutionException("Failed to execute git command", exception);
         } finally {
@@ -169,7 +166,7 @@ public class GitProcessRunner {
                 processRef.destroy();
                 try {
                     processRef.waitFor(5, TimeUnit.SECONDS);
-                } catch (InterruptedException ignored) {
+                } catch (InterruptedException _) {
                 }
 
                 if (processRef.isAlive()) {
@@ -208,7 +205,7 @@ public class GitProcessRunner {
                 var output = outputBuffer.toString(StandardCharsets.UTF_8);
                 onLine.accept(output);
             }
-        } catch (IOException ignored) {
+        } catch (IOException _) {
             // Process is destroyed or stream closed
         }
     }
@@ -233,7 +230,7 @@ public class GitProcessRunner {
             if (recordBuffer.size() > 0) {
                 emitRecord(recordBuffer, onRecord);
             }
-        } catch (IOException ignored) {
+        } catch (IOException _) {
             // Process is destroyed or stream closed
         }
     }
@@ -258,7 +255,7 @@ public class GitProcessRunner {
             if (lineBuffer.size() > 0) {
                 emitLine(lineBuffer, onLine);
             }
-        } catch (IOException ignored) {
+        } catch (IOException _) {
             // Process is destroyed or stream closed
         }
     }
@@ -302,11 +299,11 @@ public class GitProcessRunner {
     }
 
     private Path resolveGitExecutable() {
-        if (gitExecutable != null) {
+        if (gitExecutable != null)
             return gitExecutable;
-        }
 
-        GitLog.LOGGER.warn("Git executable path is not configured. Falling back to '{}' from PATH.", DEFAULT_GIT_EXECUTABLE);
+        GitLog.LOGGER.warn("Git executable path is not configured. Falling back to '{}' from PATH.",
+            DEFAULT_GIT_EXECUTABLE);
         gitExecutable = DEFAULT_GIT_EXECUTABLE;
         return DEFAULT_GIT_EXECUTABLE;
     }

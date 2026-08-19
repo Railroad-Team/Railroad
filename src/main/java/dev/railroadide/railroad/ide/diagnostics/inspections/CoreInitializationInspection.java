@@ -19,16 +19,14 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
 
     private static final Set<String> CONSTRUCTOR_KINDS = Set.of(
         JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id(),
-        JavaSyntaxKinds.RECORD_COMPACT_CONSTRUCTOR.id()
-    );
+        JavaSyntaxKinds.RECORD_COMPACT_CONSTRUCTOR.id());
 
     private static final Set<String> TYPE_DECLARATION_KINDS = Set.of(
         JavaSyntaxKinds.CLASS_DECLARATION.id(),
         JavaSyntaxKinds.INTERFACE_DECLARATION.id(),
         JavaSyntaxKinds.ENUM_DECLARATION.id(),
         JavaSyntaxKinds.ANNOTATION_TYPE_DECLARATION.id(),
-        JavaSyntaxKinds.RECORD_DECLARATION.id()
-    );
+        JavaSyntaxKinds.RECORD_DECLARATION.id());
 
     private static final List<JavaInspectionRule> RULES = List.of(
         new SimpleJavaInspectionRule(
@@ -36,16 +34,13 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
             JavaSemanticRules.OVERRIDABLE_METHOD_DURING_CONSTRUCTION.defaultSeverity(),
             JavaSemanticRules.OVERRIDABLE_METHOD_DURING_CONSTRUCTION.messageTemplate(),
             Set.of("core", "initialization"),
-            CoreInitializationInspection::reportOverridableMethodDuringConstruction
-        ),
+            CoreInitializationInspection::reportOverridableMethodDuringConstruction),
         new SimpleJavaInspectionRule(
             JavaSemanticRules.OVERRIDDEN_METHOD_DURING_CONSTRUCTION.id(),
             JavaSemanticRules.OVERRIDDEN_METHOD_DURING_CONSTRUCTION.defaultSeverity(),
             JavaSemanticRules.OVERRIDDEN_METHOD_DURING_CONSTRUCTION.messageTemplate(),
             Set.of("core", "initialization"),
-            CoreInitializationInspection::reportOverriddenMethodDuringConstruction
-        )
-    );
+            CoreInitializationInspection::reportOverriddenMethodDuringConstruction));
 
     @Override
     public String id() {
@@ -57,14 +52,17 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
         return RULES;
     }
 
-    private static void reportOverridableMethodDuringConstruction(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportOverridableMethodDuringConstruction(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         for (SyntaxNode methodInvocationNode : context.nodesOfKind(JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id())) {
             findThisConstructorCall(context, methodInvocationNode)
-                .ifPresent(callSite -> reporter.report(callSite.invocationNode(), callSite.methodSymbol().simpleName()));
+                .ifPresent(
+                    callSite -> reporter.report(callSite.invocationNode(), callSite.methodSymbol().simpleName()));
         }
     }
 
-    private static void reportOverriddenMethodDuringConstruction(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportOverriddenMethodDuringConstruction(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         Map<String, List<String>> subtypeIndex = buildSubtypeIndex(context);
         for (SyntaxNode methodInvocationNode : context.nodesOfKind(JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id())) {
             Optional<CallSite> maybeCall = findThisConstructorCall(context, methodInvocationNode);
@@ -136,10 +134,12 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
         if (descriptor == null)
             return Optional.empty();
 
-        return Optional.of(new CallSite(currentType, invocationNode, methodSymbol, ownerQualifiedName, descriptor.signatureKey()));
+        return Optional
+            .of(new CallSite(currentType, invocationNode, methodSymbol, ownerQualifiedName, descriptor.signatureKey()));
     }
 
-    private static JavaRuleContext.MethodDescriptor findMethodDescriptor(JavaRuleContext context, String ownerQualifiedName, Symbol methodSymbol) {
+    private static JavaRuleContext.MethodDescriptor findMethodDescriptor(JavaRuleContext context,
+        String ownerQualifiedName, Symbol methodSymbol) {
         for (JavaRuleContext.MethodDescriptor descriptor : context.declaredMethodDescriptors(ownerQualifiedName)) {
             if (methodSymbol.equals(descriptor.symbol()))
                 return descriptor;
@@ -161,7 +161,7 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
 
             List<String> supers = collectDirectSuperTypes(context, typeNode);
             for (String superType : supers) {
-                directSubtypes.computeIfAbsent(superType, ignored -> new ArrayList<>()).add(qualifiedName);
+                directSubtypes.computeIfAbsent(superType, _ -> new ArrayList<>()).add(qualifiedName);
             }
         }
 
@@ -171,7 +171,8 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
     private static List<String> collectDirectSuperTypes(JavaRuleContext context, SyntaxNode declaration) {
         List<String> supers = new ArrayList<>();
         addSuperTypeReferences(context, context.directChild(declaration, JavaSyntaxKinds.EXTENDS_CLAUSE.id()), supers);
-        addSuperTypeReferences(context, context.directChild(declaration, JavaSyntaxKinds.IMPLEMENTS_CLAUSE.id()), supers);
+        addSuperTypeReferences(context, context.directChild(declaration, JavaSyntaxKinds.IMPLEMENTS_CLAUSE.id()),
+            supers);
         return supers;
     }
 
@@ -216,7 +217,6 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
         SyntaxNode invocationNode,
         Symbol methodSymbol,
         String ownerQualifiedName,
-        String signatureKey
-    ) {
+        String signatureKey) {
     }
 }

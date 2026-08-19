@@ -21,8 +21,8 @@ public final class ProfileType {
     /**
      * Constructs a ProfileType with the specified name, icon, and icon provider.
      *
-     * @param name         The name of the profile type.
-     * @param icon         The icon associated with the profile type.
+     * @param name The name of the profile type.
+     * @param icon The icon associated with the profile type.
      * @param iconProvider The icon provider for the profile type.
      */
     public ProfileType(String name, String icon, IconProvider iconProvider) {
@@ -43,8 +43,10 @@ public final class ProfileType {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
+        if (obj == this)
+            return true;
+        if (obj == null || obj.getClass() != this.getClass())
+            return false;
         var that = (ProfileType) obj;
         return Objects.equals(this.name, that.name) &&
             Objects.equals(this.icon, that.icon) &&

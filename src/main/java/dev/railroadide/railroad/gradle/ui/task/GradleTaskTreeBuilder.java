@@ -54,8 +54,7 @@ public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTa
         RailroadModule module,
         Map<String, RailroadModule> projectsByPath,
         Map<String, TreeItem<GradleTreeElement>> projectNodes,
-        TreeItem<GradleTreeElement> root
-    ) {
+        TreeItem<GradleTreeElement> root) {
         return projectNodes.computeIfAbsent(module.getPath(), path -> {
             TreeItem<GradleTreeElement> parentNode = root;
             String parentPath = getParentProjectPath(path);
@@ -66,15 +65,14 @@ public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTa
                 }
             }
 
-            TreeItem<GradleTreeElement> node =
-                new TreeItem<>(new GradleModuleElement(project, module));
+            TreeItem<GradleTreeElement> node = new TreeItem<>(new GradleModuleElement(project, module));
             parentNode.getChildren().add(node);
             return node;
         });
     }
 
     private void addTasksToProjectNode(Project project, TreeItem<GradleTreeElement> projectNode,
-                                       List<RailroadGradleTask> projectTasks) {
+        List<RailroadGradleTask> projectTasks) {
         Map<String, List<RailroadGradleTask>> tasksByGroup = projectTasks.stream()
             .collect(Collectors.groupingBy(task -> {
                 String group = task.getGroup();
@@ -90,24 +88,20 @@ public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTa
             projectNode.getChildren().add(groupNode);
 
             for (RailroadGradleTask task : groupTasks) {
-                TreeItem<GradleTreeElement> taskNode =
-                    new TreeItem<>(new GradleTaskElement(project, task));
+                TreeItem<GradleTreeElement> taskNode = new TreeItem<>(new GradleTaskElement(project, task));
                 groupNode.getChildren().add(taskNode);
             }
         }
     }
 
     private void sortTree(TreeItem<GradleTreeElement> node) {
-        Comparator<TreeItem<GradleTreeElement>> comparator =
-            Comparator.<TreeItem<GradleTreeElement>, Integer>comparing(
-                item -> typeRank(item.getValue())
-            ).thenComparing(
+        Comparator<TreeItem<GradleTreeElement>> comparator = Comparator.<TreeItem<GradleTreeElement>, Integer>comparing(
+            item -> typeRank(item.getValue())).thenComparing(
                 item -> {
                     GradleTreeElement element = item.getValue();
                     return element == null ? "" : element.getName();
                 },
-                String.CASE_INSENSITIVE_ORDER
-            );
+                String.CASE_INSENSITIVE_ORDER);
 
         FXCollections.sort(node.getChildren(), comparator);
         for (TreeItem<GradleTreeElement> child : node.getChildren()) {

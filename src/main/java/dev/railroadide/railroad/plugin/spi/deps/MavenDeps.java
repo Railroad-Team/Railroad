@@ -11,7 +11,7 @@ public record MavenDeps(List<MavenRepo> repositories, List<MavenDep> artifacts) 
      * Constructs a MavenDeps object with the specified repositories and artifacts.
      *
      * @param repositories the list of Maven repositories
-     * @param artifacts    the list of Maven dependencies
+     * @param artifacts the list of Maven dependencies
      */
     public MavenDeps {
         if (repositories == null || artifacts == null)

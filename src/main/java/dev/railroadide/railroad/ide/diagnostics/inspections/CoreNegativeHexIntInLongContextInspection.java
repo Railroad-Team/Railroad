@@ -35,12 +35,11 @@ public class CoreNegativeHexIntInLongContextInspection implements JavaInspection
                 JavaSemanticRules.NEGATIVE_HEX_INT_IN_LONG_CONTEXT.defaultSeverity(),
                 JavaSemanticRules.NEGATIVE_HEX_INT_IN_LONG_CONTEXT.messageTemplate(),
                 Set.of("core", "bug"),
-                CoreNegativeHexIntInLongContextInspection::reportNegativeHexIntInLongContext
-            )
-        );
+                CoreNegativeHexIntInLongContextInspection::reportNegativeHexIntInLongContext));
     }
 
-    private static void reportNegativeHexIntInLongContext(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportNegativeHexIntInLongContext(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         for (SyntaxNode literalExprNode : context.nodesOfKinds(JavaSyntaxKinds.LITERAL_EXPRESSION.id())) {
             if (!isHexIntegerLiteral(literalExprNode))
                 continue;
@@ -65,7 +64,7 @@ public class CoreNegativeHexIntInLongContextInspection implements JavaInspection
             long value;
             try {
                 value = Long.parseUnsignedLong(digits, 16);
-            } catch (NumberFormatException ignored) {
+            } catch (NumberFormatException _) {
                 continue;
             }
 
@@ -126,9 +125,8 @@ public class CoreNegativeHexIntInLongContextInspection implements JavaInspection
                 SyntaxNode invocation = parent.parent().orElse(null);
                 if (invocation != null
                     && Objects.equals(JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id(), invocation.kind().id())
-                    && isLongMethodArgContext(context, current, invocation)) {
+                    && isLongMethodArgContext(context, current, invocation))
                     return true;
-                }
 
                 current = parent;
                 continue;

@@ -11,8 +11,7 @@ public record MinecraftVersion(
     String type,
     String url,
     LocalDateTime releaseTime,
-    LocalDateTime time
-) implements Comparable<MinecraftVersion> {
+    LocalDateTime time) implements Comparable<MinecraftVersion> {
     public static MinecraftVersion determineDefaultMinecraftVersion(List<MinecraftVersion> versions) {
         if (versions == null || versions.isEmpty())
             return null;
@@ -33,10 +32,7 @@ public record MinecraftVersion(
     }
 
     public enum Type {
-        RELEASE,
-        SNAPSHOT,
-        OLD_ALPHA,
-        OLD_BETA;
+        RELEASE, SNAPSHOT, OLD_ALPHA, OLD_BETA;
 
         public static Type fromString(String type) {
             return switch (type.toLowerCase(Locale.ROOT)) {

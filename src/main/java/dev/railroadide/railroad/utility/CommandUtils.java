@@ -30,7 +30,7 @@ public final class CommandUtils {
             }
 
             return process.exitValue() == 0;
-        } catch (Exception ignored) {
+        } catch (Exception _) {
             return false;
         }
     }
@@ -45,7 +45,7 @@ public final class CommandUtils {
             if (!line.isBlank()) {
                 try {
                     paths.add(Path.of(line));
-                } catch (Exception ignored) {
+                } catch (Exception _) {
                 }
             }
         }
@@ -67,7 +67,8 @@ public final class CommandUtils {
                 }
             }
 
-            try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+            try (var reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
                 List<String> lines = new ArrayList<>();
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -76,7 +77,7 @@ public final class CommandUtils {
 
                 return lines;
             }
-        } catch (Exception ignored) {
+        } catch (Exception _) {
             return Collections.emptyList();
         }
     }

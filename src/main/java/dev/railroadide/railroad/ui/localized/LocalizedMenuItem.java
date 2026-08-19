@@ -7,7 +7,8 @@ import javafx.scene.control.MenuItem;
 
 /**
  * An extension of the JavaFX MenuItem that allows for the MenuItem's text to be localized.
- * It also supports setting a url to open when the item is clicked, additionally allows for a keybind to be set to trigger the items action.
+ * It also supports setting a url to open when the item is clicked, additionally allows for a keybind to be set to
+ * trigger the items action.
  */
 public class LocalizedMenuItem extends MenuItem {
 
@@ -27,7 +28,7 @@ public class LocalizedMenuItem extends MenuItem {
     /**
      * Creates a new LocalizedMenuItem with the specified key and graphic.
      *
-     * @param key     The localization key
+     * @param key The localization key
      * @param graphic The graphic node to display alongside the text
      */
     public LocalizedMenuItem(final String key, Node graphic) {
@@ -43,7 +44,7 @@ public class LocalizedMenuItem extends MenuItem {
      */
     public LocalizedMenuItem(final String key, String url) {
         this(key);
-        setOnAction($ -> DesktopUtils.openUrl(url));
+        setOnAction(_ -> DesktopUtils.openUrl(url));
     }
 
     /**

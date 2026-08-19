@@ -144,7 +144,7 @@ public final class RailroadJavaStyle {
             edits.sort(Comparator.<TextEdit>comparingInt(TextEdit::start).reversed()
                 .thenComparing(Comparator.comparingInt(TextEdit::end).reversed()));
 
-            StringBuilder rewritten = new StringBuilder(source);
+            var rewritten = new StringBuilder(source);
             for (TextEdit edit : edits) {
                 rewritten.replace(edit.start(), edit.end(), edit.replacement());
             }
@@ -198,7 +198,7 @@ public final class RailroadJavaStyle {
             output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             int exitCode = process.waitFor();
             if (exitCode != 0) {
-                String error = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
+                var error = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
                 throw new IOException("Git command failed (" + String.join(" ", command) + "):\n" + error);
             }
         } catch (InterruptedException exception) {
@@ -333,8 +333,9 @@ public final class RailroadJavaStyle {
                 if (loop.getInitializer().size() != 1 || loop.getInitializer().getFirst() != variable)
                     return null;
                 List<Tree> scope = new ArrayList<>();
-                if (loop.getCondition() != null)
+                if (loop.getCondition() != null) {
                     scope.add(loop.getCondition());
+                }
                 scope.addAll(loop.getUpdate());
                 scope.add(loop.getStatement());
                 return scope;
@@ -388,10 +389,11 @@ public final class RailroadJavaStyle {
         }
 
         private static boolean containsIdentifier(List<? extends Tree> trees, String name) {
-            IdentifierUsageScanner scanner = new IdentifierUsageScanner(name);
+            var scanner = new IdentifierUsageScanner(name);
             for (Tree tree : trees) {
-                if (tree != null)
+                if (tree != null) {
                     scanner.scan(tree, null);
+                }
             }
             return scanner.found;
         }
@@ -469,7 +471,7 @@ public final class RailroadJavaStyle {
         }
 
         private static String withoutWhitespace(String text) {
-            StringBuilder result = new StringBuilder(text.length());
+            var result = new StringBuilder(text.length());
             text.codePoints()
                 .filter(codePoint -> !Character.isWhitespace(codePoint))
                 .forEach(result::appendCodePoint);
@@ -581,8 +583,9 @@ public final class RailroadJavaStyle {
 
             @Override
             public Void visitIdentifier(IdentifierTree tree, Void unused) {
-                if (tree.getName().contentEquals(name))
+                if (tree.getName().contentEquals(name)) {
                     found = true;
+                }
                 return null;
             }
         }

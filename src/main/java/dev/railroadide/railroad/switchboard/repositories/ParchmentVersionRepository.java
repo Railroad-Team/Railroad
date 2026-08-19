@@ -14,7 +14,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public record ParchmentVersionRepository(SwitchboardClient client, CacheManager cache)
-    implements SwitchboardRepository {
+    implements
+        SwitchboardRepository {
     private static final Duration VERSIONS_TTL = Duration.ofHours(12);
     private static final Duration LATEST_TTL = Duration.ofHours(1);
 
@@ -23,8 +24,7 @@ public record ParchmentVersionRepository(SwitchboardClient client, CacheManager 
             "parchment:versions",
             SwitchboardClient.LIST_OF_PARCHMENT_VERSIONS,
             VERSIONS_TTL,
-            client::fetchParchmentVersions
-        );
+            client::fetchParchmentVersions);
     }
 
     public List<ParchmentVersion> getAllVersionsSync() throws ExecutionException, InterruptedException {
@@ -40,11 +40,11 @@ public record ParchmentVersionRepository(SwitchboardClient client, CacheManager 
             key,
             SwitchboardClient.LIST_OF_PARCHMENT_VERSIONS,
             VERSIONS_TTL,
-            () -> client.fetchParchmentVersions(normalized)
-        );
+            () -> client.fetchParchmentVersions(normalized));
     }
 
-    public List<ParchmentVersion> getVersionsForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {
+    public List<ParchmentVersion> getVersionsForSync(String minecraftVersionId)
+        throws ExecutionException, InterruptedException {
         return getVersionsFor(minecraftVersionId).get();
     }
 
@@ -53,8 +53,7 @@ public record ParchmentVersionRepository(SwitchboardClient client, CacheManager 
             "parchment:latest",
             ParchmentVersion.class,
             LATEST_TTL,
-            client::fetchLatestParchmentVersion
-        );
+            client::fetchLatestParchmentVersion);
     }
 
     public ParchmentVersion getLatestVersionSync() throws ExecutionException, InterruptedException {
@@ -70,11 +69,11 @@ public record ParchmentVersionRepository(SwitchboardClient client, CacheManager 
             key,
             ParchmentVersion.class,
             LATEST_TTL,
-            () -> client.fetchLatestParchmentVersion(normalized)
-        );
+            () -> client.fetchLatestParchmentVersion(normalized));
     }
 
-    public ParchmentVersion getLatestVersionForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {
+    public ParchmentVersion getLatestVersionForSync(String minecraftVersionId)
+        throws ExecutionException, InterruptedException {
         return getLatestVersionFor(minecraftVersionId).get();
     }
 
@@ -83,11 +82,11 @@ public record ParchmentVersionRepository(SwitchboardClient client, CacheManager 
             "parchment:grouped",
             SwitchboardClient.MAP_OF_PARCHMENT_VERSIONS,
             VERSIONS_TTL,
-            client::fetchGroupedParchmentVersions
-        );
+            client::fetchGroupedParchmentVersions);
     }
 
-    public Map<String, List<ParchmentVersion>> getGroupedVersionsSync() throws ExecutionException, InterruptedException {
+    public Map<String, List<ParchmentVersion>> getGroupedVersionsSync()
+        throws ExecutionException, InterruptedException {
         return getGroupedVersions().get();
     }
 }

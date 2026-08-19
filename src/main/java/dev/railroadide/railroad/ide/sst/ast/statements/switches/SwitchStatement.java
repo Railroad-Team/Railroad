@@ -12,9 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record SwitchStatement(
-        Span span,
-        Expression selectionExpression,
-        List<SwitchRule> rule) implements Statement {
+    Span span,
+    Expression selectionExpression,
+    List<SwitchRule> rule) implements Statement {
 
     @Override
     public AstKind kind() {

@@ -13,7 +13,8 @@ import java.util.function.Supplier;
  * This class provides a builder for creating instances and a registry for managing them.
  */
 public class ProjectType {
-    public static final Registry<ProjectType> REGISTRY = RegistryManager.createOrderedRegistry("railroad:project_type", ProjectType.class);
+    public static final Registry<ProjectType> REGISTRY = RegistryManager.createOrderedRegistry("railroad:project_type",
+        ProjectType.class);
 
     @Getter
     private final String name;
@@ -26,9 +27,9 @@ public class ProjectType {
     /**
      * Constructs a new `ProjectType` instance.
      *
-     * @param name                 The name of the project type.
-     * @param description          A translation key for the project type description.
-     * @param icon                 An icon representing the project type.
+     * @param name The name of the project type.
+     * @param description A translation key for the project type description.
+     * @param icon An icon representing the project type.
      * @param onboardingUISupplier A supplier for creating an onboarding UI for the project type.
      */
     protected ProjectType(String name, String description, Image icon, Supplier<? extends Node> onboardingUISupplier) {

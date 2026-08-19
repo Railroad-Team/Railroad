@@ -37,8 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ProjectListCell extends ListCell<Project> {
     private static final LongProperty ELAPSED_TICK = new SimpleLongProperty();
     private static final Timeline ELAPSED_TIMELINE = new Timeline(
-        new KeyFrame(Duration.seconds(1), $ -> ELAPSED_TICK.set(ELAPSED_TICK.get() + 1))
-    );
+        new KeyFrame(Duration.seconds(1), _ -> ELAPSED_TICK.set(ELAPSED_TICK.get() + 1)));
     private static final AtomicInteger ATTACHED_CELLS = new AtomicInteger();
 
     static {
@@ -155,7 +154,7 @@ public class ProjectListCell extends ListCell<Project> {
             for (Facet<?> facet : project.getFacets()) {
                 if (facet != null && facet.getType() != null) {
                     // Use the FacetType's name for the tag
-                    Label tagLabel = new Label(facet.getType().name());
+                    var tagLabel = new Label(facet.getType().name());
                     tagLabel.getStyleClass().add("project-list-facet-tag");
                     tagLabel.getStyleClass().add("facet-" + facet.getType().id());
                     String description = facet.getType().description();

@@ -23,17 +23,14 @@ public class CorePublicClassNotNamedAfterFileInspection implements JavaInspectio
             JavaSemanticRules.PUBLIC_CLASS_NOT_NAMED_AFTER_FILE.defaultSeverity(),
             JavaSemanticRules.PUBLIC_CLASS_NOT_NAMED_AFTER_FILE.messageTemplate(),
             Set.of("core", "naming"),
-            CorePublicClassNotNamedAfterFileInspection::reportPublicClassNotNamedAfterFile
-        )
-    );
+            CorePublicClassNotNamedAfterFileInspection::reportPublicClassNotNamedAfterFile));
 
     private static final List<String> TOP_LEVEL_TYPE_KINDS = List.of(
         "JAVA_CLASS_DECLARATION",
         "JAVA_RECORD_DECLARATION",
         "JAVA_INTERFACE_DECLARATION",
         "JAVA_ENUM_DECLARATION",
-        "JAVA_ANNOTATION_TYPE_DECLARATION"
-    );
+        "JAVA_ANNOTATION_TYPE_DECLARATION");
 
     @Override
     public String id() {
@@ -45,7 +42,8 @@ public class CorePublicClassNotNamedAfterFileInspection implements JavaInspectio
         return RULES;
     }
 
-    private static void reportPublicClassNotNamedAfterFile(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportPublicClassNotNamedAfterFile(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         String fileName = context.filePath().getFileName().toString();
         if (!fileName.endsWith(".java"))
             return;

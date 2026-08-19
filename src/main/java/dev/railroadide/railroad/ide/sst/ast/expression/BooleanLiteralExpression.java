@@ -9,9 +9,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record BooleanLiteralExpression(
-        Span span,
-        boolean value
-) implements LiteralExpression {
+    Span span,
+    boolean value) implements LiteralExpression {
     @Override
     public AstKind kind() {
         return AstKind.BOOLEAN_LITERAL;

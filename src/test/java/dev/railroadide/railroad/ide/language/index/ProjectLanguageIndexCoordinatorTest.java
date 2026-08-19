@@ -28,7 +28,7 @@ class ProjectLanguageIndexCoordinatorTest {
             """);
 
         ProjectLanguageIndexService indexService = createIndexService();
-        ProjectLanguageIndexCoordinator coordinator = new ProjectLanguageIndexCoordinator(root, indexService, List.of(new JavaLanguageSupport()));
+        var coordinator = new ProjectLanguageIndexCoordinator(root, indexService, List.of(new JavaLanguageSupport()));
 
         coordinator.warmIndexes();
 
@@ -48,7 +48,7 @@ class ProjectLanguageIndexCoordinatorTest {
         Path aFile = root.resolve("src/main/java/demo/A.java");
 
         ProjectLanguageIndexService indexService = createIndexService();
-        ProjectLanguageIndexCoordinator coordinator = new ProjectLanguageIndexCoordinator(root, indexService, List.of(new JavaLanguageSupport()));
+        var coordinator = new ProjectLanguageIndexCoordinator(root, indexService, List.of(new JavaLanguageSupport()));
         coordinator.warmIndexes();
 
         Files.writeString(aFile, """
@@ -74,7 +74,7 @@ class ProjectLanguageIndexCoordinatorTest {
 
     private ProjectLanguageIndexService createIndexService() {
         LanguageSupport support = new JavaLanguageSupport();
-        ProjectLanguageIndexService indexService = new ProjectLanguageIndexService();
+        var indexService = new ProjectLanguageIndexService();
         indexService.registerIndexer(support.createIndexer());
         indexService.registerPersistence(support.createPersistence());
         return indexService;

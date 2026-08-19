@@ -11,10 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record ExportsDirective(
-        Span span,
-        NameExpression packageName,
-        List<NameExpression> moduleNames
-) implements ModuleDirective {
+    Span span,
+    NameExpression packageName,
+    List<NameExpression> moduleNames) implements ModuleDirective {
     @Override
     public AstKind kind() {
         return AstKind.EXPORTS_DIRECTIVE;

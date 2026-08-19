@@ -14,10 +14,9 @@ public final class JavaInspectionRuleEngine {
     }
 
     public static void runRules(
-            JavaInspectionRuleProvider provider,
-            JavaRuleContext context,
-            JavaInspectionReporter reporter
-    ) {
+        JavaInspectionRuleProvider provider,
+        JavaRuleContext context,
+        JavaInspectionReporter reporter) {
         Objects.requireNonNull(provider, "provider");
         Objects.requireNonNull(context, "context");
         Objects.requireNonNull(reporter, "reporter");
@@ -26,9 +25,8 @@ public final class JavaInspectionRuleEngine {
     }
 
     public static List<SemanticDiagnostic> collectDiagnostics(
-            JavaInspectionRuleProvider provider,
-            JavaRuleContext context
-    ) {
+        JavaInspectionRuleProvider provider,
+        JavaRuleContext context) {
         Objects.requireNonNull(provider, "provider");
         Objects.requireNonNull(context, "context");
 

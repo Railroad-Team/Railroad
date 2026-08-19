@@ -56,8 +56,7 @@ public class GitStashPane extends RRVBox {
     private final RRButton refreshButton;
     private final LongProperty elapsedTick = new SimpleLongProperty();
     private final Timeline elapsedTimeline = new Timeline(
-        new KeyFrame(Duration.seconds(1), _ -> elapsedTick.set(elapsedTick.get() + 1))
-    );
+        new KeyFrame(Duration.seconds(1), _ -> elapsedTick.set(elapsedTick.get() + 1)));
     private String selectedStashRef;
 
     public GitStashPane(Project project) {
@@ -128,11 +127,11 @@ public class GitStashPane extends RRVBox {
 
             openDiffForStashFile(selectedStashRef, fileItem.change());
         });
-        createButton.setOnAction($ -> onCreateStash());
-        refreshButton.setOnAction($ -> refreshStashes());
-        applyButton.setOnAction($ -> onApplyStash());
-        popButton.setOnAction($ -> onPopStash());
-        dropButton.setOnAction($ -> onDropStash());
+        createButton.setOnAction(_ -> onCreateStash());
+        refreshButton.setOnAction(_ -> refreshStashes());
+        applyButton.setOnAction(_ -> onApplyStash());
+        popButton.setOnAction(_ -> onPopStash());
+        dropButton.setOnAction(_ -> onDropStash());
         gitManager.repoStatusProperty().addListener((_, _, _) -> refreshStashes());
 
         elapsedTimeline.setCycleCount(Timeline.INDEFINITE);
@@ -181,8 +180,7 @@ public class GitStashPane extends RRVBox {
                 .onConfirm(() -> gitManager.stashDrop(selected.reference()));
             WindowBuilder.createDialog(
                 "railroad.git.stash.drop_dialog.title",
-                dialogBuilder
-            );
+                dialogBuilder);
         }
     }
 
@@ -197,7 +195,8 @@ public class GitStashPane extends RRVBox {
                 refreshButton.setDisable(false);
 
                 GitStashEntry selected = stashesList.getSelectionModel().getSelectedItem();
-                if (selected == null || stashes.stream().noneMatch(stash -> stash.reference().equals(selected.reference()))) {
+                if (selected == null
+                    || stashes.stream().noneMatch(stash -> stash.reference().equals(selected.reference()))) {
                     selectedStashRef = null;
                     clearStashChanges();
                 }

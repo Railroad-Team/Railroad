@@ -33,7 +33,8 @@ public class KeybindContexts {
      * @return The keybind context with the given id, or the existing context if a context with that id already exists.
      */
     public static KeybindContext of(String id) {
-        if (getContext(id) != null) return getContext(id);
+        if (getContext(id) != null)
+            return getContext(id);
 
         return registerContext(new KeybindContext(id));
     }

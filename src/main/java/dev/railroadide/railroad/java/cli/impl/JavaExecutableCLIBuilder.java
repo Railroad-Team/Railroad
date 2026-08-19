@@ -48,7 +48,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     /**
      * Creates a builder to launch a {@code .class} file.
      *
-     * @param jdk           The JDK to use.
+     * @param jdk The JDK to use.
      * @param classFilePath The path to the class file.
      * @return A new builder instance.
      */
@@ -62,7 +62,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     /**
      * Creates a builder to launch an executable {@code .jar} file.
      *
-     * @param jdk         The JDK to use.
+     * @param jdk The JDK to use.
      * @param jarFilePath The path to the JAR file.
      * @return A new builder instance.
      */
@@ -77,7 +77,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     /**
      * Creates a builder to launch a module.
      *
-     * @param jdk        The JDK to use.
+     * @param jdk The JDK to use.
      * @param moduleName The name of the module to launch.
      * @return A new builder instance.
      */
@@ -89,7 +89,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     /**
      * Creates a builder to launch a single-file {@code .java} source program.
      *
-     * @param jdk            The JDK to use.
+     * @param jdk The JDK to use.
      * @param sourceFilePath The path to the source file.
      * @return A new builder instance.
      */
@@ -155,7 +155,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Loads a native agent library (e.g., for profiling or debugging). Corresponds to the {@code -agentlib} flag.
      *
      * @param agentLib The name of the agent library.
-     * @param options  Optional arguments for the agent.
+     * @param options Optional arguments for the agent.
      * @return This builder instance.
      */
     public JavaExecutableCLIBuilder agentlib(String agentLib, String... options) {
@@ -175,7 +175,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Loads a native agent library by its full path. Corresponds to the {@code -agentpath} flag.
      *
      * @param agentPath The path to the agent library.
-     * @param options   Optional arguments for the agent.
+     * @param options Optional arguments for the agent.
      * @return This builder instance.
      */
     public JavaExecutableCLIBuilder agentpath(Path agentPath, String... options) {
@@ -262,7 +262,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     @Deprecated(forRemoval = true, since = "Java 25")
     public JavaExecutableCLIBuilder illegalNativeAccess(AccessMode mode) {
         if (jdk.version().major() < 24)
-            throw new UnsupportedOperationException("Setting illegal native access mode is only supported in JDK 24 and above.");
+            throw new UnsupportedOperationException(
+                "Setting illegal native access mode is only supported in JDK 24 and above.");
         if (mode == AccessMode.DEBUG)
             throw new UnsupportedOperationException("DEBUG mode is not available for illegal native access.");
 
@@ -380,7 +381,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     /**
      * Sets a system property. Corresponds to the {@code -Dkey=value} flag.
      *
-     * @param key   The property key.
+     * @param key The property key.
      * @param value The property value.
      * @return This builder instance.
      */
@@ -406,7 +407,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Disables assertions for a specific package or class.
      *
      * @param packageOrClassName The name of the package or class.
-     * @param subpackages        If {@code true}, also applies to subpackages.
+     * @param subpackages If {@code true}, also applies to subpackages.
      * @return This builder instance.
      */
     public JavaExecutableCLIBuilder disableAssertions(String packageOrClassName, boolean subpackages) {
@@ -449,7 +450,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Enables assertions for a specific package or class.
      *
      * @param packageOrClassName The name of the package or class.
-     * @param subpackages        If {@code true}, also applies to subpackages.
+     * @param subpackages If {@code true}, also applies to subpackages.
      * @return This builder instance.
      */
     public JavaExecutableCLIBuilder enableAssertions(String packageOrClassName, boolean subpackages) {
@@ -493,7 +494,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Loads a Java programming language agent. Corresponds to the {@code -javaagent} flag.
      *
      * @param javaAgentPath The path to the agent JAR file.
-     * @param options       Optional arguments for the agent.
+     * @param options Optional arguments for the agent.
      * @return This builder instance.
      */
     public JavaExecutableCLIBuilder javaagent(String javaAgentPath, String... options) {
@@ -513,7 +514,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Loads a Java programming language agent. Corresponds to the {@code -javaagent} flag.
      *
      * @param javaAgentPath The path to the agent JAR file.
-     * @param options       Optional arguments for the agent.
+     * @param options Optional arguments for the agent.
      * @return This builder instance.
      */
     public JavaExecutableCLIBuilder javaagent(Path javaAgentPath, String... options) {
@@ -522,7 +523,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Shows version information and continues execution. Corresponds to the {@code -showversion} or {@code --showversion} flag.
+     * Shows version information and continues execution. Corresponds to the {@code -showversion} or
+     * {@code --showversion} flag.
      *
      * @param errorOutput If {@code true}, prints to standard error.
      * @return This builder instance.
@@ -849,7 +851,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     /**
      * Adds a read edge from a source module to target modules. Corresponds to the {@code --add-reads} flag.
      *
-     * @param sourceModule  The source module.
+     * @param sourceModule The source module.
      * @param targetModules The target modules.
      * @return This builder instance.
      */
@@ -872,10 +874,11 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Adds an export of a package from a source module to target modules. Corresponds to the {@code --add-exports} flag.
+     * Adds an export of a package from a source module to target modules. Corresponds to the {@code --add-exports}
+     * flag.
      *
-     * @param sourceModule  The source module.
-     * @param packageName   The package to export.
+     * @param sourceModule The source module.
+     * @param packageName The package to export.
      * @param targetModules The target modules.
      * @return This builder instance.
      */
@@ -892,7 +895,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Adds an export of a package from a source module to all unnamed modules.
      *
      * @param sourceModule The source module.
-     * @param packageName  The package to export.
+     * @param packageName The package to export.
      * @return This builder instance.
      */
     public JavaExecutableCLIBuilder addExportsAllUnnamed(String sourceModule, String packageName) {
@@ -902,8 +905,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     /**
      * Adds an open of a package from a source module to target modules. Corresponds to the {@code --add-opens} flag.
      *
-     * @param sourceModule  The source module.
-     * @param packageName   The package to open.
+     * @param sourceModule The source module.
+     * @param packageName The package to open.
      * @param targetModules The target modules.
      * @return This builder instance.
      */
@@ -920,7 +923,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Adds an open of a package from a source module to all unnamed modules.
      *
      * @param sourceModule The source module.
-     * @param packageName  The package to open.
+     * @param packageName The package to open.
      * @return This builder instance.
      */
     public JavaExecutableCLIBuilder addOpensAllUnnamed(String sourceModule, String packageName) {
@@ -962,7 +965,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     public JavaExecutableCLIBuilder sourceVersion(String version) {
         if (launchType != LaunchType.SOURCE_FILE)
-            throw new UnsupportedOperationException("Setting source version is only supported when launching a source file.");
+            throw new UnsupportedOperationException(
+                "Setting source version is only supported when launching a source file.");
 
         Objects.requireNonNull(version, "Source version cannot be null");
         this.arguments.add("--source " + version);
@@ -970,7 +974,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the access mode for {@code sun.misc.Unsafe} memory access. Corresponds to the {@code --sun-misc-unsafe-memory-access} flag.
+     * Sets the access mode for {@code sun.misc.Unsafe} memory access. Corresponds to the
+     * {@code --sun-misc-unsafe-memory-access} flag.
      *
      * @param mode The access mode.
      * @return This builder instance.
@@ -1171,10 +1176,11 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the interval for trimming the native heap on Linux. Corresponds to the {@code -XX:TrimNativeHeapInterval} flag.
+     * Sets the interval for trimming the native heap on Linux. Corresponds to the {@code -XX:TrimNativeHeapInterval}
+     * flag.
      *
      * @param interval The interval duration.
-     * @param unit     The time unit of the interval.
+     * @param unit The time unit of the interval.
      * @return This builder instance.
      * @throws UnsupportedOperationException if not on Linux.
      */
@@ -1299,7 +1305,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     /**
      * Specifies paths to both static and dynamic shared archive files.
      *
-     * @param staticArchivePath  The path to the static archive.
+     * @param staticArchivePath The path to the static archive.
      * @param dynamicArchivePath The path to the dynamic archive.
      * @return This builder instance.
      */
@@ -1333,7 +1339,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Specifies the shared class list file for creating a CDS archive. Corresponds to the {@code -XX:SharedClassListFile} flag.
+     * Specifies the shared class list file for creating a CDS archive. Corresponds to the
+     * {@code -XX:SharedClassListFile} flag.
      *
      * @param classListFilePath The path to the class list file.
      * @return This builder instance.
@@ -1345,7 +1352,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Shows detailed code information in exception messages. Corresponds to the {@code -XX:+ShowCodeDetailsInExceptionMessages} flag.
+     * Shows detailed code information in exception messages. Corresponds to the
+     * {@code -XX:+ShowCodeDetailsInExceptionMessages} flag.
      *
      * @return This builder instance.
      */
@@ -1487,7 +1495,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     public JavaExecutableCLIBuilder branchProtectionMode(BranchProtectionMode mode) {
         if (!OperatingSystem.isLinux())
-            throw new UnsupportedOperationException("Branch protection mode is only supported on Linux (AArch64) systems.");
+            throw new UnsupportedOperationException(
+                "Branch protection mode is only supported on Linux (AArch64) systems.");
 
         Objects.requireNonNull(mode, "Branch protection mode cannot be null");
         this.arguments.add("-XX:BranchProtection=" + mode.getMode());
@@ -1495,7 +1504,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the number of cache lines to prefetch on instance allocation. Corresponds to the {@code -XX:AllocateInstancePrefetchLines} flag.
+     * Sets the number of cache lines to prefetch on instance allocation. Corresponds to the
+     * {@code -XX:AllocateInstancePrefetchLines} flag.
      *
      * @param lineCount The number of lines.
      * @return This builder instance.
@@ -1512,7 +1522,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Sets the prefetch distance for object allocation. Corresponds to the {@code -XX:AllocatePrefetchDistance} flag.
      *
      * @param distance The distance.
-     * @param unit     The unit of distance.
+     * @param unit The unit of distance.
      * @return This builder instance.
      */
     public JavaExecutableCLIBuilder allocatePrefetchDistance(long distance, ByteUnit unit) {
@@ -1539,7 +1549,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the number of cache lines to prefetch ahead of the current allocation pointer. Corresponds to the {@code -XX:AllocatePrefetchLines} flag.
+     * Sets the number of cache lines to prefetch ahead of the current allocation pointer. Corresponds to the
+     * {@code -XX:AllocatePrefetchLines} flag.
      *
      * @param lineCount The number of lines.
      * @return This builder instance.
@@ -1556,7 +1567,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Sets the prefetch step size. Corresponds to the {@code -XX:AllocatePrefetchStepSize} flag.
      *
      * @param stepSize The step size.
-     * @param unit     The unit of size.
+     * @param unit The unit of size.
      * @return This builder instance.
      */
     public JavaExecutableCLIBuilder allocatePrefetchStepSize(int stepSize, ByteUnit unit) {
@@ -1591,7 +1602,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the number of compiler threads for compilation. Corresponds to the {@code -XX:CompilerThreadsForCompilation} flag.
+     * Sets the number of compiler threads for compilation. Corresponds to the {@code -XX:CompilerThreadsForCompilation}
+     * flag.
      *
      * @param threadCount The number of threads.
      * @return This builder instance.
@@ -1605,7 +1617,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Enables dynamic adjustment of the number of compiler threads. Corresponds to the {@code -XX:+UseDynamicNumberOfCompilerThreads} flag.
+     * Enables dynamic adjustment of the number of compiler threads. Corresponds to the
+     * {@code -XX:+UseDynamicNumberOfCompilerThreads} flag.
      *
      * @return This builder instance.
      */
@@ -1617,7 +1630,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     /**
      * Specifies a command to be executed on a method. Corresponds to the {@code -XX:CompileCommand} flag.
      *
-     * @param command     The compile command (e.g., quiet, print, exclude).
+     * @param command The compile command (e.g., quiet, print, exclude).
      * @param methodSpecs The method specifications.
      * @return This builder instance.
      */
@@ -1630,7 +1643,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Specifies a file from which to read JIT compiler commands. Corresponds to the {@code -XX:CompileCommandFile} flag.
+     * Specifies a file from which to read JIT compiler commands. Corresponds to the {@code -XX:CompileCommandFile}
+     * flag.
      *
      * @param commandFilePath The path to the command file.
      * @return This builder instance.
@@ -1642,7 +1656,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Specifies a file from which to read JIT compiler directives. Corresponds to the {@code -XX:CompilerDirectivesFile} flag.
+     * Specifies a file from which to read JIT compiler directives. Corresponds to the
+     * {@code -XX:CompilerDirectivesFile} flag.
      *
      * @param directivesFilePath The path to the directives file.
      * @return This builder instance.
@@ -1747,7 +1762,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Enables logging of compilation activity to a {@code hotspot.log} file. Corresponds to the {@code -XX:+LogCompilation} flag.
+     * Enables logging of compilation activity to a {@code hotspot.log} file. Corresponds to the
+     * {@code -XX:+LogCompilation} flag.
      *
      * @return This builder instance.
      */
@@ -1757,7 +1773,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the maximum bytecode size of a frequently executed method to be inlined. Corresponds to the {@code -XX:FreqInlineSize} flag.
+     * Sets the maximum bytecode size of a frequently executed method to be inlined. Corresponds to the
+     * {@code -XX:FreqInlineSize} flag.
      *
      * @param size The size.
      * @param unit The unit of size.
@@ -1791,7 +1808,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the maximum bytecode size for a C1-compiled method to be inlined. Corresponds to the {@code -XX:C1MaxInlineSize} flag.
+     * Sets the maximum bytecode size for a C1-compiled method to be inlined. Corresponds to the
+     * {@code -XX:C1MaxInlineSize} flag.
      *
      * @param size The size.
      * @param unit The unit of size.
@@ -1808,7 +1826,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the maximum bytecode size of a trivial method to be inlined. Corresponds to the {@code -XX:MaxTrivialSize} flag.
+     * Sets the maximum bytecode size of a trivial method to be inlined. Corresponds to the {@code -XX:MaxTrivialSize}
+     * flag.
      *
      * @param size The size.
      * @param unit The unit of size.
@@ -1825,7 +1844,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the maximum bytecode size for a trivial C1-compiled method to be inlined. Corresponds to the {@code -XX:C1MaxTrivialSize} flag.
+     * Sets the maximum bytecode size for a trivial C1-compiled method to be inlined. Corresponds to the
+     * {@code -XX:C1MaxTrivialSize} flag.
      *
      * @param size The size.
      * @param unit The unit of size.
@@ -1884,7 +1904,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Enables or disables the optimization of string concatenation. Corresponds to the {@code -XX:+/-OptimizeStringConcat} flag.
+     * Enables or disables the optimization of string concatenation. Corresponds to the
+     * {@code -XX:+/-OptimizeStringConcat} flag.
      *
      * @param enable {@code true} to enable, {@code false} to disable.
      * @return This builder instance.
@@ -1969,7 +1990,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the percentage of heap occupancy at which to start aggressive sweeping. Corresponds to the {@code -XX:AggressiveHeapSweepingAt} flag.
+     * Sets the percentage of heap occupancy at which to start aggressive sweeping. Corresponds to the
+     * {@code -XX:AggressiveHeapSweepingAt} flag.
      *
      * @param percentage The percentage (0-100).
      * @return This builder instance.
@@ -2182,7 +2204,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Enables or disables the {@code multiplyToLen} intrinsic. Corresponds to the {@code -XX:+/-UseMultiplyToLenIntrinsic} flag.
+     * Enables or disables the {@code multiplyToLen} intrinsic. Corresponds to the
+     * {@code -XX:+/-UseMultiplyToLenIntrinsic} flag.
      *
      * @param enable {@code true} to enable, {@code false} to disable.
      * @return This builder instance.
@@ -2193,7 +2216,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Enables or disables the {@code squareToLen} intrinsic. Corresponds to the {@code -XX:+/-UseSquareToLenIntrinsic} flag.
+     * Enables or disables the {@code squareToLen} intrinsic. Corresponds to the {@code -XX:+/-UseSquareToLenIntrinsic}
+     * flag.
      *
      * @param enable {@code true} to enable, {@code false} to disable.
      * @return This builder instance.
@@ -2215,7 +2239,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Enables or disables the Montgomery multiply intrinsic. Corresponds to the {@code -XX:+/-UseMontgomeryMultiplyIntrinsic} flag.
+     * Enables or disables the Montgomery multiply intrinsic. Corresponds to the
+     * {@code -XX:+/-UseMontgomeryMultiplyIntrinsic} flag.
      *
      * @param enable {@code true} to enable, {@code false} to disable.
      * @return This builder instance.
@@ -2226,7 +2251,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Enables or disables the Montgomery square intrinsic. Corresponds to the {@code -XX:+/-UseMontgomerySquareIntrinsic} flag.
+     * Enables or disables the Montgomery square intrinsic. Corresponds to the
+     * {@code -XX:+/-UseMontgomerySquareIntrinsic} flag.
      *
      * @param enable {@code true} to enable, {@code false} to disable.
      * @return This builder instance.
@@ -2237,7 +2263,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Enables or disables the unconditional use of CMove instructions. Corresponds to the {@code -XX:+/-UseCMoveUnconditionally} flag.
+     * Enables or disables the unconditional use of CMove instructions. Corresponds to the
+     * {@code -XX:+/-UseCMoveUnconditionally} flag.
      *
      * @param enable {@code true} to enable, {@code false} to disable.
      * @return This builder instance.
@@ -2295,7 +2322,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the number of iterations for loop strip mining in short loops. Corresponds to the {@code -XX:LoopStripMiningIterShortLoop} flag.
+     * Sets the number of iterations for loop strip mining in short loops. Corresponds to the
+     * {@code -XX:LoopStripMiningIterShortLoop} flag.
      *
      * @param iterationCount The number of iterations.
      * @return This builder instance.
@@ -2348,7 +2376,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     public JavaExecutableCLIBuilder enableDTraceAllocProbes() {
         if (!OperatingSystem.isLinux() && !OperatingSystem.isMac())
-            throw new UnsupportedOperationException("DTrace allocation probes are only supported on macOS and Linux systems.");
+            throw new UnsupportedOperationException(
+                "DTrace allocation probes are only supported on macOS and Linux systems.");
 
         this.arguments.add("-XX:+DTraceAllocProbes");
         return this;
@@ -2362,7 +2391,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     public JavaExecutableCLIBuilder enableDTraceMethodProbes() {
         if (!OperatingSystem.isLinux() && !OperatingSystem.isMac())
-            throw new UnsupportedOperationException("DTrace method probes are only supported on macOS and Linux systems.");
+            throw new UnsupportedOperationException(
+                "DTrace method probes are only supported on macOS and Linux systems.");
 
         this.arguments.add("-XX:+DTraceMethodProbes");
         return this;
@@ -2376,14 +2406,16 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     public JavaExecutableCLIBuilder enableDTraceMonitorProbes() {
         if (!OperatingSystem.isLinux() && !OperatingSystem.isMac())
-            throw new UnsupportedOperationException("DTrace monitor probes are only supported on macOS and Linux systems.");
+            throw new UnsupportedOperationException(
+                "DTrace monitor probes are only supported on macOS and Linux systems.");
 
         this.arguments.add("-XX:+DTraceMonitorProbes");
         return this;
     }
 
     /**
-     * Enables dumping of the heap to a file on an {@link OutOfMemoryError}. Corresponds to the {@code -XX:+HeapDumpOnOutOfMemoryError} flag.
+     * Enables dumping of the heap to a file on an {@link OutOfMemoryError}. Corresponds to the
+     * {@code -XX:+HeapDumpOnOutOfMemoryError} flag.
      *
      * @return This builder instance.
      */
@@ -2417,7 +2449,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Enables printing of a class instance histogram after a {@code Control+C} event. Corresponds to the {@code -XX:+PrintClassHistogram} flag.
+     * Enables printing of a class instance histogram after a {@code Control+C} event. Corresponds to the
+     * {@code -XX:+PrintClassHistogram} flag.
      *
      * @return This builder instance.
      */
@@ -2427,7 +2460,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Enables printing of concurrent locks after a {@code Control+C} event. Corresponds to the {@code -XX:+PrintConcurrentLocks} flag.
+     * Enables printing of concurrent locks after a {@code Control+C} event. Corresponds to the
+     * {@code -XX:+PrintConcurrentLocks} flag.
      *
      * @return This builder instance.
      */
@@ -2502,7 +2536,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Disables explicit garbage collection calls (e.g., from {@code System.gc()}). Corresponds to the {@code -XX:+DisableExplicitGC} flag.
+     * Disables explicit garbage collection calls (e.g., from {@code System.gc()}). Corresponds to the
+     * {@code -XX:+DisableExplicitGC} flag.
      *
      * @return This builder instance.
      */
@@ -2512,7 +2547,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Enables concurrent invocation of explicit garbage collection. Corresponds to the {@code -XX:+ExplicitGCInvokesConcurrent} flag.
+     * Enables concurrent invocation of explicit garbage collection. Corresponds to the
+     * {@code -XX:+ExplicitGCInvokesConcurrent} flag.
      *
      * @return This builder instance.
      */
@@ -2522,7 +2558,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the number of initial samples for G1 adaptive IHOP. Corresponds to the {@code -XX:G1AdaptiveIHOPNumInitialSamples} flag.
+     * Sets the number of initial samples for G1 adaptive IHOP. Corresponds to the
+     * {@code -XX:G1AdaptiveIHOPNumInitialSamples} flag.
      *
      * @param sampleCount The number of samples.
      * @return This builder instance.
@@ -2567,7 +2604,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the maximum percentage of the heap to be used for the young generation with G1 GC. Corresponds to the {@code -XX:G1MaxNewSizePercent} flag.
+     * Sets the maximum percentage of the heap to be used for the young generation with G1 GC. Corresponds to the
+     * {@code -XX:G1MaxNewSizePercent} flag.
      *
      * @param percent The percentage of the heap.
      * @return This builder instance.
@@ -2581,7 +2619,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the target number of mixed GCs after a marking cycle for G1 GC. Corresponds to the {@code -XX:G1MixedGCCountTarget} flag.
+     * Sets the target number of mixed GCs after a marking cycle for G1 GC. Corresponds to the
+     * {@code -XX:G1MixedGCCountTarget} flag.
      *
      * @param targetCount The target number of mixed GCs.
      * @return This builder instance.
@@ -2595,7 +2634,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the live threshold percentage for a region to be included in a mixed GC cycle with G1 GC. Corresponds to the {@code -XX:G1MixedGCLiveThresholdPercent} flag.
+     * Sets the live threshold percentage for a region to be included in a mixed GC cycle with G1 GC. Corresponds to the
+     * {@code -XX:G1MixedGCLiveThresholdPercent} flag.
      *
      * @param percent The live threshold percentage.
      * @return This builder instance.
@@ -2609,7 +2649,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the percentage of the heap to use for the young generation with G1 GC. Corresponds to the {@code -XX:G1NewSizePercent} flag.
+     * Sets the percentage of the heap to use for the young generation with G1 GC. Corresponds to the
+     * {@code -XX:G1NewSizePercent} flag.
      *
      * @param percent The percentage of the heap.
      * @return This builder instance.
@@ -2623,7 +2664,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the threshold percentage for including old regions in a G1 collection set. Corresponds to the {@code -XX:G1OldCSetRegionThresholdPercent} flag.
+     * Sets the threshold percentage for including old regions in a G1 collection set. Corresponds to the
+     * {@code -XX:G1OldCSetRegionThresholdPercent} flag.
      *
      * @param percent The threshold percentage.
      * @return This builder instance.
@@ -2637,7 +2679,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the percentage of the heap to reserve for G1 GC to reduce the risk of promotion failure. Corresponds to the {@code -XX:G1ReservePercent} flag.
+     * Sets the percentage of the heap to reserve for G1 GC to reduce the risk of promotion failure. Corresponds to the
+     * {@code -XX:G1ReservePercent} flag.
      *
      * @param percent The percentage of the heap to reserve.
      * @return This builder instance.
@@ -2695,7 +2738,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the heap occupancy percentage at which to start a concurrent GC cycle. Corresponds to the {@code -XX:InitiatingHeapOccupancyPercent} flag.
+     * Sets the heap occupancy percentage at which to start a concurrent GC cycle. Corresponds to the
+     * {@code -XX:InitiatingHeapOccupancyPercent} flag.
      *
      * @param percent The heap occupancy percentage.
      * @return This builder instance.
@@ -2746,7 +2790,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the maximum percentage of free heap space after a GC to avoid shrinking. Corresponds to the {@code -XX:MaxHeapFreeRatio} flag.
+     * Sets the maximum percentage of free heap space after a GC to avoid shrinking. Corresponds to the
+     * {@code -XX:MaxHeapFreeRatio} flag.
      *
      * @param percent The maximum free heap ratio percentage.
      * @return This builder instance.
@@ -2828,7 +2873,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the maximum tenuring threshold for promoting objects to the old generation. Corresponds to the {@code -XX:MaxTenuringThreshold} flag.
+     * Sets the maximum tenuring threshold for promoting objects to the old generation. Corresponds to the
+     * {@code -XX:MaxTenuringThreshold} flag.
      *
      * @param threshold The maximum tenuring threshold.
      * @return This builder instance.
@@ -2862,7 +2908,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the minimum percentage of free heap space after a GC to avoid expansion. Corresponds to the {@code -XX:MinHeapFreeRatio} flag.
+     * Sets the minimum percentage of free heap space after a GC to avoid expansion. Corresponds to the
+     * {@code -XX:MinHeapFreeRatio} flag.
      *
      * @param percent The minimum free heap ratio percentage.
      * @return This builder instance.
@@ -2907,7 +2954,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the number of threads for parallel garbage collection. Corresponds to the {@code -XX:ParallelGCThreads} flag.
+     * Sets the number of threads for parallel garbage collection. Corresponds to the {@code -XX:ParallelGCThreads}
+     * flag.
      *
      * @param threadCount The number of threads.
      * @return This builder instance.
@@ -2932,7 +2980,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Enables printing of adaptive generation sizing information. Corresponds to the {@code -XX:+PrintAdaptiveSizePolicy} flag.
+     * Enables printing of adaptive generation sizing information. Corresponds to the
+     * {@code -XX:+PrintAdaptiveSizePolicy} flag.
      *
      * @return This builder instance.
      */
@@ -2942,7 +2991,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the amount of time a softly reachable object will be kept alive for each megabyte of free heap space. Corresponds to the {@code -XX:SoftRefLRUPolicyMSPerMB} flag.
+     * Sets the amount of time a softly reachable object will be kept alive for each megabyte of free heap space.
+     * Corresponds to the {@code -XX:SoftRefLRUPolicyMSPerMB} flag.
      *
      * @param time The time to keep softly reachable objects alive.
      * @param unit The unit of time.
@@ -2969,7 +3019,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the age threshold for string deduplication. Corresponds to the {@code -XX:StringDeduplicationAgeThreshold} flag.
+     * Sets the age threshold for string deduplication. Corresponds to the {@code -XX:StringDeduplicationAgeThreshold}
+     * flag.
      *
      * @param threshold The age threshold.
      * @return This builder instance.
@@ -2997,7 +3048,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     }
 
     /**
-     * Sets the target survivor space occupancy percentage after a young GC. Corresponds to the {@code -XX:TargetSurvivorRatio} flag.
+     * Sets the target survivor space occupancy percentage after a young GC. Corresponds to the
+     * {@code -XX:TargetSurvivorRatio} flag.
      *
      * @param percent The target survivor ratio percentage.
      * @return This builder instance.
@@ -3228,7 +3280,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
 
         try {
             Process process = processBuilder.start();
-            ProcessExecution.enforceTimeout(process, timeoutDuration, timeoutUnit, resolveExecutableName(enableConsole));
+            ProcessExecution.enforceTimeout(process, timeoutDuration, timeoutUnit,
+                resolveExecutableName(enableConsole));
             return process;
         } catch (Exception exception) {
             throw new RuntimeException("Failed to start Java process", exception);
@@ -3253,10 +3306,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum LaunchType {
-        CLASS_FILE,
-        JAR_FILE("-jar"),
-        MODULE("-m"),
-        SOURCE_FILE;
+        CLASS_FILE, JAR_FILE("-jar"), MODULE("-m"), SOURCE_FILE;
 
         private final String preArgument;
 
@@ -3274,10 +3324,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum AccessMode {
-        ALLOW("allow"),
-        WARN("warn"),
-        DENY("deny"),
-        DEBUG("debug");
+        ALLOW("allow"), WARN("warn"), DENY("deny"), DEBUG("debug");
 
         private final String mode;
 
@@ -3291,8 +3338,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum EnabledDisabled {
-        ENABLED,
-        DISABLED;
+        ENABLED, DISABLED;
 
         private final String state;
 
@@ -3306,9 +3352,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum RootModule {
-        ALL_DEFAULT,
-        ALL_SYSTEM,
-        ALL_MODULE_PATH;
+        ALL_DEFAULT, ALL_SYSTEM, ALL_MODULE_PATH;
 
         private final String module;
 
@@ -3322,10 +3366,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum VerboseComponent {
-        CLASS,
-        GC,
-        JNI,
-        MODULE;
+        CLASS, GC, JNI, MODULE;
 
         private final String component;
 
@@ -3373,7 +3414,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
         }
 
         private String asArgument() {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             if (!selections.isEmpty()) {
                 builder.append(selections.stream().map(LogSelection::asToken).collect(Collectors.joining(",")));
             }
@@ -3383,8 +3424,9 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             boolean hasOutputOptions = hasOutput && output.hasOptions();
 
             if (hasOutput || hasDecorators) {
-                if (!builder.isEmpty())
+                if (!builder.isEmpty()) {
                     builder.append(":");
+                }
 
                 if (hasOutput) {
                     builder.append(output.destination());
@@ -3419,7 +3461,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
         }
 
         public static LogSelection literal(String token) {
-            LogSelection selection = new LogSelection();
+            var selection = new LogSelection();
             selection.literalToken = Objects.requireNonNull(token, "Log selector literal cannot be null");
             return selection;
         }
@@ -3445,9 +3487,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
         }
 
         private String asToken() {
-            if (literalToken != null) {
+            if (literalToken != null)
                 return literalToken;
-            }
 
             String selector = tags.isEmpty() ? "*" : String.join("+", tags);
             return selector + "=" + level.token();
@@ -3458,12 +3499,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Represents different logging levels.
      */
     public enum LogLevel {
-        TRACE("trace"),
-        DEBUG("debug"),
-        INFO("info"),
-        WARNING("warning"),
-        ERROR("error"),
-        OFF("off");
+        TRACE("trace"), DEBUG("debug"), INFO("info"), WARNING("warning"), ERROR("error"), OFF("off");
 
         private final String token;
 
@@ -3480,17 +3516,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Represents different decorators for log output.
      */
     public enum LogDecorator {
-        TIME("time"),
-        UPTIME("uptime"),
-        TIMEMILLIS("timemillis"),
-        UPTIMEMILLIS("uptimemillis"),
-        TIMEDELTA("timedelta"),
-        USTAMP("ustamp"),
-        PID("pid"),
-        TID("tid"),
-        LEVEL("level"),
-        TAGS("tags"),
-        HOSTNAME("hostname");
+        TIME("time"), UPTIME("uptime"), TIMEMILLIS("timemillis"), UPTIMEMILLIS("uptimemillis"), TIMEDELTA(
+            "timedelta"), USTAMP("ustamp"), PID("pid"), TID("tid"), LEVEL("level"), TAGS("tags"), HOSTNAME("hostname");
 
         private final String token;
 
@@ -3567,10 +3594,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum ByteUnit {
-        BYTES(""),
-        KILOBYTES("K"),
-        MEGABYTES("M"),
-        GIGABYTES("G");
+        BYTES(""), KILOBYTES("K"), MEGABYTES("M"), GIGABYTES("G");
 
         private static final long MULTIPLIER = 1024L;
 
@@ -3595,9 +3619,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum AutoOnOff {
-        AUTO,
-        ON,
-        OFF;
+        AUTO, ON, OFF;
 
         private final String mode;
 
@@ -3611,15 +3633,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum SettingCategory {
-        ALL,
-        LOCALE,
-        PROPERTIES,
-        SECURITY_ALL,
-        SECURITY_PROPERTIES,
-        SECURITY_PROVIDERS,
-        SECURITY_TLS,
-        VM,
-        SYSTEM;
+        ALL, LOCALE, PROPERTIES, SECURITY_ALL, SECURITY_PROPERTIES, SECURITY_PROVIDERS, SECURITY_TLS, VM, SYSTEM;
 
         private final String categoryName;
 
@@ -3748,7 +3762,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             if (unit != TimeUnit.SECONDS && unit != TimeUnit.MINUTES && unit != TimeUnit.HOURS && unit != TimeUnit.DAYS)
                 throw new IllegalArgumentException("Max age must be specified in seconds, minutes, hours, or days.");
 
-            return new FlightRecorderParameters("maxage", age + unit.toString().substring(0, 1).toLowerCase(Locale.ROOT));
+            return new FlightRecorderParameters("maxage",
+                age + unit.toString().substring(0, 1).toLowerCase(Locale.ROOT));
         }
 
         public static FlightRecorderParameters maxSize(long size, ByteUnit unit) {
@@ -3798,9 +3813,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum NativeMemoryTracking {
-        OFF,
-        SUMMARY,
-        DETAIL;
+        OFF, SUMMARY, DETAIL;
 
         private final String state;
 
@@ -3814,9 +3827,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum BranchProtectionMode {
-        NONE("none"),
-        STANDARD("standard"),
-        PAC_RET("pac-ret");
+        NONE("none"), STANDARD("standard"), PAC_RET("pac-ret");
 
         private final String mode;
 
@@ -3829,10 +3840,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Represents different prefetch styles for allocation.
      */
     public enum PrefetchStyle {
-        DO_NOT(0),
-        AFTER_ALLOCATE(1),
-        TLAB_WATERMARK_POINTER(2),
-        PER_CACHE_LINE(3);
+        DO_NOT(0), AFTER_ALLOCATE(1), TLAB_WATERMARK_POINTER(2), PER_CACHE_LINE(3);
 
         private final int styleInt;
 
@@ -3850,16 +3858,8 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum CompileCommand {
-        BREAK("break"),
-        COMPILE_ONLY("compileonly"),
-        DO_NOT_INLINE("dontinline"),
-        EXCLUDE("exclude"),
-        HELP("help"),
-        INLINE("inline"),
-        LOG("log"),
-        OPTION("option"),
-        PRINT("print"),
-        QUIET("quiet");
+        BREAK("break"), COMPILE_ONLY("compileonly"), DO_NOT_INLINE("dontinline"), EXCLUDE("exclude"), HELP(
+            "help"), INLINE("inline"), LOG("log"), OPTION("option"), PRINT("print"), QUIET("quiet");
 
         private final String command;
 
@@ -3873,8 +3873,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum DataModel {
-        DATA_32("d32"),
-        DATA_64("d64");
+        DATA_32("d32"), DATA_64("d64");
 
         private final String model;
 

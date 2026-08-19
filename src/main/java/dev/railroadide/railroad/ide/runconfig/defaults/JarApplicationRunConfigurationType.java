@@ -25,7 +25,8 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
     }
 
     @Override
-    public CompletableFuture<Void> run(Project project, RunConfiguration<JarApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> run(Project project,
+        RunConfiguration<JarApplicationRunConfigurationData> configuration) {
         return CompletableFuture.runAsync(() -> {
             JarApplicationRunConfigurationData data = configuration.data();
             JDK jre = requireJre(data);
@@ -33,8 +34,9 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
             Path workingDirectory = resolveWorkingDirectory(project, data);
             String[] vmOptions = data.getVmOptions() == null ? new String[0] : data.getVmOptions();
             String[] programArguments = data.getProgramArguments() == null ? new String[0] : data.getProgramArguments();
-            Map<String, String> environmentVariables =
-                data.getEnvironmentVariables() == null ? Map.of() : data.getEnvironmentVariables();
+            Map<String, String> environmentVariables = data.getEnvironmentVariables() == null
+                ? Map.of()
+                : data.getEnvironmentVariables();
 
             try {
                 var builder = new ProcessBuilder()
@@ -75,13 +77,15 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
     }
 
     @Override
-    public CompletableFuture<Void> debug(Project project, RunConfiguration<JarApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> debug(Project project,
+        RunConfiguration<JarApplicationRunConfigurationData> configuration) {
         return CompletableFuture.failedFuture(
             new UnsupportedOperationException("Debugging is not supported for Jar Application run configurations."));
     }
 
     @Override
-    public CompletableFuture<Void> stop(Project project, RunConfiguration<JarApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> stop(Project project,
+        RunConfiguration<JarApplicationRunConfigurationData> configuration) {
         Process process = runningProcesses.get(configuration);
         if (process != null && process.isAlive()) {
             process.destroy();
@@ -103,7 +107,7 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
         data.setName("New Jar Application");
         data.setWorkingDirectory(project.getPath());
         data.setJarPath(project.getPath().resolve("app.jar"));
-        data.setJre(/*project.getJDKManager().getDefaultJDK()*/ JDKManager.getDefaultJDK()); // TODO
+        data.setJre(/* project.getJDKManager().getDefaultJDK() */ JDKManager.getDefaultJDK()); // TODO
         return data;
     }
 
@@ -138,7 +142,8 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
         }
 
         if (Files.notExists(workingDirectory) || !Files.isDirectory(workingDirectory))
-            throw new IllegalStateException("Working directory does not exist or is not a directory: " + workingDirectory);
+            throw new IllegalStateException(
+                "Working directory does not exist or is not a directory: " + workingDirectory);
 
         return workingDirectory;
     }

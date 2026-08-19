@@ -36,7 +36,8 @@ public final class ExpiringCache<T> {
             if (inFlight != null)
                 return inFlight;
 
-            CompletableFuture<T> future = Objects.requireNonNull(valueSupplier.get(), "valueSupplier returned null future");
+            CompletableFuture<T> future = Objects.requireNonNull(valueSupplier.get(),
+                "valueSupplier returned null future");
             inFlight = future;
 
             future.whenComplete((value, throwable) -> {

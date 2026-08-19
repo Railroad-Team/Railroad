@@ -11,9 +11,8 @@ import java.util.List;
 import java.util.Optional;
 
 public record SuperExpression(
-        Span span,
-        Optional<Expression> qualifier
-) implements Expression {
+    Span span,
+    Optional<Expression> qualifier) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.SUPER_EXPRESSION;

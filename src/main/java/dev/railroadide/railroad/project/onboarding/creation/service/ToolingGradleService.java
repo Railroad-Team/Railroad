@@ -71,18 +71,16 @@ public final class ToolingGradleService implements GradleService {
     private boolean shouldRetry(Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
-            if (current instanceof SocketException || current instanceof SocketTimeoutException) {
+            if (current instanceof SocketException || current instanceof SocketTimeoutException)
                 return true;
-            }
             if (current instanceof UncheckedIOException uio && uio.getCause() != null) {
                 current = uio.getCause();
                 continue;
             }
 
             String message = current.getMessage();
-            if (message != null && message.contains("Software caused connection abort")) {
+            if (message != null && message.contains("Software caused connection abort"))
                 return true;
-            }
 
             current = current.getCause();
         }
@@ -98,15 +96,14 @@ public final class ToolingGradleService implements GradleService {
     }
 
     private void log(String message, Object... args) {
-        if (logStream == null) {
+        if (logStream == null)
             return;
-        }
 
         String formatted = args.length == 0 ? message : String.format(message, args);
         try {
             logStream.write(formatted.getBytes(StandardCharsets.UTF_8));
             logStream.flush();
-        } catch (IOException ignored) {
+        } catch (IOException _) {
         }
     }
 }

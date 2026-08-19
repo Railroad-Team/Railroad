@@ -11,7 +11,7 @@ public record ProjectEvent(Project project, EventType eventType) implements Even
     /**
      * Constructs a new ProjectEvent.
      *
-     * @param project   The project associated with this event. Must not be null.
+     * @param project The project associated with this event. Must not be null.
      * @param eventType The type of event (OPENED or CLOSED). Must not be null.
      * @throws IllegalArgumentException if project or eventType is null.
      */
@@ -45,7 +45,6 @@ public record ProjectEvent(Project project, EventType eventType) implements Even
      * Enum representing the type of project event.
      */
     public enum EventType {
-        OPENED,
-        CLOSED
+        OPENED, CLOSED
     }
 }

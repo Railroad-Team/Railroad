@@ -32,9 +32,8 @@ public class PersonListTypeAdapter extends TypeAdapter<List<Person>> {
                 people.add(person);
             } else if (token == JsonToken.NULL) {
                 in.nextNull(); // Skip null entries
-            } else {
+            } else
                 throw new IOException("Expected string, object, or null for person but got " + token);
-            }
         }
         in.endArray();
 

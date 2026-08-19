@@ -6,7 +6,7 @@ public interface ExceptionlessRunnable extends Runnable {
     default void run() {
         try {
             onRun();
-        } catch (Exception ignored) {
+        } catch (Exception _) {
         }
     }
 

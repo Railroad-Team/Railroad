@@ -11,7 +11,8 @@ import java.util.Objects;
  * logic and diagnostics.
  */
 public sealed interface Type
-        permits Type.UnknownType, Type.VoidType, Type.PrimitiveType, Type.DeclaredType, Type.ArrayType, Type.TypeVariableType, Type.WildcardType {
+    permits Type.UnknownType, Type.VoidType, Type.PrimitiveType, Type.DeclaredType, Type.ArrayType,
+    Type.TypeVariableType, Type.WildcardType {
 
     /**
      * Returns the coarse-grained type category.
@@ -27,13 +28,7 @@ public sealed interface Type
      * Broad categories supported by the public semantic type model.
      */
     enum Kind {
-        UNKNOWN,
-        VOID,
-        PRIMITIVE,
-        DECLARED,
-        ARRAY,
-        TYPE_VARIABLE,
-        WILDCARD
+        UNKNOWN, VOID, PRIMITIVE, DECLARED, ARRAY, TYPE_VARIABLE, WILDCARD
     }
 
     /**

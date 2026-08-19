@@ -52,9 +52,8 @@ public class WelcomeProjectsPane extends ScrollPane {
             if (event.getClickCount() != 2)
                 return;
 
-            if (isProcessingClick) {
+            if (isProcessingClick)
                 return; // Prevent rapid successive clicks
-            }
 
             isProcessingClick = true;
 
@@ -68,7 +67,7 @@ public class WelcomeProjectsPane extends ScrollPane {
                 new Thread(() -> {
                     try {
                         Thread.sleep(300);
-                    } catch (InterruptedException ignored) {
+                    } catch (InterruptedException _) {
                         Thread.currentThread().interrupt();
                     } finally {
                         isProcessingClick = false;
@@ -184,7 +183,8 @@ public class WelcomeProjectsPane extends ScrollPane {
         this.sortProperty = observable;
 
         this.sortProperty.addListener((_, _, newValue) -> sortProjects(newValue));
-        projectsList.getItems().addListener((ListChangeListener<Project>) _ -> sortProjects(this.sortProperty.getValue()));
+        projectsList.getItems()
+            .addListener((ListChangeListener<Project>) _ -> sortProjects(this.sortProperty.getValue()));
         sortProjects(this.sortProperty.getValue());
     }
 

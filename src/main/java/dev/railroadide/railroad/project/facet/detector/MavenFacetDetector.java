@@ -15,7 +15,8 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 /**
- * Detects the presence of Maven build system support in a project directory by searching for pom.xml and extracting Maven coordinates.
+ * Detects the presence of Maven build system support in a project directory by searching for pom.xml and extracting
+ * Maven coordinates.
  * This detector is used by the facet system to identify Maven projects and extract relevant configuration data.
  */
 public class MavenFacetDetector implements FacetDetector<MavenFacetData> {

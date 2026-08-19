@@ -16,15 +16,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record RecordDeclaration(
-        Span span,
-        List<Modifier> modifiers,
-        List<Annotation> annotations,
-        NameExpression name,
-        List<TypeParameter> typeParameters,
-        List<RecordComponent> components,
-        List<TypeRef> implementsTypes,
-        List<ClassBodyDeclaration> bodyDeclarations
-) implements TypeDeclaration {
+    Span span,
+    List<Modifier> modifiers,
+    List<Annotation> annotations,
+    NameExpression name,
+    List<TypeParameter> typeParameters,
+    List<RecordComponent> components,
+    List<TypeRef> implementsTypes,
+    List<ClassBodyDeclaration> bodyDeclarations) implements TypeDeclaration {
 
     @Override
     public AstKind kind() {

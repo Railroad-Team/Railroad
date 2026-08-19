@@ -32,9 +32,7 @@ public class CoreFallthroughCaseInSwitchInspection implements JavaInspectionRule
                 JavaSemanticRules.FALLTHROUGH_CASE_IN_SWITCH.defaultSeverity(),
                 JavaSemanticRules.FALLTHROUGH_CASE_IN_SWITCH.messageTemplate(),
                 Set.of("core", "switch"),
-                CoreFallthroughCaseInSwitchInspection::reportFallthroughCasesInSwitch
-            )
-        );
+                CoreFallthroughCaseInSwitchInspection::reportFallthroughCasesInSwitch));
     }
 
     private static void reportFallthroughCasesInSwitch(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
@@ -47,7 +45,8 @@ public class CoreFallthroughCaseInSwitchInspection implements JavaInspectionRule
 
             for (int i = 0; i < rules.size() - 1; i++) {
                 SyntaxNode switchRule = rules.get(i);
-                if (CoreDefiniteAssignmentInspection.isArrowSwitchRule(switchRule)) // TODO: Possibly extract this method into JavaRuleContext
+                if (CoreDefiniteAssignmentInspection.isArrowSwitchRule(switchRule)) // TODO: Possibly extract this
+                                                                                    // method into JavaRuleContext
                     continue;
 
                 if (!canRuleFallThrough(context, switchRule))

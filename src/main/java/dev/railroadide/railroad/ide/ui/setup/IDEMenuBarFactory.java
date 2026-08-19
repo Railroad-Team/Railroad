@@ -65,11 +65,11 @@ public final class IDEMenuBarFactory {
         Project project,
         WorkspaceModeController viewModeController,
         Consumer<WorkspaceMode> viewModeRequester,
-        IDEWorkspaceActions workspaceActions
-    ) {
+        IDEWorkspaceActions workspaceActions) {
         var newFileItem = new LocalizedMenuItem("railroad.menu.file.new_file");
         newFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE));
-        newFileItem.setKeybindData(new KeybindData(KeyCode.N, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
+        newFileItem
+            .setKeybindData(new KeybindData(KeyCode.N, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
         newFileItem.setOnAction(_ -> {
             Path directoryPath = Services.UI_MANAGER.lookup(UIIds.IDE.PROJECT_EXPLORER)
                 .map(ProjectExplorerPane::getSelectedDirectory)
@@ -87,7 +87,7 @@ public final class IDEMenuBarFactory {
             var fileChooser = new FileChooser();
             fileChooser.setInitialDirectory(directoryPath.toFile());
             File file = fileChooser.showOpenDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
-            if(file == null)
+            if (file == null)
                 return;
 
             Services.IDE_STATE.openDocument(new FileSystemDocument(file.toPath()));
@@ -110,7 +110,8 @@ public final class IDEMenuBarFactory {
 
         var saveAsItem = new LocalizedMenuItem("railroad.menu.file.save_as");
         saveAsItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
-        saveAsItem.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
+        saveAsItem
+            .setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
 
         var exitItem = new LocalizedMenuItem("railroad.menu.file.exit");
         exitItem.setGraphic(new FontIcon(FontAwesomeSolid.SIGN_OUT_ALT));
@@ -201,8 +202,7 @@ public final class IDEMenuBarFactory {
         viewModeMenu.getItems().addAll(
             gitDetectingItem,
             gitUnavailableItem,
-            gitDetectionFailedItem
-        );
+            gitDetectionFailedItem);
 
         var runItem = new LocalizedMenuItem("railroad.menu.run.run");
         runItem.setGraphic(new FontIcon(FontAwesomeSolid.PLAY));
@@ -227,11 +227,13 @@ public final class IDEMenuBarFactory {
 
         var terminalItem = new LocalizedMenuItem("railroad.menu.tools.terminal");
         terminalItem.setGraphic(new FontIcon(FontAwesomeSolid.TERMINAL));
-        terminalItem.setAccelerator(new KeyCodeCombination(KeyCode.T, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
+        terminalItem
+            .setAccelerator(new KeyCodeCombination(KeyCode.T, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
         terminalItem.setOnAction(_ -> workspaceActions.toggleDockItem(IDEDockItem.TERMINAL));
 
         var fileMenu = new LocalizedMenu("railroad.menu.file");
-        fileMenu.getItems().addAll(newFileItem, openFileItem, recentProjects, saveItem, saveAsItem, new SeparatorMenuItem(), exitItem);
+        fileMenu.getItems().addAll(newFileItem, openFileItem, recentProjects, saveItem, saveAsItem,
+            new SeparatorMenuItem(), exitItem);
         fileMenu.getStyleClass().add("rr-menu");
 
         var editMenu = new LocalizedMenu("railroad.menu.edit");
@@ -244,8 +246,7 @@ public final class IDEMenuBarFactory {
             pasteItem,
             new SeparatorMenuItem(),
             findItem,
-            replaceItem
-        );
+            replaceItem);
         editMenu.getStyleClass().add("rr-menu");
 
         var viewMenu = new LocalizedMenu("railroad.menu.view");
@@ -256,8 +257,7 @@ public final class IDEMenuBarFactory {
             resetCurrentLayoutItem,
             resetAllLayoutsItem,
             new SeparatorMenuItem(),
-            fullScreenItem
-        );
+            fullScreenItem);
         viewMenu.getStyleClass().add("rr-menu");
 
         var runMenu = new LocalizedMenu("railroad.menu.run");

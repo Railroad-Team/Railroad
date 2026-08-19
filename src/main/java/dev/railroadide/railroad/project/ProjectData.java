@@ -190,7 +190,8 @@ public final class ProjectData {
         return defaultValue;
     }
 
-    public <E extends Enum<E>> E getAsEnum(String key, Class<E> enumType) throws NoSuchElementException, ClassCastException {
+    public <E extends Enum<E>> E getAsEnum(String key, Class<E> enumType)
+        throws NoSuchElementException, ClassCastException {
         if (!contains(key))
             throw new NoSuchElementException("No value present for key: " + key);
 
@@ -276,7 +277,8 @@ public final class ProjectData {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ProjectData that = (ProjectData) o;
         return Objects.equals(data, that.data);
     }

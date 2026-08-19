@@ -13,7 +13,8 @@ import java.util.List;
  * @param cancelled whether execution was cancelled
  * @param duration total execution duration
  */
-public record GitResult(int exitCode, List<String> stdout, List<String> stderr, boolean timedOut, boolean cancelled, Duration duration) {
+public record GitResult(int exitCode, List<String> stdout, List<String> stderr, boolean timedOut, boolean cancelled,
+    Duration duration) {
     /**
      * Returns the first stdout line, or an empty string.
      *

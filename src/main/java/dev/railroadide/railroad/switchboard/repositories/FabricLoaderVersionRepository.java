@@ -13,7 +13,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public record FabricLoaderVersionRepository(SwitchboardClient client, CacheManager cache)
-    implements SwitchboardRepository {
+    implements
+        SwitchboardRepository {
     private static final Duration VERSIONS_TTL = Duration.ofHours(12);
     private static final Duration LATEST_TTL = Duration.ofHours(1);
 
@@ -22,8 +23,7 @@ public record FabricLoaderVersionRepository(SwitchboardClient client, CacheManag
             "fabric:loader:versions",
             SwitchboardClient.LIST_OF_FABRIC_LOADER_VERSIONS,
             VERSIONS_TTL,
-            client::fetchFabricLoaderVersions
-        );
+            client::fetchFabricLoaderVersions);
     }
 
     public List<FabricLoaderVersion> getAllVersionsSync() throws ExecutionException, InterruptedException {
@@ -39,11 +39,11 @@ public record FabricLoaderVersionRepository(SwitchboardClient client, CacheManag
             key,
             SwitchboardClient.LIST_OF_FABRIC_LOADER_VERSIONS,
             VERSIONS_TTL,
-            () -> client.fetchFabricLoaderVersions(normalized)
-        );
+            () -> client.fetchFabricLoaderVersions(normalized));
     }
 
-    public List<FabricLoaderVersion> getVersionsForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {
+    public List<FabricLoaderVersion> getVersionsForSync(String minecraftVersionId)
+        throws ExecutionException, InterruptedException {
         return getVersionsFor(minecraftVersionId).get();
     }
 
@@ -57,15 +57,15 @@ public record FabricLoaderVersionRepository(SwitchboardClient client, CacheManag
             key,
             FabricLoaderVersion.class,
             LATEST_TTL,
-            () -> client.fetchLatestFabricLoaderVersion(includePrereleases)
-        );
+            () -> client.fetchLatestFabricLoaderVersion(includePrereleases));
     }
 
     public FabricLoaderVersion getLatestVersionSync() throws ExecutionException, InterruptedException {
         return getLatestVersion().get();
     }
 
-    public FabricLoaderVersion getLatestVersionSync(boolean includePrereleases) throws ExecutionException, InterruptedException {
+    public FabricLoaderVersion getLatestVersionSync(boolean includePrereleases)
+        throws ExecutionException, InterruptedException {
         return getLatestVersion(includePrereleases).get();
     }
 
@@ -73,7 +73,8 @@ public record FabricLoaderVersionRepository(SwitchboardClient client, CacheManag
         return getLatestVersionFor(minecraftVersionId, false);
     }
 
-    public CompletableFuture<FabricLoaderVersion> getLatestVersionFor(String minecraftVersionId, boolean includePrereleases) {
+    public CompletableFuture<FabricLoaderVersion> getLatestVersionFor(String minecraftVersionId,
+        boolean includePrereleases) {
         Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
         String normalized = minecraftVersionId.toLowerCase(Locale.ROOT);
         String key = "fabric:loader:latest:" + normalized + (includePrereleases ? ":prereleases" : "");
@@ -82,15 +83,17 @@ public record FabricLoaderVersionRepository(SwitchboardClient client, CacheManag
             key,
             FabricLoaderVersion.class,
             LATEST_TTL,
-            () -> client.fetchLatestFabricLoaderVersion(normalized, includePrereleases)
-        ).thenApply(fabricLoaderVersion -> fabricLoaderVersion.version() == null ? null : fabricLoaderVersion);
+            () -> client.fetchLatestFabricLoaderVersion(normalized, includePrereleases))
+            .thenApply(fabricLoaderVersion -> fabricLoaderVersion.version() == null ? null : fabricLoaderVersion);
     }
 
-    public FabricLoaderVersion getLatestVersionForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {
+    public FabricLoaderVersion getLatestVersionForSync(String minecraftVersionId)
+        throws ExecutionException, InterruptedException {
         return getLatestVersionFor(minecraftVersionId).get();
     }
 
-    public FabricLoaderVersion getLatestVersionForSync(String minecraftVersionId, boolean includePrereleases) throws ExecutionException, InterruptedException {
+    public FabricLoaderVersion getLatestVersionForSync(String minecraftVersionId, boolean includePrereleases)
+        throws ExecutionException, InterruptedException {
         return getLatestVersionFor(minecraftVersionId, includePrereleases).get();
     }
 }

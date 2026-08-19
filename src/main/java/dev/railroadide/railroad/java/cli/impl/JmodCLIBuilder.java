@@ -468,11 +468,7 @@ public class JmodCLIBuilder implements CLIBuilder<Process, JmodCLIBuilder> {
     }
 
     private enum OperationMode {
-        CREATE("create"),
-        EXTRACT("extract"),
-        LIST("list"),
-        DESCRIBE("describe"),
-        HASH("hash");
+        CREATE("create"), EXTRACT("extract"), LIST("list"), DESCRIBE("describe"), HASH("hash");
 
         private final String command;
 

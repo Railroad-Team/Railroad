@@ -15,9 +15,9 @@ public final class ProcessExecution {
      * Waits for a process to complete, enforcing a specified timeout. If the process does not
      * finish within the given duration, it is forcibly terminated.
      *
-     * @param process  The {@link Process} to monitor.
+     * @param process The {@link Process} to monitor.
      * @param duration The maximum time to wait. If zero or negative, no timeout is enforced.
-     * @param unit     The {@link TimeUnit} for the duration.
+     * @param unit The {@link TimeUnit} for the duration.
      * @param toolName The name of the tool being executed, used for logging and error messages.
      * @throws RuntimeException if the process times out or the waiting thread is interrupted.
      */
@@ -45,7 +45,8 @@ public final class ProcessExecution {
     }
 
     /**
-     * Forcefully terminates a process, trying a graceful destruction first, followed by a forcible one if it remains alive.
+     * Forcefully terminates a process, trying a graceful destruction first, followed by a forcible one if it remains
+     * alive.
      *
      * @param process The process to destroy.
      */

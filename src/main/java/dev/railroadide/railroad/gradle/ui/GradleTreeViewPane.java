@@ -91,9 +91,8 @@ public abstract class GradleTreeViewPane<T> extends RRVBox {
             List<T> elements = new ArrayList<>(getElementsFromModel(modelService, model));
             TreeItem<GradleTreeElement> root = createTreeBuilder().buildTree(project, elements);
             Platform.runLater(() -> {
-                if (generation != reloadGeneration.get()) {
+                if (generation != reloadGeneration.get())
                     return;
-                }
                 treeView.setRoot(root);
                 isLoading.set(false);
                 updateLoadingState();

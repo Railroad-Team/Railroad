@@ -43,7 +43,8 @@ public record SwitchboardClient(String baseUrl) {
     }
 
     public CompletableFuture<Optional<MinecraftVersion>> fetchMinecraftVersionById(String id) {
-        return getJson("minecraft/versions/" + id.toLowerCase(Locale.ROOT), MinecraftVersion.class).thenApply(Optional::of);
+        return getJson("minecraft/versions/" + id.toLowerCase(Locale.ROOT), MinecraftVersion.class)
+            .thenApply(Optional::of);
     }
 
     public CompletableFuture<MinecraftVersion> fetchLatestMinecraftVersion() {
@@ -69,8 +70,9 @@ public record SwitchboardClient(String baseUrl) {
 
     public CompletableFuture<String> fetchLatestForgeVersion(boolean includePrereleases) {
         String endpoint = "forge/latest";
-        if (includePrereleases)
+        if (includePrereleases) {
             endpoint += "?includePrereleases=true";
+        }
 
         return getJson(endpoint, VersionResponse.class).thenApply(VersionResponse::version);
     }
@@ -82,8 +84,9 @@ public record SwitchboardClient(String baseUrl) {
     public CompletableFuture<String> fetchLatestForgeVersion(String minecraftVersionId, boolean includePrereleases) {
         Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
         String endpoint = "forge/latest/" + minecraftVersionId.toLowerCase(Locale.ROOT);
-        if (includePrereleases)
+        if (includePrereleases) {
             endpoint += "?includePrereleases=true";
+        }
 
         return getJson(endpoint, VersionResponse.class).thenApply(VersionResponse::version);
     }
@@ -103,8 +106,9 @@ public record SwitchboardClient(String baseUrl) {
 
     public CompletableFuture<String> fetchLatestNeoforgeVersion(boolean includePrereleases) {
         String endpoint = "neoforge/latest";
-        if (includePrereleases)
+        if (includePrereleases) {
             endpoint += "?includePrereleases=true";
+        }
 
         return getJson(endpoint, VersionResponse.class).thenApply(VersionResponse::version);
     }
@@ -116,8 +120,9 @@ public record SwitchboardClient(String baseUrl) {
     public CompletableFuture<String> fetchLatestNeoforgeVersion(String minecraftVersionId, boolean includePrereleases) {
         Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
         String endpoint = "neoforge/latest/" + minecraftVersionId.toLowerCase(Locale.ROOT);
-        if (includePrereleases)
+        if (includePrereleases) {
             endpoint += "?includePrereleases=true";
+        }
 
         return getJson(endpoint, VersionResponse.class).thenApply(VersionResponse::version);
     }
@@ -137,8 +142,9 @@ public record SwitchboardClient(String baseUrl) {
 
     public CompletableFuture<String> fetchLatestFabricApiVersion(boolean includePrereleases) {
         String endpoint = "fabric/api/latest";
-        if (includePrereleases)
+        if (includePrereleases) {
             endpoint += "?includePrereleases=true";
+        }
 
         return getJson(endpoint, VersionResponse.class).thenApply(VersionResponse::version);
     }
@@ -147,11 +153,13 @@ public record SwitchboardClient(String baseUrl) {
         return fetchLatestFabricApiVersion(minecraftVersionId, false);
     }
 
-    public CompletableFuture<String> fetchLatestFabricApiVersion(String minecraftVersionId, boolean includePrereleases) {
+    public CompletableFuture<String> fetchLatestFabricApiVersion(String minecraftVersionId,
+        boolean includePrereleases) {
         Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
         String endpoint = "fabric/api/latest/" + minecraftVersionId.toLowerCase(Locale.ROOT);
-        if (includePrereleases)
+        if (includePrereleases) {
             endpoint += "?includePrereleases=true";
+        }
 
         return getJson(endpoint, VersionResponse.class).thenApply(VersionResponse::version);
     }
@@ -162,7 +170,8 @@ public record SwitchboardClient(String baseUrl) {
 
     public CompletableFuture<List<FabricLoaderVersion>> fetchFabricLoaderVersions(String minecraftVersionId) {
         Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
-        return getJson("fabric/loader/versions/" + minecraftVersionId.toLowerCase(Locale.ROOT), LIST_OF_FABRIC_LOADER_VERSIONS);
+        return getJson("fabric/loader/versions/" + minecraftVersionId.toLowerCase(Locale.ROOT),
+            LIST_OF_FABRIC_LOADER_VERSIONS);
     }
 
     public CompletableFuture<FabricLoaderVersion> fetchLatestFabricLoaderVersion() {
@@ -171,8 +180,9 @@ public record SwitchboardClient(String baseUrl) {
 
     public CompletableFuture<FabricLoaderVersion> fetchLatestFabricLoaderVersion(boolean includePrereleases) {
         String endpoint = "fabric/loader/latest";
-        if (includePrereleases)
+        if (includePrereleases) {
             endpoint += "?includePrereleases=true";
+        }
 
         return getJson(endpoint, FabricLoaderVersion.class);
     }
@@ -181,11 +191,13 @@ public record SwitchboardClient(String baseUrl) {
         return fetchLatestFabricLoaderVersion(minecraftVersionId, false);
     }
 
-    public CompletableFuture<FabricLoaderVersion> fetchLatestFabricLoaderVersion(String minecraftVersionId, boolean includePrereleases) {
+    public CompletableFuture<FabricLoaderVersion> fetchLatestFabricLoaderVersion(String minecraftVersionId,
+        boolean includePrereleases) {
         Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
         String endpoint = "fabric/loader/latest/" + minecraftVersionId.toLowerCase(Locale.ROOT);
-        if (includePrereleases)
+        if (includePrereleases) {
             endpoint += "?includePrereleases=true";
+        }
 
         return getJson(endpoint, FabricLoaderVersion.class);
     }
@@ -205,7 +217,8 @@ public record SwitchboardClient(String baseUrl) {
 
     public CompletableFuture<String> fetchLatestYarnVersion(String minecraftVersionId) {
         Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
-        return getJson("yarn/latest/" + minecraftVersionId.toLowerCase(Locale.ROOT), VersionResponse.class).thenApply(VersionResponse::version);
+        return getJson("yarn/latest/" + minecraftVersionId.toLowerCase(Locale.ROOT), VersionResponse.class)
+            .thenApply(VersionResponse::version);
     }
 
     public CompletableFuture<List<String>> fetchMcpVersions() {
@@ -223,7 +236,8 @@ public record SwitchboardClient(String baseUrl) {
 
     public CompletableFuture<String> fetchLatestMcpVersion(String minecraftVersionId) {
         Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
-        return getJson("mcp/latest/" + minecraftVersionId.toLowerCase(Locale.ROOT), VersionResponse.class).thenApply(VersionResponse::version);
+        return getJson("mcp/latest/" + minecraftVersionId.toLowerCase(Locale.ROOT), VersionResponse.class)
+            .thenApply(VersionResponse::version);
     }
 
     public CompletableFuture<List<String>> fetchMojmapVersions() {

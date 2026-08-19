@@ -11,16 +11,14 @@ public record ProjectAliasChangedEvent(Project project, String oldAlias, String 
     /**
      * Creates a new ProjectAliasChangedEvent.
      *
-     * @param project  the project whose alias has changed
+     * @param project the project whose alias has changed
      * @param oldAlias the previous alias of the project
      * @param newAlias the new alias of the project
      */
     public ProjectAliasChangedEvent {
-        if (project == null) {
+        if (project == null)
             throw new IllegalArgumentException("Project cannot be null");
-        }
-        if (oldAlias == null || newAlias == null) {
+        if (oldAlias == null || newAlias == null)
             throw new IllegalArgumentException("Aliases cannot be null");
-        }
     }
 }

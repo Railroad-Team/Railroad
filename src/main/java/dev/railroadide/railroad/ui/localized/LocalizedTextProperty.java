@@ -27,10 +27,10 @@ public class LocalizedTextProperty extends StringPropertyBase {
     /**
      * The constructor of {@code LocalizedTextProperty}
      *
-     * @param bean         the bean of this {@code StringProperty}
-     * @param name         the name of this {@code StringProperty}
+     * @param bean the bean of this {@code StringProperty}
+     * @param name the name of this {@code StringProperty}
      * @param initialValue the initial value of the wrapped value
-     * @param args         optional args to format the localized string
+     * @param args optional args to format the localized string
      */
     public LocalizedTextProperty(Object bean, String name, String initialValue, Object... args) {
         super("");
@@ -49,10 +49,10 @@ public class LocalizedTextProperty extends StringPropertyBase {
 
     protected void initialize() {
         L18n.currentLanguageProperty()
-            .addListener($ -> updateTranslation(false));
+            .addListener(_ -> updateTranslation(false));
 
-        translationKey.addListener($ -> updateTranslation(true));
-        translationArgs.addListener((ListChangeListener<Object>) $ -> updateTranslation(true));
+        translationKey.addListener(_ -> updateTranslation(true));
+        translationArgs.addListener((ListChangeListener<Object>) _ -> updateTranslation(true));
     }
 
     /**
@@ -71,8 +71,9 @@ public class LocalizedTextProperty extends StringPropertyBase {
         if (blockedUpdates)
             return;
 
-        if (activate)
+        if (activate) {
             activated = true;
+        }
 
         if (!activated)
             return;
@@ -122,10 +123,11 @@ public class LocalizedTextProperty extends StringPropertyBase {
     }
 
     public void setTranslationKey(String translationKey) {
-        if (translationKey == null || translationKey.trim().isEmpty())
+        if (translationKey == null || translationKey.trim().isEmpty()) {
             this.translationKey.set(null);
-        else
+        } else {
             this.translationKey.set(translationKey);
+        }
     }
 
     /**
@@ -140,10 +142,11 @@ public class LocalizedTextProperty extends StringPropertyBase {
     }
 
     public void setTranslationArgs(Object... args) {
-        if (args.length == 0 || (args.length == 1 && args[0] == null))
+        if (args.length == 0 || (args.length == 1 && args[0] == null)) {
             this.translationArgs.clear();
-        else
+        } else {
             this.translationArgs.setAll(args);
+        }
     }
 
     public void setTranslation(String translationKey, Object... args) {

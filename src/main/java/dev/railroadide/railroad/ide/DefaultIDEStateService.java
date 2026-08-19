@@ -60,7 +60,8 @@ public class DefaultIDEStateService implements IDEStateService {
         recentFiles.put(document.getPath(), System.currentTimeMillis());
         // TODO: Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.RECENT_FILE_ADDED));
 
-        if ((activeDocument != null && openDocuments.isEmpty()) || (activeDocument != null && activeDocument.equals(document))) {
+        if ((activeDocument != null && openDocuments.isEmpty())
+            || (activeDocument != null && activeDocument.equals(document))) {
             setActiveDocument_internal(null);
         }
     }

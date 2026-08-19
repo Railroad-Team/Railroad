@@ -17,8 +17,8 @@ import java.util.concurrent.CompletableFuture;
  * Subclasses override the lifecycle methods and consume options stored on RunConfiguration.
  */
 public abstract class RunConfigurationType<D extends RunConfigurationData> {
-    public static final Registry<RunConfigurationType<?>> REGISTRY =
-        RegistryManager.createOrderedRegistry("railroad:run_configuration_type", RunConfigurationType.class);
+    public static final Registry<RunConfigurationType<?>> REGISTRY = RegistryManager
+        .createOrderedRegistry("railroad:run_configuration_type", RunConfigurationType.class);
 
     private final String localizationKey;
     private final Ikon icon;

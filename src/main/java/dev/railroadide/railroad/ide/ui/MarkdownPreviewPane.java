@@ -159,8 +159,8 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
             }
         });
 
-        textEditorPane.addEventFilter(ScrollEvent.SCROLL, _ ->
-            scrollAmount = (int) textEditorPane.getEstimatedScrollY());
+        textEditorPane.addEventFilter(ScrollEvent.SCROLL,
+            _ -> scrollAmount = (int) textEditorPane.getEstimatedScrollY());
 
         restoreEditorScroll();
 
@@ -295,7 +295,8 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         imageButton.setOnAction(event -> imageDialog());
 
         return new RRHBox(headingButton, boldButton, italicButton, quoteButton, codeButton, linkButton,
-            unorderedListButton, orderedListButton, taskListButton, horizontalRuleButton, strikethroughButton, codeBlockButton, imageButton);
+            unorderedListButton, orderedListButton, taskListButton, horizontalRuleButton, strikethroughButton,
+            codeBlockButton, imageButton);
     }
 
     private CustomMenuItem createMenuItem(int level, int[] headingFontSizes, ContextMenu headingMenu) {
@@ -374,8 +375,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
                 .title("railroad.markdown.image_dialog.heading")
                 .contentNode(form)
                 .buttons(cancelButton, insertButton)
-                .submitOnEnter(false)
-        );
+                .submitOnEnter(false));
         Platform.runLater(() -> {
             addNodeStyles(dialog);
             dialog.getScene().getRoot().applyCss();
@@ -401,15 +401,15 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         }
     }
 
-    private void createDialogButtons(RRButton cancelButton, RRButton insertButton, RRTextField uriTextField, RRTextField altTextField) {
+    private void createDialogButtons(RRButton cancelButton, RRButton insertButton, RRTextField uriTextField,
+        RRTextField altTextField) {
         insertButton.setVariant(ButtonVariant.PRIMARY);
         insertButton.setButtonSize(ButtonSize.LARGE);
         insertButton.getStyleClass().add("markdown-image-dialog-button");
         insertButton.setDefaultButton(true);
         insertButton.disableProperty().bind(Bindings.createBooleanBinding(
             () -> uriTextField.getText().trim().isEmpty(),
-            uriTextField.textProperty()
-        ));
+            uriTextField.textProperty()));
 
         cancelButton.setVariant(ButtonVariant.SECONDARY);
         cancelButton.setButtonSize(ButtonSize.LARGE);
@@ -453,8 +453,6 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     }
 
     public enum MarkdownLayoutType {
-        SPLIT,
-        PREVIEW,
-        CODE
+        SPLIT, PREVIEW, CODE
     }
 }

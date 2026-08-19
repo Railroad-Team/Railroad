@@ -20,8 +20,9 @@ import java.util.Map;
 
 public class SettingsHandler {
     private static final SettingsHolder SETTINGS_HOLDER = new SettingsHolder();
-    private static final Registry<Setting<?>> SETTINGS_REGISTRY_DELEGATE = RegistryManager.createOrderedRegistry("settings", new TypeToken<>() {
-    });
+    private static final Registry<Setting<?>> SETTINGS_REGISTRY_DELEGATE = RegistryManager
+        .createOrderedRegistry("settings", new TypeToken<>() {
+        });
     public static final Registry<Setting<?>> SETTINGS_REGISTRY = new Registry<>() {
         @Override
         public String getId() {
@@ -116,7 +117,8 @@ public class SettingsHandler {
 
         try {
             String json = Railroad.GSON.toJson(SETTINGS_HOLDER.toJson());
-            Files.writeString(SETTINGS_PATH, json, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
+            Files.writeString(SETTINGS_PATH, json, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING,
+                StandardOpenOption.CREATE);
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to save settings file", exception);
         }
@@ -150,7 +152,8 @@ public class SettingsHandler {
     public static <T> void setValue(String id, Class<T> clazz, T value) {
         Setting<T> setting = getSetting(id, clazz);
         if (setting == null)
-            throw new IllegalArgumentException("Setting " + id + " does not exist or is not of type " + value.getClass().getName());
+            throw new IllegalArgumentException(
+                "Setting " + id + " does not exist or is not of type " + value.getClass().getName());
 
         setting.setValue(value);
     }
@@ -244,7 +247,8 @@ public class SettingsHandler {
         Class<?> settingType = setting.getType();
         if (!type.isAssignableFrom(settingType))
             throw new ClassCastException(
-                "Setting with ID '" + id + "' is of type " + settingType.getName() + ", cannot cast to " + type.getName());
+                "Setting with ID '" + id + "' is of type " + settingType.getName() + ", cannot cast to "
+                    + type.getName());
 
         return (Setting<T>) setting;
     }

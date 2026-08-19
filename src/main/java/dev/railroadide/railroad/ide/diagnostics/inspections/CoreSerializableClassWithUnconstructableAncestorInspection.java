@@ -33,12 +33,11 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
                 JavaSemanticRules.SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR.defaultSeverity(),
                 JavaSemanticRules.SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR.messageTemplate(),
                 Set.of("core", "serialization"),
-                CoreSerializableClassWithUnconstructableAncestorInspection::reportSerializableClassWithUnconstructableAncestor
-            )
-        );
+                CoreSerializableClassWithUnconstructableAncestorInspection::reportSerializableClassWithUnconstructableAncestor));
     }
 
-    private static void reportSerializableClassWithUnconstructableAncestor(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportSerializableClassWithUnconstructableAncestor(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         Map<String, SyntaxNode> localTypeDeclarations = context.localTypeDeclarations();
         for (SyntaxNode classNode : context.nodesOfKind(JavaSyntaxKinds.CLASS_DECLARATION.id())) {
             Symbol classSymbol = context.declaredSymbol(classNode).orElse(null);
@@ -64,11 +63,11 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
         JavaRuleContext context,
         String ancestorQualifiedName,
         String usageTypeQualifiedName,
-        Map<String, SyntaxNode> localTypeDeclarations
-    ) {
+        Map<String, SyntaxNode> localTypeDeclarations) {
         SyntaxNode localDeclaration = localTypeDeclarations.get(ancestorQualifiedName);
         if (localDeclaration != null)
-            return hasAccessibleLocalNoArgConstructor(context, localDeclaration, ancestorQualifiedName, usageTypeQualifiedName);
+            return hasAccessibleLocalNoArgConstructor(context, localDeclaration, ancestorQualifiedName,
+                usageTypeQualifiedName);
 
         ClassStub stub = context.jdkClassStubsByQualifiedName().get(ancestorQualifiedName);
         if (stub == null)
@@ -84,8 +83,7 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
                 ancestorQualifiedName,
                 usageTypeQualifiedName,
                 constructor.modifiers(),
-                stub.packageName()
-            ))
+                stub.packageName()))
                 return true;
         }
 
@@ -96,16 +94,16 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
         JavaRuleContext context,
         SyntaxNode typeNode,
         String ownerQualifiedName,
-        String usageTypeQualifiedName
-    ) {
+        String usageTypeQualifiedName) {
         List<SyntaxNode> constructors = new ArrayList<>();
         context.traverseDescendants(typeNode, node -> {
             if (!Objects.equals(JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id(), node.kind().id()))
                 return;
 
             String enclosing = context.enclosingTypeSymbol(node).flatMap(Symbol::qualifiedName).orElse(null);
-            if (Objects.equals(enclosing, ownerQualifiedName))
+            if (Objects.equals(enclosing, ownerQualifiedName)) {
                 constructors.add(node);
+            }
         });
 
         if (constructors.isEmpty())
@@ -116,8 +114,9 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
             int parameterCount = 0;
             if (parameterList != null) {
                 for (SyntaxNode child : parameterList.children()) {
-                    if (Objects.equals(JavaSyntaxKinds.PARAMETER.id(), child.kind().id()))
+                    if (Objects.equals(JavaSyntaxKinds.PARAMETER.id(), child.kind().id())) {
                         parameterCount++;
+                    }
                 }
             }
 
@@ -126,8 +125,7 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
                 ownerQualifiedName,
                 usageTypeQualifiedName,
                 modifierBits(context, constructor),
-                context.currentPackageName()
-            ))
+                context.currentPackageName()))
                 return true;
         }
 
@@ -136,14 +134,17 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
 
     private static int modifierBits(JavaRuleContext context, SyntaxNode constructor) {
         int modifiers = 0;
-        if (context.hasDirectModifierToken(constructor, JavaTokenType.PUBLIC_KEYWORD))
+        if (context.hasDirectModifierToken(constructor, JavaTokenType.PUBLIC_KEYWORD)) {
             modifiers |= Modifier.PUBLIC;
+        }
 
-        if (context.hasDirectModifierToken(constructor, JavaTokenType.PROTECTED_KEYWORD))
+        if (context.hasDirectModifierToken(constructor, JavaTokenType.PROTECTED_KEYWORD)) {
             modifiers |= Modifier.PROTECTED;
+        }
 
-        if (context.hasDirectModifierToken(constructor, JavaTokenType.PRIVATE_KEYWORD))
+        if (context.hasDirectModifierToken(constructor, JavaTokenType.PRIVATE_KEYWORD)) {
             modifiers |= Modifier.PRIVATE;
+        }
 
         return modifiers;
     }
@@ -153,8 +154,7 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
         String ownerQualifiedName,
         String usageTypeQualifiedName,
         int modifiers,
-        String ownerPackageName
-    ) {
+        String ownerPackageName) {
         if (Modifier.isPublic(modifiers))
             return true;
 

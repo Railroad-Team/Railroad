@@ -13,7 +13,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public record FabricApiVersionRepository(SwitchboardClient client, CacheManager cache)
-    implements SwitchboardRepository {
+    implements
+        SwitchboardRepository {
     private static final Duration VERSIONS_TTL = Duration.ofHours(12);
     private static final Duration LATEST_TTL = Duration.ofHours(1);
 
@@ -22,8 +23,7 @@ public record FabricApiVersionRepository(SwitchboardClient client, CacheManager 
             "fabric:api:versions",
             SwitchboardClient.LIST_OF_STRINGS,
             VERSIONS_TTL,
-            client::fetchFabricApiVersions
-        );
+            client::fetchFabricApiVersions);
     }
 
     public List<String> getAllVersionsSync() throws ExecutionException, InterruptedException {
@@ -39,8 +39,7 @@ public record FabricApiVersionRepository(SwitchboardClient client, CacheManager 
             key,
             SwitchboardClient.LIST_OF_STRINGS,
             VERSIONS_TTL,
-            () -> client.fetchFabricApiVersions(normalized)
-        );
+            () -> client.fetchFabricApiVersions(normalized));
     }
 
     public List<String> getVersionsForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {
@@ -57,8 +56,7 @@ public record FabricApiVersionRepository(SwitchboardClient client, CacheManager 
             key,
             String.class,
             LATEST_TTL,
-            () -> client.fetchLatestFabricApiVersion(includePrereleases)
-        );
+            () -> client.fetchLatestFabricApiVersion(includePrereleases));
     }
 
     public String getLatestVersionSync() throws ExecutionException, InterruptedException {
@@ -82,15 +80,15 @@ public record FabricApiVersionRepository(SwitchboardClient client, CacheManager 
             key,
             String.class,
             LATEST_TTL,
-            () -> client.fetchLatestFabricApiVersion(normalized, includePrereleases)
-        );
+            () -> client.fetchLatestFabricApiVersion(normalized, includePrereleases));
     }
 
     public String getLatestVersionForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {
         return getLatestVersionFor(minecraftVersionId).get();
     }
 
-    public String getLatestVersionForSync(String minecraftVersionId, boolean includePrereleases) throws ExecutionException, InterruptedException {
+    public String getLatestVersionForSync(String minecraftVersionId, boolean includePrereleases)
+        throws ExecutionException, InterruptedException {
         return getLatestVersionFor(minecraftVersionId, includePrereleases).get();
     }
 
@@ -103,8 +101,9 @@ public record FabricApiVersionRepository(SwitchboardClient client, CacheManager 
         if (possibleVersion.contains("build."))
             return Optional.empty(); // TODO: Handle this by figuring out what build versions are for
 
-        if (possibleVersion.endsWith("_experimental"))
+        if (possibleVersion.endsWith("_experimental")) {
             possibleVersion = possibleVersion.substring(0, possibleVersion.length() - "_experimental".length());
+        }
 
         return Optional.of(possibleVersion);
     }

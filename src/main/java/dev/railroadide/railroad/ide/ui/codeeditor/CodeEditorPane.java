@@ -62,8 +62,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     protected final ExecutorService worker = Executors.newFixedThreadPool(
         Math.max(2, Runtime.getRuntime().availableProcessors() / 2),
-        namedThreadFactory("railroad-code-editor-worker-%d")
-    );
+        namedThreadFactory("railroad-code-editor-worker-%d"));
     private final ShutdownHooks.Registration workerShutdownRegistration;
     private boolean codeEditorClosed;
 
@@ -196,9 +195,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         Diagnostic.Kind severity = lineSeverity.get(line + 1);
         if (severity != null) {
-            FontAwesomeSolid iconType = severity == Diagnostic.Kind.ERROR ?
-                FontAwesomeSolid.CIRCLE_EXCLAMATION :
-                FontAwesomeSolid.TRIANGLE_EXCLAMATION;
+            FontAwesomeSolid iconType = severity == Diagnostic.Kind.ERROR
+                ? FontAwesomeSolid.CIRCLE_EXCLAMATION
+                : FontAwesomeSolid.TRIANGLE_EXCLAMATION;
             Color color = severity == Diagnostic.Kind.ERROR ? Color.RED : Color.YELLOW;
 
             var icon = new MFXFontIcon(iconType, 12, color);
@@ -206,8 +205,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
             String tooltipText = lineDiagnosticMessages.getOrDefault(
                 line + 1,
-                severity == Diagnostic.Kind.ERROR ? "Error" : "Warning"
-            );
+                severity == Diagnostic.Kind.ERROR ? "Error" : "Warning");
             Tooltip.install(icon, new Tooltip(tooltipText));
         }
 
@@ -280,8 +278,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
         boolean lineDecorationsChanged = recomputeLineDecorations();
         applyEditorStyles();
         restoreBracketHighlight();
-        if (lineDecorationsChanged)
+        if (lineDecorationsChanged) {
             requestLayout();
+        }
     }
 
     private void installDiagnosticPopupHandlers() {
@@ -564,7 +563,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         signatureTextFlow.getChildren().clear();
 
         String owner = help.ownerQualified().isBlank() ? help.ownerDisplay() : help.ownerQualified();
-        StringBuilder headerBuilder = new StringBuilder();
+        var headerBuilder = new StringBuilder();
         if (help.constructor()) {
             headerBuilder.append("new ");
             if (!owner.isBlank()) {
@@ -590,7 +589,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
         for (int i = 0; i < parameterCount; i++) {
             SignatureHelp.ParameterInfo parameter = parameters.get(i);
             boolean highlight = highlightIndex == i ||
-                (help.varargs() && i == parameterCount - 1 && highlightIndex >= parameterCount - 1 && highlightIndex >= 0);
+                (help.varargs() && i == parameterCount - 1 && highlightIndex >= parameterCount - 1
+                    && highlightIndex >= 0);
 
             String paramLabel = parameter.type() + (parameter.name().isBlank() ? "" : " " + parameter.name());
             var paramText = new Text(paramLabel);
@@ -773,7 +773,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
     // endregion
 
-    //region Styles
+    // region Styles
     private void applyEditorStyles() {
         if (lastHighlight == null)
             return;
@@ -789,8 +789,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private static StyleSpans<Collection<String>> mergeDiagnosticStyles(
         StyleSpans<Collection<String>> baseSpans,
-        List<EditorDiagnostic> diagnostics
-    ) {
+        List<EditorDiagnostic> diagnostics) {
         if (baseSpans == null || diagnostics == null || diagnostics.isEmpty())
             return baseSpans;
 
@@ -814,7 +813,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (events.isEmpty())
             return baseSpans;
 
-        StyleSpansBuilder<Collection<String>> builder = new StyleSpansBuilder<>(baseSpans.getSpanCount() + events.size());
+        StyleSpansBuilder<Collection<String>> builder = new StyleSpansBuilder<>(
+            baseSpans.getSpanCount() + events.size());
         Iterator<Map.Entry<Integer, int[]>> iterator = events.entrySet().iterator();
         Map.Entry<Integer, int[]> nextEvent = iterator.hasNext() ? iterator.next() : null;
         int currentPosition = 0;
@@ -848,7 +848,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     private static void registerDiagnosticEvent(TreeMap<Integer, int[]> events, int offset, boolean error, int delta) {
-        int[] deltas = events.computeIfAbsent(offset, ignored -> new int[2]);
+        int[] deltas = events.computeIfAbsent(offset, _ -> new int[2]);
         if (error) {
             deltas[0] += delta;
         } else {
@@ -872,8 +872,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private static boolean styleSpansEqual(
         StyleSpans<Collection<String>> left,
-        StyleSpans<Collection<String>> right
-    ) {
+        StyleSpans<Collection<String>> right) {
         if (left == right)
             return true;
 
@@ -906,7 +905,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 continue;
 
             Diagnostic.Kind kind = diagnostic.getKind();
-            Diagnostic.Kind effectiveKind = kind == Diagnostic.Kind.ERROR ? Diagnostic.Kind.ERROR : Diagnostic.Kind.WARNING;
+            Diagnostic.Kind effectiveKind = kind == Diagnostic.Kind.ERROR
+                ? Diagnostic.Kind.ERROR
+                : Diagnostic.Kind.WARNING;
             Diagnostic.Kind existing = updatedSeverity.get(line);
             if (existing != Diagnostic.Kind.ERROR) {
                 updatedSeverity.put(line, effectiveKind);

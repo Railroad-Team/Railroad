@@ -89,7 +89,6 @@ public final class ProjectManager {
 
         Railroad.EVENT_BUS.publish(new ProjectEvent(
             beingClosed == null ? project : beingClosed,
-            project == null ? ProjectEvent.EventType.CLOSED : ProjectEvent.EventType.OPENED
-        ));
+            project == null ? ProjectEvent.EventType.CLOSED : ProjectEvent.EventType.OPENED));
     }
 }

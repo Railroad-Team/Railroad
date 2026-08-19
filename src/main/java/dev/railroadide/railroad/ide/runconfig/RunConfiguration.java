@@ -174,7 +174,8 @@ public final class RunConfiguration<D extends RunConfigurationData> {
             .filter(entry -> Objects.equals(entry.getValue(), config.type()))
             .map(Map.Entry::getKey)
             .findFirst()
-            .orElseThrow(() -> new IllegalStateException(config.type().getClass().getSimpleName() + " not registered in registry")));
+            .orElseThrow(() -> new IllegalStateException(
+                config.type().getClass().getSimpleName() + " not registered in registry")));
         json.add("data", Railroad.GSON.toJsonTree(config.data()));
         return json;
     }

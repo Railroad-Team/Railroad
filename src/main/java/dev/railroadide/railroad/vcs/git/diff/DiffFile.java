@@ -19,8 +19,7 @@ public record DiffFile(
     @Nullable Path newPath,
     boolean isBinary,
     List<String> headers,
-    List<DiffHunk> hunks
-) {
+    List<DiffHunk> hunks) {
     /**
      * Returns whether the file was newly added in this diff.
      *
@@ -51,8 +50,7 @@ public record DiffFile(
             file.newPath,
             true,
             file.headers,
-            file.hunks
-        );
+            file.hunks);
     }
 
     /**
@@ -68,8 +66,7 @@ public record DiffFile(
             file.newPath,
             file.isBinary,
             file.headers,
-            file.hunks
-        );
+            file.hunks);
     }
 
     /**
@@ -85,7 +82,6 @@ public record DiffFile(
             Path.of(newPath).normalize(),
             file.isBinary,
             file.headers,
-            file.hunks
-        );
+            file.hunks);
     }
 }

@@ -11,10 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record OpensDirective(
-        Span span,
-        NameExpression packageName,
-        List<NameExpression> targetModules
-) implements ModuleDirective {
+    Span span,
+    NameExpression packageName,
+    List<NameExpression> targetModules) implements ModuleDirective {
     @Override
     public AstKind kind() {
         return AstKind.OPENS_DIRECTIVE;

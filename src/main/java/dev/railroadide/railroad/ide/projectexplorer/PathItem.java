@@ -22,11 +22,10 @@ public class PathItem {
 
     @Override
     public String toString() {
-        if (this.path.getFileName() == null) {
+        if (this.path.getFileName() == null)
             return this.path.toString();
-        } else {
+        else
             return this.path.getFileName().toString();
-        }
     }
 
     public int getNewDepthCount() {

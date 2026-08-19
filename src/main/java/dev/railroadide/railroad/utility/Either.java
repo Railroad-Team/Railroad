@@ -35,7 +35,7 @@ public record Either<L, R>(L left, R right, boolean isLeft) {
     }
 
     public <T> T map(Function<? super L, ? extends T> leftMapper,
-                     Function<? super R, ? extends T> rightMapper) {
+        Function<? super R, ? extends T> rightMapper) {
         return isLeft ? leftMapper.apply(left) : rightMapper.apply(right);
     }
 

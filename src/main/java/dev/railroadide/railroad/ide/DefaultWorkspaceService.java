@@ -17,7 +17,8 @@ import java.util.stream.Collectors;
 
 /** Application implementation of the plugin-facing workspace API. */
 public final class DefaultWorkspaceService implements WorkspaceService {
-    private final ObjectProperty<WorkspaceMode> currentViewMode = new SimpleObjectProperty<>(WorkspaceMode.defaultMode());
+    private final ObjectProperty<WorkspaceMode> currentViewMode = new SimpleObjectProperty<>(
+        WorkspaceMode.defaultMode());
     private volatile WorkspaceAdapter activeWorkspace;
     private volatile Set<WorkspaceMode> availableModes = Set.of();
 
@@ -42,12 +43,10 @@ public final class DefaultWorkspaceService implements WorkspaceService {
      */
     public Registration attachWorkspace(
         Predicate<WorkspaceMode> activation,
-        Predicate<WorkspaceMode> availability
-    ) {
-        WorkspaceAdapter adapter = new WorkspaceAdapter(
+        Predicate<WorkspaceMode> availability) {
+        var adapter = new WorkspaceAdapter(
             Objects.requireNonNull(activation, "Activation predicate cannot be null"),
-            Objects.requireNonNull(availability, "Availability predicate cannot be null")
-        );
+            Objects.requireNonNull(availability, "Availability predicate cannot be null"));
         WorkspaceAdapter previous = activeWorkspace;
         activeWorkspace = adapter;
         if (previous != null && previous != adapter) {
@@ -147,8 +146,7 @@ public final class DefaultWorkspaceService implements WorkspaceService {
 
     private record WorkspaceAdapter(
         Predicate<WorkspaceMode> activation,
-        Predicate<WorkspaceMode> availability
-    ) {
+        Predicate<WorkspaceMode> availability) {
     }
 
     public static final class Registration implements AutoCloseable {

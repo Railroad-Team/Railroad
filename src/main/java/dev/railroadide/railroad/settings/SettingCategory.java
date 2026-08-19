@@ -110,7 +110,8 @@ public record SettingCategory(String id, String title, String description, boole
         private String buildKey() {
             String[] parts = id.split(":");
             if (parts.length != 2)
-                throw new IllegalArgumentException("SettingCategory ID must be in the format 'pluginId:categoryId', got: " + id);
+                throw new IllegalArgumentException(
+                    "SettingCategory ID must be in the format 'pluginId:categoryId', got: " + id);
 
             return parts[0] + ".settings." + parts[1];
         }

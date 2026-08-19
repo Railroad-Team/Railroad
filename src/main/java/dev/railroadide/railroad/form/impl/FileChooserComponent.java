@@ -26,22 +26,25 @@ import java.util.function.Function;
  */
 public class FileChooserComponent extends FormComponent<FormFileChooser, FileChooserComponent.Data, TextField, String> {
     public FileChooserComponent(String dataKey,
-                                Data data,
-                                FormComponentValidator<TextField> validator,
-                                FormComponentChangeListener<TextField, String> listener,
-                                Property<TextField> bindTextFieldTo,
-                                Property<BrowseButton> bindBrowseButtonTo,
-                                List<FormTransformer<TextField, String, ?>> transformers,
-                                EventHandler<? super KeyEvent> keyTypedHandler,
-                                @Nullable BooleanBinding visible) {
-        super(dataKey, data, d -> new FormFileChooser(d.label, d.required, d.defaultPath, d.includeButton), validator, listener, transformers, visible);
+        Data data,
+        FormComponentValidator<TextField> validator,
+        FormComponentChangeListener<TextField, String> listener,
+        Property<TextField> bindTextFieldTo,
+        Property<BrowseButton> bindBrowseButtonTo,
+        List<FormTransformer<TextField, String, ?>> transformers,
+        EventHandler<? super KeyEvent> keyTypedHandler,
+        @Nullable BooleanBinding visible) {
+        super(dataKey, data, d -> new FormFileChooser(d.label, d.required, d.defaultPath, d.includeButton), validator,
+            listener, transformers, visible);
 
         if (bindTextFieldTo != null) {
-            bindTextFieldTo.bind(componentProperty().map(FormFileChooser::getPrimaryComponent).map(FormFileChooser.TextFieldWithButton::getTextField));
+            bindTextFieldTo.bind(componentProperty().map(FormFileChooser::getPrimaryComponent)
+                .map(FormFileChooser.TextFieldWithButton::getTextField));
         }
 
         if (bindBrowseButtonTo != null) {
-            bindBrowseButtonTo.bind(componentProperty().map(FormFileChooser::getPrimaryComponent).map(FormFileChooser.TextFieldWithButton::getBrowseButton));
+            bindBrowseButtonTo.bind(componentProperty().map(FormFileChooser::getPrimaryComponent)
+                .map(FormFileChooser.TextFieldWithButton::getBrowseButton));
         }
 
         if (keyTypedHandler != null) {
@@ -75,8 +78,8 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
             }
 
             if (newValue != null) {
-                ChangeListener<String> changeListener = (observable1, oldValue1, newValue1) ->
-                    listener.changed(newValue.getPrimaryComponent().getTextField(), observable1, oldValue1, newValue1);
+                ChangeListener<String> changeListener = (observable1, oldValue1, newValue1) -> listener
+                    .changed(newValue.getPrimaryComponent().getTextField(), observable1, oldValue1, newValue1);
                 listenerRef.set(changeListener);
                 newValue.getPrimaryComponent().getTextField().textProperty().addListener(changeListener);
             }
@@ -89,8 +92,7 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
             .map(FormFileChooser::getPrimaryComponent)
             .map(FormFileChooser.TextFieldWithButton::getTextField)
             .flatMap(TextField::textProperty)
-            .addListener((observable, oldValue, newValue) ->
-                formData.addProperty(dataKey, newValue));
+            .addListener((observable, oldValue, newValue) -> formData.addProperty(dataKey, newValue));
 
         formData.addProperty(dataKey, componentProperty()
             .map(FormFileChooser::getPrimaryComponent)
@@ -173,19 +175,22 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
         }
 
         @Override
-        public <X> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<X> toComponentFunction, Function<String, X> valueMapper) {
-            transformers.add(new FormTransformer<>(fromComponent, TextField::getText, toComponentFunction, valueMapper));
+        public <X> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<X> toComponentFunction,
+            Function<String, X> valueMapper) {
+            transformers
+                .add(new FormTransformer<>(fromComponent, TextField::getText, toComponentFunction, valueMapper));
             return this;
         }
 
         @Override
-        public <U extends Node, X> Builder addTransformer(ObservableValue<TextField> fromComponent, ObservableValue<U> toComponent, Function<String, X> valueMapper) {
+        public <U extends Node, X> Builder addTransformer(ObservableValue<TextField> fromComponent,
+            ObservableValue<U> toComponent, Function<String, X> valueMapper) {
             transformers.add(new FormTransformer<>(fromComponent, TextField::getText, value -> {
                 if (toComponent.getValue() instanceof TextField target) {
                     target.setText(value.toString());
-                } else {
-                    throw new IllegalArgumentException("Unsupported component type: " + toComponent.getValue().getClass().getName());
-                }
+                } else
+                    throw new IllegalArgumentException(
+                        "Unsupported component type: " + toComponent.getValue().getClass().getName());
             }, valueMapper));
             return this;
         }
@@ -203,7 +208,8 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
 
         @Override
         public FileChooserComponent build() {
-            return new FileChooserComponent(dataKey, data, validator, listener, bindTextFieldTo, bindBrowseButtonTo, transformers, keyTypedHandler, visible);
+            return new FileChooserComponent(dataKey, data, validator, listener, bindTextFieldTo, bindBrowseButtonTo,
+                transformers, keyTypedHandler, visible);
         }
     }
 

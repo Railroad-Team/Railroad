@@ -29,8 +29,7 @@ public final class JavaSemanticCompletionEngine {
     public static @Nullable CompletionResult compute(
         String document,
         int triggerAt,
-        @Nullable JavaProjectSemanticIndex projectIndex
-    ) {
+        @Nullable JavaProjectSemanticIndex projectIndex) {
         if (document == null || document.isEmpty() || triggerAt < 0 || triggerAt >= document.length())
             return null;
         if (document.charAt(triggerAt) != '.')
@@ -58,8 +57,7 @@ public final class JavaSemanticCompletionEngine {
             target.staticContext(),
             currentPackage,
             itemsByKey,
-            new LinkedHashSet<>()
-        );
+            new LinkedHashSet<>());
 
         if (itemsByKey.isEmpty())
             return null;
@@ -73,8 +71,7 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable CompletionTarget resolveCompletionTarget(
         SyntaxNode node,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
-    ) {
+        @Nullable JavaProjectSemanticIndex projectIndex) {
         for (SyntaxNode current = node; current != null; current = current.parent().orElse(null)) {
             SyntaxNode receiver = JavaSemanticAnalyzer.explicitReceiver(current);
             if (receiver != null)
@@ -87,8 +84,7 @@ public final class JavaSemanticCompletionEngine {
         SyntaxNode receiver,
         SyntaxNode usageSite,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
-    ) {
+        @Nullable JavaProjectSemanticIndex projectIndex) {
         if (JavaSyntaxKinds.THIS_EXPRESSION.id().equals(receiver.kind().id())) {
             Symbol enclosing = enclosingTypeSymbol(usageSite, model);
             String ownerQualifiedName = enclosing == null ? null : enclosing.qualifiedName().orElse(null);
@@ -129,7 +125,8 @@ public final class JavaSemanticCompletionEngine {
         return null;
     }
 
-    private static @Nullable CompletionTarget completionTarget(@Nullable String ownerQualifiedName, boolean staticContext) {
+    private static @Nullable CompletionTarget completionTarget(@Nullable String ownerQualifiedName,
+        boolean staticContext) {
         if (ownerQualifiedName == null || ownerQualifiedName.isBlank())
             return null;
         return new CompletionTarget(ownerQualifiedName, staticContext);
@@ -142,8 +139,7 @@ public final class JavaSemanticCompletionEngine {
         boolean staticContext,
         String currentPackage,
         Map<String, CompletionItem> out,
-        Set<String> visitedOwners
-    ) {
+        Set<String> visitedOwners) {
         if (!visitedOwners.add(ownerQualifiedName))
             return;
 
@@ -160,8 +156,7 @@ public final class JavaSemanticCompletionEngine {
         SemanticModel model,
         String ownerQualifiedName,
         boolean staticContext,
-        Map<String, CompletionItem> out
-    ) {
+        Map<String, CompletionItem> out) {
         collectLocalMembersRecursive(model.syntaxTree().root(), model, ownerQualifiedName, staticContext, out);
     }
 
@@ -170,8 +165,7 @@ public final class JavaSemanticCompletionEngine {
         SemanticModel model,
         String ownerQualifiedName,
         boolean staticContext,
-        Map<String, CompletionItem> out
-    ) {
+        Map<String, CompletionItem> out) {
         Symbol declared = model.declaredSymbol(node).orElse(null);
         if (declared != null) {
             String declarationOwnerQualifiedName = ownerQualifiedName(declared.qualifiedName().orElse(null));
@@ -181,15 +175,13 @@ public final class JavaSemanticCompletionEngine {
                         out,
                         declared.simpleName(),
                         typeOfFieldSymbol(declared, model).displayName(),
-                        isStaticDeclaration(node)
-                    );
+                        isStaticDeclaration(node));
                     case METHOD -> addMethodItem(
                         out,
                         declared.simpleName(),
                         parameterTypesFromDeclaration(node),
                         returnTypeFromMethodDeclaration(node),
-                        isStaticDeclaration(node)
-                    );
+                        isStaticDeclaration(node));
                     case CLASS, INTERFACE, ENUM, ANNOTATION, RECORD -> {
                         if (staticContext && isStaticDeclaration(node)) {
                             addTypeItem(out, declared.simpleName(), true);
@@ -201,34 +193,35 @@ public final class JavaSemanticCompletionEngine {
             }
         }
 
-        for (SyntaxNode child : node.children())
+        for (SyntaxNode child : node.children()) {
             collectLocalMembersRecursive(child, model, ownerQualifiedName, staticContext, out);
+        }
     }
 
     private static void collectProjectMembers(
         @Nullable JavaProjectSemanticIndex projectIndex,
         String ownerQualifiedName,
         boolean staticContext,
-        Map<String, CompletionItem> out
-    ) {
+        Map<String, CompletionItem> out) {
         if (projectIndex == null)
             return;
 
         for (JavaProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupMembers(ownerQualifiedName)) {
             switch (symbol.kind()) {
                 case FIELD -> {
-                    if (symbol.isStatic() == staticContext)
+                    if (symbol.isStatic() == staticContext) {
                         addFieldItem(out, symbol.simpleName(), "?", symbol.isStatic());
+                    }
                 }
                 case METHOD -> {
-                    if (symbol.isStatic() == staticContext)
+                    if (symbol.isStatic() == staticContext) {
                         addMethodItem(
                             out,
                             symbol.simpleName(),
                             parameterDisplaysFromSignature(symbol.signature()),
                             "?",
-                            symbol.isStatic()
-                        );
+                            symbol.isStatic());
+                    }
                 }
                 default -> {
                 }
@@ -240,8 +233,7 @@ public final class JavaSemanticCompletionEngine {
         String ownerQualifiedName,
         boolean staticContext,
         String currentPackage,
-        Map<String, CompletionItem> out
-    ) {
+        Map<String, CompletionItem> out) {
         ClassStub stub = JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName().get(ownerQualifiedName);
         if (stub == null)
             return;
@@ -278,8 +270,7 @@ public final class JavaSemanticCompletionEngine {
         String name,
         List<String> parameterTypes,
         String returnType,
-        boolean isStatic
-    ) {
+        boolean isStatic) {
         String prefix = isStatic ? "static " : "";
         String parameters = String.join(", ", parameterTypes);
         String display = prefix + name + "(" + parameters + ") : " + returnType;
@@ -298,9 +289,13 @@ public final class JavaSemanticCompletionEngine {
         SyntaxNode typeRef = JavaSemanticAnalyzer.directChild(declaration, JavaSyntaxKinds.TYPE_REFERENCE.id());
         if (typeRef == null) {
             SyntaxNode parent = declaration.parent().orElse(null);
-            typeRef = parent == null ? null : JavaSemanticAnalyzer.directChild(parent, JavaSyntaxKinds.TYPE_REFERENCE.id());
+            typeRef = parent == null
+                ? null
+                : JavaSemanticAnalyzer.directChild(parent, JavaSyntaxKinds.TYPE_REFERENCE.id());
         }
-        return typeRef == null ? new Type.UnknownType("?") : model.inferredType(typeRef).orElse(new Type.UnknownType("?"));
+        return typeRef == null
+            ? new Type.UnknownType("?")
+            : model.inferredType(typeRef).orElse(new Type.UnknownType("?"));
     }
 
     private static String returnTypeFromMethodDeclaration(SyntaxNode declaration) {
@@ -372,8 +367,7 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable String superTypeQualifiedName(
         @Nullable String ownerQualifiedName,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
-    ) {
+        @Nullable JavaProjectSemanticIndex projectIndex) {
         List<String> superTypes = directSuperTypes(ownerQualifiedName, model, projectIndex);
         return superTypes.isEmpty() ? null : superTypes.get(0);
     }
@@ -381,19 +375,20 @@ public final class JavaSemanticCompletionEngine {
     private static List<String> directSuperTypes(
         @Nullable String ownerQualifiedName,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
-    ) {
+        @Nullable JavaProjectSemanticIndex projectIndex) {
         if (ownerQualifiedName == null || ownerQualifiedName.isBlank())
             return List.of();
 
         ClassStub stub = JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName().get(ownerQualifiedName);
         if (stub != null) {
             List<String> result = new ArrayList<>();
-            if (stub.superClass() instanceof dev.railroadide.railroad.ide.classparser.Type.ClassType classType)
+            if (stub.superClass() instanceof dev.railroadide.railroad.ide.classparser.Type.ClassType classType) {
                 result.add(classType.name());
+            }
             for (dev.railroadide.railroad.ide.classparser.Type iface : stub.interfaces()) {
-                if (iface instanceof dev.railroadide.railroad.ide.classparser.Type.ClassType classType)
+                if (iface instanceof dev.railroadide.railroad.ide.classparser.Type.ClassType classType) {
                     result.add(classType.name());
+                }
             }
             return List.copyOf(result);
         }
@@ -421,8 +416,7 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable TypeDeclarationInfo typeDeclarationInfoForOwner(
         String ownerQualifiedName,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
-    ) {
+        @Nullable JavaProjectSemanticIndex projectIndex) {
         TypeDeclarationInfo inCurrentModel = typeDeclarationInfoInModel(ownerQualifiedName, model, projectIndex);
         if (inCurrentModel != null)
             return inCurrentModel;
@@ -432,7 +426,8 @@ public final class JavaSemanticCompletionEngine {
             return null;
 
         try {
-            SemanticModel declarationModel = JavaSemanticAnalyzer.analyzeDeclarationsFacts(Files.readString(sourceFile));
+            SemanticModel declarationModel = JavaSemanticAnalyzer
+                .analyzeDeclarationsFacts(Files.readString(sourceFile));
             return typeDeclarationInfoInModel(ownerQualifiedName, declarationModel, projectIndex);
         } catch (IOException exception) {
             return null;
@@ -442,8 +437,7 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable TypeDeclarationInfo typeDeclarationInfoInModel(
         String ownerQualifiedName,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
-    ) {
+        @Nullable JavaProjectSemanticIndex projectIndex) {
         SyntaxNode declarationNode = findTypeDeclarationNodeByQualifiedName(model, ownerQualifiedName);
         if (declarationNode == null)
             return null;
@@ -458,15 +452,13 @@ public final class JavaSemanticCompletionEngine {
             JavaSemanticAnalyzer.directChild(declarationNode, JavaSyntaxKinds.EXTENDS_CLAUSE.id()),
             declarationNode,
             model,
-            projectIndex
-        );
+            projectIndex);
         collectClauseTypes(
             directSupertypes,
             JavaSemanticAnalyzer.directChild(declarationNode, JavaSyntaxKinds.IMPLEMENTS_CLAUSE.id()),
             declarationNode,
             model,
-            projectIndex
-        );
+            projectIndex);
         return new TypeDeclarationInfo(symbol.kind(), List.copyOf(directSupertypes));
     }
 
@@ -475,8 +467,7 @@ public final class JavaSemanticCompletionEngine {
         @Nullable SyntaxNode clauseNode,
         SyntaxNode usageSite,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
-    ) {
+        @Nullable JavaProjectSemanticIndex projectIndex) {
         if (clauseNode == null)
             return;
 
@@ -485,10 +476,10 @@ public final class JavaSemanticCompletionEngine {
                 JavaSemanticAnalyzer.canonicalTypeText(typeReference),
                 usageSite,
                 model,
-                projectIndex
-            );
-            if (qualifiedName != null && !qualifiedName.isBlank() && !out.contains(qualifiedName))
+                projectIndex);
+            if (qualifiedName != null && !qualifiedName.isBlank() && !out.contains(qualifiedName)) {
                 out.add(qualifiedName);
+            }
         }
     }
 
@@ -503,14 +494,14 @@ public final class JavaSemanticCompletionEngine {
             out.add(node);
             return;
         }
-        for (SyntaxNode child : node.children())
+        for (SyntaxNode child : node.children()) {
             collectDescendantTypeReferences(child, out);
+        }
     }
 
     private static @Nullable Path sourceFileForType(
         String ownerQualifiedName,
-        @Nullable JavaProjectSemanticIndex projectIndex
-    ) {
+        @Nullable JavaProjectSemanticIndex projectIndex) {
         if (projectIndex == null)
             return null;
 
@@ -521,7 +512,8 @@ public final class JavaSemanticCompletionEngine {
         return null;
     }
 
-    private static @Nullable SyntaxNode findTypeDeclarationNodeByQualifiedName(SemanticModel model, String ownerQualifiedName) {
+    private static @Nullable SyntaxNode findTypeDeclarationNodeByQualifiedName(SemanticModel model,
+        String ownerQualifiedName) {
         ArrayDeque<SyntaxNode> stack = new ArrayDeque<>();
         stack.push(model.syntaxTree().root());
         while (!stack.isEmpty()) {
@@ -529,9 +521,8 @@ public final class JavaSemanticCompletionEngine {
             Symbol symbol = model.declaredSymbol(node).orElse(null);
             if (symbol != null
                 && isTypeSymbol(symbol.kind())
-                && ownerQualifiedName.equals(symbol.qualifiedName().orElse(null))) {
+                && ownerQualifiedName.equals(symbol.qualifiedName().orElse(null)))
                 return node;
-            }
             List<SyntaxNode> children = node.children();
             for (int index = children.size() - 1; index >= 0; index--) {
                 stack.push(children.get(index));
@@ -544,12 +535,12 @@ public final class JavaSemanticCompletionEngine {
         @Nullable String text,
         SyntaxNode usageSite,
         SemanticModel model,
-        @Nullable JavaProjectSemanticIndex projectIndex
-    ) {
+        @Nullable JavaProjectSemanticIndex projectIndex) {
         if (text == null || text.isBlank())
             return null;
-        while (text.endsWith("[]"))
+        while (text.endsWith("[]")) {
             text = text.substring(0, text.length() - 2);
+        }
 
         if (Set.of("boolean", "byte", "short", "char", "int", "long", "float", "double", "void").contains(text))
             return text;
@@ -577,9 +568,8 @@ public final class JavaSemanticCompletionEngine {
                 String wildcardCandidate = qualified.substring(0, qualified.length() - 2) + "." + simpleName;
                 if (typeExists(wildcardCandidate, projectIndex))
                     return wildcardCandidate;
-            } else if (simpleName.equals(JavaSemanticAnalyzer.lastSegment(qualified))) {
+            } else if (simpleName.equals(JavaSemanticAnalyzer.lastSegment(qualified)))
                 return qualified;
-            }
         }
 
         String currentPackage = currentPackageName(root);
@@ -655,7 +645,8 @@ public final class JavaSemanticCompletionEngine {
     private static String renderJvmType(dev.railroadide.railroad.ide.classparser.Type type) {
         return switch (type) {
             case dev.railroadide.railroad.ide.classparser.Type.PrimitiveType primitive -> primitive.name();
-            case dev.railroadide.railroad.ide.classparser.Type.ArrayType array -> renderJvmType(array.componentType()) + "[]";
+            case dev.railroadide.railroad.ide.classparser.Type.ArrayType array ->
+                renderJvmType(array.componentType()) + "[]";
             case dev.railroadide.railroad.ide.classparser.Type.ClassType clazz -> clazz.name();
             case dev.railroadide.railroad.ide.classparser.Type.TypeVariable variable -> variable.name();
             case dev.railroadide.railroad.ide.classparser.Type.WildcardType wildcard ->

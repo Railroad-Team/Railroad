@@ -31,15 +31,12 @@ public class GitCommitHeaderCard extends RRVBox {
 
         var committedText = new LocalizedText(
             "railroad.git.commit.details.committed",
-            TimeFormatter.formatElapsed(commit.authorTimestampEpochSeconds() * 1000L)
-        );
+            TimeFormatter.formatElapsed(commit.authorTimestampEpochSeconds() * 1000L));
         committedAnimation = new Timeline(new KeyFrame(
             Duration.seconds(1),
             event -> committedText.setKeyAndArgs(
                 "railroad.git.commit.details.committed",
-                TimeFormatter.formatElapsed(commit.authorTimestampEpochSeconds() * 1000L)
-            )
-        ));
+                TimeFormatter.formatElapsed(commit.authorTimestampEpochSeconds() * 1000L))));
         committedAnimation.setCycleCount(Timeline.INDEFINITE);
         sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene == null) {

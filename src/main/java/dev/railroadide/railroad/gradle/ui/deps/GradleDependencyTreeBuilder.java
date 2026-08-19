@@ -79,7 +79,8 @@ public class GradleDependencyTreeBuilder implements GradleTreeBuilder<RailroadCo
         return root;
     }
 
-    private void addDependencies(TreeItem<GradleTreeElement> parent, Collection<? extends RailroadDependency> dependencies) {
+    private void addDependencies(TreeItem<GradleTreeElement> parent,
+        Collection<? extends RailroadDependency> dependencies) {
         if (dependencies == null)
             return;
 
@@ -100,8 +101,7 @@ public class GradleDependencyTreeBuilder implements GradleTreeBuilder<RailroadCo
                 GradleTreeElement element = item.getValue();
                 return element == null ? "" : element.getName();
             },
-            String.CASE_INSENSITIVE_ORDER
-        );
+            String.CASE_INSENSITIVE_ORDER);
 
         FXCollections.sort(node.getChildren(), comparator);
         for (TreeItem<GradleTreeElement> child : node.getChildren()) {
