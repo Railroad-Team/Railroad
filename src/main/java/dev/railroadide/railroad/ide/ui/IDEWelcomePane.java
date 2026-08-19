@@ -146,7 +146,8 @@ public class IDEWelcomePane extends ScrollPane {
             DesktopUtils.openUrl("https://railroadide.dev");
         });
 
-        var tutorialsButton = new RRButton("railroad.ide.welcome.getting_started.tutorials", FontAwesomeSolid.GRADUATION_CAP);
+        var tutorialsButton = new RRButton("railroad.ide.welcome.getting_started.tutorials",
+            FontAwesomeSolid.GRADUATION_CAP);
         tutorialsButton.setVariant(ButtonVariant.SECONDARY);
         tutorialsButton.setOnAction(event -> {
             event.consume();

@@ -65,8 +65,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         this.project = Objects.requireNonNull(project, "Project cannot be null");
         this.lifecycle = new IDEPaneLifecycle(this);
         this.viewModeController = Services.WORKSPACE.createModeController(
-            mode -> mode.isAvailable(project)
-        );
+            mode -> mode.isAvailable(project));
         this.lifecycle.onDispose(viewModeController::close);
         this.viewModeController.requestViewMode(WorkspaceMode.defaultMode());
 
@@ -100,8 +99,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
         var workspaceRegistration = Services.WORKSPACE.attachWorkspace(
             this::requestViewMode,
-            mode -> mode.isAvailable(project)
-        );
+            mode -> mode.isAvailable(project));
         lifecycle.onDispose(workspaceRegistration::close);
 
         KeybindHandler.registerCapture(KeybindContexts.of("railroad:ide"), this);
@@ -128,8 +126,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             createDockTab(IDEDockItem.GIT_BRANCHES, IDEDockItem.DockPosition.LEFT),
             createDockTab(IDEDockItem.GIT_REMOTES, IDEDockItem.DockPosition.LEFT),
             createDockTab(IDEDockItem.GIT_SYNC, IDEDockItem.DockPosition.LEFT),
-            createDockTab(IDEDockItem.GIT_STASH, IDEDockItem.DockPosition.LEFT)
-        );
+            createDockTab(IDEDockItem.GIT_STASH, IDEDockItem.DockPosition.LEFT));
     }
 
     private DetachableTabPane createCodeEditorPane() {
@@ -176,8 +173,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
     private DetachableTabPane getOrCreateEditorPane(
         Map<WorkspaceMode, DetachableTabPane> editorPanesByMode,
-        WorkspaceMode viewMode
-    ) {
+        WorkspaceMode viewMode) {
         WorkspaceMode resolvedMode = viewMode == null ? WorkspaceModes.CODE : viewMode;
         return editorPanesByMode.computeIfAbsent(resolvedMode, mode -> {
             if (mode == WorkspaceModes.CODE)
@@ -206,8 +202,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     private IDEDockTab createDockTab(IDEDockItem dockItem, IDEDockItem.DockPosition dockPosition) {
         if (dockItem.preferredDockPosition() != dockPosition)
             throw new IllegalArgumentException(
-                "Dock item '" + dockItem.id() + "' belongs in the " + dockItem.preferredDockPosition() + " dock"
-            );
+                "Dock item '" + dockItem.id() + "' belongs in the " + dockItem.preferredDockPosition() + " dock");
         return new IDEDockTab(dockItem, project);
     }
 
@@ -224,11 +219,13 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             }
 
             DetachableTabPane editorPane = getOrCreateEditorPane(editorPanesByMode, resolvedMode);
-            leftPane.getTabs().setAll(dockTabsByMode.getOrDefault(resolvedMode, dockTabsByMode.get(WorkspaceModes.CODE)));
+            leftPane.getTabs()
+                .setAll(dockTabsByMode.getOrDefault(resolvedMode, dockTabsByMode.get(WorkspaceModes.CODE)));
             replaceEditorPane(editorPane);
 
             activeViewMode = resolvedMode;
-            restoreModeLayout(layoutsByMode.getOrDefault(resolvedMode, IDELayoutState.ModeLayout.defaults()), editorPane);
+            restoreModeLayout(layoutsByMode.getOrDefault(resolvedMode, IDELayoutState.ModeLayout.defaults()),
+                editorPane);
             layoutInitialized = true;
             layoutsByMode.put(resolvedMode, captureModeLayout(resolvedMode));
             restoreModeFocus(resolvedMode, editorPane);
@@ -280,8 +277,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             bottomDivider,
             leftVisible,
             rightVisible,
-            bottomVisible
-        );
+            bottomVisible);
     }
 
     private void restoreModeLayout(IDELayoutState.ModeLayout layout, DetachableTabPane editorPane) {
@@ -358,8 +354,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 .findFirst()
                 .ifPresentOrElse(
                     pane.getSelectionModel()::select,
-                    () -> pane.getSelectionModel().selectFirst()
-                );
+                    () -> pane.getSelectionModel().selectFirst());
         } else {
             pane.getSelectionModel().selectFirst();
         }
@@ -455,7 +450,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
             WeakReference<Node> focusReference = focusOwnersByMode.get(viewMode);
             Node focusOwner = focusReference == null ? null : focusReference.get();
-            if (focusOwner != null && focusOwner.getScene() == getScene() && focusOwner.isVisible() && !focusOwner.isDisabled()) {
+            if (focusOwner != null && focusOwner.getScene() == getScene() && focusOwner.isVisible()
+                && !focusOwner.isDisabled()) {
                 focusOwner.requestFocus();
                 return;
             }
@@ -502,21 +498,18 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     @Override
     public boolean isDockItemAvailable(IDEDockItem dockItem) {
         Objects.requireNonNull(dockItem, "Dock item cannot be null");
-        if (dockItem.owningMode() != null && !dockItem.owningMode().isAvailable(project)) {
+        if (dockItem.owningMode() != null && !dockItem.owningMode().isAvailable(project))
             return false;
-        }
-        if (dockItem == IDEDockItem.GRADLE) {
+        if (dockItem == IDEDockItem.GRADLE)
             return findDockTab(rightPane, dockItem) != null;
-        }
         return true;
     }
 
     @Override
     public boolean isDockItemActive(IDEDockItem dockItem) {
         Objects.requireNonNull(dockItem, "Dock item cannot be null");
-        if (dockItem.owningMode() != null && dockItem.owningMode() != activeViewMode) {
+        if (dockItem.owningMode() != null && dockItem.owningMode() != activeViewMode)
             return false;
-        }
 
         DetachableTabPane dockPane = dockPane(dockItem.preferredDockPosition());
         Tab dockTab = findDockTab(dockPane, dockItem);
@@ -532,20 +525,17 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             Platform.runLater(() -> toggleDockItem(dockItem));
             return;
         }
-        if (!isDockItemAvailable(dockItem)) {
+        if (!isDockItemAvailable(dockItem))
             return;
-        }
 
         WorkspaceMode owningMode = dockItem.owningMode();
-        if (owningMode != null && owningMode != activeViewMode && !requestViewMode(owningMode)) {
+        if (owningMode != null && owningMode != activeViewMode && !requestViewMode(owningMode))
             return;
-        }
 
         DetachableTabPane dockPane = dockPane(dockItem.preferredDockPosition());
         Tab dockTab = findDockTab(dockPane, dockItem);
-        if (dockTab == null) {
+        if (dockTab == null)
             return;
-        }
 
         SplitPane splitPane = splitPane(dockItem.preferredDockPosition());
         if (isDockItemActive(dockItem)) {
@@ -553,7 +543,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         } else {
             setDockVisible(splitPane, dockPane, true, preferredDockIndex(dockItem.preferredDockPosition()));
             dockPane.getSelectionModel().select(dockTab);
-            IDELayoutState.ModeLayout layout = layoutsByMode.getOrDefault(activeViewMode, IDELayoutState.ModeLayout.defaults());
+            IDELayoutState.ModeLayout layout = layoutsByMode.getOrDefault(activeViewMode,
+                IDELayoutState.ModeLayout.defaults());
             if (dockItem.preferredDockPosition() == IDEDockItem.DockPosition.BOTTOM) {
                 centerBottomSplit.setDividerPositions(clampDivider(layout.bottomDividerPosition(), 0.75));
             } else {
@@ -574,9 +565,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     }
 
     private void resetLayouts(boolean allModes) {
-        if (activeViewMode == null) {
+        if (activeViewMode == null)
             return;
-        }
 
         layoutTransitioning = true;
         try {
@@ -712,8 +702,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         trackOwnedTabs(pane);
         pane.getTabs().addAll(
             createDockTab(IDEDockItem.CONSOLE, IDEDockItem.DockPosition.BOTTOM),
-            createDockTab(IDEDockItem.TERMINAL, IDEDockItem.DockPosition.BOTTOM)
-        );
+            createDockTab(IDEDockItem.TERMINAL, IDEDockItem.DockPosition.BOTTOM));
 
         assignWhileAttached(UIIds.IDE.IDE_BOTTOM_DOCK, pane);
         return pane;
@@ -736,23 +725,22 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     private void openGradleTab(Facet<?> facet, DetachableTabPane rightPane, SplitPane mainSplit) {
         Platform.runLater(() -> {
             if (facet.getType() != FacetManager.GRADLE || rightPane.getTabs().stream()
-                .anyMatch(tab -> IDEDockItem.GRADLE.id().equals(tab.getId()))) {
+                .anyMatch(tab -> IDEDockItem.GRADLE.id().equals(tab.getId())))
                 return;
-            }
 
             rightPane.getTabs().add(createDockTab(IDEDockItem.GRADLE, IDEDockItem.DockPosition.RIGHT));
             setRight(PaneIconBarFactory.create(
                 rightPane,
                 mainSplit,
                 Orientation.VERTICAL,
-                2
-            ));
+                2));
 
             if (activeViewMode != null && layoutsByMode
                 .getOrDefault(activeViewMode, IDELayoutState.ModeLayout.defaults())
                 .rightDockVisible()) {
                 setDockVisible(mainSplit, rightPane, true, 2);
-                restoreMainDividerPositions(layoutsByMode.getOrDefault(activeViewMode, IDELayoutState.ModeLayout.defaults()));
+                restoreMainDividerPositions(
+                    layoutsByMode.getOrDefault(activeViewMode, IDELayoutState.ModeLayout.defaults()));
                 snapshotActiveLayout();
             }
         });
@@ -763,8 +751,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             leftPane,
             mainSplit,
             Orientation.VERTICAL,
-            0
-        );
+            0);
     }
 
     private static RRVBox createBottomBar(DetachableTabPane consolePane, SplitPane centerBottomSplit) {
@@ -773,8 +760,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             consolePane,
             centerBottomSplit,
             Orientation.HORIZONTAL,
-            1
-        );
+            1);
         bottomBar.getChildren().addAll(bottomIcons, new IDEStatusBarPane());
         return bottomBar;
     }

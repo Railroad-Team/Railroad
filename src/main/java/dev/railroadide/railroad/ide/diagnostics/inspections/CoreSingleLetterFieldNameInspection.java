@@ -22,9 +22,7 @@ public class CoreSingleLetterFieldNameInspection implements JavaInspectionRulePr
             JavaSemanticRules.SINGLE_LETTER_FIELD_NAME.defaultSeverity(),
             JavaSemanticRules.SINGLE_LETTER_FIELD_NAME.messageTemplate(),
             Set.of("core", "naming"),
-            CoreSingleLetterFieldNameInspection::reportSingleLetterFieldNames
-        )
-    );
+            CoreSingleLetterFieldNameInspection::reportSingleLetterFieldNames));
 
     @Override
     public String id() {

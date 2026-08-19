@@ -20,17 +20,16 @@ import java.util.List;
 import java.util.Optional;
 
 public record MethodDeclaration(
-        Span span,
-        List<Annotation> annotations,
-        List<Modifier> modifiers,
-        List<TypeParameter> typeParameters,
-        TypeRef returnType,
-        NameExpression name,
-        Optional<ReceiverParameter> receiverParameter,
-        List<Parameter> parameters,
-        List<TypeRef> thrownTypes,
-        Optional<BlockStatement> body
-) implements ClassMember {
+    Span span,
+    List<Annotation> annotations,
+    List<Modifier> modifiers,
+    List<TypeParameter> typeParameters,
+    TypeRef returnType,
+    NameExpression name,
+    Optional<ReceiverParameter> receiverParameter,
+    List<Parameter> parameters,
+    List<TypeRef> thrownTypes,
+    Optional<BlockStatement> body) implements ClassMember {
     @Override
     public AstKind kind() {
         return AstKind.METHOD_DECLARATION;

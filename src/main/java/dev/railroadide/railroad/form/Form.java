@@ -71,16 +71,17 @@ public class Form {
      *
      * @return The root node of the form.
      * @implNote <strong>This method should be called on the JavaFX application thread.</strong>
-     * <p>
-     * This method will construct all the fields and all the sections and then add them to a {@link javafx.scene.layout.VBox}.
-     * <p>
-     * The submit button will be added to the bottom of the VBox.
-     * The submit button will call the onSubmit consumer when clicked.
-     * <p>
-     * The reset button will be added to the bottom of the VBox.
-     * The reset button will reset all the fields in the form section.
-     * <p>
-     * The form section will be bound to the formData object.
+     *           <p>
+     *           This method will construct all the fields and all the sections and then add them to a
+     *           {@link javafx.scene.layout.VBox}.
+     *           <p>
+     *           The submit button will be added to the bottom of the VBox.
+     *           The submit button will call the onSubmit consumer when clicked.
+     *           <p>
+     *           The reset button will be added to the bottom of the VBox.
+     *           The reset button will reset all the fields in the form section.
+     *           <p>
+     *           The form section will be bound to the formData object.
      */
     public Node createUI() {
         var vbox = new RRVBox();
@@ -185,7 +186,7 @@ public class Form {
         /**
          * Appends a section to the form.
          *
-         * @param title          The title of the section.
+         * @param title The title of the section.
          * @param formComponents The components to add to the section.
          * @return This builder.
          * @see #appendSection(FormSection)
@@ -224,10 +225,10 @@ public class Form {
         /**
          * Sets the padding of the form.
          *
-         * @param top    The top padding.
-         * @param right  The right padding.
+         * @param top The top padding.
+         * @param right The right padding.
          * @param bottom The bottom padding.
-         * @param left   The left padding.
+         * @param left The left padding.
          * @return This builder.
          */
         public Builder padding(int top, int right, int bottom, int left) {

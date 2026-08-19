@@ -9,9 +9,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record ArrayInitializerExpression(
-        Span span,
-        List<Expression> values
-) implements Expression {
+    Span span,
+    List<Expression> values) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.ARRAY_INITIALIZER;

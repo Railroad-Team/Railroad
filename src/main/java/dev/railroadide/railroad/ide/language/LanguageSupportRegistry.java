@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.Optional;
 
 public final class LanguageSupportRegistry {
-    public static final Registry<LanguageSupport> REGISTRY =
-        RegistryManager.createOrderedRegistry("railroad:language_support", LanguageSupport.class);
+    public static final Registry<LanguageSupport> REGISTRY = RegistryManager
+        .createOrderedRegistry("railroad:language_support", LanguageSupport.class);
 
     private LanguageSupportRegistry() {
     }

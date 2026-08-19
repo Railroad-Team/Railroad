@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.ide.ui;
 
-
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.id.UIIds;

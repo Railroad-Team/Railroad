@@ -11,7 +11,7 @@ public interface ProjectCreationPipelineService {
     /**
      * Creates a new project based on the specified project type and service registry.
      *
-     * @param type     The type of the project to be created.
+     * @param type The type of the project to be created.
      * @param services The registry of services required for project creation.
      * @return A `ProjectCreationPipeline` instance representing the created project.
      */
@@ -28,8 +28,9 @@ public interface ProjectCreationPipelineService {
      * Registers the default creation step providers for the specified project type and service registry.
      *
      * @param registry The registry where the default providers will be registered.
-     * @param type     The type of the project for which default providers are registered.
+     * @param type The type of the project for which default providers are registered.
      * @param services The registry of services required for the default providers.
      */
-    void registerDefaultProviders(@NotNull CreationStepRegistry registry, @NotNull ProjectType type, @NotNull ProjectServiceRegistry services);
+    void registerDefaultProviders(@NotNull CreationStepRegistry registry, @NotNull ProjectType type,
+        @NotNull ProjectServiceRegistry services);
 }

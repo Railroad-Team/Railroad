@@ -187,7 +187,8 @@ public class PluginsPane extends SplitPane {
         metaLabel.getStyleClass().add("plugin-detail-meta");
 
         detailToggle.selectedProperty().addListener((_, _, enabled) -> {
-            if (updatingDetailToggle) return;
+            if (updatingDetailToggle)
+                return;
             setPluginEnabled(activeDescriptor, enabled);
         });
 
@@ -206,7 +207,8 @@ public class PluginsPane extends SplitPane {
         websiteLink.managedProperty().bind(websiteLink.visibleProperty());
         websiteLink.setOnAction(event -> {
             String url = websiteLink.getText();
-            if (url == null || url.isBlank()) return;
+            if (url == null || url.isBlank())
+                return;
             if (hostServices != null) {
                 hostServices.showDocument(url);
             } else {

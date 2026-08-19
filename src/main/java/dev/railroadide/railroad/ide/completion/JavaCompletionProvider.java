@@ -21,8 +21,8 @@ public record JavaCompletionProvider(Project project, Path filePath) implements 
 
     @Override
     public @Nullable CompletionResult compute(String document, int triggerAt) {
-        JavaProjectSemanticIndex projectIndex =
-            Services.PROJECT_LANGUAGE_INDEX_SERVICE.indexTyped(project.getPath(), JavaLanguageSupport.LANGUAGE_ID);
+        JavaProjectSemanticIndex projectIndex = Services.PROJECT_LANGUAGE_INDEX_SERVICE.indexTyped(project.getPath(),
+            JavaLanguageSupport.LANGUAGE_ID);
         return JavaSemanticCompletionEngine.compute(document, triggerAt, projectIndex);
     }
 }

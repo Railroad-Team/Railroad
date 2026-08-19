@@ -37,9 +37,6 @@ public interface WorkspaceService {
     CompletableFuture<ActivationResult> activateMode(String modeId);
 
     enum ActivationResult {
-        ACTIVATED,
-        UNKNOWN_MODE,
-        UNAVAILABLE,
-        NO_ACTIVE_WORKSPACE
+        ACTIVATED, UNKNOWN_MODE, UNAVAILABLE, NO_ACTIVE_WORKSPACE
     }
 }

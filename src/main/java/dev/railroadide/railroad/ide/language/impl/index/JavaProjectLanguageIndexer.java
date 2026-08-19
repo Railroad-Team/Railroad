@@ -10,7 +10,9 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Locale;
 
-public final class JavaProjectLanguageIndexer implements ProjectLanguageIndexer<JavaProjectSemanticIndex, JavaProjectSemanticIndex.SourceFileIndex> {
+public final class JavaProjectLanguageIndexer
+    implements
+        ProjectLanguageIndexer<JavaProjectSemanticIndex, JavaProjectSemanticIndex.SourceFileIndex> {
     private final JavaProjectSemanticExtractor extractor = new JavaProjectSemanticExtractor();
 
     @Override
@@ -42,7 +44,8 @@ public final class JavaProjectLanguageIndexer implements ProjectLanguageIndexer<
     }
 
     @Override
-    public JavaProjectSemanticIndex withUpdatedFile(JavaProjectSemanticIndex index, Path sourceFile, JavaProjectSemanticIndex.SourceFileIndex indexedFile) {
+    public JavaProjectSemanticIndex withUpdatedFile(JavaProjectSemanticIndex index, Path sourceFile,
+        JavaProjectSemanticIndex.SourceFileIndex indexedFile) {
         JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
         index.files().forEach((path, fileIndex) -> {
             if (!path.equals(sourceFile)) {

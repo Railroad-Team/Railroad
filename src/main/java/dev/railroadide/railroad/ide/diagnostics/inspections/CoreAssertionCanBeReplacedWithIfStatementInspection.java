@@ -24,9 +24,7 @@ public class CoreAssertionCanBeReplacedWithIfStatementInspection implements Java
             JavaSemanticRules.ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT.defaultSeverity(),
             JavaSemanticRules.ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT.messageTemplate(),
             Set.of("core", "performance"),
-            CoreAssertionCanBeReplacedWithIfStatementInspection::reportAssertionCanBeReplacedWithIfStatement
-        )
-    );
+            CoreAssertionCanBeReplacedWithIfStatementInspection::reportAssertionCanBeReplacedWithIfStatement));
 
     @Override
     public String id() {
@@ -38,7 +36,8 @@ public class CoreAssertionCanBeReplacedWithIfStatementInspection implements Java
         return RULES;
     }
 
-    private static void reportAssertionCanBeReplacedWithIfStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportAssertionCanBeReplacedWithIfStatement(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         for (SyntaxNode assertNode : context.nodesOfKind(JavaSyntaxKinds.ASSERT_STATEMENT.id())) {
             SyntaxNode enclosingMethod = enclosingMethod(assertNode);
             if (enclosingMethod == null)

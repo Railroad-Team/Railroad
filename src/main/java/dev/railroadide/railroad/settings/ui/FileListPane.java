@@ -18,8 +18,7 @@ public class FileListPane extends AbstractPathListPane {
             initialFiles,
             "railroad.settings.files.empty",
             "railroad.settings.files.add.tooltip",
-            "railroad.settings.files.remove.tooltip"
-        );
+            "railroad.settings.files.remove.tooltip");
         getStyleClass().add("file-list-pane");
     }
 

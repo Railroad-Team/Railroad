@@ -14,7 +14,8 @@ public class ProjectTypePane extends RRVBox {
     private final ScrollPane projectTypesScroller;
     @Getter
     private final RRListView<ProjectType> projectTypeListView;
-    private final ObservableList<ProjectType> allProjectTypes = FXCollections.observableArrayList(ProjectType.REGISTRY.values());
+    private final ObservableList<ProjectType> allProjectTypes = FXCollections
+        .observableArrayList(ProjectType.REGISTRY.values());
 
     public ProjectTypePane() {
         super();

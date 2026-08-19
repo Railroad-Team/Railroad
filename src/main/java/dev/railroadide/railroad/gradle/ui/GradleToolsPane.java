@@ -49,20 +49,18 @@ public class GradleToolsPane extends RRVBox {
             FontAwesomeSolid.SYNC,
             "railroad.gradle.tools.button.sync.tooltip",
             "sync-button",
-            false
-        );
+            false);
         syncButton.setOnAction(_ -> gradleManager.getGradleModelService().refreshModel(true));
 
         var downloadSourcesButton = createButtonBarButton(
             FontAwesomeSolid.DOWNLOAD,
             "railroad.gradle.tools.button.downloadsources.tooltip",
             "download-sources-button",
-            false
-        );
+            false);
         downloadSourcesButton.setOnAction(_ -> {
             Railroad.LOGGER.info("Downloading Gradle sources...");
             downloadSourcesButton.setDisable(true);
-            gradleManager.downloadAllSources().whenComplete((ignored, throwable) -> {
+            gradleManager.downloadAllSources().whenComplete((_, throwable) -> {
                 if (throwable != null) {
                     Railroad.LOGGER.error("Failed to download Gradle sources", throwable);
                 } else {
@@ -79,8 +77,7 @@ public class GradleToolsPane extends RRVBox {
             offlineIcon,
             "railroad.gradle.tools.button.toggleoffline.tooltip",
             "toggle-offline-button",
-            true
-        );
+            true);
         toggleOfflineButton.setOnAction(_ -> {
             GradleSettings gradleSettings = gradleManager.getGradleSettings();
             boolean newOfflineMode = !gradleSettings.isOfflineMode();
@@ -129,7 +126,8 @@ public class GradleToolsPane extends RRVBox {
         getChildren().add(buttonBar);
 
         this.tasksTab = new LocalizedTab("railroad.gradle.tools.tasks", new GradleTasksPane(project));
-        this.dependenciesTab = new LocalizedTab("railroad.gradle.tools.dependencies", new GradleDependenciesPane(project));
+        this.dependenciesTab = new LocalizedTab("railroad.gradle.tools.dependencies",
+            new GradleDependenciesPane(project));
 
         this.tabPane = new TabPane(tasksTab, dependenciesTab);
         tabPane.getStyleClass().add("gradle-tools-tabpane");

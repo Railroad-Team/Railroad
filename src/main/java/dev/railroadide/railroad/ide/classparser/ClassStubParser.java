@@ -11,7 +11,8 @@ public class ClassStubParser {
         try {
             return parse(new ClassReader(Files.newInputStream(pathToClassFile)));
         } catch (ClassScanException exception) {
-            throw new ClassScanException("Failed to parse class file: %s".formatted(pathToClassFile), exception.getCause());
+            throw new ClassScanException("Failed to parse class file: %s".formatted(pathToClassFile),
+                exception.getCause());
         } catch (Exception exception) {
             throw new ClassScanException("Failed to parse class file: %s".formatted(pathToClassFile), exception);
         }

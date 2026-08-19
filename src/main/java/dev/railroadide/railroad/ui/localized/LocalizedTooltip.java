@@ -15,7 +15,7 @@ public class LocalizedTooltip extends Tooltip {
     /**
      * Creates a new LocalizedTooltip and sets the key and args.
      *
-     * @param key  The localization key
+     * @param key The localization key
      * @param args The args to be applied to the localization key
      */
     public LocalizedTooltip(@NotNull String key, @NotNull Object... args) {
@@ -28,7 +28,7 @@ public class LocalizedTooltip extends Tooltip {
      * Updates the key and args, and then updates the text of the tooltip.
      * Adds a listener to the current language property to update the text when the language changes.
      *
-     * @param key  The localization key
+     * @param key The localization key
      * @param args The args to be applied to the localized key
      */
     public void setKey(@NotNull String key, @NotNull Object... args) {

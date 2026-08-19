@@ -17,7 +17,8 @@ public class MacUtils {
      * Initializes the Mac's menu bar, which provides the Application Menu and its MenuItems
      */
     public static void initialize() {
-        if (!OperatingSystem.isMac()) return;
+        if (!OperatingSystem.isMac())
+            return;
 
         var toolkit = MenuToolkit.toolkit();
 
@@ -39,7 +40,8 @@ public class MacUtils {
      * @param stage The stage to which the menu bar should be added
      */
     public static void show(Stage stage) {
-        if (!OperatingSystem.isMac()) return;
+        if (!OperatingSystem.isMac())
+            return;
 
         MenuToolkit.toolkit().setMenuBar(stage, bar);
     }

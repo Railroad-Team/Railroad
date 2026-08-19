@@ -6,12 +6,11 @@ import java.util.Objects;
  * Syntax-level diagnostic emitted by the green/red parser pipeline.
  */
 public record SyntaxDiagnostic(
-        Severity severity,
-        String code,
-        String message,
-        int startOffset,
-        int endOffset
-) {
+    Severity severity,
+    String code,
+    String message,
+    int startOffset,
+    int endOffset) {
     public SyntaxDiagnostic {
         severity = Objects.requireNonNull(severity, "severity");
         code = Objects.requireNonNull(code, "code");
@@ -27,8 +26,6 @@ public record SyntaxDiagnostic(
     }
 
     public enum Severity {
-        ERROR,
-        WARNING,
-        INFO
+        ERROR, WARNING, INFO
     }
 }

@@ -30,24 +30,37 @@ public class RegexJavaSyntaxHighlighting {
     }
 
     private static @NotNull String getStyleClass(Matcher matcher) {
-        String styleClass =
-            matcher.group("IDENTIFIER") != null ? "identifier" :
-                matcher.group("METHOD") != null ? "method" :
-                    matcher.group("CLASS") != null ? "class" :
-                        matcher.group("KEYWORD") != null ? "keyword" :
-                            matcher.group("LITERAL") != null ? "literal" :
-                                matcher.group("STRING") != null ? "string" :
-                                    matcher.group("COMMENT") != null ? "comment" :
-                                        matcher.group("NUMBER") != null ? "number" :
-                                            matcher.group("OPERATOR") != null ? "operator" :
-                                                matcher.group("PAREN") != null ? "paren" :
-                                                    matcher.group("BRACE") != null ? "brace" :
-                                                        matcher.group("BRACKET") != null ? "bracket" :
-                                                            matcher.group("SEMICOLON") != null ? "semicolon" :
-                                                                matcher.group("ANNOTATION") != null ? "annotation" :
-                                                                    matcher.group("GENERIC") != null ? "generic" :
-                                                                        matcher.group("LAMBDA") != null ? "lambda" :
-                                                                            null;
+        String styleClass = matcher.group("IDENTIFIER") != null
+            ? "identifier"
+            : matcher.group("METHOD") != null
+                ? "method"
+                : matcher.group("CLASS") != null
+                    ? "class"
+                    : matcher.group("KEYWORD") != null
+                        ? "keyword"
+                        : matcher.group("LITERAL") != null
+                            ? "literal"
+                            : matcher.group("STRING") != null
+                                ? "string"
+                                : matcher.group("COMMENT") != null
+                                    ? "comment"
+                                    : matcher.group("NUMBER") != null
+                                        ? "number"
+                                        : matcher.group("OPERATOR") != null
+                                            ? "operator"
+                                            : matcher.group("PAREN") != null
+                                                ? "paren"
+                                                : matcher.group("BRACE") != null
+                                                    ? "brace"
+                                                    : matcher.group("BRACKET") != null
+                                                        ? "bracket"
+                                                        : matcher.group("SEMICOLON") != null
+                                                            ? "semicolon"
+                                                            : matcher.group("ANNOTATION") != null
+                                                                ? "annotation"
+                                                                : matcher.group("GENERIC") != null
+                                                                    ? "generic"
+                                                                    : matcher.group("LAMBDA") != null ? "lambda" : null;
         if (styleClass == null)
             throw new IllegalStateException("Unknown style class");
 
@@ -104,7 +117,6 @@ public class RegexJavaSyntaxHighlighting {
                 + "|(?<ANNOTATION>" + ANNOTATION_PATTERN + ")"
                 + "|(?<GENERIC>" + GENERIC_PATTERN + ")"
                 + "|(?<LAMBDA>" + LAMBDA_PATTERN + ")"
-                + "|(?<LITERAL>" + LITERAL_PATTERN + ")"
-        );
+                + "|(?<LITERAL>" + LITERAL_PATTERN + ")");
     }
 }

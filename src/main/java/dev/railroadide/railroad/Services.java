@@ -64,7 +64,7 @@ public class Services {
                 if (version != null && !version.isBlank())
                     return version;
             }
-        } catch (IOException ignored) {
+        } catch (IOException _) {
             // Fall back to manifest metadata below.
         }
 
@@ -95,27 +95,28 @@ public class Services {
         }
     };
 
-    public static final ProjectServiceRegistry PROJECT_SERVICE_REGISTRY = new ProjectServiceRegistry() {{
-        bind(ChecksumService.class, new MessageDigestChecksumService());
-        bind(FilesService.class, new NioFilesService());
-        bind(GitService.class, new JGitService());
-        bind(GradleService.class, new ToolingGradleService(new DiscardingOutputStream()));
-        bind(HttpService.class, new OkHttpService(Railroad.HTTP_CLIENT));
-        bind(TemplateEngineService.class, new GroovyTemplateEngineService());
-        bind(ZipService.class, new NioZipService());
-    }};
+    public static final ProjectServiceRegistry PROJECT_SERVICE_REGISTRY = new ProjectServiceRegistry() {
+        {
+            bind(ChecksumService.class, new MessageDigestChecksumService());
+            bind(FilesService.class, new NioFilesService());
+            bind(GitService.class, new JGitService());
+            bind(GradleService.class, new ToolingGradleService(new DiscardingOutputStream()));
+            bind(HttpService.class, new OkHttpService(Railroad.HTTP_CLIENT));
+            bind(TemplateEngineService.class, new GroovyTemplateEngineService());
+            bind(ZipService.class, new NioZipService());
+        }
+    };
 
     public static final DefaultProjectCreationPipelineService PROJECT_CREATION_PIPELINE = new DefaultProjectCreationPipelineService();
     public static final ProjectLanguageIndexService PROJECT_LANGUAGE_INDEX_SERVICE = new ProjectLanguageIndexService();
-    public static final Registry<LanguageInspectionProvider> LANGUAGE_INSPECTION_PROVIDER_REGISTRY =
-        LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY;
+    public static final Registry<LanguageInspectionProvider> LANGUAGE_INSPECTION_PROVIDER_REGISTRY = LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY;
 
     public static final UIManager UI_MANAGER = new UIManager();
 
     /**
      * Retrieves a service instance by its class type.
      *
-     * @param <T>          The type of the service to retrieve.
+     * @param <T> The type of the service to retrieve.
      * @param serviceClass The class type of the service to retrieve.
      * @return An instance of the requested service.
      */
@@ -124,33 +125,32 @@ public class Services {
         if (serviceClass == null)
             throw new IllegalArgumentException("Service class cannot be null.");
 
-        if (serviceClass == ApplicationInfoService.class) {
+        if (serviceClass == ApplicationInfoService.class)
             return (T) APPLICATION_INFO;
-        } else if (serviceClass == IDEStateService.class) {
+        else if (serviceClass == IDEStateService.class)
             return (T) IDE_STATE;
-        } else if (serviceClass == WorkspaceService.class) {
+        else if (serviceClass == WorkspaceService.class)
             return (T) WORKSPACE;
-        } else if (serviceClass == VCSService.class) {
+        else if (serviceClass == VCSService.class)
             return (T) Railroad.REPOSITORY_MANAGER;
-        } else if (serviceClass == HostServices.class) {
+        else if (serviceClass == HostServices.class)
             return (T) Railroad.getHostServicess();
-        } else if (serviceClass == DocumentEditorStateService.class) {
+        else if (serviceClass == DocumentEditorStateService.class)
             return (T) DOCUMENT_EDITOR_STATE;
-        } else if (serviceClass == LocalizationService.class) {
+        else if (serviceClass == LocalizationService.class)
             return (T) LOCALIZATION_SERVICE;
-        } else if (serviceClass == Logger.class) {
+        else if (serviceClass == Logger.class)
             return (T) Railroad.LOGGER;
-        } else if (serviceClass == Gson.class) {
+        else if (serviceClass == Gson.class)
             return (T) Railroad.GSON;
-        } else if (serviceClass == ProjectServiceRegistry.class) {
+        else if (serviceClass == ProjectServiceRegistry.class)
             return (T) PROJECT_SERVICE_REGISTRY;
-        } else if (serviceClass == ProjectCreationPipelineService.class) {
+        else if (serviceClass == ProjectCreationPipelineService.class)
             return (T) PROJECT_CREATION_PIPELINE;
-        } else if (serviceClass == ProjectLanguageIndexService.class) {
+        else if (serviceClass == ProjectLanguageIndexService.class)
             return (T) PROJECT_LANGUAGE_INDEX_SERVICE;
-        } else if (serviceClass == UIManager.class) {
+        else if (serviceClass == UIManager.class)
             return (T) UI_MANAGER;
-        }
 
         throw new IllegalArgumentException("Service " + serviceClass.getName() + " is not available.");
     }

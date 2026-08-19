@@ -18,14 +18,14 @@ import java.util.List;
 import java.util.Optional;
 
 public record ConstructorDeclaration(
-        Span span,
-        List<Modifier> modifiers,
-        List<Annotation> annotations,
-        List<TypeParameter> typeParameters,
-        NameExpression name,
-        List<Parameter> parameters,
-        List<TypeRef> thrownTypes,
-        Optional<BlockStatement> body) implements ClassBodyDeclaration {
+    Span span,
+    List<Modifier> modifiers,
+    List<Annotation> annotations,
+    List<TypeParameter> typeParameters,
+    NameExpression name,
+    List<Parameter> parameters,
+    List<TypeRef> thrownTypes,
+    Optional<BlockStatement> body) implements ClassBodyDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.CONSTRUCTOR_DECLARATION;

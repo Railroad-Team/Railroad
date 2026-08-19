@@ -21,9 +21,7 @@ public class CoreEmptySwitchInspection implements JavaInspectionRuleProvider {
             JavaSemanticRules.EMPTY_SWITCH.defaultSeverity(),
             JavaSemanticRules.EMPTY_SWITCH.messageTemplate(),
             Set.of("core", "control-flow"),
-            CoreEmptySwitchInspection::reportEmptySwitch
-        )
-    );
+            CoreEmptySwitchInspection::reportEmptySwitch));
 
     @Override
     public String id() {
@@ -37,8 +35,9 @@ public class CoreEmptySwitchInspection implements JavaInspectionRuleProvider {
 
     private static void reportEmptySwitch(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
         for (SyntaxNode syntaxNode : context.nodesOfKind("JAVA_SWITCH_STATEMENT")) {
-            if (isEmptySwitch(syntaxNode))
+            if (isEmptySwitch(syntaxNode)) {
                 reporter.report(syntaxNode);
+            }
         }
     }
 

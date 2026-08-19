@@ -12,11 +12,10 @@ import java.util.List;
 import java.util.Optional;
 
 public record ArrayCreationExpression(
-        Span span,
-        TypeRef type,
-        List<Expression> dimensions,
-        Optional<ArrayInitializerExpression> initializer
-) implements Expression {
+    Span span,
+    TypeRef type,
+    List<Expression> dimensions,
+    Optional<ArrayInitializerExpression> initializer) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.ARRAY_CREATION_EXPRESSION;

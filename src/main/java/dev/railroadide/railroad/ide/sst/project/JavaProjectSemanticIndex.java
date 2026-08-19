@@ -96,7 +96,8 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
         original = Objects.requireNonNull(original, "original");
         Map<Path, SourceFileIndex> copy = new LinkedHashMap<>(original.size());
         for (Map.Entry<Path, SourceFileIndex> entry : original.entrySet()) {
-            SourceFileIndex value = Objects.requireNonNull(entry.getValue(), "original contains null value for key: " + entry.getKey());
+            SourceFileIndex value = Objects.requireNonNull(entry.getValue(),
+                "original contains null value for key: " + entry.getKey());
             copy.put(FileUtils.normalizePath(entry.getKey()), value);
         }
 
@@ -107,7 +108,8 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
         original = Objects.requireNonNull(original, "original");
         Map<String, List<T>> copy = new LinkedHashMap<>(original.size());
         for (Map.Entry<String, List<T>> entry : original.entrySet()) {
-            List<T> value = Objects.requireNonNull(entry.getValue(), "original contains null value for key: " + entry.getKey());
+            List<T> value = Objects.requireNonNull(entry.getValue(),
+                "original contains null value for key: " + entry.getKey());
             copy.put(entry.getKey(), List.copyOf(value));
         }
 
@@ -120,7 +122,7 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
             if (file.packageName() == null)
                 continue;
 
-            index.computeIfAbsent(file.packageName(), $ -> new ArrayList<>()).add(file);
+            index.computeIfAbsent(file.packageName(), _ -> new ArrayList<>()).add(file);
         }
 
         return copyListMap(index);
@@ -130,7 +132,7 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
         Map<String, List<SymbolDescriptor>> index = new LinkedHashMap<>();
         for (SourceFileIndex file : files) {
             for (SymbolDescriptor symbol : file.declaredSymbols()) {
-                index.computeIfAbsent(symbol.simpleName(), $ -> new ArrayList<>()).add(symbol);
+                index.computeIfAbsent(symbol.simpleName(), _ -> new ArrayList<>()).add(symbol);
             }
         }
 
@@ -141,21 +143,22 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
         Map<String, List<SymbolDescriptor>> index = new LinkedHashMap<>();
         for (SourceFileIndex file : files) {
             for (SymbolDescriptor symbol : file.declaredSymbols()) {
-                index.computeIfAbsent(symbol.qualifiedName(), $ -> new ArrayList<>()).add(symbol);
+                index.computeIfAbsent(symbol.qualifiedName(), _ -> new ArrayList<>()).add(symbol);
             }
         }
 
         return copyListMap(index);
     }
 
-    private static Map<String, List<SymbolDescriptor>> buildMembersByOwnerQualifiedName(Iterable<SourceFileIndex> files) {
+    private static Map<String, List<SymbolDescriptor>> buildMembersByOwnerQualifiedName(
+        Iterable<SourceFileIndex> files) {
         Map<String, List<SymbolDescriptor>> index = new LinkedHashMap<>();
         for (SourceFileIndex file : files) {
             for (SymbolDescriptor symbol : file.declaredSymbols()) {
                 if (symbol.ownerQualifiedName() == null)
                     continue;
 
-                index.computeIfAbsent(symbol.ownerQualifiedName(), $ -> new ArrayList<>()).add(symbol);
+                index.computeIfAbsent(symbol.ownerQualifiedName(), _ -> new ArrayList<>()).add(symbol);
             }
         }
 
@@ -214,8 +217,7 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
         Path path,
         @Nullable String packageName,
         List<ImportDescriptor> imports,
-        List<SymbolDescriptor> declaredSymbols
-    ) implements LanguageFileIndex {
+        List<SymbolDescriptor> declaredSymbols) implements LanguageFileIndex {
         public SourceFileIndex {
             path = FileUtils.normalizePath(path);
             packageName = normalizeOptionalName(packageName);
@@ -238,8 +240,7 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
     public record ImportDescriptor(
         String qualifiedName,
         boolean isStatic,
-        boolean isWildcard
-    ) {
+        boolean isWildcard) {
         public ImportDescriptor {
             qualifiedName = requireName(qualifiedName, "qualifiedName");
         }
@@ -253,8 +254,7 @@ public final class JavaProjectSemanticIndex implements ProjectLanguageIndex<Java
         @Nullable String signature,
         Path sourceFile,
         boolean isStatic,
-        boolean isTopLevel
-    ) {
+        boolean isTopLevel) {
         public SymbolDescriptor {
             kind = Objects.requireNonNull(kind, "kind");
             simpleName = requireName(simpleName, "simpleName");

@@ -12,7 +12,7 @@ import java.util.function.Function;
  */
 public class LocalizedComboBox<T> extends ComboBox<T> {
 
-    public static final String[] DEFAULT_STYLE_CLASSES = { "combo-box-base", "rr-combo-box", "combo-box" };
+    public static final String[] DEFAULT_STYLE_CLASSES = {"combo-box-base", "rr-combo-box", "combo-box"};
 
     /**
      * Create a new ComboBox that can localize it's items with a given key function

@@ -11,7 +11,7 @@ public interface LocalizationService {
      * Retrieves a localized string based on the provided key.
      * If the key is not found, it returns the key itself.
      *
-     * @param key  the key for the localized string
+     * @param key the key for the localized string
      * @param args optional arguments to format the localized string
      * @return the localized string or the key if not found
      */

@@ -34,17 +34,19 @@ public interface Token<T extends Enum<T>> {
         int line,
         int column,
         TokenChannel channel,
-        Set<TokenFlag> flags
-    ) implements Token<T> {
+        Set<TokenFlag> flags) implements Token<T> {
         public SimpleToken {
-            if (lexeme == null)
+            if (lexeme == null) {
                 lexeme = "";
+            }
 
-            if (channel == null)
+            if (channel == null) {
                 channel = TokenChannel.DEFAULT;
+            }
 
-            if (flags == null)
+            if (flags == null) {
                 flags = EnumSet.noneOf(TokenFlag.class);
+            }
         }
     }
 
@@ -97,8 +99,7 @@ public interface Token<T extends Enum<T>> {
         T type,
         int pos,
         int line,
-        int column
-    ) implements Token<T> {
+        int column) implements Token<T> {
         public MissingToken(T type, Token<T> token) {
             this(type, token.pos(), token.line(), token.column());
         }

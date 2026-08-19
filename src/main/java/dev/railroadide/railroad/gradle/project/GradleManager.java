@@ -80,8 +80,7 @@ public final class GradleManager {
                 modelService = new ToolingGradleModelService(
                     project,
                     getGradleEnvironment(),
-                    modelExecutor
-                );
+                    modelExecutor);
             }
 
             return modelService;
@@ -105,8 +104,7 @@ public final class GradleManager {
                 environment = new DefaultGradleEnvironment(
                     project,
                     gradleHome,
-                    settings
-                );
+                    settings);
             }
 
             return environment;
@@ -129,8 +127,8 @@ public final class GradleManager {
      * Runs a simple task using the shared execution service; completes the provided future when done.
      *
      * @param taskName the name of the task to run
-     * @param jdk      the JDK to use for execution
-     * @param future   the future to complete when done
+     * @param jdk the JDK to use for execution
+     * @param future the future to complete when done
      */
     public void runBuildTaskAsync(String taskName, JDK jdk, CompletableFuture<Runnable> future) {
         Objects.requireNonNull(taskName, "taskName");
@@ -154,8 +152,7 @@ public final class GradleManager {
             prefs.offlineMode(),
             false,
             false,
-            GradleConsoleMode.RICH
-        );
+            GradleConsoleMode.RICH);
 
         GradleTaskExecutionHandle handle = execService.runTask(request);
         handle.completionFuture().whenComplete((result, throwable) -> {
@@ -204,8 +201,7 @@ public final class GradleManager {
             offline,
             !offline,
             false,
-            GradleConsoleMode.RICH
-        );
+            GradleConsoleMode.RICH);
 
         GradleTaskExecutionHandle handle;
         try {
@@ -251,16 +247,15 @@ public final class GradleManager {
         Path gradleUserHome = getEnvPath("GRADLE_USER_HOME").orElse(prefs.gradleUserHome());
         JDK gradleJvm = JDKManager.getDefaultJDK();
 
-        List<RunConfiguration<?>> gradleRunConfigs =
-            project.getRunConfigManager().getConfigurations().stream()
-                .filter(config -> config != null && config.type() == RunConfigurationTypes.GRADLE)
-                .toList();
+        List<RunConfiguration<?>> gradleRunConfigs = project.getRunConfigManager().getConfigurations().stream()
+            .filter(config -> config != null && config.type() == RunConfigurationTypes.GRADLE)
+            .toList();
 
         Path customGradleHome = useWrapper ? null : getEnvPath("GRADLE_HOME").orElse(prefs.customGradleHome());
 
-        int maxWorkers = prefs.maxWorkerCount() != null ?
-            prefs.maxWorkerCount() :
-            Runtime.getRuntime().availableProcessors();
+        int maxWorkers = prefs.maxWorkerCount() != null
+            ? prefs.maxWorkerCount()
+            : Runtime.getRuntime().availableProcessors();
 
         return new GradleSettings(
             useWrapper,
@@ -274,8 +269,7 @@ public final class GradleManager {
             maxWorkers,
             gradleRunConfigs,
             prefs.isDaemonEnabled(),
-            prefs.daemonIdleTimeout()
-        );
+            prefs.daemonIdleTimeout());
     }
 
     private Path discoverGradleInstallationPath() {
@@ -362,7 +356,7 @@ public final class GradleManager {
 
         try {
             Files.deleteIfExists(path);
-        } catch (IOException ignored) {
+        } catch (IOException _) {
         }
     }
 
@@ -378,9 +372,7 @@ public final class GradleManager {
                     gradleSettings.getDaemonIdleTimeout(),
                     gradleSettings.getMaxWorkerCount(),
                     gradleSettings.getCustomGradleHome(),
-                    gradleSettings.getGradleUserHome()
-                )
-            );
+                    gradleSettings.getGradleUserHome()));
 
             this.environment = null; // Invalidate cached environment
         }

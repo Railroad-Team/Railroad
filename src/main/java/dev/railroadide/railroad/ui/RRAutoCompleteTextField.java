@@ -101,9 +101,9 @@ public class RRAutoCompleteTextField extends RRTextField {
     }
 
     private List<String> fetchSuggestions(String query) {
-        Collection<String> source = autoCompleteOptions.getSuggestionsProvider() != null ?
-            autoCompleteOptions.getSuggestionsProvider().apply(query) :
-            resolveStaticSuggestions();
+        Collection<String> source = autoCompleteOptions.getSuggestionsProvider() != null
+            ? autoCompleteOptions.getSuggestionsProvider().apply(query)
+            : resolveStaticSuggestions();
 
         if (source == null || source.isEmpty())
             return List.of();
@@ -127,9 +127,9 @@ public class RRAutoCompleteTextField extends RRTextField {
     }
 
     private Collection<String> resolveStaticSuggestions() {
-        return autoCompleteOptions.getSuggestionsSupplier() != null ?
-            autoCompleteOptions.getSuggestionsSupplier().get() :
-            List.of();
+        return autoCompleteOptions.getSuggestionsSupplier() != null
+            ? autoCompleteOptions.getSuggestionsSupplier().get()
+            : List.of();
     }
 
     private boolean matches(String candidate, String normalizedQuery) {
@@ -179,16 +179,17 @@ public class RRAutoCompleteTextField extends RRTextField {
 
     private void adjustPopupSize() {
         Platform.runLater(() -> {
-            double rowHeight = suggestionsListView.getFixedCellSize() > 0 ?
-                suggestionsListView.getFixedCellSize() :
-                MIN_SUGGESTION_HEIGHT;
+            double rowHeight = suggestionsListView.getFixedCellSize() > 0
+                ? suggestionsListView.getFixedCellSize()
+                : MIN_SUGGESTION_HEIGHT;
             double maxPopupHeight = suggestionsListView.getMaxHeight();
             if (maxPopupHeight <= 0 || maxPopupHeight == Region.USE_COMPUTED_SIZE) {
                 maxPopupHeight = MAX_POPUP_HEIGHT;
             }
 
             int itemCount = Math.max(1, suggestionsListView.getItems().size());
-            double prefHeight = (itemCount * rowHeight) + suggestionsListView.snappedTopInset() + suggestionsListView.snappedBottomInset();
+            double prefHeight = (itemCount * rowHeight) + suggestionsListView.snappedTopInset()
+                + suggestionsListView.snappedBottomInset();
 
             double clampedHeight = Math.min(maxPopupHeight, prefHeight);
             suggestionsListView.setMinHeight(Math.min(rowHeight, clampedHeight));

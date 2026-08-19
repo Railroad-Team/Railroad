@@ -22,13 +22,11 @@ public class CoreThisReferenceEscapedObjectConstructionInspection implements Jav
         "add", "addAll", "put", "putAll", "offer", "offerFirst", "offerLast", "push", "set", "insert", "append",
         "remove", "removeAll", "clear", "poll", "pollFirst", "pollLast", "pop",
         "addIfAbsent", "compute", "computeIfAbsent", "computeIfPresent", "merge", "replace", "replaceAll",
-        "retainAll", "removeIf"
-    );
+        "retainAll", "removeIf");
 
     private static final Set<String> KNOWN_PUBLISHING_METHOD_NAMES = Set.of(
         "register", "subscribe", "attach", "listen", "execute", "enqueue", "submit", "start", "run", "schedule",
-        "invokeLater", "post", "send", "dispatch", "store", "save", "persist", "write"
-    );
+        "invokeLater", "post", "send", "dispatch", "store", "save", "persist", "write");
 
     @Override
     public String id() {
@@ -43,13 +41,13 @@ public class CoreThisReferenceEscapedObjectConstructionInspection implements Jav
                 JavaSemanticRules.THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION.defaultSeverity(),
                 JavaSemanticRules.THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION.messageTemplate(),
                 Set.of("core", "bug-risk"),
-                CoreThisReferenceEscapedObjectConstructionInspection::reportThisReferenceEscapedObjectConstruction
-            )
-        );
+                CoreThisReferenceEscapedObjectConstructionInspection::reportThisReferenceEscapedObjectConstruction));
     }
 
-    private static void reportThisReferenceEscapedObjectConstruction(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
-        for (SyntaxNode constructorNode : context.nodesOfKinds(JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id(), JavaSyntaxKinds.RECORD_COMPACT_CONSTRUCTOR.id())) {
+    private static void reportThisReferenceEscapedObjectConstruction(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
+        for (SyntaxNode constructorNode : context.nodesOfKinds(JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id(),
+            JavaSyntaxKinds.RECORD_COMPACT_CONSTRUCTOR.id())) {
             SyntaxNode body = context.directChild(constructorNode, JavaSyntaxKinds.BLOCK.id());
             if (body == null)
                 continue;
@@ -130,7 +128,8 @@ public class CoreThisReferenceEscapedObjectConstructionInspection implements Jav
             return name;
 
         String collectionOwner = receiverType != null ? receiverType : owner == null ? typeName : owner;
-        if (name != null && KNOWN_COLLECTION_MODIFYING_METHODS.contains(name) && isCollectionLike(context, collectionOwner))
+        if (name != null && KNOWN_COLLECTION_MODIFYING_METHODS.contains(name)
+            && isCollectionLike(context, collectionOwner))
             return name;
 
         return null;
@@ -184,7 +183,8 @@ public class CoreThisReferenceEscapedObjectConstructionInspection implements Jav
 
         if (Objects.equals(kindId, JavaSyntaxKinds.LAMBDA_EXPRESSION.id())
             || Objects.equals(kindId, JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id()))
-            return false; // 'this' references inside nested lambdas or anonymous classes do not escape the constructor, as they capture the correct 'this' context.
+            return false; // 'this' references inside nested lambdas or anonymous classes do not escape the constructor,
+                          // as they capture the correct 'this' context.
 
         for (SyntaxNode child : node.children()) {
             if (doesSubtreeContainThisOutsideOfNestedScopes(child))

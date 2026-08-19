@@ -13,9 +13,8 @@ final class JavaSyntaxAssertions {
     static JavaSyntaxParser.ParseResult assertParsesWithoutRecovery(String source) {
         JavaSyntaxParser.ParseResult result = JavaSyntaxParser.parseWithDiagnostics(source);
         assertTrue(
-                result.diagnostics().isEmpty(),
-                () -> "Expected no syntax diagnostics, got: " + result.diagnostics()
-        );
+            result.diagnostics().isEmpty(),
+            () -> "Expected no syntax diagnostics, got: " + result.diagnostics());
         assertEquals(source, JavaParserTestSupport.syntaxText(result.tree()));
         return result;
     }
@@ -23,9 +22,8 @@ final class JavaSyntaxAssertions {
     static JavaSyntaxParser.ParseResult assertParsesWithRecovery(String source) {
         JavaSyntaxParser.ParseResult result = JavaSyntaxParser.parseWithDiagnostics(source);
         assertFalse(
-                result.diagnostics().isEmpty(),
-                "Expected syntax diagnostics for recovery input"
-        );
+            result.diagnostics().isEmpty(),
+            "Expected syntax diagnostics for recovery input");
         assertEquals(source, JavaParserTestSupport.syntaxText(result.tree()));
         return result;
     }

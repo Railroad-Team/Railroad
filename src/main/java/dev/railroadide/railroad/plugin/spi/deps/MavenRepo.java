@@ -10,7 +10,7 @@ public record MavenRepo(String id, String url) {
     /**
      * Creates a new Maven repository.
      *
-     * @param id  the unique identifier of the repository
+     * @param id the unique identifier of the repository
      * @param url the URL of the repository
      */
     public MavenRepo {
@@ -24,8 +24,8 @@ public record MavenRepo(String id, String url) {
     @Override
     public @NonNull String toString() {
         return "MavenRepo{" +
-                "id='" + id + '\'' +
-                ", url='" + url + '\'' +
-                '}';
+            "id='" + id + '\'' +
+            ", url='" + url + '\'' +
+            '}';
     }
 }

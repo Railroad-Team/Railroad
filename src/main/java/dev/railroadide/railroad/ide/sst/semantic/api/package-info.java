@@ -7,6 +7,7 @@
  * <p>
  * Inspection authors normally access this package through {@link
  * dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext}:
+ *
  * <pre>{@code
  * context.resolvedSymbol(node)
  * context.declaredSymbol(node)

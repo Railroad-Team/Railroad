@@ -16,14 +16,12 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
     public static final String ID = "railroad:core-member-resolution";
 
     private static final List<JavaInspectionRule> RULES = List.of(
-            new SimpleJavaInspectionRule(
-                    JavaSemanticRules.UNRESOLVED_MEMBER.id(),
-                    JavaSemanticRules.UNRESOLVED_MEMBER.defaultSeverity(),
-                    JavaSemanticRules.UNRESOLVED_MEMBER.messageTemplate(),
-                    Set.of("core", "members"),
-                    CoreMemberResolutionInspection::reportUnresolvedMembers
-            )
-    );
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.UNRESOLVED_MEMBER.id(),
+            JavaSemanticRules.UNRESOLVED_MEMBER.defaultSeverity(),
+            JavaSemanticRules.UNRESOLVED_MEMBER.messageTemplate(),
+            Set.of("core", "members"),
+            CoreMemberResolutionInspection::reportUnresolvedMembers));
 
     @Override
     public String id() {

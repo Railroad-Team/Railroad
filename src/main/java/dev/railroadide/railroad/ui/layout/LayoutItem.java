@@ -55,8 +55,10 @@ public class LayoutItem {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof LayoutItem that)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof LayoutItem that))
+            return false;
         return Objects.equals(name, that.name) && Objects.equals(properties, that.properties);
     }
 

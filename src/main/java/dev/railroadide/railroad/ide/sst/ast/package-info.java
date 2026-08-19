@@ -9,10 +9,10 @@
  * <p>
  * Typical usage:
  * <ol>
- *     <li>Start from {@link dev.railroadide.railroad.ide.sst.ast.program.CompilationUnit}.</li>
- *     <li>Traverse via {@link dev.railroadide.railroad.ide.sst.ast.AstVisitor} or
- *     {@link dev.railroadide.railroad.ide.sst.ast.AstNode#children()}.</li>
- *     <li>Use {@link dev.railroadide.railroad.ide.sst.ast.Span} for source locations.</li>
+ * <li>Start from {@link dev.railroadide.railroad.ide.sst.ast.program.CompilationUnit}.</li>
+ * <li>Traverse via {@link dev.railroadide.railroad.ide.sst.ast.AstVisitor} or
+ * {@link dev.railroadide.railroad.ide.sst.ast.AstNode#children()}.</li>
+ * <li>Use {@link dev.railroadide.railroad.ide.sst.ast.Span} for source locations.</li>
  * </ol>
  * <p>
  * The AST is useful for source transformations, higher-level analyses, and features that

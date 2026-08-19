@@ -20,8 +20,7 @@ public final class IDETopBarPane extends RRHBox {
         Project project,
         WorkspaceModeController viewModeController,
         Consumer<WorkspaceMode> viewModeRequester,
-        IDEWorkspaceActions workspaceActions
-    ) {
+        IDEWorkspaceActions workspaceActions) {
         Objects.requireNonNull(project, "Project cannot be null");
         Objects.requireNonNull(viewModeController, "View mode controller cannot be null");
         Objects.requireNonNull(viewModeRequester, "View mode requester cannot be null");
@@ -33,8 +32,7 @@ public final class IDETopBarPane extends RRHBox {
         getChildren().addAll(
             IDEMenuBarFactory.create(project, viewModeController, viewModeRequester, workspaceActions),
             spacer,
-            RunControlsPane.create(project)
-        );
+            RunControlsPane.create(project));
 
         Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.IDE_TOP_BAR, this);
     }

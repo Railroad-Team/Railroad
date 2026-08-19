@@ -26,8 +26,10 @@ import java.util.function.Function;
 /**
  * Stable descriptors for built-in IDE dock items.
  *
- * <p>Dock-item identity and presentation are deliberately independent of the localized tab title. This allows titles
- * to change without breaking layout restoration, icon lookup, or future routing.</p>
+ * <p>
+ * Dock-item identity and presentation are deliberately independent of the localized tab title. This allows titles
+ * to change without breaking layout restoration, icon lookup, or future routing.
+ * </p>
  */
 public enum IDEDockItem {
     PROJECT(
@@ -37,98 +39,77 @@ public enum IDEDockItem {
         DockPosition.LEFT,
         WorkspaceModes.CODE,
         InitializationPolicy.EAGER,
-        ProjectExplorerPane::new
-    ),
-    GIT_OVERVIEW(
-        "dock-item:git-overview",
-        "railroad.ide.dock_item.git_overview",
-        FontAwesomeSolid.HOME,
-        DockPosition.LEFT,
-        WorkspaceModes.GIT,
-        InitializationPolicy.ON_FIRST_SELECTION,
-        GitOverviewPane::new
-    ),
-    GIT_COMMIT(
-        "dock-item:git-commit",
-        "railroad.ide.dock_item.git_commit",
-        FontAwesomeBrands.USB,
-        DockPosition.LEFT,
-        WorkspaceModes.GIT,
-        InitializationPolicy.ON_FIRST_SELECTION,
-        GitCommitPane::new
-    ),
-    GIT_COMMIT_LIST(
-        "dock-item:git-commit-list",
-        "railroad.ide.dock_item.git_commit_list",
-        FontAwesomeSolid.LIST,
-        DockPosition.LEFT,
-        WorkspaceModes.GIT,
-        InitializationPolicy.ON_FIRST_SELECTION,
-        GitCommitListPane::new
-    ),
-    GIT_BRANCHES(
-        "dock-item:git-branches",
-        "railroad.ide.dock_item.git_branches",
-        FontAwesomeSolid.CODE_BRANCH,
-        DockPosition.LEFT,
-        WorkspaceModes.GIT,
-        InitializationPolicy.ON_FIRST_SELECTION,
-        GitBranchesPane::new
-    ),
-    GIT_REMOTES(
-        "dock-item:git-remotes",
-        "railroad.ide.dock_item.git_remotes",
-        FontAwesomeSolid.GLOBE,
-        DockPosition.LEFT,
-        WorkspaceModes.GIT,
-        InitializationPolicy.ON_FIRST_SELECTION,
-        GitRemotesPane::new
-    ),
-    GIT_SYNC(
-        "dock-item:git-sync",
-        "railroad.ide.dock_item.git_sync",
-        FontAwesomeSolid.SYNC,
-        DockPosition.LEFT,
-        WorkspaceModes.GIT,
-        InitializationPolicy.ON_FIRST_SELECTION,
-        GitSyncPane::new
-    ),
-    GIT_STASH(
-        "dock-item:git-stash",
-        "railroad.ide.dock_item.git_stash",
-        FontAwesomeSolid.BOX,
-        DockPosition.LEFT,
-        WorkspaceModes.GIT,
-        InitializationPolicy.ON_FIRST_SELECTION,
-        GitStashPane::new
-    ),
-    GRADLE(
-        "dock-item:gradle",
-        "railroad.ide.dock_item.gradle",
-        RailroadBrandsIcon.GRADLE,
-        DockPosition.RIGHT,
-        null,
-        InitializationPolicy.EAGER,
-        GradleToolsPane::new
-    ),
-    CONSOLE(
-        "dock-item:console",
-        "railroad.ide.dock_item.console",
-        FontAwesomeSolid.PLAY_CIRCLE,
-        DockPosition.BOTTOM,
-        null,
-        InitializationPolicy.EAGER,
-        _ -> new ConsolePane()
-    ),
-    TERMINAL(
-        "dock-item:terminal",
-        "railroad.ide.dock_item.terminal",
-        FontAwesomeSolid.TERMINAL,
-        DockPosition.BOTTOM,
-        null,
-        InitializationPolicy.ON_FIRST_SELECTION,
-        project -> TerminalFactory.create(project.getPath())
-    );
+        ProjectExplorerPane::new), GIT_OVERVIEW(
+            "dock-item:git-overview",
+            "railroad.ide.dock_item.git_overview",
+            FontAwesomeSolid.HOME,
+            DockPosition.LEFT,
+            WorkspaceModes.GIT,
+            InitializationPolicy.ON_FIRST_SELECTION,
+            GitOverviewPane::new), GIT_COMMIT(
+                "dock-item:git-commit",
+                "railroad.ide.dock_item.git_commit",
+                FontAwesomeBrands.USB,
+                DockPosition.LEFT,
+                WorkspaceModes.GIT,
+                InitializationPolicy.ON_FIRST_SELECTION,
+                GitCommitPane::new), GIT_COMMIT_LIST(
+                    "dock-item:git-commit-list",
+                    "railroad.ide.dock_item.git_commit_list",
+                    FontAwesomeSolid.LIST,
+                    DockPosition.LEFT,
+                    WorkspaceModes.GIT,
+                    InitializationPolicy.ON_FIRST_SELECTION,
+                    GitCommitListPane::new), GIT_BRANCHES(
+                        "dock-item:git-branches",
+                        "railroad.ide.dock_item.git_branches",
+                        FontAwesomeSolid.CODE_BRANCH,
+                        DockPosition.LEFT,
+                        WorkspaceModes.GIT,
+                        InitializationPolicy.ON_FIRST_SELECTION,
+                        GitBranchesPane::new), GIT_REMOTES(
+                            "dock-item:git-remotes",
+                            "railroad.ide.dock_item.git_remotes",
+                            FontAwesomeSolid.GLOBE,
+                            DockPosition.LEFT,
+                            WorkspaceModes.GIT,
+                            InitializationPolicy.ON_FIRST_SELECTION,
+                            GitRemotesPane::new), GIT_SYNC(
+                                "dock-item:git-sync",
+                                "railroad.ide.dock_item.git_sync",
+                                FontAwesomeSolid.SYNC,
+                                DockPosition.LEFT,
+                                WorkspaceModes.GIT,
+                                InitializationPolicy.ON_FIRST_SELECTION,
+                                GitSyncPane::new), GIT_STASH(
+                                    "dock-item:git-stash",
+                                    "railroad.ide.dock_item.git_stash",
+                                    FontAwesomeSolid.BOX,
+                                    DockPosition.LEFT,
+                                    WorkspaceModes.GIT,
+                                    InitializationPolicy.ON_FIRST_SELECTION,
+                                    GitStashPane::new), GRADLE(
+                                        "dock-item:gradle",
+                                        "railroad.ide.dock_item.gradle",
+                                        RailroadBrandsIcon.GRADLE,
+                                        DockPosition.RIGHT,
+                                        null,
+                                        InitializationPolicy.EAGER,
+                                        GradleToolsPane::new), CONSOLE(
+                                            "dock-item:console",
+                                            "railroad.ide.dock_item.console",
+                                            FontAwesomeSolid.PLAY_CIRCLE,
+                                            DockPosition.BOTTOM,
+                                            null,
+                                            InitializationPolicy.EAGER,
+                                            _ -> new ConsolePane()), TERMINAL(
+                                                "dock-item:terminal",
+                                                "railroad.ide.dock_item.terminal",
+                                                FontAwesomeSolid.TERMINAL,
+                                                DockPosition.BOTTOM,
+                                                null,
+                                                InitializationPolicy.ON_FIRST_SELECTION,
+                                                project -> TerminalFactory.create(project.getPath()));
 
     private final String id;
     private final String localizationKey;
@@ -145,14 +126,15 @@ public enum IDEDockItem {
         DockPosition preferredDockPosition,
         @Nullable WorkspaceMode owningMode,
         InitializationPolicy initializationPolicy,
-        Function<Project, ? extends Node> contentFactory
-    ) {
+        Function<Project, ? extends Node> contentFactory) {
         this.id = Objects.requireNonNull(id, "Dock-item ID cannot be null");
         this.localizationKey = Objects.requireNonNull(localizationKey, "Localization key cannot be null");
         this.icon = Objects.requireNonNull(icon, "Dock-item icon cannot be null");
-        this.preferredDockPosition = Objects.requireNonNull(preferredDockPosition, "Preferred dock position cannot be null");
+        this.preferredDockPosition = Objects.requireNonNull(preferredDockPosition,
+            "Preferred dock position cannot be null");
         this.owningMode = owningMode;
-        this.initializationPolicy = Objects.requireNonNull(initializationPolicy, "Initialization policy cannot be null");
+        this.initializationPolicy = Objects.requireNonNull(initializationPolicy,
+            "Initialization policy cannot be null");
         this.contentFactory = Objects.requireNonNull(contentFactory, "Content factory cannot be null");
     }
 
@@ -186,13 +168,10 @@ public enum IDEDockItem {
     }
 
     public enum DockPosition {
-        LEFT,
-        RIGHT,
-        BOTTOM
+        LEFT, RIGHT, BOTTOM
     }
 
     public enum InitializationPolicy {
-        EAGER,
-        ON_FIRST_SELECTION
+        EAGER, ON_FIRST_SELECTION
     }
 }

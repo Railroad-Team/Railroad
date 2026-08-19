@@ -20,7 +20,9 @@ import java.util.Objects;
  * A labeled text field with an optional browse button for selecting files.
  */
 @Getter
-public class FormFileChooser extends InformativeLabeledHBox<FormFileChooser.TextFieldWithButton> implements HasSetValue {
+public class FormFileChooser extends InformativeLabeledHBox<FormFileChooser.TextFieldWithButton>
+    implements
+        HasSetValue {
     public FormFileChooser(String labelKey, boolean required, @Nullable String defaultPath, boolean includeButton) {
         super(labelKey, required, createParams(defaultPath, includeButton));
     }
@@ -40,7 +42,7 @@ public class FormFileChooser extends InformativeLabeledHBox<FormFileChooser.Text
         var defaultPath = (String) params.get("defaultPath");
         var includeButton = (boolean) params.get("includeButton");
 
-        RRTextField textField = new RRTextField();
+        var textField = new RRTextField();
         textField.getStyleClass().add("rr-text-field");
         if (defaultPath != null) {
             textField.setText(defaultPath);

@@ -30,69 +30,60 @@ class JavaProjectSemanticIndexTest {
         Path utilityPath = Path.of("src/main/java/demo/Utility.java");
         Path usePath = Path.of("src/main/java/demo/Use.java");
 
-        JavaProjectSemanticIndex.SourceFileIndex utility = new JavaProjectSemanticIndex.SourceFileIndex(
-                utilityPath,
-                " demo ",
-                List.of(),
-                List.of(
-                        new JavaProjectSemanticIndex.SymbolDescriptor(
-                                SymbolKind.CLASS,
-                                "Utility",
-                                "demo.Utility",
-                                null,
-                                null,
-                                utilityPath,
-                                false,
-                                true
-                        ),
-                        new JavaProjectSemanticIndex.SymbolDescriptor(
-                                SymbolKind.FIELD,
-                                "VALUE",
-                                "demo.Utility#VALUE",
-                                "demo.Utility",
-                                null,
-                                utilityPath,
-                                true,
-                                false
-                        ),
-                        new JavaProjectSemanticIndex.SymbolDescriptor(
-                                SymbolKind.METHOD,
-                                "run",
-                                "demo.Utility#run(String)",
-                                "demo.Utility",
-                                "(String)",
-                                utilityPath,
-                                false,
-                                false
-                        )
-                )
-        );
+        var utility = new JavaProjectSemanticIndex.SourceFileIndex(
+            utilityPath,
+            " demo ",
+            List.of(),
+            List.of(
+                new JavaProjectSemanticIndex.SymbolDescriptor(
+                    SymbolKind.CLASS,
+                    "Utility",
+                    "demo.Utility",
+                    null,
+                    null,
+                    utilityPath,
+                    false,
+                    true),
+                new JavaProjectSemanticIndex.SymbolDescriptor(
+                    SymbolKind.FIELD,
+                    "VALUE",
+                    "demo.Utility#VALUE",
+                    "demo.Utility",
+                    null,
+                    utilityPath,
+                    true,
+                    false),
+                new JavaProjectSemanticIndex.SymbolDescriptor(
+                    SymbolKind.METHOD,
+                    "run",
+                    "demo.Utility#run(String)",
+                    "demo.Utility",
+                    "(String)",
+                    utilityPath,
+                    false,
+                    false)));
 
-        JavaProjectSemanticIndex.SourceFileIndex use = new JavaProjectSemanticIndex.SourceFileIndex(
-                usePath,
-                "demo",
-                List.of(
-                        new JavaProjectSemanticIndex.ImportDescriptor("demo.Utility", false, false),
-                        new JavaProjectSemanticIndex.ImportDescriptor("demo.Utility.VALUE", true, false)
-                ),
-                List.of(
-                        new JavaProjectSemanticIndex.SymbolDescriptor(
-                                SymbolKind.CLASS,
-                                "Use",
-                                "demo.Use",
-                                null,
-                                null,
-                                usePath,
-                                false,
-                                true
-                        )
-                )
-        );
+        var use = new JavaProjectSemanticIndex.SourceFileIndex(
+            usePath,
+            "demo",
+            List.of(
+                new JavaProjectSemanticIndex.ImportDescriptor("demo.Utility", false, false),
+                new JavaProjectSemanticIndex.ImportDescriptor("demo.Utility.VALUE", true, false)),
+            List.of(
+                new JavaProjectSemanticIndex.SymbolDescriptor(
+                    SymbolKind.CLASS,
+                    "Use",
+                    "demo.Use",
+                    null,
+                    null,
+                    usePath,
+                    false,
+                    true)));
 
         JavaProjectSemanticIndex index = JavaProjectSemanticIndex.builder()
-                .putFile(utility)
-                .putFile(use)
-                .build();
+            .putFile(utility)
+            .putFile(use)
+            .build();
 
         assertEquals(2, index.files().size());
         assertTrue(index.containsFile(utility.path()));
@@ -109,28 +100,25 @@ class JavaProjectSemanticIndexTest {
     void builderRemoveFileRemovesIndexedDeclarations() {
         Path utilityPath = Path.of("src/main/java/demo/Utility.java");
 
-        JavaProjectSemanticIndex.SourceFileIndex utility = new JavaProjectSemanticIndex.SourceFileIndex(
-                utilityPath,
-                "demo",
-                List.of(),
-                List.of(
-                        new JavaProjectSemanticIndex.SymbolDescriptor(
-                                SymbolKind.CLASS,
-                                "Utility",
-                                "demo.Utility",
-                                null,
-                                null,
-                                utilityPath,
-                                false,
-                                true
-                        )
-                )
-        );
+        var utility = new JavaProjectSemanticIndex.SourceFileIndex(
+            utilityPath,
+            "demo",
+            List.of(),
+            List.of(
+                new JavaProjectSemanticIndex.SymbolDescriptor(
+                    SymbolKind.CLASS,
+                    "Utility",
+                    "demo.Utility",
+                    null,
+                    null,
+                    utilityPath,
+                    false,
+                    true)));
 
         JavaProjectSemanticIndex index = JavaProjectSemanticIndex.builder()
-                .putFile(utility)
-                .removeFile(Path.of("src/main/java/demo/./Utility.java"))
-                .build();
+            .putFile(utility)
+            .removeFile(Path.of("src/main/java/demo/./Utility.java"))
+            .build();
 
         assertFalse(index.containsFile(utility.path()));
         assertTrue(index.getFile(utilityPath).isEmpty());
@@ -142,33 +130,29 @@ class JavaProjectSemanticIndexTest {
     void sourceFileIndexCollectsOnlyNonNullQualifiedNames() {
         Path path = Path.of("src/main/java/demo/Utility.java");
 
-        JavaProjectSemanticIndex.SourceFileIndex file = new JavaProjectSemanticIndex.SourceFileIndex(
-                path,
-                "demo",
-                List.of(),
-                List.of(
-                        new JavaProjectSemanticIndex.SymbolDescriptor(
-                                SymbolKind.CLASS,
-                                "Utility",
-                                "demo.Utility",
-                                null,
-                                null,
-                                path,
-                                false,
-                                true
-                        ),
-                        new JavaProjectSemanticIndex.SymbolDescriptor(
-                                SymbolKind.LOCAL_VARIABLE,
-                                "temp",
-                                null,
-                                "demo.Utility#run(String)",
-                                null,
-                                path,
-                                false,
-                                false
-                        )
-                )
-        );
+        var file = new JavaProjectSemanticIndex.SourceFileIndex(
+            path,
+            "demo",
+            List.of(),
+            List.of(
+                new JavaProjectSemanticIndex.SymbolDescriptor(
+                    SymbolKind.CLASS,
+                    "Utility",
+                    "demo.Utility",
+                    null,
+                    null,
+                    path,
+                    false,
+                    true),
+                new JavaProjectSemanticIndex.SymbolDescriptor(
+                    SymbolKind.LOCAL_VARIABLE,
+                    "temp",
+                    null,
+                    "demo.Utility#run(String)",
+                    null,
+                    path,
+                    false,
+                    false)));
 
         assertEquals(Set.of("demo.Utility"), file.declaredQualifiedNames());
     }
@@ -177,19 +161,17 @@ class JavaProjectSemanticIndexTest {
     void rejectsBlankImportAndSymbolNames() {
         Path path = Path.of("src/main/java/demo/Utility.java");
 
-        assertThrows(IllegalArgumentException.class, () ->
-                new JavaProjectSemanticIndex.ImportDescriptor("   ", false, false));
+        assertThrows(IllegalArgumentException.class,
+            () -> new JavaProjectSemanticIndex.ImportDescriptor("   ", false, false));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                new JavaProjectSemanticIndex.SymbolDescriptor(
-                        SymbolKind.CLASS,
-                        "   ",
-                        "demo.Utility",
-                        null,
-                        null,
-                        path,
-                        false,
-                        true
-                ));
+        assertThrows(IllegalArgumentException.class, () -> new JavaProjectSemanticIndex.SymbolDescriptor(
+            SymbolKind.CLASS,
+            "   ",
+            "demo.Utility",
+            null,
+            null,
+            path,
+            false,
+            true));
     }
 }

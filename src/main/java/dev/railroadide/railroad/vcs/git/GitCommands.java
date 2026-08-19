@@ -329,7 +329,8 @@ public final class GitCommands {
         return GitCommand.builder()
             .workingDirectory(repo)
             .timeout(10, TimeUnit.SECONDS)
-            .addArgs("--no-pager", "diff", "--no-color", "--unified=%d".formatted(contextLines), "--", filePath.toString())
+            .addArgs("--no-pager", "diff", "--no-color", "--unified=%d".formatted(contextLines), "--",
+                filePath.toString())
             .build();
     }
 
@@ -468,8 +469,7 @@ public final class GitCommands {
                 "--no-pager",
                 "shortlog",
                 "--summary",
-                "--numbered"
-            );
+                "--numbered");
         if (includeEmails) {
             builder.addArgs("--email");
         }
@@ -493,8 +493,7 @@ public final class GitCommands {
                 "--reverse",
                 "--pretty=format:%at",
                 "--max-parents=0",
-                "-n", "1"
-            )
+                "-n", "1")
             .build();
     }
 
@@ -514,8 +513,7 @@ public final class GitCommands {
                 "show",
                 "--pretty=format:",
                 "--numstat",
-                hash
-            )
+                hash)
             .build();
     }
 
@@ -535,8 +533,7 @@ public final class GitCommands {
                 "log",
                 "-n", "1",
                 "--format=%B",
-                hash
-            )
+                hash)
             .build();
     }
 
@@ -555,8 +552,7 @@ public final class GitCommands {
             .addArgs(
                 "stash",
                 "push",
-                "-m", message
-            );
+                "-m", message);
 
         if (includeUntracked) {
             builder.addArgs("-u");
@@ -577,8 +573,7 @@ public final class GitCommands {
             .timeout(10, TimeUnit.SECONDS)
             .addArgs(
                 "stash",
-                "pop"
-            )
+                "pop")
             .build();
     }
 
@@ -596,8 +591,7 @@ public final class GitCommands {
             .addArgs(
                 "stash",
                 "pop",
-                stashRef
-            )
+                stashRef)
             .build();
     }
 
@@ -615,8 +609,7 @@ public final class GitCommands {
                 "--no-pager",
                 "stash",
                 "list",
-                "--pretty=format:%gd%x1f%H%x1f%ct%x1f%gs"
-            )
+                "--pretty=format:%gd%x1f%H%x1f%ct%x1f%gs")
             .build();
     }
 
@@ -634,8 +627,7 @@ public final class GitCommands {
             .addArgs(
                 "stash",
                 "apply",
-                stashRef
-            )
+                stashRef)
             .build();
     }
 
@@ -653,8 +645,7 @@ public final class GitCommands {
             .addArgs(
                 "stash",
                 "drop",
-                stashRef
-            )
+                stashRef)
             .build();
     }
 
@@ -675,8 +666,7 @@ public final class GitCommands {
                 "--name-status",
                 "-z",
                 stashRef + "^1",
-                stashRef
-            )
+                stashRef)
             .build();
     }
 
@@ -699,8 +689,7 @@ public final class GitCommands {
                 stashRef + "^1",
                 stashRef,
                 "--",
-                filePath.toString()
-            )
+                filePath.toString())
             .build();
     }
 
@@ -718,8 +707,7 @@ public final class GitCommands {
             .addArgs(
                 "switch",
                 "--detach",
-                hash
-            )
+                hash)
             .build();
     }
 
@@ -737,8 +725,7 @@ public final class GitCommands {
             .addArgs(
                 "checkout",
                 "--detach",
-                hash
-            )
+                hash)
             .build();
     }
 
@@ -754,8 +741,7 @@ public final class GitCommands {
             .timeout(10, TimeUnit.SECONDS)
             .addArgs(
                 "reset",
-                "--hard"
-            )
+                "--hard")
             .build();
     }
 
@@ -771,8 +757,7 @@ public final class GitCommands {
             .timeout(10, TimeUnit.SECONDS)
             .addArgs(
                 "clean",
-                "-fd"
-            )
+                "-fd")
             .build();
     }
 
@@ -790,8 +775,7 @@ public final class GitCommands {
             .addArgs(
                 "check-ref-format",
                 "--branch",
-                string
-            )
+                string)
             .build();
     }
 
@@ -810,8 +794,7 @@ public final class GitCommands {
             .addArgs(
                 "branch",
                 branchName,
-                hash
-            )
+                hash)
             .build();
     }
 
@@ -828,8 +811,7 @@ public final class GitCommands {
             .timeout(10, TimeUnit.SECONDS)
             .addArgs(
                 "switch",
-                branchName
-            )
+                branchName)
             .build();
     }
 
@@ -846,8 +828,7 @@ public final class GitCommands {
             .timeout(10, TimeUnit.SECONDS)
             .addArgs(
                 "checkout",
-                branchName
-            )
+                branchName)
             .build();
     }
 
@@ -866,8 +847,7 @@ public final class GitCommands {
                 "rev-parse",
                 "-q",
                 "--verify",
-                "refs/tags/" + tagName
-            )
+                "refs/tags/" + tagName)
             .build();
     }
 
@@ -884,8 +864,7 @@ public final class GitCommands {
             .timeout(5, TimeUnit.SECONDS)
             .addArgs(
                 "check-ref-format",
-                "refs/tags/" + tagName
-            )
+                "refs/tags/" + tagName)
             .build();
     }
 
@@ -899,13 +878,13 @@ public final class GitCommands {
      * @param overwrite whether existing tags may be overwritten
      * @return configured git command
      */
-    public static GitCommand createTag(GitRepository repo, String tagName, String hash, @Nullable String message, boolean overwrite) {
+    public static GitCommand createTag(GitRepository repo, String tagName, String hash, @Nullable String message,
+        boolean overwrite) {
         GitCommand.Builder builder = GitCommand.builder()
             .workingDirectory(repo)
             .timeout(10, TimeUnit.SECONDS)
             .addArgs(
-                "tag"
-            );
+                "tag");
 
         if (overwrite) {
             builder.addArgs("-f");
@@ -936,8 +915,7 @@ public final class GitCommands {
                 "rev-parse",
                 "-q",
                 "--verify",
-                "CHERRY_PICK_HEAD"
-            )
+                "CHERRY_PICK_HEAD")
             .build();
     }
 
@@ -956,8 +934,7 @@ public final class GitCommands {
                 "cherry-pick",
                 "-x",
                 "--no-edit",
-                commitHash
-            )
+                commitHash)
             .build();
     }
 
@@ -973,8 +950,7 @@ public final class GitCommands {
             .timeout(15, TimeUnit.SECONDS)
             .addArgs(
                 "cherry-pick",
-                "--continue"
-            )
+                "--continue")
             .build();
     }
 
@@ -990,8 +966,7 @@ public final class GitCommands {
             .timeout(15, TimeUnit.SECONDS)
             .addArgs(
                 "cherry-pick",
-                "--abort"
-            )
+                "--abort")
             .build();
     }
 
@@ -1007,8 +982,7 @@ public final class GitCommands {
             .timeout(15, TimeUnit.SECONDS)
             .addArgs(
                 "cherry-pick",
-                "--quit"
-            )
+                "--quit")
             .build();
     }
 
@@ -1027,8 +1001,7 @@ public final class GitCommands {
                 "revert",
                 "-x",
                 "--no-edit",
-                commitHash
-            )
+                commitHash)
             .build();
     }
 
@@ -1047,8 +1020,7 @@ public final class GitCommands {
                 "rev-parse",
                 "--abbrev-ref",
                 "--symbolic-full-name",
-                "\"" + branchName + "@{u}\""
-            )
+                "\"" + branchName + "@{u}\"")
             .build();
     }
 
@@ -1068,8 +1040,7 @@ public final class GitCommands {
                 "rev-list",
                 "--left-right",
                 "--count",
-                branchName + "..." + upstreamBranch
-            )
+                branchName + "..." + upstreamBranch)
             .build();
     }
 
@@ -1086,8 +1057,7 @@ public final class GitCommands {
             .timeout(5, TimeUnit.SECONDS)
             .addArgs(
                 "rev-parse",
-                branchName
-            )
+                branchName)
             .build();
     }
 
@@ -1106,8 +1076,7 @@ public final class GitCommands {
                 "log",
                 "-1",
                 "--format=%ct",
-                branchName
-            )
+                branchName)
             .build();
     }
 
@@ -1127,8 +1096,7 @@ public final class GitCommands {
                 "log",
                 "-n", "1",
                 "--format=%an%x00%ae",
-                hash
-            )
+                hash)
             .build();
     }
 
@@ -1147,8 +1115,7 @@ public final class GitCommands {
             .addArgs(
                 "branch",
                 "--set-upstream-to=" + upstreamBranch,
-                branchName
-            )
+                branchName)
             .build();
     }
 
@@ -1166,8 +1133,7 @@ public final class GitCommands {
             .addArgs(
                 "branch",
                 "--unset-upstream",
-                branchName
-            )
+                branchName)
             .build();
     }
 
@@ -1187,8 +1153,7 @@ public final class GitCommands {
                 "branch",
                 "--delete",
                 force ? "--force" : null,
-                branchName
-            )
+                branchName)
             .build();
     }
 
@@ -1210,8 +1175,7 @@ public final class GitCommands {
                 "--move",
                 force ? "--force" : null,
                 oldName,
-                newName
-            )
+                newName)
             .build();
     }
 
@@ -1230,8 +1194,7 @@ public final class GitCommands {
                 "remote",
                 "get-url",
                 "--all",
-                remote.name()
-            )
+                remote.name())
             .build();
     }
 
@@ -1251,8 +1214,7 @@ public final class GitCommands {
                 "remote",
                 "add",
                 name,
-                fetchUrl
-            )
+                fetchUrl)
             .build();
     }
 
@@ -1272,8 +1234,7 @@ public final class GitCommands {
                 "remote",
                 "rename",
                 oldName,
-                newName
-            )
+                newName)
             .build();
     }
 
@@ -1293,8 +1254,7 @@ public final class GitCommands {
                 "remote",
                 "set-url",
                 name,
-                fetchUrl
-            )
+                fetchUrl)
             .build();
     }
 
@@ -1315,8 +1275,7 @@ public final class GitCommands {
                 "set-url",
                 "--push",
                 name,
-                pushUrl
-            )
+                pushUrl)
             .build();
     }
 
@@ -1334,8 +1293,7 @@ public final class GitCommands {
             .addArgs(
                 "remote",
                 "remove",
-                name
-            )
+                name)
             .build();
     }
 
@@ -1353,8 +1311,7 @@ public final class GitCommands {
             .addArgs(
                 "config",
                 "--get",
-                "remote." + remote.name() + ".prune"
-            )
+                "remote." + remote.name() + ".prune")
             .build();
     }
 
@@ -1372,8 +1329,7 @@ public final class GitCommands {
                 "fetch",
                 "--all",
                 "--prune",
-                "--progress"
-            )
+                "--progress")
             .build();
     }
 
@@ -1390,8 +1346,7 @@ public final class GitCommands {
             .addArgs(
                 "remote",
                 "prune",
-                "--all"
-            )
+                "--all")
             .build();
     }
 
@@ -1406,8 +1361,7 @@ public final class GitCommands {
             .workingDirectory(repo)
             .timeout(30, TimeUnit.SECONDS)
             .addArgs(
-                "gc"
-            )
+                "gc")
             .build();
     }
 
@@ -1424,8 +1378,7 @@ public final class GitCommands {
             .addArgs(
                 "config",
                 "--get",
-                "pull.ff"
-            )
+                "pull.ff")
             .build();
     }
 
@@ -1443,8 +1396,7 @@ public final class GitCommands {
             .addArgs(
                 "config",
                 "--get",
-                "branch." + branchName + ".rebase"
-            )
+                "branch." + branchName + ".rebase")
             .build();
     }
 
@@ -1461,8 +1413,7 @@ public final class GitCommands {
             .addArgs(
                 "config",
                 "--get",
-                "pull.rebase"
-            )
+                "pull.rebase")
             .build();
     }
 
@@ -1479,8 +1430,7 @@ public final class GitCommands {
             .addArgs(
                 "config",
                 "--get",
-                "push.default"
-            )
+                "push.default")
             .build();
     }
 
@@ -1497,8 +1447,7 @@ public final class GitCommands {
             .addArgs(
                 "config",
                 "--unset",
-                "push.default"
-            )
+                "push.default")
             .build();
     }
 
@@ -1516,8 +1465,7 @@ public final class GitCommands {
             .addArgs(
                 "config",
                 "push.default",
-                strategy.name().toLowerCase()
-            )
+                strategy.name().toLowerCase())
             .build();
     }
 
@@ -1534,8 +1482,7 @@ public final class GitCommands {
             .addArgs(
                 "config",
                 "--unset",
-                "pull.rebase"
-            )
+                "pull.rebase")
             .build();
     }
 
@@ -1553,8 +1500,7 @@ public final class GitCommands {
             .addArgs(
                 "config",
                 "pull.rebase",
-                shouldRebase ? "true" : "false"
-            )
+                shouldRebase ? "true" : "false")
             .build();
     }
 
@@ -1572,8 +1518,7 @@ public final class GitCommands {
             .addArgs(
                 "config",
                 "pull.ff",
-                ffOnly ? "only" : "false"
-            )
+                ffOnly ? "only" : "false")
             .build();
     }
 
@@ -1595,8 +1540,7 @@ public final class GitCommands {
                 "--first-parent",
                 "--date=unix",
                 "--pretty=format:%H%x00%h%x00%s%x00%an%x00%ae%x00%at%x00%cn%x00%ce%x00%ct%x00%P%x1e",
-                branchA + ".." + branchB
-            )
+                branchA + ".." + branchB)
             .build();
     }
 }

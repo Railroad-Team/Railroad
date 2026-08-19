@@ -22,7 +22,8 @@ import java.util.function.Consumer;
  * <p>
  * A form section is a group of form components that are related to each other in some way. For example, a form section
  * could be a group of fields that are all related to a single entity, such as a user. A form section is responsible for
- * creating the UI for the fields it contains, binding the fields to a {@link FormData} object, and validating the fields.
+ * creating the UI for the fields it contains, binding the fields to a {@link FormData} object, and validating the
+ * fields.
  * </p>
  */
 public class FormSection {
@@ -53,7 +54,8 @@ public class FormSection {
         this.customSpacing = builder.customSpacing;
         this.customPadding = builder.customPadding;
         this.border = Objects.requireNonNullElseGet(builder.border,
-            () -> new Border(new BorderStroke(builder.borderColor, builder.borderStyle, builder.borderRadii, builder.borderWidths)));
+            () -> new Border(
+                new BorderStroke(builder.borderColor, builder.borderStyle, builder.borderRadii, builder.borderWidths)));
         this.titleConsumer = builder.titleConsumer;
     }
 
@@ -89,7 +91,7 @@ public class FormSection {
      *
      * @return the root node of the form section
      * @implNote This method will construct all the fields in the form section and add them to a VBox. The title of the
-     * form section will be displayed at the top of the VBox.
+     *           form section will be displayed at the top of the VBox.
      */
     public Node createUI() {
         var vbox = new RRVBox();
@@ -134,7 +136,7 @@ public class FormSection {
      * before the given component in the list and add the component after that field.
      * </p>
      *
-     * @param vbox      the vbox to add the component to
+     * @param vbox the vbox to add the component to
      * @param component the component to add
      */
     private void addChildNode(RRVBox vbox, FormComponent<?, ?, ?, ?> component) {
@@ -171,7 +173,8 @@ public class FormSection {
      * @return whether all the fields in the form section are valid
      */
     public boolean validate() {
-        return fields.stream().allMatch(formComponent -> formComponent.validate().status() != ValidationResult.Status.ERROR);
+        return fields.stream()
+            .allMatch(formComponent -> formComponent.validate().status() != ValidationResult.Status.ERROR);
     }
 
     /**
@@ -199,7 +202,7 @@ public class FormSection {
         private CornerRadii borderRadii = CornerRadii.EMPTY;
         private BorderWidths borderWidths = BorderWidths.DEFAULT;
 
-        private Consumer<LocalizedText> titleConsumer = ignored -> {
+        private Consumer<LocalizedText> titleConsumer = _ -> {
         };
 
         /**
@@ -252,10 +255,10 @@ public class FormSection {
         /**
          * Sets the padding of the form section.
          *
-         * @param top    the top padding
-         * @param right  the right padding
+         * @param top the top padding
+         * @param right the right padding
          * @param bottom the bottom padding
-         * @param left   the left padding
+         * @param left the left padding
          * @return this builder
          */
         public Builder padding(double top, double right, double bottom, double left) {

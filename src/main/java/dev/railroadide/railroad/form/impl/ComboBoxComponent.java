@@ -46,23 +46,29 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
     /**
      * Constructs a new combobox component.
      *
-     * @param dataKey         the key to store the data in the form data
-     * @param data            the data for the combobox
-     * @param validator       the validator for the combobox
-     * @param listener        the listener for the combobox
-     * @param bindComboBoxTo  the property to bind the combobox to
-     * @param transformers    the transformers for the combobox
+     * @param dataKey the key to store the data in the form data
+     * @param data the data for the combobox
+     * @param validator the validator for the combobox
+     * @param listener the listener for the combobox
+     * @param bindComboBoxTo the property to bind the combobox to
+     * @param transformers the transformers for the combobox
      * @param keyTypedHandler the key typed handler for the combobox
-     * @param visible         the visibility of the combobox
-     * @param cellFactory     the cell factory for the combobox
-     * @param buttonCell      the button cell for the combobox
-     * @param defaultValue    the default value for the combobox
+     * @param visible the visibility of the combobox
+     * @param cellFactory the cell factory for the combobox
+     * @param buttonCell the button cell for the combobox
+     * @param defaultValue the default value for the combobox
      */
-    public ComboBoxComponent(String dataKey, Data<T> data, FormComponentValidator<ComboBox<T>> validator, FormComponentChangeListener<ComboBox<T>, T> listener, Property<ComboBox<T>> bindComboBoxTo, List<FormTransformer<ComboBox<T>, T, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible, Callback<ListView<T>, ListCell<T>> cellFactory, ListCell<T> buttonCell, Supplier<T> defaultValue) {
+    public ComboBoxComponent(String dataKey, Data<T> data, FormComponentValidator<ComboBox<T>> validator,
+        FormComponentChangeListener<ComboBox<T>, T> listener, Property<ComboBox<T>> bindComboBoxTo,
+        List<FormTransformer<ComboBox<T>, T, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler,
+        @Nullable BooleanBinding visible, Callback<ListView<T>, ListCell<T>> cellFactory, ListCell<T> buttonCell,
+        Supplier<T> defaultValue) {
         super(dataKey, data, currentData -> {
-            var formComboBox = new FormComboBox<>(currentData.label, currentData.required, currentData.editable, currentData.translate, (T v) -> currentData.keyFunction.toString(v));
+            var formComboBox = new FormComboBox<>(currentData.label, currentData.required, currentData.editable,
+                currentData.translate, (T v) -> currentData.keyFunction.toString(v));
             if (!currentData.translate) {
-                formComboBox.getPrimaryComponent().setConverter(new ComboBoxConverter<>(currentData.keyFunction, currentData.valueOfFunction));
+                formComboBox.getPrimaryComponent()
+                    .setConverter(new ComboBoxConverter<>(currentData.keyFunction, currentData.valueOfFunction));
             }
 
             if (cellFactory != null) {
@@ -92,7 +98,8 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         }, validator, listener, transformers, visible);
 
         if (dataProperty().get() != null && !dataProperty().get().translate) {
-            componentProperty().get().getPrimaryComponent().setConverter(new ComboBoxConverter<>(data.keyFunction, data.valueOfFunction));
+            componentProperty().get().getPrimaryComponent()
+                .setConverter(new ComboBoxConverter<>(data.keyFunction, data.valueOfFunction));
         }
 
         componentProperty().get().getPrimaryComponent().getEditor().setOnKeyTyped(keyTypedHandler);
@@ -100,7 +107,8 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         componentProperty().addListener((observable, oldValue, newValue) -> {
             Data<T> currentData = dataProperty().get();
             if (newValue != null && currentData != null && !currentData.translate) {
-                newValue.getPrimaryComponent().setConverter(new ComboBoxConverter<>(currentData.keyFunction, currentData.valueOfFunction));
+                newValue.getPrimaryComponent()
+                    .setConverter(new ComboBoxConverter<>(currentData.keyFunction, currentData.valueOfFunction));
             }
 
             if (keyTypedHandler != null) {
@@ -136,8 +144,8 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
             }
 
             if (newValue != null) {
-                listenerRef.set((observable1, oldValue1, newValue1) ->
-                    listener.changed(newValue.getPrimaryComponent(), observable1, oldValue1, newValue1));
+                listenerRef.set((observable1, oldValue1, newValue1) -> listener.changed(newValue.getPrimaryComponent(),
+                    observable1, oldValue1, newValue1));
 
                 newValue.getPrimaryComponent().valueProperty().addListener(listenerRef.get());
             }
@@ -149,8 +157,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         componentProperty()
             .map(FormComboBox::getPrimaryComponent)
             .flatMap(ComboBox::valueProperty)
-            .addListener((observable, oldValue, newValue) ->
-                formData.add(dataKey, newValue));
+            .addListener((observable, oldValue, newValue) -> formData.add(dataKey, newValue));
 
         formData.add(dataKey, componentProperty()
             .map(FormComboBox::getPrimaryComponent)
@@ -192,9 +199,9 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
                     setGraphic(null);
                     setText(null);
                 } else {
-                    setText(data.translate ?
-                        L18n.localize(defaultDisplayNameFunction.toString(item)) :
-                        defaultDisplayNameFunction.toString(item));
+                    setText(data.translate
+                        ? L18n.localize(defaultDisplayNameFunction.toString(item))
+                        : defaultDisplayNameFunction.toString(item));
                 }
             }
         };
@@ -205,7 +212,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          * Constructs a new combobox builder.
          *
          * @param dataKey the key to store the data in the form data
-         * @param label   the label for the combobox
+         * @param label the label for the combobox
          */
         public Builder(@NotNull String dataKey, @NotNull String label) {
             this.dataKey = dataKey;
@@ -275,7 +282,8 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         }
 
         /**
-         * Sets the default display name function for the combobox. This is only used if no cell factory or button cell is set.
+         * Sets the default display name function for the combobox. This is only used if no cell factory or button cell
+         * is set.
          *
          * @param displayNameFunction the display name function
          * @return this builder
@@ -345,20 +353,24 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
         /**
          * Adds a transformer to the combobox.
          *
-         * @param fromComponent       the observable value of the component to transform
+         * @param fromComponent the observable value of the component to transform
          * @param toComponentFunction the function to set the value of the component
-         * @param valueMapper         the value mapper
-         * @param <X>                 the type of the component
+         * @param valueMapper the value mapper
+         * @param <X> the type of the component
          * @return this builder
          */
         @Override
-        public <X> Builder<T> addTransformer(ObservableValue<ComboBox<T>> fromComponent, Consumer<X> toComponentFunction, Function<T, X> valueMapper) {
-            this.transformers.add(new FormTransformer<>(fromComponent, ComboBox::getValue, toComponentFunction, valueMapper));
+        public <X> Builder<T> addTransformer(ObservableValue<ComboBox<T>> fromComponent,
+            Consumer<X> toComponentFunction, Function<T, X> valueMapper) {
+            this.transformers
+                .add(new FormTransformer<>(fromComponent, ComboBox::getValue, toComponentFunction, valueMapper));
             return this;
         }
 
-        public <W> Builder<T> addAsyncTransformer(ObservableValue<ComboBox<T>> fromComponent, Consumer<W> toComponentFunction, Function<T, CompletableFuture<W>> valueMapper) {
-            this.transformers.add(FormTransformer.async(fromComponent, ComboBox::getValue, toComponentFunction, valueMapper));
+        public <W> Builder<T> addAsyncTransformer(ObservableValue<ComboBox<T>> fromComponent,
+            Consumer<W> toComponentFunction, Function<T, CompletableFuture<W>> valueMapper) {
+            this.transformers
+                .add(FormTransformer.async(fromComponent, ComboBox::getValue, toComponentFunction, valueMapper));
             return this;
         }
 
@@ -366,17 +378,18 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          * Adds a transformer to the combobox.
          *
          * @param fromComponent the observable value of the component to transform
-         * @param toComponent   the component to set the value of
-         * @param valueMapper   the value mapper
-         * @param <U>           the type of the component
-         * @param <X>           the type of the value
+         * @param toComponent the component to set the value of
+         * @param valueMapper the value mapper
+         * @param <U> the type of the component
+         * @param <X> the type of the value
          * @return this builder
          * @throws IllegalArgumentException if the component type is unsupported
          * @implNote The supported component types are {@link TextField} and {@link ComboBox}.
          */
         @Override
         @SuppressWarnings({"unchecked", "rawtypes"})
-        public <U extends Node, X> Builder<T> addTransformer(ObservableValue<ComboBox<T>> fromComponent, ObservableValue<U> toComponent, Function<T, X> valueMapper) {
+        public <U extends Node, X> Builder<T> addTransformer(ObservableValue<ComboBox<T>> fromComponent,
+            ObservableValue<U> toComponent, Function<T, X> valueMapper) {
             return addTransformer(fromComponent, value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());
@@ -387,11 +400,11 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
                         } else {
                             comboBox.setValue(value);
                         }
-                    } catch (Exception ignored) {
+                    } catch (Exception _) {
                     }
-                } else {
-                    throw new IllegalArgumentException("Unsupported component type: " + toComponent.getValue().getClass().getName());
-                }
+                } else
+                    throw new IllegalArgumentException(
+                        "Unsupported component type: " + toComponent.getValue().getClass().getName());
             }, valueMapper);
         }
 
@@ -458,7 +471,8 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          */
         @Override
         public ComboBoxComponent<T> build() {
-            return new ComboBoxComponent<>(dataKey, data, validator, listener, bindComboBoxTo, transformers, keyTypedHandler, visible, cellFactory, buttonCell, defaultValue);
+            return new ComboBoxComponent<>(dataKey, data, validator, listener, bindComboBoxTo, transformers,
+                keyTypedHandler, visible, cellFactory, buttonCell, defaultValue);
         }
     }
 

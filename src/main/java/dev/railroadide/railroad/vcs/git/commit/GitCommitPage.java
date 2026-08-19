@@ -10,4 +10,5 @@ import java.util.List;
  * @param commits commits in this page
  * @param nextCursor cursor for the next page, when present
  */
-public record GitCommitPage(List<GitCommit> commits, @Nullable String nextCursor) {}
+public record GitCommitPage(List<GitCommit> commits, @Nullable String nextCursor) {
+}

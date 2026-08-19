@@ -22,23 +22,26 @@ import java.util.Objects;
  * Supports validation and modern styling.
  */
 @Getter
-public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryChooser.TextFieldWithButton> implements HasSetValue {
+public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryChooser.TextFieldWithButton>
+    implements
+        HasSetValue {
     /**
      * Constructs a new FormDirectoryChooser with the specified configuration.
      *
-     * @param labelKey      the localization key for the label text
-     * @param required      whether the directory chooser is required
-     * @param defaultPath   the default path to display in the text field, or null for empty
+     * @param labelKey the localization key for the label text
+     * @param required whether the directory chooser is required
+     * @param defaultPath the default path to display in the text field, or null for empty
      * @param includeButton whether to include a browse button for directory selection
      */
-    public FormDirectoryChooser(String labelKey, boolean required, @Nullable String defaultPath, boolean includeButton) {
+    public FormDirectoryChooser(String labelKey, boolean required, @Nullable String defaultPath,
+        boolean includeButton) {
         super(labelKey, required, createParams(defaultPath, includeButton));
     }
 
     /**
      * Creates the parameters map for the directory chooser component.
      *
-     * @param defaultPath   the default path to display
+     * @param defaultPath the default path to display
      * @param includeButton whether to include a browse button
      * @return a map containing the component parameters
      */
@@ -64,7 +67,7 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
         var defaultPath = (String) params.get("defaultPath");
         var includeButton = (boolean) params.get("includeButton");
 
-        RRTextField textField = new RRTextField();
+        var textField = new RRTextField();
         textField.getStyleClass().add("rr-text-field");
         if (defaultPath != null) {
             textField.setText(defaultPath);
@@ -107,7 +110,7 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
         /**
          * Constructs a new TextFieldWithButton with the specified components.
          *
-         * @param textField    the text field for displaying the selected directory path
+         * @param textField the text field for displaying the selected directory path
          * @param browseButton the browse button for opening the directory chooser, or null if not needed
          */
         public TextFieldWithButton(RRTextField textField, @Nullable BrowseButton browseButton) {

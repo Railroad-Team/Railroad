@@ -9,10 +9,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record UnionTypeRef(
-        Span span,
-        TypeRef left,
-        TypeRef right
-) implements TypeRef {
+    Span span,
+    TypeRef left,
+    TypeRef right) implements TypeRef {
     @Override
     public AstKind kind() {
         return AstKind.UNION_TYPE;

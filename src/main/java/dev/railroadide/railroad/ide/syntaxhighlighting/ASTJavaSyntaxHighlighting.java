@@ -164,7 +164,8 @@ public class ASTJavaSyntaxHighlighting {
         }
 
         public StyleSpans<Collection<String>> computeStyleSpans() {
-            styleRanges.sort(Comparator.comparingInt(styleRange -> styleRange.beginOffset)); // Ensure ranges are in order
+            styleRanges.sort(Comparator.comparingInt(styleRange -> styleRange.beginOffset)); // Ensure ranges are in
+                                                                                             // order
             StyleSpansBuilder<Collection<String>> spansBuilder = new StyleSpansBuilder<>();
             int lastEnd = 0;
 
@@ -176,7 +177,8 @@ public class ASTJavaSyntaxHighlighting {
                 }
 
                 int endOffset = nextStyleRange != null ? nextStyleRange.beginOffset - 1 : styleRange.endOffset;
-                spansBuilder.add(Collections.singleton(styleRange.styleClass), (endOffset - styleRange.beginOffset) + 1);
+                spansBuilder.add(Collections.singleton(styleRange.styleClass),
+                    (endOffset - styleRange.beginOffset) + 1);
                 lastEnd = endOffset + 1;
             }
 

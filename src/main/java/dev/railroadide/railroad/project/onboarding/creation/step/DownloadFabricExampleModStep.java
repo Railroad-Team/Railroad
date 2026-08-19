@@ -17,7 +17,7 @@ import java.nio.file.Path;
  * @param checksum TODO: Possibly consider holding some known checksums for example mods?
  */
 public record DownloadFabricExampleModStep(HttpService http, FilesService files, ZipService zip,
-                                           ChecksumService checksum) implements CreationStep {
+    ChecksumService checksum) implements CreationStep {
     @Override
     public String id() {
         return "railroad:download_fabric_example_mod";
@@ -31,7 +31,8 @@ public record DownloadFabricExampleModStep(HttpService http, FilesService files,
     @Override
     public void run(ProjectContext ctx, ProgressReporter reporter) throws Exception {
         MinecraftVersion mcVersion = ctx.get(ProjectContextKeys.MDK_VERSION);
-        URI url = URI.create("https://github.com/FabricMC/fabric-example-mod/archive/refs/heads/" + mcVersion.id() + ".zip");
+        URI url = URI
+            .create("https://github.com/FabricMC/fabric-example-mod/archive/refs/heads/" + mcVersion.id() + ".zip");
         Path zipPath = ctx.projectDir().resolve("example-mod.zip");
 
         reporter.info("Downloading example mod from " + url);

@@ -21,9 +21,7 @@ public class CoreEmptySynchronizedInspection implements JavaInspectionRuleProvid
             JavaSemanticRules.EMPTY_SYNCHRONIZED.defaultSeverity(),
             JavaSemanticRules.EMPTY_SYNCHRONIZED.messageTemplate(),
             Set.of("core", "control-flow"),
-            CoreEmptySynchronizedInspection::reportEmptySynchronized
-        )
-    );
+            CoreEmptySynchronizedInspection::reportEmptySynchronized));
 
     @Override
     public String id() {
@@ -41,8 +39,9 @@ public class CoreEmptySynchronizedInspection implements JavaInspectionRuleProvid
             if (block == null)
                 continue;
 
-            if (context.isEmptyBlock(block))
+            if (context.isEmptyBlock(block)) {
                 reporter.report(syntaxNode);
+            }
         }
     }
 }

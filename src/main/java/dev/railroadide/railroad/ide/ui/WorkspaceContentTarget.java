@@ -11,8 +11,8 @@ import java.util.Optional;
 
 /** Registered destination for content routed into a workspace mode. */
 public final class WorkspaceContentTarget {
-    public static final Registry<WorkspaceContentTarget> REGISTRY =
-        RegistryManager.createOrderedRegistry("railroad:workspace_content_target", WorkspaceContentTarget.class);
+    public static final Registry<WorkspaceContentTarget> REGISTRY = RegistryManager
+        .createOrderedRegistry("railroad:workspace_content_target", WorkspaceContentTarget.class);
 
     private final String id;
     private final WorkspaceMode mode;
@@ -39,16 +39,14 @@ public final class WorkspaceContentTarget {
     public static WorkspaceContentTarget register(
         String id,
         WorkspaceMode mode,
-        UIId<DetachableTabPane> dockId
-    ) {
+        UIId<DetachableTabPane> dockId) {
         if (id == null || id.isBlank())
             throw new IllegalArgumentException("Workspace content-target ID cannot be null or blank");
 
         return REGISTRY.register(id, new WorkspaceContentTarget(
             id,
             Objects.requireNonNull(mode, "Workspace mode cannot be null"),
-            Objects.requireNonNull(dockId, "Workspace content-target dock cannot be null")
-        ));
+            Objects.requireNonNull(dockId, "Workspace content-target dock cannot be null")));
     }
 
     public static Optional<WorkspaceContentTarget> fromId(String id) {

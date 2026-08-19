@@ -29,7 +29,8 @@ public class ProjectTypeRegistry {
             .name("Neoforge")
             .description("railroad.project.type.neoforge.description")
             .icon(new Image(AppResources.getResourceAsStream("images/neoforge.png")))
-            .onboardingUI(() -> new OnboardingProjectCreationPane(scene -> new NeoforgeProjectOnboarding().start(scene)))
+            .onboardingUI(
+                () -> new OnboardingProjectCreationPane(scene -> new NeoforgeProjectOnboarding().start(scene)))
             .build());
 
     public static void initialize() {

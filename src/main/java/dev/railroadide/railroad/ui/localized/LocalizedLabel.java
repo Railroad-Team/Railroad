@@ -14,7 +14,7 @@ public class LocalizedLabel extends Label {
     /**
      * Creates a new LocalizedLabel and sets the key and args
      *
-     * @param key  The localization key
+     * @param key The localization key
      * @param args The args to be applied to the localization key
      */
     public LocalizedLabel(@NotNull String key, @NotNull Object... args) {
@@ -32,7 +32,7 @@ public class LocalizedLabel extends Label {
      * Updates the key and args, and then updates the text of the label.
      * Adds a listener to the current language property to update the text when the language changes.
      *
-     * @param key  The localization key
+     * @param key The localization key
      * @param args The args to be applied to the localized key
      */
     public void setKey(@NotNull String key, @NotNull Object... args) {

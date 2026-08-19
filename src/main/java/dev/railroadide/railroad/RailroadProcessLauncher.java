@@ -14,8 +14,7 @@ public final class RailroadProcessLauncher {
     }
 
     public static void openProject(Path projectPath) throws IOException {
-        String projectArgument =
-            "--project=" + projectPath.toAbsolutePath().normalize();
+        String projectArgument = "--project=" + projectPath.toAbsolutePath().normalize();
 
         // Packaged jpackage application
         String packagedLauncher = System.getProperty("jpackage.app-path");
@@ -28,13 +27,11 @@ public final class RailroadProcessLauncher {
     }
 
     private static void launchDevelopmentProcess(
-        String projectArgument
-    ) throws IOException {
+        String projectArgument) throws IOException {
         Path javaExecutable = Path.of(
             System.getProperty("java.home"),
             "bin",
-            OperatingSystem.isWindows() ? "java.exe" : "java"
-        );
+            OperatingSystem.isWindows() ? "java.exe" : "java");
 
         List<String> command = new ArrayList<>();
         command.add(javaExecutable.toString());
@@ -46,9 +43,8 @@ public final class RailroadProcessLauncher {
 
             // A second process cannot reuse the debugger's listening port.
             if (argument.startsWith("-agentlib:jdwp=")
-                || argument.startsWith("-Xrunjdwp:")) {
+                || argument.startsWith("-Xrunjdwp:"))
                 continue;
-            }
 
             command.add(argument);
         }
@@ -67,20 +63,16 @@ public final class RailroadProcessLauncher {
     }
 
     private static void addModulePathIfNecessary(List<String> command) {
-        boolean alreadyPresent = command.stream().anyMatch(argument ->
-            argument.equals("--module-path")
-                || argument.equals("-p")
-                || argument.startsWith("--module-path=")
-        );
+        boolean alreadyPresent = command.stream().anyMatch(argument -> argument.equals("--module-path")
+            || argument.equals("-p")
+            || argument.startsWith("--module-path="));
 
-        if (alreadyPresent) {
+        if (alreadyPresent)
             return;
-        }
 
         String modulePath = System.getProperty("jdk.module.path");
-        if (modulePath == null || modulePath.isBlank()) {
+        if (modulePath == null || modulePath.isBlank())
             return;
-        }
 
         command.add("--module-path");
         command.add(modulePath);

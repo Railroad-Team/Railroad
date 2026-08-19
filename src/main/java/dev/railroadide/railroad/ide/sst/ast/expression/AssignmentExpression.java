@@ -11,12 +11,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record AssignmentExpression(
-        Span span,
-        Expression left,
-        LexerToken<JavaTokenType> operator,
-        Expression right) implements Expression {
+    Span span,
+    Expression left,
+    LexerToken<JavaTokenType> operator,
+    Expression right) implements Expression {
     public static boolean isValidLeftHandSide(Expression left) {
-        return left instanceof NameExpression || left instanceof FieldAccessExpression || left instanceof ArrayAccessExpression;
+        return left instanceof NameExpression || left instanceof FieldAccessExpression
+            || left instanceof ArrayAccessExpression;
     }
 
     @Override

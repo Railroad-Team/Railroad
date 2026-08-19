@@ -41,22 +41,18 @@ final class SyntaxTreeValidator {
 
         int childCursor = node.start();
         for (SyntaxNode child : children) {
-            if (child.start() != childCursor) {
+            if (child.start() != childCursor)
                 throw new IllegalStateException(
-                        "child start mismatch in node " + node.kind().id() +
-                                ": expected " + childCursor + ", got " + child.start()
-                );
-            }
+                    "child start mismatch in node " + node.kind().id() +
+                        ": expected " + childCursor + ", got " + child.start());
 
             validateNode(child, node);
             childCursor = child.end();
         }
 
-        if (childCursor != node.end()) {
+        if (childCursor != node.end())
             throw new IllegalStateException(
-                    "child range mismatch in node " + node.kind().id() +
-                            ": expected end " + node.end() + ", got " + childCursor
-            );
-        }
+                "child range mismatch in node " + node.kind().id() +
+                    ": expected end " + node.end() + ", got " + childCursor);
     }
 }

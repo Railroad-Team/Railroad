@@ -16,12 +16,12 @@ import java.util.List;
 import java.util.Optional;
 
 public record AnnotationTypeMemberDeclaration(
-        Span span,
-        List<Modifier> modifiers,
-        List<Annotation> annotations,
-        TypeRef type,
-        NameExpression name,
-        Optional<Expression> defaultValue) implements AnnotationMember {
+    Span span,
+    List<Modifier> modifiers,
+    List<Annotation> annotations,
+    TypeRef type,
+    NameExpression name,
+    Optional<Expression> defaultValue) implements AnnotationMember {
     @Override
     public AstKind kind() {
         return AstKind.ANNOTATION_TYPE_MEMBER_DECLARATION;

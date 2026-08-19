@@ -22,9 +22,7 @@ public class CoreMethodNamedUnderscoreInspection implements JavaInspectionRulePr
             JavaSemanticRules.METHOD_NAMED_UNDERSCORE.defaultSeverity(),
             JavaSemanticRules.METHOD_NAMED_UNDERSCORE.messageTemplate(),
             Set.of("core", "naming"),
-            CoreMethodNamedUnderscoreInspection::reportMethodNamedUnderscore
-        )
-    );
+            CoreMethodNamedUnderscoreInspection::reportMethodNamedUnderscore));
 
     @Override
     public String id() {

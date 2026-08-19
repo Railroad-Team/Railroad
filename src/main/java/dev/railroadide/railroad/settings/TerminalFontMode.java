@@ -1,7 +1,5 @@
 package dev.railroadide.railroad.settings;
 
 public enum TerminalFontMode {
-    AUTO,
-    INSTALLED_FONT,
-    CUSTOM_FAMILY
+    AUTO, INSTALLED_FONT, CUSTOM_FAMILY
 }

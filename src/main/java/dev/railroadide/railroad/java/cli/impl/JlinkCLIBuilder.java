@@ -116,11 +116,11 @@ public class JlinkCLIBuilder implements CLIBuilder<Process, JlinkCLIBuilder> {
     /**
      * Sets the compression level and filter pattern for the `jlink` command.
      *
-     * @param level         the compression level (0, 1, or 2)
+     * @param level the compression level (0, 1, or 2)
      * @param filterPattern the filter pattern; must not be null
      * @return the current `JlinkCLIBuilder` instance
      * @throws IllegalArgumentException if the level is not 0, 1, or 2
-     * @throws NullPointerException     if the filter pattern is null
+     * @throws NullPointerException if the filter pattern is null
      */
     public JlinkCLIBuilder compressionLevel(int level, String filterPattern) {
         if (level < 0 || level > 2)
@@ -180,7 +180,7 @@ public class JlinkCLIBuilder implements CLIBuilder<Process, JlinkCLIBuilder> {
     /**
      * Adds a launcher definition to the `jlink` command.
      *
-     * @param commandName  the name of the launcher command; must not be null
+     * @param commandName the name of the launcher command; must not be null
      * @param moduleOrMain the module or main class definition; must not be null
      * @return the current `JlinkCLIBuilder` instance
      * @throws NullPointerException if the command name or module definition is null

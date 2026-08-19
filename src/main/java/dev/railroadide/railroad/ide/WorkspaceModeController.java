@@ -45,11 +45,11 @@ public final class WorkspaceModeController implements AutoCloseable {
     WorkspaceModeController(
         ObjectProperty<WorkspaceMode> stateProperty,
         Predicate<WorkspaceMode> availability,
-        Executor applicationThreadExecutor
-    ) {
+        Executor applicationThreadExecutor) {
         this.stateProperty = Objects.requireNonNull(stateProperty, "State property cannot be null");
         this.availability = Objects.requireNonNull(availability, "Availability predicate cannot be null");
-        this.applicationThreadExecutor = Objects.requireNonNull(applicationThreadExecutor, "Application thread executor cannot be null");
+        this.applicationThreadExecutor = Objects.requireNonNull(applicationThreadExecutor,
+            "Application thread executor cannot be null");
         WorkspaceMode initialMode = resolve(stateProperty.get());
         if (!availability.test(initialMode)) {
             initialMode = WorkspaceMode.defaultMode();

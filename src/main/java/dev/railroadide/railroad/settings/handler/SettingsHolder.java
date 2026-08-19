@@ -48,8 +48,12 @@ public class SettingsHolder implements JsonSerializable<JsonObject> {
                 JsonElement element = value.toJson();
                 if (element != null) {
                     json.add(key, element);
-                } else Railroad.LOGGER.error("Setting with ID '{}' returned null from toJson().", key);
-            } else Railroad.LOGGER.error("Setting with ID '{}' is null.", key);
+                } else {
+                    Railroad.LOGGER.error("Setting with ID '{}' returned null from toJson().", key);
+                }
+            } else {
+                Railroad.LOGGER.error("Setting with ID '{}' is null.", key);
+            }
         }
 
         for (Map.Entry<String, JsonElement> entry : pendingSettings.entrySet()) {

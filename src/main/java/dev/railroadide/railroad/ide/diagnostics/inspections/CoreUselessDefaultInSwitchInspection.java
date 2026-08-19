@@ -23,9 +23,7 @@ public class CoreUselessDefaultInSwitchInspection implements JavaInspectionRuleP
             JavaSemanticRules.USELESS_DEFAULT_IN_SWITCH.defaultSeverity(),
             JavaSemanticRules.USELESS_DEFAULT_IN_SWITCH.messageTemplate(),
             Set.of("core", "control-flow"),
-            CoreUselessDefaultInSwitchInspection::reportUselessDefaultInSwitch
-        )
-    );
+            CoreUselessDefaultInSwitchInspection::reportUselessDefaultInSwitch));
 
     @Override
     public String id() {

@@ -15,8 +15,8 @@ import java.util.function.Function;
  * @see DefaultSettingCodecs
  */
 public record SettingCodec<T, N extends Node>(String id, Function<N, T> nodeToValue, BiConsumer<T, N> valueToNode,
-                                              Function<JsonElement, T> jsonDecoder,
-                                              Function<T, JsonElement> jsonEncoder, Function<T, N> createNode) {
+    Function<JsonElement, T> jsonDecoder,
+    Function<T, JsonElement> jsonEncoder, Function<T, N> createNode) {
     /**
      * Serializes the setting value to JSON.
      *
@@ -51,7 +51,7 @@ public record SettingCodec<T, N extends Node>(String id, Function<N, T> nodeToVa
     /**
      * Creates a new builder for a SettingCodec with an ID.
      *
-     * @param id  The unique identifier for the setting codec.
+     * @param id The unique identifier for the setting codec.
      * @param <T> The type of the setting value.
      * @param <N> The type of the node to display.
      * @return A new Builder instance with the specified ID.

@@ -24,27 +24,27 @@ class JavaJavaProjectSemanticIndexerTest {
         Path bFile = sourceRoot.resolve("B.java");
 
         Files.writeString(aFile, """
-                package demo;
+            package demo;
 
-                class A {
-                    static int VALUE;
-                }
-                """);
+            class A {
+                static int VALUE;
+            }
+            """);
 
         Files.writeString(bFile, """
-                package demo;
+            package demo;
 
-                import demo.A;
-                import static demo.A.VALUE;
+            import demo.A;
+            import static demo.A.VALUE;
 
-                class B {
-                    int use() {
-                        return VALUE;
-                    }
+            class B {
+                int use() {
+                    return VALUE;
                 }
-                """);
+            }
+            """);
 
-        JavaProjectSemanticIndexer indexer = new JavaProjectSemanticIndexer();
+        var indexer = new JavaProjectSemanticIndexer();
         JavaProjectSemanticIndex index = indexer.build(root);
 
         assertEquals(2, index.files().size());

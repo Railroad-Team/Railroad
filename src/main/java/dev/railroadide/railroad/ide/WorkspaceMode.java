@@ -12,8 +12,8 @@ import java.util.function.Predicate;
 
 /** Registered workspace-mode descriptor. The plugin SPI refers to modes only by stable ID. */
 public final class WorkspaceMode {
-    public static final Registry<WorkspaceMode> REGISTRY =
-        RegistryManager.createOrderedRegistry("railroad:workspace_mode", WorkspaceMode.class);
+    public static final Registry<WorkspaceMode> REGISTRY = RegistryManager
+        .createOrderedRegistry("railroad:workspace_mode", WorkspaceMode.class);
 
     private final String id;
     private final String localizationKey;
@@ -28,8 +28,7 @@ public final class WorkspaceMode {
         Ikon graphic,
         String acceleratorId,
         Predicate<Project> availability,
-        Function<Project, ObservableBooleanValue> unavailableBindingFactory
-    ) {
+        Function<Project, ObservableBooleanValue> unavailableBindingFactory) {
         this.id = id;
         this.localizationKey = localizationKey;
         this.graphic = graphic;
@@ -68,8 +67,7 @@ public final class WorkspaceMode {
         Ikon graphic,
         String acceleratorId,
         Predicate<Project> availability,
-        Function<Project, ObservableBooleanValue> unavailableBindingFactory
-    ) {
+        Function<Project, ObservableBooleanValue> unavailableBindingFactory) {
         if (id == null || id.isBlank())
             throw new IllegalArgumentException("Workspace-mode ID cannot be null or blank");
         if (localizationKey == null || localizationKey.isBlank())
@@ -85,8 +83,7 @@ public final class WorkspaceMode {
             graphic,
             acceleratorId,
             availability,
-            unavailableBindingFactory
-        ));
+            unavailableBindingFactory));
     }
 
     public static Optional<WorkspaceMode> fromId(String id) {

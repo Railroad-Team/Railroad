@@ -109,8 +109,7 @@ public class ThemeExamplePane {
             "railroad.home.settings.appearance.preview.navigation.0",
             "railroad.home.settings.appearance.preview.navigation.1",
             "railroad.home.settings.appearance.preview.navigation.2",
-            "railroad.home.settings.appearance.preview.navigation.3"
-        );
+            "railroad.home.settings.appearance.preview.navigation.3");
 
         for (String item : navItems) {
             var navButton = new RRButton(item);
@@ -139,8 +138,7 @@ public class ThemeExamplePane {
 
         textFieldRow.getChildren().addAll(
             new LocalizedLabel("railroad.theme.preview.text_field"), textField,
-            new LocalizedLabel("railroad.theme.preview.password"), passwordField
-        );
+            new LocalizedLabel("railroad.theme.preview.password"), passwordField);
 
         var controlsRow = new RRHBox();
         controlsRow.setAlignment(Pos.CENTER_LEFT);
@@ -149,8 +147,7 @@ public class ThemeExamplePane {
         var comboBox = LocalizedComboBox.fromLocalizationKeys(FXCollections.observableArrayList(
             "railroad.home.settings.appearance.preview.form.combo_box.items.0",
             "railroad.home.settings.appearance.preview.form.combo_box.items.1",
-            "railroad.home.settings.appearance.preview.form.combo_box.items.2"
-        ));
+            "railroad.home.settings.appearance.preview.form.combo_box.items.2"));
         comboBox.setValue("railroad.home.settings.appearance.preview.form.combo_box.items.0");
         comboBox.getStyleClass().add("theme-example-combo");
 
@@ -165,8 +162,7 @@ public class ThemeExamplePane {
 
         controlsRow.getChildren().addAll(
             new LocalizedLabel("railroad.theme.preview.dropdown"), comboBox,
-            toggleButton, checkBox, radioButton
-        );
+            toggleButton, checkBox, radioButton);
 
         formSection.addContent(textFieldRow, controlsRow);
         return formSection;
@@ -185,14 +181,16 @@ public class ThemeExamplePane {
             L18n.localize("railroad.home.settings.appearance.preview.list.items.4"),
             L18n.localize("railroad.home.settings.appearance.preview.list.items.5"),
             L18n.localize("railroad.home.settings.appearance.preview.list.items.6"),
-            L18n.localize("railroad.home.settings.appearance.preview.list.items.7")
-        );
+            L18n.localize("railroad.home.settings.appearance.preview.list.items.7"));
         listView.getStyleClass().addAll("theme-example-list-view", "theme-example-tall-list");
 
         var table = new RRTableView<ProjectData>();
-        var nameColumn = new LocalizedTableColumn<ProjectData, String>("railroad.home.settings.appearance.preview.table.columns.0");
-        var typeColumn = new LocalizedTableColumn<ProjectData, String>("railroad.home.settings.appearance.preview.table.columns.1");
-        var statusColumn = new LocalizedTableColumn<ProjectData, String>("railroad.home.settings.appearance.preview.table.columns.2");
+        var nameColumn = new LocalizedTableColumn<ProjectData, String>(
+            "railroad.home.settings.appearance.preview.table.columns.0");
+        var typeColumn = new LocalizedTableColumn<ProjectData, String>(
+            "railroad.home.settings.appearance.preview.table.columns.1");
+        var statusColumn = new LocalizedTableColumn<ProjectData, String>(
+            "railroad.home.settings.appearance.preview.table.columns.2");
 
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
@@ -208,8 +206,7 @@ public class ThemeExamplePane {
             new ProjectData("MyMod", "Fabric", "Active"),
             new ProjectData("CoolPlugin", "Forge", "Inactive"),
             new ProjectData("AwesomeAddon", "Neoforge", "Active"),
-            new ProjectData("DemoMod", "Bukkit", "Inactive")
-        );
+            new ProjectData("DemoMod", "Bukkit", "Inactive"));
         table.setItems(data);
         table.getStyleClass().addAll("theme-example-table", "theme-example-tall-table");
 

@@ -36,25 +36,25 @@ public final class SyntaxTreeDumper {
      */
     public static String dump(SyntaxNode root) {
         Objects.requireNonNull(root, "root");
-        StringBuilder builder = new StringBuilder();
+        var builder = new StringBuilder();
         appendNode(root, builder, 0);
         return builder.toString();
     }
 
     private static void appendNode(SyntaxNode node, StringBuilder builder, int depth) {
         builder.append(INDENT.repeat(Math.max(0, depth)))
-                .append(node.kind().id())
-                .append(" [")
-                .append(node.start())
-                .append(",")
-                .append(node.end())
-                .append(')');
+            .append(node.kind().id())
+            .append(" [")
+            .append(node.start())
+            .append(",")
+            .append(node.end())
+            .append(')');
 
         if (node instanceof SyntaxToken token) {
             builder.append(' ')
-                    .append('"')
-                    .append(escape(token.text()))
-                    .append('"');
+                .append('"')
+                .append(escape(token.text()))
+                .append('"');
         }
 
         builder.append('\n');
@@ -66,7 +66,7 @@ public final class SyntaxTreeDumper {
     }
 
     private static String escape(String text) {
-        StringBuilder escaped = new StringBuilder(text.length());
+        var escaped = new StringBuilder(text.length());
         for (int index = 0; index < text.length(); index++) {
             char ch = text.charAt(index);
             if (ch == '\\') {

@@ -14,7 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 public record DefaultGradleEnvironment(Project project, Path gradleInstallationPath,
-                                       GradleSettings settings) implements GradleEnvironment {
+    GradleSettings settings) implements GradleEnvironment {
     @Override
     public boolean useWrapper() {
         return settings.isUseWrapper();
@@ -67,8 +67,8 @@ public record DefaultGradleEnvironment(Project project, Path gradleInstallationP
     }
 
     private boolean matchesConfiguration(GradleTaskExecutionRequest request,
-                                         JDK jvm,
-                                         GradleRunConfigurationData data) {
+        JDK jvm,
+        GradleRunConfigurationData data) {
         if (request == null || data == null)
             return false;
 

@@ -17,8 +17,7 @@ public class GitCommitRevertButton extends RRButton {
         setOnAction(event -> {
             var content = new LocalizedText(
                 "railroad.git.commit.details.revert_dialog.content",
-                commit.shortHash()
-            );
+                commit.shortHash());
             content.getStyleClass().add("git-commit-revert-dialog-content");
 
             var cancelButton = new RRButton("railroad.generic.cancel");
@@ -35,8 +34,8 @@ public class GitCommitRevertButton extends RRButton {
                 .buttons(cancelButton, confirmButton);
             Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.revert_dialog.title", dialogBuilder);
 
-            cancelButton.setOnAction($ -> dialog.close());
-            confirmButton.setOnAction($ -> {
+            cancelButton.setOnAction(_ -> dialog.close());
+            confirmButton.setOnAction(_ -> {
                 project.getGitManager().revertCommit(commit.hash());
                 dialog.close();
             });

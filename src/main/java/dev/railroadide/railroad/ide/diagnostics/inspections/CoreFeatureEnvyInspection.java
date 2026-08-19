@@ -22,8 +22,7 @@ public class CoreFeatureEnvyInspection implements JavaInspectionRuleProvider {
     private static final Set<String> CALLABLE_KINDS = Set.of(
         JavaSyntaxKinds.METHOD_DECLARATION.id(),
         JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id(),
-        JavaSyntaxKinds.RECORD_COMPACT_CONSTRUCTOR.id()
-    );
+        JavaSyntaxKinds.RECORD_COMPACT_CONSTRUCTOR.id());
 
     private static final List<JavaInspectionRule> RULES = List.of(
         new SimpleJavaInspectionRule(
@@ -31,16 +30,13 @@ public class CoreFeatureEnvyInspection implements JavaInspectionRuleProvider {
             JavaSemanticRules.FEATURE_ENVY_MANIPULATE.defaultSeverity(),
             JavaSemanticRules.FEATURE_ENVY_MANIPULATE.messageTemplate(),
             Set.of("core", "feature-envy"),
-            CoreFeatureEnvyInspection::reportFeatureEnvyManipulate
-        ),
+            CoreFeatureEnvyInspection::reportFeatureEnvyManipulate),
         new SimpleJavaInspectionRule(
             JavaSemanticRules.FEATURE_ENVY_TIGHTLY_COUPLED.id(),
             JavaSemanticRules.FEATURE_ENVY_TIGHTLY_COUPLED.defaultSeverity(),
             JavaSemanticRules.FEATURE_ENVY_TIGHTLY_COUPLED.messageTemplate(),
             Set.of("core", "feature-envy"),
-            CoreFeatureEnvyInspection::reportFeatureEnvyTightlyCoupled
-        )
-    );
+            CoreFeatureEnvyInspection::reportFeatureEnvyTightlyCoupled));
 
     @Override
     public String id() {
@@ -130,7 +126,7 @@ public class CoreFeatureEnvyInspection implements JavaInspectionRuleProvider {
                 if (ownerName == null || ownerName.equals(hostQualifiedName) || isLibraryType(context, ownerName))
                     return;
 
-                externalMembersAccessed.computeIfAbsent(ownerName, $ -> new HashSet<>())
+                externalMembersAccessed.computeIfAbsent(ownerName, _ -> new HashSet<>())
                     .add(symbol.simpleName());
             });
 

@@ -5,7 +5,7 @@ import javafx.scene.control.TableView;
 
 public class RRTableView<T> extends TableView<T> {
 
-    public static final String[] DEFAULT_STYLE_CLASSES = { "rr-table-view", "table-view" };
+    public static final String[] DEFAULT_STYLE_CLASSES = {"rr-table-view", "table-view"};
 
     public RRTableView() {
         super();

@@ -15,8 +15,8 @@ public interface EventBus {
      * Subscribes a listener to events of a specific type.
      *
      * @param eventType the class of the event type to subscribe to
-     * @param listener  the listener that will handle the events
-     * @param <T>       the type of the event
+     * @param listener the listener that will handle the events
+     * @param <T> the type of the event
      */
     <T extends Event> void subscribe(Class<T> eventType, EventListener<T> listener);
 
@@ -24,8 +24,8 @@ public interface EventBus {
      * Unsubscribes a listener from events of a specific type.
      *
      * @param eventType the class of the event type to unsubscribe from
-     * @param listener  the listener to remove
-     * @param <T>       the type of the event
+     * @param listener the listener to remove
+     * @param <T> the type of the event
      */
     <T extends Event> void unsubscribe(Class<T> eventType, EventListener<T> listener);
 }

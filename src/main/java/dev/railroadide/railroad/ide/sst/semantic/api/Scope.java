@@ -51,8 +51,8 @@ public final class Scope {
     public void declare(Symbol symbol) {
         Objects.requireNonNull(symbol, "symbol");
         declarationsByName
-                .computeIfAbsent(symbol.simpleName(), ignored -> new ArrayList<>())
-                .add(symbol);
+            .computeIfAbsent(symbol.simpleName(), _ -> new ArrayList<>())
+            .add(symbol);
     }
 
     /**
@@ -85,8 +85,9 @@ public final class Scope {
     public List<Symbol> lookupAll(String name) {
         Objects.requireNonNull(name, "name");
         List<Symbol> result = new ArrayList<>();
-        for (Scope current = this; current != null; current = current.parent)
+        for (Scope current = this; current != null; current = current.parent) {
             result.addAll(current.lookupLocal(name));
+        }
         return List.copyOf(result);
     }
 

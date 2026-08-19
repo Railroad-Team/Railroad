@@ -9,10 +9,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record StringLiteralExpression(
-        Span span,
-        String value,
-        boolean isTextBlock
-) implements LiteralExpression {
+    Span span,
+    String value,
+    boolean isTextBlock) implements LiteralExpression {
     @Override
     public AstKind kind() {
         return AstKind.STRING_LITERAL;

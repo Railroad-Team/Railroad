@@ -39,14 +39,12 @@ public class KeyComboNode extends RRButton {
     }
 
     public void toggleEditing() {
-        if (editing) {
+        if (editing)
             return;
-        }
 
         Scene scene = getScene();
-        if (scene == null) {
+        if (scene == null)
             throw new IllegalStateException("KeyComboNode must be attached to a Scene before editing.");
-        }
 
         editing = true;
         getStyleClass().add("recording");
@@ -61,11 +59,21 @@ public class KeyComboNode extends RRButton {
         pendingKeyCode = event.getCode();
 
         List<KeyCombination.Modifier> modifiers = new ArrayList<>();
-        if (event.isShortcutDown()) modifiers.add(KeyCombination.SHORTCUT_DOWN);
-        if (event.isControlDown()) modifiers.add(KeyCombination.CONTROL_DOWN);
-        if (event.isAltDown()) modifiers.add(KeyCombination.ALT_DOWN);
-        if (event.isShiftDown()) modifiers.add(KeyCombination.SHIFT_DOWN);
-        if (event.isMetaDown()) modifiers.add(KeyCombination.META_DOWN);
+        if (event.isShortcutDown()) {
+            modifiers.add(KeyCombination.SHORTCUT_DOWN);
+        }
+        if (event.isControlDown()) {
+            modifiers.add(KeyCombination.CONTROL_DOWN);
+        }
+        if (event.isAltDown()) {
+            modifiers.add(KeyCombination.ALT_DOWN);
+        }
+        if (event.isShiftDown()) {
+            modifiers.add(KeyCombination.SHIFT_DOWN);
+        }
+        if (event.isMetaDown()) {
+            modifiers.add(KeyCombination.META_DOWN);
+        }
 
         if (OperatingSystem.isMac()) {
             if (event.isMetaDown()) {
@@ -81,17 +89,15 @@ public class KeyComboNode extends RRButton {
     }
 
     private void handleKeyReleased(KeyEvent event) {
-        if (!editing || pendingKeyCode == null) {
+        if (!editing || pendingKeyCode == null)
             return;
-        }
 
         event.consume();
 
-        if (pendingKeyCode.isModifierKey()) {
+        if (pendingKeyCode.isModifierKey())
             return; // Wait for a non-modifier key before finalizing
-        }
 
-        KeybindData updated = new KeybindData(pendingKeyCode, pendingModifiers);
+        var updated = new KeybindData(pendingKeyCode, pendingModifiers);
         boolean changed = !Objects.equals(keybindData.keyCode(), updated.keyCode())
             || !Arrays.equals(keybindData.modifiers(), updated.modifiers());
 
@@ -124,7 +130,7 @@ public class KeyComboNode extends RRButton {
             return;
         }
 
-        StringBuilder label = new StringBuilder();
+        var label = new StringBuilder();
         KeyCombination.Modifier[] modifiers = keybindData.modifiers();
         if (modifiers != null) {
             for (KeyCombination.Modifier modifier : modifiers) {

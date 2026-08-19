@@ -16,13 +16,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record FieldDeclaration(
-        Span span,
-        List<Annotation> annotations,
-        List<Modifier> modifiers,
-        TypeRef type,
-        NameExpression name,
-        List<VariableDeclarator> variableDeclarators
-) implements ClassMember, AnnotationMember {
+    Span span,
+    List<Annotation> annotations,
+    List<Modifier> modifiers,
+    TypeRef type,
+    NameExpression name,
+    List<VariableDeclarator> variableDeclarators) implements ClassMember, AnnotationMember {
     @Override
     public AstKind kind() {
         return AstKind.FIELD_DECLARATION;

@@ -62,8 +62,7 @@ public class ProjectCreationView extends RRBorderPane {
 
         var subtitle = new LocalizedLabel(
             "railroad.project.creation.status.creating.subtitle",
-            data.getAsString(ProjectData.DefaultKeys.NAME)
-        );
+            data.getAsString(ProjectData.DefaultKeys.NAME));
 
         var header = new RRVBox();
         header.setAlignment(Pos.CENTER);
@@ -108,8 +107,7 @@ public class ProjectCreationView extends RRBorderPane {
             chipRow,
             new Separator(),
             logsPane,
-            footer
-        );
+            footer);
 
         bg.getChildren().add(card);
         StackPane.setAlignment(card, Pos.CENTER);
@@ -138,15 +136,16 @@ public class ProjectCreationView extends RRBorderPane {
     }
 
     public void bindToService(Service<?> service,
-                              Runnable onCancel,
-                              Runnable onSuccess,
-                              Consumer<Throwable> onError) {
+        Runnable onCancel,
+        Runnable onSuccess,
+        Consumer<Throwable> onError) {
         spinner.progressProperty().bind(service.progressProperty());
 
         // Task message → task chip
         taskChip.textProperty().bind(Bindings.createStringBinding(() -> {
             var key = service.getMessage();
-            if (key == null || key.isBlank()) return L18n.localize("railroad.project.creation.status.task");
+            if (key == null || key.isBlank())
+                return L18n.localize("railroad.project.creation.status.task");
             return L18n.localize(key);
         }, service.messageProperty()));
 
@@ -176,7 +175,9 @@ public class ProjectCreationView extends RRBorderPane {
 
     private void startTicker() {
         startInstant.set(Instant.now());
-        if (elapsedTicker != null) elapsedTicker.stop();
+        if (elapsedTicker != null) {
+            elapsedTicker.stop();
+        }
         elapsedTicker = new Timeline(new KeyFrame(Duration.seconds(1), _ -> {
             var start = startInstant.get();
             if (start == null)
@@ -198,7 +199,9 @@ public class ProjectCreationView extends RRBorderPane {
     }
 
     private void stopTicker() {
-        if (elapsedTicker != null) elapsedTicker.stop();
+        if (elapsedTicker != null) {
+            elapsedTicker.stop();
+        }
     }
 
     private static Label chip(String text) {

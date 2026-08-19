@@ -83,10 +83,11 @@ public class PathTreeCell extends TreeCell<PathItem> {
 
         var openIn = new Menu("Open In");
         var openInExplorer = new MenuItem("Explorer");
-        if (System.getProperty("os.name").toLowerCase().contains("mac"))
+        if (System.getProperty("os.name").toLowerCase().contains("mac")) {
             openInExplorer.setText("Finder");
-        else if (System.getProperty("os.name").toLowerCase().contains("linux"))
+        } else if (System.getProperty("os.name").toLowerCase().contains("linux")) {
             openInExplorer.setText("File Manager");
+        }
         var openInTerminal = new MenuItem("Terminal");
 
         openInExplorer.setOnAction(_ -> ProjectExplorerPane.openInExplorer(currentPath));
@@ -195,7 +196,8 @@ public class PathTreeCell extends TreeCell<PathItem> {
     public void commitEdit(PathItem newValue) {
         if (editingPath != null) {
             try {
-                // TODO: This should really use the IDEStateService to rename the document rather than have manual handling
+                // TODO: This should really use the IDEStateService to rename the document rather than have manual
+                // handling
                 ProjectExplorerPane.disableFileChangeListener();
 
                 String oldName = editingPath.getFileName().toString();
@@ -203,7 +205,8 @@ public class PathTreeCell extends TreeCell<PathItem> {
 
                 Files.move(editingPath, newValue.getPath());
                 getItem().setPath(newValue.getPath());
-                Railroad.EVENT_BUS.publish(new DocumentRenamedEvent(new FileSystemDocument(newValue.getPath()), oldName, newName));
+                Railroad.EVENT_BUS
+                    .publish(new DocumentRenamedEvent(new FileSystemDocument(newValue.getPath()), oldName, newName));
             } catch (IOException exception) {
                 cancelEdit();
                 messageProperty.setValue("Renaming %s failed".formatted(editingPath.getFileName()));

@@ -29,9 +29,7 @@ public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRulePro
                 JavaSemanticRules.OVERLY_STRONG_TYPE_CAST.defaultSeverity(),
                 JavaSemanticRules.OVERLY_STRONG_TYPE_CAST.messageTemplate(),
                 Set.of("core", "type-safety"),
-                CoreOverlyStrongTypeCastInspection::reportOverlyStrongTypeCasts
-            )
-        );
+                CoreOverlyStrongTypeCastInspection::reportOverlyStrongTypeCasts));
     }
 
     private static void reportOverlyStrongTypeCasts(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
@@ -48,7 +46,8 @@ public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRulePro
             if (castTypeName == null || castTypeName.isBlank())
                 continue;
 
-            reportOverlyStrongReceiverCastForMethodInvocation(context, reporter, castNode, invocationNode, castTypeName);
+            reportOverlyStrongReceiverCastForMethodInvocation(context, reporter, castNode, invocationNode,
+                castTypeName);
         }
 
         for (SyntaxNode fieldAccessNode : context.nodesOfKind(JavaSyntaxKinds.FIELD_ACCESS_EXPRESSION.id())) {
@@ -68,7 +67,8 @@ public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRulePro
         }
     }
 
-    private static void reportOverlyStrongReceiverCastForMethodInvocation(JavaRuleContext context, JavaInspectionRuleReporter reporter, SyntaxNode castNode, SyntaxNode invocationNode, String castTypeName) {
+    private static void reportOverlyStrongReceiverCastForMethodInvocation(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter, SyntaxNode castNode, SyntaxNode invocationNode, String castTypeName) {
         SyntaxNode selectorNode = context.selectorNameNode(invocationNode);
         if (selectorNode == null)
             return;
@@ -79,8 +79,9 @@ public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRulePro
 
         int argumentCount = 0;
         SyntaxNode argumentList = context.directChild(invocationNode, JavaSyntaxKinds.ARGUMENT_LIST.id());
-        if (argumentList != null)
+        if (argumentList != null) {
             argumentCount = context.directExpressionChildren(argumentList).size();
+        }
 
         String weakerType = findWeakerTypeDeclaringMethod(context, castTypeName, methodName, argumentCount);
         if (weakerType == null)
@@ -89,7 +90,8 @@ public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRulePro
         reporter.report(castNode, context.simpleTypeName(castTypeName), context.simpleTypeName(weakerType));
     }
 
-    private static void reportOverlyStrongReceiverCastForFieldAccess(JavaRuleContext context, JavaInspectionRuleReporter reporter, SyntaxNode castNode, SyntaxNode invocationNode, String castTypeName) {
+    private static void reportOverlyStrongReceiverCastForFieldAccess(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter, SyntaxNode castNode, SyntaxNode invocationNode, String castTypeName) {
         SyntaxNode selectorNode = context.selectorNameNode(invocationNode);
         if (selectorNode == null)
             return;
@@ -105,7 +107,8 @@ public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRulePro
         reporter.report(castNode, context.simpleTypeName(castTypeName), context.simpleTypeName(weakerType));
     }
 
-    private static @Nullable String findWeakerTypeDeclaringMethod(JavaRuleContext context, String castTypeName, String methodName, int argumentCount) {
+    private static @Nullable String findWeakerTypeDeclaringMethod(JavaRuleContext context, String castTypeName,
+        String methodName, int argumentCount) {
         for (String candidate : superTypesOf(context, castTypeName)) {
             if (candidate.equals(castTypeName))
                 continue;
@@ -117,7 +120,8 @@ public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRulePro
         return null;
     }
 
-    private static @Nullable String findWeakerTypeDeclaringField(JavaRuleContext context, String castTypeName, String fieldName) {
+    private static @Nullable String findWeakerTypeDeclaringField(JavaRuleContext context, String castTypeName,
+        String fieldName) {
         for (String candidate : superTypesOf(context, castTypeName)) {
             if (candidate.equals(castTypeName))
                 continue;
@@ -151,7 +155,8 @@ public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRulePro
         return List.copyOf(superTypes);
     }
 
-    private static boolean declaresMethod(JavaRuleContext context, String ownerTypeName, String methodName, int argumentCount) {
+    private static boolean declaresMethod(JavaRuleContext context, String ownerTypeName, String methodName,
+        int argumentCount) {
         for (JavaRuleContext.MethodDescriptor method : context.declaredMethodDescriptors(ownerTypeName)) {
             // TODO: Check that the types of the parameters are compatible, not just the count
             if (method.name().equals(methodName) && method.parameterTypes().size() == argumentCount)

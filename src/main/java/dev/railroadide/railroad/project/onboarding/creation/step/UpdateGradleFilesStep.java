@@ -21,7 +21,7 @@ import java.util.Locale;
 import java.util.Map;
 
 public record UpdateGradleFilesStep(FilesService files, HttpService http, TemplateEngineService templateEngine,
-                                    String branch, boolean includeSettingsGradle) implements CreationStep {
+    String branch, boolean includeSettingsGradle) implements CreationStep {
     private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/%s/templates/fabric/%s/template_build.gradle";
     private static final String TEMPLATE_SETTINGS_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/%s/templates/fabric/%s/template_settings.gradle";
 
@@ -38,8 +38,9 @@ public record UpdateGradleFilesStep(FilesService files, HttpService http, Templa
     @Override
     public void run(ProjectContext ctx, ProgressReporter reporter) throws Exception {
         updateBuildGradle(ctx, reporter);
-        if (includeSettingsGradle)
+        if (includeSettingsGradle) {
             updateSettingsGradle(ctx, reporter);
+        }
     }
 
     private void updateBuildGradle(ProjectContext ctx, ProgressReporter reporter) throws Exception {
@@ -52,15 +53,19 @@ public record UpdateGradleFilesStep(FilesService files, HttpService http, Templa
         if (mdkVersion == null)
             throw new IllegalStateException("MDK version not set in project context");
 
-        String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(branch, mdkVersion.id().substring("1.".length()));
+        String templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(branch,
+            mdkVersion.id().substring("1.".length()));
         if (http.isNotFound(new URI(templateBuildGradleUrl))) {
-            MinecraftVersion minecraftVersion = ctx.data().get(MinecraftProjectKeys.MINECRAFT_VERSION, MinecraftVersion.class);
+            MinecraftVersion minecraftVersion = ctx.data().get(MinecraftProjectKeys.MINECRAFT_VERSION,
+                MinecraftVersion.class);
             if (minecraftVersion == null)
                 throw new IllegalStateException("Minecraft version not set in project context");
 
-            templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(branch, minecraftVersion.id().substring("1.".length()));
+            templateBuildGradleUrl = TEMPLATE_BUILD_GRADLE_URL.formatted(branch,
+                minecraftVersion.id().substring("1.".length()));
             if (http.isNotFound(new URI(templateBuildGradleUrl)))
-                throw new IllegalStateException("Template build.gradle not found for version " + mdkVersion.id() + " or " + minecraftVersion.id());
+                throw new IllegalStateException(
+                    "Template build.gradle not found for version " + mdkVersion.id() + " or " + minecraftVersion.id());
         }
 
         Path templateBuildGradlePath = buildGradlePath.resolveSibling("template_build.gradle");
@@ -84,15 +89,19 @@ public record UpdateGradleFilesStep(FilesService files, HttpService http, Templa
         if (mdkVersion == null)
             throw new IllegalStateException("MDK version not set in project context");
 
-        String templateSettingsGradleUrl = TEMPLATE_SETTINGS_GRADLE_URL.formatted(branch, mdkVersion.id().substring("1.".length()));
+        String templateSettingsGradleUrl = TEMPLATE_SETTINGS_GRADLE_URL.formatted(branch,
+            mdkVersion.id().substring("1.".length()));
         if (http.isNotFound(new URI(templateSettingsGradleUrl))) {
-            MinecraftVersion minecraftVersion = ctx.data().get(MinecraftProjectKeys.MINECRAFT_VERSION, MinecraftVersion.class);
+            MinecraftVersion minecraftVersion = ctx.data().get(MinecraftProjectKeys.MINECRAFT_VERSION,
+                MinecraftVersion.class);
             if (minecraftVersion == null)
                 throw new IllegalStateException("Minecraft version not set in project context");
 
-            templateSettingsGradleUrl = TEMPLATE_SETTINGS_GRADLE_URL.formatted(branch, minecraftVersion.id().substring("1.".length()));
+            templateSettingsGradleUrl = TEMPLATE_SETTINGS_GRADLE_URL.formatted(branch,
+                minecraftVersion.id().substring("1.".length()));
             if (http.isNotFound(new URI(templateSettingsGradleUrl)))
-                throw new IllegalStateException("Template settings.gradle not found for version " + mdkVersion.id() + " or " + minecraftVersion.id());
+                throw new IllegalStateException("Template settings.gradle not found for version " + mdkVersion.id()
+                    + " or " + minecraftVersion.id());
         }
 
         Path templateSettingsGradlePath = settingsGradlePath.resolveSibling("template_settings.gradle");
@@ -106,7 +115,8 @@ public record UpdateGradleFilesStep(FilesService files, HttpService http, Templa
         updateContent(ctx, projectDir, settingsGradlePath, templateSettingsGradlePath, templateContent);
     }
 
-    private void updateContent(ProjectContext ctx, Path projectDir, Path settingsGradlePath, Path templateSettingsGradlePath, String templateContent) throws Exception {
+    private void updateContent(ProjectContext ctx, Path projectDir, Path settingsGradlePath,
+        Path templateSettingsGradlePath, String templateContent) throws Exception {
         Map<String, Object> args = createGradleBindings(ctx.data());
         var binding = new Binding(args);
         binding.setVariable("defaultName", projectDir.relativize(settingsGradlePath.toAbsolutePath()).toString());
@@ -125,9 +135,10 @@ public record UpdateGradleFilesStep(FilesService files, HttpService http, Templa
 
         final Map<String, Object> args = new HashMap<>();
         args.put("mappings", Map.of(
-            "channel", data.getOrDefault(MinecraftProjectKeys.MAPPING_CHANNEL, defaultChannel, MappingChannel.class).id().toLowerCase(Locale.ROOT),
-            "version", data.getAsString(MinecraftProjectKeys.MAPPING_VERSION)
-        ));
+            "channel",
+            data.getOrDefault(MinecraftProjectKeys.MAPPING_CHANNEL, defaultChannel, MappingChannel.class).id()
+                .toLowerCase(Locale.ROOT),
+            "version", data.getAsString(MinecraftProjectKeys.MAPPING_VERSION)));
 
         Map<String, Object> props = new HashMap<>();
         if (projectType == ProjectTypeRegistry.FABRIC) {
@@ -135,33 +146,30 @@ public record UpdateGradleFilesStep(FilesService files, HttpService http, Templa
                 "splitSourceSets", data.getAsBoolean(FabricProjectKeys.SPLIT_SOURCES),
                 "includeFabricApi", data.contains(FabricProjectKeys.FABRIC_API_VERSION),
                 "useAccessWidener", data.getAsBoolean(FabricProjectKeys.USE_ACCESS_WIDENER),
-                "accessWidenerPath", data.contains(FabricProjectKeys.ACCESS_WIDENER_PATH) ?
-                    data.getAsString(FabricProjectKeys.ACCESS_WIDENER_PATH) :
-                    data.getAsString(MinecraftProjectKeys.MOD_ID) + ".accesswidener",
-                "modId", data.getAsString(MinecraftProjectKeys.MOD_ID)
-            ));
+                "accessWidenerPath",
+                data.contains(FabricProjectKeys.ACCESS_WIDENER_PATH)
+                    ? data.getAsString(FabricProjectKeys.ACCESS_WIDENER_PATH)
+                    : data.getAsString(MinecraftProjectKeys.MOD_ID) + ".accesswidener",
+                "modId", data.getAsString(MinecraftProjectKeys.MOD_ID)));
         } else if (projectType == ProjectTypeRegistry.FORGE || projectType == ProjectTypeRegistry.NEOFORGE) {
             props.putAll(Map.of(
                 "useMixins", data.getAsBoolean(ForgeProjectKeys.USE_MIXINS),
                 "useAccessTransformer", data.getAsBoolean(ForgeProjectKeys.USE_ACCESS_TRANSFORMER),
-                "genRunFolders", data.getAsBoolean(ForgeProjectKeys.GEN_RUN_FOLDERS)
-            ));
-        } else {
+                "genRunFolders", data.getAsBoolean(ForgeProjectKeys.GEN_RUN_FOLDERS)));
+        } else
             throw new IllegalStateException("Unsupported project type: " + projectType);
-        }
 
         args.put("props", props);
         return args;
     }
 
     public static MappingChannel getDefaultMappingChannel(ProjectType projectType) {
-        if (projectType.equals(ProjectTypeRegistry.FABRIC)) {
+        if (projectType.equals(ProjectTypeRegistry.FABRIC))
             return MappingChannelRegistry.YARN;
-        } else if (projectType.equals(ProjectTypeRegistry.FORGE)) {
+        else if (projectType.equals(ProjectTypeRegistry.FORGE))
             return MappingChannelRegistry.MOJMAP;
-        } else if (projectType.equals(ProjectTypeRegistry.NEOFORGE)) {
+        else if (projectType.equals(ProjectTypeRegistry.NEOFORGE))
             return MappingChannelRegistry.PARCHMENT;
-        }
 
         throw new IllegalStateException("Unsupported project type: " + projectType);
     }

@@ -22,9 +22,7 @@ public class CoreMethodNamedTODOInspection implements JavaInspectionRuleProvider
             JavaSemanticRules.METHOD_NAMED_TODO.defaultSeverity(),
             JavaSemanticRules.METHOD_NAMED_TODO.messageTemplate(),
             Set.of("core", "naming"),
-            CoreMethodNamedTODOInspection::reportMethodNamedTODO
-        )
-    );
+            CoreMethodNamedTODOInspection::reportMethodNamedTODO));
 
     @Override
     public String id() {

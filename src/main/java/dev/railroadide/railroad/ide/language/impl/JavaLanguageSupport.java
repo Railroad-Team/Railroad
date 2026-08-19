@@ -33,8 +33,8 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
         var editorPane = new JavaCodeEditorPane(
             project,
             file,
-            CodeEditorConfig.fromLanguageSupport(project, file, this, TreeSitterJavaSyntaxHighlighting::computeHighlighting)
-        );
+            CodeEditorConfig.fromLanguageSupport(project, file, this,
+                TreeSitterJavaSyntaxHighlighting::computeHighlighting));
         return new EditorOpenView(editorPane, editorPane, languageId());
     }
 

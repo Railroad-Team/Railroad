@@ -16,7 +16,8 @@ import java.util.concurrent.TimeUnit;
  * Allows configuring classpaths, JVM options, and the list of classes to analyze.
  * </p>
  *
- * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/serialver.html">serialver command documentation</a>
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/serialver.html">serialver command
+ *      documentation</a>
  */
 public class SerialverCLIBuilder implements CLIBuilder<Process, SerialverCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "serialver.exe" : "serialver";
@@ -132,7 +133,7 @@ public class SerialverCLIBuilder implements CLIBuilder<Process, SerialverCLIBuil
      *
      * @param className the class to inspect; must not be null or blank
      * @return the current {@link SerialverCLIBuilder} instance
-     * @throws NullPointerException     if the class name is null
+     * @throws NullPointerException if the class name is null
      * @throws IllegalArgumentException if the class name is blank
      */
     public SerialverCLIBuilder addClassName(String className) {

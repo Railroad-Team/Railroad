@@ -16,7 +16,8 @@ import java.util.regex.Pattern;
  * @param email author email, when available
  */
 public record GitAuthor(int commitCount, String name, @Nullable String email) {
-    private static final Pattern AUTHOR_LINE_PATTERN = Pattern.compile("^\\s*(?<count>\\d+)\\s+(?<name>.*?)\\s+(<(?<email>.*)?>)\\s*$");
+    private static final Pattern AUTHOR_LINE_PATTERN = Pattern
+        .compile("^\\s*(?<count>\\d+)\\s+(?<name>.*?)\\s+(<(?<email>.*)?>)\\s*$");
 
     /**
      * Parses shortlog lines into author summaries.
@@ -33,7 +34,7 @@ public record GitAuthor(int commitCount, String name, @Nullable String email) {
                 continue;
 
             Matcher matcher = AUTHOR_LINE_PATTERN.matcher(line);
-            if(matcher.find()) {
+            if (matcher.find()) {
                 String commitsStr = matcher.group("count");
                 int commits;
                 try {

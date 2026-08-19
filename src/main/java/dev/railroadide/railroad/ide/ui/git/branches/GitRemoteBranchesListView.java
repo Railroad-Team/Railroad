@@ -25,8 +25,7 @@ public class GitRemoteBranchesListView extends AbstractGitBranchesListView<GitBr
             project,
             "git-remote-branches-list-view",
             value -> value.getGitManager().getAllRemoteBranches(),
-            _ -> new GitRemoteBranchCell()
-        );
+            _ -> new GitRemoteBranchCell());
     }
 
     @Override

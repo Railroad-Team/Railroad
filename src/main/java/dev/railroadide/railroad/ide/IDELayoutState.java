@@ -14,14 +14,14 @@ import java.util.Map;
 public record IDELayoutState(
     int schemaVersion,
     String currentModeId,
-    Map<String, ModeLayout> modes
-) {
+    Map<String, ModeLayout> modes) {
     public static final int CURRENT_SCHEMA_VERSION = 1;
 
     public IDELayoutState {
         currentModeId = normalizeModeId(currentModeId);
-        if (currentModeId == null)
+        if (currentModeId == null) {
             currentModeId = WorkspaceMode.defaultMode().getId();
+        }
 
         var normalizedModes = new LinkedHashMap<String, ModeLayout>();
         if (modes != null) {
@@ -39,8 +39,7 @@ public record IDELayoutState(
         this(
             CURRENT_SCHEMA_VERSION,
             resolve(currentMode).getId(),
-            toPersistedModes(modes)
-        );
+            toPersistedModes(modes));
     }
 
     public boolean isSupported() {
@@ -95,8 +94,7 @@ public record IDELayoutState(
         double bottomDividerPosition,
         boolean leftDockVisible,
         boolean rightDockVisible,
-        boolean bottomDockVisible
-    ) {
+        boolean bottomDockVisible) {
         public ModeLayout {
             leftDividerPosition = validDivider(leftDividerPosition, 0.15);
             rightDividerPosition = validDivider(rightDividerPosition, 0.85);

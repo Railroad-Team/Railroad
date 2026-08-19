@@ -26,8 +26,7 @@ public class GitSyncInfoPane extends RRVBox {
         getChildren().addAll(
             trackingInfoPane,
             aheadBehindInfoPane,
-            strategyPane
-        );
+            strategyPane);
     }
 
     private static class GitSyncTrackingInfoPane extends RRVBox {
@@ -53,18 +52,16 @@ public class GitSyncInfoPane extends RRVBox {
             var infoBox = new RRHBox(2);
             infoBox.getChildren().addAll(
                 branchText, branchChip,
-                upstreamText, upstreamChip
-            );
+                upstreamText, upstreamChip);
             infoBox.getStyleClass().add("git-sync-tracking-info-box");
 
             getChildren().addAll(
                 trackingTitle,
-                infoBox
-            );
+                infoBox);
 
             update(gitManager.getRepoStatus(), gitManager.getUpstream().orElse(null));
-            gitManager.repoStatusProperty().addListener((_, _, newStatus) ->
-                update(newStatus, gitManager.getUpstream().orElse(null)));
+            gitManager.repoStatusProperty()
+                .addListener((_, _, newStatus) -> update(newStatus, gitManager.getUpstream().orElse(null)));
         }
 
         private void update(GitRepoStatus status, GitUpstream upstream) {
@@ -88,8 +85,7 @@ public class GitSyncInfoPane extends RRVBox {
 
             getChildren().addAll(
                 aheadBehindTitle,
-                aheadBehindBox
-            );
+                aheadBehindBox);
 
             update(gitManager.getRepoStatus());
             gitManager.repoStatusProperty().addListener((_, _, newStatus) -> update(newStatus));
@@ -122,8 +118,10 @@ public class GitSyncInfoPane extends RRVBox {
     }
 
     private static class GitSyncStrategyPane extends RRVBox {
-        private final LocalizedComboBox<GitPullStrategy> pullStrategyComboBox = new LocalizedComboBox<>(GitPullStrategy::getLocalizationKey);
-        private final LocalizedComboBox<GitPushStrategy> pushStrategyComboBox = new LocalizedComboBox<>(GitPushStrategy::getLocalizationKey);
+        private final LocalizedComboBox<GitPullStrategy> pullStrategyComboBox = new LocalizedComboBox<>(
+            GitPullStrategy::getLocalizationKey);
+        private final LocalizedComboBox<GitPushStrategy> pushStrategyComboBox = new LocalizedComboBox<>(
+            GitPushStrategy::getLocalizationKey);
 
         public GitSyncStrategyPane(GitManager gitManager) {
             getStyleClass().add("git-sync-strategy-pane");
@@ -144,8 +142,7 @@ public class GitSyncInfoPane extends RRVBox {
             });
             pullStrategyComboBox.getStyleClass().add("git-sync-strategy-combobox");
             pullStrategyHbox.getChildren().addAll(
-                pullStrategyLabel, pullStrategyComboBox
-            );
+                pullStrategyLabel, pullStrategyComboBox);
 
             var pushStrategyHbox = new RRHBox(2);
             pushStrategyHbox.getStyleClass().add("git-sync-strategy-push-box");
@@ -160,14 +157,12 @@ public class GitSyncInfoPane extends RRVBox {
             });
             pushStrategyComboBox.getStyleClass().add("git-sync-strategy-combobox");
             pushStrategyHbox.getChildren().addAll(
-                pushStrategyLabel, pushStrategyComboBox
-            );
+                pushStrategyLabel, pushStrategyComboBox);
 
             getChildren().addAll(
                 strategyTitle,
                 pullStrategyHbox,
-                pushStrategyHbox
-            );
+                pushStrategyHbox);
 
             updateSelections(gitManager);
             gitManager.repoStatusProperty().addListener((_, _, _) -> updateSelections(gitManager));

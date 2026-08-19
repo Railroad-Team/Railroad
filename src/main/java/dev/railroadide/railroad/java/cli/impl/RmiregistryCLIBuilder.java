@@ -15,7 +15,8 @@ import java.util.concurrent.TimeUnit;
  * Supports setting ports and JVM options before launching the registry.
  * </p>
  *
- * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/rmiregistry.html">rmiregistry command documentation</a>
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/rmiregistry.html">rmiregistry command
+ *      documentation</a>
  */
 public class RmiregistryCLIBuilder implements CLIBuilder<Process, RmiregistryCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "rmiregistry.exe" : "rmiregistry";
@@ -114,8 +115,9 @@ public class RmiregistryCLIBuilder implements CLIBuilder<Process, RmiregistryCLI
         List<String> command = new ArrayList<>();
         command.add(jdk.executablePath(EXECUTABLE_NAME).toString());
         command.addAll(arguments);
-        if (port != null)
+        if (port != null) {
             command.add(Integer.toString(port));
+        }
 
         var processBuilder = new ProcessBuilder();
         processBuilder.command(command);

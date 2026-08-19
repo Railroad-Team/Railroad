@@ -31,23 +31,27 @@ public record HTTPCheck(HttpClientMode clientMode) implements NetworkCheck {
                     int responseCode = connection.getResponseCode();
                     yield (200 <= responseCode && responseCode < 400);
                 } catch (ProtocolException exception) {
-                    if (shouldLogFailures())
+                    if (shouldLogFailures()) {
                         Railroad.LOGGER.error("Requested protocol is not supported.", exception);
+                    }
 
                     yield false;
                 } catch (MalformedURLException exception) {
-                    if (shouldLogFailures())
+                    if (shouldLogFailures()) {
                         Railroad.LOGGER.error("The provided URL is malformed.", exception);
+                    }
 
                     yield false;
                 } catch (URISyntaxException exception) {
-                    if (shouldLogFailures())
+                    if (shouldLogFailures()) {
                         Railroad.LOGGER.error("The provided URL has an invalid syntax.", exception);
+                    }
 
                     yield false;
                 } catch (IOException exception) {
-                    if (shouldLogFailures())
+                    if (shouldLogFailures()) {
                         Railroad.LOGGER.error("An I/O error occurred while trying to connect.", exception);
+                    }
 
                     yield false;
                 }
@@ -66,13 +70,15 @@ public record HTTPCheck(HttpClientMode clientMode) implements NetworkCheck {
                     var response = client.send(request, HttpResponse.BodyHandlers.discarding());
                     yield (200 <= response.statusCode() && response.statusCode() < 400);
                 } catch (IOException exception) {
-                    if (shouldLogFailures())
+                    if (shouldLogFailures()) {
                         Railroad.LOGGER.error("An I/O error occurred while trying to connect.", exception);
+                    }
 
                     yield false;
                 } catch (InterruptedException exception) {
-                    if (shouldLogFailures())
+                    if (shouldLogFailures()) {
                         Railroad.LOGGER.error("The operation was interrupted.", exception);
+                    }
 
                     Thread.currentThread().interrupt();
                     yield false;
@@ -99,13 +105,15 @@ public record HTTPCheck(HttpClientMode clientMode) implements NetworkCheck {
                         yield (200 <= response.code() && response.code() < 400);
                     }
                 } catch (IllegalArgumentException exception) {
-                    if (shouldLogFailures())
+                    if (shouldLogFailures()) {
                         Railroad.LOGGER.error("The provided URL is malformed.", exception);
+                    }
 
                     yield false;
                 } catch (IOException exception) {
-                    if (shouldLogFailures())
+                    if (shouldLogFailures()) {
                         Railroad.LOGGER.error("An I/O error occurred while trying to connect.", exception);
+                    }
 
                     yield false;
                 }
@@ -114,8 +122,6 @@ public record HTTPCheck(HttpClientMode clientMode) implements NetworkCheck {
     }
 
     public enum HttpClientMode {
-        URL_CONNECTION,
-        JAVA_NET,
-        OKHTTP
+        URL_CONNECTION, JAVA_NET, OKHTTP
     }
 }

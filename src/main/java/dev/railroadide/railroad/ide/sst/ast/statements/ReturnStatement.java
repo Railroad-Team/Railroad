@@ -12,9 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 public record ReturnStatement(
-        Span span,
-        Optional<Expression> expression
-) implements Statement {
+    Span span,
+    Optional<Expression> expression) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.RETURN_STATEMENT;

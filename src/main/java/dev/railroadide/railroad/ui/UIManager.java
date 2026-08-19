@@ -38,7 +38,8 @@ public final class UIManager {
     }
 
     public <T extends Node> T lookupOrThrow(UIId<T> id) {
-        return lookup(id).orElseThrow(() -> new IllegalArgumentException("UIId '" + id.path() + "' is not registered."));
+        return lookup(id)
+            .orElseThrow(() -> new IllegalArgumentException("UIId '" + id.path() + "' is not registered."));
     }
 
     public <T extends Node> boolean isRegistered(UIId<T> id) {
@@ -55,10 +56,10 @@ public final class UIManager {
      * This is useful for nodes that belong to an attached UI component but are temporarily absent from its scene
      * graph, such as an inactive editor dock in a view-mode workspace.
      *
-     * @param id    ID to assign
+     * @param id ID to assign
      * @param owner node whose scene attachment controls the registration lifetime
-     * @param node  node exposed by the ID
-     * @param <T>   exposed node type
+     * @param node node exposed by the ID
+     * @param <T> exposed node type
      * @return a registration that can stop tracking the owner and remove the assignment
      */
     public <T extends Node> Registration assignWhileAttached(UIId<T> id, Node owner, T node) {

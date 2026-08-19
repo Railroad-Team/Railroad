@@ -12,7 +12,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public record YarnVersionRepository(SwitchboardClient client, CacheManager cache)
-    implements SwitchboardRepository {
+    implements
+        SwitchboardRepository {
     private static final Duration VERSIONS_TTL = Duration.ofHours(12);
     private static final Duration LATEST_TTL = Duration.ofHours(1);
 
@@ -21,8 +22,7 @@ public record YarnVersionRepository(SwitchboardClient client, CacheManager cache
             "yarn:versions",
             SwitchboardClient.LIST_OF_STRINGS,
             VERSIONS_TTL,
-            client::fetchYarnVersions
-        );
+            client::fetchYarnVersions);
     }
 
     public List<String> getAllVersionsSync() throws ExecutionException, InterruptedException {
@@ -38,8 +38,7 @@ public record YarnVersionRepository(SwitchboardClient client, CacheManager cache
             key,
             SwitchboardClient.LIST_OF_STRINGS,
             VERSIONS_TTL,
-            () -> client.fetchYarnVersions(normalized)
-        );
+            () -> client.fetchYarnVersions(normalized));
     }
 
     public List<String> getVersionsForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {
@@ -51,8 +50,7 @@ public record YarnVersionRepository(SwitchboardClient client, CacheManager cache
             "yarn:latest",
             String.class,
             LATEST_TTL,
-            client::fetchLatestYarnVersion
-        );
+            client::fetchLatestYarnVersion);
     }
 
     public String getLatestVersionSync() throws ExecutionException, InterruptedException {
@@ -68,8 +66,7 @@ public record YarnVersionRepository(SwitchboardClient client, CacheManager cache
             key,
             String.class,
             LATEST_TTL,
-            () -> client.fetchLatestYarnVersion(normalized)
-        );
+            () -> client.fetchLatestYarnVersion(normalized));
     }
 
     public String getLatestVersionForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {

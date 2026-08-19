@@ -15,11 +15,10 @@ import java.util.List;
 import java.util.Optional;
 
 public record LambdaExpression(
-        Span span,
-        List<Parameter> parameters,
-        boolean inferredParameters,
-        LambdaBody body
-) implements Expression {
+    Span span,
+    List<Parameter> parameters,
+    boolean inferredParameters,
+    LambdaBody body) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.LAMBDA_EXPRESSION;

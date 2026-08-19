@@ -26,7 +26,8 @@ import java.util.concurrent.TimeUnit;
  * and various output formatting controls.
  * </p>
  *
- * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/javadoc.html">javadoc command documentation</a>
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/javadoc.html">javadoc command
+ *      documentation</a>
  */
 public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "javadoc.exe" : "javadoc";
@@ -143,7 +144,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Adds all modules on the module path to be documented. Corresponds to the {@code --add-modules ALL-MODULE-PATH} option.
+     * Adds all modules on the module path to be documented. Corresponds to the {@code --add-modules ALL-MODULE-PATH}
+     * option.
      *
      * @return This builder instance.
      */
@@ -160,7 +162,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
      */
     public JavadocCLIBuilder appendBootClassPath(String... bootClassPathEntries) {
         if (jdk.version().major() >= 9)
-            throw new UnsupportedOperationException("The --boot-class-path option is not supported in JDK 9 and above.");
+            throw new UnsupportedOperationException(
+                "The --boot-class-path option is not supported in JDK 9 and above.");
 
         Objects.requireNonNull(bootClassPathEntries, "Boot class path entries cannot be null");
         this.arguments.add("--boot-class-path " + String.join(File.pathSeparator, bootClassPathEntries));
@@ -168,7 +171,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Specifies the classpath for finding user class files. Corresponds to the {@code -cp} or {@code -classpath} option.
+     * Specifies the classpath for finding user class files. Corresponds to the {@code -cp} or {@code -classpath}
+     * option.
      *
      * @param classpathEntries The entries for the classpath.
      * @return This builder instance.
@@ -217,7 +221,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Specifies the directories in which to search for installed extensions. Corresponds to the {@code -extdirs} option.
+     * Specifies the directories in which to search for installed extensions. Corresponds to the {@code -extdirs}
+     * option.
      *
      * @param dirs The extension directories.
      * @return This builder instance.
@@ -229,7 +234,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Specifies the directories in which to search for installed extensions. Corresponds to the {@code -extdirs} option.
+     * Specifies the directories in which to search for installed extensions. Corresponds to the {@code -extdirs}
+     * option.
      *
      * @param dirs The extension directories.
      * @return This builder instance.
@@ -241,7 +247,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Disables the generation of line-number information in Javadoc comments. Corresponds to the {@code --disable-line-doc-comments} option.
+     * Disables the generation of line-number information in Javadoc comments. Corresponds to the
+     * {@code --disable-line-doc-comments} option.
      *
      * @return This builder instance.
      */
@@ -427,7 +434,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Enables the use of {@code BreakIterator} for determining sentence breaks. Corresponds to the {@code -breakiterator} option.
+     * Enables the use of {@code BreakIterator} for determining sentence breaks. Corresponds to the
+     * {@code -breakiterator} option.
      *
      * @return This builder instance.
      */
@@ -449,7 +457,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Specifies the path where the doclet and its supporting classes are located. Corresponds to the {@code -docletpath} option.
+     * Specifies the path where the doclet and its supporting classes are located. Corresponds to the
+     * {@code -docletpath} option.
      *
      * @param docletPaths The entries for the doclet path.
      * @return This builder instance.
@@ -461,7 +470,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Specifies the path where the doclet and its supporting classes are located. Corresponds to the {@code -docletpath} option.
+     * Specifies the path where the doclet and its supporting classes are located. Corresponds to the
+     * {@code -docletpath} option.
      *
      * @param docletPaths The entries for the doclet path.
      * @return This builder instance.
@@ -552,7 +562,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Sets the minimum visibility level of members to be documented. Corresponds to options like {@code -public}, {@code -protected}, {@code -package}, {@code -private}.
+     * Sets the minimum visibility level of members to be documented. Corresponds to options like {@code -public},
+     * {@code -protected}, {@code -package}, {@code -private}.
      *
      * @param visibility The minimum visibility level.
      * @return This builder instance.
@@ -622,7 +633,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Recursively retrieves source files from the specified subpackages. Corresponds to the {@code -subpackages} option.
+     * Recursively retrieves source files from the specified subpackages. Corresponds to the {@code -subpackages}
+     * option.
      *
      * @param packageNames The names of the subpackages.
      * @return This builder instance.
@@ -666,7 +678,7 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     /**
      * Adds a read edge from a source module to target modules. Corresponds to the {@code --add-reads} option.
      *
-     * @param sourceModule  The source module.
+     * @param sourceModule The source module.
      * @param targetModules The target modules.
      * @return This builder instance.
      */
@@ -689,10 +701,11 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Adds an export of a package from a source module to target modules. Corresponds to the {@code --add-exports} option.
+     * Adds an export of a package from a source module to target modules. Corresponds to the {@code --add-exports}
+     * option.
      *
-     * @param sourceModule  The source module.
-     * @param packageName   The package to export.
+     * @param sourceModule The source module.
+     * @param packageName The package to export.
      * @param targetModules The target modules.
      * @return This builder instance.
      */
@@ -709,7 +722,7 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
      * Adds an export of a package from a source module to all unnamed modules.
      *
      * @param sourceModule The source module.
-     * @param packageName  The package to export.
+     * @param packageName The package to export.
      * @return This builder instance.
      */
     public JavadocCLIBuilder addExportsAllUnnamed(String sourceModule, String packageName) {
@@ -717,7 +730,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Patches a module with classes and resources from specified paths. Corresponds to the {@code --patch-module} option.
+     * Patches a module with classes and resources from specified paths. Corresponds to the {@code --patch-module}
+     * option.
      *
      * @param moduleName The module to patch.
      * @param patchPaths The paths to the patch content.
@@ -731,7 +745,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Patches a module with classes and resources from specified paths. Corresponds to the {@code --patch-module} option.
+     * Patches a module with classes and resources from specified paths. Corresponds to the {@code --patch-module}
+     * option.
      *
      * @param moduleName The module to patch.
      * @param patchPaths The paths to the patch content.
@@ -933,7 +948,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Excludes subdirectories from the {@code doc-files} directory. Corresponds to the {@code -excludedocfilessubdir} option.
+     * Excludes subdirectories from the {@code doc-files} directory. Corresponds to the {@code -excludedocfilessubdir}
+     * option.
      *
      * @param dirNames The names of the directories to exclude.
      * @return This builder instance.
@@ -1059,7 +1075,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Specifies how to handle modularity mismatches when linking. Corresponds to the {@code --link-modularity-mismatch} option.
+     * Specifies how to handle modularity mismatches when linking. Corresponds to the {@code --link-modularity-mismatch}
+     * option.
      *
      * @param mismatchBehavior The behavior for modularity mismatches (WARN or INFO).
      * @return This builder instance.
@@ -1071,9 +1088,10 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Creates links to existing Javadoc documentation for offline access. Corresponds to the {@code -linkoffline} option.
+     * Creates links to existing Javadoc documentation for offline access. Corresponds to the {@code -linkoffline}
+     * option.
      *
-     * @param url             The URL of the external Javadoc documentation.
+     * @param url The URL of the external Javadoc documentation.
      * @param packageListPath The path to the {@code package-list} file.
      * @return This builder instance.
      */
@@ -1085,9 +1103,10 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Creates links to existing Javadoc documentation for offline access. Corresponds to the {@code -linkoffline} option.
+     * Creates links to existing Javadoc documentation for offline access. Corresponds to the {@code -linkoffline}
+     * option.
      *
-     * @param url             The URL of the external Javadoc documentation.
+     * @param url The URL of the external Javadoc documentation.
      * @param packageListPath The path to the {@code package-list} file.
      * @return This builder instance.
      */
@@ -1155,7 +1174,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Suppresses the entire comment body, including the main description and all tags, from the generated documentation. Corresponds to the {@code -nocomment} option.
+     * Suppresses the entire comment body, including the main description and all tags, from the generated
+     * documentation. Corresponds to the {@code -nocomment} option.
      *
      * @return This builder instance.
      */
@@ -1225,7 +1245,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Suppresses the generation of links to platform documentation. Corresponds to the {@code --no-platform-links} option.
+     * Suppresses the generation of links to platform documentation. Corresponds to the {@code --no-platform-links}
+     * option.
      *
      * @return This builder instance.
      */
@@ -1289,7 +1310,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Specifies the path to an HTML file that contains overview documentation. Corresponds to the {@code -overview} option.
+     * Specifies the path to an HTML file that contains overview documentation. Corresponds to the {@code -overview}
+     * option.
      *
      * @param filePath The path to the overview file.
      * @return This builder instance.
@@ -1301,7 +1323,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Specifies the path to an HTML file that contains overview documentation. Corresponds to the {@code -overview} option.
+     * Specifies the path to an HTML file that contains overview documentation. Corresponds to the {@code -overview}
+     * option.
      *
      * @param filePath The path to the overview file.
      * @return This builder instance.
@@ -1322,7 +1345,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Includes documentation for APIs introduced in a specific release version. Corresponds to the {@code -since} option.
+     * Includes documentation for APIs introduced in a specific release version. Corresponds to the {@code -since}
+     * option.
      *
      * @param releaseVersions The release versions.
      * @return This builder instance.
@@ -1334,7 +1358,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Includes documentation for APIs introduced in a specific release version. Corresponds to the {@code -since} option.
+     * Includes documentation for APIs introduced in a specific release version. Corresponds to the {@code -since}
+     * option.
      *
      * @param releaseVersions The release versions.
      * @return This builder instance.
@@ -1382,7 +1407,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Specifies the number of spaces each tab in the source file occupies. Corresponds to the {@code -sourcetab} option.
+     * Specifies the number of spaces each tab in the source file occupies. Corresponds to the {@code -sourcetab}
+     * option.
      *
      * @param spaces The number of spaces per tab.
      * @return This builder instance.
@@ -1431,9 +1457,9 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     /**
      * Enables the Javadoc tool to interpret a simple custom block tag. Corresponds to the {@code -tag} option.
      *
-     * @param name      The name of the tag.
+     * @param name The name of the tag.
      * @param locations The locations where the tag is valid.
-     * @param header    The header text for the tag.
+     * @param header The header text for the tag.
      * @return This builder instance.
      */
     public JavadocCLIBuilder tag(String name, String locations, String header) {
@@ -1457,7 +1483,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Specifies the path where the taglet and its supporting classes are located. Corresponds to the {@code -tagletpath} option.
+     * Specifies the path where the taglet and its supporting classes are located. Corresponds to the
+     * {@code -tagletpath} option.
      *
      * @param tagletPaths The entries for the taglet path.
      * @return This builder instance.
@@ -1469,7 +1496,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Specifies the path where the taglet and its supporting classes are located. Corresponds to the {@code -tagletpath} option.
+     * Specifies the path where the taglet and its supporting classes are located. Corresponds to the
+     * {@code -tagletpath} option.
      *
      * @param tagletPaths The entries for the taglet path.
      * @return This builder instance.
@@ -1537,7 +1565,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
             OffsetDateTime dateTime = OffsetDateTime.parse(iso8601Date, ISO_OFFSET_FORMATTER);
             return date(dateTime);
         } catch (DateTimeParseException exception) {
-            throw new IllegalArgumentException("Date must be in ISO 8601 format (e.g., 2023-10-05T14:48:00Z)", exception);
+            throw new IllegalArgumentException("Date must be in ISO 8601 format (e.g., 2023-10-05T14:48:00Z)",
+                exception);
         }
     }
 
@@ -1578,7 +1607,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
      *
      * @param dateTime The {@link OffsetDateTime} object.
      * @return This builder instance.
-     * @throws IllegalArgumentException if the date is outside a reasonable range (10 years before or after current date).
+     * @throws IllegalArgumentException if the date is outside a reasonable range (10 years before or after current
+     *             date).
      */
     private JavadocCLIBuilder date(OffsetDateTime dateTime) {
         Objects.requireNonNull(dateTime, "DateTime cannot be null");
@@ -1596,10 +1626,10 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     /**
      * Specifies the date and time to be used for the generated documentation. Corresponds to the {@code -date} option.
      *
-     * @param year   The year.
-     * @param month  The month.
-     * @param day    The day.
-     * @param hour   The hour.
+     * @param year The year.
+     * @param month The month.
+     * @param day The day.
+     * @param hour The hour.
      * @param minute The minute.
      * @param second The second.
      * @return This builder instance.
@@ -1612,9 +1642,9 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     /**
      * Specifies the date and time to be used for the generated documentation. Corresponds to the {@code -date} option.
      *
-     * @param year  The year.
+     * @param year The year.
      * @param month The month.
-     * @param day   The day.
+     * @param day The day.
      * @return This builder instance.
      */
     public JavadocCLIBuilder date(int year, int month, int day) {
@@ -1735,7 +1765,8 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
     }
 
     /**
-     * Specifies the URL of the parent directory for the generated documentation. Corresponds to the {@code -Xdocrootparent} option.
+     * Specifies the URL of the parent directory for the generated documentation. Corresponds to the
+     * {@code -Xdocrootparent} option.
      *
      * @param url The URL of the parent directory.
      * @return This builder instance.
@@ -1782,49 +1813,41 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
      * Represents the type of module expansion.
      */
     public enum ExpansionType {
-        TRANSITIVE,
-        ALL
+        TRANSITIVE, ALL
     }
 
     /**
      * Represents the visibility levels for members.
      */
     public enum Visibility {
-        PUBLIC,
-        PROTECTED,
-        PACKAGE,
-        PRIVATE
+        PUBLIC, PROTECTED, PACKAGE, PRIVATE
     }
 
     /**
      * Represents the granularity levels for module contents.
      */
     public enum ModuleGranularity {
-        API,
-        ALL
+        API, ALL
     }
 
     /**
      * Represents the granularity levels for packages.
      */
     public enum PackageGranularity {
-        EXPORTED,
-        ALL
+        EXPORTED, ALL
     }
 
     /**
      * Represents how to handle modularity mismatches when linking.
      */
     public enum LinkModularityMismatch {
-        WARN,
-        INFO
+        WARN, INFO
     }
 
     /**
      * Represents how to handle method override documentation.
      */
     public enum MethodOverrideHandling {
-        DETAIL,
-        SUMMARY
+        DETAIL, SUMMARY
     }
 }

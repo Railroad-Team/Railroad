@@ -24,14 +24,14 @@ class JavaDiagnosticsProviderTest {
         JavaInspectionRuleProvider core = JavaInspectionRegistries.getRuleProvider(CoreNameResolutionInspection.ID);
         assertNotNull(core);
 
-        JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
+        var provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
         List<EditorDiagnostic> diagnostics = provider.compute("""
-                class Example {
-                    void run() {
-                        missing = 1;
-                    }
+            class Example {
+                void run() {
+                    missing = 1;
                 }
-                """);
+            }
+            """);
 
         assertTrue(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code())));
     }
@@ -43,13 +43,14 @@ class JavaDiagnosticsProviderTest {
 
         try {
             JavaInspectionRegistries.registerRuleProvider(id, provider);
-            JavaDiagnosticsProvider providerRunner = new JavaDiagnosticsProvider(Path.of("Example.java"));
+            var providerRunner = new JavaDiagnosticsProvider(Path.of("Example.java"));
             List<EditorDiagnostic> diagnostics = providerRunner.compute("class Example {}");
             assertTrue(diagnostics.stream().anyMatch(diagnostic -> PLUGIN_RULE_ID.equals(diagnostic.code())));
             assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.WARNING));
         } finally {
-            if (JavaInspectionRegistries.containsRuleProvider(id))
+            if (JavaInspectionRegistries.containsRuleProvider(id)) {
                 JavaInspectionRegistries.unregisterRuleProvider(id);
+            }
         }
     }
 
@@ -57,34 +58,35 @@ class JavaDiagnosticsProviderTest {
     void supportsRuleSettingsOverridesAndDisabling() {
         try {
             JavaInspectionRuleSettings.setRuleEnabled("SEM_UNRESOLVED_NAME", false);
-            JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
+            var provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
             List<EditorDiagnostic> disabledDiagnostics = provider.compute("""
-                    class Example {
-                        void run() {
-                            missing = 1;
-                        }
+                class Example {
+                    void run() {
+                        missing = 1;
                     }
-                    """);
-            assertFalse(disabledDiagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code())));
+                }
+                """);
+            assertFalse(
+                disabledDiagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code())));
         } finally {
             JavaInspectionRuleSettings.resetAll();
         }
 
         try {
             JavaInspectionRuleSettings.setSeverityOverride("SEM_UNRESOLVED_NAME",
-                    SemanticDiagnostic.Severity.INFO);
-            JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
+                SemanticDiagnostic.Severity.INFO);
+            var provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
             List<EditorDiagnostic> overriddenDiagnostics = provider.compute("""
-                    class Example {
-                        void run() {
-                            missing = 1;
-                        }
+                class Example {
+                    void run() {
+                        missing = 1;
                     }
-                    """);
+                }
+                """);
             EditorDiagnostic unresolved = overriddenDiagnostics.stream()
-                    .filter(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code()))
-                    .findFirst()
-                    .orElse(null);
+                .filter(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code()))
+                .findFirst()
+                .orElse(null);
             assertNotNull(unresolved);
             assertEquals(Diagnostic.Kind.NOTE, unresolved.kind());
         } finally {

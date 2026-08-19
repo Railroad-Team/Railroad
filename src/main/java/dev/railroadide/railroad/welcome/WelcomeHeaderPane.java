@@ -130,9 +130,8 @@ public class WelcomeHeaderPane extends RRCard {
         searchContainer.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(searchField, Priority.ALWAYS);
 
-        searchField.focusedProperty().addListener((_, _, newValue) ->
-            searchContainer.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, newValue)
-        );
+        searchField.focusedProperty()
+            .addListener((_, _, newValue) -> searchContainer.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, newValue));
 
         return searchContainer;
     }

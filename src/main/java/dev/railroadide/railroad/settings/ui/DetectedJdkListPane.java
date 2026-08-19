@@ -37,7 +37,8 @@ import java.util.List;
 public class DetectedJdkListPane extends RRVBox {
     private final ObservableList<JDK> items = FXCollections.observableArrayList();
     private final ListView<JDK> listView = new RRListView<>(items);
-    private final LocalizedLabel countLabel = new LocalizedLabel("railroad.settings.ide.jdk_management.detected.count", 0);
+    private final LocalizedLabel countLabel = new LocalizedLabel("railroad.settings.ide.jdk_management.detected.count",
+        0);
 
     public DetectedJdkListPane() {
         setFillWidth(true);

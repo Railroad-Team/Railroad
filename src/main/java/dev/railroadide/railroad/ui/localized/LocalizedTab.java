@@ -42,8 +42,7 @@ public class LocalizedTab extends Tab {
      */
     public void setKey(final String key) {
         currentKey = key;
-        L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) ->
-            setText(L18n.localize(key)));
+        L18n.currentLanguageProperty().addListener((observable, oldValue, newValue) -> setText(L18n.localize(key)));
         setText(L18n.localize(currentKey));
     }
 }

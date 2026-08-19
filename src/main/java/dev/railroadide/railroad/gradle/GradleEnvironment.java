@@ -51,7 +51,7 @@ public interface GradleEnvironment {
      * Constructs the JVM arguments for a specific Gradle task execution request.
      *
      * @param request the Gradle task execution request.
-     * @param jvm     the JDK instance to be used.
+     * @param jvm the JDK instance to be used.
      * @return a string containing the JVM arguments.
      */
     String jvmArgumentsFor(GradleTaskExecutionRequest request, JDK jvm);

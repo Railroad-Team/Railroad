@@ -12,8 +12,7 @@ public final class WorkspaceModes {
         FontAwesomeSolid.CODE,
         "railroad:view_mode_code",
         _ -> true,
-        _ -> null
-    );
+        _ -> null);
     public static final WorkspaceMode GIT = WorkspaceMode.register(
         "railroad:git",
         "railroad.ide.view_mode.git",
@@ -21,8 +20,7 @@ public final class WorkspaceModes {
         "railroad:view_mode_git",
         project -> project.getGitManager().isActive(),
         project -> project.getGitManager().repositoryStateProperty()
-            .isNotEqualTo(GitRepositoryState.AVAILABLE)
-    );
+            .isNotEqualTo(GitRepositoryState.AVAILABLE));
 
     private WorkspaceModes() {
     }

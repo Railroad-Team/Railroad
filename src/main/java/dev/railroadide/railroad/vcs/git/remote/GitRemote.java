@@ -13,11 +13,7 @@ public record GitRemote(String name, String fetchUrl, String pushUrl, Protocol p
      * Supported remote URL protocol classifications.
      */
     public enum Protocol {
-        HTTPS,
-        SSH,
-        GIT,
-        FILE,
-        UNKNOWN;
+        HTTPS, SSH, GIT, FILE, UNKNOWN;
 
         /**
          * Detects protocol type from a remote URL.
@@ -26,17 +22,16 @@ public record GitRemote(String name, String fetchUrl, String pushUrl, Protocol p
          * @return detected protocol enum value
          */
         public static Protocol fromUrl(String url) {
-            if (url.startsWith("https://") || url.startsWith("http://")) {
+            if (url.startsWith("https://") || url.startsWith("http://"))
                 return HTTPS;
-            } else if (url.startsWith("ssh://") || url.contains("@")) {
+            else if (url.startsWith("ssh://") || url.contains("@"))
                 return SSH;
-            } else if (url.startsWith("git://")) {
+            else if (url.startsWith("git://"))
                 return GIT;
-            } else if (url.startsWith("file://") || url.startsWith("/")) {
+            else if (url.startsWith("file://") || url.startsWith("/"))
                 return FILE;
-            } else {
+            else
                 return UNKNOWN;
-            }
         }
     }
 }

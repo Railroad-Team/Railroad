@@ -10,10 +10,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record InstanceofExpression(
-        Span span,
-        Expression expression,
-        Pattern pattern
-) implements Expression {
+    Span span,
+    Expression expression,
+    Pattern pattern) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.INSTANCEOF_EXPRESSION;
