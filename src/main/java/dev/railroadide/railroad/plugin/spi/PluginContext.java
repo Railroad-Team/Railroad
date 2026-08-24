@@ -53,9 +53,9 @@ public interface PluginContext {
      * Registers an extension for the specified extension point.
      * Extensions are additional functionalities or features that can be added to the plugin.
      *
-     * @param <T>            the type of the extension
+     * @param <T> the type of the extension
      * @param extensionPoint the class representing the extension point
-     * @param extension      the extension to register
+     * @param extension the extension to register
      */
     <T> void registerExtension(Class<T> extensionPoint, T extension);
 
@@ -64,7 +64,7 @@ public interface PluginContext {
      * This method returns a list of all extensions that have been registered
      * for the given extension point class.
      *
-     * @param <T>            the type of the extension
+     * @param <T> the type of the extension
      * @param extensionPoint the class representing the extension point
      * @return a list of registered extensions for the specified extension point
      */
@@ -84,7 +84,7 @@ public interface PluginContext {
      * This method allows plugins to access shared services provided by the core system
      * or other plugins.
      *
-     * @param <T>          the type of the service
+     * @param <T> the type of the service
      * @param serviceClass the class representing the service
      * @return an instance of the requested service, or null if not found
      */
@@ -95,7 +95,7 @@ public interface PluginContext {
      * Registries are used to manage collections of objects of a specific type,
      * allowing for efficient access and manipulation.
      *
-     * @param <T>  the type of objects in the registry
+     * @param <T> the type of objects in the registry
      * @param type the class representing the type of objects in the registry
      * @return a registry for the specified type
      */

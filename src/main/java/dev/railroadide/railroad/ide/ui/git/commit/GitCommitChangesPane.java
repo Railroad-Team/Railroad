@@ -79,7 +79,7 @@ public class GitCommitChangesPane extends RRBorderPane {
             Path current = Path.of("");
             for (Path part : parent) {
                 current = current.resolve(part);
-                List<GitFileChange> changesForDir = directoryChanges.computeIfAbsent(current, ignored -> new ArrayList<>());
+                List<GitFileChange> changesForDir = directoryChanges.computeIfAbsent(current, _ -> new ArrayList<>());
                 changesForDir.add(change);
 
                 CommitTreeItem directoryItem = directories.get(current);

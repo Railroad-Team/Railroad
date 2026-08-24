@@ -12,10 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record SugarTypeRef(
-        Span span,
-        List<Modifier> modifiers,
-        List<Annotation> annotations,
-        TypeRef baseType) implements TypeRef {
+    Span span,
+    List<Modifier> modifiers,
+    List<Annotation> annotations,
+    TypeRef baseType) implements TypeRef {
 
     @Override
     public AstKind kind() {

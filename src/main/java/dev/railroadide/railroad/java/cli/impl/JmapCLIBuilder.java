@@ -133,8 +133,8 @@ public class JmapCLIBuilder implements CLIBuilder<Process, JmapCLIBuilder> {
      * Adds the `-dump` option to the `jmap` command to dump the heap with the specified options.
      *
      * @param liveOnly whether to include only live objects in the dump
-     * @param format   the format of the dump; must not be null
-     * @param file     the file to save the dump to; must not be null
+     * @param format the format of the dump; must not be null
+     * @param file the file to save the dump to; must not be null
      * @return the current `JmapCLIBuilder` instance
      * @throws NullPointerException if the format or file is null
      */
@@ -143,8 +143,9 @@ public class JmapCLIBuilder implements CLIBuilder<Process, JmapCLIBuilder> {
         Objects.requireNonNull(file, "Dump file cannot be null");
 
         var options = new StringJoiner(",");
-        if (liveOnly)
+        if (liveOnly) {
             options.add("live");
+        }
         options.add("format=" + format);
         options.add("file=" + file);
         this.arguments.add("-dump:" + options);

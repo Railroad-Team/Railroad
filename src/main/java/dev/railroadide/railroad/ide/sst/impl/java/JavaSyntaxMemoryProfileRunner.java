@@ -38,12 +38,11 @@ public final class JavaSyntaxMemoryProfileRunner {
         long totalBytes = units.stream().mapToLong(SourceUnit::bytes).sum();
         long totalLines = units.stream().mapToLong(SourceUnit::lineCount).sum();
         System.out.printf(
-                Locale.ROOT,
-                "Java syntax memory profile: files=%d, size=%.2f MiB, lines=%d%n",
-                units.size(),
-                bytesToMiB(totalBytes),
-                totalLines
-        );
+            Locale.ROOT,
+            "Java syntax memory profile: files=%d, size=%.2f MiB, lines=%d%n",
+            units.size(),
+            bytesToMiB(totalBytes),
+            totalLines);
 
         forceGc();
         long heapBeforeParse = usedHeapBytes();
@@ -57,7 +56,7 @@ public final class JavaSyntaxMemoryProfileRunner {
         AggregateStats greenStats = collectGreenStats(trees);
         long heapAfterGreenWalk = heapAfterParse;
         long heapAfterRedWalk = heapAfterParse;
-        AggregateStats redStats = new AggregateStats();
+        var redStats = new AggregateStats();
         if (options.materializeRed()) {
             redStats = collectRedStats(trees);
             forceGc();
@@ -66,23 +65,22 @@ public final class JavaSyntaxMemoryProfileRunner {
         }
 
         printGreenStats(greenStats, totalBytes);
-        if (options.materializeRed())
+        if (options.materializeRed()) {
             printRedStats(redStats, totalBytes);
+        }
 
         if (options.measureHeap()) {
             System.out.println();
             System.out.println("Heap deltas (approximate, GC-sensitive):");
             System.out.printf(
-                    Locale.ROOT,
-                    "  Parse tree retained: %s%n",
-                    formatBytes(heapAfterParse - heapBeforeParse)
-            );
+                Locale.ROOT,
+                "  Parse tree retained: %s%n",
+                formatBytes(heapAfterParse - heapBeforeParse));
             if (options.materializeRed()) {
                 System.out.printf(
-                        Locale.ROOT,
-                        "  Additional red wrappers (after full traversal): %s%n",
-                        formatBytes(heapAfterRedWalk - heapAfterGreenWalk)
-                );
+                    Locale.ROOT,
+                    "  Additional red wrappers (after full traversal): %s%n",
+                    formatBytes(heapAfterRedWalk - heapAfterGreenWalk));
             }
         }
     }
@@ -95,10 +93,9 @@ public final class JavaSyntaxMemoryProfileRunner {
         System.out.printf(Locale.ROOT, "  Token text chars: %d%n", stats.tokenChars());
         System.out.printf(Locale.ROOT, "  Max depth: %d%n", stats.maxDepth());
         System.out.printf(
-                Locale.ROOT,
-                "  Density: %.2f elements / KiB%n",
-                densityPerKiB(stats.totalElements(), totalBytes)
-        );
+            Locale.ROOT,
+            "  Density: %.2f elements / KiB%n",
+            densityPerKiB(stats.totalElements(), totalBytes));
     }
 
     private static void printRedStats(AggregateStats stats, long totalBytes) {
@@ -108,10 +105,9 @@ public final class JavaSyntaxMemoryProfileRunner {
         System.out.printf(Locale.ROOT, "  Tokens: %d%n", stats.tokenCount());
         System.out.printf(Locale.ROOT, "  Max depth: %d%n", stats.maxDepth());
         System.out.printf(
-                Locale.ROOT,
-                "  Density: %.2f wrappers / KiB%n",
-                densityPerKiB(stats.totalElements(), totalBytes)
-        );
+            Locale.ROOT,
+            "  Density: %.2f wrappers / KiB%n",
+            densityPerKiB(stats.totalElements(), totalBytes));
     }
 
     private static double densityPerKiB(long count, long bytes) {
@@ -122,7 +118,7 @@ public final class JavaSyntaxMemoryProfileRunner {
     }
 
     private static AggregateStats collectGreenStats(List<SyntaxTree> trees) {
-        AggregateStats stats = new AggregateStats();
+        var stats = new AggregateStats();
         for (SyntaxTree tree : trees) {
             GreenNode root = SyntaxInternalFactory.greenRoot(tree);
             Deque<GreenFrame> stack = new ArrayDeque<>();
@@ -150,7 +146,7 @@ public final class JavaSyntaxMemoryProfileRunner {
     }
 
     private static AggregateStats collectRedStats(List<SyntaxTree> trees) {
-        AggregateStats stats = new AggregateStats();
+        var stats = new AggregateStats();
         for (SyntaxTree tree : trees) {
             Deque<RedFrame> stack = new ArrayDeque<>();
             stack.push(new RedFrame(tree.root(), 1));
@@ -204,8 +200,9 @@ public final class JavaSyntaxMemoryProfileRunner {
             inputs.add(Path.of(arg));
         }
 
-        if (inputs.isEmpty())
+        if (inputs.isEmpty()) {
             inputs = List.of(Path.of("src/main/java"));
+        }
 
         return new ProfileOptions(List.copyOf(inputs), maxFiles, materializeRed, measureHeap);
     }
@@ -218,14 +215,15 @@ public final class JavaSyntaxMemoryProfileRunner {
                 continue;
 
             if (Files.isRegularFile(normalized)) {
-                if (normalized.toString().endsWith(".java"))
+                if (normalized.toString().endsWith(".java")) {
                     javaFiles.add(normalized);
+                }
                 continue;
             }
 
             try (var stream = Files.walk(normalized)) {
                 stream.filter(path -> Files.isRegularFile(path) && path.toString().endsWith(".java"))
-                        .forEach(javaFiles::add);
+                    .forEach(javaFiles::add);
             }
         }
 
@@ -281,11 +279,10 @@ public final class JavaSyntaxMemoryProfileRunner {
     }
 
     private record ProfileOptions(
-            List<Path> inputs,
-            int maxFiles,
-            boolean materializeRed,
-            boolean measureHeap
-    ) {
+        List<Path> inputs,
+        int maxFiles,
+        boolean materializeRed,
+        boolean measureHeap) {
     }
 
     private record GreenFrame(GreenElement element, int depth) {

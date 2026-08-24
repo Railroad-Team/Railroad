@@ -21,9 +21,7 @@ public class CoreEmptyCatchInspection implements JavaInspectionRuleProvider {
             JavaSemanticRules.EMPTY_CATCH.defaultSeverity(),
             JavaSemanticRules.EMPTY_CATCH.messageTemplate(),
             Set.of("core", "control-flow"),
-            CoreEmptyCatchInspection::reportEmptyCatch
-        )
-    );
+            CoreEmptyCatchInspection::reportEmptyCatch));
 
     @Override
     public String id() {
@@ -41,8 +39,9 @@ public class CoreEmptyCatchInspection implements JavaInspectionRuleProvider {
             if (block == null)
                 continue;
 
-            if (context.isEmptyBlock(block))
+            if (context.isEmptyBlock(block)) {
                 reporter.report(syntaxNode);
+            }
         }
     }
 }

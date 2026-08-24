@@ -21,9 +21,8 @@ public class Tree<T> {
     }
 
     public void setRoot(Node<T> root) {
-        if (this.root != null) {
+        if (this.root != null)
             throw new IllegalStateException("Root node is already set");
-        }
 
         this.root = root;
     }

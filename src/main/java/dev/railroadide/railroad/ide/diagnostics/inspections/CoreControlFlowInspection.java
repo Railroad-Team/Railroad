@@ -45,39 +45,34 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
     private static final String JAVA_TYPE_REFERENCE = "JAVA_TYPE_REFERENCE";
 
     private static final Set<String> LOOP_KINDS = Set.of(
-            JAVA_WHILE_STATEMENT,
-            JAVA_DO_WHILE_STATEMENT,
-            JAVA_FOR_STATEMENT
-    );
+        JAVA_WHILE_STATEMENT,
+        JAVA_DO_WHILE_STATEMENT,
+        JAVA_FOR_STATEMENT);
 
     private static final Set<String> CONTROL_FLOW_BARRIER_KINDS = Set.of(
-            JAVA_METHOD_DECLARATION,
-            JAVA_CONSTRUCTOR_DECLARATION,
-            JAVA_RECORD_COMPACT_CONSTRUCTOR,
-            JAVA_LAMBDA_EXPRESSION,
-            "JAVA_CLASS_DECLARATION",
-            "JAVA_INTERFACE_DECLARATION",
-            "JAVA_ENUM_DECLARATION",
-            "JAVA_ANNOTATION_TYPE_DECLARATION",
-            "JAVA_RECORD_DECLARATION"
-    );
+        JAVA_METHOD_DECLARATION,
+        JAVA_CONSTRUCTOR_DECLARATION,
+        JAVA_RECORD_COMPACT_CONSTRUCTOR,
+        JAVA_LAMBDA_EXPRESSION,
+        "JAVA_CLASS_DECLARATION",
+        "JAVA_INTERFACE_DECLARATION",
+        "JAVA_ENUM_DECLARATION",
+        "JAVA_ANNOTATION_TYPE_DECLARATION",
+        "JAVA_RECORD_DECLARATION");
 
     private static final List<JavaInspectionRule> RULES = List.of(
-            new SimpleJavaInspectionRule(
-                    JavaSemanticRules.INVALID_CONTROL_FLOW.id(),
-                    JavaSemanticRules.INVALID_CONTROL_FLOW.defaultSeverity(),
-                    JavaSemanticRules.INVALID_CONTROL_FLOW.messageTemplate(),
-                    Set.of("core", "control-flow"),
-                    CoreControlFlowInspection::reportInvalidControlFlow
-            ),
-            new SimpleJavaInspectionRule(
-                    JavaSemanticRules.MISSING_RETURN.id(),
-                    JavaSemanticRules.MISSING_RETURN.defaultSeverity(),
-                    JavaSemanticRules.MISSING_RETURN.messageTemplate(),
-                    Set.of("core", "control-flow", "returns"),
-                    CoreControlFlowInspection::reportMissingReturns
-            )
-    );
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.INVALID_CONTROL_FLOW.id(),
+            JavaSemanticRules.INVALID_CONTROL_FLOW.defaultSeverity(),
+            JavaSemanticRules.INVALID_CONTROL_FLOW.messageTemplate(),
+            Set.of("core", "control-flow"),
+            CoreControlFlowInspection::reportInvalidControlFlow),
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.MISSING_RETURN.id(),
+            JavaSemanticRules.MISSING_RETURN.defaultSeverity(),
+            JavaSemanticRules.MISSING_RETURN.messageTemplate(),
+            Set.of("core", "control-flow", "returns"),
+            CoreControlFlowInspection::reportMissingReturns));
 
     @Override
     public String id() {
@@ -123,30 +118,37 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
                 return;
 
             String methodName = callableName(context, node);
-            if (methodName == null || methodName.isBlank())
+            if (methodName == null || methodName.isBlank()) {
                 methodName = "<method>";
-            reporter.report(node, "method '%s' must return '%s' on all paths".formatted(methodName, context.simpleTypeName(returnType)));
+            }
+            reporter.report(node,
+                "method '%s' must return '%s' on all paths".formatted(methodName, context.simpleTypeName(returnType)));
         });
     }
 
-    private static void reportBreakStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter, SyntaxNode node) {
+    private static void reportBreakStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter,
+        SyntaxNode node) {
         String label = breakOrContinueLabel(context, node);
         if (label == null) {
-            if (!hasBreakTarget(node))
+            if (!hasBreakTarget(node)) {
                 reporter.report(node, "'break' is only allowed inside loops or switch statements");
+            }
             return;
         }
 
         SyntaxNode target = findLabeledTarget(node, label);
-        if (target == null)
+        if (target == null) {
             reporter.report(node, "cannot resolve break label '%s'".formatted(label));
+        }
     }
 
-    private static void reportContinueStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter, SyntaxNode node) {
+    private static void reportContinueStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter,
+        SyntaxNode node) {
         String label = breakOrContinueLabel(context, node);
         if (label == null) {
-            if (!hasContinueTarget(node))
+            if (!hasContinueTarget(node)) {
                 reporter.report(node, "'continue' is only allowed inside loops");
+            }
             return;
         }
 
@@ -157,11 +159,13 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         }
 
         SyntaxNode labeledStatement = labeledStatementTarget(target);
-        if (labeledStatement == null || !LOOP_KINDS.contains(labeledStatement.kind().id()))
+        if (labeledStatement == null || !LOOP_KINDS.contains(labeledStatement.kind().id())) {
             reporter.report(node, "continue label '%s' must target a loop".formatted(label));
+        }
     }
 
-    private static void reportReturnStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter, SyntaxNode node) {
+    private static void reportReturnStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter,
+        SyntaxNode node) {
         SyntaxNode enclosingCallable = nearestCallableOrLambda(node);
         if (enclosingCallable == null) {
             reporter.report(node, "'return' is only allowed inside methods, constructors, or lambdas");
@@ -175,27 +179,31 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             return;
 
         if (JAVA_CONSTRUCTOR_DECLARATION.equals(callableKind) || JAVA_RECORD_COMPACT_CONSTRUCTOR.equals(callableKind)) {
-            if (hasValue)
+            if (hasValue) {
                 reporter.report(node, "constructors cannot return a value");
+            }
             return;
         }
 
         SyntaxNode typeRef = context.directChild(enclosingCallable, JAVA_TYPE_REFERENCE);
         String returnType = typeRef == null ? "void" : context.resolveQualifiedTypeName(typeRef);
         if ("void".equals(returnType)) {
-            if (hasValue)
+            if (hasValue) {
                 reporter.report(node, "void methods cannot return a value");
+            }
         } else if (!hasValue) {
             String methodName = callableName(context, enclosingCallable);
-            if (methodName == null || methodName.isBlank())
+            if (methodName == null || methodName.isBlank()) {
                 methodName = "<method>";
+            }
             reporter.report(node, "non-void method '%s' must return a value".formatted(methodName));
         }
     }
 
     private static void reportYieldStatement(JavaInspectionRuleReporter reporter, SyntaxNode node) {
-        if (!hasYieldTarget(node))
+        if (!hasYieldTarget(node)) {
             reporter.report(node, "'yield' is only allowed inside switch expressions");
+        }
     }
 
     private static boolean hasBreakTarget(SyntaxNode node) {
@@ -268,9 +276,8 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
     private static @org.jetbrains.annotations.Nullable SyntaxNode labeledStatementTarget(SyntaxNode labeledStatement) {
         for (SyntaxNode child : labeledStatement.children()) {
             if (!(child instanceof dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken)
-                    && !JAVA_LABELED_STATEMENT.equals(child.kind().id())) {
+                && !JAVA_LABELED_STATEMENT.equals(child.kind().id()))
                 return child;
-            }
         }
         return null;
     }
@@ -304,15 +311,16 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         if (node instanceof dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken token) {
             String text = token.text();
             if (!text.isBlank()
-                    && Character.isJavaIdentifierStart(text.charAt(0))
-                    && !Set.of("break", "continue", "return").contains(text)) {
+                && Character.isJavaIdentifierStart(text.charAt(0))
+                && !Set.of("break", "continue", "return").contains(text)) {
                 out.add(text);
             }
             return;
         }
 
-        for (SyntaxNode child : node.children())
+        for (SyntaxNode child : node.children()) {
             collectIdentifierLikeTokens(child, out);
+        }
     }
 
     private static @org.jetbrains.annotations.Nullable SyntaxNode returnExpression(SyntaxNode returnStatement) {
@@ -334,11 +342,10 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             current = parent.get();
             String kindId = current.kind().id();
             if (JAVA_METHOD_DECLARATION.equals(kindId)
-                    || JAVA_CONSTRUCTOR_DECLARATION.equals(kindId)
-                    || JAVA_RECORD_COMPACT_CONSTRUCTOR.equals(kindId)
-                    || JAVA_LAMBDA_EXPRESSION.equals(kindId)) {
+                || JAVA_CONSTRUCTOR_DECLARATION.equals(kindId)
+                || JAVA_RECORD_COMPACT_CONSTRUCTOR.equals(kindId)
+                || JAVA_LAMBDA_EXPRESSION.equals(kindId))
                 return current;
-            }
         }
     }
 
@@ -376,7 +383,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         if (statements.size() < 2)
             return false;
         return definitelyReturnsOrThrows(context, statements.get(0))
-                && definitelyReturnsOrThrows(context, statements.get(1));
+            && definitelyReturnsOrThrows(context, statements.get(1));
     }
 
     private static boolean tryDefinitelyReturnsOrThrows(JavaRuleContext context, SyntaxNode tryStatement) {
@@ -414,8 +421,9 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         boolean hasDefault = false;
         for (SyntaxNode rule : rules) {
             SyntaxNode label = context.directChild(rule, JAVA_SWITCH_LABEL);
-            if (label != null && labelContainsDefault(label))
+            if (label != null && labelContainsDefault(label)) {
                 hasDefault = true;
+            }
             if (!switchRuleDefinitelyReturnsOrThrows(context, rule))
                 return false;
         }
@@ -443,8 +451,9 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
     private static List<SyntaxNode> directChildrenOfKind(SyntaxNode node, String kindId) {
         List<SyntaxNode> matches = new ArrayList<>();
         for (SyntaxNode child : node.children()) {
-            if (kindId.equals(child.kind().id()))
+            if (kindId.equals(child.kind().id())) {
                 matches.add(child);
+            }
         }
         return List.copyOf(matches);
     }
@@ -467,7 +476,8 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             return;
         }
 
-        for (SyntaxNode child : node.children())
+        for (SyntaxNode child : node.children()) {
             collectLeafTokenTexts(child, out);
+        }
     }
 }

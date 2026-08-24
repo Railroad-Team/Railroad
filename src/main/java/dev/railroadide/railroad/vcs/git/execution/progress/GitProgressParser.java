@@ -12,19 +12,17 @@ public final class GitProgressParser {
     }
 
     // Examples:
-    // "Receiving objects:  42% (1234/5678), 1.23 MiB | 4.56 MiB/s"
-    // "Resolving deltas:  90% (111/123)"
+    // "Receiving objects: 42% (1234/5678), 1.23 MiB | 4.56 MiB/s"
+    // "Resolving deltas: 90% (111/123)"
     private static final Pattern PERCENT_LINE = Pattern.compile(
-        "^(?<phase>[A-Za-z ][A-Za-z ]+?):\\s*(?<pct>\\d{1,3})%\\b.*$"
-    );
+        "^(?<phase>[A-Za-z ][A-Za-z ]+?):\\s*(?<pct>\\d{1,3})%\\b.*$");
 
     // Examples:
     // "Enumerating objects: 123, done."
     // "Counting objects: 100% (123/123), done."
     // (If it has % it will match PERCENT_LINE too)
     private static final Pattern PHASE_PREFIX = Pattern.compile(
-        "^(?<phase>[A-Za-z ][A-Za-z ]+?):\\s*.*$"
-    );
+        "^(?<phase>[A-Za-z ][A-Za-z ]+?):\\s*.*$");
 
     // Examples:
     // "remote: Enumerating objects: 123, done."
@@ -47,7 +45,8 @@ public final class GitProgressParser {
             return Optional.empty();
 
         // Special cases where we just want to emit a message
-        if (normalized.startsWith("From ") || normalized.startsWith("* ") || normalized.startsWith(" + ") || normalized.startsWith(" = "))
+        if (normalized.startsWith("From ") || normalized.startsWith("* ") || normalized.startsWith(" + ")
+            || normalized.startsWith(" = "))
             return Optional.of(new GitProgressEvent.Message(normalized));
 
         // Check for remote prefix
@@ -93,7 +92,7 @@ public final class GitProgressParser {
     private static int parseIntSafe(String s, int fallback) {
         try {
             return Integer.parseInt(s);
-        } catch (Exception ignored) {
+        } catch (Exception _) {
             return fallback;
         }
     }

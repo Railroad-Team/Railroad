@@ -12,7 +12,8 @@ import lombok.ToString;
 @EqualsAndHashCode
 @AllArgsConstructor
 public class License {
-    public static final Registry<License> REGISTRY = RegistryManager.createOrderedRegistry("railroad:license", License.class);
+    public static final Registry<License> REGISTRY = RegistryManager.createOrderedRegistry("railroad:license",
+        License.class);
 
     private final String name;
     private final String url;
@@ -25,9 +26,8 @@ public class License {
 
     public static License fromSpdxId(String spdxId) {
         for (License license : REGISTRY.values()) {
-            if (license.spdxId.equals(spdxId)) {
+            if (license.spdxId.equals(spdxId))
                 return license;
-            }
         }
 
         return null;
@@ -35,9 +35,8 @@ public class License {
 
     public static License fromName(String name) {
         for (License license : REGISTRY.values()) {
-            if (license.name.equals(name)) {
+            if (license.name.equals(name))
                 return license;
-            }
         }
 
         return null;

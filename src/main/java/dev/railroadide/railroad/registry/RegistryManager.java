@@ -25,9 +25,9 @@ public class RegistryManager {
     /**
      * Creates a new registry with the specified ID and type.
      *
-     * @param id   the unique identifier for the registry
+     * @param id the unique identifier for the registry
      * @param type the type of elements in the registry
-     * @param <T>  the type of elements in the registry
+     * @param <T> the type of elements in the registry
      * @return a new Registry instance
      */
     public static <T> Registry<T> createRegistry(String id, Type type) {
@@ -55,9 +55,9 @@ public class RegistryManager {
     /**
      * Creates a new registry with the specified ID and TypeToken.
      *
-     * @param id   the unique identifier for the registry
+     * @param id the unique identifier for the registry
      * @param type the TypeToken representing the type of elements in the registry
-     * @param <T>  the type of elements in the registry
+     * @param <T> the type of elements in the registry
      * @return a new Registry instance
      */
     public static <T> Registry<T> createRegistry(String id, TypeToken<T> type) {
@@ -77,7 +77,7 @@ public class RegistryManager {
     /**
      * Retrieves a registry by its ID.
      *
-     * @param id  the unique identifier for the registry
+     * @param id the unique identifier for the registry
      * @param <T> the type of elements in the registry
      * @return the Registry instance associated with the given ID
      * @throws IllegalArgumentException if no registry is found with the specified ID
@@ -104,7 +104,8 @@ public class RegistryManager {
     /**
      * Retrieves all registered registries.
      *
-     * @return an unmodifiable map of all registries, where the key is the registry ID and the value is the Registry instance
+     * @return an unmodifiable map of all registries, where the key is the registry ID and the value is the Registry
+     *         instance
      */
     public static Map<String, Registry<?>> getAllRegistries() {
         return Map.copyOf(REGISTRIES);
@@ -127,7 +128,7 @@ public class RegistryManager {
      * Retrieves a registry by its type.
      *
      * @param registryClass the class representing the type of elements in the registry
-     * @param <T>           the type of elements in the registry
+     * @param <T> the type of elements in the registry
      * @return the Registry instance associated with the given type
      * @throws IllegalArgumentException if no registry is found for the specified type
      */

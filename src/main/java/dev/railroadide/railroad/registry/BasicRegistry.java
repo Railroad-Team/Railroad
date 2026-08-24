@@ -79,11 +79,10 @@ public class BasicRegistry<T> implements Registry<T> {
     }
 
     static Class<?> rawType(Type type) {
-        if (type instanceof Class<?> clazz) {
+        if (type instanceof Class<?> clazz)
             return clazz;
-        } else if (type instanceof ParameterizedType pType) {
+        else if (type instanceof ParameterizedType pType)
             return (Class<?>) pType.getRawType();
-        }
 
         return null;
     }

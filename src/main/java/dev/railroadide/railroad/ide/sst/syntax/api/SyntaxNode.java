@@ -12,11 +12,11 @@ import java.util.Optional;
  * <p>
  * Contract:
  * <ul>
- *     <li>offsets are zero-based, half-open ranges {@code [start, end)}</li>
- *     <li>node width is {@code end() - start()}</li>
- *     <li>token nodes have no children</li>
- *     <li>parent/child links are consistent</li>
- *     <li>child ranges are contiguous and fully cover the parent range</li>
+ * <li>offsets are zero-based, half-open ranges {@code [start, end)}</li>
+ * <li>node width is {@code end() - start()}</li>
+ * <li>token nodes have no children</li>
+ * <li>parent/child links are consistent</li>
+ * <li>child ranges are contiguous and fully cover the parent range</li>
  * </ul>
  */
 public interface SyntaxNode {

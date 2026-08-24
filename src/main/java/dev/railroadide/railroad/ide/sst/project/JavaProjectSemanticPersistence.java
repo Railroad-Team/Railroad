@@ -106,7 +106,8 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
         FileUtils.deleteFolder(cacheDirectory(normalizedRoot));
     }
 
-    private static JavaProjectSemanticIndex.SourceFileIndex readEntry(Path entryPath, Path projectRoot) throws IOException {
+    private static JavaProjectSemanticIndex.SourceFileIndex readEntry(Path entryPath, Path projectRoot)
+        throws IOException {
         try (DataInputStream input = new DataInputStream(new BufferedInputStream(Files.newInputStream(entryPath)))) {
             verifyHeader(input, ENTRY_MAGIC);
             Path sourcePath = projectRoot.resolve(input.readUTF()).normalize();
@@ -118,8 +119,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
                 imports.add(new JavaProjectSemanticIndex.ImportDescriptor(
                     input.readUTF(),
                     input.readBoolean(),
-                    input.readBoolean()
-                ));
+                    input.readBoolean()));
             }
 
             int symbolCount = input.readInt();
@@ -133,19 +133,20 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
                     readNullableString(input),
                     sourcePath,
                     input.readBoolean(),
-                    input.readBoolean()
-                ));
+                    input.readBoolean()));
             }
 
             return new JavaProjectSemanticIndex.SourceFileIndex(sourcePath, packageName, imports, symbols);
         }
     }
 
-    private static void writeEntry(Path entryPath, Path projectRoot, JavaProjectSemanticIndex.SourceFileIndex file) throws IOException {
+    private static void writeEntry(Path entryPath, Path projectRoot, JavaProjectSemanticIndex.SourceFileIndex file)
+        throws IOException {
         Files.createDirectories(entryPath.getParent());
         Path tempFile = Files.createTempFile(entryPath.getParent(), "semantic-entry", ".tmp");
         try {
-            try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(tempFile)))) {
+            try (DataOutputStream output = new DataOutputStream(
+                new BufferedOutputStream(Files.newOutputStream(tempFile)))) {
                 writeHeader(output, ENTRY_MAGIC);
                 output.writeUTF(projectRoot.relativize(file.path()).toString());
                 writeNullableString(output, file.packageName());
@@ -179,7 +180,8 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
         Files.createDirectories(manifestPath.getParent());
         Path tempFile = Files.createTempFile(manifestPath.getParent(), "semantic-manifest", ".tmp");
         try {
-            try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(tempFile)))) {
+            try (DataOutputStream output = new DataOutputStream(
+                new BufferedOutputStream(Files.newOutputStream(tempFile)))) {
                 writeHeader(output, MANIFEST_MAGIC);
                 output.writeInt(entries.size());
                 for (ManifestEntry entry : entries) {
@@ -204,18 +206,17 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
     private static void verifyHeader(DataInputStream input, String expectedMagic) throws IOException {
         String actualMagic = input.readUTF();
         int version = input.readInt();
-        if (!expectedMagic.equals(actualMagic)) {
+        if (!expectedMagic.equals(actualMagic))
             throw new IOException("Unexpected semantic index magic: " + actualMagic);
-        }
-        if (version != FORMAT_VERSION) {
+        if (version != FORMAT_VERSION)
             throw new IOException("Unsupported semantic index version: " + version);
-        }
     }
 
     private static void writeNullableString(DataOutputStream output, @Nullable String value) throws IOException {
         output.writeBoolean(value != null);
-        if (value != null)
+        if (value != null) {
             output.writeUTF(value);
+        }
     }
 
     private static @Nullable String readNullableString(DataInputStream input) throws IOException {
@@ -264,7 +265,6 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
         String relativePath,
         long lastModified,
         String contentHash,
-        String entryFileName
-    ) {
+        String entryFileName) {
     }
 }

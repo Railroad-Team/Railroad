@@ -67,7 +67,7 @@ public class RRFormContainer extends VBox {
      */
     public void setLocalizedTitle(@Nullable String localizationKey, Object... args) {
         titleLabel.setVisible(localizationKey != null && !localizationKey.trim().isEmpty());
-        if(localizationKey != null) {
+        if (localizationKey != null) {
             titleLabel.setKey(localizationKey, args);
         }
     }

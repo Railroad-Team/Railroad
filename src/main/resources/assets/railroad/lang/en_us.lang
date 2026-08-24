@@ -270,6 +270,7 @@ railroad.settings.keybinds.recording=Recording...
 
 # Keybinds categories
 railroad.settings.keybinds.category.general=General
+railroad.settings.keybinds.category.view_modes=View Modes
 
 # Keybinds
 railroad.settings.keybinds.open_project_explorer_item=Open selected project item
@@ -283,6 +284,8 @@ railroad.settings.keybinds.rename_project_explorer_item=Rename selected project 
 railroad.settings.keybinds.open_in_file_explorer=Open in file explorer
 railroad.settings.keybinds.open_in_terminal=Open in terminal
 railroad.settings.keybinds.fullscreen=Fullscreen
+railroad.settings.keybinds.view_mode_code=Switch to Code view mode
+railroad.settings.keybinds.view_mode_git=Switch to Git view mode
 
 # Plugin settings
 railroad.window.plugins.title=Plugins
@@ -523,10 +526,30 @@ railroad.menu.edit.find=Find...
 railroad.menu.edit.replace=Replace...
 
 railroad.menu.view=View
+railroad.menu.view.mode=View Mode
+railroad.menu.view.tool_windows=Tool Windows
+railroad.menu.view.reset_current_layout=Reset Current Layout
+railroad.menu.view.reset_all_layouts=Reset All Layouts
 railroad.menu.view.project_explorer=Project Explorer
 railroad.menu.view.properties=Properties
 railroad.menu.view.console=Console
 railroad.menu.view.full_screen=Toggle Full Screen
+railroad.ide.view_mode.code=Code
+railroad.ide.view_mode.git=Git
+railroad.ide.view_mode.git_detecting=Detecting Git repository…
+railroad.ide.view_mode.git_unavailable=No Git repository detected
+railroad.ide.view_mode.git_detection_failed=Git detection failed — click to retry
+railroad.ide.dock_item.project=Project
+railroad.ide.dock_item.git_overview=Git Overview
+railroad.ide.dock_item.git_commit=Git Commit
+railroad.ide.dock_item.git_commit_list=Git Commit List
+railroad.ide.dock_item.git_branches=Git Branches
+railroad.ide.dock_item.git_remotes=Git Remotes
+railroad.ide.dock_item.git_sync=Git Sync
+railroad.ide.dock_item.git_stash=Git Stash
+railroad.ide.dock_item.gradle=Gradle
+railroad.ide.dock_item.console=Console
+railroad.ide.dock_item.terminal=Terminal
 
 railroad.menu.run=Run
 railroad.menu.run.run=Run

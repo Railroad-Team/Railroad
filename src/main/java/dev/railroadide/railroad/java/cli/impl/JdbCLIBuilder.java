@@ -164,7 +164,7 @@ public class JdbCLIBuilder implements CLIBuilder<Process, JdbCLIBuilder> {
      * Connects to a running JVM using the specified connector. Corresponds to the {@code -connect} option.
      *
      * @param connectorName The name of the connector.
-     * @param arguments     A map of arguments for the connector.
+     * @param arguments A map of arguments for the connector.
      * @return This builder instance.
      */
     public JdbCLIBuilder connect(String connectorName, Map<String, String> arguments) {
@@ -267,7 +267,7 @@ public class JdbCLIBuilder implements CLIBuilder<Process, JdbCLIBuilder> {
     /**
      * Sets a system property for the debuggee JVM. Corresponds to the {@code -Dkey=value} option.
      *
-     * @param key   The property key.
+     * @param key The property key.
      * @param value The property value.
      * @return This builder instance.
      */

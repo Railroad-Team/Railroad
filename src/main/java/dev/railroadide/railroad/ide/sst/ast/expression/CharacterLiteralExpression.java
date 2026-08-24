@@ -9,10 +9,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record CharacterLiteralExpression(
-        Span span,
-        String rawValue,
-        char value
-) implements LiteralExpression {
+    Span span,
+    String rawValue,
+    char value) implements LiteralExpression {
     @Override
     public AstKind kind() {
         return AstKind.CHARACTER_LITERAL;

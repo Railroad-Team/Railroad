@@ -15,11 +15,11 @@ import java.util.List;
 import java.util.Optional;
 
 public record CompactConstructorDeclaration(
-        Span span,
-        List<Modifier> modifiers,
-        List<Annotation> annotations,
-        NameExpression name,
-        Optional<BlockStatement> body) implements ClassBodyDeclaration {
+    Span span,
+    List<Modifier> modifiers,
+    List<Annotation> annotations,
+    NameExpression name,
+    Optional<BlockStatement> body) implements ClassBodyDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.COMPACT_CONSTRUCTOR_DECLARATION;

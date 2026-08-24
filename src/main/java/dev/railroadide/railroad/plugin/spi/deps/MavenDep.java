@@ -26,9 +26,9 @@ public record MavenDep(String groupId, String artifactId, String version) {
     /**
      * Constructs a Maven dependency from its group ID, artifact ID, and version.
      *
-     * @param groupId    the group ID of the dependency
+     * @param groupId the group ID of the dependency
      * @param artifactId the artifact ID of the dependency
-     * @param version    the version of the dependency
+     * @param version the version of the dependency
      * @throws IllegalArgumentException if any of the parameters are null or empty,
      */
     public MavenDep {
@@ -38,8 +38,10 @@ public record MavenDep(String groupId, String artifactId, String version) {
         if (groupId.isEmpty() || artifactId.isEmpty() || version.isEmpty())
             throw new IllegalArgumentException("Group ID, artifact ID, and version must not be empty");
 
-        if (!groupId.matches("[a-zA-Z0-9._-]+") || !artifactId.matches("[a-zA-Z0-9._-]+") || !version.matches("[a-zA-Z0-9._-]+"))
-            throw new IllegalArgumentException("Group ID, artifact ID, and version must match the Maven naming conventions");
+        if (!groupId.matches("[a-zA-Z0-9._-]+") || !artifactId.matches("[a-zA-Z0-9._-]+")
+            || !version.matches("[a-zA-Z0-9._-]+"))
+            throw new IllegalArgumentException(
+                "Group ID, artifact ID, and version must match the Maven naming conventions");
     }
 
     /**

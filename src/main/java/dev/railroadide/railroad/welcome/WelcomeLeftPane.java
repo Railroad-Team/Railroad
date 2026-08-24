@@ -60,11 +60,10 @@ public class WelcomeLeftPane extends RRSidebar {
 
     @Getter
     public enum MenuType {
-        HOME("railroad.home.welcome.home", FontAwesomeSolid.HOME),
-        NEW_PROJECT("railroad.home.welcome.newproject", FontAwesomeSolid.PLUS),
-        OPEN_PROJECT("railroad.home.welcome.openproject", FontAwesomeSolid.FOLDER_OPEN),
-        IMPORT_PROJECT("railroad.home.welcome.importproject", FontAwesomeSolid.FILE_IMPORT),
-        SETTINGS("railroad.home.welcome.settings", FontAwesomeSolid.COG);
+        HOME("railroad.home.welcome.home", FontAwesomeSolid.HOME), NEW_PROJECT("railroad.home.welcome.newproject",
+            FontAwesomeSolid.PLUS), OPEN_PROJECT("railroad.home.welcome.openproject",
+                FontAwesomeSolid.FOLDER_OPEN), IMPORT_PROJECT("railroad.home.welcome.importproject",
+                    FontAwesomeSolid.FILE_IMPORT), SETTINGS("railroad.home.welcome.settings", FontAwesomeSolid.COG);
 
         private final String key;
         private final Ikon icon;

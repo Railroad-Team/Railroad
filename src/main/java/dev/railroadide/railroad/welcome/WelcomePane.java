@@ -52,7 +52,8 @@ public class WelcomePane extends HBox {
         HBox.setHgrow(rightPane, Priority.ALWAYS);
 
         leftPane.getListView().getSelectionModel().selectedItemProperty().addListener((_, _, newValue) -> {
-            if (newValue == null) return;
+            if (newValue == null)
+                return;
             switch (newValue) {
                 case HOME -> {
                     rightPane.getChildren().clear();
@@ -97,17 +98,17 @@ public class WelcomePane extends HBox {
 
                 // For now, we will allow opening any directory and let the Project class handle validation
                 // TODO: Re-add validation here in the future
-//                if (isValidProjectDirectory(projectPath)) {
+                // if (isValidProjectDirectory(projectPath)) {
                 var project = new RailroadProject(projectPath);
                 project.open(null);
-//                } else {
-//                    WindowBuilder.createAlert(
-//                        AlertType.ERROR,
-//                        "railroad.dialog.open_project.error.invalid_directory",
-//                        "railroad.dialog.open_project.error.invalid_directory",
-//                        "railroad.dialog.open_project.error.invalid_directory.message"
-//                    ).build();
-//                }
+                // } else {
+                // WindowBuilder.createAlert(
+                // AlertType.ERROR,
+                // "railroad.dialog.open_project.error.invalid_directory",
+                // "railroad.dialog.open_project.error.invalid_directory",
+                // "railroad.dialog.open_project.error.invalid_directory.message"
+                // ).build();
+                // }
             }
         });
     }

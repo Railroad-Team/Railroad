@@ -99,7 +99,7 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
     private StackPane createBusyOverlay() {
         var indicator = new ProgressIndicator();
         indicator.getStyleClass().add("onboarding-busy-indicator");
-        StackPane overlay = new StackPane(indicator);
+        var overlay = new StackPane(indicator);
         overlay.getStyleClass().add("onboarding-busy-overlay");
         overlay.setVisible(false);
         overlay.setManaged(false);

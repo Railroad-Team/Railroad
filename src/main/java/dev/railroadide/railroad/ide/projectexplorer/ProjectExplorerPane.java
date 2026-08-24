@@ -15,6 +15,8 @@ import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import dev.railroadide.railroad.ide.projectexplorer.task.FileCopyTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.SearchTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
+import dev.railroadide.railroad.ide.ui.IDEContentRouter;
+import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
@@ -63,7 +65,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeListener {
+public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeListener, AutoCloseable {
     private static boolean fileChangeListenerEnabled = true;
     private final Project project;
     private final ExecutorService executorService = Executors.newFixedThreadPool(3);
@@ -74,6 +76,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private final ObservableList<String> searchListItems = FXCollections.observableArrayList();
     private final StringProperty searchProperty = new SimpleStringProperty();
     private final List<String> searchList = new ArrayList<>();
+    private final ShutdownHooks.Registration shutdownRegistration;
+    private boolean closed;
 
     public ProjectExplorerPane(Project project) {
         this.project = project;
@@ -110,8 +114,18 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         KeybindHandler.registerCapture(KeybindContexts.of("railroad:project_explorer"), this.treeView);
 
-        ShutdownHooks.addHook(this.executorService::shutdownNow);
+        shutdownRegistration = ShutdownHooks.registerHook(this.executorService::shutdownNow);
         Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.PROJECT_EXPLORER, this);
+    }
+
+    @Override
+    public void close() {
+        if (closed)
+            return;
+
+        closed = true;
+        shutdownRegistration.close();
+        executorService.shutdownNow();
     }
 
     public void openSelectedItem() {
@@ -142,8 +156,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     public void createFileInSelectedItem(FileCreateType type) {
-        selectedTreeItem().ifPresent(selectedItem ->
-            CreateFileDialog.open(getScene().getWindow(), selectedItem.getValue().getPath(), type));
+        selectedTreeItem().ifPresent(
+            selectedItem -> CreateFileDialog.open(getScene().getWindow(), selectedItem.getValue().getPath(), type));
     }
 
     public void renameSelectedItem() {
@@ -185,7 +199,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
                 // we need to find the cells that match the path and set them to not cut
                 TreeItem<PathItem> rootItem = treeView.getRoot();
-                TreeItem<PathItem> item = ((ProjectExplorerPane) treeView.getParent()).findOrCreateTreeItem(rootItem, path);
+                TreeItem<PathItem> item = ((ProjectExplorerPane) treeView.getParent()).findOrCreateTreeItem(rootItem,
+                    path);
                 if (item == null)
                     continue;
 
@@ -266,7 +281,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         });
     }
 
-    // TODO: Probably just rewrite this entire method as its not designed well for IDEStateService and the way we handle documents
+    // TODO: Probably just rewrite this entire method as its not designed well for IDEStateService and the way we handle
+    // documents
     public static void openFile(Project project, PathItem item) {
         Path path = item.getPath();
         if (Files.isDirectory(path))
@@ -282,8 +298,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             // TODO: This will not really work long term as everything will think its an open tab in the IDE
             Railroad.EVENT_BUS.publish(new DocumentEvent(
                 new FileSystemDocument(path),
-                DocumentEvent.EventType.OPENED
-            ));
+                DocumentEvent.EventType.OPENED));
             return;
         }
 
@@ -292,12 +307,13 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             return;
         }
 
-        Services.UI_MANAGER.lookup(UIIds.IDE.IDE_EDITOR_DOCK).ifPresent(detachableTabPane -> {
+        IDEContentRouter.routeActive(WorkspaceContentTargets.CODE_EDITOR, detachableTabPane -> {
             String fileName = path.getFileName().toString();
-            if (detachableTabPane.getTabs().stream().anyMatch(tab -> tab.getId().equals(path.toAbsolutePath().toString()))) {
+            String tabId = normalizedPath.toString();
+            if (detachableTabPane.getTabs().stream().anyMatch(tab -> tabId.equals(tab.getId()))) {
                 // If a tab with the same name is already open, select it and return
                 detachableTabPane.getTabs().stream()
-                    .filter(tab -> tab.getText().equals(fileName))
+                    .filter(tab -> tabId.equals(tab.getId()))
                     .findFirst().ifPresent(existingTab -> detachableTabPane.getSelectionModel().select(existingTab));
                 return;
             }
@@ -313,7 +329,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 FileUtils.openInDefaultApplication(path);
                 // TODO: This will not really work long term as everything will think its an open tab in the IDE
                 // TODO: Also look at combining this with the other one that does the same thing
-                Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(path, support.languageId()), DocumentEvent.EventType.OPENED));
+                Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(path, support.languageId()),
+                    DocumentEvent.EventType.OPENED));
                 return;
             }
 
@@ -330,7 +347,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 tab = detachableTabPane.addTab(fileName, content);
             }
 
-            tab.setId(path.toAbsolutePath().toString());
+            tab.setId(tabId);
             detachableTabPane.getSelectionModel().select(tab);
 
             var document = new FileSystemDocument(path, support.languageId());
@@ -461,9 +478,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 addPathToTree(path);
             } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
                 removePathFromTree(path);
-            }/* else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-
-            }*/
+            } /*
+               * else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
+               *
+               * }
+               */
 
             String searchValue = searchField.getText();
             if (!searchValue.isBlank()) {
@@ -489,7 +508,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         cell.setOnDragOver(event -> {
             TreeItem<PathItem> item = cell.getTreeItem();
-            if ((item != null && !item.isLeaf()) && event.getGestureSource() != cell && event.getDragboard().hasFiles()) {
+            if ((item != null && !item.isLeaf()) && event.getGestureSource() != cell
+                && event.getDragboard().hasFiles()) {
                 Path targetPath = cell.getTreeItem().getValue().getPath();
                 var sourceCell = (PathTreeCell) event.getGestureSource();
                 Path sourceParentPath = sourceCell.getTreeItem().getValue().getPath().getParent();
@@ -503,7 +523,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         cell.setOnDragEntered(event -> {
             TreeItem<PathItem> item = cell.getTreeItem();
-            if ((item != null && !item.isLeaf()) && event.getGestureSource() != cell && event.getDragboard().hasFiles()) {
+            if ((item != null && !item.isLeaf()) && event.getGestureSource() != cell
+                && event.getDragboard().hasFiles()) {
                 Path targetPath = cell.getTreeItem().getValue().getPath();
                 var sourceCell = (PathTreeCell) event.getGestureSource(); // TODO: This breaks if from external source
                 Path sourceParentPath = sourceCell.getTreeItem().getValue().getPath().getParent();
@@ -527,8 +548,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 Path sourcePath = dragboard.getFiles().getFirst().toPath();
                 var targetPath = Path.of(
                     cell.getTreeItem().getValue().getPath().toAbsolutePath().toString(),
-                    sourcePath.getFileName().toString()
-                );
+                    sourcePath.getFileName().toString());
 
                 if (Files.exists(targetPath, LinkOption.NOFOLLOW_LINKS)) {
                     Platform.runLater(() -> {
@@ -650,7 +670,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 }
 
                 @Override
-                public @NotNull FileVisitResult preVisitDirectory(@NotNull Path dir, @NotNull BasicFileAttributes attrs) {
+                public @NotNull FileVisitResult preVisitDirectory(@NotNull Path dir,
+                    @NotNull BasicFileAttributes attrs) {
                     addPathToTree(dir);
                     return FileVisitResult.CONTINUE;
                 }
@@ -678,7 +699,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private void addPathToTree(Path path) {
         TreeItem<PathItem> parentItem = findTreeItem(path.getParent());
         if (parentItem != null && isMissingPath(parentItem, path)) {
-            PathItem newItem = new PathItem(path);
+            var newItem = new PathItem(path);
             TreeItem<PathItem> newTreeItem = new PathTreeItem(newItem);
             parentItem.getChildren().add(newTreeItem);
             sortTreeItems(parentItem);
@@ -699,23 +720,20 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     private TreeItem<PathItem> findTreeItemRecursive(TreeItem<PathItem> currentItem, Path path) {
-        if (currentItem.getValue().getPath().equals(path)) {
+        if (currentItem.getValue().getPath().equals(path))
             return currentItem;
-        }
 
         for (TreeItem<PathItem> child : getLoadedChildren(currentItem)) {
             TreeItem<PathItem> result = findTreeItemRecursive(child, path);
-            if (result != null) {
+            if (result != null)
                 return result;
-            }
         }
         return null;
     }
 
     private static ObservableList<TreeItem<PathItem>> getLoadedChildren(TreeItem<PathItem> item) {
-        if (item instanceof PathTreeItem pathTreeItem && !pathTreeItem.areChildrenLoaded()) {
+        if (item instanceof PathTreeItem pathTreeItem && !pathTreeItem.areChildrenLoaded())
             return FXCollections.emptyObservableList();
-        }
 
         return item.getChildren();
     }

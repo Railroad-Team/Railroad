@@ -20,7 +20,7 @@ public class RRMenuBar extends MenuBar {
      * Creates a new RRMenuBar, optionally adding default menus such as Help.
      *
      * @param addDefaults If true, adds default menus like Help with links to documentation, issues, and Discord.
-     * @param children    The initial menus to add to the menu bar.
+     * @param children The initial menus to add to the menu bar.
      */
     public RRMenuBar(boolean addDefaults, Menu... children) {
         this(children);
@@ -29,7 +29,8 @@ public class RRMenuBar extends MenuBar {
             var help = new LocalizedMenu("railroad.menu.help");
             help.getItems().add(new LocalizedMenuItem("railroad.menu.help.documentation", "https://railroadide.dev/"));
             help.getItems().add(new SeparatorMenuItem());
-            help.getItems().add(new LocalizedMenuItem("railroad.menu.help.issues", "https://github.com/Railroad-Team/Railroad/issues"));
+            help.getItems().add(
+                new LocalizedMenuItem("railroad.menu.help.issues", "https://github.com/Railroad-Team/Railroad/issues"));
             help.getItems().add(new LocalizedMenuItem("railroad.menu.help.discord", "https://discord.turtywurty.dev/"));
 
             getMenus().addLast(help);

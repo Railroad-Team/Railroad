@@ -29,8 +29,7 @@ public final class ProjectLanguageIndexCoordinator {
     public ProjectLanguageIndexCoordinator(
         Path projectRoot,
         ProjectLanguageIndexService indexService,
-        Collection<LanguageSupport> supports
-    ) {
+        Collection<LanguageSupport> supports) {
         this.projectRoot = FileUtils.normalizePath(Objects.requireNonNull(projectRoot, "projectRoot"));
         this.indexService = Objects.requireNonNull(indexService, "indexService");
         this.supports = List.copyOf(Objects.requireNonNull(supports, "supports"));
@@ -48,8 +47,7 @@ public final class ProjectLanguageIndexCoordinator {
                     "Failed to warm project index for language {} in {}",
                     support.languageId(),
                     projectRoot,
-                    exception
-                );
+                    exception);
             }
         }
     }
@@ -79,8 +77,7 @@ public final class ProjectLanguageIndexCoordinator {
                 "Failed to update project index for language {} and path {}",
                 support.languageId(),
                 path,
-                exception
-            );
+                exception);
         }
     }
 

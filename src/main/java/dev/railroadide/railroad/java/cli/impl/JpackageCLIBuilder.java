@@ -321,7 +321,7 @@ public class JpackageCLIBuilder implements CLIBuilder<Process, JpackageCLIBuilde
     /**
      * Declares an extra launcher with its properties file.
      *
-     * @param name           launcher name
+     * @param name launcher name
      * @param propertiesFile launcher properties path
      * @return this builder
      */

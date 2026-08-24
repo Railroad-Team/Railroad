@@ -20,11 +20,9 @@ public class CoreIntegerDivisionInFloatingPointContextInspection implements Java
     public static final String ID = "railroad:core-integer-division-in-floating-point-context";
 
     private static final Set<String> INTEGRAL_TYPE_PRIMITIVE_NAMES = Set.of(
-        "byte", "short", "int", "long", "char"
-    );
+        "byte", "short", "int", "long", "char");
     private static final Set<String> FLOATING_POINT_TYPE_PRIMITIVE_NAMES = Set.of(
-        "float", "double"
-    );
+        "float", "double");
 
     @Override
     public String id() {
@@ -39,12 +37,11 @@ public class CoreIntegerDivisionInFloatingPointContextInspection implements Java
                 JavaSemanticRules.INTEGER_DIVISION_IN_FLOATING_POINT_CONTEXT.defaultSeverity(),
                 JavaSemanticRules.INTEGER_DIVISION_IN_FLOATING_POINT_CONTEXT.messageTemplate(),
                 Set.of("core", "numeric-precision"),
-                CoreIntegerDivisionInFloatingPointContextInspection::reportIntegerDivisionInFloatingPointContext
-            )
-        );
+                CoreIntegerDivisionInFloatingPointContextInspection::reportIntegerDivisionInFloatingPointContext));
     }
 
-    private static void reportIntegerDivisionInFloatingPointContext(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportIntegerDivisionInFloatingPointContext(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         for (SyntaxNode binaryExpression : context.nodesOfKind(JavaSyntaxKinds.BINARY_EXPRESSION.id())) {
             if (!isIntegerDivision(context, binaryExpression))
                 continue;
@@ -80,14 +77,15 @@ public class CoreIntegerDivisionInFloatingPointContextInspection implements Java
                 continue;
             }
 
-            if(isFloatingPointExpressionContext(context, parent))
+            if (isFloatingPointExpressionContext(context, parent))
                 return true;
 
             current = parent;
         }
     }
 
-    private static boolean isInFloatingPointMethodArgContext(JavaRuleContext context, SyntaxNode current, SyntaxNode invocation) {
+    private static boolean isInFloatingPointMethodArgContext(JavaRuleContext context, SyntaxNode current,
+        SyntaxNode invocation) {
         return false;
     }
 

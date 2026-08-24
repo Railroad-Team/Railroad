@@ -9,12 +9,11 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record IntegerLiteralExpression(
-        Span span,
-        String rawValue,
-        long value,
-        int base,
-        boolean isLong
-) implements LiteralExpression {
+    Span span,
+    String rawValue,
+    long value,
+    int base,
+    boolean isLong) implements LiteralExpression {
     @Override
     public AstKind kind() {
         return AstKind.INTEGER_LITERAL;

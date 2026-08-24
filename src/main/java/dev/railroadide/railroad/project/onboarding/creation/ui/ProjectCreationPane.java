@@ -26,8 +26,7 @@ public class ProjectCreationPane extends RRBorderPane {
     public ProjectCreationPane(ProjectData data) {
         this.context = new ProjectContext(
             data,
-            data.getAsPath(ProjectData.DefaultKeys.PATH).resolve(data.getAsString(ProjectData.DefaultKeys.NAME))
-        );
+            data.getAsPath(ProjectData.DefaultKeys.PATH).resolve(data.getAsString(ProjectData.DefaultKeys.NAME)));
 
         this.view = new ProjectCreationView(data);
         this.taos = new TextAreaOutputStream(view.getLogArea());
@@ -53,9 +52,7 @@ public class ProjectCreationPane extends RRBorderPane {
 
                     ((Stage) view.sceneProperty().get().getWindow()).close();
                     returnToWelcome();
-                }
-            )
-        );
+                }));
 
         setCenter(view);
         service.start();
@@ -64,7 +61,8 @@ public class ProjectCreationPane extends RRBorderPane {
     protected void openInIDE(ProjectContext ctx) {
         Platform.runLater(() -> {
             try {
-                var project = new RailroadProject(ctx.projectDir(), ctx.data().getAsString(ProjectData.DefaultKeys.NAME));
+                var project = new RailroadProject(ctx.projectDir(),
+                    ctx.data().getAsString(ProjectData.DefaultKeys.NAME));
                 project.open(null);
             } catch (Exception exception) {
                 Railroad.LOGGER.error("Failed to open project in IDE", exception);
@@ -73,8 +71,7 @@ public class ProjectCreationPane extends RRBorderPane {
                     "railroad.project.creation.error.open_ide.title",
                     "railroad.project.creation.error.open_ide.header",
                     exception,
-                    ProjectCreationPane::returnToWelcome
-                );
+                    ProjectCreationPane::returnToWelcome);
             }
         });
     }

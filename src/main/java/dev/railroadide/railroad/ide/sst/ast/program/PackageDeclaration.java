@@ -10,9 +10,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record PackageDeclaration(
-        Span span,
-        NameExpression name
-) implements AstNode {
+    Span span,
+    NameExpression name) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.PACKAGE_DECLARATION;

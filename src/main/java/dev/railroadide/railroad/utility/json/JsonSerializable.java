@@ -13,7 +13,7 @@ public interface JsonSerializable<T extends JsonElement> {
     /**
      * Converts a given JSON element to its string representation using the provided Gson instance.
      *
-     * @param gson       The Gson instance used for serialization.
+     * @param gson The Gson instance used for serialization.
      * @param jsonObject The JSON element to convert to a string.
      * @return The string representation of the JSON element.
      */

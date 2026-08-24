@@ -29,10 +29,10 @@ public final class JavaProjectSemanticIndexer {
 
         try (Stream<Path> paths = Files.walk(projectRoot)) {
             List<Path> javaFiles = paths
-                    .filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().endsWith(".java"))
-                    .sorted(Comparator.naturalOrder())
-                    .toList();
+                .filter(Files::isRegularFile)
+                .filter(path -> path.getFileName().toString().endsWith(".java"))
+                .sorted(Comparator.naturalOrder())
+                .toList();
             return build(javaFiles);
         } catch (IOException exception) {
             throw new UncheckedIOException("Failed to build semantic index for " + projectRoot, exception);

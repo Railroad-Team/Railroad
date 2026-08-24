@@ -46,9 +46,9 @@ public class ToolingGradleModelService implements GradleModelService {
     /**
      * Creates a new ToolingGradleModelService.
      *
-     * @param project     the project for which to load the Gradle model
+     * @param project the project for which to load the Gradle model
      * @param environment the Gradle environment configuration
-     * @param executor    the executor to use for asynchronous operations
+     * @param executor the executor to use for asynchronous operations
      */
     public ToolingGradleModelService(Project project, GradleEnvironment environment, Executor executor) {
         this.project = Objects.requireNonNull(project);
@@ -90,7 +90,7 @@ public class ToolingGradleModelService implements GradleModelService {
             if (initScriptPath != null) {
                 try {
                     Files.deleteIfExists(initScriptPath);
-                } catch (Exception ignored) {
+                } catch (Exception _) {
                 }
             }
         }
@@ -100,7 +100,8 @@ public class ToolingGradleModelService implements GradleModelService {
         try {
             Path path = Files.createTempFile("gradle-init-script", ".gradle");
             path.toFile().deleteOnExit();
-            Files.copy(AppResources.getResourceAsStream("scripts/init-gradle-plugin.gradle"), path, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(AppResources.getResourceAsStream("scripts/init-gradle-plugin.gradle"), path,
+                StandardCopyOption.REPLACE_EXISTING);
             return path;
         } catch (Exception exception) {
             throw new RuntimeException("Failed to write Gradle init script", exception);
@@ -108,7 +109,7 @@ public class ToolingGradleModelService implements GradleModelService {
     }
 
     private static <T> T requestOptionalModel(ProjectConnection connection, Class<T> modelClass,
-                                              String[] initScriptArgs, GradleEnvironment environment) {
+        String[] initScriptArgs, GradleEnvironment environment) {
         try {
             return configureJvm(connection.model(modelClass), environment)
                 .withArguments(initScriptArgs)
@@ -122,7 +123,7 @@ public class ToolingGradleModelService implements GradleModelService {
     /**
      * Configures the given GradleConnector based on the provided GradleEnvironment.
      *
-     * @param connector   the GradleConnector to configure
+     * @param connector the GradleConnector to configure
      * @param environment the GradleEnvironment containing configuration settings
      */
     public static void configureConnector(GradleConnector connector, GradleEnvironment environment) {
@@ -178,8 +179,8 @@ public class ToolingGradleModelService implements GradleModelService {
                 return ongoingRefresh;
 
             refresh = CompletableFuture.supplyAsync(
-                    safely(() -> ToolingGradleModelService.loadModel(this.project, this.environment)),
-                    executor)
+                safely(() -> ToolingGradleModelService.loadModel(this.project, this.environment)),
+                executor)
                 .orTimeout(modelTimeout.toMillis(), TimeUnit.MILLISECONDS);
             ongoingRefresh = refresh;
         }
@@ -190,8 +191,8 @@ public class ToolingGradleModelService implements GradleModelService {
     }
 
     private void completeRefresh(CompletableFuture<GradleBuildModel> refresh,
-                                 GradleBuildModel model,
-                                 Throwable throwable) {
+        GradleBuildModel model,
+        Throwable throwable) {
         synchronized (lock) {
             if (throwable == null && model != null) {
                 cachedModel.set(model);
@@ -202,8 +203,7 @@ public class ToolingGradleModelService implements GradleModelService {
             if (throwable == null && model != null) {
                 listeners.forEach(listener -> notifyListener(
                     () -> listener.modelReloadSucceeded(model),
-                    "success"
-                ));
+                    "success"));
             } else {
                 Throwable error = throwable != null
                     ? throwable
@@ -211,8 +211,7 @@ public class ToolingGradleModelService implements GradleModelService {
                 Railroad.LOGGER.error("Failed to reload Gradle model", error);
                 listeners.forEach(listener -> notifyListener(
                     () -> listener.modelReloadFailed(error),
-                    "failure"
-                ));
+                    "failure"));
             }
         } finally {
             synchronized (lock) {

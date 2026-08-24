@@ -161,7 +161,7 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
         Runnable close = () -> {
             try {
                 onClose.run();
-            } catch (Exception ignored) {
+            } catch (Exception _) {
             }
 
             var window = overlay.getScene() != null ? overlay.getScene().getWindow() : null;
@@ -172,8 +172,8 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
             }
         };
 
-        primary.setOnAction($ -> close.run());
-        secondary.setOnAction($ -> close.run());
+        primary.setOnAction(_ -> close.run());
+        secondary.setOnAction(_ -> close.run());
 
         var scene = new Scene(overlay);
         scene.setFill(Color.TRANSPARENT);

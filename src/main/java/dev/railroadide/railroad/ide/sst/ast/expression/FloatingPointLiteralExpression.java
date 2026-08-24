@@ -9,11 +9,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record FloatingPointLiteralExpression(
-        Span span,
-        String rawValue,
-        double value,
-        boolean isFloat
-) implements LiteralExpression {
+    Span span,
+    String rawValue,
+    double value,
+    boolean isFloat) implements LiteralExpression {
     @Override
     public AstKind kind() {
         return AstKind.FLOATING_POINT_LITERAL;

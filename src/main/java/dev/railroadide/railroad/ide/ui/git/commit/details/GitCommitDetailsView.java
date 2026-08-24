@@ -9,7 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 public class GitCommitDetailsView extends RRVBox {
-    public GitCommitDetailsView(Project project, GitCommit commit, String headCommitHash, Map<String, List<String>> tagsByCommit) {
+    public GitCommitDetailsView(Project project, GitCommit commit, String headCommitHash,
+        Map<String, List<String>> tagsByCommit) {
         super();
         getStyleClass().add("git-commit-details-view");
         setAlignment(Pos.TOP_LEFT);

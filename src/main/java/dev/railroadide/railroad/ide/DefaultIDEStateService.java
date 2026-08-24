@@ -12,13 +12,13 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Getter
 public class DefaultIDEStateService implements IDEStateService {
     private static DefaultIDEStateService instance;
     private final Map<Document, Long> openDocuments = new HashMap<>();
     private final Map<Path, Long> recentFiles = new HashMap<>();
-
     private Project currentProject;
     private long openedProjectAtMillis = -1L;
     private Document activeDocument;
@@ -44,10 +44,8 @@ public class DefaultIDEStateService implements IDEStateService {
     private void setCurrentProject_internal(Project project) {
         this.currentProject = project;
         this.openedProjectAtMillis = project != null ? System.currentTimeMillis() : -1L;
-
         if (project == null) {
             clearOpenDocuments_internal();
-            setActiveDocument_internal(null);
         }
     }
 
@@ -62,23 +60,29 @@ public class DefaultIDEStateService implements IDEStateService {
         recentFiles.put(document.getPath(), System.currentTimeMillis());
         // TODO: Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.RECENT_FILE_ADDED));
 
-        if ((activeDocument != null && openDocuments.isEmpty()) || (activeDocument != null && activeDocument.equals(document))) {
+        if ((activeDocument != null && openDocuments.isEmpty())
+            || (activeDocument != null && activeDocument.equals(document))) {
             setActiveDocument_internal(null);
         }
     }
 
     private void setActiveDocument_internal(Document document) {
-        if (openDocuments.containsKey(document)) {
-            this.activeDocument = document;
-            Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.ACTIVATED));
-        } else {
-            this.activeDocument = null;
-            Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.DEACTIVATED));
+        Document previousDocument = this.activeDocument;
+        Document nextDocument = document != null && openDocuments.containsKey(document) ? document : null;
+        if (Objects.equals(previousDocument, nextDocument))
+            return;
+
+        this.activeDocument = nextDocument;
+        if (previousDocument != null) {
+            Railroad.EVENT_BUS.publish(new DocumentEvent(previousDocument, DocumentEvent.EventType.DEACTIVATED));
+        }
+        if (nextDocument != null) {
+            Railroad.EVENT_BUS.publish(new DocumentEvent(nextDocument, DocumentEvent.EventType.ACTIVATED));
         }
     }
 
     private void clearOpenDocuments_internal() {
-        openDocuments.keySet().forEach(this::closeDocument_internal);
+        List.copyOf(openDocuments.keySet()).forEach(this::closeDocument_internal);
         setActiveDocument_internal(null);
     }
 
@@ -92,7 +96,6 @@ public class DefaultIDEStateService implements IDEStateService {
     @Override
     public void clearOpenDocuments() {
         clearOpenDocuments_internal();
-        setActiveDocument_internal(null);
     }
 
     @Override
@@ -138,4 +141,5 @@ public class DefaultIDEStateService implements IDEStateService {
     public void closeDocument(Document document) {
         closeDocument_internal(document);
     }
+
 }

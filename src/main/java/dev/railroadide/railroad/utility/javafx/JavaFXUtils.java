@@ -1,10 +1,12 @@
 package dev.railroadide.railroad.utility.javafx;
 
+import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class JavaFXUtils {
@@ -26,6 +28,16 @@ public final class JavaFXUtils {
         double width = bounds.getWidth();
         TEXT_WIDTH_CACHE.put(key, width);
         return width;
+    }
+
+    /** Runs an action immediately on the JavaFX application thread, or schedules it there otherwise. */
+    public static void runOnApplicationThread(Runnable action) {
+        Objects.requireNonNull(action, "Action cannot be null");
+        if (Platform.isFxApplicationThread()) {
+            action.run();
+        } else {
+            Platform.runLater(action);
+        }
     }
 
     private record MeasurementKey(String text, String fontFamily, double fontSize, String fontStyle) {

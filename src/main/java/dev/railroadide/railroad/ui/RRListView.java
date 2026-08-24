@@ -43,7 +43,7 @@ public class RRListView<T> extends ListView<T> {
      * Create a modern list view with items
      *
      * @param items the observable list of items to display
-     * @param <T>   the type of items in the list
+     * @param <T> the type of items in the list
      * @return a new RRListView instance
      */
     public static <T> RRListView<T> create(ObservableList<T> items) {

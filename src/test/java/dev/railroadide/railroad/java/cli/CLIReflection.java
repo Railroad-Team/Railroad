@@ -24,7 +24,7 @@ final class CLIReflection {
         while (current != null) {
             try {
                 return current.getDeclaredField(fieldName);
-            } catch (NoSuchFieldException ignored) {
+            } catch (NoSuchFieldException _) {
                 current = current.getSuperclass();
             }
         }

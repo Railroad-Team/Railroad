@@ -18,16 +18,17 @@ public abstract class AbstractLexerSnapshot implements Lexer.Snapshot {
     @Override
     public String toString() {
         return "AbstractLexerSnapshot{" +
-                "offset=" + offset +
-                ", line=" + line +
-                ", column=" + column +
-                ", mode=" + mode +
-                '}';
+            "offset=" + offset +
+            ", line=" + line +
+            ", column=" + column +
+            ", mode=" + mode +
+            '}';
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
         AbstractLexerSnapshot that = (AbstractLexerSnapshot) o;
         return offset == that.offset && line == that.line && column == that.column && mode == that.mode;
     }

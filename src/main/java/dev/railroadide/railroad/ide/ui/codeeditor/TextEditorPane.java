@@ -30,8 +30,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
-public class TextEditorPane extends CodeArea {
+public class TextEditorPane extends CodeArea implements AutoCloseable {
     private static final int[] FONT_SIZES = {6, 8, 10, 12, 14, 16, 18, 20, 24, 26, 28, 30, 36, 40, 48, 56, 60};
     private static final Duration SAVE_DELAY = Duration.ofMillis(400);
     private static final Duration CHANGE_DEBOUNCE = Duration.ofMillis(150);
@@ -69,7 +70,11 @@ public class TextEditorPane extends CodeArea {
     private WatchService watchService;
     private Subscription changeSubscription;
     private ScheduledFuture<?> pendingSaveTask;
+    private final ShutdownHooks.Registration shutdownRegistration;
+    private final BiConsumer<Integer, Integer> tabWidthListener = (_, _) -> applyEditorStyles();
+    private final BiConsumer<String, String> fontFamilyListener = (_, _) -> applyEditorStyles();
     private volatile boolean dirty;
+    private boolean closed;
 
     private int fontSizeIndex = 5;
 
@@ -91,21 +96,34 @@ public class TextEditorPane extends CodeArea {
             scrollToPixel(0, 0);
         });
 
-        ShutdownHooks.addHook(this::close);
+        shutdownRegistration = ShutdownHooks.registerHook(this::close);
     }
 
+    @Override
     public void close() {
+        if (closed)
+            return;
+
+        closed = true;
+        shutdownRegistration.close();
+        Settings.TAB_WIDTH.removeListener(tabWidthListener);
+        Settings.EDITOR_FONT_FAMILY.removeListener(fontFamilyListener);
+        if (pendingSaveTask != null) {
+            pendingSaveTask.cancel(false);
+            pendingSaveTask = null;
+        }
         watcherExecutor.shutdownNow();
         if (watchService != null) {
             try {
                 watchService.close();
-            } catch (IOException ignored) {
+            } catch (IOException _) {
                 // Nothing to do here
             }
         }
 
         if (changeSubscription != null) {
             changeSubscription.unsubscribe();
+            changeSubscription = null;
         }
     }
 
@@ -152,8 +170,8 @@ public class TextEditorPane extends CodeArea {
     private void configureTabBehaviour() {
         applyEditorStyles();
         Platform.runLater(this::applyEditorStyles);
-        Settings.TAB_WIDTH.addListener((oldVal, newVal) -> applyEditorStyles());
-        Settings.EDITOR_FONT_FAMILY.addListener((oldVal, newVal) -> applyEditorStyles());
+        Settings.TAB_WIDTH.addListener(tabWidthListener);
+        Settings.EDITOR_FONT_FAMILY.addListener(fontFamilyListener);
 
         addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             // Skip if any modifier keys are pressed to allow for shortcuts like Ctrl+Tab, Alt+Tab, etc.
@@ -376,9 +394,9 @@ public class TextEditorPane extends CodeArea {
                 if (!key.reset())
                     break;
             }
-        } catch (InterruptedException ignored) {
+        } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
-        } catch (ClosedWatchServiceException ignored) {
+        } catch (ClosedWatchServiceException _) {
             // watcher closed during shutdown
         }
     }
@@ -441,8 +459,7 @@ public class TextEditorPane extends CodeArea {
             detectChangeType(inserted, removed),
             removed,
             inserted,
-            new DocumentModifiedEvent.Range(start.getKey(), start.getValue(), end.getKey(), end.getValue())
-        );
+            new DocumentModifiedEvent.Range(start.getKey(), start.getValue(), end.getKey(), end.getValue()));
     }
 
     private static DocumentModifiedEvent.Change.Type detectChangeType(String inserted, String removed) {

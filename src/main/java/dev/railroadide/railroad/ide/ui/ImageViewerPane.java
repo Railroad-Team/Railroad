@@ -93,7 +93,8 @@ public class ImageViewerPane extends BorderPane {
         colorDepthText = new Text("Color Depth: ");
         colorSpaceText = new Text("Color Space: ");
         numberOfColorsText = new Text("Number of Colors: ");
-        infoPane.getChildren().addAll(dimensionsText, fileNameText, fileSizeText, typeText, colorDepthText, colorSpaceText, numberOfColorsText);
+        infoPane.getChildren().addAll(dimensionsText, fileNameText, fileSizeText, typeText, colorDepthText,
+            colorSpaceText, numberOfColorsText);
 
         infoPaneContainer = new StackPane(infoPane);
         infoPaneContainer.getStyleClass().add("ide-image-viewer-info-pane-container");
@@ -290,12 +291,15 @@ public class ImageViewerPane extends BorderPane {
 
         canvas.setCursor(currentImage == null ? Cursor.DEFAULT : Cursor.OPEN_HAND);
 
-        if (canvasContainer != null) canvasContainer.requestLayout();
+        if (canvasContainer != null) {
+            canvasContainer.requestLayout();
+        }
     }
 
     private void updateInfoPane() {
         if (this.currentImage != null && this.imagePath != null) {
-            dimensionsText.setText(("Dimensions: " + currentImage.getWidth() + " x " + currentImage.getHeight()).replace(".0", ""));
+            dimensionsText.setText(
+                ("Dimensions: " + currentImage.getWidth() + " x " + currentImage.getHeight()).replace(".0", ""));
             fileNameText.setText("File Name: " + imagePath.getFileName());
             fileSizeText.setText("File Size: " + FileUtils.humanReadableByteCount(imagePath));
             typeText.setText("Type: " + FileUtils.getExtension(imagePath).toUpperCase(Locale.ROOT));

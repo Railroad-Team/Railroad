@@ -35,9 +35,9 @@ public abstract class AbstractPathListPane extends RRVBox {
     private final ListView<Path> listView = new RRListView<>(paths);
 
     protected AbstractPathListPane(Collection<Path> initialPaths,
-                                   String placeholderKey,
-                                   String addTooltipKey,
-                                   String removeTooltipKey) {
+        String placeholderKey,
+        String addTooltipKey,
+        String removeTooltipKey) {
         setFillWidth(true);
         getStyleClass().add("path-list-pane");
 
@@ -69,16 +69,15 @@ public abstract class AbstractPathListPane extends RRVBox {
 
         controls.getChildren().addAll(addButton, removeButton);
 
-        addButton.setOnAction($ -> {
+        addButton.setOnAction(_ -> {
             Path selected = choosePath();
-            if (selected == null) {
+            if (selected == null)
                 return;
-            }
 
             addPath(selected);
         });
 
-        removeButton.setOnAction($ -> {
+        removeButton.setOnAction(_ -> {
             Path selected = listView.getSelectionModel().getSelectedItem();
             if (selected != null) {
                 paths.remove(selected);
@@ -94,8 +93,8 @@ public abstract class AbstractPathListPane extends RRVBox {
     }
 
     protected AbstractPathListPane(String placeholderKey,
-                                   String addTooltipKey,
-                                   String removeTooltipKey) {
+        String addTooltipKey,
+        String removeTooltipKey) {
         this(Collections.emptyList(), placeholderKey, addTooltipKey, removeTooltipKey);
     }
 
@@ -151,7 +150,7 @@ public abstract class AbstractPathListPane extends RRVBox {
 
         try {
             return path.toAbsolutePath().normalize();
-        } catch (InvalidPathException ignored) {
+        } catch (InvalidPathException _) {
             return null;
         }
     }
@@ -175,7 +174,7 @@ public abstract class AbstractPathListPane extends RRVBox {
             try {
                 Path path = Path.of(element.getAsString());
                 paths.add(path);
-            } catch (InvalidPathException ignored) {
+            } catch (InvalidPathException _) {
             }
         }
 

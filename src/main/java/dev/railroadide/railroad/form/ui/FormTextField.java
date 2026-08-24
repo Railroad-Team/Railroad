@@ -20,17 +20,18 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
     /**
      * Constructs a new FormTextField with the specified configuration.
      *
-     * @param labelKey   the localization key for the label text
-     * @param required   whether the text field is required
+     * @param labelKey the localization key for the label text
+     * @param required whether the text field is required
      * @param promptText the placeholder text to display when empty
-     * @param editable   whether the text field is editable
-     * @param translate  whether to use localization for the prompt text
+     * @param editable whether the text field is editable
+     * @param translate whether to use localization for the prompt text
      */
     public FormTextField(String labelKey, boolean required, String promptText, boolean editable, boolean translate) {
         this(labelKey, required, promptText, editable, translate, null);
     }
 
-    public FormTextField(String labelKey, boolean required, String promptText, boolean editable, boolean translate, AutoCompleteOptions autoCompleteOptions) {
+    public FormTextField(String labelKey, boolean required, String promptText, boolean editable, boolean translate,
+        AutoCompleteOptions autoCompleteOptions) {
         super(labelKey, required, createParams(promptText, editable, translate, autoCompleteOptions));
     }
 
@@ -38,11 +39,12 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
      * Creates the parameters map for the text field component.
      *
      * @param promptText the placeholder text
-     * @param editable   whether the text field is editable
-     * @param translate  whether to use localization
+     * @param editable whether the text field is editable
+     * @param translate whether to use localization
      * @return a map containing the component parameters
      */
-    private static Map<String, Object> createParams(String promptText, boolean editable, boolean translate, AutoCompleteOptions autoCompleteOptions) {
+    private static Map<String, Object> createParams(String promptText, boolean editable, boolean translate,
+        AutoCompleteOptions autoCompleteOptions) {
         Map<String, Object> params = new HashMap<>();
         if (promptText != null) {
             params.put("promptText", promptText);
@@ -69,11 +71,14 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
         RRTextField textField;
         boolean useAutoComplete = autoCompleteOptions != null && autoCompleteOptions.isConfigured();
         if (useAutoComplete) {
-            Railroad.LOGGER.debug("FormTextField using autocomplete for label {}", promptText != null ? promptText : "null");
+            Railroad.LOGGER.debug("FormTextField using autocomplete for label {}",
+                promptText != null ? promptText : "null");
         }
 
         if (useAutoComplete) {
-            var autoCompleteTextField = translate ? new RRAutoCompleteTextField(promptText) : new RRAutoCompleteTextField();
+            var autoCompleteTextField = translate
+                ? new RRAutoCompleteTextField(promptText)
+                : new RRAutoCompleteTextField();
             if (!translate) {
                 autoCompleteTextField.setPromptText(promptText);
             }

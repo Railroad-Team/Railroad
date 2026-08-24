@@ -83,7 +83,8 @@ public class GitOverviewHeaderPane extends RRVBox {
         updateHeaderInfo(gitManager);
         listenForUpdates(gitManager);
 
-        upstreamElapsedTimeline = new Timeline(new KeyFrame(Duration.seconds(1), _ -> updateUpstreamRow(this.gitManager)));
+        upstreamElapsedTimeline = new Timeline(
+            new KeyFrame(Duration.seconds(1), _ -> updateUpstreamRow(this.gitManager)));
         upstreamElapsedTimeline.setCycleCount(Timeline.INDEFINITE);
         sceneProperty().addListener((_, _, newScene) -> {
             if (newScene == null) {
@@ -115,7 +116,7 @@ public class GitOverviewHeaderPane extends RRVBox {
         infoGrid.add(new RRFlowPane(6, 6, repoNameText, repoStatusTag), 1, row);
         GridPane.setValignment(infoGrid.getChildren().getLast(), VPos.CENTER);
         row++;
-        Region separator0 = new Region();
+        var separator0 = new Region();
         separator0.getStyleClass().add("git-overview-grid-row-separator");
         infoGrid.add(separator0, 0, row, 2, 1); // col=0, row=current, columnspan=2, rowspan=1
         row++;
@@ -131,7 +132,7 @@ public class GitOverviewHeaderPane extends RRVBox {
         infoGrid.add(new RRFlowPane(6, 6, headBranchText, headUpstreamTag), 1, row);
         GridPane.setValignment(infoGrid.getChildren().getLast(), VPos.CENTER);
         row++;
-        Region separator1 = new Region();
+        var separator1 = new Region();
         separator1.getStyleClass().add("git-overview-grid-row-separator");
         infoGrid.add(separator1, 0, row, 2, 1);
         row++;
@@ -140,12 +141,14 @@ public class GitOverviewHeaderPane extends RRVBox {
         upstreamBehindText.getStyleClass().addAll("git-overview-table-value-text", "git-overview-value-strong");
         var upstreamBehindLabel = new Text("behind");
         upstreamBehindLabel.getStyleClass().add("git-overview-table-value-text");
-        upstreamBehindTag.getChildren().addAll(createDot("git-overview-dot-warn"), upstreamBehindLabel, upstreamBehindText);
+        upstreamBehindTag.getChildren().addAll(createDot("git-overview-dot-warn"), upstreamBehindLabel,
+            upstreamBehindText);
 
         upstreamAheadText.getStyleClass().addAll("git-overview-table-value-text", "git-overview-value-strong");
         var upstreamAheadLabel = new Text("ahead");
         upstreamAheadLabel.getStyleClass().add("git-overview-table-value-text");
-        upstreamAheadTag.getChildren().addAll(createDot("git-overview-dot-good"), upstreamAheadLabel, upstreamAheadText);
+        upstreamAheadTag.getChildren().addAll(createDot("git-overview-dot-good"), upstreamAheadLabel,
+            upstreamAheadText);
 
         upstreamFetchText.getStyleClass().addAll("git-overview-table-value-text", "git-overview-mono");
         var upstreamFetchLabel = new Text("last fetch");
@@ -156,7 +159,7 @@ public class GitOverviewHeaderPane extends RRVBox {
         infoGrid.add(new RRFlowPane(6, 6, upstreamBehindTag, upstreamAheadTag, upstreamFetchTag), 1, row);
         GridPane.setValignment(infoGrid.getChildren().getLast(), VPos.CENTER);
         row++;
-        Region separator2 = new Region();
+        var separator2 = new Region();
         separator2.getStyleClass().add("git-overview-grid-row-separator");
         infoGrid.add(separator2, 0, row, 2, 1);
         row++;

@@ -40,7 +40,8 @@ public class GitCommitCreateTagButton extends RRButton {
             messageText.getStyleClass().add("git-commit-new-tag-message-text");
             messageVbox.getChildren().add(messageText);
 
-            var messageArea = new RRTextArea("railroad.git.commit.details.new_tag_dialog.annotation_message_placeholder");
+            var messageArea = new RRTextArea(
+                "railroad.git.commit.details.new_tag_dialog.annotation_message_placeholder");
             messageArea.getStyleClass().add("git-commit-new-tag-message-area");
             messageArea.setWrapText(true);
             messageVbox.getChildren().add(messageArea);
@@ -52,7 +53,8 @@ public class GitCommitCreateTagButton extends RRButton {
                 .onConfirm(() -> {
                     String tagName = tagNameField.getText().trim();
                     if (!tagName.isBlank() && project.getGitManager().isValidTagName(tagName)) {
-                        project.getGitManager().createTag(tagName, commit.hash(), messageArea.getText().strip(), overwriteCheckbox.isSelected());
+                        project.getGitManager().createTag(tagName, commit.hash(), messageArea.getText().strip(),
+                            overwriteCheckbox.isSelected());
                     }
                 });
             var dialog = WindowBuilder.createDialog("railroad.git.commit.details.new_tag_dialog.title", dialogBuilder);

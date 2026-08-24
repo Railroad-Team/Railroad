@@ -8,10 +8,9 @@ import java.util.Objects;
  * Canonical Java semantic rule definition.
  */
 public record JavaSemanticRule(
-        String id,
-        SemanticDiagnostic.Severity defaultSeverity,
-        String messageTemplate
-) {
+    String id,
+    SemanticDiagnostic.Severity defaultSeverity,
+    String messageTemplate) {
     public JavaSemanticRule {
         id = Objects.requireNonNull(id, "id");
         defaultSeverity = Objects.requireNonNull(defaultSeverity, "defaultSeverity");

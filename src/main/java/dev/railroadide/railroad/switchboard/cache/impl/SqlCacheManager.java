@@ -70,7 +70,8 @@ public class SqlCacheManager implements IterableCacheManager {
                 if (rs.next()) {
                     byte[] jsonBytes = rs.getBytes("value");
 
-                    T data = objectMapper.readValue(jsonBytes, objectMapper.getTypeFactory().constructType(typeToken.getType()));
+                    T data = objectMapper.readValue(jsonBytes,
+                        objectMapper.getTypeFactory().constructType(typeToken.getType()));
 
                     Instant lastFetched = Instant.ofEpochMilli(rs.getLong("last_fetched"));
                     Duration ttl = Duration.ofSeconds(rs.getLong("ttl_seconds"));
@@ -142,7 +143,8 @@ public class SqlCacheManager implements IterableCacheManager {
     public Iterable<CacheEntryWrapper> entries() {
         List<CacheEntryWrapper> results = new ArrayList<>();
         try (Statement stmt = connection.createStatement()) {
-            ResultSet rs = stmt.executeQuery("SELECT key, value, type, last_fetched, ttl_seconds, etag FROM cache_entries");
+            ResultSet rs = stmt
+                .executeQuery("SELECT key, value, type, last_fetched, ttl_seconds, etag FROM cache_entries");
             while (rs.next()) {
                 String key = rs.getString("key");
                 String typeName = rs.getString("type");
@@ -154,8 +156,7 @@ public class SqlCacheManager implements IterableCacheManager {
 
                     MetadataCacheEntry<?> entry = objectMapper.readValue(
                         jsonBytes,
-                        objectMapper.getTypeFactory().constructParametricType(MetadataCacheEntry.class, clazz)
-                    );
+                        objectMapper.getTypeFactory().constructParametricType(MetadataCacheEntry.class, clazz));
 
                     results.add(new CacheEntryWrapper(key, entry, typeToken));
                 } catch (Exception exception) {

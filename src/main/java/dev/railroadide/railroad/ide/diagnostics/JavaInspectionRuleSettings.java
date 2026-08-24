@@ -102,7 +102,8 @@ public final class JavaInspectionRuleSettings {
 
     public static void setSeverityOverride(String ruleId, SemanticDiagnostic.Severity severity) {
         ensureLoaded();
-        RULE_SEVERITY_OVERRIDES.put(Objects.requireNonNull(ruleId, "ruleId"), Objects.requireNonNull(severity, "severity"));
+        RULE_SEVERITY_OVERRIDES.put(Objects.requireNonNull(ruleId, "ruleId"),
+            Objects.requireNonNull(severity, "severity"));
         persistToConfig();
     }
 
@@ -124,7 +125,7 @@ public final class JavaInspectionRuleSettings {
                 return;
             try {
                 RULE_SEVERITY_OVERRIDES.put(ruleId, SemanticDiagnostic.Severity.valueOf(severityName));
-            } catch (IllegalArgumentException ignored) {
+            } catch (IllegalArgumentException _) {
             }
         });
         loaded = true;
@@ -150,8 +151,9 @@ public final class JavaInspectionRuleSettings {
         if (loaded)
             return;
         synchronized (JavaInspectionRuleSettings.class) {
-            if (!loaded)
+            if (!loaded) {
                 reloadFromConfig();
+            }
         }
     }
 

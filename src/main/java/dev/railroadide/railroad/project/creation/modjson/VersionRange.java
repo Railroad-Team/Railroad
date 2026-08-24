@@ -52,8 +52,8 @@ public class VersionRange {
     }
 
     public static VersionRange between(String min, String max, boolean inclusive) {
-        return inclusive ?
-            new VersionRange(List.of(">=" + min, "<=" + max)) :
-            new VersionRange(List.of(">" + min, "<" + max));
+        return inclusive
+            ? new VersionRange(List.of(">=" + min, "<=" + max))
+            : new VersionRange(List.of(">" + min, "<" + max));
     }
 }

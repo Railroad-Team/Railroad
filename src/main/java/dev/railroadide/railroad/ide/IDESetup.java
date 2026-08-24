@@ -8,7 +8,7 @@ import dev.railroadide.railroad.ide.ui.IDEPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.window.WindowBuilder;
-import javafx.application.Platform;
+import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
@@ -27,7 +27,8 @@ public class IDESetup {
         return new Scene(new IDEPane(project));
     }
 
-    public static void showEditRunConfigurationsWindow(@NotNull Project project, @Nullable RunConfiguration<?> runConfiguration) {
+    public static void showEditRunConfigurationsWindow(@NotNull Project project,
+        @Nullable RunConfiguration<?> runConfiguration) {
         var editorPane = new RunConfigurationEditorPane(project);
         WindowBuilder.create()
             .owner(Railroad.WINDOW_MANAGER.getPrimaryStage())
@@ -46,7 +47,7 @@ public class IDESetup {
      * and notifies the plugins of the activity
      *
      * @param project The project to switch to
-     * @param stage   The stage to switch to. Set to {@code null} if a new stage with a transition is required
+     * @param stage The stage to switch to. Set to {@code null} if a new stage with a transition is required
      */
     public static void switchToIDE(Project project, @Nullable Stage stage) {
         if (isSwitchingToIDE)
@@ -54,23 +55,30 @@ public class IDESetup {
 
         isSwitchingToIDE = true;
 
-        Platform.runLater(() -> {
+        Runnable switchAction = () -> {
             try {
-                Scene ideScene = IDESetup.createIDEScene(project);
                 Stage ideStage = stage == null ? Railroad.WINDOW_MANAGER.getPrimaryStage() : stage;
+                Scene previousScene = ideStage.getScene();
+                var idePane = new IDEPane(project);
 
-                ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion() + " - " + project.getAlias());
+                disposePreviousScene(previousScene);
+                var ideScene = new Scene(idePane);
+
+                ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()
+                    + " - " + project.getAlias());
                 ideStage.setResizable(true);
                 ideStage.setMaximized(true);
 
                 if (stage == null) {
-                    ThemeManager.prepareSceneTransition(ideStage.getScene(), ideScene);
+                    ThemeManager.prepareSceneTransition(previousScene, ideScene);
                     ideStage.setScene(ideScene);
                     Railroad.WINDOW_MANAGER.setPrimaryStage(ideStage);
                 } else {
+                    ThemeManager.prepareSceneTransition(previousScene, ideScene);
                     ideStage.setScene(ideScene);
                     Railroad.WINDOW_MANAGER.showPrimary(stage, ideScene, stage.getTitle());
                 }
+                ThemeManager.release(previousScene);
 
                 try {
                     Railroad.PROJECT_MANAGER.setCurrentProject(project);
@@ -81,6 +89,23 @@ public class IDESetup {
                 isSwitchingToIDE = false;
                 throw exception;
             }
-        });
+        };
+
+        JavaFXUtils.runOnApplicationThread(switchAction);
+    }
+
+    private static void disposePreviousScene(@Nullable Scene previousScene) {
+        if (previousScene == null)
+            return;
+
+        if (previousScene.getRoot() instanceof IDEPane idePane) {
+            try {
+                idePane.close();
+            } catch (RuntimeException exception) {
+                Railroad.LOGGER.error("Failed to dispose the previous IDE workspace cleanly", exception);
+            }
+        }
+
+        Services.UI_MANAGER.releaseScene(previousScene);
     }
 }

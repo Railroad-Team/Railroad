@@ -67,10 +67,10 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                         if (!requiresNormalization)
                             return;
 
-                        JsonArray normalized = new JsonArray();
+                        var normalized = new JsonArray();
                         for (JsonElement element : array) {
                             if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
-                                JsonObject obj = new JsonObject();
+                                var obj = new JsonObject();
                                 obj.addProperty("value", element.getAsString());
                                 obj.addProperty("adapter", "default");
                                 normalized.add(obj);
@@ -83,19 +83,21 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                     });
                 }
 
-                // We're in version 1, using 'https://wiki.fabricmc.net/documentation:fabric_mod_json_spec#version_1_current'
+                // We're in version 1, using
+                // 'https://wiki.fabricmc.net/documentation:fabric_mod_json_spec#version_1_current'
                 FabricModJson modJson = Railroad.GSON.fromJson(json, FabricModJson.class);
 
                 String modId = ctx.data().getAsString(MinecraftProjectKeys.MOD_ID);
                 String modName = ctx.data().getAsString(MinecraftProjectKeys.MOD_NAME);
                 modJson.setId(modId);
                 modJson.setName(modName);
-                if (ctx.data().contains(ProjectData.DefaultKeys.DESCRIPTION))
+                if (ctx.data().contains(ProjectData.DefaultKeys.DESCRIPTION)) {
                     modJson.setDescription(ctx.data().getAsString(ProjectData.DefaultKeys.DESCRIPTION));
+                }
 
-                Optional<String> authorOpt = ctx.data().contains(ProjectData.DefaultKeys.AUTHOR) ?
-                    Optional.of(ctx.data().getAsString(ProjectData.DefaultKeys.AUTHOR)) :
-                    Optional.empty();
+                Optional<String> authorOpt = ctx.data().contains(ProjectData.DefaultKeys.AUTHOR)
+                    ? Optional.of(ctx.data().getAsString(ProjectData.DefaultKeys.AUTHOR))
+                    : Optional.empty();
 
                 authorOpt.ifPresent(author -> {
                     String[] split = author.split(",\\s*");
@@ -103,15 +105,19 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                 });
 
                 License license = ctx.data().get(ProjectData.DefaultKeys.LICENSE, License.class);
-                String licenseStr = license == LicenseRegistry.CUSTOM ? ctx.data().getAsString(ProjectData.DefaultKeys.LICENSE_CUSTOM) : license.getSpdxId();
+                String licenseStr = license == LicenseRegistry.CUSTOM
+                    ? ctx.data().getAsString(ProjectData.DefaultKeys.LICENSE_CUSTOM)
+                    : license.getSpdxId();
                 modJson.setLicense(Collections.singletonList(licenseStr));
 
                 String groupId = ctx.data().getAsString(MavenProjectKeys.GROUP_ID);
                 String mainClass = ctx.data().getAsString(MinecraftProjectKeys.MAIN_CLASS);
                 var entrypoints = new EntrypointContainer();
-                entrypoints.put("main", Collections.singletonList(Entrypoint.of(groupId + "." + modId + "." + mainClass)));
+                entrypoints.put("main",
+                    Collections.singletonList(Entrypoint.of(groupId + "." + modId + "." + mainClass)));
                 if (ctx.data().getAsBoolean(FabricProjectKeys.SPLIT_SOURCES, false)) {
-                    entrypoints.put("client", Collections.singletonList(Entrypoint.of(groupId + "." + modId + "." + mainClass + "Client")));
+                    entrypoints.put("client",
+                        Collections.singletonList(Entrypoint.of(groupId + "." + modId + "." + mainClass + "Client")));
                 }
                 modJson.setEntrypoints(entrypoints);
 
@@ -123,19 +129,25 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                 modJson.setMixins(mixinConfigs);
 
                 Map<String, VersionRange> depends = modJson.getDepends();
-                if (depends == null) depends = new HashMap<>();
+                if (depends == null) {
+                    depends = new HashMap<>();
+                }
 
-                FabricLoaderVersion loaderVersion = ctx.data().get(FabricProjectKeys.FABRIC_LOADER_VERSION, FabricLoaderVersion.class);
+                FabricLoaderVersion loaderVersion = ctx.data().get(FabricProjectKeys.FABRIC_LOADER_VERSION,
+                    FabricLoaderVersion.class);
                 if (loaderVersion == null) {
                     reporter.info("No fabric loader version found in context, cannot update fabric.mod.json.");
-                    Railroad.LOGGER.warn("No fabric loader version found in context during project creation, cannot update fabric.mod.json.");
+                    Railroad.LOGGER.warn(
+                        "No fabric loader version found in context during project creation, cannot update fabric.mod.json.");
                     return;
                 }
 
-                MinecraftVersion mcVersion = ctx.data().get(MinecraftProjectKeys.MINECRAFT_VERSION, MinecraftVersion.class);
+                MinecraftVersion mcVersion = ctx.data().get(MinecraftProjectKeys.MINECRAFT_VERSION,
+                    MinecraftVersion.class);
                 if (mcVersion == null) {
                     reporter.info("No minecraft version found in context, cannot update fabric.mod.json.");
-                    Railroad.LOGGER.warn("No minecraft version found in context during project creation, cannot update fabric.mod.json.");
+                    Railroad.LOGGER.warn(
+                        "No minecraft version found in context during project creation, cannot update fabric.mod.json.");
                     return;
                 }
 
@@ -146,7 +158,8 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                     depends.put("fabric", VersionRange.gte(fabricApiVersion));
                 } else {
                     depends.put("fabric", VersionRange.any());
-                    Railroad.LOGGER.warn("No fabric api version found in context during project creation, setting fabric dependency to '*'.");
+                    Railroad.LOGGER.warn(
+                        "No fabric api version found in context during project creation, setting fabric dependency to '*'.");
                 }
                 modJson.setDepends(depends);
 
@@ -187,12 +200,15 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                 }
 
                 ContactInformation contact = modJson.getContact();
-                if (ctx.data().contains(ProjectData.DefaultKeys.ISSUES_URL))
+                if (ctx.data().contains(ProjectData.DefaultKeys.ISSUES_URL)) {
                     contact.setIssues(ctx.data().getAsString(ProjectData.DefaultKeys.ISSUES_URL));
-                if (ctx.data().contains(ProjectData.DefaultKeys.HOMEPAGE_URL))
+                }
+                if (ctx.data().contains(ProjectData.DefaultKeys.HOMEPAGE_URL)) {
                     contact.setHomepage(ctx.data().getAsString(ProjectData.DefaultKeys.HOMEPAGE_URL));
-                if (ctx.data().contains(ProjectData.DefaultKeys.SOURCES_URL))
+                }
+                if (ctx.data().contains(ProjectData.DefaultKeys.SOURCES_URL)) {
                     contact.setSources(ctx.data().getAsString(ProjectData.DefaultKeys.SOURCES_URL));
+                }
                 modJson.setContact(contact);
 
                 files.writeString(fabricModJson, Railroad.GSON.toJson(modJson));
@@ -201,7 +217,9 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
             } else {
                 // TODO: Maybe try and parse? Unsure whats the best way to handle this.
                 reporter.info("Unknown fabric.mod.json schema version: " + schemaVersion + ", skipping update.");
-                Railroad.LOGGER.warn("Unknown fabric.mod.json schema version '{}' during project creation, skipping update.", schemaVersion);
+                Railroad.LOGGER.warn(
+                    "Unknown fabric.mod.json schema version '{}' during project creation, skipping update.",
+                    schemaVersion);
                 Thread.sleep(1000); // Sleep a bit so the user can see the message
             }
         }

@@ -31,7 +31,7 @@ public interface CLIBuilder<R, T extends CLIBuilder<R, T>> {
     /**
      * Sets a custom environment variable for the process.
      *
-     * @param key   The name of the environment variable.
+     * @param key The name of the environment variable.
      * @param value The value of the environment variable.
      * @return The builder instance for chaining.
      */
@@ -59,7 +59,7 @@ public interface CLIBuilder<R, T extends CLIBuilder<R, T>> {
      * Sets a timeout for the process execution with a specific time unit.
      *
      * @param duration The timeout duration.
-     * @param unit     The {@link TimeUnit} of the duration.
+     * @param unit The {@link TimeUnit} of the duration.
      * @return The builder instance for chaining.
      */
     T setTimeout(long duration, TimeUnit unit);
@@ -69,7 +69,7 @@ public interface CLIBuilder<R, T extends CLIBuilder<R, T>> {
      *
      * @return The result of the process execution, typically a {@link Process} object.
      * @throws IllegalStateException if the builder is not in a runnable state (e.g., missing required parameters).
-     * @throws RuntimeException      if the process fails to start.
+     * @throws RuntimeException if the process fails to start.
      */
     R run();
 }

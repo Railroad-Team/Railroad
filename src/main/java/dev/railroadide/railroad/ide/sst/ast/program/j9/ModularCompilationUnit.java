@@ -12,12 +12,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record ModularCompilationUnit(
-        Span span,
-        boolean isOpen,
-        NameExpression name,
-        List<Annotation> annotations,
-        List<ModuleDirective> directives
-) implements AstNode {
+    Span span,
+    boolean isOpen,
+    NameExpression name,
+    List<Annotation> annotations,
+    List<ModuleDirective> directives) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.MODULAR_COMPILATION_UNIT;

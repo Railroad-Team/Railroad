@@ -23,7 +23,9 @@ public class JDKManager {
     /**
      * The name of the Java executable, platform-dependent (e.g., "java.exe" on Windows, "java" on Linux/macOS).
      */
-    public static final String JAVA_EXECUTABLE_NAME = OperatingSystem.CURRENT == OperatingSystem.WINDOWS ? "java.exe" : "java";
+    public static final String JAVA_EXECUTABLE_NAME = OperatingSystem.CURRENT == OperatingSystem.WINDOWS
+        ? "java.exe"
+        : "java";
 
     private static final List<String> WIN_JDK_PATHS = List.of(
         "{drive}:\\Program Files\\Java",
@@ -37,14 +39,12 @@ public class JDKManager {
         "{drive}:\\Program Files\\Amazon Corretto",
         "{drive}:\\Program Files (x86)\\Amazon Corretto",
         "{drive}:\\Program Files\\BellSoft",
-        "{drive}:\\Program Files\\GraalVM"
-    );
+        "{drive}:\\Program Files\\GraalVM");
     private static final List<String> LINUX_JDK_PATHS = List.of(
         "/usr/lib/jvm",
         "/usr/java",
         "/opt/java",
-        "/opt/jdk"
-    );
+        "/opt/jdk");
     private static final List<JDK> JDKS = new CopyOnWriteArrayList<>();
 
     /**
@@ -144,7 +144,7 @@ public class JDKManager {
      * Traverses known installation directories (SDKMAN, vendor folders, etc.) and registers any
      * detected JDK executables while respecting the provided exclusion list.
      *
-     * @param jdks          collection being populated with discovered JDKs
+     * @param jdks collection being populated with discovered JDKs
      * @param excludedPaths normalized paths that should be ignored during discovery
      */
     private static void discoverJDKsInCommonDirectories(List<JDK> jdks, List<Path> excludedPaths) {
@@ -164,7 +164,8 @@ public class JDKManager {
                         Path exe;
                         if (OperatingSystem.CURRENT == OperatingSystem.MAC) {
                             // Try bundle layout first
-                            Path bundle = entry.resolve("Contents").resolve("Home").resolve("bin").resolve(JAVA_EXECUTABLE_NAME);
+                            Path bundle = entry.resolve("Contents").resolve("Home").resolve("bin")
+                                .resolve(JAVA_EXECUTABLE_NAME);
                             // Fallback: plain folder layout (SDKMAN/asdf/.gradle/jdks, etc.)
                             Path flat = entry.resolve("bin").resolve(JAVA_EXECUTABLE_NAME);
                             exe = Files.isExecutable(bundle) ? bundle : flat;
@@ -184,8 +185,8 @@ public class JDKManager {
     /**
      * Adds the supplied JDK to the running list when it is non-null and not excluded.
      *
-     * @param jdks          aggregate list being populated
-     * @param jdk           potential discovery result
+     * @param jdks aggregate list being populated
+     * @param jdk potential discovery result
      * @param excludedPaths paths that should be filtered out
      */
     private static void addIfValid(List<JDK> jdks, JDK jdk, List<Path> excludedPaths) {
@@ -202,8 +203,8 @@ public class JDKManager {
     /**
      * Inserts the JDK into the map keyed by path when the location is not excluded.
      *
-     * @param uniqueJDKs    map keyed by canonical JDK path
-     * @param jdk           descriptor to consider for insertion
+     * @param uniqueJDKs map keyed by canonical JDK path
+     * @param jdk descriptor to consider for insertion
      * @param excludedPaths normalized paths that should be skipped
      */
     private static void addIfNotExcluded(Map<String, JDK> uniqueJDKs, JDK jdk, List<Path> excludedPaths) {
@@ -217,7 +218,7 @@ public class JDKManager {
     /**
      * Consolidates the provided discoveries by normalizing their paths and removing duplicates.
      *
-     * @param jdks          discovered JDK entries
+     * @param jdks discovered JDK entries
      * @param excludedPaths normalized paths that should be ignored
      * @return list with duplicate locations removed
      */
@@ -227,9 +228,10 @@ public class JDKManager {
             try {
                 Path normalizedPath = jdk.path().toRealPath();
                 if (!isExcluded(normalizedPath, excludedPaths)) {
-                    uniqueJDKs.putIfAbsent(normalizedPath.toString(), new JDK(normalizedPath, jdk.name(), jdk.version()));
+                    uniqueJDKs.putIfAbsent(normalizedPath.toString(),
+                        new JDK(normalizedPath, jdk.name(), jdk.version()));
                 }
-            } catch (IOException | InvalidPathException ignored) {
+            } catch (IOException | InvalidPathException _) {
                 addIfNotExcluded(uniqueJDKs, jdk, excludedPaths);
             }
         }
@@ -240,7 +242,7 @@ public class JDKManager {
     /**
      * Determines whether the candidate path should be skipped based on the exclusion list.
      *
-     * @param candidate     path to evaluate
+     * @param candidate path to evaluate
      * @param excludedPaths normalized paths to exclude
      * @return {@code true} when the candidate is equal to or inside any excluded path
      */
@@ -292,8 +294,8 @@ public class JDKManager {
                 }
 
                 // Homebrew (Apple Silicon + Intel)
-                candidates.add(FileUtils.normalizePath(Path.of("/opt/homebrew/opt")));   // ARM
-                candidates.add(FileUtils.normalizePath(Path.of("/usr/local/opt")));      // Intel
+                candidates.add(FileUtils.normalizePath(Path.of("/opt/homebrew/opt"))); // ARM
+                candidates.add(FileUtils.normalizePath(Path.of("/usr/local/opt"))); // Intel
             }
             case LINUX -> LINUX_JDK_PATHS.forEach(path -> candidates.add(FileUtils.normalizePath(Path.of(path))));
         }

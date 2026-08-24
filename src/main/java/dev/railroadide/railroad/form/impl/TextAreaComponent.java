@@ -32,19 +32,23 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
     /**
      * Constructs a new text area component.
      *
-     * @param dataKey         the key to store the data in the form data
-     * @param data            the data for the text area
-     * @param validator       the validator for the text area
-     * @param listener        the listener for the text area
-     * @param bindTextAreaTo  the property to bind the text area to
-     * @param transformers    the transformers for the text area
+     * @param dataKey the key to store the data in the form data
+     * @param data the data for the text area
+     * @param validator the validator for the text area
+     * @param listener the listener for the text area
+     * @param bindTextAreaTo the property to bind the text area to
+     * @param transformers the transformers for the text area
      * @param keyTypedHandler the key typed handler for the text area
-     * @param visible         the visibility of the text area
+     * @param visible the visibility of the text area
      */
-    public TextAreaComponent(String dataKey, Data data, FormComponentValidator<TextArea> validator, FormComponentChangeListener<TextArea, String> listener, Property<TextArea> bindTextAreaTo, List<FormTransformer<TextArea, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
+    public TextAreaComponent(String dataKey, Data data, FormComponentValidator<TextArea> validator,
+        FormComponentChangeListener<TextArea, String> listener, Property<TextArea> bindTextAreaTo,
+        List<FormTransformer<TextArea, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler,
+        @Nullable BooleanBinding visible) {
         super(dataKey, data, currentData -> {
             String initialText = currentData.text == null ? "" : currentData.text.get();
-            return new FormTextArea(currentData.label, currentData.required, initialText, currentData.promptText, currentData.editable, currentData.resize, currentData.wrapText, currentData.translate);
+            return new FormTextArea(currentData.label, currentData.required, initialText, currentData.promptText,
+                currentData.editable, currentData.resize, currentData.wrapText, currentData.translate);
         }, validator, listener, transformers, visible);
 
         if (bindTextAreaTo != null) {
@@ -81,8 +85,8 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
 
             if (newValue != null) {
                 TextArea textArea = newValue.getTextArea();
-                listenerRef.set((observable1, oldValue1, newValue1) ->
-                    listener.changed(textArea, observable1, oldValue1, newValue1));
+                listenerRef.set((observable1, oldValue1, newValue1) -> listener.changed(textArea, observable1,
+                    oldValue1, newValue1));
                 textArea.textProperty().addListener(listenerRef.get());
             }
         });
@@ -93,8 +97,7 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
         componentProperty()
             .map(FormTextArea::getPrimaryComponent)
             .flatMap(TextArea::textProperty)
-            .addListener((observable, oldValue, newValue) ->
-                formData.addProperty(dataKey, newValue));
+            .addListener((observable, oldValue, newValue) -> formData.addProperty(dataKey, newValue));
 
         formData.addProperty(dataKey, componentProperty()
             .map(FormTextArea::getPrimaryComponent)
@@ -125,7 +128,7 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          * Constructs a new builder for a text area component.
          *
          * @param dataKey the key to store the data in the form data
-         * @param label   the label for the text area
+         * @param label the label for the text area
          */
         public Builder(@NotNull String dataKey, @NotNull String label) {
             this.dataKey = dataKey;
@@ -201,7 +204,8 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
         }
 
         /**
-         * Sets whether the text area is resizable (i.e. if it should automatically (vertically) resize to fit its content).
+         * Sets whether the text area is resizable (i.e. if it should automatically (vertically) resize to fit its
+         * content).
          *
          * @param resize whether the text area is resizable
          * @return this builder
@@ -271,15 +275,17 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
         /**
          * Adds a transformer to the text area.
          *
-         * @param fromComponent       the observable value of the component to transform
+         * @param fromComponent the observable value of the component to transform
          * @param toComponentFunction the function to set the value of the component
-         * @param valueMapper         the function to map the value to the desired type
-         * @param <X>                 the type of the component
+         * @param valueMapper the function to map the value to the desired type
+         * @param <X> the type of the component
          * @return this builder
          */
         @Override
-        public <X> Builder addTransformer(ObservableValue<TextArea> fromComponent, Consumer<X> toComponentFunction, Function<String, X> valueMapper) {
-            this.transformers.add(new FormTransformer<>(fromComponent, TextArea::getText, toComponentFunction, valueMapper));
+        public <X> Builder addTransformer(ObservableValue<TextArea> fromComponent, Consumer<X> toComponentFunction,
+            Function<String, X> valueMapper) {
+            this.transformers
+                .add(new FormTransformer<>(fromComponent, TextArea::getText, toComponentFunction, valueMapper));
             return this;
         }
 
@@ -287,20 +293,21 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          * Adds a transformer to the text area.
          *
          * @param fromComponent the observable value of the component to transform
-         * @param toComponent   the component to set the value to
-         * @param valueMapper   the function to map the value to the desired type
-         * @param <U>           the type of the component
-         * @param <X>           the type of the value
+         * @param toComponent the component to set the value to
+         * @param valueMapper the function to map the value to the desired type
+         * @param <U> the type of the component
+         * @param <X> the type of the value
          * @return this builder
          */
         @Override
-        public <U extends Node, X> Builder addTransformer(ObservableValue<TextArea> fromComponent, ObservableValue<U> toComponent, Function<String, X> valueMapper) {
+        public <U extends Node, X> Builder addTransformer(ObservableValue<TextArea> fromComponent,
+            ObservableValue<U> toComponent, Function<String, X> valueMapper) {
             this.transformers.add(new FormTransformer<>(fromComponent, TextArea::getText, value -> {
                 if (toComponent.getValue() instanceof TextArea textArea) {
                     textArea.setText(value.toString());
-                } else {
-                    throw new IllegalArgumentException("Unsupported component type: " + toComponent.getValue().getClass().getName());
-                }
+                } else
+                    throw new IllegalArgumentException(
+                        "Unsupported component type: " + toComponent.getValue().getClass().getName());
             }, valueMapper));
             return this;
         }
@@ -335,7 +342,8 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          */
         @Override
         public TextAreaComponent build() {
-            return new TextAreaComponent(dataKey, data, validator, listener, bindTextAreaTo, transformers, keyTypedHandler, visible);
+            return new TextAreaComponent(dataKey, data, validator, listener, bindTextAreaTo, transformers,
+                keyTypedHandler, visible);
         }
     }
 
@@ -417,7 +425,8 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
         }
 
         /**
-         * Sets whether the text area is resizable (i.e. if it should automatically (vertically) resize to fit its content).
+         * Sets whether the text area is resizable (i.e. if it should automatically (vertically) resize to fit its
+         * content).
          *
          * @param resize whether the text area is resizable
          * @return this data

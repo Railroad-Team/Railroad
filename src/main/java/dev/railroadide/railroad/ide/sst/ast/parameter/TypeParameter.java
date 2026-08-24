@@ -13,10 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record TypeParameter(
-        Span span,
-        List<Annotation> annotations,
-        NameExpression name,
-        List<TypeRef> bounds) implements AstNode {
+    Span span,
+    List<Annotation> annotations,
+    NameExpression name,
+    List<TypeRef> bounds) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.TYPE_PARAMETER;

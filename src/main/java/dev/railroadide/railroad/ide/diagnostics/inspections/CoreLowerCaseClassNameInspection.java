@@ -22,17 +22,14 @@ public class CoreLowerCaseClassNameInspection implements JavaInspectionRuleProvi
             JavaSemanticRules.LOWERCASE_CLASS_NAME.defaultSeverity(),
             JavaSemanticRules.LOWERCASE_CLASS_NAME.messageTemplate(),
             Set.of("core", "naming"),
-            CoreLowerCaseClassNameInspection::reportLowerCaseClassNames
-        )
-    );
+            CoreLowerCaseClassNameInspection::reportLowerCaseClassNames));
 
     private static final List<String> TOP_LEVEL_TYPE_KINDS = List.of(
         "JAVA_CLASS_DECLARATION",
         "JAVA_RECORD_DECLARATION",
         "JAVA_INTERFACE_DECLARATION",
         "JAVA_ENUM_DECLARATION",
-        "JAVA_ANNOTATION_TYPE_DECLARATION"
-    );
+        "JAVA_ANNOTATION_TYPE_DECLARATION");
 
     @Override
     public String id() {

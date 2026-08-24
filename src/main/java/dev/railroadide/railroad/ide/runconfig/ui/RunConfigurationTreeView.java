@@ -107,10 +107,11 @@ final class RunConfigurationTreeView extends TreeView<RunConfigurationTreeView.T
             String folderPath = sanitizeFolderPath(configuration.folderPath());
             if (!folderPath.isBlank()) {
                 List<String> segments = extractFolderSegments(folderPath);
-                StringBuilder currentPath = new StringBuilder();
+                var currentPath = new StringBuilder();
                 for (String segment : segments) {
-                    if (!currentPath.isEmpty())
+                    if (!currentPath.isEmpty()) {
                         currentPath.append('/');
+                    }
                     currentPath.append(segment);
                     String pathKey = currentPath.toString();
                     TreeItem<TreeEntry> folderItem = folders.get(pathKey);
@@ -162,8 +163,9 @@ final class RunConfigurationTreeView extends TreeView<RunConfigurationTreeView.T
 
     private void selectPendingOrCurrentConfiguration() {
         UUID targetId = pendingSelectionId;
-        if (targetId == null && selectedConfiguration.get() != null)
+        if (targetId == null && selectedConfiguration.get() != null) {
             targetId = selectedConfiguration.get().uuid();
+        }
 
         if (targetId == null) {
             clearTreeSelection();
@@ -189,8 +191,9 @@ final class RunConfigurationTreeView extends TreeView<RunConfigurationTreeView.T
         try {
             getSelectionModel().select(treeItem);
             int row = getRow(treeItem);
-            if (row >= 0)
+            if (row >= 0) {
                 scrollTo(row);
+            }
         } finally {
             updatingSelection = false;
         }
@@ -229,8 +232,9 @@ final class RunConfigurationTreeView extends TreeView<RunConfigurationTreeView.T
         List<String> cleaned = new ArrayList<>();
         for (String segment : segments) {
             String trimmed = segment.trim();
-            if (!trimmed.isEmpty())
+            if (!trimmed.isEmpty()) {
                 cleaned.add(trimmed);
+            }
         }
 
         return cleaned;

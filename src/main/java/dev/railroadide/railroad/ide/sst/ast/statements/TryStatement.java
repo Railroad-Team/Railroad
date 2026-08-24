@@ -12,11 +12,11 @@ import java.util.List;
 import java.util.Optional;
 
 public record TryStatement(
-        Span span,
-        List<LocalVariableDeclarationStatement> resources,
-        BlockStatement tryBlock,
-        List<CatchClause> catchClauses,
-        Optional<FinallyClause> finallyBlock) implements Statement {
+    Span span,
+    List<LocalVariableDeclarationStatement> resources,
+    BlockStatement tryBlock,
+    List<CatchClause> catchClauses,
+    Optional<FinallyClause> finallyBlock) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.TRY_STATEMENT;

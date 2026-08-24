@@ -25,19 +25,18 @@ public class CLIArguments {
             .findFirst();
     }
 
-    private static List<Argument> readKeyValues(JsonArray array, BiConsumer<List<Argument>, JsonElement> notPrimitiveHandler) {
+    private static List<Argument> readKeyValues(JsonArray array,
+        BiConsumer<List<Argument>, JsonElement> notPrimitiveHandler) {
         List<Argument> arguments = new ArrayList<>();
-        if (array == null || array.isEmpty()) {
+        if (array == null || array.isEmpty())
             return arguments;
-        }
 
         for (int i = 0; i < array.size(); i++) {
             JsonElement element = array.get(i);
             if (element.isJsonPrimitive()) {
                 JsonPrimitive primitive = element.getAsJsonPrimitive();
-                if (!primitive.isString()) {
+                if (!primitive.isString())
                     throw new IllegalArgumentException("Argument must be a string! " + primitive);
-                }
 
                 String key = primitive.getAsString();
                 if (key.startsWith("--")) {
@@ -45,9 +44,8 @@ public class CLIArguments {
 
                     if (key.contains("=")) {
                         String[] split = key.split("=");
-                        if (split.length != 2) {
+                        if (split.length != 2)
                             throw new IllegalArgumentException("Argument must have a key and value! " + key);
-                        }
 
                         arguments.add(new Argument(split[0], split[1]));
                     } else {
@@ -57,14 +55,12 @@ public class CLIArguments {
                         }
 
                         JsonElement next = array.get(i + 1);
-                        if (!next.isJsonPrimitive()) {
+                        if (!next.isJsonPrimitive())
                             throw new IllegalArgumentException("Argument must have a value! " + key);
-                        }
 
                         JsonPrimitive nextPrimitive = next.getAsJsonPrimitive();
-                        if (!nextPrimitive.isString()) {
+                        if (!nextPrimitive.isString())
                             throw new IllegalArgumentException("Argument must have a value! " + key);
-                        }
 
                         arguments.add(new Argument(key, nextPrimitive.getAsString()));
                         i++;
@@ -82,21 +78,18 @@ public class CLIArguments {
                         }
 
                         JsonElement next = array.get(i + 1);
-                        if (!next.isJsonPrimitive()) {
+                        if (!next.isJsonPrimitive())
                             throw new IllegalArgumentException("Argument must have a value! " + key);
-                        }
 
                         JsonPrimitive nextPrimitive = next.getAsJsonPrimitive();
-                        if (!nextPrimitive.isString()) {
+                        if (!nextPrimitive.isString())
                             throw new IllegalArgumentException("Argument must have a value! " + key);
-                        }
 
                         arguments.add(new Argument(key, nextPrimitive.getAsString()));
                         i++;
                     }
-                } else {
+                } else
                     throw new IllegalArgumentException("Argument must start with a '-' or '--'! " + key);
-                }
             } else {
                 notPrimitiveHandler.accept(arguments, element);
             }
@@ -109,42 +102,38 @@ public class CLIArguments {
         List<Argument> args = readKeyValues(array, (arguments, element) -> {
             if (element.isJsonObject()) {
                 JsonObject object = element.getAsJsonObject();
-                if (!object.has("rules")) {
+                if (!object.has("rules"))
                     throw new IllegalArgumentException("Argument must have rules! " + object);
-                }
 
                 JsonArray rulesJson = object.getAsJsonArray("rules");
                 List<Argument.Rule> rules = new ArrayList<>();
                 for (JsonElement ruleElement : rulesJson) {
-                    if (!ruleElement.isJsonObject()) {
+                    if (!ruleElement.isJsonObject())
                         throw new IllegalArgumentException("Rule must be an object! " + ruleElement);
-                    }
 
                     JsonObject ruleObject = ruleElement.getAsJsonObject();
-                    if (!ruleObject.has("action")) {
+                    if (!ruleObject.has("action"))
                         throw new IllegalArgumentException("Rule must have an action! " + ruleObject);
-                    }
 
                     String actionString = ruleObject.get("action").getAsString();
                     Argument.Rule.Action action;
                     try {
                         action = Argument.Rule.Action.valueOf(actionString.toUpperCase(Locale.ROOT));
                     } catch (IllegalArgumentException exception) {
-                        throw new IllegalArgumentException("Rule action must be 'allow' or 'disallow'! " + actionString);
+                        throw new IllegalArgumentException(
+                            "Rule action must be 'allow' or 'disallow'! " + actionString);
                     }
 
                     Map<String, String> os = new HashMap<>();
                     if (ruleObject.has("os")) {
                         JsonObject osObject = ruleObject.getAsJsonObject("os");
                         for (Map.Entry<String, JsonElement> entry : osObject.entrySet()) {
-                            if (!entry.getValue().isJsonPrimitive()) {
+                            if (!entry.getValue().isJsonPrimitive())
                                 throw new IllegalArgumentException("OS value must be a primitive! " + entry);
-                            }
 
                             JsonPrimitive primitive = entry.getValue().getAsJsonPrimitive();
-                            if (!primitive.isString()) {
+                            if (!primitive.isString())
                                 throw new IllegalArgumentException("OS value must be a string! " + entry);
-                            }
 
                             os.put(entry.getKey(), primitive.getAsString());
                         }
@@ -154,14 +143,12 @@ public class CLIArguments {
                     if (ruleObject.has("features")) {
                         JsonObject featuresObject = ruleObject.getAsJsonObject("features");
                         for (Map.Entry<String, JsonElement> entry : featuresObject.entrySet()) {
-                            if (!entry.getValue().isJsonPrimitive()) {
+                            if (!entry.getValue().isJsonPrimitive())
                                 throw new IllegalArgumentException("Feature value must be a primitive! " + entry);
-                            }
 
                             JsonPrimitive primitive = entry.getValue().getAsJsonPrimitive();
-                            if (!primitive.isBoolean()) {
+                            if (!primitive.isBoolean())
                                 throw new IllegalArgumentException("Feature value must be a boolean! " + entry);
-                            }
 
                             features.put(entry.getKey(), primitive.getAsBoolean());
                         }
@@ -170,16 +157,16 @@ public class CLIArguments {
                     rules.add(new Argument.Rule(action, os, features));
                 }
 
-                if (!object.has("value")) {
+                if (!object.has("value"))
                     throw new IllegalArgumentException("Argument must have a value! " + object);
-                }
 
                 // can either be a string or an array of strings
                 JsonElement valueElement = object.get("value");
                 if (valueElement.isJsonArray()) {
-                    List<Argument> valueArguments = readKeyValues(valueElement.getAsJsonArray(), (arguments1, jsonElement1) -> {
-                        throw new IllegalArgumentException("Argument value must be a string! " + jsonElement1);
-                    });
+                    List<Argument> valueArguments = readKeyValues(valueElement.getAsJsonArray(),
+                        (arguments1, jsonElement1) -> {
+                            throw new IllegalArgumentException("Argument value must be a string! " + jsonElement1);
+                        });
 
                     for (Argument argument : valueArguments) {
                         arguments.add(new Argument(argument.name(), argument.value(), rules));
@@ -195,9 +182,8 @@ public class CLIArguments {
                     for (Argument argument : valueArguments) {
                         arguments.add(new Argument(argument.name(), argument.value(), rules));
                     }
-                } else {
+                } else
                     throw new IllegalArgumentException("Argument value must be a string! " + valueElement);
-                }
             }
         });
 
@@ -260,8 +246,7 @@ public class CLIArguments {
             }
 
             public enum Action {
-                ALLOW,
-                DISALLOW
+                ALLOW, DISALLOW
             }
         }
     }

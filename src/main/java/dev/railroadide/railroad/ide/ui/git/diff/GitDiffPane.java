@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class GitDiffPane extends RRBorderPane {
+public class GitDiffPane extends RRBorderPane implements AutoCloseable {
     private static final String DEFAULT_TITLE = "Git Diff";
     private static final String PLACEHOLDER_NO_FILE_KEY = "railroad.git.diff.placeholder.no_file";
     private static final String PLACEHOLDER_NO_REPO_KEY = "railroad.git.diff.placeholder.no_repo";
@@ -48,6 +48,7 @@ public class GitDiffPane extends RRBorderPane {
         return thread;
     });
     private final AtomicInteger generation = new AtomicInteger();
+    private final ShutdownHooks.Registration shutdownRegistration;
     private List<RenderLine> renderLines = List.of();
     private int oldNumberDigits = 1;
     private int newNumberDigits = 1;
@@ -74,11 +75,18 @@ public class GitDiffPane extends RRBorderPane {
             requestDiff(newPath);
         });
 
-        ShutdownHooks.addHook(executor::shutdownNow);
+        shutdownRegistration = ShutdownHooks.registerHook(executor::shutdownNow);
     }
 
     public GitDiffPane(Project project) {
         this(project, null);
+    }
+
+    @Override
+    public void close() {
+        generation.incrementAndGet();
+        shutdownRegistration.close();
+        executor.shutdownNow();
     }
 
     public ObjectProperty<Path> filePathProperty() {
@@ -142,11 +150,10 @@ public class GitDiffPane extends RRBorderPane {
             return DiffResult.placeholder(PLACEHOLDER_FAILED_KEY);
         }
 
-        if (diffTextOpt.isEmpty()) {
+        if (diffTextOpt.isEmpty())
             return DiffResult.placeholder(gitManager.getGitRepository() == null
                 ? PLACEHOLDER_NO_REPO_KEY
                 : PLACEHOLDER_FAILED_KEY);
-        }
 
         String diffText = diffTextOpt.orElse("");
         if (diffText.isBlank())
@@ -201,7 +208,8 @@ public class GitDiffPane extends RRBorderPane {
         return builder.create();
     }
 
-    private static void appendLineStyles(StyleSpansBuilder<Collection<String>> builder, RenderLine line, boolean hasNewline) {
+    private static void appendLineStyles(StyleSpansBuilder<Collection<String>> builder, RenderLine line,
+        boolean hasNewline) {
         String text = line.text();
         if (text.isEmpty()) {
             builder.add(styleForKind(line.kind()), hasNewline ? 1 : 0);
@@ -301,7 +309,8 @@ public class GitDiffPane extends RRBorderPane {
                         case DELETION -> LineKind.DELETION;
                     };
                     String text = prefixForKind(kind) + hunkLine.content();
-                    lines.add(new RenderLine(text, kind, hunkLine.oldLineNumber(), hunkLine.newLineNumber(), languageId));
+                    lines.add(
+                        new RenderLine(text, kind, hunkLine.oldLineNumber(), hunkLine.newLineNumber(), languageId));
                 }
             }
 
@@ -340,7 +349,8 @@ public class GitDiffPane extends RRBorderPane {
     }
 
     private static String formatHunkHeader(DiffHunk hunk) {
-        String header = "@@ -%d,%d +%d,%d @@".formatted(hunk.oldStart(), hunk.oldCount(), hunk.newStart(), hunk.newCount());
+        String header = "@@ -%d,%d +%d,%d @@".formatted(hunk.oldStart(), hunk.oldCount(), hunk.newStart(),
+            hunk.newCount());
         if (hunk.sectionHeader() != null && !hunk.sectionHeader().isBlank()) {
             header = header + " " + hunk.sectionHeader();
         }
@@ -435,7 +445,7 @@ public class GitDiffPane extends RRBorderPane {
     }
 
     private record RenderLine(String text, LineKind kind, Integer oldLineNumber, Integer newLineNumber,
-                              String languageId) {
+        String languageId) {
     }
 
     private static String resolveTitle(Path path) {
@@ -447,12 +457,7 @@ public class GitDiffPane extends RRBorderPane {
     }
 
     private enum LineKind {
-        FILE_HEADER(false),
-        HUNK_HEADER(false),
-        META(false),
-        CONTEXT(true),
-        ADDITION(true),
-        DELETION(true);
+        FILE_HEADER(false), HUNK_HEADER(false), META(false), CONTEXT(true), ADDITION(true), DELETION(true);
 
         private final boolean codeLine;
 

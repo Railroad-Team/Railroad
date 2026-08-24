@@ -23,23 +23,19 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
             JavaSemanticRules.INACCESSIBLE_TYPE.defaultSeverity(),
             JavaSemanticRules.INACCESSIBLE_TYPE.messageTemplate(),
             Set.of("core", "accessibility", "types"),
-            CoreAccessibilityInspection::reportInaccessibleTypes
-        ),
+            CoreAccessibilityInspection::reportInaccessibleTypes),
         new SimpleJavaInspectionRule(
             JavaSemanticRules.INACCESSIBLE_MEMBER.id(),
             JavaSemanticRules.INACCESSIBLE_MEMBER.defaultSeverity(),
             JavaSemanticRules.INACCESSIBLE_MEMBER.messageTemplate(),
             Set.of("core", "accessibility", "members"),
-            CoreAccessibilityInspection::reportInaccessibleMembers
-        ),
+            CoreAccessibilityInspection::reportInaccessibleMembers),
         new SimpleJavaInspectionRule(
             JavaSemanticRules.INACCESSIBLE_CALL.id(),
             JavaSemanticRules.INACCESSIBLE_CALL.defaultSeverity(),
             JavaSemanticRules.INACCESSIBLE_CALL.messageTemplate(),
             Set.of("core", "accessibility", "calls"),
-            CoreAccessibilityInspection::reportInaccessibleCalls
-        )
-    );
+            CoreAccessibilityInspection::reportInaccessibleCalls));
 
     @Override
     public String id() {
@@ -130,8 +126,9 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
             String displayName = typeRef == null
                 ? context.ownerQualifiedName(resolved).orElse(resolved.simpleName())
                 : context.canonicalTypeText(typeRef);
-            if (displayName == null || displayName.isBlank())
+            if (displayName == null || displayName.isBlank()) {
                 displayName = resolved.simpleName();
+            }
             reporter.report(typeRef == null ? node : typeRef, context.simpleTypeName(displayName));
         });
     }

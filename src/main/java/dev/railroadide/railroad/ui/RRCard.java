@@ -31,7 +31,7 @@ public class RRCard extends VBox {
         content.managedProperty().bind(Bindings.isNotEmpty(content.getChildren()));
 
         // Create a clip rectangle for the RRCard itself
-        Rectangle clip = new Rectangle();
+        var clip = new Rectangle();
         clip.widthProperty().bind(widthProperty());
         clip.heightProperty().bind(heightProperty());
         clip.setArcWidth(cornerRadius);
@@ -41,12 +41,12 @@ public class RRCard extends VBox {
         getChildren().add(content);
         getStyleClass().addAll("rr-card", "elevated-1");
 
-        setOnMouseEntered($ -> {
+        setOnMouseEntered(_ -> {
             getStyleClass().remove("elevated-1");
             getStyleClass().add("elevated-2");
         });
 
-        setOnMouseExited($ -> {
+        setOnMouseExited(_ -> {
             getStyleClass().remove("elevated-2");
             getStyleClass().add("elevated-1");
         });

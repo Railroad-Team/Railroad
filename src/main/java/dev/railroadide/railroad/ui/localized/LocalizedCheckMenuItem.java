@@ -12,7 +12,7 @@ public class LocalizedCheckMenuItem extends CheckMenuItem {
     /**
      * Creates a new LocalizedCheckMenuItem with the specified key.
      *
-     * @param key      The localization key
+     * @param key The localization key
      * @param selected Whether the item should be selected by default
      */
     public LocalizedCheckMenuItem(String key, boolean selected) {

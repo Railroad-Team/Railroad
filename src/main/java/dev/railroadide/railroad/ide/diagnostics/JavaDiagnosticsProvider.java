@@ -37,11 +37,11 @@ public record JavaDiagnosticsProvider(Project project, Path filePath) implements
 
         SemanticModel semanticModel;
         if (project != null) {
-            JavaProjectSemanticIndex projectIndex =
-                Services.PROJECT_LANGUAGE_INDEX_SERVICE.indexTyped(project.getPath(), JavaLanguageSupport.LANGUAGE_ID);
+            JavaProjectSemanticIndex projectIndex = Services.PROJECT_LANGUAGE_INDEX_SERVICE
+                .indexTyped(project.getPath(), JavaLanguageSupport.LANGUAGE_ID);
             semanticModel = projectIndex == null
-                    ? JavaSemanticAnalyzer.analyzeFacts(document)
-                    : JavaSemanticAnalyzer.analyzeFacts(document, projectIndex);
+                ? JavaSemanticAnalyzer.analyzeFacts(document)
+                : JavaSemanticAnalyzer.analyzeFacts(document, projectIndex);
         } else {
             semanticModel = JavaSemanticAnalyzer.analyzeFacts(document);
         }
@@ -75,8 +75,7 @@ public record JavaDiagnosticsProvider(Project project, Path filePath) implements
                 column,
                 diagnostic.message(),
                 diagnostic.code(),
-                sourceFile
-            ));
+                sourceFile));
         }
 
         return List.copyOf(diagnostics);
@@ -84,8 +83,9 @@ public record JavaDiagnosticsProvider(Project project, Path filePath) implements
 
     private List<SemanticDiagnostic> runRegisteredInspections(String document, SemanticModel semanticModel) {
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
-        JavaRuleContext context = new JavaRuleContext(filePath, document, semanticModel);
-        JavaInspectionReporter reporter = diagnostic -> diagnostics.add(Objects.requireNonNull(diagnostic, "diagnostic"));
+        var context = new JavaRuleContext(filePath, document, semanticModel);
+        JavaInspectionReporter reporter = diagnostic -> diagnostics
+            .add(Objects.requireNonNull(diagnostic, "diagnostic"));
 
         for (JavaInspectionRuleProvider provider : sortedRuleProviders()) {
             if (provider == null)
@@ -94,7 +94,8 @@ public record JavaDiagnosticsProvider(Project project, Path filePath) implements
             try {
                 JavaInspectionRuleEngine.runRules(provider, context, reporter);
             } catch (Exception exception) {
-                Railroad.LOGGER.error("Plugin Java inspection rule provider '{}' failed for {}", provider.id(), filePath, exception);
+                Railroad.LOGGER.error("Plugin Java inspection rule provider '{}' failed for {}", provider.id(),
+                    filePath, exception);
             }
         }
 
@@ -103,17 +104,18 @@ public record JavaDiagnosticsProvider(Project project, Path filePath) implements
 
     private static List<JavaInspectionRuleProvider> sortedRuleProviders() {
         return JavaInspectionRegistries.ruleProviderEntries().entrySet().stream()
-                .sorted(java.util.Map.Entry.comparingByKey())
-                .map(java.util.Map.Entry::getValue)
-                .toList();
+            .sorted(java.util.Map.Entry.comparingByKey())
+            .map(java.util.Map.Entry::getValue)
+            .toList();
     }
 
     private static long computeLine(char[] source, int position) {
         long line = 1;
         int bound = Math.clamp(source.length, 0, position);
         for (int index = 0; index < bound; index++) {
-            if (source[index] == '\n')
+            if (source[index] == '\n') {
                 line++;
+            }
         }
         return line;
     }

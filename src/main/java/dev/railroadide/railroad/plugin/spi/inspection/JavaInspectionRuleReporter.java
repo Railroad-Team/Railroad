@@ -1,4 +1,4 @@
 package dev.railroadide.railroad.plugin.spi.inspection;
 
-public interface JavaInspectionRuleReporter extends LanguageInspectionRuleReporter{
+public interface JavaInspectionRuleReporter extends LanguageInspectionRuleReporter {
 }

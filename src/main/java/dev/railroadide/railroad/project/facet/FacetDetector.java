@@ -16,7 +16,8 @@ public interface FacetDetector<D> {
      * Detects a facet based on the provided path.
      *
      * @param project the project context for detection
-     * @return an {@link Optional} containing the detected facet if found, or an {@link Optional#empty} if no facet is detected
+     * @return an {@link Optional} containing the detected facet if found, or an {@link Optional#empty} if no facet is
+     *         detected
      */
     Optional<Facet<D>> detect(Project project);
 }

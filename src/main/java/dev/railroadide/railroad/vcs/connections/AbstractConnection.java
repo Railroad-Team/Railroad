@@ -34,9 +34,9 @@ public abstract class AbstractConnection {
      * behavior for cloning a repository from the VCS.
      *
      * @param repository The repository to clone.
-     * @param path       The local file system path where the repository will be cloned.
+     * @param path The local file system path where the repository will be cloned.
      * @return A CompletableFuture that resolves to true if the cloning operation
-     * was successful, or false otherwise.
+     *         was successful, or false otherwise.
      */
     public abstract CompletableFuture<Boolean> cloneRepo(Repository repository, Path path);
 }

@@ -15,7 +15,7 @@ public final class ProjectPathIdentity {
         Path normalized = Objects.requireNonNull(path, "path").toAbsolutePath().normalize();
         try {
             return normalized.toRealPath();
-        } catch (IOException ignored) {
+        } catch (IOException _) {
             return normalized;
         }
     }

@@ -11,9 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record SwitchExpression(
-        Span span,
-        Expression selector,
-        List<SwitchRule> switchRule) implements Expression{
+    Span span,
+    Expression selector,
+    List<SwitchRule> switchRule) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.SWITCH_EXPRESSION;

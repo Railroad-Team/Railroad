@@ -30,16 +30,20 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
     /**
      * Constructs a new checkbox component.
      *
-     * @param dataKey        the key to store the data in the form data
-     * @param data           the data for the checkbox
-     * @param validator      the validator for the checkbox
-     * @param listener       the listener for the checkbox
+     * @param dataKey the key to store the data in the form data
+     * @param data the data for the checkbox
+     * @param validator the validator for the checkbox
+     * @param listener the listener for the checkbox
      * @param bindCheckboxTo the property to bind the checkbox to
-     * @param transformers   the transformers for the checkbox
-     * @param visible        the visibility of the checkbox
+     * @param transformers the transformers for the checkbox
+     * @param visible the visibility of the checkbox
      */
-    public CheckBoxComponent(String dataKey, Data data, FormComponentValidator<CheckBox> validator, FormComponentChangeListener<CheckBox, Boolean> listener, Property<CheckBox> bindCheckboxTo, List<FormTransformer<CheckBox, Boolean, ?>> transformers, @Nullable BooleanBinding visible) {
-        super(dataKey, data, dataCurrent -> new FormCheckBox(dataCurrent.label, dataCurrent.required, dataCurrent.selected), validator, listener, transformers, visible);
+    public CheckBoxComponent(String dataKey, Data data, FormComponentValidator<CheckBox> validator,
+        FormComponentChangeListener<CheckBox, Boolean> listener, Property<CheckBox> bindCheckboxTo,
+        List<FormTransformer<CheckBox, Boolean, ?>> transformers, @Nullable BooleanBinding visible) {
+        super(dataKey, data,
+            dataCurrent -> new FormCheckBox(dataCurrent.label, dataCurrent.required, dataCurrent.selected), validator,
+            listener, transformers, visible);
 
         if (bindCheckboxTo != null) {
             bindCheckboxTo.bind(componentProperty().map(FormCheckBox::getPrimaryComponent));
@@ -60,8 +64,8 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
             }
 
             if (newValue != null) {
-                listenerRef.set((observable1, oldValue1, newValue1) ->
-                    listener.changed(newValue.getPrimaryComponent(), observable1, oldValue1, newValue1));
+                listenerRef.set((observable1, oldValue1, newValue1) -> listener.changed(newValue.getPrimaryComponent(),
+                    observable1, oldValue1, newValue1));
 
                 newValue.getPrimaryComponent().selectedProperty().addListener(listenerRef.get());
             }
@@ -73,8 +77,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
         componentProperty()
             .map(FormCheckBox::getPrimaryComponent)
             .flatMap(CheckBox::selectedProperty)
-            .addListener((observable, oldValue, newValue) ->
-                formData.addProperty(dataKey, newValue));
+            .addListener((observable, oldValue, newValue) -> formData.addProperty(dataKey, newValue));
 
         formData.addProperty(dataKey, componentProperty()
             .map(FormCheckBox::getPrimaryComponent)
@@ -104,7 +107,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * Constructs a new builder for a checkbox component.
          *
          * @param dataKey the key to store the data in the form data
-         * @param label   the label for the checkbox
+         * @param label the label for the checkbox
          */
         public Builder(@NotNull String dataKey, @NotNull String label) {
             this.dataKey = dataKey;
@@ -176,15 +179,17 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
         /**
          * Adds a transformer to the checkbox.
          *
-         * @param fromComponent       the observable value to get the value from
+         * @param fromComponent the observable value to get the value from
          * @param toComponentFunction the function to set the value to the component
-         * @param valueMapper         the function to map the value
-         * @param <X>                 the type of the value
+         * @param valueMapper the function to map the value
+         * @param <X> the type of the value
          * @return this builder
          */
         @Override
-        public <X> Builder addTransformer(ObservableValue<CheckBox> fromComponent, Consumer<X> toComponentFunction, Function<Boolean, X> valueMapper) {
-            transformers.add(new FormTransformer<>(fromComponent, CheckBox::isSelected, toComponentFunction, valueMapper));
+        public <X> Builder addTransformer(ObservableValue<CheckBox> fromComponent, Consumer<X> toComponentFunction,
+            Function<Boolean, X> valueMapper) {
+            transformers
+                .add(new FormTransformer<>(fromComponent, CheckBox::isSelected, toComponentFunction, valueMapper));
             return this;
         }
 
@@ -192,25 +197,26 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * Adds a transformer to the checkbox.
          *
          * @param fromComponent the observable value to get the value from
-         * @param toComponent   the observable value to set the value to
-         * @param valueMapper   the function to map the value
-         * @param <U>           the type of the component
-         * @param <W>           the type of the value
+         * @param toComponent the observable value to set the value to
+         * @param valueMapper the function to map the value
+         * @param <U> the type of the component
+         * @param <W> the type of the value
          * @return this builder
          */
         @Override
-        public <U extends Node, X> Builder addTransformer(ObservableValue<CheckBox> fromComponent, ObservableValue<U> toComponent, Function<Boolean, X> valueMapper) {
+        public <U extends Node, X> Builder addTransformer(ObservableValue<CheckBox> fromComponent,
+            ObservableValue<U> toComponent, Function<Boolean, X> valueMapper) {
             this.transformers.add(new FormTransformer<>(fromComponent, CheckBox::isSelected, value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());
                 } else if (toComponent.getValue() instanceof CheckBox checkBox) {
                     try {
                         checkBox.setSelected((Boolean) value);
-                    } catch (Exception ignored) {
+                    } catch (Exception _) {
                     }
-                } else {
-                    throw new IllegalArgumentException("Unsupported component type: " + toComponent.getValue().getClass().getName());
-                }
+                } else
+                    throw new IllegalArgumentException(
+                        "Unsupported component type: " + toComponent.getValue().getClass().getName());
             }, valueMapper));
             return this;
         }

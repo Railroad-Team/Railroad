@@ -44,7 +44,7 @@ public class ThemeManager {
             Railroad.LOGGER.error("Failed to load component CSS files", exception);
         }
 
-        currentTheme.addListener($ -> reloadAll());
+        currentTheme.addListener(_ -> reloadAll());
         currentTheme.set(SettingsHandler.getValue(Settings.THEME));
     }
 
@@ -53,7 +53,8 @@ public class ThemeManager {
     }
 
     public static void apply(Scene scene) {
-        if (scene == null) return;
+        if (scene == null)
+            return;
 
         TRACKED_SCENES.add(scene);
         applyThemeToScene(currentTheme.get(), scene);
@@ -78,13 +79,22 @@ public class ThemeManager {
         apply(nextScene);
     }
 
+    public static void release(Scene scene) {
+        if (scene == null)
+            return;
+
+        TRACKED_SCENES.remove(scene);
+        scene.setOnKeyReleased(null);
+    }
+
     public static StringProperty getCurrentThemeProperty() {
         return currentTheme;
     }
 
     public static void setTheme(String theme) {
-        if (theme == null)
+        if (theme == null) {
             theme = "";
+        }
 
         currentTheme.set(theme);
     }
@@ -122,8 +132,7 @@ public class ThemeManager {
             } else {
                 scene.getStylesheets().add(
                     new File(ThemeDownloadManager.getThemesDirectory()
-                        + "/" + theme + ".css").toURI().toString()
-                );
+                        + "/" + theme + ".css").toURI().toString());
             }
         }
 
@@ -158,7 +167,8 @@ public class ThemeManager {
             if (url.getProtocol().equals("file")) {
                 try (Stream<Path> walk = Files.walk(Paths.get(url.toURI()), 1)) {
                     walk.filter(Files::isRegularFile)
-                        .forEach(p -> componentCss.add(getAsExternalForm("styles/components/" + p.getFileName().toString())));
+                        .forEach(p -> componentCss
+                            .add(getAsExternalForm("styles/components/" + p.getFileName().toString())));
                 }
             } else if (url.getProtocol().equals("jar")) {
                 JarURLConnection connection = (JarURLConnection) url.openConnection();
@@ -168,7 +178,8 @@ public class ThemeManager {
                         JarEntry entry = entries.nextElement();
                         String name = entry.getName();
                         if (name.startsWith(folderPath) && !name.equals(folderPath) && !entry.isDirectory()) {
-                            componentCss.add(getAsExternalForm("styles/components/" + name.substring(folderPath.length() + 1)));
+                            componentCss
+                                .add(getAsExternalForm("styles/components/" + name.substring(folderPath.length() + 1)));
                         }
                     }
                 }

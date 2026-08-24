@@ -121,8 +121,8 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
     /**
      * Updates the current state of the task and notifies listeners.
      *
-     * @param newState    the new state of the task
-     * @param messageKey  the message key for status updates
+     * @param newState the new state of the task
+     * @param messageKey the message key for status updates
      * @param messageArgs optional arguments for the message
      */
     void updateState(GradleTaskState newState, String messageKey, Object... messageArgs) {
@@ -134,8 +134,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
             messageKey,
             messageArgs,
             -1.0, // unknown progress for now
-            Instant.now()
-        );
+            Instant.now());
         for (Consumer<GradleTaskProgressEvent> listener : progressListeners) {
             listener.accept(progressEvent);
         }

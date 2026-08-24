@@ -12,7 +12,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public record NeoforgeVersionRepository(SwitchboardClient client, CacheManager cache)
-    implements SwitchboardRepository {
+    implements
+        SwitchboardRepository {
     private static final Duration VERSIONS_TTL = Duration.ofHours(12);
     private static final Duration LATEST_TTL = Duration.ofHours(1);
 
@@ -21,8 +22,7 @@ public record NeoforgeVersionRepository(SwitchboardClient client, CacheManager c
             "neoforge:versions",
             SwitchboardClient.LIST_OF_STRINGS,
             VERSIONS_TTL,
-            client::fetchNeoforgeVersions
-        );
+            client::fetchNeoforgeVersions);
     }
 
     public List<String> getAllVersionsSync() throws ExecutionException, InterruptedException {
@@ -38,8 +38,7 @@ public record NeoforgeVersionRepository(SwitchboardClient client, CacheManager c
             key,
             SwitchboardClient.LIST_OF_STRINGS,
             VERSIONS_TTL,
-            () -> client.fetchNeoforgeVersions(normalized)
-        );
+            () -> client.fetchNeoforgeVersions(normalized));
     }
 
     public List<String> getVersionsForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {
@@ -56,8 +55,7 @@ public record NeoforgeVersionRepository(SwitchboardClient client, CacheManager c
             key,
             String.class,
             LATEST_TTL,
-            () -> client.fetchLatestNeoforgeVersion(includePrereleases)
-        );
+            () -> client.fetchLatestNeoforgeVersion(includePrereleases));
     }
 
     public String getLatestVersionSync() throws ExecutionException, InterruptedException {
@@ -81,15 +79,15 @@ public record NeoforgeVersionRepository(SwitchboardClient client, CacheManager c
             key,
             String.class,
             LATEST_TTL,
-            () -> client.fetchLatestNeoforgeVersion(normalized, includePrereleases)
-        );
+            () -> client.fetchLatestNeoforgeVersion(normalized, includePrereleases));
     }
 
     public String getLatestVersionForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {
         return getLatestVersionFor(minecraftVersionId).get();
     }
 
-    public String getLatestVersionForSync(String minecraftVersionId, boolean includePrereleases) throws ExecutionException, InterruptedException {
+    public String getLatestVersionForSync(String minecraftVersionId, boolean includePrereleases)
+        throws ExecutionException, InterruptedException {
         return getLatestVersionFor(minecraftVersionId, includePrereleases).get();
     }
 }

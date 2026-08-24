@@ -24,7 +24,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * Detects the presence of Java support in a project directory by searching for Java source files and determining the Java version.
+ * Detects the presence of Java support in a project directory by searching for Java source files and determining the
+ * Java version.
  * This detector is used by the facet system to identify Java projects and extract relevant configuration data.
  */
 public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
@@ -75,7 +76,8 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
                     InstalledJdk jdk = gradleBuildModel.project().javaLanguageSettings().getJdk();
                     return JavaVersion.fromMajor(Integer.parseInt(jdk.getJavaVersion().getMajorVersion()));
                 } catch (NumberFormatException exception) {
-                    Railroad.LOGGER.error("Error parsing Java version from Gradle model for project: {}", project.getAlias(), exception);
+                    Railroad.LOGGER.error("Error parsing Java version from Gradle model for project: {}",
+                        project.getAlias(), exception);
                     return JavaVersion.fromMajor(-1);
                 }
             })
@@ -115,8 +117,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
                 for (Plugin plugin : build.getPlugins()) {
                     if ("org.apache.maven.plugins:maven-compiler-plugin"
                         .equals(plugin.getGroupId() + ":" + plugin.getArtifactId())) {
-                        var cfg = (XmlPlexusConfiguration)
-                            plugin.getConfiguration();
+                        var cfg = (XmlPlexusConfiguration) plugin.getConfiguration();
                         if (src == null && cfg.getChild("source") != null) {
                             src = cfg.getChild("source").getValue();
                         }
@@ -130,8 +131,12 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             }
 
             // fall back defaults
-            if (src == null) src = "1.8";
-            if (tgt == null) tgt = src;
+            if (src == null) {
+                src = "1.8";
+            }
+            if (tgt == null) {
+                tgt = src;
+            }
 
             JavaVersion sourceVer = JavaVersion.fromReleaseString(src);
             JavaVersion targetVer = JavaVersion.fromReleaseString(tgt);
@@ -168,8 +173,6 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             data.setVersion(highestJavaVersion);
         }
 
-        return hasJavaFiles ?
-            Optional.of(new Facet<>(FacetManager.JAVA, data)) :
-            Optional.empty();
+        return hasJavaFiles ? Optional.of(new Facet<>(FacetManager.JAVA, data)) : Optional.empty();
     }
 }

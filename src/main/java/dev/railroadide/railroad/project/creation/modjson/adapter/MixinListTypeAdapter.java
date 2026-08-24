@@ -33,9 +33,8 @@ public class MixinListTypeAdapter extends TypeAdapter<List<MixinEnvironment>> {
                 configs.add(configObject);
             } else if (token == JsonToken.NULL) {
                 in.nextNull();
-            } else {
+            } else
                 throw new IOException("Expected string, object, or null for Mixin entry but got " + token);
-            }
         }
 
         in.endArray();

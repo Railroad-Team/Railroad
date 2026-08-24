@@ -11,10 +11,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record SynchronizedStatement(
-        Span span,
-        Expression expression,
-        BlockStatement body
-) implements Statement {
+    Span span,
+    Expression expression,
+    BlockStatement body) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.SYNCHRONIZED_STATEMENT;

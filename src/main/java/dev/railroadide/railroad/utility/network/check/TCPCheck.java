@@ -13,8 +13,9 @@ public class TCPCheck implements NetworkCheck {
             socket.connect(socketAddress, timeout);
             return true;
         } catch (Exception exception) {
-            if (shouldLogFailures())
+            if (shouldLogFailures()) {
                 Railroad.LOGGER.error("An error occurred while trying to connect via DNS over TCP.", exception);
+            }
             return false;
         }
     }

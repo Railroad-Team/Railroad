@@ -12,12 +12,11 @@ import java.util.List;
 import java.util.Optional;
 
 public record BasicForStatement(
-        Span span,
-        Optional<Statement> initStatement,
-        Optional<Expression> condition,
-        List<Expression> updaters,
-        Statement body
-) implements ForStatement {
+    Span span,
+    Optional<Statement> initStatement,
+    Optional<Expression> condition,
+    List<Expression> updaters,
+    Statement body) implements ForStatement {
     @Override
     public AstKind kind() {
         return AstKind.BASIC_FOR_STATEMENT;

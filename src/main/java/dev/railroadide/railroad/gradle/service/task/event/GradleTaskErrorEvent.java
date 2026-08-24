@@ -9,8 +9,8 @@ import java.util.UUID;
 /**
  * Carries information about an error produced by a running Gradle task.
  *
- * @param taskId       the execution handle identifier
- * @param state        the task’s terminal state when the error occurred
+ * @param taskId the execution handle identifier
+ * @param state the task’s terminal state when the error occurred
  * @param errorMessage the message provided by Gradle
  */
 public record GradleTaskErrorEvent(

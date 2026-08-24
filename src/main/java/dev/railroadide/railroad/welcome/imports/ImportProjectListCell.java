@@ -14,7 +14,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 
-
 public class ImportProjectListCell extends ListCell<Repository> {
     private final RRCard card = new RRCard(12);
     private final HBox content = new RRHBox();

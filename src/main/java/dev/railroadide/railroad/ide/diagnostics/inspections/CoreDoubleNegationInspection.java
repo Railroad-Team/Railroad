@@ -24,9 +24,7 @@ public class CoreDoubleNegationInspection implements JavaInspectionRuleProvider 
             JavaSemanticRules.DOUBLE_NEGATION.defaultSeverity(),
             JavaSemanticRules.DOUBLE_NEGATION.messageTemplate(),
             Set.of("core", "control-flow"),
-            CoreDoubleNegationInspection::reportDoubleNegation
-        )
-    );
+            CoreDoubleNegationInspection::reportDoubleNegation));
 
     @Override
     public String id() {

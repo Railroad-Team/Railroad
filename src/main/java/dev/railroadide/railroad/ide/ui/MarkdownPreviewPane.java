@@ -39,9 +39,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
-public class MarkdownPreviewPane extends RRVBox {
+public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     public static final Pattern NUMBERED_LIST_PATTERN = Pattern.compile("\\d+\\. \\w+");
     public static final Pattern BULLET_LIST_PATTERN = Pattern.compile("\\* .+");
     public static final Pattern DASH_LIST_PATTERN = Pattern.compile("- .+");
@@ -62,8 +63,18 @@ public class MarkdownPreviewPane extends RRVBox {
     private final HBox switchButtons;
 
     private final Project project;
+    private final BiConsumer<String, String> themeListener;
 
     private int scrollAmount;
+
+    @Override
+    public void close() {
+        if (textEditorPane != null) {
+            textEditorPane.close();
+            textEditorPane = null;
+        }
+        Settings.THEME.removeListener(themeListener);
+    }
 
     public MarkdownPreviewPane(Path markdownFile, Project project) {
         this.markdownFile = markdownFile;
@@ -84,8 +95,8 @@ public class MarkdownPreviewPane extends RRVBox {
 
         preview.setDarkMode(ThemeManager.getTheme().contains("dark"));
 
-        Settings.THEME.addListener((ignored, newThemeName) ->
-            preview.setDarkMode(newThemeName.contains("dark")));
+        themeListener = (_, newThemeName) -> preview.setDarkMode(newThemeName.contains("dark"));
+        Settings.THEME.addListener(themeListener);
 
         ProjectDataStore dataStore = project.getDataStore();
 
@@ -148,8 +159,8 @@ public class MarkdownPreviewPane extends RRVBox {
             }
         });
 
-        textEditorPane.addEventFilter(ScrollEvent.SCROLL, _ ->
-            scrollAmount = (int) textEditorPane.getEstimatedScrollY());
+        textEditorPane.addEventFilter(ScrollEvent.SCROLL,
+            _ -> scrollAmount = (int) textEditorPane.getEstimatedScrollY());
 
         restoreEditorScroll();
 
@@ -284,7 +295,8 @@ public class MarkdownPreviewPane extends RRVBox {
         imageButton.setOnAction(event -> imageDialog());
 
         return new RRHBox(headingButton, boldButton, italicButton, quoteButton, codeButton, linkButton,
-            unorderedListButton, orderedListButton, taskListButton, horizontalRuleButton, strikethroughButton, codeBlockButton, imageButton);
+            unorderedListButton, orderedListButton, taskListButton, horizontalRuleButton, strikethroughButton,
+            codeBlockButton, imageButton);
     }
 
     private CustomMenuItem createMenuItem(int level, int[] headingFontSizes, ContextMenu headingMenu) {
@@ -363,8 +375,7 @@ public class MarkdownPreviewPane extends RRVBox {
                 .title("railroad.markdown.image_dialog.heading")
                 .contentNode(form)
                 .buttons(cancelButton, insertButton)
-                .submitOnEnter(false)
-        );
+                .submitOnEnter(false));
         Platform.runLater(() -> {
             addNodeStyles(dialog);
             dialog.getScene().getRoot().applyCss();
@@ -390,15 +401,15 @@ public class MarkdownPreviewPane extends RRVBox {
         }
     }
 
-    private void createDialogButtons(RRButton cancelButton, RRButton insertButton, RRTextField uriTextField, RRTextField altTextField) {
+    private void createDialogButtons(RRButton cancelButton, RRButton insertButton, RRTextField uriTextField,
+        RRTextField altTextField) {
         insertButton.setVariant(ButtonVariant.PRIMARY);
         insertButton.setButtonSize(ButtonSize.LARGE);
         insertButton.getStyleClass().add("markdown-image-dialog-button");
         insertButton.setDefaultButton(true);
         insertButton.disableProperty().bind(Bindings.createBooleanBinding(
             () -> uriTextField.getText().trim().isEmpty(),
-            uriTextField.textProperty()
-        ));
+            uriTextField.textProperty()));
 
         cancelButton.setVariant(ButtonVariant.SECONDARY);
         cancelButton.setButtonSize(ButtonSize.LARGE);
@@ -442,8 +453,6 @@ public class MarkdownPreviewPane extends RRVBox {
     }
 
     public enum MarkdownLayoutType {
-        SPLIT,
-        PREVIEW,
-        CODE
+        SPLIT, PREVIEW, CODE
     }
 }

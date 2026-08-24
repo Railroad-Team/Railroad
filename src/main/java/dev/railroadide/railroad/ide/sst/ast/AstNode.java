@@ -10,10 +10,10 @@ import java.util.List;
  * AST nodes represent language-level constructs rather than raw parser productions.
  * Implementations are immutable value objects, usually records, that expose:
  * <ul>
- *     <li>{@link #kind()} for the broad node category</li>
- *     <li>{@link #span()} for source coordinates</li>
- *     <li>{@link #children()} for generic traversal</li>
- *     <li>{@link #accept(AstVisitor)} for typed traversal</li>
+ * <li>{@link #kind()} for the broad node category</li>
+ * <li>{@link #span()} for source coordinates</li>
+ * <li>{@link #children()} for generic traversal</li>
+ * <li>{@link #accept(AstVisitor)} for typed traversal</li>
  * </ul>
  * <p>
  * Prefer {@link #accept(AstVisitor)} when you want type-safe logic over specific node

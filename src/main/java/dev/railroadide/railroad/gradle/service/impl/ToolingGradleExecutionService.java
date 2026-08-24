@@ -30,9 +30,9 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
     /**
      * Creates a new ToolingGradleExecutionService.
      *
-     * @param project     the project for which Gradle tasks will be executed
+     * @param project the project for which Gradle tasks will be executed
      * @param environment the Gradle environment configuration
-     * @param executor    the executor for running tasks asynchronously
+     * @param executor the executor for running tasks asynchronously
      */
     public ToolingGradleExecutionService(Project project, GradleEnvironment environment, Executor executor) {
         this.project = Objects.requireNonNull(project);
@@ -105,7 +105,8 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
         return List.copyOf(recentRequests);
     }
 
-    private GradleTaskExecutionResult execute(GradleTaskExecutionRequest request, ToolingGradleTaskExecutionHandle handle) {
+    private GradleTaskExecutionResult execute(GradleTaskExecutionRequest request,
+        ToolingGradleTaskExecutionHandle handle) {
         GradleConnector connector = GradleConnector.newConnector()
             .forProjectDirectory(project.getPath().toFile());
         ToolingGradleModelService.configureConnector(connector, environment);
@@ -152,7 +153,8 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
 
             build.run();
 
-            return new GradleTaskExecutionResult(handle.currentState(), 0, bufferToString(handle.getOutputBuffer()), bufferToString(handle.getErrorBuffer()));
+            return new GradleTaskExecutionResult(handle.currentState(), 0, bufferToString(handle.getOutputBuffer()),
+                bufferToString(handle.getErrorBuffer()));
         }
     }
 
@@ -180,23 +182,21 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
     }
 
     private void applyDebugConfiguration(GradleTaskExecutionRequest request,
-                                         BuildLauncher build,
-                                         ToolingGradleTaskExecutionHandle handle) {
+        BuildLauncher build,
+        ToolingGradleTaskExecutionHandle handle) {
         if (!request.debug())
             return;
 
         int debugPort = findFreePort();
 
         List<String> debugJvmArgs = List.of(
-            "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:" + debugPort
-        );
+            "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:" + debugPort);
         build.addJvmArguments(debugJvmArgs);
 
         handle.setDebugPort(debugPort);
         handle.updateState(
             GradleTaskState.STARTING,
             "railroad.gradle.execution.debug_started",
-            debugPort
-        );
+            debugPort);
     }
 }

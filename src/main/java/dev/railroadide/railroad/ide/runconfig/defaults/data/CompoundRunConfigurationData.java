@@ -52,7 +52,7 @@ public class CompoundRunConfigurationData extends RunConfigurationData {
                             break;
                         }
                     }
-                } catch (IllegalArgumentException ignored) {
+                } catch (IllegalArgumentException _) {
                     // TODO: Invalid UUID stored; keep null to present an issue during execution.
                 }
             }
@@ -67,7 +67,9 @@ public class CompoundRunConfigurationData extends RunConfigurationData {
     public Form createConfigurationForm(Project project, RunConfiguration<?> configuration) {
         return createBaseFormBuilder(project, configuration)
             .appendSection(FormSection.create("railroad.runconfig.compound.configurations.title")
-                .appendComponent(FormComponent.radioButtonGroup("runMode", "railroad.runconfig.compound.configuration.runMode.label", RunMode.class)
+                .appendComponent(FormComponent
+                    .radioButtonGroup("runMode", "railroad.runconfig.compound.configuration.runMode.label",
+                        RunMode.class)
                     .required()
                     .selected(() -> this.runMode != null ? this.runMode : RunMode.PARALLEL)
                     .optionLabelProvider(RunMode::getLocalizationKey)
@@ -75,8 +77,10 @@ public class CompoundRunConfigurationData extends RunConfigurationData {
                 .appendComponent(RunConfigurationPickerComponent.builder("configurations")
                     .labelKey("railroad.runconfig.compound.configuration.configurations.label")
                     .availableConfigurations(project.getRunConfigManager().getConfigurations())
-                    .filter(runConfig -> runConfig != null && (configuration == null || !runConfig.uuid().equals(configuration.uuid())))
-                    .initialSelectionSupplier(() -> resolveConfigurations(project.getRunConfigManager().getConfigurations()))
+                    .filter(runConfig -> runConfig != null
+                        && (configuration == null || !runConfig.uuid().equals(configuration.uuid())))
+                    .initialSelectionSupplier(
+                        () -> resolveConfigurations(project.getRunConfigManager().getConfigurations()))
                     .build())
                 .build())
             .build();
@@ -103,8 +107,7 @@ public class CompoundRunConfigurationData extends RunConfigurationData {
 
     @Getter
     public enum RunMode {
-        PARALLEL,
-        SEQUENTIAL;
+        PARALLEL, SEQUENTIAL;
 
         private final String localizationKey;
 

@@ -28,14 +28,12 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
     private static final String JAVA_RECORD_DECLARATION = "JAVA_RECORD_DECLARATION";
 
     private static final List<JavaInspectionRule> RULES = List.of(
-            new SimpleJavaInspectionRule(
-                    JavaSemanticRules.DUPLICATE_DECLARATION.id(),
-                    JavaSemanticRules.DUPLICATE_DECLARATION.defaultSeverity(),
-                    JavaSemanticRules.DUPLICATE_DECLARATION.messageTemplate(),
-                    Set.of("core", "declarations"),
-                    (context, reporter) -> visitScopes(context, context.syntaxTree().root(), new ScopeTracker(), reporter)
-            )
-    );
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.DUPLICATE_DECLARATION.id(),
+            JavaSemanticRules.DUPLICATE_DECLARATION.defaultSeverity(),
+            JavaSemanticRules.DUPLICATE_DECLARATION.messageTemplate(),
+            Set.of("core", "declarations"),
+            (context, reporter) -> visitScopes(context, context.syntaxTree().root(), new ScopeTracker(), reporter)));
 
     @Override
     public String id() {
@@ -46,7 +44,8 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
     public List<JavaInspectionRule> rules() {
         return RULES;
     }
-    private static void visitScopes(JavaRuleContext context, SyntaxNode node, ScopeTracker scope, JavaInspectionRuleReporter reporter) {
+    private static void visitScopes(JavaRuleContext context, SyntaxNode node, ScopeTracker scope,
+        JavaInspectionRuleReporter reporter) {
         Symbol symbol = context.declaredSymbol(node).orElse(null);
         if (symbol != null && symbol.kind() != SymbolKind.IMPORT) {
             if (!scope.firstDeclarationByName.containsKey(symbol.simpleName())) {
@@ -57,20 +56,21 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
         }
 
         ScopeTracker childScope = opensScope(node) ? new ScopeTracker() : scope;
-        for (SyntaxNode child : node.children())
+        for (SyntaxNode child : node.children()) {
             visitScopes(context, child, childScope, reporter);
+        }
     }
 
     private static boolean opensScope(SyntaxNode node) {
         String kindId = node.kind().id();
         return JAVA_BLOCK.equals(kindId)
-                || JAVA_METHOD_DECLARATION.equals(kindId)
-                || JAVA_CONSTRUCTOR_DECLARATION.equals(kindId)
-                || JAVA_CLASS_DECLARATION.equals(kindId)
-                || JAVA_INTERFACE_DECLARATION.equals(kindId)
-                || JAVA_ENUM_DECLARATION.equals(kindId)
-                || JAVA_ANNOTATION_TYPE_DECLARATION.equals(kindId)
-                || JAVA_RECORD_DECLARATION.equals(kindId);
+            || JAVA_METHOD_DECLARATION.equals(kindId)
+            || JAVA_CONSTRUCTOR_DECLARATION.equals(kindId)
+            || JAVA_CLASS_DECLARATION.equals(kindId)
+            || JAVA_INTERFACE_DECLARATION.equals(kindId)
+            || JAVA_ENUM_DECLARATION.equals(kindId)
+            || JAVA_ANNOTATION_TYPE_DECLARATION.equals(kindId)
+            || JAVA_RECORD_DECLARATION.equals(kindId);
     }
 
     private static final class ScopeTracker {

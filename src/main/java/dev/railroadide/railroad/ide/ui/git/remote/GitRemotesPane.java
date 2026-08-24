@@ -47,8 +47,7 @@ public class GitRemotesPane extends RRVBox {
             .stream()
             .filter(remote -> Objects.equals(
                 remote.name(),
-                gitManager.getUpstream().map(GitUpstream::remoteName).orElse(null)
-            ))
+                gitManager.getUpstream().map(GitUpstream::remoteName).orElse(null)))
             .findFirst()
             .orElse(null);
     }

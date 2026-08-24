@@ -23,8 +23,7 @@ import java.util.regex.Pattern;
  * java executables.
  */
 public final class JDKUtils {
-    private static final Pattern JAVA_VERSION_PATTERN =
-        Pattern.compile("^(\\d+)(?:\\.(\\d+))?(?:\\.\\d+)?(?:_\\d+)?$");
+    private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("^(\\d+)(?:\\.(\\d+))?(?:\\.\\d+)?(?:_\\d+)?$");
 
     private JDKUtils() {
         // static helper class
@@ -42,7 +41,7 @@ public final class JDKUtils {
         if (Files.isRegularFile(release)) {
             try (BufferedReader bufferedReader = Files.newBufferedReader(release)) {
                 props.load(bufferedReader);
-            } catch (IOException ignored) {
+            } catch (IOException _) {
             }
         }
 
@@ -52,7 +51,7 @@ public final class JDKUtils {
     /**
      * Reads the JDK version metadata from the supplied home directory.
      *
-     * @param javaHome           root directory of the JDK installation
+     * @param javaHome root directory of the JDK installation
      * @param javaExecutableName preferred executable filename for the current OS (e.g., {@code java.exe})
      * @return parsed {@link JavaVersion} or {@code null} if detection failed
      */
@@ -88,7 +87,8 @@ public final class JDKUtils {
                 try {
                     minor = Integer.parseInt(matcher.group(2));
                 } catch (NumberFormatException exception) {
-                    Railroad.LOGGER.warn("Failed to parse minor version from Java version string: {}", version, exception);
+                    Railroad.LOGGER.warn("Failed to parse minor version from Java version string: {}", version,
+                        exception);
                 }
             }
 
@@ -113,27 +113,23 @@ public final class JDKUtils {
         if (str == null)
             return null;
 
-        return str.length() >= 2 && str.startsWith("\"") && str.endsWith("\"") ?
-            str.substring(1, str.length() - 1) :
-            str;
+        return str.length() >= 2 && str.startsWith("\"") && str.endsWith("\"")
+            ? str.substring(1, str.length() - 1)
+            : str;
     }
 
     /**
      * Attempts to resolve the Java home directory given a file or directory anywhere within the JDK.
      *
-     * @param candidate          path that may reference the JDK root, {@code bin/java}, or other known layouts
+     * @param candidate path that may reference the JDK root, {@code bin/java}, or other known layouts
      * @param javaExecutableName preferred executable filename for the current OS (e.g., {@code java.exe})
      * @return resolved home directory if one could be derived; otherwise {@code null}
      */
     public static Path resolveJavaHome(Path candidate, String javaExecutableName) {
         Path resolved = maybeRealPath(candidate);
         if (Files.isDirectory(resolved)) {
-            if (Files.isExecutable(resolved.resolve("bin").resolve(javaExecutableName))) {
-                return isMacSystemJavaStub(resolved) ?
-                    resolveMacJavaHome(javaExecutableName) :
-                    resolved;
-
-            }
+            if (Files.isExecutable(resolved.resolve("bin").resolve(javaExecutableName)))
+                return isMacSystemJavaStub(resolved) ? resolveMacJavaHome(javaExecutableName) : resolved;
 
             if (Files.isExecutable(resolved.resolve("jre").resolve("bin").resolve(javaExecutableName)))
                 return resolved;
@@ -166,9 +162,8 @@ public final class JDKUtils {
             parent.getParent().getFileName().toString().equals("Home")) {
             Path home = parent.getParent();
             if (home.getParent() != null && home.getParent().getFileName() != null &&
-                home.getParent().getFileName().toString().equals("Contents")) {
+                home.getParent().getFileName().toString().equals("Contents"))
                 return home;
-            }
         }
 
         if (parentName.equalsIgnoreCase("bin")) {
@@ -184,9 +179,8 @@ public final class JDKUtils {
 
         if (parentName.equalsIgnoreCase("bin") && parent.getParent() != null &&
             parent.getParent().getFileName() != null &&
-            parent.getParent().getFileName().toString().equalsIgnoreCase("jre")) {
+            parent.getParent().getFileName().toString().equalsIgnoreCase("jre"))
             return parent.getParent().getParent();
-        }
 
         return null;
     }
@@ -225,7 +219,7 @@ public final class JDKUtils {
         Path path;
         try {
             path = Path.of(javaHomeOrExe);
-        } catch (InvalidPathException ignored) {
+        } catch (InvalidPathException _) {
             return null;
         }
 
@@ -270,8 +264,8 @@ public final class JDKUtils {
 
             Path home = Path.of(homeDir.trim());
             return Files.isExecutable(home.resolve("bin").resolve(javaExecutableName)) ? home : null;
-        } catch (IOException ignored) {
-        } catch (InterruptedException ignored) {
+        } catch (IOException _) {
+        } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
         }
 
@@ -311,7 +305,8 @@ public final class JDKUtils {
                         String versionStr = line.substring(q1 + 1, q2);
                         JavaVersion version = parseJavaVersionString(versionStr);
                         if (version != null) {
-                            process.waitFor(Settings.JAVA_VERSION_DETECTION_TIMEOUT_MS.getOrDefaultValue(), TimeUnit.MILLISECONDS);
+                            process.waitFor(Settings.JAVA_VERSION_DETECTION_TIMEOUT_MS.getOrDefaultValue(),
+                                TimeUnit.MILLISECONDS);
                             return version;
                         }
                     }
@@ -319,8 +314,8 @@ public final class JDKUtils {
             }
 
             process.waitFor(Settings.JAVA_VERSION_DETECTION_TIMEOUT_MS.getOrDefaultValue(), TimeUnit.MILLISECONDS);
-        } catch (IOException ignored) {
-        } catch (InterruptedException ignored) {
+        } catch (IOException _) {
+        } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
         }
 

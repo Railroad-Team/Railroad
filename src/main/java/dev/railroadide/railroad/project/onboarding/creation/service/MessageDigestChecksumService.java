@@ -32,7 +32,9 @@ public class MessageDigestChecksumService implements ChecksumService {
 
     private static String toHex(byte[] bytes) {
         var sb = new StringBuilder();
-        for (byte b : bytes) sb.append(String.format("%02x", b));
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
         return sb.toString();
     }
 }

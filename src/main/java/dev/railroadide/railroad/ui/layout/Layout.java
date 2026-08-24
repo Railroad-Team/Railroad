@@ -18,47 +18,48 @@ import java.util.List;
 public record Layout(Tree<LayoutItem> tree) {
     private static Either<Pane, DetachableTabPane> createPaneForItem(LayoutItem node) {
         switch (node.getName()) {
-            case "HSplit":
+            case "HSplit" :
                 return Either.left(new RRHBox());
-            case "VSplit":
+            case "VSplit" :
                 return Either.left(new RRVBox());
-            case "FileExplorer":
+            case "FileExplorer" :
                 var fileExplorer = new RRVBox();
                 fileExplorer.getChildren().add(new Text("File Explorer"));
                 return Either.left(fileExplorer);
-            case "TextEditor":
+            case "TextEditor" :
                 return null;
-            case "Terminal":
+            case "Terminal" :
                 return Either.left(new TerminalBuilder().newTerminal().getTerminal());
-            case "GradleTasks":
+            case "GradleTasks" :
                 var gradleTasks = new RRVBox();
                 gradleTasks.getChildren().add(new Text("Gradle Tasks"));
                 return Either.left(gradleTasks);
-            default:
+            default :
                 throw new IllegalArgumentException("Unknown layout item: " + node.getName());
         }
     }
 
-    private static void bindChildSize(Either<Pane, DetachableTabPane> child, LayoutItem node, Either<Pane, DetachableTabPane> parent) {
+    private static void bindChildSize(Either<Pane, DetachableTabPane> child, LayoutItem node,
+        Either<Pane, DetachableTabPane> parent) {
         // TODO: Can't get size of a node, so I'm not sure how we can do this
-//        if (node.hasProperty("size")) {
-//            String size = node.getProperty("size").toString().replace("%", "");
-//            double sizePercentage = Double.parseDouble(size) / 100;
-//
-//            if (child instanceof RRHBox hbox) {
-//                hbox.minHeightProperty().bind(Bindings.multiply(parent.heightProperty(), sizePercentage));
-//                hbox.minWidthProperty().bind(parent.widthProperty());
-//            } else if (child instanceof RRVBox/* || child instanceof TabPane*/) {
-//                child.minWidthProperty().bind(Bindings.multiply(parent.widthProperty(), sizePercentage));
-//                child.minHeightProperty().bind(parent.heightProperty());
-//            } else {
-//                child.minWidthProperty().bind(parent.widthProperty());
-//                child.minHeightProperty().bind(parent.heightProperty());
-//            }
-//        } else {
-//            child.minWidthProperty().bind(parent.widthProperty());
-//            child.minHeightProperty().bind(parent.heightProperty());
-//        }
+        // if (node.hasProperty("size")) {
+        // String size = node.getProperty("size").toString().replace("%", "");
+        // double sizePercentage = Double.parseDouble(size) / 100;
+        //
+        // if (child instanceof RRHBox hbox) {
+        // hbox.minHeightProperty().bind(Bindings.multiply(parent.heightProperty(), sizePercentage));
+        // hbox.minWidthProperty().bind(parent.widthProperty());
+        // } else if (child instanceof RRVBox/* || child instanceof TabPane*/) {
+        // child.minWidthProperty().bind(Bindings.multiply(parent.widthProperty(), sizePercentage));
+        // child.minHeightProperty().bind(parent.heightProperty());
+        // } else {
+        // child.minWidthProperty().bind(parent.widthProperty());
+        // child.minHeightProperty().bind(parent.heightProperty());
+        // }
+        // } else {
+        // child.minWidthProperty().bind(parent.widthProperty());
+        // child.minHeightProperty().bind(parent.heightProperty());
+        // }
     }
 
     public void print() {
@@ -102,7 +103,8 @@ public record Layout(Tree<LayoutItem> tree) {
         }
     }
 
-    private @Nullable Either<Pane, DetachableTabPane> parseItem(LayoutItem node, Either<Pane, DetachableTabPane> parent) {
+    private @Nullable Either<Pane, DetachableTabPane> parseItem(LayoutItem node,
+        Either<Pane, DetachableTabPane> parent) {
         Railroad.LOGGER.info("[LayoutBuilder] Adding new Item: {}", node.getName());
         try {
             Either<Pane, DetachableTabPane> pane = createPaneForItem(node);
