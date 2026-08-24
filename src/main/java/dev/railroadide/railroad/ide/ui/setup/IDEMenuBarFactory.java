@@ -5,11 +5,11 @@ import dev.railroadide.railroad.RailroadProcessLauncher;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.WorkspaceMode;
 import dev.railroadide.railroad.ide.WorkspaceModeController;
-import dev.railroadide.railroad.ide.ui.IDEDockItem;
-import dev.railroadide.railroad.ide.ui.IDEWorkspaceActions;
 import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
+import dev.railroadide.railroad.ide.ui.IDEDockItem;
+import dev.railroadide.railroad.ide.ui.IDEWorkspaceActions;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -21,8 +21,8 @@ import dev.railroadide.railroad.settings.ui.SettingsPane;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRMenuBar;
 import dev.railroadide.railroad.ui.id.UIIds;
-import dev.railroadide.railroad.ui.localized.LocalizedMenu;
 import dev.railroadide.railroad.ui.localized.LocalizedCheckMenuItem;
+import dev.railroadide.railroad.ui.localized.LocalizedMenu;
 import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.ui.localized.LocalizedRadioMenuItem;
 import dev.railroadide.railroad.utility.OperatingSystem;
@@ -31,9 +31,9 @@ import dev.railroadide.railroad.window.DialogBuilder;
 import dev.railroadide.railroad.window.WindowBuilder;
 import dev.railroadide.railroad.window.WindowManager;
 import javafx.application.Platform;
+import javafx.beans.value.ObservableBooleanValue;
 import javafx.collections.ListChangeListener;
 import javafx.collections.WeakListChangeListener;
-import javafx.beans.value.ObservableBooleanValue;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
@@ -44,7 +44,6 @@ import javafx.scene.input.KeyCombination;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -94,26 +93,24 @@ public final class IDEMenuBarFactory {
             if (file == null)
                 return;
 
-
             Services.IDE_STATE.openDocument(new FileSystemDocument(file.toPath()));
         });
 
         var openProjectItem = new LocalizedMenuItem("railroad.menu.file.open_project");
         openProjectItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
-        openProjectItem.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN, KeyCombination.ALT_DOWN));
+        openProjectItem.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.SHORTCUT_DOWN,
+            KeyCombination.SHIFT_DOWN, KeyCombination.ALT_DOWN));
         openProjectItem.setOnAction(_ -> {
             Path directoryPath = Services.UI_MANAGER.lookup(UIIds.IDE.PROJECT_EXPLORER)
                 .map(ProjectExplorerPane::getSelectedDirectory)
                 .orElseGet(project::getPath);
-            Window window = Railroad.WINDOW_MANAGER.getPrimaryStage();
-            DirectoryChooser directoryChooser = new DirectoryChooser();
+            var directoryChooser = new DirectoryChooser();
             directoryChooser.setTitle("Open Project");
             directoryChooser.setInitialDirectory(directoryPath.toFile());
-            File file = directoryChooser.showDialog(window);
+            File file = directoryChooser.showDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
 
-            if(file == null){
+            if (file == null)
                 return;
-            }
 
             Project createdProject = Railroad.PROJECT_MANAGER.newProject(new RailroadProject(Path.of(file.getPath())));
             showOpenProjectDialog(createdProject);
@@ -258,7 +255,8 @@ public final class IDEMenuBarFactory {
         terminalItem.setOnAction(_ -> workspaceActions.toggleDockItem(IDEDockItem.TERMINAL));
 
         var fileMenu = new LocalizedMenu("railroad.menu.file");
-        fileMenu.getItems().addAll(newFileItem, openFileItem, openProjectItem, recentProjects, saveItem, saveAsItem, new SeparatorMenuItem(), exitItem);
+        fileMenu.getItems().addAll(newFileItem, openFileItem, openProjectItem, recentProjects, saveItem, saveAsItem,
+            new SeparatorMenuItem(), exitItem);
         fileMenu.getStyleClass().add("rr-menu");
 
         var editMenu = new LocalizedMenu("railroad.menu.edit");
