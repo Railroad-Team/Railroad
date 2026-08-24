@@ -9,6 +9,7 @@ import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
 import dev.railroadide.railroad.ui.RRButton;
@@ -28,6 +29,7 @@ import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -65,6 +67,7 @@ public final class IDEMenuBarFactory {
                 .map(ProjectExplorerPane::getSelectedDirectory)
                 .orElseGet(project::getPath);
             var fileChooser = new FileChooser();
+            fileChooser.setTitle("Open File");
             fileChooser.setInitialDirectory(directoryPath.toFile());
             File file = fileChooser.showOpenDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
             if(file == null)
