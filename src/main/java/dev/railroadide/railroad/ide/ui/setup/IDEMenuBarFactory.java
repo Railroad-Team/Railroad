@@ -87,7 +87,7 @@ public final class IDEMenuBarFactory {
                 .map(ProjectExplorerPane::getSelectedDirectory)
                 .orElseGet(project::getPath);
             var fileChooser = new FileChooser();
-            fileChooser.setTitle("Open File");
+            fileChooser.setTitle(L18n.localize("railroad.menu.file.open_file"));
             fileChooser.setInitialDirectory(directoryPath.toFile());
             File file = fileChooser.showOpenDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
             if (file == null)
@@ -105,7 +105,7 @@ public final class IDEMenuBarFactory {
                 .map(ProjectExplorerPane::getSelectedDirectory)
                 .orElseGet(project::getPath);
             var directoryChooser = new DirectoryChooser();
-            directoryChooser.setTitle("Open Project");
+            directoryChooser.setTitle(L18n.localize("railroad.menu.file.open_project"));
             directoryChooser.setInitialDirectory(directoryPath.toFile());
             File file = directoryChooser.showDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
 
