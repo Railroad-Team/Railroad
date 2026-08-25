@@ -90,41 +90,33 @@ public class GitClient {
     public Optional<GitRepository> detectRepository(Path path) {
         GitCommand isInsideCmd = GitCommands.revParseIsInsideWorkTree(path);
         GitResult isInsideResult = runner.run(isInsideCmd, null, null, GitResultCaptureMode.TEXT_LINES);
-        if (isInsideResult.timedOut()) {
-            GitLog.LOGGER.warn("git {} timed out for path: {}", isInsideCmd.argsString(), path);
-            return Optional.empty();
-        }
+        if (isInsideResult.timedOut())
+            throw new GitExecutionException("git " + isInsideCmd.argsString() + " timed out for path: " + path);
 
-        if (isInsideResult.cancelled()) {
-            GitLog.LOGGER.warn("git {} was cancelled for path: {}", isInsideCmd.argsString(), path);
-            return Optional.empty();
-        }
+        if (isInsideResult.cancelled())
+            throw new GitExecutionException("git " + isInsideCmd.argsString() + " was cancelled for path: " + path);
 
         if (isInsideResult.exitCode() != 0 || !"true".equalsIgnoreCase(isInsideResult.readFirstStdoutLine()))
             return Optional.empty();
 
         GitCommand topLevelCmd = GitCommands.revParseShowTopLevel(path);
         GitResult topLevelResult = runner.run(topLevelCmd, null, null, GitResultCaptureMode.TEXT_LINES);
-        if (topLevelResult.timedOut()) {
-            GitLog.LOGGER.warn("git {} timed out for path: {}", topLevelCmd.argsString(), path);
-            return Optional.empty();
-        }
+        if (topLevelResult.timedOut())
+            throw new GitExecutionException("git " + topLevelCmd.argsString() + " timed out for path: " + path);
 
-        if (topLevelResult.cancelled()) {
-            GitLog.LOGGER.warn("git {} was cancelled for path: {}", topLevelCmd.argsString(), path);
-            return Optional.empty();
-        }
+        if (topLevelResult.cancelled())
+            throw new GitExecutionException("git " + topLevelCmd.argsString() + " was cancelled for path: " + path);
 
         if (topLevelResult.exitCode() != 0)
-            return Optional.empty();
+            throw new GitExecutionException(
+                "git " + topLevelCmd.argsString() + " failed: " + String.join("\n", topLevelResult.stderr()));
 
         String topLevelPathStr = String.join("", topLevelResult.stdout()).trim();
         try {
             Path topLevelPath = Path.of(topLevelPathStr).toAbsolutePath().normalize();
             return Optional.of(new GitRepository(topLevelPath));
         } catch (Exception exception) {
-            GitLog.LOGGER.warn("Failed to parse git top-level path: {}", topLevelPathStr, exception);
-            return Optional.empty();
+            throw new GitExecutionException("Failed to parse git top-level path: " + topLevelPathStr, exception);
         }
     }
 

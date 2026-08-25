@@ -20,12 +20,14 @@ import javafx.stage.Window;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Creates configured TerminalFX instances pointing at a specific project path.
  */
+// TODO: Create a way for terminals to live in a globally accessible list so we don't have to try and search for them in
+// the scene graph
 public final class TerminalFactory {
     private static final String DEFAULT_FONT_STACK = "\"Cascadia Mono\", \"JetBrains Mono\", \"Consolas\", monospace";
     private static final Set<Terminal> OPEN_TERMINALS = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -39,10 +41,10 @@ public final class TerminalFactory {
     }
 
     static {
-        Settings.TERMINAL_FONT_MODE.addListener((oldValue, newValue) -> refreshOpenTerminals());
-        Settings.TERMINAL_INSTALLED_FONT.addListener((oldValue, newValue) -> refreshOpenTerminals());
-        Settings.TERMINAL_CUSTOM_FONT_FAMILY.addListener((oldValue, newValue) -> refreshOpenTerminals());
-        Settings.WINDOWS_TERMINAL_SETTINGS_PATH.addListener((oldValue, newValue) -> refreshOpenTerminals());
+        Settings.TERMINAL_FONT_MODE.addListener((_, _) -> refreshOpenTerminals());
+        Settings.TERMINAL_INSTALLED_FONT.addListener((_, _) -> refreshOpenTerminals());
+        Settings.TERMINAL_CUSTOM_FONT_FAMILY.addListener((_, _) -> refreshOpenTerminals());
+        Settings.WINDOWS_TERMINAL_SETTINGS_PATH.addListener((_, _) -> refreshOpenTerminals());
         ShutdownHooks.addHook(TerminalFactory::shutdownOpenTerminals);
     }
 
@@ -131,13 +133,12 @@ public final class TerminalFactory {
     private static void registerTerminal(Terminal terminal) {
         OPEN_TERMINALS.add(terminal);
 
-        terminal.sceneProperty().addListener((obs, oldScene, newScene) -> {
+        terminal.sceneProperty().addListener((_, _, newScene) -> {
             if (newScene == null)
                 return;
 
             registerWindowListener(terminal, newScene.getWindow());
-            newScene.windowProperty()
-                .addListener((sceneObs, oldWindow, newWindow) -> registerWindowListener(terminal, newWindow));
+            newScene.windowProperty().addListener((_, _, newWindow) -> registerWindowListener(terminal, newWindow));
         });
     }
 
@@ -145,9 +146,9 @@ public final class TerminalFactory {
         if (window == null)
             return;
 
-        window.showingProperty().addListener((windowObs, wasShowing, isShowing) -> {
+        window.showingProperty().addListener((_, _, isShowing) -> {
             if (!isShowing) {
-                closeTerminal(terminal);
+                close(terminal);
             }
         });
     }
@@ -162,7 +163,7 @@ public final class TerminalFactory {
         }
     }
 
-    private static void closeTerminal(Terminal terminal) {
+    public static void close(Terminal terminal) {
         if (terminal == null)
             return;
 

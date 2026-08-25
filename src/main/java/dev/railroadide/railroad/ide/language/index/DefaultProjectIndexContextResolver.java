@@ -24,7 +24,7 @@ public final class DefaultProjectIndexContextResolver implements ProjectIndexCon
 
         return new ProjectIndexContext(
             project,
-            FileUtils.normalizePath(project.path()),
+            FileUtils.normalizePath(project.getPath()),
             contexts);
     }
 }

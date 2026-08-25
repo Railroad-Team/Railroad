@@ -82,8 +82,8 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
                     build != null ? build.getTestSourceDirectory() : null, "src/test/java"));
             });
         } else {
-            addReadableDirectory(sourceRoots, project.path().resolve("src/main/java"));
-            addReadableDirectory(sourceRoots, project.path().resolve("src/test/java"));
+            addReadableDirectory(sourceRoots, project.getPath().resolve("src/main/java"));
+            addReadableDirectory(sourceRoots, project.getPath().resolve("src/test/java"));
         }
 
         return normalizePaths(sourceRoots);
@@ -220,7 +220,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
                     .forEach(path -> addReadableRoot(moduleRoots, path));
             });
         } else if (project.hasFacet(FacetManager.MAVEN)) {
-            addMavenModuleRoots(project.path(), moduleRoots);
+            addMavenModuleRoots(project.getPath(), moduleRoots);
         }
 
         return normalizePaths(moduleRoots);
@@ -304,7 +304,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
                 addReadableFile(roots, jar.toPath());
             }
         } catch (CoursierError error) {
-            Railroad.LOGGER.error("Error resolving Maven dependencies for {}", project.path(), error);
+            Railroad.LOGGER.error("Error resolving Maven dependencies for {}", project.getPath(), error);
         }
     }
 
@@ -328,7 +328,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
             addReadableFile(roots, resolveProjectPath(project, dependency.getSystemPath(), dependency.getSystemPath()));
         } catch (InvalidPathException exception) {
             Railroad.LOGGER.warn("Ignoring invalid Maven system dependency path '{}' in {}", dependency.getSystemPath(),
-                project.path(), exception);
+                project.getPath(), exception);
         }
     }
 
@@ -352,8 +352,8 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
     }
 
     private static void addLocalJarRoots(Project project, List<Path> roots) {
-        addLocalJarRoots(project.path().resolve("lib"), roots);
-        addLocalJarRoots(project.path().resolve("libs"), roots);
+        addLocalJarRoots(project.getPath().resolve("lib"), roots);
+        addLocalJarRoots(project.getPath().resolve("libs"), roots);
     }
 
     private static void addLocalJarRoots(Path directory, List<Path> roots) {
@@ -376,7 +376,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
 
     private static Path resolveProjectPath(Project project, String value, String defaultValue) {
         String path = value == null || value.isBlank() ? defaultValue : value;
-        return project.path().resolve(path);
+        return project.getPath().resolve(path);
     }
 
     private static void addReadableDirectory(List<Path> paths, Path path) {
@@ -410,7 +410,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
     }
 
     private static void consumeMavenModel(Project project, Consumer<Model> modelConsumer) {
-        MAVEN_MODELS.loadEffectiveModel(project.path()).ifPresent(modelConsumer);
+        MAVEN_MODELS.loadEffectiveModel(project.getPath()).ifPresent(modelConsumer);
     }
 
     private static Optional<Model> buildMavenModel(Path projectRoot) {

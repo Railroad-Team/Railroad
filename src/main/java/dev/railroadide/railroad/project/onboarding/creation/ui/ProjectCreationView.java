@@ -118,7 +118,7 @@ public class ProjectCreationView extends RRBorderPane {
         fade.setInterpolator(Interpolator.EASE_OUT);
         fade.play();
 
-        logArea.textProperty().addListener((obs, ov, nv) -> logArea.setScrollTop(Double.MAX_VALUE));
+        logArea.textProperty().addListener((_, _, _) -> logArea.setScrollTop(Double.MAX_VALUE));
 
         setOnKeyPressed(event -> {
             if (Objects.requireNonNull(event.getCode()) == KeyCode.ESCAPE) {
@@ -126,7 +126,7 @@ public class ProjectCreationView extends RRBorderPane {
             }
         });
 
-        sceneProperty().addListener((obs, oldScene, newScene) -> {
+        sceneProperty().addListener((_, _, newScene) -> {
             if (newScene == null) {
                 stopTicker();
             } else if (elapsedTicker != null && startInstant.get() != null) {
@@ -150,14 +150,14 @@ public class ProjectCreationView extends RRBorderPane {
         }, service.messageProperty()));
 
         // Elapsed time ticker
-        service.setOnRunning(e -> startTicker());
-        service.setOnSucceeded(e -> {
+        service.setOnRunning(_ -> startTicker());
+        service.setOnSucceeded(_ -> {
             stopTicker();
             if (onSuccess != null) {
                 onSuccess.run();
             }
         });
-        service.setOnFailed(e -> {
+        service.setOnFailed(_ -> {
             stopTicker();
             if (onError != null) {
                 onError.accept(service.getException());
@@ -166,7 +166,7 @@ public class ProjectCreationView extends RRBorderPane {
 
         // Cancel
         cancelBtn.disableProperty().bind(service.runningProperty().not());
-        cancelBtn.setOnAction(e -> {
+        cancelBtn.setOnAction(_ -> {
             if (onCancel != null) {
                 onCancel.run();
             }
@@ -178,7 +178,7 @@ public class ProjectCreationView extends RRBorderPane {
         if (elapsedTicker != null) {
             elapsedTicker.stop();
         }
-        elapsedTicker = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+        elapsedTicker = new Timeline(new KeyFrame(Duration.seconds(1), _ -> {
             var start = startInstant.get();
             if (start == null)
                 return;

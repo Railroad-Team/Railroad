@@ -11,6 +11,7 @@ import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
 import dev.railroadide.railroad.project.onboarding.ProjectValidators;
 import dev.railroadide.railroad.settings.ui.DetectedJdkListPane;
 import dev.railroadide.railroad.utility.StringUtils;
@@ -266,11 +267,7 @@ public class GradleRunConfigurationData extends RunConfigurationData {
     private void loadGradleTasksAsync(Project project, Path gradleProjectPath,
         ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
         if (gradleProjectPath == null) {
-            if (Platform.isFxApplicationThread()) {
-                gradleTasksCache.clear();
-            } else {
-                Platform.runLater(gradleTasksCache::clear);
-            }
+            JavaFXUtils.runOnApplicationThread(gradleTasksCache::clear);
 
             return;
         }

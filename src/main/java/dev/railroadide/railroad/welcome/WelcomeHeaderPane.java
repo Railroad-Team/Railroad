@@ -1,9 +1,11 @@
 package dev.railroadide.railroad.welcome;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRCard;
 import dev.railroadide.railroad.ui.RRTextField;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.ui.styling.TextFieldSize;
@@ -47,6 +49,8 @@ public class WelcomeHeaderPane extends RRCard {
 
         getChildren().setAll(content);
         initializeProjectStats();
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Welcome.WELCOME_HEADER, this);
     }
 
     private VBox createHeroSection() {
@@ -117,7 +121,7 @@ public class WelcomeHeaderPane extends RRCard {
         clearButton.getStyleClass().add("welcome-search-clear");
         clearButton.setGraphic(clearIcon);
         clearButton.setFocusTraversable(false);
-        clearButton.setOnAction(event -> searchField.clear());
+        clearButton.setOnAction(_ -> searchField.clear());
         clearButton.visibleProperty().bind(searchField.textProperty().isNotEmpty());
         clearButton.managedProperty().bind(clearButton.visibleProperty());
 
@@ -126,16 +130,15 @@ public class WelcomeHeaderPane extends RRCard {
         searchContainer.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(searchField, Priority.ALWAYS);
 
-        searchField.focusedProperty().addListener(
-            (obs, oldValue, newValue) -> searchContainer.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, newValue));
+        searchField.focusedProperty()
+            .addListener((_, _, newValue) -> searchContainer.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, newValue));
 
         return searchContainer;
     }
 
     private void initializeProjectStats() {
         updateProjectStats();
-        Railroad.PROJECT_MANAGER.getProjects()
-            .addListener((ListChangeListener<Project>) change -> updateProjectStats());
+        Railroad.PROJECT_MANAGER.getProjects().addListener((ListChangeListener<Project>) _ -> updateProjectStats());
     }
 
     private void updateProjectStats() {

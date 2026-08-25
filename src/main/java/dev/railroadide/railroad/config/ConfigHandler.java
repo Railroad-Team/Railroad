@@ -5,8 +5,10 @@ import dev.railroadide.railroad.utility.OperatingSystem;
 import dev.railroadide.railroad.Railroad;
 
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 public final class ConfigHandler {
     private static final ConfigHandler INSTANCE = new ConfigHandler();
@@ -37,13 +39,28 @@ public final class ConfigHandler {
         };
     }
 
-    public static void saveConfig() {
+    public static synchronized void saveConfig() {
         Railroad.LOGGER.info("Updating config file");
 
         Path railroadDataPath = getConfigDirectory();
         try {
             Files.createDirectories(railroadDataPath);
-            Files.writeString(railroadDataPath.resolve("config.json"), Railroad.GSON.toJson(INSTANCE.config.toJson()));
+            Path configPath = railroadDataPath.resolve("config.json");
+            Path temporaryConfigPath = Files.createTempFile(railroadDataPath, "config-", ".json.tmp");
+            try {
+                Files.writeString(temporaryConfigPath, Railroad.GSON.toJson(INSTANCE.config.toJson()));
+                try {
+                    Files.move(
+                        temporaryConfigPath,
+                        configPath,
+                        StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
+                } catch (AtomicMoveNotSupportedException _) {
+                    Files.move(temporaryConfigPath, configPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+            } finally {
+                Files.deleteIfExists(temporaryConfigPath);
+            }
         } catch (IOException exception) {
             throw new IllegalStateException("Error updating config.json", exception);
         }

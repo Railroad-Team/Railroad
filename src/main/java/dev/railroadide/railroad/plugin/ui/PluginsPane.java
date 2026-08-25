@@ -10,6 +10,7 @@ import dev.railroadide.railroad.plugin.spi.deps.MavenDeps;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.ui.RRTextField;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import javafx.application.HostServices;
 import javafx.collections.FXCollections;
@@ -111,11 +112,13 @@ public class PluginsPane extends SplitPane {
 
         setEnabledPlugins(defaultEnabledPlugins);
 
-        L18n.currentLanguageProperty().addListener((obs, oldLang, newLang) -> {
+        L18n.currentLanguageProperty().addListener((_, _, _) -> {
             updateLocalizedStaticTexts();
             updateDetails(activeDescriptor);
         });
         updateLocalizedStaticTexts();
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Settings.PLUGINS, this);
     }
 
     public Map<PluginDescriptor, Boolean> getEnabledPlugins() {
@@ -143,10 +146,10 @@ public class PluginsPane extends SplitPane {
         pluginListView.setBordered(true);
         pluginListView.setDense(true);
         pluginListView.getSelectionModel().selectedItemProperty()
-            .addListener((obs, oldSelection, descriptor) -> updateDetails(descriptor));
-        pluginListView.setCellFactory(list -> new PluginListCell());
+            .addListener((_, _, descriptor) -> updateDetails(descriptor));
+        pluginListView.setCellFactory(_ -> new PluginListCell());
 
-        filteredPlugins.addListener((ListChangeListener<PluginDescriptor>) change -> {
+        filteredPlugins.addListener((ListChangeListener<PluginDescriptor>) _ -> {
             if (activeDescriptor != null && !filteredPlugins.contains(activeDescriptor)) {
                 if (!filteredPlugins.isEmpty()) {
                     pluginListView.getSelectionModel().select(filteredPlugins.getFirst());
@@ -161,7 +164,7 @@ public class PluginsPane extends SplitPane {
     private Node createListSection() {
         var searchField = new RRTextField();
         searchField.setLocalizedPlaceholder("railroad.plugins.search.placeholder");
-        searchField.textProperty().addListener((obs, oldText, newText) -> applyFilter(newText));
+        searchField.textProperty().addListener((_, _, newText) -> applyFilter(newText));
 
         var container = new RRVBox();
         container.getStyleClass().add("plugins-pane-list-section");
@@ -183,7 +186,7 @@ public class PluginsPane extends SplitPane {
         nameLabel.setWrapText(true);
         metaLabel.getStyleClass().add("plugin-detail-meta");
 
-        detailToggle.selectedProperty().addListener((obs, oldValue, enabled) -> {
+        detailToggle.selectedProperty().addListener((_, _, enabled) -> {
             if (updatingDetailToggle)
                 return;
             setPluginEnabled(activeDescriptor, enabled);
@@ -412,7 +415,7 @@ public class PluginsPane extends SplitPane {
             icon.getStyleClass().add("plugin-cell-icon");
 
             toggle.setFocusTraversable(false);
-            toggle.selectedProperty().addListener((obs, oldValue, enabled) -> {
+            toggle.selectedProperty().addListener((_, _, enabled) -> {
                 if (updating)
                     return;
 
@@ -435,7 +438,7 @@ public class PluginsPane extends SplitPane {
             container.getChildren().addAll(icon, textContainer, toggle);
             setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
             selectedProperty().addListener(
-                (obs, oldSelected, newSelected) -> updateSelectedState(newSelected));
+                (_, _, newSelected) -> updateSelectedState(newSelected));
             updateSelectedState(isSelected());
         }
 

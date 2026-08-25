@@ -10,6 +10,7 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.localized.LocalizedComboBox;
+import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
@@ -80,7 +81,7 @@ public final class RunControlsPane extends RRHBox {
         comboBox.getItems().add(null);
 
         project.getRunConfigManager().getConfigurations().addListener(
-            (ListChangeListener<? super RunConfiguration<?>>) change -> {
+            (ListChangeListener<? super RunConfiguration<?>>) _ -> {
                 RunConfiguration<?> selected = comboBox.getValue();
                 UUID selectedUuid = selected != null ? selected.uuid() : null;
 
@@ -102,7 +103,7 @@ public final class RunControlsPane extends RRHBox {
 
         comboBox.getStyleClass().add("run-config-combobox");
         comboBox.setTooltip(new LocalizedTooltip("railroad.ide.toolbar.run_configurations.tooltip"));
-        comboBox.setCellFactory(param -> new RunConfigurationListCell(project));
+        comboBox.setCellFactory(_ -> new RunConfigurationListCell(project));
         comboBox.setButtonCell(new ListCell<>() {
             @Override
             protected void updateItem(RunConfiguration<?> item, boolean empty) {
@@ -137,7 +138,7 @@ public final class RunControlsPane extends RRHBox {
         runButton.getStyleClass().addAll("toolbar-button", "run-button");
         runButton.setFocusTraversable(false);
         runButton.setDisable(true);
-        runButton.setOnAction(event -> {
+        runButton.setOnAction(_ -> {
             RunConfiguration<?> selected = runConfigurationsComboBox.getValue();
             if (selected == null || isConfigurationStopping(selected))
                 return;
@@ -156,7 +157,7 @@ public final class RunControlsPane extends RRHBox {
         debugButton.getStyleClass().addAll("toolbar-button", "debug-button");
         debugButton.setFocusTraversable(false);
         debugButton.setDisable(true);
-        debugButton.setOnAction(event -> {
+        debugButton.setOnAction(_ -> {
             RunConfiguration<?> selected = runConfigurationsComboBox.getValue();
             if (selected == null || isConfigurationStopping(selected) || !selected.isDebuggingSupported(project))
                 return;
@@ -193,7 +194,7 @@ public final class RunControlsPane extends RRHBox {
             .setTooltip(new LocalizedTooltip("railroad.ide.toolbar.run_configurations.more_actions.tooltip"));
         moreActionsButton.getStyleClass().addAll("toolbar-button", "more-actions-button");
         moreActionsButton.setFocusTraversable(false);
-        moreActionsButton.setOnAction(event -> {
+        moreActionsButton.setOnAction(_ -> {
             RunConfiguration<?> item = runConfigurationsComboBox.getValue();
             if (item == null) {
                 IDESetup.showEditRunConfigurationsWindow(project, null);
@@ -204,7 +205,7 @@ public final class RunControlsPane extends RRHBox {
             RunConfigurationContextMenuManager.show(moreActionsButton, menu, Side.BOTTOM);
         });
 
-        runConfigurationsComboBox.valueProperty().addListener((observable, oldValue, newValue) -> updateRunControls());
+        runConfigurationsComboBox.valueProperty().addListener((_, _, _) -> updateRunControls());
         runConfigurationsComboBox.getSelectionModel().selectFirst();
         updateRunControls();
     }
@@ -320,7 +321,7 @@ public final class RunControlsPane extends RRHBox {
     }
 
     private void decrementRunningConfiguration(RunConfiguration<?> configuration) {
-        runningConfigurations.computeIfPresent(configuration.uuid(), (uuid, count) -> count > 1 ? count - 1 : null);
+        runningConfigurations.computeIfPresent(configuration.uuid(), (_, count) -> count > 1 ? count - 1 : null);
         unmarkStoppingConfiguration(configuration);
     }
 
@@ -374,7 +375,7 @@ public final class RunControlsPane extends RRHBox {
             }
 
             var item = new MenuItem(label);
-            item.setOnAction(event -> {
+            item.setOnAction(_ -> {
                 runConfigurationsComboBox.setValue(configuration);
                 stopConfiguration(configuration);
             });
@@ -385,7 +386,7 @@ public final class RunControlsPane extends RRHBox {
             menu.getItems().add(new SeparatorMenuItem());
         }
 
-        var stopAllItem = new MenuItem(L18n.localize("railroad.ide.toolbar.stop.all"));
+        var stopAllItem = new LocalizedMenuItem("railroad.ide.toolbar.stop.all");
         stopAllItem.setOnAction(event -> {
             for (RunConfiguration<?> configuration : runningConfigs) {
                 stopConfiguration(configuration);

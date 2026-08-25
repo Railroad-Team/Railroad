@@ -5,6 +5,7 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.ui.RRNavigationItem;
 import dev.railroadide.railroad.ui.RRSidebar;
+import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.Separator;
@@ -40,7 +41,7 @@ public class WelcomeLeftPane extends RRSidebar {
 
         listView = new RRListView<>();
         listView.getItems().addAll(MenuType.values());
-        listView.setCellFactory(param -> new MenuTypeCell());
+        listView.setCellFactory(_ -> new MenuTypeCell());
         listView.getStyleClass().add("welcome-left-pane-list");
         listView.setFixedCellSize(44);
         listView.setFocusTraversable(false);
@@ -53,6 +54,8 @@ public class WelcomeLeftPane extends RRSidebar {
 
         getChildren().clear();
         getChildren().addAll(topBox, separator, listView);
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Welcome.WELCOME_LEFT, this);
     }
 
     @Getter

@@ -1,8 +1,9 @@
 package dev.railroadide.railroad.ide.completion;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticCompletionEngine;
-import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,7 +21,8 @@ public record JavaCompletionProvider(Project project, Path filePath) implements 
 
     @Override
     public @Nullable CompletionResult compute(String document, int triggerAt) {
-        JavaSymbolIndex symbolIndex = JavaLanguageSupport.analysisContextProvider().index(project);
-        return JavaSemanticCompletionEngine.compute(document, triggerAt, symbolIndex);
+        JavaProjectSemanticIndex projectIndex = Services.PROJECT_LANGUAGE_INDEX_SERVICE.indexTyped(project,
+            JavaLanguageSupport.LANGUAGE_ID);
+        return JavaSemanticCompletionEngine.compute(document, triggerAt, projectIndex);
     }
 }

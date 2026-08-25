@@ -93,7 +93,7 @@ public class ThemeDownloadPane {
         sectionHeader.getChildren().addAll(themesLabel, refreshButton);
 
         themeListView = new RRListView<>();
-        themeListView.setCellFactory(param -> new ThemeDownloadCell());
+        themeListView.setCellFactory(_ -> new ThemeDownloadCell());
         themeListView.getStyleClass().add("theme-download-list-view");
         VBox.setVgrow(themeListView, Priority.ALWAYS);
 
@@ -108,8 +108,8 @@ public class ThemeDownloadPane {
 
         var closeButton = new RRButton("railroad.generic.close");
         closeButton.setVariant(ButtonVariant.SECONDARY);
-        closeButton.setOnAction(e -> {
-            var target = (Node) e.getTarget();
+        closeButton.setOnAction(event -> {
+            var target = (Node) event.getTarget();
             var stage = (Stage) target.sceneProperty().get().getWindow();
             stage.close();
         });

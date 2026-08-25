@@ -1,62 +1,18 @@
 package dev.railroadide.railroad.ide;
 
-import com.kodedu.terminalfx.Terminal;
-import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
-import dev.railroadide.railroad.gradle.ui.GradleToolsPane;
-import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationEditorPane;
-import dev.railroadide.railroad.ide.ui.*;
-import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
-import dev.railroadide.railroad.ide.ui.git.branches.GitBranchesPane;
-import dev.railroadide.railroad.ide.ui.git.commit.GitCommitPane;
-import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
-import dev.railroadide.railroad.ide.ui.git.commit.list.GitCommitListPane;
-import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
-import dev.railroadide.railroad.ide.ui.git.overview.GitOverviewPane;
-import dev.railroadide.railroad.ide.ui.git.remote.GitRemotesPane;
-import dev.railroadide.railroad.ide.ui.git.stash.GitStashPane;
-import dev.railroadide.railroad.ide.ui.git.sync.GitSyncPane;
-import dev.railroadide.railroad.ide.ui.setup.IDEMenuBarFactory;
-import dev.railroadide.railroad.ide.ui.setup.PaneIconBarFactory;
-import dev.railroadide.railroad.ide.ui.setup.RunControlsPane;
-import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
+import dev.railroadide.railroad.ide.ui.IDEPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
-import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
-import dev.railroadide.railroad.project.FacetDetectedEvent;
-import dev.railroadide.railroad.project.facet.Facet;
-import dev.railroadide.railroad.project.facet.FacetManager;
-import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
-import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.theme.ThemeManager;
-import dev.railroadide.railroad.ui.RRBorderPane;
-import dev.railroadide.railroad.ui.RRHBox;
-import dev.railroadide.railroad.ui.RRVBox;
-import dev.railroadide.railroad.utility.icon.RailroadBrandsIcon;
 import dev.railroadide.railroad.window.WindowBuilder;
-import javafx.application.Platform;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
-import javafx.scene.Parent;
+import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
 import javafx.scene.Scene;
-import javafx.scene.control.SplitPane;
-import javafx.scene.control.Tab;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.stage.Stage;
-import org.fxmisc.richtext.CodeArea;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
-import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
-
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 
 public class IDESetup {
     private static boolean isSwitchingToIDE = false;
@@ -68,106 +24,7 @@ public class IDESetup {
      * @return The created IDE window
      */
     public static Scene createIDEScene(Project project) {
-        var root = new RRBorderPane();
-        var topBar = new RRHBox(IDEMenuBarFactory.create(project), new Region(), RunControlsPane.create(project));
-        HBox.setHgrow(topBar.getChildren().get(1), Priority.ALWAYS);
-        root.setTop(topBar);
-
-        var leftPane = new DetachableTabPane();
-        leftPane.addTab("Project", new ProjectExplorerPane(project, root));
-        leftPane.addTab("Git Commit", new GitCommitPane(project));
-        leftPane.addTab("Git Overview", new GitOverviewPane(project));
-        leftPane.addTab("Git Commit List", new GitCommitListPane(project));
-        leftPane.addTab("Git Branches", new GitBranchesPane(project));
-        leftPane.addTab("Git Remotes", new GitRemotesPane(project));
-        leftPane.addTab("Git Sync", new GitSyncPane(project));
-        leftPane.addTab("Git Stash", new GitStashPane(project));
-
-        var rightPane = new DetachableTabPane();
-
-        var editorPane = new DetachableTabPane();
-        editorPane.addTab("Welcome", new IDEWelcomePane());
-
-        var gitDiffPane = new GitDiffPane(project);
-        var gitDiffTab = editorPane.addTab("Git Diff", gitDiffPane);
-        gitDiffTab.textProperty().bind(gitDiffPane.titleProperty());
-
-        var gitCommitDetailsPane = new GitCommitDetailsPane(project);
-        var gitCommitDetailsTab = editorPane.addTab("Git Commit Details", gitCommitDetailsPane);
-        gitCommitDetailsTab.textProperty().bind(gitCommitDetailsPane.titleProperty());
-
-        var consolePane = new DetachableTabPane();
-        consolePane.addTab("Console", new ConsolePane());
-        consolePane.addTab("Terminal", TerminalFactory.create(project.path()));
-
-        var centerBottomSplit = new SplitPane(editorPane, consolePane);
-        centerBottomSplit.setOrientation(Orientation.VERTICAL);
-        centerBottomSplit.setDividerPositions(0.75);
-
-        var mainSplit = new SplitPane(leftPane, centerBottomSplit, rightPane);
-        mainSplit.setOrientation(Orientation.HORIZONTAL);
-        mainSplit.setDividerPositions(0.15, 0.85);
-        root.setCenter(mainSplit);
-
-        if (project.hasFacet(FacetManager.GRADLE)) {
-            openGradleTab(project, project.getFacet(FacetManager.GRADLE).orElseThrow(), rightPane, root, mainSplit);
-        }
-
-        Railroad.EVENT_BUS.subscribe(FacetDetectedEvent.class, event -> {
-            if (event.project() != project)
-                return;
-
-            openGradleTab(project, event.facet(), rightPane, root, mainSplit);
-        });
-
-        root.setLeft(PaneIconBarFactory.create(
-            leftPane,
-            mainSplit,
-            Orientation.VERTICAL,
-            0,
-            Map.of("Project", FontAwesomeSolid.FOLDER.getDescription(),
-                "Git Commit", FontAwesomeBrands.USB.getDescription(),
-                "Git Overview", FontAwesomeSolid.HOME.getDescription(),
-                "Git Commit List", FontAwesomeSolid.LIST.getDescription(),
-                "Git Branches", FontAwesomeSolid.CODE_BRANCH.getDescription(),
-                "Git Remotes", FontAwesomeSolid.GLOBE.getDescription(),
-                "Git Sync", FontAwesomeSolid.SYNC.getDescription(),
-                "Git Stash", FontAwesomeSolid.BOX.getDescription())));
-
-        var bottomBar = new RRVBox();
-        var bottomIcons = PaneIconBarFactory.create(
-            consolePane,
-            centerBottomSplit,
-            Orientation.HORIZONTAL,
-            1,
-            Map.of(
-                "Console", FontAwesomeSolid.PLAY_CIRCLE.getDescription(),
-                "Terminal", FontAwesomeSolid.TERMINAL.getDescription()));
-        bottomBar.getChildren().addAll(
-            bottomIcons,
-            new StatusBarPane());
-        root.setBottom(bottomBar);
-
-        KeybindHandler.registerCapture(KeybindContexts.of("railroad:ide"), root);
-        return new Scene(root);
-    }
-
-    private static void openGradleTab(Project project, Facet<?> facet, DetachableTabPane rightPane, RRBorderPane root,
-        SplitPane mainSplit) {
-        Platform.runLater(() -> {
-            if (facet.getType() == FacetManager.GRADLE) {
-                if (rightPane.getTabs().stream().noneMatch(tab -> tab.getContent() instanceof GradleToolsPane)) {
-                    rightPane.addTab("Gradle", new GradleToolsPane(project));
-
-                    root.setRight(PaneIconBarFactory.create(
-                        rightPane,
-                        mainSplit,
-                        Orientation.VERTICAL,
-                        2,
-                        Map.of("Gradle", RailroadBrandsIcon.GRADLE.getDescription())));
-                }
-            }
-        });
+        return new Scene(new IDEPane(project));
     }
 
     public static void showEditRunConfigurationsWindow(@NotNull Project project,
@@ -178,7 +35,7 @@ public class IDESetup {
             .title("railroad.window.ide.toolbar.edit_run_configurations", true)
             .applyPreferredSize()
             .scene(new Scene(editorPane))
-            .onInit(stage -> editorPane.selectConfiguration(runConfiguration))
+            .onInit(_ -> editorPane.selectConfiguration(runConfiguration))
             .build();
     }
 
@@ -190,28 +47,41 @@ public class IDESetup {
      * and notifies the plugins of the activity
      *
      * @param project The project to switch to
+     * @param stage The stage to switch to. Set to {@code null} if a new stage with a transition is required
      */
-    public static void switchToIDE(Project project) {
+    public static void switchToIDE(Project project, @Nullable Stage stage) {
         if (isSwitchingToIDE)
             return; // Prevent multiple simultaneous IDE window creations
 
         isSwitchingToIDE = true;
 
-        Platform.runLater(() -> {
+        Runnable switchAction = () -> {
             try {
-                Scene ideScene = IDESetup.createIDEScene(project);
-                Stage ideStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
-                ThemeManager.prepareSceneTransition(ideStage.getScene(), ideScene);
+                Stage ideStage = stage == null ? Railroad.WINDOW_MANAGER.getPrimaryStage() : stage;
+                Scene previousScene = ideStage.getScene();
+                var idePane = new IDEPane(project);
+
+                disposePreviousScene(previousScene);
+                var ideScene = new Scene(idePane);
+
                 ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()
                     + " - " + project.getAlias());
-                ideStage.setScene(ideScene);
                 ideStage.setResizable(true);
                 ideStage.setMaximized(true);
-                Railroad.WINDOW_MANAGER.setPrimaryStage(ideStage);
+
+                if (stage == null) {
+                    ThemeManager.prepareSceneTransition(previousScene, ideScene);
+                    ideStage.setScene(ideScene);
+                    Railroad.WINDOW_MANAGER.setPrimaryStage(ideStage);
+                } else {
+                    ThemeManager.prepareSceneTransition(previousScene, ideScene);
+                    ideStage.setScene(ideScene);
+                    Railroad.WINDOW_MANAGER.showPrimary(stage, ideScene, stage.getTitle());
+                }
+                ThemeManager.release(previousScene);
 
                 try {
                     Railroad.PROJECT_MANAGER.setCurrentProject(project);
-                    Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.OPENED));
                 } finally {
                     isSwitchingToIDE = false;
                 }
@@ -219,106 +89,23 @@ public class IDESetup {
                 isSwitchingToIDE = false;
                 throw exception;
             }
-        });
+        };
+
+        JavaFXUtils.runOnApplicationThread(switchAction);
     }
 
-    /**
-     * Find the best tab pane for files (CodeArea) in the given parent.
-     * If a tab pane with a CodeArea is found, it will be returned.
-     * If no tab pane with a CodeArea is found, it will look for a welcome tab to replace.
-     * If no tab pane with a CodeArea is found, the first tab pane found will be returned.
-     *
-     * @param parent The parent to search in
-     * @return The best tab pane for files
-     */
-    public static Optional<DetachableTabPane> findBestPaneForFiles(Parent parent) {
-        // Prefer panes that already contain editors so code tabs stay grouped together.
-        var codePane = findBestPaneForFiles(parent, tab -> tab.getContent() instanceof CodeArea);
-        if (codePane.isPresent())
-            return codePane;
+    private static void disposePreviousScene(@Nullable Scene previousScene) {
+        if (previousScene == null)
+            return;
 
-        // Fall back to replacing a welcome tab when no editor pane exists yet.
-        var welcomePane = findBestPaneForFiles(parent, tab -> tab.getContent() instanceof IDEWelcomePane);
-        if (welcomePane.isPresent())
-            return welcomePane;
-
-        // If no welcome tab exists, reuse a pane that already hosts file-like content.
-        return findBestPaneForFiles(parent,
-            tab -> tab.getContent() instanceof TextEditorPane || tab.getContent() instanceof CodeArea
-                || tab.getContent() instanceof ImageViewerPane || tab.getContent() instanceof MarkdownPreviewPane);
-    }
-
-    /**
-     * Find the best tab pane for images (ImageViewerPane) in the given parent.
-     * If a tab pane with an ImageViewerPane is found, it will be returned.
-     * If no tab pane with an ImageViewerPane is found, the first tab pane found will be returned.
-     *
-     * @param parent The parent to search in
-     * @return The best tab pane for images
-     */
-    public static Optional<DetachableTabPane> findBestPaneForImages(Parent parent) { // TODO: Priority based search
-        return findBestPaneForFiles(parent,
-            tab -> tab.getContent() instanceof ImageViewerPane || tab.getContent() instanceof CodeArea);
-    }
-
-    /**
-     * Find the best tab pane for the terminal in the given parent.
-     * If a tab pane with a terminal is found, it will be returned.
-     * If no tab pane with a terminal is found, the first tab pane found will be returned.
-     *
-     * @param parent The parent to search in
-     * @return The best tab pane for the terminal
-     */
-    public static Optional<DetachableTabPane> findBestPaneForTerminal(Parent parent) {
-        return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof Terminal);
-    }
-
-    /**
-     * Find the best tab pane for the files that match the given predicate in the given parent.
-     * If a tab pane with a file that matches the predicate is found, it will be returned.
-     *
-     * @param parent The parent to search in
-     * @param predicate The predicate to match the file
-     * @return The best tab pane for the files that match the predicate
-     */
-    private static Optional<DetachableTabPane> findBestPaneForFiles(Parent parent, Predicate<Tab> predicate) {
-        var bestCandidate = new AtomicReference<DetachableTabPane>();
-        Optional<DetachableTabPane> found = findBestPaneFor(parent, bestCandidate, predicate);
-        return found.or(() -> Optional.ofNullable(bestCandidate.get()));
-    }
-
-    /**
-     * Find the best tab pane for the given parent.
-     * If a tab pane with a file that matches the predicate is found, it will be returned.
-     * If no tab pane with a file that matches the predicate is found, the first tab pane found will be returned.
-     *
-     * @param parent The parent to search in
-     * @param bestCandidate The best candidate found so far
-     * @param predicate The predicate to match the file
-     * @return The best tab pane for the files that match the predicate
-     */
-    private static Optional<DetachableTabPane> findBestPaneFor(Parent parent,
-        AtomicReference<DetachableTabPane> bestCandidate, Predicate<Tab> predicate) {
-        if (parent instanceof DetachableTabPane tabPane) {
-            if (tabPane.getTabs().stream().anyMatch(predicate))
-                return Optional.of(tabPane);
-            else if (bestCandidate.get() == null || tabPane.getTabs().size() < bestCandidate.get().getTabs().size()) {
-                bestCandidate.set(tabPane);
+        if (previousScene.getRoot() instanceof IDEPane idePane) {
+            try {
+                idePane.close();
+            } catch (RuntimeException exception) {
+                Railroad.LOGGER.error("Failed to dispose the previous IDE workspace cleanly", exception);
             }
         }
 
-        if (parent.getChildrenUnmodifiable().isEmpty())
-            return Optional.empty();
-
-        for (Node child : parent.getChildrenUnmodifiable()) {
-            if (!(child instanceof Parent childAsParent))
-                continue;
-
-            Optional<DetachableTabPane> result = findBestPaneFor(childAsParent, bestCandidate, predicate);
-            if (result.isPresent())
-                return result;
-        }
-
-        return Optional.empty();
+        Services.UI_MANAGER.releaseScene(previousScene);
     }
 }

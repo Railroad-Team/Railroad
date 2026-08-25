@@ -24,7 +24,7 @@ public record JdtCompletionProvider(Path filePath, String[] systemModulePaths) i
         if (range == null)
             return null;
 
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
+        ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setSource(document.toCharArray());
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
         parser.setResolveBindings(true);

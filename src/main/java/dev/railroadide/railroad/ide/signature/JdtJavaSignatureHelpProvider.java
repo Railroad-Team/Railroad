@@ -19,7 +19,7 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
         if (document == null || document.isEmpty() || caretPosition < 0)
             return null;
 
-        ASTParser parser = ASTParser.newParser(AST.JLS21); // TODO: Detect version from project settings
+        ASTParser parser = ASTParser.newParser(AST.getJLSLatest()); // TODO: Detect version from project settings
         parser.setSource(document.toCharArray());
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
         parser.setResolveBindings(true);

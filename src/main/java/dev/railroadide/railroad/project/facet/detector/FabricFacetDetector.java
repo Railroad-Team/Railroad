@@ -32,7 +32,7 @@ public class FabricFacetDetector implements FacetDetector<FabricFacetData> {
      */
     @Override
     public Optional<Facet<FabricFacetData>> detect(@UnknownNullability Project project) {
-        Path path = project.path();
+        Path path = project.getPath();
         Path fabricModJson = path.resolve("src").resolve("main").resolve("resources").resolve("fabric.mod.json");
         if (Files.notExists(fabricModJson) || !Files.isRegularFile(fabricModJson) || !Files.isReadable(fabricModJson))
             return Optional.empty();

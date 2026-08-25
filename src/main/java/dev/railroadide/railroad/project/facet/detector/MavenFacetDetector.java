@@ -1,14 +1,13 @@
 package dev.railroadide.railroad.project.facet.detector;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.maven.DefaultMavenModelService;
-import dev.railroadide.railroad.maven.MavenModelService;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.data.MavenFacetData;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.building.*;
 import org.jetbrains.annotations.UnknownNullability;
 
 import java.nio.file.Files;
@@ -21,7 +20,7 @@ import java.util.Optional;
  * This detector is used by the facet system to identify Maven projects and extract relevant configuration data.
  */
 public class MavenFacetDetector implements FacetDetector<MavenFacetData> {
-    private static final MavenModelService MAVEN_MODELS = new DefaultMavenModelService();
+    private static final ModelBuilder BUILDER = new DefaultModelBuilderFactory().newInstance();
 
     /**
      * Detects a Maven facet in the given path by searching for pom.xml and extracting Maven coordinates.
@@ -31,16 +30,21 @@ public class MavenFacetDetector implements FacetDetector<MavenFacetData> {
      */
     @Override
     public Optional<Facet<MavenFacetData>> detect(@UnknownNullability Project project) {
-        Path pomFile = project.path().resolve("pom.xml");
+        Path pomFile = project.getPath().resolve("pom.xml");
         if (Files.notExists(pomFile) || !Files.isRegularFile(pomFile) || !Files.isReadable(pomFile))
             return Optional.empty();
 
         try {
-            Optional<Model> maybeModel = MAVEN_MODELS.loadEffectiveModel(project.path());
-            if (maybeModel.isEmpty())
-                return Optional.empty();
+            ModelBuildingRequest req = new DefaultModelBuildingRequest()
+                .setProcessPlugins(false)
+                .setPomFile(pomFile.toFile())
+                .setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL)
+                .setTwoPhaseBuilding(false);
 
-            Model effectiveModel = maybeModel.get();
+            ModelBuildingResult result = BUILDER.build(req);
+            Model effectiveModel = result.getEffectiveModel();
+            if (effectiveModel == null)
+                return Optional.empty();
 
             String groupId = effectiveModel.getGroupId();
             String artifactId = effectiveModel.getArtifactId();
@@ -53,6 +57,8 @@ public class MavenFacetDetector implements FacetDetector<MavenFacetData> {
             data.setVersion(version);
 
             return Optional.of(new Facet<>(FacetManager.MAVEN, data));
+        } catch (ModelBuildingException exception) {
+            Railroad.LOGGER.error("Error building Maven model from pom.xml", exception);
         } catch (Exception exception) {
             Railroad.LOGGER.error("Unexpected error while detecting Maven facet", exception);
         }

@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.settings.ui;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.ui.PluginsPane;
 import dev.railroadide.railroad.settings.SettingsSearchHandler;
@@ -10,6 +11,7 @@ import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRTextField;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
@@ -79,7 +81,7 @@ public class SettingsPane extends RRVBox {
 
         List<Runnable> applyListeners = new ArrayList<>();
 
-        tree.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newItem) -> {
+        tree.getSelectionModel().selectedItemProperty().addListener((_, _, newItem) -> {
             if (newItem == null)
                 return;
 
@@ -127,7 +129,7 @@ public class SettingsPane extends RRVBox {
         });
 
         var searchHandler = new SettingsSearchHandler(SettingsHandler.SETTINGS_REGISTRY.values());
-        searchBar.textProperty().addListener((observable, oldText, newText) -> {
+        searchBar.textProperty().addListener((_, _, newText) -> {
             searchHandler.setQuery(newText);
             if (newText.isEmpty())
                 return;
@@ -170,14 +172,14 @@ public class SettingsPane extends RRVBox {
         var cancel = new RRButton("railroad.generic.cancel");
         buttonBar.getChildren().addAll(apply, cancel);
 
-        apply.setOnAction(event -> {
+        apply.setOnAction(_ -> {
             for (Runnable listener : applyListeners) {
                 listener.run();
             }
 
             SettingsHandler.saveSettings();
         });
-        cancel.setOnAction(event -> {
+        cancel.setOnAction(_ -> {
             SettingsHandler.loadSettings();
             SettingsHandler.getSettingsHolder().updateAll();
             Scene scene = getScene();
@@ -196,6 +198,8 @@ public class SettingsPane extends RRVBox {
             tree.getSelectionModel().select(firstCategory);
             tree.scrollTo(tree.getRow(firstCategory));
         }
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Settings.SETTINGS, this);
     }
 
     public static void openSettingsWindow() {

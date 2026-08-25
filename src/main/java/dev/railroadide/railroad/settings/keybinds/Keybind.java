@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.settings.keybinds;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
@@ -20,7 +22,7 @@ public class Keybind {
     @Getter
     private final List<KeybindData> defaultKeys;
     @Getter
-    private final List<KeybindData> keys = new ArrayList<>();
+    private final ObservableList<KeybindData> keys = FXCollections.observableArrayList();
     @Getter
     private final List<KeybindContexts.KeybindContext> validContexts;
     @Getter
@@ -83,27 +85,8 @@ public class Keybind {
      */
     public boolean matches(KeyEvent keyEvent) {
         for (KeybindData key : keys) {
-            KeyCode keyCode = key.keyCode();
-            KeyCombination.Modifier[] modifiers = key.modifiers();
-
-            if (keyCode != keyEvent.getCode())
-                continue;
-
-            if (modifiers == null)
+            if (key.getKeyCodeCombination().match(keyEvent))
                 return true;
-
-            for (KeyCombination.Modifier modifier : modifiers) {
-                if (!keyEvent.isShortcutDown() && modifier == KeyCombination.SHORTCUT_DOWN)
-                    continue;
-                if (!keyEvent.isControlDown() && modifier == KeyCombination.CONTROL_DOWN)
-                    continue;
-                if (!keyEvent.isShiftDown() && modifier == KeyCombination.SHIFT_DOWN)
-                    continue;
-                if (!keyEvent.isAltDown() && modifier == KeyCombination.ALT_DOWN)
-                    continue;
-            }
-
-            return true;
         }
 
         return false;

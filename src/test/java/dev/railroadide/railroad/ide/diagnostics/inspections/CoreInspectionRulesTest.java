@@ -2643,6 +2643,28 @@ class CoreInspectionRulesTest {
     }
 
     @Test
+    void duplicateDeclarationRuleAllowsUnnamedVariables() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDuplicateDeclarationInspection(), """
+            class Example {
+                void run() {
+                    try {
+                        work();
+                    } catch (Exception _) {
+                    }
+                    try {
+                        work();
+                    } catch (Exception _) {
+                    }
+                }
+
+                void work() {}
+            }
+            """);
+
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_DUPLICATE_DECLARATION".equals(diagnostic.code())));
+    }
+
+    @Test
     void typeResolutionHandlesAnnotatedTypesAndMultiCatchAlternativesIndividually() {
         String source = """
             import java.io.IOException;

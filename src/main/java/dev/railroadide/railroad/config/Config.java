@@ -8,7 +8,9 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.utility.json.JsonSerializable;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -124,6 +126,7 @@ public class Config implements JsonSerializable<JsonObject> {
         inspectionRuleTagEnabledOverrides.clear();
         inspectionRuleSeverityOverrides.clear();
 
+        List<Project> loadedProjects = new ArrayList<>();
         if (json.has("Projects")) {
             JsonElement projects = json.get("Projects");
             if (projects.isJsonArray()) {
@@ -133,9 +136,15 @@ public class Config implements JsonSerializable<JsonObject> {
                         continue;
 
                     Optional<RailroadProject> optProject = RailroadProject.createFromJson(project.getAsJsonObject());
-                    optProject.ifPresent(Railroad.PROJECT_MANAGER::newProject);
+                    optProject.ifPresent(loadedProjects::add);
                 }
             }
+        }
+        Railroad.PROJECT_MANAGER.setProjects(loadedProjects);
+        if (loadedProjects.size() != Railroad.PROJECT_MANAGER.getProjects().size()) {
+            Railroad.LOGGER.warn(
+                "Removed {} duplicate project entries while loading configuration",
+                loadedProjects.size() - Railroad.PROJECT_MANAGER.getProjects().size());
         }
 
         if (json.has("EnabledPlugins")) {

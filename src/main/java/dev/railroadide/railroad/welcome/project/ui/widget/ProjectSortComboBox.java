@@ -42,7 +42,7 @@ public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {
         setVisibleRowCount(ProjectSort.values().length);
 
         setButtonCell(new ProjectSortListCell(true));
-        setCellFactory(listView -> new ProjectSortListCell(false));
+        setCellFactory(_ -> new ProjectSortListCell(false));
 
         initializeTooltip();
 
@@ -55,7 +55,7 @@ public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {
         sortTooltip.setShowDuration(Duration.seconds(4));
         setTooltip(sortTooltip);
         updateTooltip(getValue());
-        valueProperty().addListener((observable, oldValue, newValue) -> updateTooltip(newValue));
+        valueProperty().addListener((_, _, newValue) -> updateTooltip(newValue));
     }
 
     private void updateTooltip(ProjectSort sort) {

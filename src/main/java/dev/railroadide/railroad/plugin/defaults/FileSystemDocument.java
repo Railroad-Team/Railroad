@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.plugin.defaults;
 
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import lombok.Setter;
 
@@ -26,6 +27,14 @@ public class FileSystemDocument implements Document {
         this.name = name;
         this.path = path;
         this.languageId = languageId;
+    }
+
+    public FileSystemDocument(Path path) {
+        this(path.getFileName().toString(), path, LanguageSupportRegistry.resolveLanguageId(path));
+    }
+
+    public FileSystemDocument(Path path, String languageId) {
+        this(path.getFileName().toString(), path, languageId);
     }
 
     @Override

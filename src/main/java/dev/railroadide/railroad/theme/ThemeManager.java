@@ -79,6 +79,14 @@ public class ThemeManager {
         apply(nextScene);
     }
 
+    public static void release(Scene scene) {
+        if (scene == null)
+            return;
+
+        TRACKED_SCENES.remove(scene);
+        scene.setOnKeyReleased(null);
+    }
+
     public static StringProperty getCurrentThemeProperty() {
         return currentTheme;
     }
@@ -115,6 +123,7 @@ public class ThemeManager {
     }
 
     public static void applyThemeToScene(String theme, Scene scene) {
+        ResponsiveDesign.install(scene);
         scene.getStylesheets().clear();
 
         if (theme != null && !theme.isEmpty()) {

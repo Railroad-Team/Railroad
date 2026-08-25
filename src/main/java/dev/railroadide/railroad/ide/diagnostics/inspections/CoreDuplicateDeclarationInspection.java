@@ -49,7 +49,7 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
     private static void visitScopes(JavaRuleContext context, SyntaxNode node, ScopeTracker scope,
         JavaInspectionRuleReporter reporter) {
         Symbol symbol = context.declaredSymbol(node).orElse(null);
-        if (symbol != null && symbol.kind() != SymbolKind.IMPORT) {
+        if (symbol != null && symbol.kind() != SymbolKind.IMPORT && !"_".equals(symbol.simpleName())) {
             if (JAVA_PATTERN.equals(node.kind().id())) {
                 symbol = null;
             }

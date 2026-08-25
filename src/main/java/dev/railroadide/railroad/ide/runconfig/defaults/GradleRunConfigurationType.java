@@ -72,7 +72,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
     public GradleRunConfigurationData createDataInstance(@UnknownNullability Project project) {
         var data = new GradleRunConfigurationData();
         data.setName("New Gradle Configuration");
-        data.setGradleProjectPath(project.path());
+        data.setGradleProjectPath(project.getPath());
         data.setJavaHome(/* project.getJDKManager().getDefaultJDK() */ JDKManager.getDefaultJDK()); // TODO
         return data;
     }

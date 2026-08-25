@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.sync;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -13,6 +15,7 @@ public class GitSyncPane extends RRVBox {
     private final GitSyncOutgoingChangesPane outgoingChangesPane;
 
     public GitSyncPane(Project project) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_SYNC, this);
         getStyleClass().add("git-sync-pane-root");
 
         GitManager gitManager = project.getGitManager();

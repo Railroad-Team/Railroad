@@ -1,9 +1,11 @@
 package dev.railroadide.railroad.welcome;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.welcome.imports.WelcomeImportProjectsPane;
 import dev.railroadide.railroad.welcome.project.ui.NewProjectPane;
 import javafx.application.Platform;
@@ -49,39 +51,39 @@ public class WelcomePane extends HBox {
         getChildren().addAll(leftPane, verticalSeparator, rightPane);
         HBox.setHgrow(rightPane, Priority.ALWAYS);
 
-        leftPane.getListView().getSelectionModel().selectedItemProperty()
-            .addListener((observable, oldValue, newValue) -> {
-                if (newValue == null)
-                    return;
-                switch (newValue) {
-                    case HOME -> {
-                        rightPane.getChildren().clear();
-                        rightPane.getChildren().addAll(headerPane, projectsPane);
-                    }
-                    case OPEN_PROJECT -> {
-                        openProjectDialog();
-                        // Reset selection to HOME after opening dialog
-                        leftPane.getListView().getSelectionModel().select(WelcomeLeftPane.MenuType.HOME);
-                    }
-                    case NEW_PROJECT -> {
-                        newProjectPane.set(new NewProjectPane());
-                        rightPane.getChildren().setAll(newProjectPane.get());
-                        VBox.setVgrow(newProjectPane.get(), Priority.ALWAYS);
-                    }
-                    case IMPORT_PROJECT -> {
-                        var importProjectsPane = new WelcomeImportProjectsPane();
-                        rightPane.getChildren().setAll(importProjectsPane);
-                        VBox.setVgrow(importProjectsPane, Priority.ALWAYS);
-                    }
-                    case SETTINGS -> {
-                        SettingsPane.openSettingsWindow();
-                        leftPane.getListView().getSelectionModel().select(WelcomeLeftPane.MenuType.HOME);
-                    }
-                    default -> throw new IllegalStateException("Unexpected value: " + newValue);
+        leftPane.getListView().getSelectionModel().selectedItemProperty().addListener((_, _, newValue) -> {
+            if (newValue == null)
+                return;
+            switch (newValue) {
+                case HOME -> {
+                    rightPane.getChildren().clear();
+                    rightPane.getChildren().addAll(headerPane, projectsPane);
                 }
-            });
+                case OPEN_PROJECT -> {
+                    openProjectDialog();
+                    // Reset selection to HOME after opening dialog
+                    leftPane.getListView().getSelectionModel().select(WelcomeLeftPane.MenuType.HOME);
+                }
+                case NEW_PROJECT -> {
+                    newProjectPane.set(new NewProjectPane());
+                    rightPane.getChildren().setAll(newProjectPane.get());
+                    VBox.setVgrow(newProjectPane.get(), Priority.ALWAYS);
+                }
+                case IMPORT_PROJECT -> {
+                    var importProjectsPane = new WelcomeImportProjectsPane();
+                    rightPane.getChildren().setAll(importProjectsPane);
+                    VBox.setVgrow(importProjectsPane, Priority.ALWAYS);
+                }
+                case SETTINGS -> {
+                    SettingsPane.openSettingsWindow();
+                    leftPane.getListView().getSelectionModel().select(WelcomeLeftPane.MenuType.HOME);
+                }
+                default -> throw new IllegalStateException("Unexpected value: " + newValue);
+            }
+        });
 
         Platform.runLater(this::requestFocus);
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Welcome.WELCOME, this);
     }
 
     private void openProjectDialog() {
@@ -98,7 +100,7 @@ public class WelcomePane extends HBox {
                 // TODO: Re-add validation here in the future
                 // if (isValidProjectDirectory(projectPath)) {
                 var project = new RailroadProject(projectPath);
-                project.open();
+                project.open(null);
                 // } else {
                 // WindowBuilder.createAlert(
                 // AlertType.ERROR,

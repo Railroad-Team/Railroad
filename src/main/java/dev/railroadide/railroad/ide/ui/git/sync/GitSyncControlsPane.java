@@ -1,9 +1,11 @@
 package dev.railroadide.railroad.ide.ui.git.sync;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.vcs.git.GitManager;
@@ -16,6 +18,7 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 public class GitSyncControlsPane extends RRVBox {
     public GitSyncControlsPane(GitManager gitManager) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_SYNC_CONTROLS, this);
         getStyleClass().add("git-sync-controls-pane-root");
 
         var remoteLabel = new LocalizedLabel("railroad.git.sync.controls.remote");
@@ -89,6 +92,6 @@ public class GitSyncControlsPane extends RRVBox {
             remoteComboBox.getSelectionModel().select(gitManager.getCurrentRemote());
         };
         refreshRemotes.run();
-        gitManager.repoStatusProperty().addListener((obs, oldStatus, newStatus) -> refreshRemotes.run());
+        gitManager.repoStatusProperty().addListener((_, _, _) -> refreshRemotes.run());
     }
 }

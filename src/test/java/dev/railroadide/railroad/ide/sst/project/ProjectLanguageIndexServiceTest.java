@@ -18,6 +18,7 @@ import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import javafx.scene.image.Image;
+import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -316,6 +317,11 @@ class ProjectLanguageIndexServiceTest {
 
         private record TestProject(Path path) implements Project {
             @Override
+            public Path getPath() {
+                return path;
+            }
+
+            @Override
             public String getAlias() {
                 return path.getFileName() != null ? path.getFileName().toString() : path.toString();
             }
@@ -336,7 +342,12 @@ class ProjectLanguageIndexServiceTest {
             }
 
             @Override
-            public void open() {
+            public void open(Stage stage) {
+                throw unsupported();
+            }
+
+            @Override
+            public void close() {
                 throw unsupported();
             }
 

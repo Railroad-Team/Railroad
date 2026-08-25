@@ -5,12 +5,16 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
+import dev.railroadide.railroad.ide.ui.IDEPane;
 import dev.railroadide.railroad.java.JDK;
+import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
+import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.ProjectAliasChangedEvent;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
@@ -18,19 +22,23 @@ import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.settings.Settings;
+import dev.railroadide.railroad.ui.id.UIIds;
+import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroad.vcs.Repository;
 import dev.railroadide.railroad.vcs.git.GitClient;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.execution.GitProcessRunner;
-import javafx.beans.property.*;
 import javafx.application.Platform;
+import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableSet;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
+import javafx.stage.Stage;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -43,6 +51,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class RailroadProject implements Project {
+    private static final String PROJECT_CONFIG_LOCATION = "project.json";
+
     private final ObjectProperty<Path> path = new ReadOnlyObjectWrapper<>();
     private final StringProperty alias = new SimpleStringProperty();
     private final ObjectProperty<Image> icon = new SimpleObjectProperty<>();
@@ -72,7 +82,7 @@ public class RailroadProject implements Project {
     }
 
     public RailroadProject(Path path, String alias, Image icon) {
-        this.path.set(path);
+        this.path.set(ProjectPathIdentity.normalize(path));
         this.alias.set(alias);
         this.icon.set(icon == null ? createIcon() : icon);
         this.dataStore = new ProjectDataStore(this);
@@ -86,7 +96,7 @@ public class RailroadProject implements Project {
     }
 
     private BufferedImage createIconImage() {
-        var color = new Color(Math.abs(path().toAbsolutePath().toString().hashCode() % 0xFFFFFF));
+        var color = new Color(Math.abs(getPath().toAbsolutePath().toString().hashCode() % 0xFFFFFF));
         String abbreviation = StringUtils.getAbbreviation(getAlias()).toUpperCase(Locale.ROOT);
         abbreviation = abbreviation.isBlank() ? "?" : abbreviation;
         abbreviation = abbreviation.length() > 4 ? abbreviation.substring(0, 4) : abbreviation;
@@ -115,7 +125,7 @@ public class RailroadProject implements Project {
             Files.createDirectories(iconPath.getParent());
             ImageIO.write(iconImage, "png", iconPath.toFile());
         } catch (Exception exception) {
-            Railroad.LOGGER.error("Failed to create project icon for: {}", path(), exception);
+            Railroad.LOGGER.error("Failed to create project icon for: {}", getPath(), exception);
             return SwingFXUtils.toFXImage(iconImage, null);
         }
 
@@ -187,18 +197,72 @@ public class RailroadProject implements Project {
     }
 
     @Override
-    public Path path() {
+    public Path getPath() {
         return this.path.get();
     }
 
     @Override
-    public void open() {
+    public void open(@Nullable Stage stage) {
+        Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
+        if (currentProject != null && !ProjectPathIdentity.matches(currentProject.getPath(), getPath())) {
+            currentProject.close();
+        }
+
         Railroad.LOGGER.debug("Opening project: {}", getPathString());
         setLastOpened(System.currentTimeMillis());
-        Railroad.PROJECT_MANAGER.updateProjectInfo(this);
-        IDESetup.switchToIDE(this);
-        discoverFacets();
-        this.gitManager.detectRepository();
+        Project project = Railroad.PROJECT_MANAGER.updateProjectInfo(this);
+        project.getGitManager().detectRepository();
+        IDESetup.switchToIDE(project, stage);
+        if (project instanceof RailroadProject railroadProject) {
+            railroadProject.discoverFacets();
+        }
+
+        ProjectDataStore dataStore = project.getDataStore();
+        ProjectConfig projectConfig = dataStore.readJson(PROJECT_CONFIG_LOCATION, ProjectConfig.class)
+            .orElseGet(ProjectConfig::new);
+        List<Path> openDocumentPaths = projectConfig.getOpenDocuments();
+        Path activeDocumentPath = projectConfig.getActiveDocument();
+        if (openDocumentPaths != null) {
+            Services.IDE_STATE.setOpenDocuments(openDocumentPaths.stream()
+                .map(FileSystemDocument::new)
+                .map(Document.class::cast)
+                .toList());
+        }
+        if (activeDocumentPath != null) {
+            Services.IDE_STATE.setActiveDocument(new FileSystemDocument(activeDocumentPath));
+        }
+        if (projectConfig.getIdeLayoutState() != null) {
+            Platform.runLater(() -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+                .ifPresent(idePane -> idePane.restoreLayoutState(projectConfig.getIdeLayoutState())));
+        }
+
+        ShutdownHooks.addHook(() -> {
+            if (Railroad.PROJECT_MANAGER.getOpenProject() == project) {
+                project.close();
+            }
+        });
+    }
+
+    @Override
+    public void close() {
+        Railroad.LOGGER.debug("Closing project: {}", getPathString());
+        Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
+        if (currentProject != null && ProjectPathIdentity.matches(currentProject.getPath(), getPath())) {
+            List<Document> openDocuments = Services.IDE_STATE.getOpenDocuments();
+            Document activeDocument = Services.IDE_STATE.getActiveDocument();
+
+            ProjectDataStore dataStore = getDataStore();
+            ProjectConfig projectConfig = dataStore.readJson(PROJECT_CONFIG_LOCATION, ProjectConfig.class)
+                .orElseGet(ProjectConfig::new);
+            projectConfig.setOpenDocuments(openDocuments.stream().map(Document::getPath).toList());
+            projectConfig.setActiveDocument(activeDocument != null ? activeDocument.getPath() : null);
+            Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+                .map(IDEPane::captureLayoutState)
+                .ifPresent(projectConfig::setIdeLayoutState);
+            dataStore.writeJson(PROJECT_CONFIG_LOCATION, projectConfig);
+
+            Railroad.PROJECT_MANAGER.setCurrentProject(null);
+        }
     }
 
     @Override
@@ -215,12 +279,12 @@ public class RailroadProject implements Project {
             return false;
 
         RailroadProject project = (RailroadProject) obj;
-        return path.equals(project.path);
+        return ProjectPathIdentity.matches(getPath(), project.getPath());
     }
 
     @Override
     public int hashCode() {
-        return path.hashCode();
+        return ProjectPathIdentity.key(getPath()).hashCode();
     }
 
     @Override
@@ -267,10 +331,11 @@ public class RailroadProject implements Project {
             if (pathElement.isJsonPrimitive()) {
                 JsonPrimitive pathPrimitive = pathElement.getAsJsonPrimitive();
                 if (pathPrimitive.isString()) {
-                    this.path.set(Path.of(pathElement.getAsString()));
+                    this.path.set(ProjectPathIdentity.normalize(Path.of(pathElement.getAsString())));
                 } else if (pathPrimitive.isNumber()) {
                     try {
-                        this.path.set(Path.of(String.valueOf(pathPrimitive.getAsNumber())));
+                        this.path
+                            .set(ProjectPathIdentity.normalize(Path.of(String.valueOf(pathPrimitive.getAsNumber()))));
                     } catch (Exception exception) {
                         Railroad.LOGGER.warn("Project JSON 'Path' is not a valid path: {}", pathElement, exception);
                     }

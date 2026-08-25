@@ -223,11 +223,11 @@ public final class ProjectLanguageIndexService {
 
     public void invalidate(Project project, String languageId) {
         Objects.requireNonNull(project, "project");
-        indexesByProjectAndLanguage.remove(key(project.path(), languageId));
+        indexesByProjectAndLanguage.remove(key(project.getPath(), languageId));
     }
 
     public void deletePersisted(Project project, String languageId) {
-        ProjectLanguageKey key = key(project.path(), languageId);
+        ProjectLanguageKey key = key(project.getPath(), languageId);
         ProjectLanguageIndexPersistence<?> persistence = persistenceByLanguageId.get(key.languageId());
         if (persistence != null) {
             persistence.delete(key.projectRoot());
@@ -235,7 +235,7 @@ public final class ProjectLanguageIndexService {
     }
 
     public void invalidateProject(Project project) {
-        Path normalizedRoot = normalize(project.path());
+        Path normalizedRoot = normalize(project.getPath());
         indexesByProjectAndLanguage.keySet().removeIf(key -> key.projectRoot().equals(normalizedRoot));
     }
 

@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.commit.list;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ui.RRTextField;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.vcs.git.GitManager;
 
@@ -10,6 +12,7 @@ public class GitCommitListHeaderPane extends RRVBox {
 
     public GitCommitListHeaderPane(GitManager gitManager, GitCommitListViewPane commitListView) {
         super();
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT_LIST_HEADER, this);
         getStyleClass().add("git-commit-list-header-pane");
 
         var searchVbox = new RRVBox(2);

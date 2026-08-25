@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ui;
 
+import dev.railroadide.railroad.ui.animation.UIAnimations;
 import dev.railroadide.railroad.ui.localized.LocalizedTextProperty;
+import javafx.animation.RotateTransition;
 import javafx.animation.ScaleTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -18,6 +20,7 @@ public class RRCheckBox extends CheckBox {
 
     private Node originalGraphic;
     private FontIcon loadingSpinner;
+    private RotateTransition loadingSpinnerAnimation;
 
     private final BooleanProperty isLoading = new SimpleBooleanProperty(this, "isLoading", false);
     public boolean getIsLoading() {
@@ -60,6 +63,7 @@ public class RRCheckBox extends CheckBox {
         loadingSpinner = new FontIcon(FontAwesomeSolid.SYNC_ALT);
         loadingSpinner.setIconSize(16);
         loadingSpinner.getStyleClass().add("loading-spinner");
+        loadingSpinnerAnimation = UIAnimations.spinner(loadingSpinner);
 
         setOnMousePressed(_ -> {
             if (!getIsLoading()) {
@@ -177,12 +181,15 @@ public class RRCheckBox extends CheckBox {
         }
 
         setGraphic(loadingContent);
+        loadingSpinnerAnimation.playFromStart();
     }
 
     /**
      * Called when the button has stopped loading
      */
     protected void onNotLoading() {
+        loadingSpinnerAnimation.stop();
+        loadingSpinner.setRotate(0);
         setDisable(false);
         getStyleClass().remove("loading");
 

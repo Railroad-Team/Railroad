@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.overview;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.utility.TimeFormatter;
@@ -48,6 +50,7 @@ public class GitOverviewHeaderPane extends RRVBox {
     private final GitManager gitManager;
 
     public GitOverviewHeaderPane(Project project) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_OVERVIEW_HEADER, this);
         getStyleClass().add("git-overview-header-pane");
 
         // Actions Box
@@ -83,7 +86,7 @@ public class GitOverviewHeaderPane extends RRVBox {
         upstreamElapsedTimeline = new Timeline(
             new KeyFrame(Duration.seconds(1), _ -> updateUpstreamRow(this.gitManager)));
         upstreamElapsedTimeline.setCycleCount(Timeline.INDEFINITE);
-        sceneProperty().addListener((obs, oldScene, newScene) -> {
+        sceneProperty().addListener((_, _, newScene) -> {
             if (newScene == null) {
                 upstreamElapsedTimeline.stop();
             } else {
@@ -227,7 +230,7 @@ public class GitOverviewHeaderPane extends RRVBox {
     }
 
     private void listenForUpdates(GitManager gitManager) {
-        gitManager.repoStatusProperty().addListener((obs, oldStatus, newStatus) -> updateHeaderInfo(gitManager));
+        gitManager.repoStatusProperty().addListener((_, _, _) -> updateHeaderInfo(gitManager));
     }
 
     private void updateUpstreamRow(GitManager gitManager) {

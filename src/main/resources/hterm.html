@@ -33,6 +33,15 @@
 
     function startTerminal() {
         hterm.defaultStorage = new lib.Storage.Memory();
+
+        // JavaFX WebKit cannot play hterm's default base64 data: OGG URL.
+        // Memory storage updates synchronously, so the terminal observes this
+        // value while its preference handlers are first being installed.
+        hterm.defaultStorage.setItem(
+            "/hterm/profiles/myterm/audible-bell-sound",
+            ""
+        );
+
         hterm.copySelectionToClipboard = function (document) {
             app.copy(document.getSelection().toString());
         };

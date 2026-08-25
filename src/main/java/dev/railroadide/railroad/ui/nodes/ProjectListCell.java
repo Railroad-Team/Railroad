@@ -103,7 +103,7 @@ public class ProjectListCell extends ListCell<Project> {
         openItem.setOnAction(_ -> {
             Project project = getItem();
             if (project != null) {
-                project.open();
+                project.open(null);
             }
         });
 
@@ -119,7 +119,7 @@ public class ProjectListCell extends ListCell<Project> {
         ellipsisButton.setOnAction(_ -> dropdown.show(ellipsisButton, Side.BOTTOM, 0, 0));
 
         ELAPSED_TICK.addListener(new WeakInvalidationListener(elapsedTickListener));
-        sceneProperty().addListener((obs, oldScene, newScene) -> {
+        sceneProperty().addListener((_, oldScene, newScene) -> {
             if (oldScene == null && newScene != null) {
                 if (ATTACHED_CELLS.incrementAndGet() == 1) {
                     ELAPSED_TIMELINE.play();
@@ -177,5 +177,4 @@ public class ProjectListCell extends ListCell<Project> {
 
         lastOpenedLabel.setText(TimeFormatter.formatElapsed(project.getLastOpened()));
     }
-
 }

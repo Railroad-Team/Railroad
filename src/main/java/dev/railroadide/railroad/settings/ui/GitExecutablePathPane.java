@@ -38,9 +38,9 @@ public class GitExecutablePathPane extends RRHBox {
         browseButton.parentWindowProperty().bind(sceneProperty().flatMap(Scene::windowProperty));
 
         pathField.setLocalizedPlaceholder("railroad.settings.vcs.git_executable_path.placeholder");
-        gitExecutablePath.addListener(
-            (observable, oldValue, newValue) -> pathField.setText(newValue == null ? "" : Objects.toString(newValue)));
-        pathField.textProperty().addListener((obs, oldText, newText) -> {
+        gitExecutablePath
+            .addListener((_, _, newValue) -> pathField.setText(newValue == null ? "" : Objects.toString(newValue)));
+        pathField.textProperty().addListener((_, _, newText) -> {
             if (newText == null || newText.isBlank()) {
                 setGitExecutablePath(null);
             } else {
@@ -58,7 +58,7 @@ public class GitExecutablePathPane extends RRHBox {
 
         downloadButton.setRounded(true);
         downloadButton.setVariant(ButtonVariant.PRIMARY);
-        downloadButton.setOnAction(event -> {
+        downloadButton.setOnAction(_ -> {
             String postfix = switch (OperatingSystem.CURRENT) {
                 case WINDOWS -> "windows";
                 case MAC -> "mac";

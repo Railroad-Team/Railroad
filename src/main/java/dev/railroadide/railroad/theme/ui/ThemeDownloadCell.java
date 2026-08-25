@@ -89,7 +89,7 @@ public class ThemeDownloadCell extends ListCell<Theme> {
     }
 
     private void setupEventHandlers() {
-        downloadButton.setOnAction(e -> {
+        downloadButton.setOnAction(_ -> {
             Theme theme = themeProperty.get();
             if (theme != null) {
                 boolean success = ThemeDownloadManager.downloadTheme(theme);
@@ -97,7 +97,7 @@ public class ThemeDownloadCell extends ListCell<Theme> {
             }
         });
 
-        previewButton.setOnAction(e -> {
+        previewButton.setOnAction(_ -> {
             Theme theme = themeProperty.get();
             if (theme != null) {
                 new ThemeExamplePane(theme.getName().replace(".css", ""));
@@ -127,7 +127,7 @@ public class ThemeDownloadCell extends ListCell<Theme> {
         });
         themeSizeLabel.textProperty().bind(themeSize);
 
-        themeProperty.addListener((observable, oldValue, newValue) -> {
+        themeProperty.addListener((_, _, newValue) -> {
             if (newValue != null) {
                 boolean isDownloaded = ThemeDownloadManager.isDownloaded(newValue);
                 updateButtonStates(isDownloaded);

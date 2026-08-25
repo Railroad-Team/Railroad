@@ -159,7 +159,6 @@ public class SettingCodecs {
         .jsonEncoder(state -> JsonNull.INSTANCE)
         .jsonDecoder(json -> JavaInspectionRuleSettingsState.empty())
         .build();
-
     public static final SettingCodec<Path, WindowsTerminalSettingsPathPane> WINDOWS_TERMINAL_SETTINGS_PATH = SettingCodec
         .<Path, WindowsTerminalSettingsPathPane>builder("railroad:windows_terminal_settings_path")
         .createNode(WindowsTerminalSettingsPathPane::new)

@@ -76,8 +76,8 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
     public ShellScriptRunConfigurationData createDataInstance(@UnknownNullability Project project) {
         var data = new ShellScriptRunConfigurationData();
         data.setName("New Shell Script");
-        data.setWorkingDirectory(project.path());
-        data.setScriptPath(project.path().resolve("script.sh"));
+        data.setWorkingDirectory(project.getPath());
+        data.setScriptPath(project.getPath().resolve("script.sh"));
         return data;
     }
 
@@ -139,7 +139,7 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
     private static Path resolveWorkingDirectory(Project project, ShellScriptRunConfigurationData data) {
         Path workingDirectory = data.getWorkingDirectory();
         if (workingDirectory == null) {
-            workingDirectory = project.path();
+            workingDirectory = project.getPath();
         }
 
         if (Files.notExists(workingDirectory) || !Files.isDirectory(workingDirectory))

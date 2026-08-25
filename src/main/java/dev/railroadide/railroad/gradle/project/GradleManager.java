@@ -17,7 +17,6 @@ import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
-import dev.railroadide.railroad.utility.ShutdownHooks;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,7 +29,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -50,7 +48,6 @@ public final class GradleManager {
     private GradleExecutionService executionService;
     private GradleEnvironment environment;
     private GradleSettings gradleSettings;
-    private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
     /**
      * Creates a new Gradle manager for the given project.
@@ -59,7 +56,6 @@ public final class GradleManager {
      */
     public GradleManager(Project project) {
         this.project = Objects.requireNonNull(project);
-        ShutdownHooks.addHook(this::shutdown);
     }
 
     /**
@@ -75,7 +71,7 @@ public final class GradleManager {
             if (modelService == null) {
                 if (modelExecutor == null || modelExecutor.isShutdown()) {
                     modelExecutor = Executors.newSingleThreadExecutor(runnable -> {
-                        var thread = new Thread(runnable, "railroad-gradle-model-" + project.path());
+                        var thread = new Thread(runnable, "railroad-gradle-model-" + project.getPath());
                         thread.setDaemon(true);
                         return thread;
                     });
@@ -229,13 +225,13 @@ public final class GradleManager {
     }
 
     private void ensureIsGradleProject() {
-        Path path = project.path();
+        Path path = project.getPath();
         if (!isGradleProject())
             throw new IllegalStateException("Project at " + path + " is not a Gradle project.");
     }
 
     public boolean isGradleProject() {
-        Path path = project.path();
+        Path path = project.getPath();
         Path groovyBuildFile = path.resolve("build.gradle");
         Path kotlinBuildFile = path.resolve("build.gradle.kts");
         boolean hasGroovyBuild = Files.isRegularFile(groovyBuildFile) && Files.isReadable(groovyBuildFile);
@@ -285,12 +281,12 @@ public final class GradleManager {
     }
 
     private boolean hasGradleWrapper() {
-        Path wrapperProps = project.path().resolve("gradle").resolve("wrapper").resolve("gradle-wrapper.properties");
+        Path wrapperProps = project.getPath().resolve("gradle").resolve("wrapper").resolve("gradle-wrapper.properties");
         return Files.isRegularFile(wrapperProps);
     }
 
     private String getGradleVersion() {
-        Path wrapperProps = project.path().resolve("gradle").resolve("wrapper").resolve("gradle-wrapper.properties");
+        Path wrapperProps = project.getPath().resolve("gradle").resolve("wrapper").resolve("gradle-wrapper.properties");
         if (!Files.isRegularFile(wrapperProps))
             return null;
 
@@ -388,7 +384,7 @@ public final class GradleManager {
             if (executionService == null) {
                 if (executionExecutor == null || executionExecutor.isShutdown()) {
                     executionExecutor = Executors.newCachedThreadPool(r -> {
-                        var thread = new Thread(r, "railroad-gradle-exec-" + project.path());
+                        var thread = new Thread(r, "railroad-gradle-exec-" + project.getPath());
                         thread.setDaemon(true);
                         return thread;
                     });
@@ -399,35 +395,6 @@ public final class GradleManager {
             }
 
             return executionService;
-        }
-    }
-
-    public void shutdown() {
-        if (!shutdown.compareAndSet(false, true))
-            return;
-
-        synchronized (lock) {
-            if (executionService != null) {
-                try {
-                    executionService.stopAllRunningTasks();
-                } catch (RuntimeException exception) {
-                    Railroad.LOGGER.warn("Failed to stop Gradle tasks for {}", project.path(), exception);
-                }
-            }
-
-            if (modelExecutor != null) {
-                modelExecutor.shutdownNow();
-            }
-            if (executionExecutor != null) {
-                executionExecutor.shutdownNow();
-            }
-
-            modelExecutor = null;
-            executionExecutor = null;
-            modelService = null;
-            executionService = null;
-            environment = null;
-            gradleSettings = null;
         }
     }
 }

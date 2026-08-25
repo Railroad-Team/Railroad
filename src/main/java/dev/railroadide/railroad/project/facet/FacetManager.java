@@ -157,15 +157,15 @@ public class FacetManager {
                     Railroad.LOGGER.error(
                         "Facet detector {} failed for project at {}",
                         detector.getClass().getSimpleName(),
-                        project.path(),
+                        project.getPath(),
                         error);
                 }
             }
 
             if (facets.isEmpty()) {
-                Railroad.LOGGER.warn("No facets detected for project at {}", project.path());
+                Railroad.LOGGER.warn("No facets detected for project at {}", project.getPath());
             } else {
-                Railroad.LOGGER.info("Detected {} facets for project at {}", facets.size(), project.path());
+                Railroad.LOGGER.info("Detected {} facets for project at {}", facets.size(), project.getPath());
             }
 
             return List.copyOf(facets.values());

@@ -164,7 +164,7 @@ public class RunConfigurationManager {
                     RunConfiguration<?> config = RunConfiguration.fromJson(element.getAsJsonObject());
                     runConfigurations.add(config);
                 } catch (Exception exception) {
-                    Railroad.LOGGER.error("Failed to load run configuration for project: {}", this.project.path(),
+                    Railroad.LOGGER.error("Failed to load run configuration for project: {}", this.project.getPath(),
                         exception);
                 }
             }

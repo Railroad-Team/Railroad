@@ -365,12 +365,14 @@ public class KeybindsList extends RRVBox {
                 continue;
             }
 
+            KeybindHandler.getKeybind(id).getKeys().clear();
+
             for (JsonElement keyCombo : keyList) {
                 String[] parts = keyCombo.getAsString().split(";");
                 KeyCode keyCode = KeyCode.valueOf(parts[0]);
 
                 if (parts.length < 2 || parts[1].isBlank()) {
-                    KeybindHandler.getKeybind(id).addKey(keyCode, (KeyCombination.Modifier) null);
+                    KeybindHandler.getKeybind(id).addKey(keyCode);
                     continue;
                 }
 

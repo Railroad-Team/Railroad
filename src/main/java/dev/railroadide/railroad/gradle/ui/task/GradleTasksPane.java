@@ -1,10 +1,12 @@
 package dev.railroadide.railroad.gradle.ui.task;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.gradle.ui.GradleTreeBuilder;
 import dev.railroadide.railroad.gradle.ui.GradleTreeViewPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroadplugin.dto.RailroadGradleTask;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
 import dev.railroadide.railroadplugin.dto.RailroadProject;
@@ -17,6 +19,8 @@ import java.util.Optional;
 public class GradleTasksPane extends GradleTreeViewPane<RailroadGradleTask> {
     public GradleTasksPane(Project project) {
         super(project);
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Gradle.GRADLE_TASKS, this);
     }
 
     @Override

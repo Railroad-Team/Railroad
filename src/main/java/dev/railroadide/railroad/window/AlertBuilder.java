@@ -34,6 +34,7 @@ import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+// TODO: Add a way to make the content translatable with arguments
 @SuppressWarnings("unchecked")
 public class AlertBuilder<T extends AlertBuilder<?>> {
     protected String title = "";

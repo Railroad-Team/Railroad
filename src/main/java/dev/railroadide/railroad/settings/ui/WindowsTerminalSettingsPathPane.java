@@ -30,9 +30,9 @@ public class WindowsTerminalSettingsPathPane extends RRHBox {
 
         pathField.setLocalizedPlaceholder(
             "railroad.settings.appearance.terminal.windows_terminal_settings_path.placeholder");
-        settingsPath.addListener(
-            (observable, oldValue, newValue) -> pathField.setText(newValue == null ? "" : Objects.toString(newValue)));
-        pathField.textProperty().addListener((obs, oldText, newText) -> {
+        settingsPath
+            .addListener((_, _, newValue) -> pathField.setText(newValue == null ? "" : Objects.toString(newValue)));
+        pathField.textProperty().addListener((_, _, newText) -> {
             if (newText == null || newText.isBlank()) {
                 setSettingsPath(null);
             } else {

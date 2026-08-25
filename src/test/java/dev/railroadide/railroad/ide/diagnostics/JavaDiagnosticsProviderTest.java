@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.diagnostics;
 
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
 import dev.railroadide.railroad.ide.diagnostics.inspections.CoreNameResolutionInspection;
@@ -21,6 +22,7 @@ import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import javafx.scene.image.Image;
+import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
 import javax.tools.Diagnostic;
@@ -131,6 +133,8 @@ class JavaDiagnosticsProviderTest {
     }
 
     private static void ensureJavaLanguageSupportRegistered() {
+        WorkspaceModes.initialize();
+
         if (!LanguageSupportRegistry.contains(JavaLanguageSupport.LANGUAGE_ID)) {
             LanguageSupportRegistry.register(new JavaLanguageSupport());
         }
@@ -182,6 +186,11 @@ class JavaDiagnosticsProviderTest {
 
     private record TestProject(Path path) implements Project {
         @Override
+        public Path getPath() {
+            return path;
+        }
+
+        @Override
         public String getAlias() {
             return path.getFileName() == null ? path.toString() : path.getFileName().toString();
         }
@@ -202,7 +211,12 @@ class JavaDiagnosticsProviderTest {
         }
 
         @Override
-        public void open() {
+        public void open(Stage stage) {
+            throw unsupported();
+        }
+
+        @Override
+        public void close() {
             throw unsupported();
         }
 

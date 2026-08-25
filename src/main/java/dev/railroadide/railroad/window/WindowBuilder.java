@@ -2,6 +2,7 @@ package dev.railroadide.railroad.window;
 
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.utility.MacUtils;
@@ -12,6 +13,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
+import javafx.stage.WindowEvent;
 import org.joml.Matrix3x2d;
 
 import java.io.InputStream;
@@ -246,6 +248,13 @@ public class WindowBuilder {
 
         if (scene != null) {
             stage.setScene(scene);
+            stage.addEventHandler(WindowEvent.WINDOW_HIDDEN, _ -> {
+                try {
+                    Services.UI_MANAGER.releaseScene(scene);
+                } finally {
+                    ThemeManager.release(scene);
+                }
+            });
         }
 
         if (iconStream != null) {

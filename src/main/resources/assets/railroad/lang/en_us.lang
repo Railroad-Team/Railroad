@@ -270,11 +270,22 @@ railroad.settings.keybinds.recording=Recording...
 
 # Keybinds categories
 railroad.settings.keybinds.category.general=General
+railroad.settings.keybinds.category.view_modes=View Modes
 
 # Keybinds
+railroad.settings.keybinds.open_project_explorer_item=Open selected project item
+railroad.settings.keybinds.delete_project_explorer_item=Delete selected project item
+railroad.settings.keybinds.cut=Cut
 railroad.settings.keybinds.copy=Copy
 railroad.settings.keybinds.paste=Paste
+railroad.settings.keybinds.create_file=Create file
+railroad.settings.keybinds.create_folder=Create folder
+railroad.settings.keybinds.rename_project_explorer_item=Rename selected project item
+railroad.settings.keybinds.open_in_file_explorer=Open in file explorer
+railroad.settings.keybinds.open_in_terminal=Open in terminal
 railroad.settings.keybinds.fullscreen=Fullscreen
+railroad.settings.keybinds.view_mode_code=Switch to Code view mode
+railroad.settings.keybinds.view_mode_git=Switch to Git view mode
 
 # Plugin settings
 railroad.window.plugins.title=Plugins
@@ -331,6 +342,12 @@ railroad.settings.projects.defaults.author.default_author.title=Override default
 railroad.settings.projects.defaults.author.default_author.description=Set the author name Railroad pre-fills during project onboarding. Leave blank to fall back to the system user name.
 railroad.settings.projects.defaults.author.projects.default_author.title=Override default project author
 railroad.settings.projects.defaults.author.projects.default_author.description=Set the author name Railroad pre-fills during project onboarding. Leave blank to fall back to the system user name.
+
+railroad.settings.projects.project.title=Project
+railroad.settings.projects.project.description=Configure settings related to opening of projects.
+railroad.settings.projects.project.open_last_project_on_start.title=Reopen last project on startup.
+railroad.settings.projects.project.open_last_project_on_start.description=Reopen the most recently opened project when railroad starts up, skipping the welcome page.
+
 
 # Theme management
 railroad.home.settings.appearance.theme=Select a Theme
@@ -493,10 +510,11 @@ railroad.importprojects.repositoryurl.placeholder=Enter the repository URL to cl
 railroad.menu.file=File
 railroad.menu.file.new_file=New File
 railroad.menu.file.open_file=Open File...
+railroad.menu.file.open_project=Open Project...
 railroad.menu.file.save=Save
 railroad.menu.file.save_as=Save As...
-railroad.menu.file.export_diagnostics=Export Project Diagnostics...
 railroad.menu.file.exit=Exit
+railroad.menu.file.recent_projects=Recent Projects
 
 railroad.menu.edit=Edit
 railroad.menu.edit.undo=Undo
@@ -508,10 +526,30 @@ railroad.menu.edit.find=Find...
 railroad.menu.edit.replace=Replace...
 
 railroad.menu.view=View
+railroad.menu.view.mode=View Mode
+railroad.menu.view.tool_windows=Tool Windows
+railroad.menu.view.reset_current_layout=Reset Current Layout
+railroad.menu.view.reset_all_layouts=Reset All Layouts
 railroad.menu.view.project_explorer=Project Explorer
 railroad.menu.view.properties=Properties
 railroad.menu.view.console=Console
 railroad.menu.view.full_screen=Toggle Full Screen
+railroad.ide.view_mode.code=Code
+railroad.ide.view_mode.git=Git
+railroad.ide.view_mode.git_detecting=Detecting Git repository…
+railroad.ide.view_mode.git_unavailable=No Git repository detected
+railroad.ide.view_mode.git_detection_failed=Git detection failed — click to retry
+railroad.ide.dock_item.project=Project
+railroad.ide.dock_item.git_overview=Git Overview
+railroad.ide.dock_item.git_commit=Git Commit
+railroad.ide.dock_item.git_commit_list=Git Commit List
+railroad.ide.dock_item.git_branches=Git Branches
+railroad.ide.dock_item.git_remotes=Git Remotes
+railroad.ide.dock_item.git_sync=Git Sync
+railroad.ide.dock_item.git_stash=Git Stash
+railroad.ide.dock_item.gradle=Gradle
+railroad.ide.dock_item.console=Console
+railroad.ide.dock_item.terminal=Terminal
 
 railroad.menu.run=Run
 railroad.menu.run.run=Run
@@ -1020,3 +1058,20 @@ railroad.git.push.strategy.matching=Matching
 railroad.git.push.strategy.nothing=Nothing
 railroad.git.sync.controls.remote.none=No remotes
 railroad.git.commit.details.unknown=Unknown
+
+# =============================================================================
+# Recent Projects
+# =============================================================================
+railroad.recent_projects.dialog.title=Open Project
+railroad.recent_projects.dialog.this_window_button=This Window
+railroad.recent_projects.dialog.new_window_button=New Window
+railroad.recent_projects.dialog.cancel_button=Cancel
+railroad.recent_projects.dialog.description=Where would you like to open the project '%s'?
+
+# =============================================================================
+# Markdown
+# =============================================================================
+railroad.markdown.image_dialog.heading=Insert Image
+railroad.markdown.image_dialog.image_alt_text=Alt Text
+railroad.markdown.image_dialog.image_uri_prompt=Image URI
+railroad.markdown.image_dialog.insert=Insert

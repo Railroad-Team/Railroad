@@ -1,10 +1,13 @@
 package dev.railroadide.railroad.ide.ui.git.stash;
 
-import dev.railroadide.railroad.ide.IDESetup;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.ui.IDEContentRouter;
+import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.ide.ui.git.commit.changes.*;
 import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.utility.TimeFormatter;
@@ -57,6 +60,7 @@ public class GitStashPane extends RRVBox {
     private String selectedStashRef;
 
     public GitStashPane(Project project) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_STASH, this);
         this.project = project;
         this.gitManager = project.getGitManager();
         getStyleClass().add("git-stash-pane");
@@ -113,11 +117,11 @@ public class GitStashPane extends RRVBox {
 
         getChildren().addAll(controlsRow, stashesList, stashChangesTree, actionsRow);
 
-        stashesList.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+        stashesList.getSelectionModel().selectedItemProperty().addListener((_, _, newValue) -> {
             updateActionState();
             onStashSelectionChanged(newValue);
         });
-        stashChangesTree.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+        stashChangesTree.getSelectionModel().selectedItemProperty().addListener((_, _, newValue) -> {
             if (newValue == null || !(newValue.getValue() instanceof FileItem fileItem) || selectedStashRef == null)
                 return;
 
@@ -128,10 +132,10 @@ public class GitStashPane extends RRVBox {
         applyButton.setOnAction(_ -> onApplyStash());
         popButton.setOnAction(_ -> onPopStash());
         dropButton.setOnAction(_ -> onDropStash());
-        gitManager.repoStatusProperty().addListener((obs, oldValue, newValue) -> refreshStashes());
+        gitManager.repoStatusProperty().addListener((_, _, _) -> refreshStashes());
 
         elapsedTimeline.setCycleCount(Timeline.INDEFINITE);
-        sceneProperty().addListener((obs, oldScene, newScene) -> {
+        sceneProperty().addListener((_, _, newScene) -> {
             if (newScene == null) {
                 elapsedTimeline.stop();
             } else {
@@ -217,8 +221,7 @@ public class GitStashPane extends RRVBox {
     }
 
     private void loadStashChanges(String stashRef) {
-        CompletableFuture
-            .supplyAsync(() -> gitManager.getStashChanges(stashRef))
+        CompletableFuture.supplyAsync(() -> gitManager.getStashChanges(stashRef))
             .exceptionally(_ -> List.of())
             .thenAccept(changes -> Platform.runLater(() -> {
                 if (!Objects.equals(selectedStashRef, stashRef))
@@ -282,38 +285,34 @@ public class GitStashPane extends RRVBox {
     }
 
     private void openDiffForStashFile(String stashRef, GitFileChange change) {
-        var scene = getScene();
-        if (scene == null || scene.getRoot() == null || stashRef == null || change == null)
+        if (stashRef == null || change == null)
             return;
 
-        var root = scene.getRoot();
-        var tabPane = IDESetup.findBestPaneForFiles(root).orElse(null);
-        if (tabPane == null)
-            return;
+        IDEContentRouter.routeActive(WorkspaceContentTargets.GIT_EDITOR, tabPane -> {
+            Tab diffTab = tabPane.getTabs().stream()
+                .filter(tab -> tab.getContent() instanceof GitDiffPane)
+                .findFirst()
+                .orElseGet(() -> {
+                    var diffPane = new GitDiffPane(project);
+                    Tab created = tabPane.addTab("Git Diff", diffPane);
+                    created.textProperty().bind(diffPane.titleProperty());
+                    return created;
+                });
 
-        Tab diffTab = tabPane.getTabs().stream()
-            .filter(tab -> tab.getContent() instanceof GitDiffPane)
-            .findFirst()
-            .orElseGet(() -> {
-                var diffPane = new GitDiffPane(project);
-                Tab created = tabPane.addTab("Git Diff", diffPane);
-                created.textProperty().bind(diffPane.titleProperty());
-                return created;
-            });
+            tabPane.getSelectionModel().select(diffTab);
+            var diffPane = (GitDiffPane) diffTab.getContent();
+            String title = "Git Diff: " + change.path().getFileName();
+            diffPane.setExternalDiff(title, "");
 
-        tabPane.getSelectionModel().select(diffTab);
-        var diffPane = (GitDiffPane) diffTab.getContent();
-        String title = "Git Diff: " + change.path().getFileName();
-        diffPane.setExternalDiff(title, "");
+            CompletableFuture
+                .supplyAsync(() -> gitManager.getStashDiff(stashRef, change.path()).orElse(""))
+                .thenAccept(diffText -> Platform.runLater(() -> {
+                    if (!Objects.equals(selectedStashRef, stashRef))
+                        return;
 
-        CompletableFuture
-            .supplyAsync(() -> gitManager.getStashDiff(stashRef, change.path()).orElse(""))
-            .thenAccept(diffText -> Platform.runLater(() -> {
-                if (!Objects.equals(selectedStashRef, stashRef))
-                    return;
-
-                diffPane.setExternalDiff(title, diffText);
-            }));
+                    diffPane.setExternalDiff(title, diffText);
+                }));
+        });
     }
 
     private static class GitStashEntryCell extends ListCell<GitStashEntry> {

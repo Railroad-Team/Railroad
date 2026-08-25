@@ -28,7 +28,7 @@ public class ProjectTypePane extends RRVBox {
 
         projectTypeListView = new RRListView<>();
         projectTypeListView.getStyleClass().add("project-type-list");
-        projectTypeListView.setCellFactory(param -> new ProjectTypeCell());
+        projectTypeListView.setCellFactory(_ -> new ProjectTypeCell());
         projectTypeListView.getItems().addAll(allProjectTypes);
         projectTypeListView.getSelectionModel().selectFirst();
         projectTypeListView.setListViewSize(RRListView.ListViewSize.MEDIUM);

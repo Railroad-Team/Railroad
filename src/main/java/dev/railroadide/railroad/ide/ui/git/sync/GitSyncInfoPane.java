@@ -1,8 +1,10 @@
 package dev.railroadide.railroad.ide.ui.git.sync;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedComboBox;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.vcs.git.GitManager;
@@ -14,6 +16,7 @@ import javafx.scene.control.Label;
 
 public class GitSyncInfoPane extends RRVBox {
     public GitSyncInfoPane(GitManager gitManager) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_SYNC_INFO, this);
         getStyleClass().add("git-sync-info-pane");
 
         var trackingInfoPane = new GitSyncTrackingInfoPane(gitManager);
@@ -58,7 +61,7 @@ public class GitSyncInfoPane extends RRVBox {
 
             update(gitManager.getRepoStatus(), gitManager.getUpstream().orElse(null));
             gitManager.repoStatusProperty()
-                .addListener((obs, oldStatus, newStatus) -> update(newStatus, gitManager.getUpstream().orElse(null)));
+                .addListener((_, _, newStatus) -> update(newStatus, gitManager.getUpstream().orElse(null)));
         }
 
         private void update(GitRepoStatus status, GitUpstream upstream) {
@@ -85,14 +88,14 @@ public class GitSyncInfoPane extends RRVBox {
                 aheadBehindBox);
 
             update(gitManager.getRepoStatus());
-            gitManager.repoStatusProperty().addListener((obs, oldStatus, newStatus) -> update(newStatus));
+            gitManager.repoStatusProperty().addListener((_, _, newStatus) -> update(newStatus));
         }
 
         private void update(GitRepoStatus status) {
             aheadBehindBox.getChildren().clear();
 
-            int aheadCount = status != null ? (int) status.ahead() : 0;
-            int behindCount = status != null ? (int) status.behind() : 0;
+            int aheadCount = status != null ? status.ahead() : 0;
+            int behindCount = status != null ? status.behind() : 0;
 
             if (aheadCount > 0) {
                 var aheadText = new LocalizedText("railroad.git.sync.aheadBehind.ahead", aheadCount);
@@ -131,7 +134,7 @@ public class GitSyncInfoPane extends RRVBox {
             var pullStrategyLabel = new LocalizedText("railroad.git.sync.strategy.pull");
             pullStrategyLabel.getStyleClass().add("git-sync-strategy-label");
             pullStrategyComboBox.getItems().addAll(GitPullStrategy.values());
-            pullStrategyComboBox.setOnAction(e -> {
+            pullStrategyComboBox.setOnAction(_ -> {
                 GitPullStrategy selectedStrategy = pullStrategyComboBox.getSelectionModel().getSelectedItem();
                 if (selectedStrategy != null) {
                     gitManager.setPullStrategy(selectedStrategy);
@@ -162,7 +165,7 @@ public class GitSyncInfoPane extends RRVBox {
                 pushStrategyHbox);
 
             updateSelections(gitManager);
-            gitManager.repoStatusProperty().addListener((obs, oldStatus, newStatus) -> updateSelections(gitManager));
+            gitManager.repoStatusProperty().addListener((_, _, _) -> updateSelections(gitManager));
         }
 
         private void updateSelections(GitManager gitManager) {

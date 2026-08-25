@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.utility;
 
-import java.awt.*;
-import java.io.IOException;
+import dev.railroadide.railroad.Railroad;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -16,10 +16,9 @@ public class DesktopUtils {
             throw new IllegalArgumentException(url + " is not a valid URL");
 
         try {
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().browse(new URI(url));
-            }
-        } catch (IOException | URISyntaxException exception) {
+            var uri = new URI(url);
+            Railroad.getHostServicess().showDocument(uri.toString());
+        } catch (URISyntaxException exception) {
             throw new RuntimeException("Failed to open URL: " + url, exception);
         }
     }
