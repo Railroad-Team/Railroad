@@ -14,13 +14,12 @@ import java.util.Set;
 
 public final class SyntaxTreeJavaSyntaxHighlighting {
     private static final Set<String> OPERATOR_TOKENS = Set.of(
-            "=", ">", "<", "!", "?", ":", "->", "::",
-            "==", ">=", "<=", "!=", "&&", "||",
-            "+", "-", "++", "--", "*", "/", "%", "~",
-            "&", "|", "^", "<<", ">>", ">>>",
-            "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=",
-            "<<=", ">>=", ">>>="
-    );
+        "=", ">", "<", "!", "?", ":", "->", "::",
+        "==", ">=", "<=", "!=", "&&", "||",
+        "+", "-", "++", "--", "*", "/", "%", "~",
+        "&", "|", "^", "<<", ">>", ">>>",
+        "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=",
+        "<<=", ">>=", ">>>=");
 
     private SyntaxTreeJavaSyntaxHighlighting() {
     }
@@ -59,7 +58,8 @@ public final class SyntaxTreeJavaSyntaxHighlighting {
             return "comment";
         if (kind.endsWith("_KEYWORD"))
             return "keyword";
-        if (kind.contains("STRING_LITERAL") || kind.contains("CHARACTER_LITERAL") || kind.contains("TEXT_BLOCK_LITERAL"))
+        if (kind.contains("STRING_LITERAL") || kind.contains("CHARACTER_LITERAL")
+            || kind.contains("TEXT_BLOCK_LITERAL"))
             return "literal";
         if (kind.contains("NUMBER_") || kind.contains("BOOLEAN_LITERAL") || kind.contains("NULL_LITERAL"))
             return "literal";

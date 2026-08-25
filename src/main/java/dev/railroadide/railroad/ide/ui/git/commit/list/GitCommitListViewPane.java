@@ -81,8 +81,10 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
             }
         }));
         reloadCommitMetadata(project);
-        project.getGitManager().commitMetadataRevisionProperty().addListener((obs, oldRevision, newRevision) -> reloadCommitMetadata(project));
-        project.getGitManager().getAllCommits(this::handleCommitsPage, () -> Platform.runLater(this::handleCommitsDone), 200);
+        project.getGitManager().commitMetadataRevisionProperty()
+            .addListener((obs, oldRevision, newRevision) -> reloadCommitMetadata(project));
+        project.getGitManager().getAllCommits(this::handleCommitsPage, () -> Platform.runLater(this::handleCommitsDone),
+            200);
         ShutdownHooks.addHook(executorService::shutdownNow);
     }
 
@@ -117,8 +119,9 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
     private void handleCommitsDone() {
         loadingCommits = false;
         setPlaceholder(placeholderText);
-        if (hasActiveFilters())
+        if (hasActiveFilters()) {
             requestFilterUpdate(0);
+        }
     }
 
     public void setSearchFilter(String searchText) {
@@ -156,8 +159,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
                     commit.subject(),
                     commit.authorName(),
                     commit.authorEmail(),
-                    commit.hash()
-                ).toLowerCase());
+                    commit.hash()).toLowerCase());
                 if (!searchable.contains(searchText))
                     continue;
             }
@@ -320,27 +322,23 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
                 6.0, 0.0,
                 12.0, 6.0,
                 6.0, 12.0,
-                0.0, 6.0
-            );
+                0.0, 6.0);
             revertIcon.getPoints().addAll(
                 6.0, 0.0,
                 12.0, 12.0,
-                0.0, 12.0
-            );
+                0.0, 12.0);
             squashIcon.getPoints().addAll(
                 0.0, 0.0,
                 12.0, 0.0,
                 12.0, 12.0,
-                0.0, 12.0
-            );
+                0.0, 12.0);
             initialIcon.getPoints().addAll(
                 6.0, 0.0,
                 11.5, 3.0,
                 11.5, 9.0,
                 6.0, 12.0,
                 0.5, 9.0,
-                0.5, 3.0
-            );
+                0.5, 3.0);
 
             getChildren().addAll(regularIcon, mergeIcon, revertIcon, squashIcon, initialIcon);
             setCommit(null);
@@ -375,7 +373,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
         }
     }
 
-        private class GitCommitMiniDetailsPane extends RRVBox {
+    private class GitCommitMiniDetailsPane extends RRVBox {
         private final Text message = new Text();
         private final Text author = new Text();
         private final Text hash = new Text();
@@ -452,9 +450,8 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
             getChildren().add(timestampText);
 
             sceneProperty().addListener((obs, oldScene, newScene) -> {
-                if (updateTimeline == null) {
+                if (updateTimeline == null)
                     return;
-                }
 
                 if (newScene == null) {
                     updateTimeline.stop();
@@ -469,7 +466,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> {
             long timestampMillis = getCommitTimestampEpochSeconds(commit) * 1000L;
             timestampText.setText(TimeFormatter.formatElapsed(timestampMillis));
             tooltip.setText(TimeFormatter.formatDateTime(timestampMillis));
-            updateTimeline = new Timeline(new KeyFrame(Duration.seconds(1), $ -> {
+            updateTimeline = new Timeline(new KeyFrame(Duration.seconds(1), _ -> {
                 timestampText.setText(TimeFormatter.formatElapsed(timestampMillis));
                 tooltip.setText(TimeFormatter.formatDateTime(timestampMillis));
             }));

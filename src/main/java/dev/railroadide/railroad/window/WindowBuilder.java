@@ -42,11 +42,13 @@ public class WindowBuilder {
         return createAlert(alertType, title, subtitle, content, null);
     }
 
-    public static WindowBuilder createAlert(AlertType alertType, String title, String subtitle, String content, Runnable onClose) {
+    public static WindowBuilder createAlert(AlertType alertType, String title, String subtitle, String content,
+        Runnable onClose) {
         return createAlert(alertType, title, subtitle, content, null, onClose);
     }
 
-    public static WindowBuilder createAlert(AlertType alertType, String title, String subtitle, String content, Consumer<AlertBuilder<?>> alertModifier, Runnable onClose) {
+    public static WindowBuilder createAlert(AlertType alertType, String title, String subtitle, String content,
+        Consumer<AlertBuilder<?>> alertModifier, Runnable onClose) {
         AlertBuilder<?> alertBuilder = AlertBuilder.create()
             .alertType(alertType)
             .title(subtitle)
@@ -77,18 +79,19 @@ public class WindowBuilder {
             subtitle,
             StringUtils.exceptionToString(exception),
             alertBuilder -> alertBuilder.translateContent(false),
-            onClose
-        ).build();
+            onClose).build();
     }
 
-    public static Stage createDialog(String title, String subtitle, String content, Runnable onConfirm, Runnable onCancel) {
+    public static Stage createDialog(String title, String subtitle, String content, Runnable onConfirm,
+        Runnable onCancel) {
         return createDialog(title, subtitle, content, dialogBuilder -> {
             dialogBuilder.onConfirm(onConfirm);
             dialogBuilder.onCancel(onCancel);
         });
     }
 
-    public static Stage createDialog(String title, String subtitle, String content, Consumer<DialogBuilder> dialogModifier) {
+    public static Stage createDialog(String title, String subtitle, String content,
+        Consumer<DialogBuilder> dialogModifier) {
         DialogBuilder dialogBuilder = DialogBuilder.create()
             .title(subtitle)
             .content(content);
@@ -255,12 +258,24 @@ public class WindowBuilder {
 
         stage.initModality(modality);
 
-        if (minWidth >= 0) stage.setMinWidth(minWidth);
-        if (minHeight >= 0) stage.setMinHeight(minHeight);
-        if (width >= 0) stage.setWidth(width);
-        if (height >= 0) stage.setHeight(height);
-        if (maxWidth >= 0) stage.setMaxWidth(maxWidth);
-        if (maxHeight >= 0) stage.setMaxHeight(maxHeight);
+        if (minWidth >= 0) {
+            stage.setMinWidth(minWidth);
+        }
+        if (minHeight >= 0) {
+            stage.setMinHeight(minHeight);
+        }
+        if (width >= 0) {
+            stage.setWidth(width);
+        }
+        if (height >= 0) {
+            stage.setHeight(height);
+        }
+        if (maxWidth >= 0) {
+            stage.setMaxWidth(maxWidth);
+        }
+        if (maxHeight >= 0) {
+            stage.setMaxHeight(maxHeight);
+        }
 
         // If caller did not specify an explicit size, use the scene's preferred size.
         if (scene != null && width < 0 && height < 0) {

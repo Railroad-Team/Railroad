@@ -61,8 +61,8 @@ public class GradleRunConfigurationData extends RunConfigurationData {
 
         ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache = FXCollections.observableHashMap();
         ObjectProperty<Path> gradleProjectPathProperty = new SimpleObjectProperty<>(this.gradleProjectPath);
-        gradleProjectPathProperty.addListener((observable, oldValue, newValue) ->
-            loadGradleTasksAsync(project, newValue, gradleTasksCache));
+        gradleProjectPathProperty
+            .addListener((observable, oldValue, newValue) -> loadGradleTasksAsync(project, newValue, gradleTasksCache));
         loadGradleTasksAsync(project, gradleProjectPathProperty.get(), gradleTasksCache);
 
         return createBaseFormBuilder(project, configuration)
@@ -71,8 +71,8 @@ public class GradleRunConfigurationData extends RunConfigurationData {
                     .required()
                     .text(() -> this.task != null ? this.task : "")
                     .promptText("railroad.runconfig.gradle.configuration.task.prompt")
-                    .autoComplete(query ->
-                        filterGradleTaskSuggestions(query, gradleProjectPathProperty.get(), gradleTasksCache))
+                    .autoComplete(
+                        query -> filterGradleTaskSuggestions(query, gradleProjectPathProperty.get(), gradleTasksCache))
                     .autoCompleteSuggestionCellFactory(createGradleTaskSuggestionCellFactory(
                         gradleProjectPathProperty, gradleTasksCache))
                     .autoCompleteShowSuggestionsOnEmpty(true)
@@ -85,7 +85,8 @@ public class GradleRunConfigurationData extends RunConfigurationData {
                         return ValidationResult.ok();
                     })
                     .build())
-                .appendComponent(FormComponent.directoryChooser("gradleProjectPath", "railroad.runconfig.gradle.configuration.projectPath.label")
+                .appendComponent(FormComponent
+                    .directoryChooser("gradleProjectPath", "railroad.runconfig.gradle.configuration.projectPath.label")
                     .required()
                     .defaultPath(this.gradleProjectPath)
                     .validator(ProjectValidators::validateGradleProjectPath)
@@ -107,26 +108,29 @@ public class GradleRunConfigurationData extends RunConfigurationData {
                         this.gradleProjectPath = normalizedPath;
                     })
                     .build())
-                .appendComponent(FormComponent.textField("environmentVariables", "railroad.runconfig.gradle.configuration.envVariables.label")
+                .appendComponent(FormComponent
+                    .textField("environmentVariables", "railroad.runconfig.gradle.configuration.envVariables.label")
                     .required()
                     .text(() -> StringUtils.environmentVariablesToString(this.environmentVariables))
                     .promptText("railroad.runconfig.gradle.configuration.envVariables.prompt")
-                    .validator(textField -> !StringUtils.isValidEnvironmentVariablesString(textField.getText()) ?
-                        ValidationResult.error("railroad.runconfig.gradle.configuration.envVariables.invalid") :
-                        ValidationResult.ok())
+                    .validator(textField -> !StringUtils.isValidEnvironmentVariablesString(textField.getText())
+                        ? ValidationResult.error("railroad.runconfig.gradle.configuration.envVariables.invalid")
+                        : ValidationResult.ok())
                     .build())
-                .appendComponent(FormComponent.textField("vmOptions", "railroad.runconfig.gradle.configuration.vmOptions.label")
-                    .required()
-                    .text(() -> StringUtils.stringArrayToString(this.vmOptions, " "))
-                    .promptText("railroad.runconfig.gradle.configuration.vmOptions.prompt")
-                    .build())
-                .appendComponent(FormComponent.comboBox("javaHome", "railroad.runconfig.gradle.configuration.javaHome.label", JDK.class)
+                .appendComponent(
+                    FormComponent.textField("vmOptions", "railroad.runconfig.gradle.configuration.vmOptions.label")
+                        .required()
+                        .text(() -> StringUtils.stringArrayToString(this.vmOptions, " "))
+                        .promptText("railroad.runconfig.gradle.configuration.vmOptions.prompt")
+                        .build())
+                .appendComponent(FormComponent
+                    .comboBox("javaHome", "railroad.runconfig.gradle.configuration.javaHome.label", JDK.class)
                     .required()
                     .defaultValue(this::getJavaHome)
                     .items(JDKManager::getAvailableJDKs)
                     .translate(false)
                     .buttonCell(new DetectedJdkListPane.JdkCell())
-                    .cellFactory($ -> new DetectedJdkListPane.JdkCell())
+                    .cellFactory(_ -> new DetectedJdkListPane.JdkCell())
                     .keyFunction(jdk -> jdk != null ? jdk.path().toString() : "")
                     .valueOfFunction(jdkPath -> JDKManager.getAvailableJDKs()
                         .stream()
@@ -134,11 +138,12 @@ public class GradleRunConfigurationData extends RunConfigurationData {
                         .findFirst()
                         .orElse(null))
                     .bindComboBoxTo(javaHomeComboBoxProperty)
-                    .build())
-            ).build();
+                    .build()))
+            .build();
     }
 
-    private List<String> buildGradleTaskSuggestions(Path gradleProjectPath, ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
+    private List<String> buildGradleTaskSuggestions(Path gradleProjectPath,
+        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
         if (gradleProjectPath == null)
             return List.of();
 
@@ -154,8 +159,9 @@ public class GradleRunConfigurationData extends RunConfigurationData {
                 continue;
 
             String taskName = task.getName();
-            if (taskName != null && !taskName.isBlank())
+            if (taskName != null && !taskName.isBlank()) {
                 suggestions.add(taskName);
+            }
 
             DomainObjectSet<? extends RailroadGradleTaskArgument> options = task.getArguments();
             if (options != null && !options.isEmpty()) {
@@ -172,12 +178,11 @@ public class GradleRunConfigurationData extends RunConfigurationData {
     }
 
     private Collection<String> filterGradleTaskSuggestions(String query, Path gradleProjectPath,
-                                                           ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
+        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
         List<String> suggestions = buildGradleTaskSuggestions(gradleProjectPath, gradleTasksCache);
         String token = currentToken(query);
-        if (token.isBlank()) {
+        if (token.isBlank())
             return suggestions;
-        }
 
         String normalized = token.toLowerCase(Locale.ROOT);
         return suggestions.stream()
@@ -223,7 +228,7 @@ public class GradleRunConfigurationData extends RunConfigurationData {
     }
 
     private @Nullable String findGradleTaskDescription(String taskOrOptionName, Path gradleProjectPath,
-                                                       ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
+        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
         if (taskOrOptionName == null || gradleProjectPath == null)
             return null;
 
@@ -258,7 +263,8 @@ public class GradleRunConfigurationData extends RunConfigurationData {
         return null;
     }
 
-    private void loadGradleTasksAsync(Project project, Path gradleProjectPath, ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
+    private void loadGradleTasksAsync(Project project, Path gradleProjectPath,
+        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
         if (gradleProjectPath == null) {
             if (Platform.isFxApplicationThread()) {
                 gradleTasksCache.clear();
@@ -280,7 +286,8 @@ public class GradleRunConfigurationData extends RunConfigurationData {
 
                 Platform.runLater(() -> {
                     gradleTasksCache.put(gradleProjectPath, tasks);
-                    Railroad.LOGGER.debug("Cached {} Gradle tasks for {}", tasks != null ? tasks.size() : 0, gradleProjectPath);
+                    Railroad.LOGGER.debug("Cached {} Gradle tasks for {}", tasks != null ? tasks.size() : 0,
+                        gradleProjectPath);
                 });
             });
     }
@@ -330,7 +337,8 @@ public class GradleRunConfigurationData extends RunConfigurationData {
         applyBaseFormData(formData);
         this.task = formData.get("task", String.class);
         this.gradleProjectPath = Path.of(formData.get("gradleProjectPath", String.class));
-        this.environmentVariables = StringUtils.stringToEnvironmentVariables(formData.get("environmentVariables", String.class));
+        this.environmentVariables = StringUtils
+            .stringToEnvironmentVariables(formData.get("environmentVariables", String.class));
         this.vmOptions = StringUtils.stringToStringArray(formData.get("vmOptions", String.class), " ");
         this.javaHome = formData.get("javaHome", JDK.class);
     }

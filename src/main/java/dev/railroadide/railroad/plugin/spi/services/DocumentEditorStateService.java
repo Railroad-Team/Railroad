@@ -38,13 +38,14 @@ public interface DocumentEditorStateService {
      *
      * @return the active {@link TextEditorPane}, or null if no editor is active
      */
-    @Nullable TextEditorPane getActiveEditorPane();
+    @Nullable
+    TextEditorPane getActiveEditorPane();
 
     /**
      * Sets the active text editor and its associated language ID.
      * This method should be called by the IDE when the active editor changes.
      *
-     * @param editor     the active {@link TextEditorPane}, or null if no editor is active
+     * @param editor the active {@link TextEditorPane}, or null if no editor is active
      * @param languageId the language ID of the document in the active editor, or null if unknown
      */
     void setActiveEditor(@Nullable TextEditorPane editor, @Nullable String languageId);

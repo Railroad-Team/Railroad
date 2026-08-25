@@ -14,13 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record LocalVariableDeclarationStatement(
-        Span span,
-        List<Annotation> annotations,
-        List<Modifier> modifiers,
-        TypeRef type,
-        boolean isVar,
-        List<VariableDeclarator> declarations
-) implements Statement {
+    Span span,
+    List<Annotation> annotations,
+    List<Modifier> modifiers,
+    TypeRef type,
+    boolean isVar,
+    List<VariableDeclarator> declarations) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.LOCAL_VARIABLE_DECLARATION_STATEMENT;

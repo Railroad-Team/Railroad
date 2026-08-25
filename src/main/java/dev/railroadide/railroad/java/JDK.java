@@ -63,6 +63,7 @@ public final class JDK {
 
     /**
      * Returns the absolute path to the JDK installation directory.
+     *
      * @return The path to the JDK.
      */
     public Path path() {
@@ -71,6 +72,7 @@ public final class JDK {
 
     /**
      * Returns the display name of this JDK.
+     *
      * @return The name of the JDK.
      */
     public String name() {
@@ -79,6 +81,7 @@ public final class JDK {
 
     /**
      * Returns the Java version of this JDK.
+     *
      * @return The Java version.
      */
     public JavaVersion version() {
@@ -87,6 +90,7 @@ public final class JDK {
 
     /**
      * Returns the brand of this JDK.
+     *
      * @return The JDK brand.
      */
     public Brand brand() {
@@ -95,6 +99,7 @@ public final class JDK {
 
     /**
      * Returns the command-line interface (CLI) utility for this JDK.
+     *
      * @return The JDKCLI instance.
      */
     public JDKCLI cli() {
@@ -121,17 +126,13 @@ public final class JDK {
      * Represents the brand or vendor of a JDK distribution.
      */
     public enum Brand {
-        ORACLE("oracle", "/images/Oracle-icon.svg"),
-        ADOPTIUM("temurin", "/images/Adoptium-icon.svg", "adoptopenjdk", "adoptium", "eclipse"),
-        AZUL("zulu", "/images/Azul-icon.svg", "azul"),
-        CORRETTO("corretto", FontAwesomeBrands.AMAZON, "amazon"),
-        BELL_SOFT("liberica", "/images/Liberica-icon.svg", "bellsoft"),
-        GRAAL("graalvm", "/images/GraalVM-icon.svg", "graal"),
-        SAP("sapmachine", "/images/SAP-icon.svg", "sap"),
-        RED_HAT("redhat", FontAwesomeBrands.REDHAT, "red hat", "rhel"),
-        MICROSOFT("microsoft", FontAwesomeBrands.MICROSOFT, "ms"),
-        IBM("ibm", "/images/IBM-icon.svg", "semeru"),
-        UNKNOWN("java", FontAwesomeBrands.JAVA);
+        ORACLE("oracle", "/images/Oracle-icon.svg"), ADOPTIUM("temurin", "/images/Adoptium-icon.svg", "adoptopenjdk",
+            "adoptium", "eclipse"), AZUL("zulu", "/images/Azul-icon.svg", "azul"), CORRETTO("corretto",
+                FontAwesomeBrands.AMAZON, "amazon"), BELL_SOFT("liberica", "/images/Liberica-icon.svg",
+                    "bellsoft"), GRAAL("graalvm", "/images/GraalVM-icon.svg", "graal"), SAP("sapmachine",
+                        "/images/SAP-icon.svg", "sap"), RED_HAT("redhat", FontAwesomeBrands.REDHAT, "red hat",
+                            "rhel"), MICROSOFT("microsoft", FontAwesomeBrands.MICROSOFT, "ms"), IBM("ibm",
+                                "/images/IBM-icon.svg", "semeru"), UNKNOWN("java", FontAwesomeBrands.JAVA);
 
         private final String key;
         private final String[] aliases;
@@ -142,6 +143,7 @@ public final class JDK {
 
         /**
          * Constructs a Brand with a key, Ikon, and optional aliases.
+         *
          * @param key The primary identifier for the brand.
          * @param icon The Ikon associated with the brand.
          * @param aliases Additional names or identifiers for the brand.
@@ -154,6 +156,7 @@ public final class JDK {
 
         /**
          * Constructs a Brand with a key, image path, and optional aliases.
+         *
          * @param key The primary identifier for the brand.
          * @param imagePath The path to the image icon associated with the brand.
          * @param aliases Additional names or identifiers for the brand.
@@ -166,6 +169,7 @@ public final class JDK {
 
         /**
          * Constructs a Brand with a key and an Ikon, with no aliases.
+         *
          * @param key The primary identifier for the brand.
          * @param icon The Ikon associated with the brand.
          */
@@ -175,6 +179,7 @@ public final class JDK {
 
         /**
          * Constructs a Brand with a key and an image path, with no aliases.
+         *
          * @param key The primary identifier for the brand.
          * @param imagePath The path to the image icon associated with the brand.
          */
@@ -184,6 +189,7 @@ public final class JDK {
 
         /**
          * Checks if this brand has an associated Ikon.
+         *
          * @return {@code true} if an Ikon is present, {@code false} otherwise.
          */
         public boolean isIkon() {
@@ -192,6 +198,7 @@ public final class JDK {
 
         /**
          * Checks if this brand has an associated image path.
+         *
          * @return {@code true} if an image path is present, {@code false} otherwise.
          */
         public boolean isImage() {

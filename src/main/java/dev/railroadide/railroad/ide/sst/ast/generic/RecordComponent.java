@@ -13,12 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record RecordComponent(
-        Span span,
-        List<Modifier> modifiers,
-        List<Annotation> annotations,
-        TypeRef type,
-        NameExpression name
-) implements AstNode {
+    Span span,
+    List<Modifier> modifiers,
+    List<Annotation> annotations,
+    TypeRef type,
+    NameExpression name) implements AstNode {
 
     @Override
     public AstKind kind() {

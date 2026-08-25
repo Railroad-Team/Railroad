@@ -122,5 +122,4 @@ class CoreBigDecimalEqualsInspectionTest {
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_BIG_DECIMAL_EQUALS".equals(d.code())));
     }
 
-
 }

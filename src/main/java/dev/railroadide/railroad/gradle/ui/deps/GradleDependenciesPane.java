@@ -23,7 +23,8 @@ public class GradleDependenciesPane extends GradleTreeViewPane<RailroadConfigura
     }
 
     @Override
-    protected Collection<RailroadConfiguration> getElementsFromModel(GradleModelService modelService, GradleBuildModel model) {
+    protected Collection<RailroadConfiguration> getElementsFromModel(GradleModelService modelService,
+        GradleBuildModel model) {
         return List.copyOf(modelService.getCachedModel()
             .map(GradleBuildModel::project)
             .map(RailroadProject::getModules)

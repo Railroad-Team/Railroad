@@ -11,7 +11,7 @@ import java.util.Optional;
 /**
  * A Gradle environment that overrides the JVM with a specified JDK.
  *
- * @param delegate    the original Gradle environment to delegate to
+ * @param delegate the original Gradle environment to delegate to
  * @param overrideJvm the JDK to use instead of the one from the delegate
  */
 record JdkOverridingEnvironment(GradleEnvironment delegate, JDK overrideJvm) implements GradleEnvironment {

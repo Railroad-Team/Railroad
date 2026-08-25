@@ -41,8 +41,7 @@ public final class SyntaxInternalFactory {
     public static SyntaxTree treeFromRootChildren(
         DocumentId documentId,
         DocumentUri documentUri,
-        List<? extends GreenElement> children
-    ) {
+        List<? extends GreenElement> children) {
         return treeFromRootChildren(documentId, documentUri, DocumentVersion.initial(), children);
     }
 
@@ -50,8 +49,7 @@ public final class SyntaxInternalFactory {
         DocumentId documentId,
         DocumentUri documentUri,
         DocumentVersion documentVersion,
-        List<? extends GreenElement> children
-    ) {
+        List<? extends GreenElement> children) {
         Objects.requireNonNull(documentId, "documentId");
         Objects.requireNonNull(documentUri, "documentUri");
         Objects.requireNonNull(documentVersion, "documentVersion");
@@ -64,8 +62,7 @@ public final class SyntaxInternalFactory {
 
     public static SyntaxTree treeFromRootChildren(
         TextDocumentSnapshot documentSnapshot,
-        List<? extends GreenElement> children
-    ) {
+        List<? extends GreenElement> children) {
         Objects.requireNonNull(documentSnapshot, "documentSnapshot");
         Objects.requireNonNull(children, "children");
         GreenNode rootGreen = GreenNode.root(children);
@@ -90,8 +87,7 @@ public final class SyntaxInternalFactory {
         DocumentId documentId,
         DocumentUri documentUri,
         DocumentVersion documentVersion,
-        GreenNode root
-    ) {
+        GreenNode root) {
         Objects.requireNonNull(documentId, "documentId");
         Objects.requireNonNull(documentUri, "documentUri");
         Objects.requireNonNull(documentVersion, "documentVersion");
@@ -99,8 +95,7 @@ public final class SyntaxInternalFactory {
             documentId,
             documentUri,
             documentVersion,
-            RedFactory.root(Objects.requireNonNull(root, "root"))
-        );
+            RedFactory.root(Objects.requireNonNull(root, "root")));
         SyntaxTreeValidator.validate(tree.root());
         return tree;
     }
@@ -109,8 +104,7 @@ public final class SyntaxInternalFactory {
         Objects.requireNonNull(documentSnapshot, "documentSnapshot");
         var tree = new SyntaxTree(
             documentSnapshot,
-            RedFactory.root(Objects.requireNonNull(root, "root"))
-        );
+            RedFactory.root(Objects.requireNonNull(root, "root")));
         SyntaxTreeValidator.validate(tree.root());
         return tree;
     }
@@ -133,7 +127,8 @@ public final class SyntaxInternalFactory {
         if (node instanceof RedElement redElement)
             return redElement.green();
 
-        throw new IllegalArgumentException("syntax node is not backed by internal red element: " + node.getClass().getName());
+        throw new IllegalArgumentException(
+            "syntax node is not backed by internal red element: " + node.getClass().getName());
     }
 
     public static String sourceText(GreenElement element) {

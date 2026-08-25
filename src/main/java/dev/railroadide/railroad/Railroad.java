@@ -63,9 +63,10 @@ public class Railroad extends Application {
             .logDirectory(ConfigHandler.getConfigDirectory().resolve("logs"))
             .configFile(ConfigHandler.getConfigDirectory().resolve("logger_config.json"))
             .addLogFile("latest.log")
-            .build()
-        ).build();
-    public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).build();
+            .build())
+        .build();
+    public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false)
+        .followSslRedirects(false).build();
     public static final Gson GSON = new GsonBuilder()
         .setPrettyPrinting()
         .disableHtmlEscaping()
@@ -107,17 +108,20 @@ public class Railroad extends Application {
             new InitializationStep("Initializing Git logger", GitLog::initialize),
             new InitializationStep("Initializing run configuration types", RunConfigurationTypes::initialize),
             new InitializationStep("Loading configuration", ConfigHandler::initConfig),
-            new InitializationStep("Scanning plugins", () -> PluginManager.loadPlugins(ConfigHandler.getConfigDirectory().resolve("plugins"))),
+            new InitializationStep("Scanning plugins",
+                () -> PluginManager.loadPlugins(ConfigHandler.getConfigDirectory().resolve("plugins"))),
             new InitializationStep("Registering keybinds", Keybinds::initialize),
             new InitializationStep("Scanning language files", Languages::initialize),
             new InitializationStep("Loading settings", Settings::initialize),
             new InitializationStep("Registering language supports", LanguageSupports::initialize),
             new InitializationStep("Registering language indexers", LanguageSupports::initializeLanguageIndexers),
-            new InitializationStep("Registering language index persistence", LanguageSupports::initializeLanguagePersistence),
+            new InitializationStep("Registering language index persistence",
+                LanguageSupports::initializeLanguagePersistence),
             new InitializationStep("Preparing settings handler", SettingsHandler::init),
             new InitializationStep("Preparing themes", ThemeManager::init),
             new InitializationStep("Finding Java versions", JDKManager::refreshJDKs),
-            new InitializationStep("Loading language", () -> L18n.loadLanguage(SettingsHandler.getValue(Settings.LANGUAGE))),
+            new InitializationStep("Loading language",
+                () -> L18n.loadLanguage(SettingsHandler.getValue(Settings.LANGUAGE))),
             new InitializationStep("Initializing repositories", SwitchboardRepositories::initialize),
             new InitializationStep("Loading mapping channels", MappingChannelRegistry::initialize),
             new InitializationStep("Loading license registry", LicenseRegistry::initialize),
@@ -132,8 +136,7 @@ public class Railroad extends Application {
                 }
 
                 HTTP_CLIENT.connectionPool().evictAll();
-            }))
-        );
+            })));
 
         int totalSteps = steps.size();
         for (int stepIndex = 0; stepIndex < totalSteps; stepIndex++) {
@@ -161,8 +164,7 @@ public class Railroad extends Application {
                 "railroad.generic.error",
                 "railroad.startup.error.title",
                 startupException,
-                Platform::exit
-            );
+                Platform::exit);
             return;
         }
 
@@ -171,8 +173,7 @@ public class Railroad extends Application {
             WINDOW_MANAGER.showPrimary(
                 primaryStage,
                 new Scene(new WelcomePane()),
-                Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()
-            );
+                Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion());
             LOGGER.info("Railroad started");
             EVENT_BUS.publish(new ApplicationStartEvent());
         } catch (Throwable exception) {
@@ -181,8 +182,7 @@ public class Railroad extends Application {
                 "railroad.generic.error",
                 "railroad.startup.error.title",
                 exception,
-                Platform::exit
-            );
+                Platform::exit);
         }
     }
 

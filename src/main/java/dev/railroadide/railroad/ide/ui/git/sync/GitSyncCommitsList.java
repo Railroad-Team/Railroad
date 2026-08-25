@@ -25,8 +25,7 @@ import java.util.List;
 public class GitSyncCommitsList extends RRListView<GitCommit> {
     private final LongProperty elapsedTick = new SimpleLongProperty();
     private final Timeline elapsedTimeline = new Timeline(
-        new KeyFrame(Duration.seconds(1), $ -> elapsedTick.set(elapsedTick.get() + 1))
-    );
+        new KeyFrame(Duration.seconds(1), _ -> elapsedTick.set(elapsedTick.get() + 1)));
     private String noCommitsTextKey;
 
     public GitSyncCommitsList() {

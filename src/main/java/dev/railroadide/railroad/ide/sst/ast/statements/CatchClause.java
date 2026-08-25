@@ -13,11 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record CatchClause(
-        Span span,
-        List<SugarTypeRef> exceptionTypes,
-        NameExpression variableName,
-        BlockStatement body
-) implements AstNode {
+    Span span,
+    List<SugarTypeRef> exceptionTypes,
+    NameExpression variableName,
+    BlockStatement body) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.CATCH_CLAUSE;

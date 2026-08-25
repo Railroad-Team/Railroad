@@ -32,22 +32,26 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
     private final N ui;
     private final Consumer<OnboardingContext> onFinish;
 
-    protected OnboardingProcess(OnboardingFlow flow, OnboardingContext context, N ui, Consumer<OnboardingContext> onFinish) {
+    protected OnboardingProcess(OnboardingFlow flow, OnboardingContext context, N ui,
+        Consumer<OnboardingContext> onFinish) {
         this.flow = flow;
         this.context = context;
         this.ui = ui;
         this.onFinish = onFinish;
     }
 
-    public static <N extends Parent & OnboardingUI> OnboardingProcess<N> create(OnboardingFlow flow, OnboardingContext context, N ui, Consumer<OnboardingContext> onFinish) {
+    public static <N extends Parent & OnboardingUI> OnboardingProcess<N> create(OnboardingFlow flow,
+        OnboardingContext context, N ui, Consumer<OnboardingContext> onFinish) {
         return new OnboardingProcess<>(flow, context, ui, onFinish);
     }
 
-    public static OnboardingProcess<BasicOnboardingUI> createBasic(OnboardingFlow flow, OnboardingContext context, Node content, Consumer<OnboardingContext> onFinish) {
+    public static OnboardingProcess<BasicOnboardingUI> createBasic(OnboardingFlow flow, OnboardingContext context,
+        Node content, Consumer<OnboardingContext> onFinish) {
         return create(flow, context, new BasicOnboardingUI(content), onFinish);
     }
 
-    public static OnboardingProcess<BasicOnboardingUI> createBasic(OnboardingFlow flow, OnboardingContext context, Consumer<OnboardingContext> onFinish) {
+    public static OnboardingProcess<BasicOnboardingUI> createBasic(OnboardingFlow flow, OnboardingContext context,
+        Consumer<OnboardingContext> onFinish) {
         return createBasic(flow, context, new RRBorderPane(), onFinish);
     }
 
@@ -109,24 +113,22 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
                     this.ui.setContent(
                         cachedUIs.computeIfAbsent(
                             currentStep.id(),
-                            $ -> currentStep.section().createUI()
-                        )
-                    );
+                            _ -> currentStep.section().createUI()));
                     this.ui.onStepChanged(currentStep, stepHistory.size() - 1, flow.getTotalSteps());
                     configureNavigation();
                     currentStep.onEnterAfterUI(context);
                     context.clearAllRefreshMarks();
                     busy.set(false);
                 })).exceptionally(throwable -> {
-                Railroad.LOGGER.error("Error during onboarding step's enter operation", throwable);
+                    Railroad.LOGGER.error("Error during onboarding step's enter operation", throwable);
 
-                return null;
-            });
+                    return null;
+                });
         }
 
         private OnboardingStep stepAt(String id) {
             return stepCache.computeIfAbsent(id,
-                $ -> {
+                _ -> {
                     Supplier<OnboardingStep> sup = flow.lookup(id);
                     if (sup == null)
                         throw new IllegalArgumentException("Unknown step id: " + id);
@@ -141,7 +143,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
             busy.set(true);
 
             currentStep.beforeNext(context).whenComplete(
-                (ignored, throwable) -> Platform.runLater(() -> {
+                (_, throwable) -> Platform.runLater(() -> {
                     busy.set(false);
                     if (throwable != null) {
                         Railroad.LOGGER.error("Error during onboarding step's next operation", throwable);
@@ -208,7 +210,8 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
                 handleBack();
             });
 
-            boolean hasNextStep = flow.getTransitions().stream().anyMatch(t -> t.getFromStepId().equals(currentStep.id()));
+            boolean hasNextStep = flow.getTransitions().stream()
+                .anyMatch(t -> t.getFromStepId().equals(currentStep.id()));
 
             nextButton.setOnAction(null);
             nextButton.disableProperty().unbind();
@@ -279,7 +282,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
                 return;
 
             busy.set(true);
-            currentStep.beforeNext(context).whenComplete((ignored, throwable) -> Platform.runLater(() -> {
+            currentStep.beforeNext(context).whenComplete((_, throwable) -> Platform.runLater(() -> {
                 busy.set(false);
                 if (throwable != null) {
                     Railroad.LOGGER.error("Error during onboarding step's finish operation", throwable);

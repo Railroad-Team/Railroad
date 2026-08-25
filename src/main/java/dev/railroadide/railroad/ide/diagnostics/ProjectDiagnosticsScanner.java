@@ -62,8 +62,7 @@ public final class ProjectDiagnosticsScanner {
             "Starting project diagnostics scan for {}: {} files using {} workers",
             context.projectRoot(),
             targets.size(),
-            parallelism
-        );
+            parallelism);
         try {
             for (ScanTarget target : targets) {
                 completionService.submit(() -> scanOne(diagnosticsContext, target));
@@ -92,8 +91,7 @@ public final class ProjectDiagnosticsScanner {
                     targets.size(),
                     result.diagnostics().size(),
                     result.startedAtNanos(),
-                    scanStartedAt
-                );
+                    scanStartedAt);
             }
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
@@ -124,8 +122,7 @@ public final class ProjectDiagnosticsScanner {
             targets.size(),
             files.size(),
             diagnosticCount,
-            reportPath
-        );
+            reportPath);
         return reportPath;
     }
 
@@ -137,12 +134,15 @@ public final class ProjectDiagnosticsScanner {
             List<EditorDiagnostic> diagnostics = provider.compute(source);
             return new FileScanResult(target.path(), target.support().languageId(), diagnostics, null, fileStartedAt);
         } catch (Exception | StackOverflowError exception) {
-            return new FileScanResult(target.path(), target.support().languageId(), List.of(), exception, fileStartedAt);
+            return new FileScanResult(target.path(), target.support().languageId(), List.of(), exception,
+                fileStartedAt);
         }
     }
 
-    private static DiagnosticsProvider createDiagnosticsProvider(ProjectDiagnosticsContext diagnosticsContext, ScanTarget target) {
-        ProjectDiagnosticsFeatureFactory<DiagnosticsProvider> projectDiagnosticsFactory = target.support().projectDiagnosticsFactory();
+    private static DiagnosticsProvider createDiagnosticsProvider(ProjectDiagnosticsContext diagnosticsContext,
+        ScanTarget target) {
+        ProjectDiagnosticsFeatureFactory<DiagnosticsProvider> projectDiagnosticsFactory = target.support()
+            .projectDiagnosticsFactory();
         if (projectDiagnosticsFactory != null)
             return projectDiagnosticsFactory.create(diagnosticsContext, target.path());
 
@@ -170,8 +170,7 @@ public final class ProjectDiagnosticsScanner {
         int total,
         int diagnosticCount,
         long fileStartedAt,
-        long scanStartedAt
-    ) {
+        long scanStartedAt) {
         long fileNanos = System.nanoTime() - fileStartedAt;
         long elapsedNanos = System.nanoTime() - scanStartedAt;
         long remainingNanos = completed == 0
@@ -188,8 +187,7 @@ public final class ProjectDiagnosticsScanner {
             diagnosticCount,
             formatDuration(fileNanos),
             formatDuration(elapsedNanos),
-            formatDuration(remainingNanos)
-        );
+            formatDuration(remainingNanos));
     }
 
     private static String formatDuration(long nanos) {
@@ -215,8 +213,9 @@ public final class ProjectDiagnosticsScanner {
         } else {
             roots.addAll(languageContext.sourceRoots());
             roots.addAll(languageContext.generatedRoots());
-            if (roots.isEmpty())
+            if (roots.isEmpty()) {
                 roots.add(context.projectRoot());
+            }
         }
 
         Set<Path> files = new LinkedHashSet<>();
@@ -224,8 +223,9 @@ public final class ProjectDiagnosticsScanner {
             if (root == null || Files.notExists(root))
                 continue;
             if (Files.isRegularFile(root)) {
-                if (support.supports(root))
+                if (support.supports(root)) {
                     files.add(root.toAbsolutePath().normalize());
+                }
                 continue;
             }
 
@@ -246,9 +246,8 @@ public final class ProjectDiagnosticsScanner {
         int scannedFiles,
         List<FileDiagnostics> files,
         Map<Diagnostic.Kind, Integer> countsByKind,
-        Map<String, Integer> countsByCode
-    ) {
-        StringBuilder report = new StringBuilder();
+        Map<String, Integer> countsByCode) {
+        var report = new StringBuilder();
         int diagnosticCount = countsByCode.values().stream().mapToInt(Integer::intValue).sum();
         report.append("Project: ").append(context.project().getAlias()).append('\n');
         report.append("Root: ").append(context.projectRoot()).append('\n');
@@ -256,11 +255,9 @@ public final class ProjectDiagnosticsScanner {
         report.append("Scanned files: ").append(scannedFiles).append('\n');
         report.append("Affected files: ").append(files.size()).append('\n');
         report.append("Diagnostics: ").append(diagnosticCount).append('\n');
-        countsByKind.forEach((kind, count) ->
-            report.append("  ").append(kind).append(": ").append(count).append('\n'));
+        countsByKind.forEach((kind, count) -> report.append("  ").append(kind).append(": ").append(count).append('\n'));
         report.append("\nBy code:\n");
-        countsByCode.forEach((code, count) ->
-            report.append("  ").append(code).append(": ").append(count).append('\n'));
+        countsByCode.forEach((code, count) -> report.append("  ").append(code).append(": ").append(count).append('\n'));
 
         for (FileDiagnostics file : files) {
             report.append("\n")
@@ -300,8 +297,7 @@ public final class ProjectDiagnosticsScanner {
         String languageId,
         List<EditorDiagnostic> diagnostics,
         Throwable failure,
-        long startedAtNanos
-    ) {
+        long startedAtNanos) {
         private FileScanResult {
             diagnostics = List.copyOf(diagnostics);
         }

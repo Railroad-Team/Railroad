@@ -36,22 +36,26 @@ public final class JavaAnalysisContextProvider {
     public @Nullable JavaSymbolIndex index(ProjectIndexContext context) {
         Objects.requireNonNull(context, "context");
 
-        JavaProjectSemanticIndex projectIndex =
-            Services.PROJECT_LANGUAGE_INDEX_SERVICE.indexTyped(context, JavaLanguageSupport.LANGUAGE_ID);
-        JavaLanguageIndexContext javaContext = context.language(JavaLanguageSupport.LANGUAGE_ID, JavaLanguageIndexContext.class);
+        JavaProjectSemanticIndex projectIndex = Services.PROJECT_LANGUAGE_INDEX_SERVICE.indexTyped(context,
+            JavaLanguageSupport.LANGUAGE_ID);
+        JavaLanguageIndexContext javaContext = context.language(JavaLanguageSupport.LANGUAGE_ID,
+            JavaLanguageIndexContext.class);
 
         List<JavaSymbolIndex> delegates = new ArrayList<>();
-        if (projectIndex != null)
+        if (projectIndex != null) {
             delegates.add(projectIndex);
+        }
 
         if (javaContext != null) {
             JavaLibrarySymbolIndex libraryIndex = libraryIndex(javaContext);
-            if (!libraryIndex.declaredQualifiedNames().isEmpty())
+            if (!libraryIndex.declaredQualifiedNames().isEmpty()) {
                 delegates.add(libraryIndex);
+            }
 
             JavaJdkSymbolIndex jdkIndex = jdkIndex(javaContext);
-            if (!jdkIndex.declaredQualifiedNames().isEmpty())
+            if (!jdkIndex.declaredQualifiedNames().isEmpty()) {
                 delegates.add(jdkIndex);
+            }
 
             logIndexSummary(javaContext, projectIndex, libraryIndex, jdkIndex);
         }
@@ -70,15 +74,14 @@ public final class JavaAnalysisContextProvider {
         roots.addAll(context.modulePathRoots());
 
         List<Path> normalizedRoots = FileUtils.normalizePaths(List.copyOf(roots));
-        LibraryIndexKey key = new LibraryIndexKey(normalizedRoots);
-        return libraryIndexes.computeIfAbsent(key, $ -> {
+        var key = new LibraryIndexKey(normalizedRoots);
+        return libraryIndexes.computeIfAbsent(key, _ -> {
             Railroad.LOGGER.warn(
                 "Building Java library index: roots={}, javafxBaseRoots={}, javafxGraphicsRoots={}, sampleRoots={}",
                 normalizedRoots.size(),
                 countRootsContaining(normalizedRoots, "javafx-base"),
                 countRootsContaining(normalizedRoots, "javafx-graphics"),
-                sampleRoots(normalizedRoots)
-            );
+                sampleRoots(normalizedRoots));
             JavaLibrarySymbolIndex index = JavaLibrarySymbolIndex.build(normalizedRoots);
             Railroad.LOGGER.warn(
                 "Built Java library index: classes={}, hasObservableList={}, hasReadOnlyDoubleProperty={}, hasNode={}, hasScene={}",
@@ -86,16 +89,17 @@ public final class JavaAnalysisContextProvider {
                 index.classStubsByQualifiedName().containsKey("javafx.collections.ObservableList"),
                 index.classStubsByQualifiedName().containsKey("javafx.beans.property.ReadOnlyDoubleProperty"),
                 index.classStubsByQualifiedName().containsKey("javafx.scene.Node"),
-                index.classStubsByQualifiedName().containsKey("javafx.scene.Scene")
-            );
+                index.classStubsByQualifiedName().containsKey("javafx.scene.Scene"));
             return index;
         });
     }
 
     private JavaJdkSymbolIndex jdkIndex(JavaLanguageIndexContext context) {
         Path jdkHome = context.jdkHome();
-        Path cacheKey = jdkHome == null ? Path.of(System.getProperty("java.home")).toAbsolutePath().normalize() : FileUtils.normalizePath(jdkHome);
-        return jdkIndexes.computeIfAbsent(cacheKey, $ -> {
+        Path cacheKey = jdkHome == null
+            ? Path.of(System.getProperty("java.home")).toAbsolutePath().normalize()
+            : FileUtils.normalizePath(jdkHome);
+        return jdkIndexes.computeIfAbsent(cacheKey, _ -> {
             Railroad.LOGGER.warn("Building Java JDK index: jdkHome={}, cacheKey={}", jdkHome, cacheKey);
             JavaJdkSymbolIndex index = JavaJdkSymbolIndex.build(jdkHome);
             Railroad.LOGGER.warn(
@@ -103,8 +107,7 @@ public final class JavaAnalysisContextProvider {
                 index.declaredQualifiedNames().size(),
                 index.classStubsByQualifiedName().containsKey("java.util.List"),
                 index.classStubsByQualifiedName().containsKey("java.lang.Object"),
-                index.classStubsByQualifiedName().containsKey("java.util.Collection")
-            );
+                index.classStubsByQualifiedName().containsKey("java.util.Collection"));
             return index;
         });
     }
@@ -113,8 +116,7 @@ public final class JavaAnalysisContextProvider {
         JavaLanguageIndexContext context,
         @Nullable JavaProjectSemanticIndex projectIndex,
         JavaLibrarySymbolIndex libraryIndex,
-        JavaJdkSymbolIndex jdkIndex
-    ) {
+        JavaJdkSymbolIndex jdkIndex) {
         Railroad.LOGGER.warn(
             "Java analysis index context: sourceRoots={}, generatedRoots={}, dependencyRoots={}, classpathRoots={}, modulePathRoots={}, jdkHome={}",
             context.sourceRoots().size(),
@@ -122,8 +124,7 @@ public final class JavaAnalysisContextProvider {
             context.dependencyRoots().size(),
             context.classpathRoots().size(),
             context.modulePathRoots().size(),
-            context.jdkHome()
-        );
+            context.jdkHome());
         Railroad.LOGGER.warn(
             "Java analysis index availability: projectClasses={}, libraryClasses={}, jdkClasses={}, hasObservableList={}, hasList={}, hasNode={}, hasReadOnlyDoubleProperty={}",
             projectIndex == null ? 0 : projectIndex.declaredQualifiedNames().size(),
@@ -132,8 +133,7 @@ public final class JavaAnalysisContextProvider {
             libraryIndex.classStubsByQualifiedName().containsKey("javafx.collections.ObservableList"),
             jdkIndex.classStubsByQualifiedName().containsKey("java.util.List"),
             libraryIndex.classStubsByQualifiedName().containsKey("javafx.scene.Node"),
-            libraryIndex.classStubsByQualifiedName().containsKey("javafx.beans.property.ReadOnlyDoubleProperty")
-        );
+            libraryIndex.classStubsByQualifiedName().containsKey("javafx.beans.property.ReadOnlyDoubleProperty"));
     }
 
     private static long countRootsContaining(List<Path> roots, String text) {
@@ -145,9 +145,8 @@ public final class JavaAnalysisContextProvider {
 
     private static List<String> sampleRoots(List<Path> roots) {
         return Stream.concat(
-                roots.stream().filter(path -> path.toString().toLowerCase().contains("javafx")).limit(8),
-                roots.stream().limit(4)
-            )
+            roots.stream().filter(path -> path.toString().toLowerCase().contains("javafx")).limit(8),
+            roots.stream().limit(4))
             .map(Path::toString)
             .distinct()
             .limit(12)

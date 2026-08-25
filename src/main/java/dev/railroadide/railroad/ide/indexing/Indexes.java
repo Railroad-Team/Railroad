@@ -68,9 +68,9 @@ public class Indexes {
         Path jmods = javaHome.resolve("jmods");
         try (var paths = Files.list(jmods)) {
             for (Path jmodPath : paths
-                    .filter(path -> path.getFileName().toString().endsWith(".jmod"))
-                    .sorted()
-                    .toList()) {
+                .filter(path -> path.getFileName().toString().endsWith(".jmod"))
+                .sorted()
+                .toList()) {
                 scanJMod(jmodPath, stubs);
             }
         } catch (IOException exception) {
@@ -103,7 +103,7 @@ public class Indexes {
             FileSystem fileSystem;
             try {
                 fileSystem = FileSystems.getFileSystem(URI.create("jrt:/"));
-            } catch (Exception ignored) {
+            } catch (Exception _) {
                 fileSystem = FileSystems.newFileSystem(URI.create("jrt:/"), Collections.emptyMap());
             }
 
@@ -133,9 +133,8 @@ public class Indexes {
     private static Path resolveJavaHome() {
         Path configured = normalizeHome(System.getProperty("java.home"));
         if (configured != null && (hasScannableStandardLibrary(configured)
-                || Files.isRegularFile(configured.resolve("lib").resolve("modules")))) {
+            || Files.isRegularFile(configured.resolve("lib").resolve("modules"))))
             return configured;
-        }
 
         Path javaHomeEnv = normalizeHome(System.getenv("JAVA_HOME"));
         if (javaHomeEnv != null && hasScannableStandardLibrary(javaHomeEnv))
@@ -160,7 +159,7 @@ public class Indexes {
 
         try {
             return Path.of(home).toAbsolutePath().normalize();
-        } catch (Exception ignored) {
+        } catch (Exception _) {
             return null;
         }
     }

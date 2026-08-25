@@ -55,7 +55,8 @@ public class GitCommitDetailsInfoCard extends RRVBox {
         var committerFlow = new RRFlowPane(4, 4);
         committerFlow.getStyleClass().add("git-commit-details-committer-flow");
         committerFlow.getChildren().add(createChip(commit.committerName(), "git-commit-details-committer-name"));
-        committerFlow.getChildren().add(createChip("<" + commit.committerEmail() + ">", "git-commit-details-committer-email"));
+        committerFlow.getChildren()
+            .add(createChip("<" + commit.committerEmail() + ">", "git-commit-details-committer-email"));
         committerHbox.getChildren().add(committerFlow);
         HBox.setHgrow(committerFlow, Priority.ALWAYS);
 

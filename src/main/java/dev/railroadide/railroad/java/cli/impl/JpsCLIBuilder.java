@@ -63,7 +63,7 @@ public class JpsCLIBuilder implements CLIBuilder<Process, JpsCLIBuilder> {
     /**
      * Adds or overrides an environment variable for the spawned process.
      *
-     * @param key   variable name
+     * @param key variable name
      * @param value variable value
      * @return this builder
      */
@@ -91,7 +91,7 @@ public class JpsCLIBuilder implements CLIBuilder<Process, JpsCLIBuilder> {
      * Sets a timeout applied when enforcing process termination.
      *
      * @param duration timeout duration
-     * @param unit     time unit
+     * @param unit time unit
      * @return this builder
      */
     @Override
@@ -187,8 +187,9 @@ public class JpsCLIBuilder implements CLIBuilder<Process, JpsCLIBuilder> {
         List<String> command = new ArrayList<>();
         command.add(jdk.executablePath(EXECUTABLE_NAME).toString());
         command.addAll(arguments);
-        if (hostIdentifier != null)
+        if (hostIdentifier != null) {
             command.add(hostIdentifier);
+        }
 
         var processBuilder = new ProcessBuilder();
         processBuilder.command(command);

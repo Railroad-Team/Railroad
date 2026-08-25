@@ -19,7 +19,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 public class RRToggleButton extends ToggleButton {
 
-	public static final String[] DEFAULT_STYLE_CLASSES = { "rr-button", "rr-toggle-button", "toggle-button" };
+    public static final String[] DEFAULT_STYLE_CLASSES = {"rr-button", "rr-toggle-button", "toggle-button"};
 
     private FontIcon icon;
 
@@ -35,29 +35,30 @@ public class RRToggleButton extends ToggleButton {
     private final BooleanProperty isSquare = new SimpleBooleanProperty(this, "isSquare", false);
     private final BooleanProperty isOutlined = new SimpleBooleanProperty(this, "isOutlined", false);
     private final BooleanProperty isFlat = new SimpleBooleanProperty(this, "isFlat", false);
-    private final ObjectProperty<ButtonVariant> variant = new SimpleObjectProperty<>(this, "variant", ButtonVariant.PRIMARY);
+    private final ObjectProperty<ButtonVariant> variant = new SimpleObjectProperty<>(this, "variant",
+        ButtonVariant.PRIMARY);
     private final ObjectProperty<ButtonSize> size = new SimpleObjectProperty<>(this, "size", ButtonSize.MEDIUM);
 
-	public RRToggleButton() {
+    public RRToggleButton() {
         this("");
     }
 
-	public RRToggleButton(String localizationKey, Ikon icon, Object... args) {
+    public RRToggleButton(String localizationKey, Ikon icon, Object... args) {
         super();
 
         initialize(localizationKey, args);
         setIcon(icon);
     }
 
-	public RRToggleButton(String localizationKey, Node graphic, Object... args) {
-		super();
+    public RRToggleButton(String localizationKey, Node graphic, Object... args) {
+        super();
 
         initialize(localizationKey, args);
         setGraphic(graphic);
     }
 
     public RRToggleButton(String localizationKey, Object... args) {
-		super();
+        super();
 
         initialize(localizationKey, args);
     }
@@ -116,8 +117,8 @@ public class RRToggleButton extends ToggleButton {
         return button;
     }
 
-	protected void initialize(String localizationKey, Object... args) {
-		getStyleClass().setAll(RRToggleButton.DEFAULT_STYLE_CLASSES);
+    protected void initialize(String localizationKey, Object... args) {
+        getStyleClass().setAll(RRToggleButton.DEFAULT_STYLE_CLASSES);
 
         setAlignment(Pos.CENTER);
 
@@ -128,7 +129,7 @@ public class RRToggleButton extends ToggleButton {
         loadingSpinner.setIconSize(16);
         loadingSpinner.getStyleClass().add("loading-spinner");
 
-        setOnMousePressed($ -> {
+        setOnMousePressed(_ -> {
             if (!getIsLoading()) {
                 var scale = new ScaleTransition(Duration.millis(100), this);
                 scale.setToX(0.95);
@@ -137,7 +138,7 @@ public class RRToggleButton extends ToggleButton {
             }
         });
 
-        setOnMouseReleased($ -> {
+        setOnMouseReleased(_ -> {
             if (!getIsLoading()) {
                 var scale = new ScaleTransition(Duration.millis(100), this);
                 scale.setToX(1.0);
@@ -146,7 +147,7 @@ public class RRToggleButton extends ToggleButton {
             }
         });
 
-        isLoading.addListener($ -> {
+        isLoading.addListener(_ -> {
             if (getIsLoading()) {
                 onLoading();
             } else {
@@ -154,22 +155,22 @@ public class RRToggleButton extends ToggleButton {
             }
         });
 
-        variant.addListener($ -> updateStyle());
-        size.addListener($ -> updateStyle());
-        isSquare.addListener($ -> updateStyle());
-        isOutlined.addListener($ -> updateStyle());
-        isFlat.addListener($ -> updateStyle());
+        variant.addListener(_ -> updateStyle());
+        size.addListener(_ -> updateStyle());
+        isSquare.addListener(_ -> updateStyle());
+        isOutlined.addListener(_ -> updateStyle());
+        isFlat.addListener(_ -> updateStyle());
 
         updateStyle();
         updateContent();
-	}
+    }
 
     /**
      * Set the button text using a localization key with optional formatting arguments.
      * The text will automatically update when the application language changes.
      *
      * @param localizationKey the localization key for the text
-     * @param args            optional formatting arguments for the localized text
+     * @param args optional formatting arguments for the localized text
      */
     public void setLocalizedText(String localizationKey, Object... args) {
         localizedText.setTranslation(localizationKey, args);
@@ -225,6 +226,7 @@ public class RRToggleButton extends ToggleButton {
      * - The "loading" CSS class is removed
      * <p>
      * Example usage:
+     *
      * <pre>
      * RRToggleButton button = RRToggleButton.primary("Save");
      * button.setOnAction(e -> {
@@ -342,14 +344,17 @@ public class RRToggleButton extends ToggleButton {
         styleClass.removeAll("primary", "secondary", "ghost", "danger", "success", "warning");
         styleClass.removeAll("small", "medium", "large");
 
-        if (isSquare.get())
+        if (isSquare.get()) {
             styleClass.add("square");
+        }
 
-        if (isOutlined.get())
+        if (isOutlined.get()) {
             styleClass.add("outlined");
+        }
 
-        if (isFlat.get())
+        if (isFlat.get()) {
             styleClass.add("flat");
+        }
 
         switch (variant.get()) {
             case PRIMARY -> styleClass.add("primary");

@@ -56,7 +56,7 @@ public interface Project extends JsonSerializable<JsonObject> {
      * Get the facet of the specified type.
      *
      * @param type The facet type to get.
-     * @param <D>  The data type of the facet.
+     * @param <D> The data type of the facet.
      * @return An Optional containing the facet if found, otherwise empty.
      */
     <D> Optional<Facet<D>> getFacet(FacetType<D> type);

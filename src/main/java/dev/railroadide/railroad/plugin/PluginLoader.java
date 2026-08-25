@@ -31,7 +31,7 @@ public class PluginLoader {
      * @param pluginPath the path to the plugin JAR file
      * @return a PluginLoadResult containing the loaded plugin descriptor and path
      * @throws IllegalArgumentException if the plugin path is invalid
-     * @throws RuntimeException         if there is an error reading the plugin JAR or descriptor
+     * @throws RuntimeException if there is an error reading the plugin JAR or descriptor
      */
     public static PluginLoadResult loadPlugin(Path pluginPath) {
         if (pluginPath == null || !pluginPath.toString().endsWith(".jar"))
@@ -117,9 +117,9 @@ public class PluginLoader {
                         } else if (repoElement.isJsonPrimitive() && repoElement.getAsJsonPrimitive().isString()) {
                             String url = repoElement.getAsString();
                             repositories.add(new MavenRepo("unknown", url));
-                        } else {
-                            throw new IOException("plugin.json 'dependencies.repositories' must be an array of objects or strings");
-                        }
+                        } else
+                            throw new IOException(
+                                "plugin.json 'dependencies.repositories' must be an array of objects or strings");
                     }
                 }
 
@@ -132,12 +132,13 @@ public class PluginLoader {
                             String versionArtifact = getAsString(artifactObject, "version", true);
 
                             artifacts.add(new MavenDep(groupId, artifactId, versionArtifact));
-                        } else if (artifactElement.isJsonPrimitive() && artifactElement.getAsJsonPrimitive().isString()) {
+                        } else if (artifactElement.isJsonPrimitive()
+                            && artifactElement.getAsJsonPrimitive().isString()) {
                             String artifact = artifactElement.getAsString();
                             artifacts.add(MavenDep.fromFullName(artifact));
-                        } else {
-                            throw new IOException("plugin.json 'dependencies.artifacts' must be an array of objects or strings");
-                        }
+                        } else
+                            throw new IOException(
+                                "plugin.json 'dependencies.artifacts' must be an array of objects or strings");
                     }
                 }
             }
@@ -159,10 +160,12 @@ public class PluginLoader {
     private static @Nullable String getAsString(JsonObject json, String key, boolean required) throws IOException {
         if (json.has(key)) {
             JsonElement element = json.get(key);
-            if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+            if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString())
                 return element.getAsString();
-            } else throw new IOException("plugin.json '" + key + "' field must be a string");
-        } else if (required) throw new IOException("plugin.json does not contain '" + key + "' field");
+            else
+                throw new IOException("plugin.json '" + key + "' field must be a string");
+        } else if (required)
+            throw new IOException("plugin.json does not contain '" + key + "' field");
 
         return null;
     }

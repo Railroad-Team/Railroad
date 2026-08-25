@@ -126,16 +126,16 @@ public class WelcomeHeaderPane extends RRCard {
         searchContainer.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(searchField, Priority.ALWAYS);
 
-        searchField.focusedProperty().addListener((obs, oldValue, newValue) ->
-            searchContainer.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, newValue)
-        );
+        searchField.focusedProperty().addListener(
+            (obs, oldValue, newValue) -> searchContainer.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, newValue));
 
         return searchContainer;
     }
 
     private void initializeProjectStats() {
         updateProjectStats();
-        Railroad.PROJECT_MANAGER.getProjects().addListener((ListChangeListener<Project>) change -> updateProjectStats());
+        Railroad.PROJECT_MANAGER.getProjects()
+            .addListener((ListChangeListener<Project>) change -> updateProjectStats());
     }
 
     private void updateProjectStats() {

@@ -23,9 +23,8 @@ public record OkHttpService(OkHttpClient client) implements HttpService {
             attempt++;
             var request = new Request.Builder().url(uri.toString()).get().build();
             try (var response = client.newCall(request).execute()) {
-                if (!response.isSuccessful() || response.body() == null) {
+                if (!response.isSuccessful() || response.body() == null)
                     throw new IOException("HTTP " + response.code() + " for " + uri);
-                }
 
                 var tmpFile = Files.createTempFile(dest.getParent(), ".dl", ".tmp");
                 try (var in = response.body().byteStream(); var out = Files.newOutputStream(tmpFile)) {
@@ -57,17 +56,15 @@ public record OkHttpService(OkHttpClient client) implements HttpService {
     private boolean shouldRetry(Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
-            if (current instanceof SocketException || current instanceof SocketTimeoutException) {
+            if (current instanceof SocketException || current instanceof SocketTimeoutException)
                 return true;
-            }
             if (current instanceof UncheckedIOException uio && uio.getCause() != null) {
                 current = uio.getCause();
                 continue;
             }
             String message = current.getMessage();
-            if (message != null && message.contains("Software caused connection abort")) {
+            if (message != null && message.contains("Software caused connection abort"))
                 return true;
-            }
 
             current = current.getCause();
         }

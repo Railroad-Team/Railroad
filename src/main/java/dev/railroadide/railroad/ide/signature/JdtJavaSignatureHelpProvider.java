@@ -29,7 +29,8 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
         parser.setEnvironment(systemModulePaths, null, null, false);
 
         CompilationUnit unit = (CompilationUnit) parser.createAST(null);
-        int searchAt = Math.max(0, Math.min(Math.max(document.length() - 1, 0), caretPosition > 0 ? caretPosition - 1 : 0));
+        int searchAt = Math.max(0,
+            Math.min(Math.max(document.length() - 1, 0), caretPosition > 0 ? caretPosition - 1 : 0));
         var finder = new NodeFinder(unit, searchAt, 0);
         ASTNode node = finder.getCoveringNode();
 
@@ -60,8 +61,7 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForMethodInvocation(
         MethodInvocation invocation,
         int caretPosition,
-        String text
-    ) {
+        String text) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(invocation, text)))
             return null;
 
@@ -76,8 +76,7 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForSuperMethodInvocation(
         SuperMethodInvocation invocation,
         int caretPosition,
-        String text
-    ) {
+        String text) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(invocation, text)))
             return null;
 
@@ -92,8 +91,7 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForClassInstanceCreation(
         ClassInstanceCreation creation,
         int caretPosition,
-        String text
-    ) {
+        String text) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(creation, text)))
             return null;
 
@@ -108,8 +106,7 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForConstructorInvocation(
         ConstructorInvocation invocation,
         int caretPosition,
-        String text
-    ) {
+        String text) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(invocation, text)))
             return null;
 
@@ -124,8 +121,7 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForSuperConstructorInvocation(
         SuperConstructorInvocation invocation,
         int caretPosition,
-        String text
-    ) {
+        String text) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(invocation, text)))
             return null;
 
@@ -202,7 +198,9 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
         }
 
         int activeIndex = computeActiveParameter(requestedIndex, parameters.size(), binding.isVarargs());
-        String returnType = binding.isConstructor() ? ownerQualified : JdtCompletionProvider.renderType(binding.getReturnType());
+        String returnType = binding.isConstructor()
+            ? ownerQualified
+            : JdtCompletionProvider.renderType(binding.getReturnType());
 
         return new SignatureHelp(
             ownerQualified,
@@ -212,8 +210,7 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
             activeIndex,
             binding.isConstructor(),
             returnType,
-            binding.isVarargs()
-        );
+            binding.isVarargs());
     }
 
     private int computeActiveParameter(int requestedIndex, int parameterCount, boolean varargs) {

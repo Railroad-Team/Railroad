@@ -18,10 +18,9 @@ public final class CoreImportInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-imports";
 
     private static final List<JavaInspectionRule> RULES = List.of(
-            rule(JavaSemanticRules.DUPLICATE_IMPORT),
-            rule(JavaSemanticRules.AMBIGUOUS_IMPORT),
-            rule(JavaSemanticRules.UNRESOLVED_IMPORT)
-    );
+        rule(JavaSemanticRules.DUPLICATE_IMPORT),
+        rule(JavaSemanticRules.AMBIGUOUS_IMPORT),
+        rule(JavaSemanticRules.UNRESOLVED_IMPORT));
 
     @Override
     public String id() {
@@ -34,26 +33,26 @@ public final class CoreImportInspection implements JavaInspectionRuleProvider {
     }
     private static JavaInspectionRule rule(JavaSemanticRule semanticRule) {
         return new SimpleJavaInspectionRule(
-                semanticRule.id(),
-                semanticRule.defaultSeverity(),
-                semanticRule.messageTemplate(),
-                Set.of("core", "imports"),
-                switch (semanticRule.id()) {
-                    case "SEM_DUPLICATE_IMPORT" -> CoreImportInspection::reportDuplicateImports;
-                    case "SEM_AMBIGUOUS_IMPORT" -> CoreImportInspection::reportAmbiguousImports;
-                    case "SEM_UNRESOLVED_IMPORT" -> CoreImportInspection::reportUnresolvedImports;
-                    default -> (context, reporter) -> {
-                    };
-                }
-        );
+            semanticRule.id(),
+            semanticRule.defaultSeverity(),
+            semanticRule.messageTemplate(),
+            Set.of("core", "imports"),
+            switch (semanticRule.id()) {
+                case "SEM_DUPLICATE_IMPORT" -> CoreImportInspection::reportDuplicateImports;
+                case "SEM_AMBIGUOUS_IMPORT" -> CoreImportInspection::reportAmbiguousImports;
+                case "SEM_UNRESOLVED_IMPORT" -> CoreImportInspection::reportUnresolvedImports;
+                default -> (context, reporter) -> {
+                };
+            });
     }
 
     private static void reportDuplicateImports(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
         Map<String, JavaRuleContext.ImportEntry> seen = new LinkedHashMap<>();
         for (JavaRuleContext.ImportEntry importEntry : context.importEntries()) {
             String key = (importEntry.isStatic() ? "static " : "") + importEntry.qualifiedTarget();
-            if (seen.putIfAbsent(key, importEntry) != null)
+            if (seen.putIfAbsent(key, importEntry) != null) {
                 reporter.report(importEntry.targetNode(), importEntry.qualifiedTarget());
+            }
         }
     }
 
@@ -63,18 +62,18 @@ public final class CoreImportInspection implements JavaInspectionRuleProvider {
             if (importEntry.isStatic() || importEntry.isWildcard())
                 continue;
 
-            JavaRuleContext.ImportEntry previous = seenBySimpleName.putIfAbsent(importEntry.importedName(), importEntry);
+            JavaRuleContext.ImportEntry previous = seenBySimpleName.putIfAbsent(importEntry.importedName(),
+                importEntry);
             if (previous == null)
                 continue;
             if (previous.qualifiedTarget().equals(importEntry.qualifiedTarget()))
                 continue;
 
             reporter.report(
-                    importEntry.targetNode(),
-                    importEntry.importedName(),
-                    previous.qualifiedTarget(),
-                    importEntry.qualifiedTarget()
-            );
+                importEntry.targetNode(),
+                importEntry.importedName(),
+                previous.qualifiedTarget(),
+                importEntry.qualifiedTarget());
         }
     }
 
@@ -86,19 +85,23 @@ public final class CoreImportInspection implements JavaInspectionRuleProvider {
                     reporter.report(importEntry.targetNode(), importEntry.ownerName());
                     continue;
                 }
-                if (!importEntry.isWildcard() && !importIndex.hasResolvableStaticMember(importEntry.ownerName(), importEntry.importedName()))
+                if (!importEntry.isWildcard()
+                    && !importIndex.hasResolvableStaticMember(importEntry.ownerName(), importEntry.importedName())) {
                     reporter.report(importEntry.targetNode(), importEntry.qualifiedTarget());
+                }
                 continue;
             }
 
             if (importEntry.isWildcard()) {
-                if (!importIndex.isResolvablePackagePrefix(importEntry.ownerName()))
+                if (!importIndex.isResolvablePackagePrefix(importEntry.ownerName())) {
                     reporter.report(importEntry.targetNode(), importEntry.ownerName() + ".*");
+                }
                 continue;
             }
 
-            if (!importIndex.isResolvableType(importEntry.qualifiedTarget()))
+            if (!importIndex.isResolvableType(importEntry.qualifiedTarget())) {
                 reporter.report(importEntry.targetNode(), importEntry.qualifiedTarget());
+            }
         }
     }
 }

@@ -24,7 +24,8 @@ public record RenamePackagesStep(FilesService files) implements CreationStep {
     @Override
     public void run(ProjectContext ctx, ProgressReporter reporter) throws Exception {
         Path projectDir = ctx.projectDir();
-        boolean splitSources = ctx.data().contains(FabricProjectKeys.SPLIT_SOURCES) && ctx.data().getAsBoolean(FabricProjectKeys.SPLIT_SOURCES);
+        boolean splitSources = ctx.data().contains(FabricProjectKeys.SPLIT_SOURCES)
+            && ctx.data().getAsBoolean(FabricProjectKeys.SPLIT_SOURCES);
 
         if (!splitSources) {
             reporter.info("Removing client source directory as split sources is disabled.");

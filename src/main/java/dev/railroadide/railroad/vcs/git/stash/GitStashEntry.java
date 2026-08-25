@@ -18,6 +18,5 @@ public record GitStashEntry(
     long createdAtEpochSeconds,
     String message,
     int additions,
-    int deletions
-) {
+    int deletions) {
 }

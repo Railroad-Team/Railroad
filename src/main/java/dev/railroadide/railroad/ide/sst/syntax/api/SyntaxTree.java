@@ -67,8 +67,7 @@ public final class SyntaxTree {
         DocumentId documentId,
         DocumentUri documentUri,
         DocumentVersion documentVersion,
-        SyntaxNode root
-    ) {
+        SyntaxNode root) {
         this(compatibilitySnapshot(documentId, documentUri, documentVersion, root), root);
     }
 
@@ -133,20 +132,18 @@ public final class SyntaxTree {
         DocumentId documentId,
         DocumentUri documentUri,
         DocumentVersion documentVersion,
-        SyntaxNode root
-    ) {
+        SyntaxNode root) {
         return new TextDocumentSnapshot(
             Objects.requireNonNull(documentId, "documentId"),
             Objects.requireNonNull(documentUri, "documentUri"),
             Objects.requireNonNull(documentVersion, "documentVersion"),
             "unknown",
             sourceText(Objects.requireNonNull(root, "root")),
-            StandardCharsets.UTF_8
-        );
+            StandardCharsets.UTF_8);
     }
 
     private static String sourceText(SyntaxNode root) {
-        StringBuilder text = new StringBuilder(Math.max(0, root.width()));
+        var text = new StringBuilder(Math.max(0, root.width()));
         appendSourceText(root, text);
         return text.toString();
     }
@@ -156,7 +153,8 @@ public final class SyntaxTree {
             text.append(token.text());
             return;
         }
-        for (SyntaxNode child : node.children())
+        for (SyntaxNode child : node.children()) {
             appendSourceText(child, text);
+        }
     }
 }

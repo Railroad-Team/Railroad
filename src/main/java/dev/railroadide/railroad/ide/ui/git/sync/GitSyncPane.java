@@ -25,8 +25,7 @@ public class GitSyncPane extends RRVBox {
             infoPane,
             controlsPane,
             incomingChangesPane,
-            outgoingChangesPane
-        );
+            outgoingChangesPane);
 
         VBox.setVgrow(incomingChangesPane, Priority.ALWAYS);
         VBox.setVgrow(outgoingChangesPane, Priority.ALWAYS);

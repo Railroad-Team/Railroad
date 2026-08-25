@@ -11,9 +11,9 @@ public record FileRenamedEvent(Document file, String oldName, String newName) im
     /**
      * Constructs a new FileRenamedEvent.
      *
-     * @param file     The file associated with this event. Must not be null.
-     * @param oldName  The previous name of the file. Must not be null.
-     * @param newName  The new name of the file. Must not be null.
+     * @param file The file associated with this event. Must not be null.
+     * @param oldName The previous name of the file. Must not be null.
+     * @param newName The new name of the file. Must not be null.
      * @throws IllegalArgumentException if file, oldName, or newName is null.
      */
     public FileRenamedEvent {

@@ -22,9 +22,7 @@ public class CoreFieldNameSameAsClassInspection implements JavaInspectionRulePro
             JavaSemanticRules.FIELD_NAME_SAME_AS_CLASS_NAME.defaultSeverity(),
             JavaSemanticRules.FIELD_NAME_SAME_AS_CLASS_NAME.messageTemplate(),
             Set.of("core", "naming"),
-            CoreFieldNameSameAsClassInspection::reportFieldNameSameAsClass
-        )
-    );
+            CoreFieldNameSameAsClassInspection::reportFieldNameSameAsClass));
 
     @Override
     public String id() {

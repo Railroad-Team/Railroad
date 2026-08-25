@@ -26,20 +26,20 @@ public class GitExecutablePathPane extends RRHBox {
     private final BrowseButton browseButton = new BrowseButton();
     private final RRButton downloadButton = new RRButton(
         "railroad.generic.download",
-        FontAwesomeSolid.DOWNLOAD
-    );
+        FontAwesomeSolid.DOWNLOAD);
 
     public GitExecutablePathPane(@Nullable Path path) {
         getStyleClass().add("git-executable-path-pane");
         browseButton.textFieldProperty().set(pathField);
         browseButton.browseTypeProperty().set(BrowseButton.BrowseType.FILE);
-        browseButton.defaultLocationProperty().set(path != null ? path.getParent() : Path.of(System.getProperty("user.home")));
+        browseButton.defaultLocationProperty()
+            .set(path != null ? path.getParent() : Path.of(System.getProperty("user.home")));
         browseButton.selectionModeProperty().set(BrowseButton.BrowseSelectionMode.SINGLE);
         browseButton.parentWindowProperty().bind(sceneProperty().flatMap(Scene::windowProperty));
 
         pathField.setLocalizedPlaceholder("railroad.settings.vcs.git_executable_path.placeholder");
-        gitExecutablePath.addListener((observable, oldValue, newValue) ->
-            pathField.setText(newValue == null ? "" : Objects.toString(newValue)));
+        gitExecutablePath.addListener(
+            (observable, oldValue, newValue) -> pathField.setText(newValue == null ? "" : Objects.toString(newValue)));
         pathField.textProperty().addListener((obs, oldText, newText) -> {
             if (newText == null || newText.isBlank()) {
                 setGitExecutablePath(null);

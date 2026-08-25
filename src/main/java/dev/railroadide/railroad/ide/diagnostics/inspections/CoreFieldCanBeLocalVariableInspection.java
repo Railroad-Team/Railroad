@@ -18,7 +18,11 @@ import java.util.*;
 public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-field-can-be-local-variable";
 
-    private static final List<JavaInspectionRule> RULES = List.of(new SimpleJavaInspectionRule(JavaSemanticRules.FIELD_CAN_BE_LOCAL_VARIABLE.id(), JavaSemanticRules.FIELD_CAN_BE_LOCAL_VARIABLE.defaultSeverity(), JavaSemanticRules.FIELD_CAN_BE_LOCAL_VARIABLE.messageTemplate(), Set.of("core", "field"), CoreFieldCanBeLocalVariableInspection::reportFieldCanBeLocalVariable));
+    private static final List<JavaInspectionRule> RULES = List
+        .of(new SimpleJavaInspectionRule(JavaSemanticRules.FIELD_CAN_BE_LOCAL_VARIABLE.id(),
+            JavaSemanticRules.FIELD_CAN_BE_LOCAL_VARIABLE.defaultSeverity(),
+            JavaSemanticRules.FIELD_CAN_BE_LOCAL_VARIABLE.messageTemplate(), Set.of("core", "field"),
+            CoreFieldCanBeLocalVariableInspection::reportFieldCanBeLocalVariable));
 
     @Override
     public String id() {
@@ -36,10 +40,12 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
         Set<Symbol> referencesOutsideCallable = new HashSet<>();
 
         context.traverse(node -> {
-            if (!node.kind().id().equals(JavaSyntaxKinds.NAME_EXPRESSION.id())) return;
+            if (!node.kind().id().equals(JavaSyntaxKinds.NAME_EXPRESSION.id()))
+                return;
 
             Symbol symbol = context.resolvedSymbol(node).orElse(null);
-            if (symbol == null) return;
+            if (symbol == null)
+                return;
 
             SyntaxNode callableOrLambda = context.nearestEnclosingCallableOrLambda(node);
             if (callableOrLambda == null) {
@@ -47,7 +53,8 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
                 return;
             }
 
-            if (callableOrLambda.kind().id().equals(JavaSyntaxKinds.LAMBDA_EXPRESSION.id()) && isWriteTarget(context, node)) {
+            if (callableOrLambda.kind().id().equals(JavaSyntaxKinds.LAMBDA_EXPRESSION.id())
+                && isWriteTarget(context, node)) {
                 symbolsWrittenInLambdas.add(symbol);
             }
 
@@ -63,7 +70,8 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
         for (SyntaxNode node : context.nodesOfKind(JavaSyntaxKinds.VARIABLE_DECLARATOR.id())) {
             SyntaxNode parent = node.parent().orElse(null);
 
-            if (parent == null || !JavaSyntaxKinds.FIELD_DECLARATION.id().equals(parent.kind().id())) continue;
+            if (parent == null || !JavaSyntaxKinds.FIELD_DECLARATION.id().equals(parent.kind().id()))
+                continue;
 
             if (!context.hasDirectModifierToken(parent, JavaTokenType.PRIVATE_KEYWORD) ||
                 context.hasDirectModifierToken(parent, JavaTokenType.STATIC_KEYWORD) ||
@@ -73,13 +81,15 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
 
             Symbol declaredSymbol = context.declaredSymbol(node).orElse(null);
 
-            if (declaredSymbol == null) continue;
+            if (declaredSymbol == null)
+                continue;
 
-            if (symbolsWrittenInLambdas.contains(declaredSymbol)) continue;
+            if (symbolsWrittenInLambdas.contains(declaredSymbol))
+                continue;
 
             Set<SyntaxNode> callables = callablesBySymbol.getOrDefault(declaredSymbol, Set.of());
-            if (referencesOutsideCallable.contains(declaredSymbol) || callables.size() != 1) continue;
-
+            if (referencesOutsideCallable.contains(declaredSymbol) || callables.size() != 1)
+                continue;
 
             reporter.report(node, declaredSymbol.simpleName());
         }
@@ -89,22 +99,23 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
         SyntaxNode target = expression;
         SyntaxNode parent = target.parent().orElse(null);
 
-
-        if (parent != null && JavaSyntaxKinds.FIELD_ACCESS_EXPRESSION.id().equals(parent.kind().id()) && context.selectorNameNode(parent) == expression) {
+        if (parent != null && JavaSyntaxKinds.FIELD_ACCESS_EXPRESSION.id().equals(parent.kind().id())
+            && context.selectorNameNode(parent) == expression) {
             target = parent;
             parent = target.parent().orElse(null);
         }
 
-        if (parent == null) return false;
+        if (parent == null)
+            return false;
 
         if (JavaSyntaxKinds.ASSIGNMENT_EXPRESSION.id().equals(parent.kind().id())) {
             List<SyntaxNode> expressions = context.directExpressionChildren(parent);
             return !expressions.isEmpty() && expressions.getFirst() == target;
         }
 
-        if (JavaSyntaxKinds.UNARY_EXPRESSION.id().equals(parent.kind().id()) || JavaSyntaxKinds.POSTFIX_EXPRESSION.id().equals(parent.kind().id())) {
+        if (JavaSyntaxKinds.UNARY_EXPRESSION.id().equals(parent.kind().id())
+            || JavaSyntaxKinds.POSTFIX_EXPRESSION.id().equals(parent.kind().id()))
             return isIncrementOrDecrement(parent);
-        }
 
         return false;
     }
@@ -113,7 +124,8 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
         SyntaxNode current = callableOrLambda;
         while (current.kind().id().equals(JavaSyntaxKinds.LAMBDA_EXPRESSION.id())) {
             current = context.nearestEnclosingCallableOrLambda(current);
-            if (current == null) return null;
+            if (current == null)
+                return null;
         }
 
         return current;

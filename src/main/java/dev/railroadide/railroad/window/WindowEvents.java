@@ -21,38 +21,28 @@ public class WindowEvents {
     }
 
     public void beginTracking() {
-        addEventHandler(MouseEvent.MOUSE_CLICKED, event ->
-            Railroad.EVENT_BUS.publish(new MouseClickedEvent(event)));
+        addEventHandler(MouseEvent.MOUSE_CLICKED, event -> Railroad.EVENT_BUS.publish(new MouseClickedEvent(event)));
 
-        addEventHandler(MouseEvent.MOUSE_MOVED, event ->
-            Railroad.EVENT_BUS.publish(new MouseMovedEvent(event)));
+        addEventHandler(MouseEvent.MOUSE_MOVED, event -> Railroad.EVENT_BUS.publish(new MouseMovedEvent(event)));
 
-        addEventHandler(MouseEvent.MOUSE_PRESSED, event ->
-            Railroad.EVENT_BUS.publish(new MousePressedEvent(event)));
+        addEventHandler(MouseEvent.MOUSE_PRESSED, event -> Railroad.EVENT_BUS.publish(new MousePressedEvent(event)));
 
-        addEventHandler(MouseEvent.MOUSE_RELEASED, event ->
-            Railroad.EVENT_BUS.publish(new MouseReleasedEvent(event)));
+        addEventHandler(MouseEvent.MOUSE_RELEASED, event -> Railroad.EVENT_BUS.publish(new MouseReleasedEvent(event)));
 
-        addEventHandler(MouseEvent.MOUSE_DRAGGED, event ->
-            Railroad.EVENT_BUS.publish(new MouseDraggedEvent(event)));
+        addEventHandler(MouseEvent.MOUSE_DRAGGED, event -> Railroad.EVENT_BUS.publish(new MouseDraggedEvent(event)));
 
-        addEventHandler(MouseEvent.MOUSE_ENTERED, event ->
-            Railroad.EVENT_BUS.publish(new MouseEnteredEvent(event)));
+        addEventHandler(MouseEvent.MOUSE_ENTERED, event -> Railroad.EVENT_BUS.publish(new MouseEnteredEvent(event)));
 
-        addEventHandler(MouseEvent.MOUSE_EXITED, event ->
-            Railroad.EVENT_BUS.publish(new MouseExitedEvent(event)));
+        addEventHandler(MouseEvent.MOUSE_EXITED, event -> Railroad.EVENT_BUS.publish(new MouseExitedEvent(event)));
 
-        addEventHandler(MouseEvent.DRAG_DETECTED, event ->
-            Railroad.EVENT_BUS.publish(new MouseDragDetectedEvent(event)));
+        addEventHandler(MouseEvent.DRAG_DETECTED,
+            event -> Railroad.EVENT_BUS.publish(new MouseDragDetectedEvent(event)));
 
-        addEventHandler(KeyEvent.KEY_PRESSED, event ->
-            Railroad.EVENT_BUS.publish(new KeyPressedEvent(event)));
+        addEventHandler(KeyEvent.KEY_PRESSED, event -> Railroad.EVENT_BUS.publish(new KeyPressedEvent(event)));
 
-        addEventHandler(KeyEvent.KEY_RELEASED, event ->
-            Railroad.EVENT_BUS.publish(new KeyReleasedEvent(event)));
+        addEventHandler(KeyEvent.KEY_RELEASED, event -> Railroad.EVENT_BUS.publish(new KeyReleasedEvent(event)));
 
-        addEventHandler(KeyEvent.KEY_TYPED, event ->
-            Railroad.EVENT_BUS.publish(new KeyTypedEvent(event)));
+        addEventHandler(KeyEvent.KEY_TYPED, event -> Railroad.EVENT_BUS.publish(new KeyTypedEvent(event)));
     }
 
     private <T extends Event> void addEventHandler(EventType<T> eventType, EventHandler<? super T> handler) {

@@ -18,12 +18,14 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 /**
- * Detects the presence of Fabric modding platform support in a project directory by searching for fabric.mod.json and extracting metadata.
+ * Detects the presence of Fabric modding platform support in a project directory by searching for fabric.mod.json and
+ * extracting metadata.
  * This detector is used by the facet system to identify Fabric mod projects and extract relevant configuration data.
  */
 public class FabricFacetDetector implements FacetDetector<FabricFacetData> {
     /**
-     * Detects a Fabric facet in the given path by searching for fabric.mod.json and extracting mod metadata and build info.
+     * Detects a Fabric facet in the given path by searching for fabric.mod.json and extracting mod metadata and build
+     * info.
      *
      * @param project the project context for detection
      * @return an Optional containing the Fabric facet if detected, or empty if not found
@@ -55,25 +57,26 @@ public class FabricFacetDetector implements FacetDetector<FabricFacetData> {
 
             if (project.getGradleManager().isGradleProject()) {
                 GradleModelService gradleModelService = project.getGradleManager().getGradleModelService();
-                gradleModelService.getCachedModel().map(gradleBuildModel -> gradleBuildModel.fabricData()).ifPresent(fabricDataModel -> {
-                    data.setMinecraftVersion(fabricDataModel.minecraftVersion());
-                    data.setYarnMappingsVersion(fabricDataModel.mappingsVersion());
-                    data.setFabricLoaderVersion(fabricDataModel.loaderVersion());
-                    data.setFabricApiVersion(fabricDataModel.fabricApiVersion());
-                    if (fabricDataModel.loomVersion() != null) {
-                        data.setLoomVersion(fabricDataModel.loomVersion().version());
-                        data.setArchitecturyLoom(fabricDataModel.loomVersion().isArchitecturyLoom());
-                    }
+                gradleModelService.getCachedModel().map(gradleBuildModel -> gradleBuildModel.fabricData())
+                    .ifPresent(fabricDataModel -> {
+                        data.setMinecraftVersion(fabricDataModel.minecraftVersion());
+                        data.setYarnMappingsVersion(fabricDataModel.mappingsVersion());
+                        data.setFabricLoaderVersion(fabricDataModel.loaderVersion());
+                        data.setFabricApiVersion(fabricDataModel.fabricApiVersion());
+                        if (fabricDataModel.loomVersion() != null) {
+                            data.setLoomVersion(fabricDataModel.loomVersion().version());
+                            data.setArchitecturyLoom(fabricDataModel.loomVersion().isArchitecturyLoom());
+                        }
 
-                    // TODO: Set source file
-                });
+                        // TODO: Set source file
+                    });
             }
 
             return Optional.of(new Facet<>(FacetManager.FABRIC, data));
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to read fabric.mod.json at {}", fabricModJson, exception);
             return Optional.empty();
-        } catch (GradleException | BuildException ignored) {
+        } catch (GradleException | BuildException _) {
         } catch (RuntimeException exception) {
             Railroad.LOGGER.error("Failed to parse Fabric metadata at {}", fabricModJson, exception);
         }

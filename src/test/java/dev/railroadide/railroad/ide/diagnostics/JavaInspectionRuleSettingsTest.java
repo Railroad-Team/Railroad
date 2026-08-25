@@ -32,7 +32,7 @@ class JavaInspectionRuleSettingsTest {
         assertFalse(JavaInspectionRuleSettings.ruleEnabledOverride("test:rule").orElse(true));
         assertFalse(JavaInspectionRuleSettings.tagEnabledOverride("names").orElse(true));
         assertEquals(SemanticDiagnostic.Severity.WARNING,
-                JavaInspectionRuleSettings.severityOverride("test:rule").orElseThrow());
+            JavaInspectionRuleSettings.severityOverride("test:rule").orElseThrow());
 
         JavaInspectionRuleSettings.resetAll();
         assertTrue(JavaInspectionRuleSettings.ruleEnabledOverrides().isEmpty());

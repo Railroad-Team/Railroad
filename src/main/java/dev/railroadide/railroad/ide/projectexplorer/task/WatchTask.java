@@ -58,7 +58,8 @@ public class WatchTask extends Task<Void> {
                                 registerAll(child, watcher);
                             }
                         } catch (IOException exception) {
-                            updateMessage("Failed to register new directory: " + child + " due to " + exception.getMessage());
+                            updateMessage(
+                                "Failed to register new directory: " + child + " due to " + exception.getMessage());
                         }
                     }
                 }

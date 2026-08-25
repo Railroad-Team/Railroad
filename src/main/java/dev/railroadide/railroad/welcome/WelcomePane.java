@@ -49,35 +49,37 @@ public class WelcomePane extends HBox {
         getChildren().addAll(leftPane, verticalSeparator, rightPane);
         HBox.setHgrow(rightPane, Priority.ALWAYS);
 
-        leftPane.getListView().getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue == null) return;
-            switch (newValue) {
-                case HOME -> {
-                    rightPane.getChildren().clear();
-                    rightPane.getChildren().addAll(headerPane, projectsPane);
+        leftPane.getListView().getSelectionModel().selectedItemProperty()
+            .addListener((observable, oldValue, newValue) -> {
+                if (newValue == null)
+                    return;
+                switch (newValue) {
+                    case HOME -> {
+                        rightPane.getChildren().clear();
+                        rightPane.getChildren().addAll(headerPane, projectsPane);
+                    }
+                    case OPEN_PROJECT -> {
+                        openProjectDialog();
+                        // Reset selection to HOME after opening dialog
+                        leftPane.getListView().getSelectionModel().select(WelcomeLeftPane.MenuType.HOME);
+                    }
+                    case NEW_PROJECT -> {
+                        newProjectPane.set(new NewProjectPane());
+                        rightPane.getChildren().setAll(newProjectPane.get());
+                        VBox.setVgrow(newProjectPane.get(), Priority.ALWAYS);
+                    }
+                    case IMPORT_PROJECT -> {
+                        var importProjectsPane = new WelcomeImportProjectsPane();
+                        rightPane.getChildren().setAll(importProjectsPane);
+                        VBox.setVgrow(importProjectsPane, Priority.ALWAYS);
+                    }
+                    case SETTINGS -> {
+                        SettingsPane.openSettingsWindow();
+                        leftPane.getListView().getSelectionModel().select(WelcomeLeftPane.MenuType.HOME);
+                    }
+                    default -> throw new IllegalStateException("Unexpected value: " + newValue);
                 }
-                case OPEN_PROJECT -> {
-                    openProjectDialog();
-                    // Reset selection to HOME after opening dialog
-                    leftPane.getListView().getSelectionModel().select(WelcomeLeftPane.MenuType.HOME);
-                }
-                case NEW_PROJECT -> {
-                    newProjectPane.set(new NewProjectPane());
-                    rightPane.getChildren().setAll(newProjectPane.get());
-                    VBox.setVgrow(newProjectPane.get(), Priority.ALWAYS);
-                }
-                case IMPORT_PROJECT -> {
-                    var importProjectsPane = new WelcomeImportProjectsPane();
-                    rightPane.getChildren().setAll(importProjectsPane);
-                    VBox.setVgrow(importProjectsPane, Priority.ALWAYS);
-                }
-                case SETTINGS -> {
-                    SettingsPane.openSettingsWindow();
-                    leftPane.getListView().getSelectionModel().select(WelcomeLeftPane.MenuType.HOME);
-                }
-                default -> throw new IllegalStateException("Unexpected value: " + newValue);
-            }
-        });
+            });
 
         Platform.runLater(this::requestFocus);
     }
@@ -94,17 +96,17 @@ public class WelcomePane extends HBox {
 
                 // For now, we will allow opening any directory and let the Project class handle validation
                 // TODO: Re-add validation here in the future
-//                if (isValidProjectDirectory(projectPath)) {
+                // if (isValidProjectDirectory(projectPath)) {
                 var project = new RailroadProject(projectPath);
                 project.open();
-//                } else {
-//                    WindowBuilder.createAlert(
-//                        AlertType.ERROR,
-//                        "railroad.dialog.open_project.error.invalid_directory",
-//                        "railroad.dialog.open_project.error.invalid_directory",
-//                        "railroad.dialog.open_project.error.invalid_directory.message"
-//                    ).build();
-//                }
+                // } else {
+                // WindowBuilder.createAlert(
+                // AlertType.ERROR,
+                // "railroad.dialog.open_project.error.invalid_directory",
+                // "railroad.dialog.open_project.error.invalid_directory",
+                // "railroad.dialog.open_project.error.invalid_directory.message"
+                // ).build();
+                // }
             }
         });
     }

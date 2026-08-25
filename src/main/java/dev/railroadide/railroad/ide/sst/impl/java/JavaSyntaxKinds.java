@@ -64,7 +64,8 @@ public final class JavaSyntaxKinds {
     public static final SyntaxKind BLOCK = SyntaxKind.of("JAVA_BLOCK");
     public static final SyntaxKind EMPTY_STATEMENT = SyntaxKind.of("JAVA_EMPTY_STATEMENT");
     public static final SyntaxKind EXPRESSION_STATEMENT = SyntaxKind.of("JAVA_EXPRESSION_STATEMENT");
-    public static final SyntaxKind LOCAL_VARIABLE_DECLARATION_STATEMENT = SyntaxKind.of("JAVA_LOCAL_VARIABLE_DECLARATION_STATEMENT");
+    public static final SyntaxKind LOCAL_VARIABLE_DECLARATION_STATEMENT = SyntaxKind
+        .of("JAVA_LOCAL_VARIABLE_DECLARATION_STATEMENT");
     public static final SyntaxKind IF_STATEMENT = SyntaxKind.of("JAVA_IF_STATEMENT");
     public static final SyntaxKind SWITCH_STATEMENT = SyntaxKind.of("JAVA_SWITCH_STATEMENT");
     public static final SyntaxKind SWITCH_RULE = SyntaxKind.of("JAVA_SWITCH_RULE");
@@ -110,7 +111,8 @@ public final class JavaSyntaxKinds {
     public static final SyntaxKind METHOD_INVOCATION_EXPRESSION = SyntaxKind.of("JAVA_METHOD_INVOCATION_EXPRESSION");
     public static final SyntaxKind ARGUMENT_LIST = SyntaxKind.of("JAVA_ARGUMENT_LIST");
     public static final SyntaxKind METHOD_REFERENCE_EXPRESSION = SyntaxKind.of("JAVA_METHOD_REFERENCE_EXPRESSION");
-    public static final SyntaxKind CLASS_INSTANCE_CREATION_EXPRESSION = SyntaxKind.of("JAVA_CLASS_INSTANCE_CREATION_EXPRESSION");
+    public static final SyntaxKind CLASS_INSTANCE_CREATION_EXPRESSION = SyntaxKind
+        .of("JAVA_CLASS_INSTANCE_CREATION_EXPRESSION");
     public static final SyntaxKind ANONYMOUS_CLASS_BODY = SyntaxKind.of("JAVA_ANONYMOUS_CLASS_BODY");
     public static final SyntaxKind ARRAY_CREATION_EXPRESSION = SyntaxKind.of("JAVA_ARRAY_CREATION_EXPRESSION");
     public static final SyntaxKind ARRAY_INITIALIZER_EXPRESSION = SyntaxKind.of("JAVA_ARRAY_INITIALIZER_EXPRESSION");

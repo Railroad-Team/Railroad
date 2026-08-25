@@ -24,9 +24,7 @@ public final class CoreTypeResolutionInspection implements JavaInspectionRulePro
             JavaSemanticRules.UNRESOLVED_TYPE.defaultSeverity(),
             JavaSemanticRules.UNRESOLVED_TYPE.messageTemplate(),
             Set.of("core", "types"),
-            CoreTypeResolutionInspection::reportUnresolvedTypeReferences
-        )
-    );
+            CoreTypeResolutionInspection::reportUnresolvedTypeReferences));
 
     private static void reportUnresolvedTypeReferences(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
         Set<String> availableTypeNames = context.availableTypeNames();
@@ -34,9 +32,8 @@ public final class CoreTypeResolutionInspection implements JavaInspectionRulePro
             String kindId = node.kind().id();
             if (!JAVA_TYPE_REFERENCE.equals(kindId)
                 && !JAVA_INTERSECTION_TYPE_REFERENCE.equals(kindId)
-                && !JAVA_UNION_TYPE_REFERENCE.equals(kindId)) {
+                && !JAVA_UNION_TYPE_REFERENCE.equals(kindId))
                 return;
-            }
 
             Type type = context.inferredType(node).orElse(null);
             if (type == null || type.kind() != Type.Kind.DECLARED)

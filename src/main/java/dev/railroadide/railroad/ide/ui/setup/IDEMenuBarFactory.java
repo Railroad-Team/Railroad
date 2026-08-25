@@ -34,7 +34,8 @@ public final class IDEMenuBarFactory {
     public static MenuBar create(Project project) {
         var newFileItem = new LocalizedMenuItem("railroad.menu.file.new_file");
         newFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE));
-        newFileItem.setKeybindData(new KeybindData(KeyCode.N, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
+        newFileItem
+            .setKeybindData(new KeybindData(KeyCode.N, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
 
         var openFileItem = new LocalizedMenuItem("railroad.menu.file.open_file");
         openFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
@@ -46,7 +47,8 @@ public final class IDEMenuBarFactory {
 
         var saveAsItem = new LocalizedMenuItem("railroad.menu.file.save_as");
         saveAsItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
-        saveAsItem.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
+        saveAsItem
+            .setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
 
         var exportDiagnosticsItem = new LocalizedMenuItem("railroad.menu.file.export_diagnostics");
         exportDiagnosticsItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE_ALT));
@@ -62,7 +64,7 @@ public final class IDEMenuBarFactory {
 
             exportDiagnosticsItem.setDisable(true);
             CompletableFuture.runAsync(() -> ProjectDiagnosticsScanner.scan(project, destination.toPath()))
-                .whenComplete((ignored, exception) -> Platform.runLater(() -> {
+                .whenComplete((_, exception) -> Platform.runLater(() -> {
                     exportDiagnosticsItem.setDisable(false);
                     if (exception == null) {
                         Railroad.LOGGER.info("Exported project diagnostics to {}", destination);
@@ -119,7 +121,7 @@ public final class IDEMenuBarFactory {
 
         var fullScreenItem = new LocalizedMenuItem("railroad.menu.view.full_screen");
         fullScreenItem.setGraphic(new FontIcon(FontAwesomeSolid.EXPAND));
-        fullScreenItem.setOnAction($ -> WindowManager.toggleFullScreen());
+        fullScreenItem.setOnAction(_ -> WindowManager.toggleFullScreen());
 
         var runItem = new LocalizedMenuItem("railroad.menu.run.run");
         runItem.setGraphic(new FontIcon(FontAwesomeSolid.PLAY));
@@ -136,15 +138,16 @@ public final class IDEMenuBarFactory {
         var settingsItem = new LocalizedMenuItem("railroad.menu.tools.settings");
         settingsItem.setGraphic(new FontIcon(FontAwesomeSolid.COG));
         settingsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.SHORTCUT_DOWN));
-        settingsItem.setOnAction($ -> SettingsPane.openSettingsWindow());
+        settingsItem.setOnAction(_ -> SettingsPane.openSettingsWindow());
 
         var pluginsItem = new LocalizedMenuItem("railroad.menu.tools.plugins");
         pluginsItem.setGraphic(new FontIcon(FontAwesomeSolid.PUZZLE_PIECE));
-        pluginsItem.setOnAction($ -> SettingsPane.openPluginsWindow());
+        pluginsItem.setOnAction(_ -> SettingsPane.openPluginsWindow());
 
         var terminalItem = new LocalizedMenuItem("railroad.menu.tools.terminal");
         terminalItem.setGraphic(new FontIcon(FontAwesomeSolid.TERMINAL));
-        terminalItem.setAccelerator(new KeyCodeCombination(KeyCode.T, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
+        terminalItem
+            .setAccelerator(new KeyCodeCombination(KeyCode.T, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
 
         var fileMenu = new LocalizedMenu("railroad.menu.file");
         fileMenu.getItems().addAll(
@@ -155,8 +158,7 @@ public final class IDEMenuBarFactory {
             new SeparatorMenuItem(),
             exportDiagnosticsItem,
             new SeparatorMenuItem(),
-            exitItem
-        );
+            exitItem);
         fileMenu.getStyleClass().add("rr-menu");
 
         var editMenu = new LocalizedMenu("railroad.menu.edit");
@@ -169,8 +171,7 @@ public final class IDEMenuBarFactory {
             pasteItem,
             new SeparatorMenuItem(),
             findItem,
-            replaceItem
-        );
+            replaceItem);
         editMenu.getStyleClass().add("rr-menu");
 
         var viewMenu = new LocalizedMenu("railroad.menu.view");
@@ -179,8 +180,7 @@ public final class IDEMenuBarFactory {
             propertiesItem,
             consoleItem,
             new SeparatorMenuItem(),
-            fullScreenItem
-        );
+            fullScreenItem);
         viewMenu.getStyleClass().add("rr-menu");
 
         var runMenu = new LocalizedMenu("railroad.menu.run");

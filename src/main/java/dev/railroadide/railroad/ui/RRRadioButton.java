@@ -62,7 +62,7 @@ public class RRRadioButton extends RadioButton {
         loadingSpinner.setIconSize(16);
         loadingSpinner.getStyleClass().add("loading-spinner");
 
-        setOnMousePressed($ -> {
+        setOnMousePressed(_ -> {
             if (!getIsLoading()) {
                 var scale = new ScaleTransition(Duration.millis(100), this);
                 scale.setToX(0.95);
@@ -71,7 +71,7 @@ public class RRRadioButton extends RadioButton {
             }
         });
 
-        setOnMouseReleased($ -> {
+        setOnMouseReleased(_ -> {
             if (!getIsLoading()) {
                 var scale = new ScaleTransition(Duration.millis(100), this);
                 scale.setToX(1.0);
@@ -80,7 +80,7 @@ public class RRRadioButton extends RadioButton {
             }
         });
 
-        isLoading.addListener($ -> {
+        isLoading.addListener(_ -> {
             if (getIsLoading()) {
                 onLoading();
             } else {
@@ -96,7 +96,7 @@ public class RRRadioButton extends RadioButton {
      * The text will automatically update when the application language changes.
      *
      * @param localizationKey the localization key for the text
-     * @param args            optional formatting arguments for the localized text
+     * @param args optional formatting arguments for the localized text
      */
     public void setLocalizedText(String localizationKey, Object... args) {
         localizedText.setTranslation(localizationKey, args);

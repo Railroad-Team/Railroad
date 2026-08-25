@@ -110,7 +110,7 @@ public record FileItem(Project project, GitFileChange change) implements ChangeI
             return;
 
         Tab diffTab = existing.map(DiffTabLocation::tab).orElseGet(() -> {
-            GitDiffPane diffPane = new GitDiffPane(fileItem.project());
+            var diffPane = new GitDiffPane(fileItem.project());
             Tab created = tabPane.addTab("Git Diff", diffPane);
             created.textProperty().bind(diffPane.titleProperty());
             return created;

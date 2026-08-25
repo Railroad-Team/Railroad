@@ -26,11 +26,10 @@ class RailroadSemanticResolutionRegressionTest {
         Path preloaderPath = sourceRoot.resolve("dev/railroadide/railroad/RailroadPreloader.java").normalize();
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
-        List<SemanticDiagnostic> railroadCallDiagnostics =
-            runProvider(new CoreCallResolutionInspection(), railroadPath, Files.readString(railroadPath), symbolIndex);
+        List<SemanticDiagnostic> railroadCallDiagnostics = runProvider(new CoreCallResolutionInspection(), railroadPath,
+            Files.readString(railroadPath), symbolIndex);
         assertFalse(railroadCallDiagnostics.stream()
             .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve call 'InitializationStep'")),
             () -> railroadCallDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
@@ -38,10 +37,11 @@ class RailroadSemanticResolutionRegressionTest {
             .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve call 'publish'")),
             () -> railroadCallDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
 
-        List<SemanticDiagnostic> preloaderExceptionDiagnostics =
-            runProvider(new CoreExceptionInspection(), preloaderPath, Files.readString(preloaderPath), symbolIndex);
+        List<SemanticDiagnostic> preloaderExceptionDiagnostics = runProvider(new CoreExceptionInspection(),
+            preloaderPath, Files.readString(preloaderPath), symbolIndex);
         assertFalse(preloaderExceptionDiagnostics.stream()
-            .anyMatch(diagnostic -> diagnostic.message().contains("ErrorNotification") && diagnostic.message().contains("must extend Throwable")));
+            .anyMatch(diagnostic -> diagnostic.message().contains("ErrorNotification")
+                && diagnostic.message().contains("must extend Throwable")));
     }
 
     @Test
@@ -49,8 +49,7 @@ class RailroadSemanticResolutionRegressionTest {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
         List<String> unresolvedPublishDiagnostics = new ArrayList<>();
         try (Stream<Path> paths = Files.walk(sourceRoot)) {
@@ -62,8 +61,8 @@ class RailroadSemanticResolutionRegressionTest {
                 if (!source.contains(".publish("))
                     continue;
 
-                List<SemanticDiagnostic> diagnostics =
-                    runProvider(new CoreCallResolutionInspection(), sourceFile, source, symbolIndex);
+                List<SemanticDiagnostic> diagnostics = runProvider(new CoreCallResolutionInspection(), sourceFile,
+                    source, symbolIndex);
                 diagnostics.stream()
                     .filter(diagnostic -> diagnostic.message().equals("Cannot resolve call 'publish'"))
                     .map(diagnostic -> sourceRoot.relativize(sourceFile) + ": " + diagnostic.message())
@@ -80,11 +79,10 @@ class RailroadSemanticResolutionRegressionTest {
         Path preloaderPath = sourceRoot.resolve("dev/railroadide/railroad/RailroadPreloader.java").normalize();
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
-        List<SemanticDiagnostic> diagnostics =
-            runProvider(new CoreAssignmentInspection(), preloaderPath, Files.readString(preloaderPath), symbolIndex);
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), preloaderPath,
+            Files.readString(preloaderPath), symbolIndex);
 
         assertFalse(diagnostics.stream()
             .anyMatch(diagnostic -> diagnostic.message().contains(" to 'void'")),
@@ -97,20 +95,19 @@ class RailroadSemanticResolutionRegressionTest {
         Path servicesPath = sourceRoot.resolve("dev/railroadide/railroad/Services.java").normalize();
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
-        List<SemanticDiagnostic> callDiagnostics =
-            runProvider(new CoreCallResolutionInspection(), servicesPath, Files.readString(servicesPath), symbolIndex);
+        List<SemanticDiagnostic> callDiagnostics = runProvider(new CoreCallResolutionInspection(), servicesPath,
+            Files.readString(servicesPath), symbolIndex);
         assertFalse(callDiagnostics.stream()
-                .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve call 'ApplicationInfoService'")
-                    || diagnostic.message().equals("Cannot resolve call 'LocalizationService'")),
+            .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve call 'ApplicationInfoService'")
+                || diagnostic.message().equals("Cannot resolve call 'LocalizationService'")),
             () -> callDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
 
-        List<SemanticDiagnostic> typeDiagnostics =
-            runProvider(new CoreTypeResolutionInspection(), servicesPath, Files.readString(servicesPath), symbolIndex);
+        List<SemanticDiagnostic> typeDiagnostics = runProvider(new CoreTypeResolutionInspection(), servicesPath,
+            Files.readString(servicesPath), symbolIndex);
         assertFalse(typeDiagnostics.stream()
-                .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve type 'T'")),
+            .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve type 'T'")),
             () -> typeDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -122,46 +119,44 @@ class RailroadSemanticResolutionRegressionTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(List.of(compiledClasses)),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
         String source = Files.readString(environmentPath);
 
-        List<SemanticDiagnostic> callDiagnostics =
-            runProvider(new CoreCallResolutionInspection(), environmentPath, source, symbolIndex);
+        List<SemanticDiagnostic> callDiagnostics = runProvider(new CoreCallResolutionInspection(), environmentPath,
+            source, symbolIndex);
         assertFalse(callDiagnostics.stream()
-                .anyMatch(diagnostic -> Set.of(
-                    "Cannot resolve call 'equals'",
-                    "Cannot resolve call 'isUseWrapper'",
-                    "Cannot resolve call 'getGradleUserHome'",
-                    "Cannot resolve call 'getGradleJvm'",
-                    "Cannot resolve call 'getConfigurations'",
-                    "Cannot resolve call 'getVmOptions'",
-                    "Cannot resolve call 'isDaemonEnabled'",
-                    "Cannot resolve call 'getDaemonIdleTimeout'",
-                    "Cannot resolve call 'getTask'",
-                    "Cannot resolve call 'getGradleProjectPath'",
-                    "Cannot resolve call 'getJavaHome'"
-                ).contains(diagnostic.message())),
+            .anyMatch(diagnostic -> Set.of(
+                "Cannot resolve call 'equals'",
+                "Cannot resolve call 'isUseWrapper'",
+                "Cannot resolve call 'getGradleUserHome'",
+                "Cannot resolve call 'getGradleJvm'",
+                "Cannot resolve call 'getConfigurations'",
+                "Cannot resolve call 'getVmOptions'",
+                "Cannot resolve call 'isDaemonEnabled'",
+                "Cannot resolve call 'getDaemonIdleTimeout'",
+                "Cannot resolve call 'getTask'",
+                "Cannot resolve call 'getGradleProjectPath'",
+                "Cannot resolve call 'getJavaHome'").contains(diagnostic.message())),
             () -> callDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
 
-        List<SemanticDiagnostic> inheritanceDiagnostics =
-            runProvider(new CoreInheritanceInspection(), environmentPath, source, symbolIndex);
+        List<SemanticDiagnostic> inheritanceDiagnostics = runProvider(new CoreInheritanceInspection(), environmentPath,
+            source, symbolIndex);
         assertFalse(inheritanceDiagnostics.stream()
-                .anyMatch(diagnostic -> diagnostic.message().contains("project()")),
+            .anyMatch(diagnostic -> diagnostic.message().contains("project()")),
             () -> inheritanceDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
 
-        List<SemanticDiagnostic> assignmentDiagnostics =
-            runProvider(new CoreDefiniteAssignmentInspection(), environmentPath, source, symbolIndex);
+        List<SemanticDiagnostic> assignmentDiagnostics = runProvider(new CoreDefiniteAssignmentInspection(),
+            environmentPath, source, symbolIndex);
         assertFalse(assignmentDiagnostics.stream()
-                .anyMatch(diagnostic -> diagnostic.message().contains("Variable 'project'")
-                    || diagnostic.message().contains("Variable 'settings'")
-                    || diagnostic.message().contains("Variable 'gradleInstallationPath'")),
+            .anyMatch(diagnostic -> diagnostic.message().contains("Variable 'project'")
+                || diagnostic.message().contains("Variable 'settings'")
+                || diagnostic.message().contains("Variable 'gradleInstallationPath'")),
             () -> assignmentDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
 
-        List<SemanticDiagnostic> memberDiagnostics =
-            runProvider(new CoreMemberResolutionInspection(), environmentPath, source, symbolIndex);
+        List<SemanticDiagnostic> memberDiagnostics = runProvider(new CoreMemberResolutionInspection(), environmentPath,
+            source, symbolIndex);
         assertFalse(memberDiagnostics.stream()
-                .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve member 'length'")),
+            .anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve member 'length'")),
             () -> memberDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -173,15 +168,15 @@ class RailroadSemanticResolutionRegressionTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(List.of(compiledClasses)),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
         String source = Files.readString(windowManagerPath);
 
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
         diagnostics.addAll(runProvider(new CoreCallResolutionInspection(), windowManagerPath, source, symbolIndex));
         diagnostics.addAll(runProvider(new CoreMemberResolutionInspection(), windowManagerPath, source, symbolIndex));
         diagnostics.addAll(runProvider(new CoreNameResolutionInspection(), windowManagerPath, source, symbolIndex));
-        diagnostics.addAll(runProvider(new CoreDuplicateDeclarationInspection(), windowManagerPath, source, symbolIndex));
+        diagnostics
+            .addAll(runProvider(new CoreDuplicateDeclarationInspection(), windowManagerPath, source, symbolIndex));
 
         assertFalse(diagnostics.stream().anyMatch(diagnostic -> Set.of(
             "Cannot resolve call 'getPrimaryStage'",
@@ -189,8 +184,7 @@ class RailroadSemanticResolutionRegressionTest {
             "Cannot resolve member 'railroad'",
             "Cannot resolve member 'railroadide'",
             "Cannot resolve name 'dev'",
-            "Duplicate declaration for 'WindowManager'"
-        ).contains(diagnostic.message())),
+            "Duplicate declaration for 'WindowManager'").contains(diagnostic.message())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -202,19 +196,19 @@ class RailroadSemanticResolutionRegressionTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(List.of(compiledClasses)),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
         String source = Files.readString(windowEventsPath);
 
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
         diagnostics.addAll(runProvider(new CoreCallResolutionInspection(), windowEventsPath, source, symbolIndex));
         diagnostics.addAll(runProvider(new CoreNameResolutionInspection(), windowEventsPath, source, symbolIndex));
-        diagnostics.addAll(runProvider(new CoreDuplicateDeclarationInspection(), windowEventsPath, source, symbolIndex));
+        diagnostics
+            .addAll(runProvider(new CoreDuplicateDeclarationInspection(), windowEventsPath, source, symbolIndex));
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-                diagnostic.message().equals("Cannot resolve call 'publish'")
-                    || diagnostic.message().equals("Cannot resolve name 'event'")
-                    || diagnostic.message().equals("Duplicate declaration for 'event'")),
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> diagnostic.message().equals("Cannot resolve call 'publish'")
+                || diagnostic.message().equals("Cannot resolve name 'event'")
+                || diagnostic.message().equals("Duplicate declaration for 'event'")),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -226,8 +220,7 @@ class RailroadSemanticResolutionRegressionTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(List.of(compiledClasses)),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
         String source = Files.readString(sourcePath);
 
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
@@ -241,8 +234,8 @@ class RailroadSemanticResolutionRegressionTest {
             "Cannot resolve call 'translateContent'",
             "Cannot resolve call 'onConfirm'",
             "Cannot resolve call 'onCancel'",
-            "Cannot assign 'boolean' to 'dev.railroadide.railroad.window.DialogBuilder'"
-        ).contains(diagnostic.message())),
+            "Cannot assign 'boolean' to 'dev.railroadide.railroad.window.DialogBuilder'")
+            .contains(diagnostic.message())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -252,11 +245,10 @@ class RailroadSemanticResolutionRegressionTest {
         Path sourceFile = sourceRoot.resolve(
             "dev/railroadide/railroad/ide/diagnostics/inspections/CoreAccessibilityInspection.java");
         Path compiledClasses = Path.of("build/classes/java/main").toAbsolutePath().normalize();
-        CompositeJavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
+        var symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(List.of(compiledClasses)),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
         String source = Files.readString(sourceFile);
 
         List<SemanticDiagnostic> diagnostics = new ArrayList<>(runProvider(
@@ -284,16 +276,13 @@ class RailroadSemanticResolutionRegressionTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(runtimeClasspath),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreAccessibilityInspection(), sourceFile, Files.readString(sourceFile), symbolIndex);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-                "SEM_INACCESSIBLE_MEMBER".equals(diagnostic.code())),
-            () -> diagnostics.stream().map(diagnostic ->
-                    diagnostic.startOffset() + " " + diagnostic.message())
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_INACCESSIBLE_MEMBER".equals(diagnostic.code())),
+            () -> diagnostics.stream().map(diagnostic -> diagnostic.startOffset() + " " + diagnostic.message())
                 .collect(Collectors.joining("\n")));
     }
 

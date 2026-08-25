@@ -19,8 +19,8 @@ public class FuzzySearch<D, R> {
     /**
      * Constructs a new FuzzySearch instance.
      *
-     * @param data        The data to search in, e.g., a map or a list.
-     * @param extractor   A function to extract a list of search strings from the data.
+     * @param data The data to search in, e.g., a map or a list.
+     * @param extractor A function to extract a list of search strings from the data.
      * @param transformer A function to transform a matching key into a result.
      */
     public FuzzySearch(D data, Function<D, List<String>> extractor, Function<String, R> transformer) {
@@ -75,14 +75,16 @@ public class FuzzySearch<D, R> {
         for (String key : extractor.apply(data)) {
             String keyMeta = metaphone(key);
 
-            int score = dev.railroadide.railroad.utility.StringUtils.levenshtein(query.toLowerCase(), key.toLowerCase());
+            int score = dev.railroadide.railroad.utility.StringUtils.levenshtein(query.toLowerCase(),
+                key.toLowerCase());
 
             if (queryMeta.equals(keyMeta)) {
                 score -= 1;
             }
 
             for (String substring : key.split(" ")) {
-                int substringScore = dev.railroadide.railroad.utility.StringUtils.levenshtein(query.toLowerCase(), substring.toLowerCase());
+                int substringScore = dev.railroadide.railroad.utility.StringUtils.levenshtein(query.toLowerCase(),
+                    substring.toLowerCase());
 
                 if (query.contains(substring)) {
                     // TODO: possibly add a system where the uniqueness of a substring is taken into account
@@ -101,9 +103,8 @@ public class FuzzySearch<D, R> {
         }
 
         int maxDistance = Math.max(2, query.length() / 3);
-        if (bestScore > maxDistance) {
+        if (bestScore > maxDistance)
             return null;
-        }
 
         return transformer.apply(bestMatch);
     }
@@ -113,7 +114,7 @@ public class FuzzySearch<D, R> {
      * and Levenshtein distance.
      *
      * @param query The string to search for.
-     * @param key   The string to compare against.
+     * @param key The string to compare against.
      * @return true if the two strings are considered similar, false otherwise.
      */
     public boolean isSimilar(String query, String key) {
@@ -129,9 +130,8 @@ public class FuzzySearch<D, R> {
         for (String substring : key.split(" ")) {
             int substringScore = StringUtils.levenshtein(query.toLowerCase(), substring.toLowerCase());
 
-            if (substringScore <= Math.max(2, substring.length() / 3)) {
+            if (substringScore <= Math.max(2, substring.length() / 3))
                 return true;
-            }
         }
 
         int maxDistance = Math.max(2, query.length() / 3);

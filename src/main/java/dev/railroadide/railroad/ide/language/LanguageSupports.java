@@ -12,8 +12,7 @@ public final class LanguageSupports {
     private static final List<LanguageSupport> BUILT_INS = List.of(
         new JavaLanguageSupport(),
         new JsonLanguageSupport(),
-        new MarkdownLanguageSupport()
-    );
+        new MarkdownLanguageSupport());
 
     private static boolean initialized = false;
 

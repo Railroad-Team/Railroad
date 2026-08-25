@@ -46,13 +46,15 @@ public class GradleTaskContextMenu extends ContextMenu {
      * Get an existing run configuration for the given Gradle task, or create a new one if it doesn't exist.
      *
      * @param project the current project
-     * @param task    the Gradle task
+     * @param task the Gradle task
      * @return the run configuration
      */
-    public static @NotNull RunConfiguration<GradleRunConfigurationData> getOrCreateRunConfig(Project project, RailroadGradleTask task) {
+    public static @NotNull RunConfiguration<GradleRunConfigurationData> getOrCreateRunConfig(Project project,
+        RailroadGradleTask task) {
         RunConfigurationManager runConfigManager = project.getRunConfigManager();
         @SuppressWarnings("unchecked")
-        Optional<RunConfiguration<GradleRunConfigurationData>> existingRunConfig = runConfigManager.getConfigurations().stream()
+        Optional<RunConfiguration<GradleRunConfigurationData>> existingRunConfig = runConfigManager.getConfigurations()
+            .stream()
             .filter(configuration -> hasExistingRunConfig(task, configuration))
             .map(configuration -> (RunConfiguration<GradleRunConfigurationData>) configuration)
             .findFirst();
@@ -63,11 +65,12 @@ public class GradleTaskContextMenu extends ContextMenu {
     /**
      * Create a new run configuration for the given Gradle task.
      *
-     * @param task             the Gradle task
+     * @param task the Gradle task
      * @param runConfigManager the run configuration manager
      * @return the newly created run configuration
      */
-    public static @NotNull RunConfiguration<GradleRunConfigurationData> createRunConfig(RailroadGradleTask task, RunConfigurationManager runConfigManager) {
+    public static @NotNull RunConfiguration<GradleRunConfigurationData> createRunConfig(RailroadGradleTask task,
+        RunConfigurationManager runConfigManager) {
         var configurationData = new GradleRunConfigurationData();
         RailroadModule module = task.module();
         if (module == null || module.getGradleProject() == null)
@@ -87,7 +90,7 @@ public class GradleTaskContextMenu extends ContextMenu {
     /**
      * Check if the given run configuration corresponds to the given Gradle task.
      *
-     * @param task          the Gradle task
+     * @param task the Gradle task
      * @param configuration the run configuration
      * @return true if the run configuration corresponds to the Gradle task, false otherwise
      */

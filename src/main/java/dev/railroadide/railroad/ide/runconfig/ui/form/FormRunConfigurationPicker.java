@@ -64,15 +64,14 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
     }
 
     public FormRunConfigurationPicker(String labelKey,
-                                      boolean required,
-                                      ObservableList<RunConfiguration<?>> availableConfigurations,
-                                      Predicate<RunConfiguration<?>> filter,
-                                      List<RunConfiguration<?>> initialSelection) {
+        boolean required,
+        ObservableList<RunConfiguration<?>> availableConfigurations,
+        Predicate<RunConfiguration<?>> filter,
+        List<RunConfiguration<?>> initialSelection) {
         super(labelKey, required, Map.of(
             "availableConfigurations", availableConfigurations,
             "filter", filter == null ? (Predicate<RunConfiguration<?>>) Objects::nonNull : filter,
-            "initialSelection", initialSelection == null ? List.of() : initialSelection
-        ));
+            "initialSelection", initialSelection == null ? List.of() : initialSelection));
         ensureStateInitialized();
 
         selectedConfigurations.addListener((ListChangeListener<? super RunConfiguration<?>>) change -> {
@@ -100,7 +99,8 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
                 setText(empty ? null : formatDisplayName(item));
             }
         });
-        selectedListView.setPlaceholder(new LocalizedLabel("railroad.runconfig.compound.configuration.configurations.empty"));
+        selectedListView
+            .setPlaceholder(new LocalizedLabel("railroad.runconfig.compound.configuration.configurations.empty"));
         RRVBox.setVgrow(selectedListView, Priority.ALWAYS);
 
         var toolbar = new RRHBox();
@@ -118,14 +118,15 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
             "railroad.runconfig.compound.configuration.configurations.remove",
             "remove");
         removeButton.disableProperty().bind(selectedListView.getSelectionModel().selectedItemProperty().isNull());
-        removeButton.setOnAction($ -> removeSelectedConfiguration());
+        removeButton.setOnAction(_ -> removeSelectedConfiguration());
         toolbar.getChildren().add(removeButton);
 
         RRButton moveUpButton = createToolbarButton(FontAwesomeSolid.ARROW_UP,
             "railroad.runconfig.compound.configuration.configurations.move_up",
             "move-up");
-        moveUpButton.disableProperty().bind(selectedListView.getSelectionModel().selectedIndexProperty().lessThanOrEqualTo(0));
-        moveUpButton.setOnAction($ -> moveSelection(-1));
+        moveUpButton.disableProperty()
+            .bind(selectedListView.getSelectionModel().selectedIndexProperty().lessThanOrEqualTo(0));
+        moveUpButton.setOnAction(_ -> moveSelection(-1));
         toolbar.getChildren().add(moveUpButton);
 
         RRButton moveDownButton = createToolbarButton(FontAwesomeSolid.ARROW_DOWN,
@@ -137,9 +138,8 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
                 return selectedIndex < 0 || selectedIndex >= selectedConfigurations.size() - 1;
             },
             selectedListView.getSelectionModel().selectedIndexProperty(),
-            selectedConfigurations
-        ));
-        moveDownButton.setOnAction($ -> moveSelection(1));
+            selectedConfigurations));
+        moveDownButton.setOnAction(_ -> moveSelection(1));
         toolbar.getChildren().add(moveDownButton);
 
         var container = new RRVBox(toolbar, selectedListView);
@@ -147,9 +147,8 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
 
         availableConfigurations.addListener((ListChangeListener<? super RunConfiguration<?>>) change -> {
             while (change.next()) {
-                if (change.wasRemoved() || change.wasAdded() || change.wasReplaced() || change.wasPermutated()) {
+                if (change.wasRemoved() || change.wasAdded() || change.wasReplaced() || change.wasPermutated())
                     break;
-                }
             }
 
             boolean selectionsChanged = synchronizeSelectionWithAvailable();
@@ -225,9 +224,8 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
         }
 
         refreshAddMenuItems();
-        if (addMenu.getItems().isEmpty()) {
+        if (addMenu.getItems().isEmpty())
             return;
-        }
 
         if (addMenu.isShowing()) {
             addMenu.hide();
@@ -243,12 +241,13 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
 
         for (RunConfiguration<?> configuration : selectableConfigurations) {
             var menuItem = new MenuItem(formatDisplayName(configuration));
-            menuItem.setOnAction($ -> addSelectedConfiguration(configuration));
+            menuItem.setOnAction(_ -> addSelectedConfiguration(configuration));
             addMenu.getItems().add(menuItem);
         }
 
         if (addMenu.getItems().isEmpty()) {
-            var emptyItem = new MenuItem(L18n.localize("railroad.runconfig.compound.configuration.configurations.empty"));
+            var emptyItem = new MenuItem(
+                L18n.localize("railroad.runconfig.compound.configuration.configurations.empty"));
             emptyItem.setDisable(true);
             addMenu.getItems().add(emptyItem);
         }
@@ -289,10 +288,9 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
 
     private void refreshSelectablePredicate() {
         ensureStateInitialized();
-        selectableConfigurations.setPredicate(configuration ->
-            configuration != null &&
-                filter.test(configuration) &&
-                selectedConfigurations.stream().noneMatch(selected -> selected.uuid().equals(configuration.uuid())));
+        selectableConfigurations.setPredicate(configuration -> configuration != null &&
+            filter.test(configuration) &&
+            selectedConfigurations.stream().noneMatch(selected -> selected.uuid().equals(configuration.uuid())));
     }
 
     private boolean synchronizeSelectionWithAvailable() {

@@ -10,10 +10,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record SingleMemberAnnotation(
-        Span span,
-        NameExpression name,
-        ElementValue value
-) implements Annotation {
+    Span span,
+    NameExpression name,
+    ElementValue value) implements Annotation {
     @Override
     public AstKind kind() {
         return AstKind.SINGLE_MEMBER_ANNOTATION;

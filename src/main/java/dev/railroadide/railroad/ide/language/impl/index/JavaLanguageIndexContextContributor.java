@@ -50,8 +50,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
             resolveDependencyRoots(project),
             resolveClasspathRoots(project),
             resolveModuleRoots(project),
-            resolveJdkHome(project)
-        );
+            resolveJdkHome(project));
     }
 
     private static List<Path> resolveSourceRoots(Project project) {
@@ -77,8 +76,10 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         } else if (project.hasFacet(FacetManager.MAVEN)) {
             consumeMavenModel(project, model -> {
                 Build build = model.getBuild();
-                addReadableDirectory(sourceRoots, resolveProjectPath(project, build != null ? build.getSourceDirectory() : null, "src/main/java"));
-                addReadableDirectory(sourceRoots, resolveProjectPath(project, build != null ? build.getTestSourceDirectory() : null, "src/test/java"));
+                addReadableDirectory(sourceRoots,
+                    resolveProjectPath(project, build != null ? build.getSourceDirectory() : null, "src/main/java"));
+                addReadableDirectory(sourceRoots, resolveProjectPath(project,
+                    build != null ? build.getTestSourceDirectory() : null, "src/test/java"));
             });
         } else {
             addReadableDirectory(sourceRoots, project.path().resolve("src/main/java"));
@@ -319,13 +320,15 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
     }
 
     private static void addMavenSystemDependencyRoot(Project project, Dependency dependency, List<Path> roots) {
-        if (!"system".equals(dependency.getScope()) || dependency.getSystemPath() == null || dependency.getSystemPath().isBlank())
+        if (!"system".equals(dependency.getScope()) || dependency.getSystemPath() == null
+            || dependency.getSystemPath().isBlank())
             return;
 
         try {
             addReadableFile(roots, resolveProjectPath(project, dependency.getSystemPath(), dependency.getSystemPath()));
         } catch (InvalidPathException exception) {
-            Railroad.LOGGER.warn("Ignoring invalid Maven system dependency path '{}' in {}", dependency.getSystemPath(), project.path(), exception);
+            Railroad.LOGGER.warn("Ignoring invalid Maven system dependency path '{}' in {}", dependency.getSystemPath(),
+                project.path(), exception);
         }
     }
 
@@ -390,7 +393,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
 
     private static void addReadableRoot(List<Path> paths, Path path) {
         if (path != null && Files.exists(path) && Files.isReadable(path)
-                && (Files.isRegularFile(path) || Files.isDirectory(path))) {
+            && (Files.isRegularFile(path) || Files.isDirectory(path))) {
             paths.add(path);
         }
     }
@@ -427,8 +430,9 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
                 GradleBuildModel model = gradleManager.getGradleModelService()
                     .refreshModel(false)
                     .get(30, TimeUnit.SECONDS);
-                if (model != null)
+                if (model != null) {
                     modelConsumer.accept(model);
+                }
             } catch (Exception exception) {
                 Railroad.LOGGER.warn("Unable to load Gradle model for project {}", project.getAlias(), exception);
             }

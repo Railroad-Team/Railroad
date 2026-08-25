@@ -25,15 +25,14 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 public class GitLocalBranchesListView extends AbstractGitBranchesListView<GitBranch.LocalGitBranch> {
-    private final Timeline elapsedRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(1), $ -> refresh()));
+    private final Timeline elapsedRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(1), _ -> refresh()));
 
     public GitLocalBranchesListView(Project project) {
         super(
             project,
             "git-local-branches-list-view",
             value -> value.getGitManager().getAllLocalBranches(),
-            listView -> new GitLocalBranchCell()
-        );
+            listView -> new GitLocalBranchCell());
 
         elapsedRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
         sceneProperty().addListener((obs, oldScene, newScene) -> {
@@ -51,16 +50,20 @@ public class GitLocalBranchesListView extends AbstractGitBranchesListView<GitBra
         var rows = new ArrayList<Node>();
         String upstream = branch.remoteName();
         if (upstream == null || upstream.isBlank()) {
-            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.upstream", "railroad.git.branches.no_upstream"));
+            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.upstream",
+                "railroad.git.branches.no_upstream"));
         } else {
             rows.add(createTextDetailsRow("railroad.git.branches.details.upstream", upstream));
         }
         rows.add(createLocalizedDetailsRow(
             "railroad.git.branches.details.current",
-            branch.isCurrent() ? "railroad.git.branches.details.current.yes" : "railroad.git.branches.details.current.no"
-        ));
-        rows.add(createLocalizedDetailsRow("railroad.git.branches.details.ahead", "railroad.git.branches.local.ahead", branch.aheadCount()));
-        rows.add(createLocalizedDetailsRow("railroad.git.branches.details.behind", "railroad.git.branches.local.behind", branch.behindCount()));
+            branch.isCurrent()
+                ? "railroad.git.branches.details.current.yes"
+                : "railroad.git.branches.details.current.no"));
+        rows.add(createLocalizedDetailsRow("railroad.git.branches.details.ahead", "railroad.git.branches.local.ahead",
+            branch.aheadCount()));
+        rows.add(createLocalizedDetailsRow("railroad.git.branches.details.behind", "railroad.git.branches.local.behind",
+            branch.behindCount()));
         return createCommonDetailsNode(branch, rows);
     }
 
@@ -213,7 +216,8 @@ public class GitLocalBranchesListView extends AbstractGitBranchesListView<GitBra
         private static void updateCountChip(LocalizedLabel label, Circle dot, String key, int count) {
             label.setKey(key, count);
             dot.getStyleClass().removeAll("git-local-branch-chip-dot-zero", "git-local-branch-chip-dot-nonzero");
-            dot.getStyleClass().add(count == 0 ? "git-local-branch-chip-dot-zero" : "git-local-branch-chip-dot-nonzero");
+            dot.getStyleClass()
+                .add(count == 0 ? "git-local-branch-chip-dot-zero" : "git-local-branch-chip-dot-nonzero");
         }
     }
 }

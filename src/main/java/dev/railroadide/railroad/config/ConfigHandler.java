@@ -17,18 +17,16 @@ public final class ConfigHandler {
         return switch (OperatingSystem.CURRENT) {
             case WINDOWS -> {
                 String roaming = System.getenv("APPDATA");
-                if (roaming != null && !roaming.isBlank()) {
+                if (roaming != null && !roaming.isBlank())
                     yield Path.of(roaming, "Railroad");
-                }
 
                 yield Path.of(userHome, "AppData", "Roaming", "Railroad");
             }
             case MAC -> Path.of(userHome, "Library", "Application Support", "Railroad");
             case LINUX -> {
                 String xdgConfigHome = System.getenv("XDG_CONFIG_HOME");
-                if (xdgConfigHome != null && !xdgConfigHome.isBlank()) {
+                if (xdgConfigHome != null && !xdgConfigHome.isBlank())
                     yield Path.of(xdgConfigHome, "Railroad");
-                }
 
                 yield Path.of(userHome, ".config", "Railroad");
             }
@@ -58,7 +56,8 @@ public final class ConfigHandler {
         try {
             Files.createDirectories(railroadDataPath);
             if (Files.notExists(railroadDataPath.resolve("config.json"))) {
-                Files.writeString(railroadDataPath.resolve("config.json"), Railroad.GSON.toJson(INSTANCE.config.toJson()));
+                Files.writeString(railroadDataPath.resolve("config.json"),
+                    Railroad.GSON.toJson(INSTANCE.config.toJson()));
             } else {
                 String configJson = Files.readString(railroadDataPath.resolve("config.json"));
                 INSTANCE.config.fromJson(Railroad.GSON.fromJson(configJson, JsonObject.class));

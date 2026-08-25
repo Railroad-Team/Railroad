@@ -12,7 +12,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public record MojmapVersionRepository(SwitchboardClient client, CacheManager cache)
-    implements SwitchboardRepository {
+    implements
+        SwitchboardRepository {
     private static final Duration VERSIONS_TTL = Duration.ofHours(12);
     private static final Duration LATEST_TTL = Duration.ofHours(1);
 
@@ -21,8 +22,7 @@ public record MojmapVersionRepository(SwitchboardClient client, CacheManager cac
             "mojmap:versions",
             SwitchboardClient.LIST_OF_STRINGS,
             VERSIONS_TTL,
-            client::fetchMojmapVersions
-        );
+            client::fetchMojmapVersions);
     }
 
     public List<String> getAllVersionsSync() throws ExecutionException, InterruptedException {
@@ -38,8 +38,7 @@ public record MojmapVersionRepository(SwitchboardClient client, CacheManager cac
             key,
             SwitchboardClient.LIST_OF_STRINGS,
             VERSIONS_TTL,
-            () -> client.fetchMojmapVersions(normalized)
-        );
+            () -> client.fetchMojmapVersions(normalized));
     }
 
     public List<String> getVersionsForSync(String minecraftVersionId) throws ExecutionException, InterruptedException {
@@ -51,8 +50,7 @@ public record MojmapVersionRepository(SwitchboardClient client, CacheManager cac
             "mojmap:latest",
             String.class,
             LATEST_TTL,
-            client::fetchLatestMojmapVersion
-        );
+            client::fetchLatestMojmapVersion);
     }
 
     public String getLatestVersionSync() throws ExecutionException, InterruptedException {

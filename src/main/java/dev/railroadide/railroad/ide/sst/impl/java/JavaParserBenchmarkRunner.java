@@ -37,12 +37,11 @@ public final class JavaParserBenchmarkRunner {
     private static void runDataset(BenchmarkOptions options, BenchmarkDataset dataset, Path cwd) {
         System.out.println();
         System.out.printf(
-                Locale.ROOT,
-                "Dataset %s: files=%d, size=%.2f MiB%n",
-                dataset.name(),
-                dataset.units().size(),
-                bytesToMiB(dataset.totalBytes())
-        );
+            Locale.ROOT,
+            "Dataset %s: files=%d, size=%.2f MiB%n",
+            dataset.name(),
+            dataset.units().size(),
+            bytesToMiB(dataset.totalBytes()));
 
         List<BenchmarkResult> results = new ArrayList<>();
         for (ParseMode mode : options.modes()) {
@@ -81,16 +80,16 @@ public final class JavaParserBenchmarkRunner {
 
         long bytesPerIteration = dataset.totalBytes() * options.repeatPerIteration();
         int parsesPerIteration = dataset.units().size() * options.repeatPerIteration();
-        return new BenchmarkResult(mode, dataset.name(), bytesPerIteration, parsesPerIteration, iterationNanos, Map.copyOf(fileTiming));
+        return new BenchmarkResult(mode, dataset.name(), bytesPerIteration, parsesPerIteration, iterationNanos,
+            Map.copyOf(fileTiming));
     }
 
     private static void runIteration(
-            List<SourceUnit> units,
-            int repeats,
-            ParseStrategy strategy,
-            Map<Path, MutableFileTiming> perFile,
-            ParseMode mode
-    ) {
+        List<SourceUnit> units,
+        int repeats,
+        ParseStrategy strategy,
+        Map<Path, MutableFileTiming> perFile,
+        ParseMode mode) {
         for (int repeat = 0; repeat < repeats; repeat++) {
             for (SourceUnit unit : units) {
                 long parseStart = perFile == null ? 0L : System.nanoTime();
@@ -103,7 +102,7 @@ public final class JavaParserBenchmarkRunner {
 
                 if (perFile != null) {
                     long elapsed = System.nanoTime() - parseStart;
-                    perFile.computeIfAbsent(unit.path(), ignored -> new MutableFileTiming()).record(elapsed);
+                    perFile.computeIfAbsent(unit.path(), _ -> new MutableFileTiming()).record(elapsed);
                 }
             }
         }
@@ -121,26 +120,24 @@ public final class JavaParserBenchmarkRunner {
 
     private static void printResultTable(List<BenchmarkResult> results) {
         System.out.printf(
-                Locale.ROOT,
-                "%-8s %10s %10s %10s %10s %12s%n",
-                "Mode",
-                "p50(ms)",
-                "p95(ms)",
-                "mean(ms)",
-                "ops/s",
-                "MiB/s"
-        );
+            Locale.ROOT,
+            "%-8s %10s %10s %10s %10s %12s%n",
+            "Mode",
+            "p50(ms)",
+            "p95(ms)",
+            "mean(ms)",
+            "ops/s",
+            "MiB/s");
         for (BenchmarkResult result : results) {
             System.out.printf(
-                    Locale.ROOT,
-                    "%-8s %10.3f %10.3f %10.3f %10.1f %12.2f%n",
-                    result.mode().id,
-                    nanosToMillis(percentileNanos(result.iterationNanos(), 0.50)),
-                    nanosToMillis(percentileNanos(result.iterationNanos(), 0.95)),
-                    nanosToMillis(meanNanos(result.iterationNanos())),
-                    result.operationsPerSecond(),
-                    result.mebibytesPerSecond()
-            );
+                Locale.ROOT,
+                "%-8s %10.3f %10.3f %10.3f %10.1f %12.2f%n",
+                result.mode().id,
+                nanosToMillis(percentileNanos(result.iterationNanos(), 0.50)),
+                nanosToMillis(percentileNanos(result.iterationNanos(), 0.95)),
+                nanosToMillis(meanNanos(result.iterationNanos())),
+                result.operationsPerSecond(),
+                result.mebibytesPerSecond());
         }
     }
 
@@ -149,7 +146,8 @@ public final class JavaParserBenchmarkRunner {
             return;
 
         List<Map.Entry<Path, FileTiming>> entries = new ArrayList<>(result.perFileTiming().entrySet());
-        entries.sort(Comparator.comparingLong((Map.Entry<Path, FileTiming> entry) -> entry.getValue().averageNanos()).reversed());
+        entries.sort(Comparator.comparingLong((Map.Entry<Path, FileTiming> entry) -> entry.getValue().averageNanos())
+            .reversed());
 
         System.out.printf("Slowest files (%s, avg parse):%n", result.mode().id);
         int printed = 0;
@@ -160,18 +158,18 @@ public final class JavaParserBenchmarkRunner {
             String displayPath = relativize(cwd, entry.getKey());
             FileTiming timing = entry.getValue();
             System.out.printf(
-                    Locale.ROOT,
-                    "  %s -> avg %.3f ms, max %.3f ms (%d samples)%n",
-                    displayPath,
-                    nanosToMillis(timing.averageNanos()),
-                    nanosToMillis(timing.maxNanos()),
-                    timing.samples()
-            );
+                Locale.ROOT,
+                "  %s -> avg %.3f ms, max %.3f ms (%d samples)%n",
+                displayPath,
+                nanosToMillis(timing.averageNanos()),
+                nanosToMillis(timing.maxNanos()),
+                timing.samples());
             printed++;
         }
     }
 
-    private static void printRunHeader(BenchmarkOptions options, List<SourceUnit> corpus, List<BenchmarkDataset> datasets) {
+    private static void printRunHeader(BenchmarkOptions options, List<SourceUnit> corpus,
+        List<BenchmarkDataset> datasets) {
         long bytes = 0L;
         long lines = 0L;
         for (SourceUnit unit : corpus) {
@@ -188,31 +186,29 @@ public final class JavaParserBenchmarkRunner {
         }
 
         System.out.printf(
-                Locale.ROOT,
-                "Java parser benchmark: files=%d, size=%.2f MiB, lines=%d%n",
-                corpus.size(),
-                bytesToMiB(bytes),
-                lines
-        );
+            Locale.ROOT,
+            "Java parser benchmark: files=%d, size=%.2f MiB, lines=%d%n",
+            corpus.size(),
+            bytesToMiB(bytes),
+            lines);
         System.out.printf(
-                Locale.ROOT,
-                "Warmup=%d, iterations=%d, repeats=%d, modes=%s%n",
-                options.warmupIterations(),
-                options.measureIterations(),
-                options.repeatPerIteration(),
-                options.modes()
-        );
+            Locale.ROOT,
+            "Warmup=%d, iterations=%d, repeats=%d, modes=%s%n",
+            options.warmupIterations(),
+            options.measureIterations(),
+            options.repeatPerIteration(),
+            options.modes());
         System.out.printf(
-                Locale.ROOT,
-                "Buckets: small=%d, medium=%d, large=%d%n",
-                bucketCounts.get(SizeBucket.SMALL),
-                bucketCounts.get(SizeBucket.MEDIUM),
-                bucketCounts.get(SizeBucket.LARGE)
-        );
+            Locale.ROOT,
+            "Buckets: small=%d, medium=%d, large=%d%n",
+            bucketCounts.get(SizeBucket.SMALL),
+            bucketCounts.get(SizeBucket.MEDIUM),
+            bucketCounts.get(SizeBucket.LARGE));
         System.out.print("Datasets: ");
         for (int i = 0; i < datasets.size(); i++) {
-            if (i > 0)
+            if (i > 0) {
                 System.out.print(", ");
+            }
             System.out.print(datasets.get(i).name());
         }
         System.out.println();
@@ -225,8 +221,9 @@ public final class JavaParserBenchmarkRunner {
         for (SizeBucket bucket : SizeBucket.values()) {
             List<SourceUnit> bucketUnits = new ArrayList<>();
             for (SourceUnit unit : corpus) {
-                if (unit.bucket() == bucket)
+                if (unit.bucket() == bucket) {
                     bucketUnits.add(unit);
+                }
             }
 
             if (!bucketUnits.isEmpty()) {
@@ -244,8 +241,8 @@ public final class JavaParserBenchmarkRunner {
             if (Files.isDirectory(normalized)) {
                 try (var stream = Files.walk(normalized)) {
                     stream.filter(Files::isRegularFile)
-                            .filter(path -> path.getFileName().toString().endsWith(".java"))
-                            .forEach(files::add);
+                        .filter(path -> path.getFileName().toString().endsWith(".java"))
+                        .forEach(files::add);
                 }
             } else if (Files.isRegularFile(normalized) && normalized.getFileName().toString().endsWith(".java")) {
                 files.add(normalized);
@@ -295,7 +292,8 @@ public final class JavaParserBenchmarkRunner {
             inputs.add(Path.of("src/main/java"));
         }
 
-        return new BenchmarkOptions(warmupIterations, measureIterations, repeatPerIteration, slowestFiles, Set.copyOf(modes), List.copyOf(inputs));
+        return new BenchmarkOptions(warmupIterations, measureIterations, repeatPerIteration, slowestFiles,
+            Set.copyOf(modes), List.copyOf(inputs));
     }
 
     private static Set<ParseMode> parseModes(String rawMode) {
@@ -332,11 +330,15 @@ public final class JavaParserBenchmarkRunner {
     private static void printUsage() {
         System.out.println("Usage: JavaParserBenchmarkRunner [options] <file-or-directory>...");
         System.out.println("Options:");
-        System.out.println("  --warmup=<n>      Warmup iterations per dataset (default " + DEFAULT_WARMUP_ITERATIONS + ")");
-        System.out.println("  --iterations=<n>  Measured iterations per dataset (default " + DEFAULT_MEASURE_ITERATIONS + ")");
-        System.out.println("  --repeat=<n>      Repeat corpus parses inside each iteration (default " + DEFAULT_REPEAT_PER_ITERATION + ")");
+        System.out
+            .println("  --warmup=<n>      Warmup iterations per dataset (default " + DEFAULT_WARMUP_ITERATIONS + ")");
+        System.out.println(
+            "  --iterations=<n>  Measured iterations per dataset (default " + DEFAULT_MEASURE_ITERATIONS + ")");
+        System.out.println("  --repeat=<n>      Repeat corpus parses inside each iteration (default "
+            + DEFAULT_REPEAT_PER_ITERATION + ")");
         System.out.println("  --mode=<m>        syntax (default syntax)");
-        System.out.println("  --slowest=<n>     Print N slowest files for full dataset (default " + DEFAULT_SLOWEST_FILES + ")");
+        System.out.println(
+            "  --slowest=<n>     Print N slowest files for full dataset (default " + DEFAULT_SLOWEST_FILES + ")");
         System.out.println("  --help            Show this help");
     }
 
@@ -346,8 +348,9 @@ public final class JavaParserBenchmarkRunner {
 
         int lines = 1;
         for (int i = 0; i < source.length(); i++) {
-            if (source.charAt(i) == '\n')
+            if (source.charAt(i) == '\n') {
                 lines++;
+            }
         }
 
         return lines;
@@ -412,9 +415,7 @@ public final class JavaParserBenchmarkRunner {
     }
 
     private enum SizeBucket {
-        SMALL("small"),
-        MEDIUM("medium"),
-        LARGE("large");
+        SMALL("small"), MEDIUM("medium"), LARGE("large");
 
         private final String id;
 
@@ -445,23 +446,21 @@ public final class JavaParserBenchmarkRunner {
     }
 
     private record BenchmarkOptions(
-            int warmupIterations,
-            int measureIterations,
-            int repeatPerIteration,
-            int slowestFiles,
-            Set<ParseMode> modes,
-            List<Path> inputs
-    ) {
+        int warmupIterations,
+        int measureIterations,
+        int repeatPerIteration,
+        int slowestFiles,
+        Set<ParseMode> modes,
+        List<Path> inputs) {
     }
 
     private record BenchmarkResult(
-            ParseMode mode,
-            String datasetName,
-            long bytesPerIteration,
-            int parsesPerIteration,
-            List<Long> iterationNanos,
-            Map<Path, FileTiming> perFileTiming
-    ) {
+        ParseMode mode,
+        String datasetName,
+        long bytesPerIteration,
+        int parsesPerIteration,
+        List<Long> iterationNanos,
+        Map<Path, FileTiming> perFileTiming) {
         private double operationsPerSecond() {
             double meanNanos = meanNanos(iterationNanos);
             if (meanNanos <= 0.0)

@@ -63,7 +63,8 @@ public class JsonCodeEditorPane extends CodeEditorPane {
     private void autoInsertPairs() {
         addEventFilter(KeyEvent.KEY_TYPED, event -> {
             String ch = event.getCharacter();
-            if (ch == null || ch.isEmpty()) return;
+            if (ch == null || ch.isEmpty())
+                return;
 
             String closing = switch (ch) {
                 case "[" -> "]";
@@ -120,15 +121,14 @@ public class JsonCodeEditorPane extends CodeEditorPane {
             String after = text.substring(pos);
 
             int lineStart = before.lastIndexOf('\n') + 1;
-            StringBuilder baseIndent = new StringBuilder();
+            var baseIndent = new StringBuilder();
             while (lineStart < before.length()) {
                 char c = before.charAt(lineStart);
                 if (c == ' ' || c == '\t') {
                     baseIndent.append(c);
                     lineStart++;
-                } else {
+                } else
                     break;
-                }
             }
 
             char prev = pos > 0 ? before.charAt(pos - 1) : '\0';
@@ -142,7 +142,7 @@ public class JsonCodeEditorPane extends CodeEditorPane {
                 replaceText(pos, pos, insertion);
                 moveTo(pos + 1 + inner.length());
             } else {
-                StringBuilder indent = new StringBuilder(baseIndent);
+                var indent = new StringBuilder(baseIndent);
                 if (prev == '{' || prev == '[') {
                     indent.append("    ");
                 }
@@ -196,9 +196,8 @@ public class JsonCodeEditorPane extends CodeEditorPane {
             Pair<Integer, Integer> range = findRangeForPointer(ex.getPointerToViolation(), text);
             int start = range.getKey();
             int end = range.getValue();
-            if (start < 0 || end <= start) {
+            if (start < 0 || end <= start)
                 continue;
-            }
 
             addStyleClass(start, end, "error");
 
@@ -231,23 +230,20 @@ public class JsonCodeEditorPane extends CodeEditorPane {
     }
 
     private Pair<Integer, Integer> findRangeForPointer(String pointer, String text) {
-        if (pointer == null || "#".equals(pointer)) {
+        if (pointer == null || "#".equals(pointer))
             return new Pair<>(0, getLength());
-        }
 
         String prop = pointer.substring(pointer.lastIndexOf('/') + 1)
             .replace("~1", "/")
             .replace("~0", "~");
         String search = "\"" + prop + "\"";
         int nameIdx = text.indexOf(search);
-        if (nameIdx < 0) {
+        if (nameIdx < 0)
             return new Pair<>(-1, -1);
-        }
 
         int colonIdx = text.indexOf(':', nameIdx + search.length());
-        if (colonIdx < 0) {
+        if (colonIdx < 0)
             return new Pair<>(nameIdx, nameIdx + search.length());
-        }
 
         int valueStart = colonIdx + 1;
         while (valueStart < text.length() && Character.isWhitespace(text.charAt(valueStart))) {
@@ -279,19 +275,19 @@ public class JsonCodeEditorPane extends CodeEditorPane {
                 valueEnd++;
                 while (valueEnd < text.length() && depth > 0) {
                     char c = text.charAt(valueEnd);
-                    if (c == open)
+                    if (c == open) {
                         depth++;
-                    else if (c == close)
+                    } else if (c == close) {
                         depth--;
+                    }
 
                     valueEnd++;
                 }
             } else {
                 while (valueEnd < text.length()) {
                     char c = text.charAt(valueEnd);
-                    if (c == ',' || c == '}' || c == ']' || Character.isWhitespace(c)) {
+                    if (c == ',' || c == '}' || c == ']' || Character.isWhitespace(c))
                         break;
-                    }
 
                     valueEnd++;
                 }
@@ -302,7 +298,7 @@ public class JsonCodeEditorPane extends CodeEditorPane {
     }
 
     private void loadDefaultSchema() { // TODO: Get rid of this hardcoded schema
-        JSONObject raw = new JSONObject(new JSONTokener(DEFAULT_SCHEMA));
+        var raw = new JSONObject(new JSONTokener(DEFAULT_SCHEMA));
         this.schema = SchemaLoader.load(raw);
     }
 

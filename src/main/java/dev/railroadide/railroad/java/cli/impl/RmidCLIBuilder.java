@@ -112,7 +112,7 @@ public class RmidCLIBuilder implements CLIBuilder<Process, RmidCLIBuilder> {
      *
      * @param policy the execution policy; must not be null or blank
      * @return the current {@link RmidCLIBuilder} instance
-     * @throws NullPointerException     if the policy is null
+     * @throws NullPointerException if the policy is null
      * @throws IllegalArgumentException if the policy is blank
      */
     public RmidCLIBuilder execPolicy(String policy) {

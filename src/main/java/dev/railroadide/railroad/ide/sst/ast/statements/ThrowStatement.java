@@ -10,9 +10,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record ThrowStatement(
-        Span span,
-        Expression expression
-) implements Statement {
+    Span span,
+    Expression expression) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.THROW_STATEMENT;

@@ -138,7 +138,7 @@ public final class StringUtils {
     /**
      * Splits a string into an array of strings based on the specified delimiter.
      *
-     * @param str       The string to split.
+     * @param str The string to split.
      * @param delimiter The delimiter to use for splitting.
      * @return An array of strings obtained by splitting the input string.
      */
@@ -181,8 +181,12 @@ public final class StringUtils {
         int[][] dp = new int[a.length() + 1][b.length() + 1];
 
         // Initialize the first row and column of the DP table.
-        for (int i = 0; i <= a.length(); i++) dp[i][0] = i;
-        for (int j = 0; j <= b.length(); j++) dp[0][j] = j;
+        for (int i = 0; i <= a.length(); i++) {
+            dp[i][0] = i;
+        }
+        for (int j = 0; j <= b.length(); j++) {
+            dp[0][j] = j;
+        }
 
         // Fill the DP table with the minimum edit distances.
         for (int i = 1; i <= a.length(); i++) {
@@ -190,8 +194,7 @@ public final class StringUtils {
                 int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
                 dp[i][j] = Math.min(
                     Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),
-                    dp[i - 1][j - 1] + cost
-                );
+                    dp[i - 1][j - 1] + cost);
             }
         }
 

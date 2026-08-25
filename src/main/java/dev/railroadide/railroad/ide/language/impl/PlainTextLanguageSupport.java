@@ -21,7 +21,6 @@ public class PlainTextLanguageSupport extends BaseLanguageSupport {
         return new EditorOpenView(
             editor,
             editor,
-            languageId()
-        );
+            languageId());
     }
 }

@@ -20,9 +20,7 @@ public class CoreWildcardImportInspection implements JavaInspectionRuleProvider 
             JavaSemanticRules.WILDCARD_IMPORT.defaultSeverity(),
             JavaSemanticRules.WILDCARD_IMPORT.messageTemplate(),
             Set.of("core", "imports"),
-            CoreWildcardImportInspection::reportWildcardImports
-        )
-    );
+            CoreWildcardImportInspection::reportWildcardImports));
 
     @Override
     public String id() {

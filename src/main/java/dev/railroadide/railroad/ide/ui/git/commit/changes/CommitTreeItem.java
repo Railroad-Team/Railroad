@@ -38,9 +38,8 @@ public class CommitTreeItem extends RRCheckBoxTreeItem<ChangeItem> {
             if (!(onlyChild instanceof CommitTreeItem commitChild))
                 return;
 
-            if (!(commitChild.getValue() instanceof DirectoryItem(
-                Project project, Path path, List<GitFileChange> changes, String displayTitle
-            )))
+            if (!(commitChild
+                .getValue() instanceof DirectoryItem(Project project, Path path, List<GitFileChange> changes, String displayTitle)))
                 return;
 
             String mergedTitle = parentDir.displayTitle() + "/" + displayTitle;

@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
-    private JavaJdkSymbolIndex(Map<String, ClassStub> classStubsByQualifiedName, Map<String, Path> sourceByQualifiedName) {
+    private JavaJdkSymbolIndex(Map<String, ClassStub> classStubsByQualifiedName,
+        Map<String, Path> sourceByQualifiedName) {
         super(classStubsByQualifiedName, sourceByQualifiedName);
     }
 
@@ -29,7 +30,7 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
             if (Files.isDirectory(jmods)) {
                 try (var paths = Files.list(jmods)) {
                     roots.addAll(paths.filter(path -> path.getFileName().toString().endsWith(".jmod")).toList());
-                } catch (IOException ignored) {
+                } catch (IOException _) {
                     return fromCurrentRuntime();
                 }
             }
@@ -46,10 +47,12 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
     }
 
     public static JavaJdkSymbolIndex fromCurrentRuntime() {
-        Map<String, ClassStub> classStubsByQualifiedName = new LinkedHashMap<>(JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName());
+        Map<String, ClassStub> classStubsByQualifiedName = new LinkedHashMap<>(
+            JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName());
         Map<String, Path> sourceByQualifiedName = new LinkedHashMap<>();
         Path runtimeHome = Path.of(System.getProperty("java.home")).toAbsolutePath().normalize();
-        classStubsByQualifiedName.keySet().forEach(qualifiedName -> sourceByQualifiedName.put(qualifiedName, runtimeHome));
+        classStubsByQualifiedName.keySet()
+            .forEach(qualifiedName -> sourceByQualifiedName.put(qualifiedName, runtimeHome));
         return new JavaJdkSymbolIndex(classStubsByQualifiedName, sourceByQualifiedName);
     }
 }

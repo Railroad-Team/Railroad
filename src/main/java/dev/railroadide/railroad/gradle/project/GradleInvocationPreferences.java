@@ -5,23 +5,23 @@ import java.nio.file.Path;
 /**
  * Preferences for invoking Gradle builds.
  *
- * @param offlineMode              whether to run Gradle in offline mode
- * @param enableBuildCache         whether to enable the Gradle build cache
- * @param parallelExecution        whether to enable parallel execution of tasks
- * @param isDaemonEnabled          whether to enable the Gradle daemon
+ * @param offlineMode whether to run Gradle in offline mode
+ * @param enableBuildCache whether to enable the Gradle build cache
+ * @param parallelExecution whether to enable parallel execution of tasks
+ * @param isDaemonEnabled whether to enable the Gradle daemon
  * @param daemonIdleTimeoutMinutes the idle timeout for the Gradle daemon in minutes
- * @param maxWorkerCount           the maximum number of worker threads for Gradle
- * @param customGradleHome         a custom Gradle home directory, or null to use the default
- * @param gradleUserHome           a custom Gradle user home directory, or null to use the default
+ * @param maxWorkerCount the maximum number of worker threads for Gradle
+ * @param customGradleHome a custom Gradle home directory, or null to use the default
+ * @param gradleUserHome a custom Gradle user home directory, or null to use the default
  */
 public record GradleInvocationPreferences(boolean offlineMode,
-                                          boolean enableBuildCache,
-                                          boolean parallelExecution,
-                                          boolean isDaemonEnabled,
-                                          Long daemonIdleTimeoutMinutes,
-                                          Integer maxWorkerCount,
-                                          Path customGradleHome,
-                                          Path gradleUserHome) {
+    boolean enableBuildCache,
+    boolean parallelExecution,
+    boolean isDaemonEnabled,
+    Long daemonIdleTimeoutMinutes,
+    Integer maxWorkerCount,
+    Path customGradleHome,
+    Path gradleUserHome) {
     /**
      * Returns the default Gradle invocation preferences.
      * <p>

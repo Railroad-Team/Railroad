@@ -80,8 +80,8 @@ public class RailroadProject implements Project {
         this.gradleManager = new GradleManager(this);
         Path gitExecutable = Settings.GIT_EXECUTABLE_PATH.getOrDefaultValue();
         this.gitManager = new GitManager(this, new GitClient(new GitProcessRunner(gitExecutable)));
-        Settings.GIT_EXECUTABLE_PATH.addListener((oldPath, newPath) ->
-            this.gitManager.setGitExecutablePath(newPath != null ? newPath : Settings.GIT_EXECUTABLE_PATH.getDefaultValue()));
+        Settings.GIT_EXECUTABLE_PATH.addListener((oldPath, newPath) -> this.gitManager
+            .setGitExecutablePath(newPath != null ? newPath : Settings.GIT_EXECUTABLE_PATH.getDefaultValue()));
         this.debuggingManager = new DebuggingManager(this);
     }
 
@@ -150,18 +150,16 @@ public class RailroadProject implements Project {
 
     private void discoverFacets() {
         this.facets.clear();
-        FacetManager.scan(this).thenAccept(discoveredFacets ->
-            Platform.runLater(() -> {
-                for (Facet<?> facet : discoveredFacets) {
-                    if (facet != null) {
-                        this.facets.add(facet);
-                        Railroad.EVENT_BUS.publish(new FacetDetectedEvent(this, facet));
-                    } else {
-                        Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
-                    }
+        FacetManager.scan(this).thenAccept(discoveredFacets -> Platform.runLater(() -> {
+            for (Facet<?> facet : discoveredFacets) {
+                if (facet != null) {
+                    this.facets.add(facet);
+                    Railroad.EVENT_BUS.publish(new FacetDetectedEvent(this, facet));
+                } else {
+                    Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
                 }
-            })
-        ).exceptionally(ex -> {
+            }
+        })).exceptionally(ex -> {
             Railroad.LOGGER.error("Failed to discover facets for project: {}", getPathString(), ex);
             return null;
         });
@@ -170,9 +168,8 @@ public class RailroadProject implements Project {
     @Override
     public boolean hasFacet(FacetType<?> type) {
         for (Facet<?> facet : facets) {
-            if (facet.getType().equals(type)) {
+            if (facet.getType().equals(type))
                 return true;
-            }
         }
 
         return false;
@@ -277,8 +274,12 @@ public class RailroadProject implements Project {
                     } catch (Exception exception) {
                         Railroad.LOGGER.warn("Project JSON 'Path' is not a valid path: {}", pathElement, exception);
                     }
-                } else Railroad.LOGGER.warn("Project JSON 'Path' is not a string or number: {}", pathElement);
-            } else Railroad.LOGGER.warn("Project JSON 'Path' is not a string: {}", pathElement);
+                } else {
+                    Railroad.LOGGER.warn("Project JSON 'Path' is not a string or number: {}", pathElement);
+                }
+            } else {
+                Railroad.LOGGER.warn("Project JSON 'Path' is not a string: {}", pathElement);
+            }
         }
 
         if (json.has("Alias")) {
@@ -289,8 +290,12 @@ public class RailroadProject implements Project {
                     this.alias.set(aliasElement.getAsString());
                 } else if (aliasPrimitive.isNumber()) {
                     this.alias.set(String.valueOf(aliasPrimitive.getAsNumber()));
-                } else Railroad.LOGGER.warn("Project JSON 'Alias' is not a string or number: {}", aliasElement);
-            } else Railroad.LOGGER.warn("Project JSON 'Alias' is not a string: {}", aliasElement);
+                } else {
+                    Railroad.LOGGER.warn("Project JSON 'Alias' is not a string or number: {}", aliasElement);
+                }
+            } else {
+                Railroad.LOGGER.warn("Project JSON 'Alias' is not a string: {}", aliasElement);
+            }
         }
 
         if (json.has("LastOpened")) {
@@ -303,12 +308,15 @@ public class RailroadProject implements Project {
                     try {
                         this.lastOpened.set(Long.parseLong(lastOpenedElement.getAsString()));
                     } catch (NumberFormatException exception) {
-                        Railroad.LOGGER.warn("Project JSON 'LastOpened' is not a valid number: {}", lastOpenedElement, exception);
+                        Railroad.LOGGER.warn("Project JSON 'LastOpened' is not a valid number: {}", lastOpenedElement,
+                            exception);
                     }
                 } else {
                     Railroad.LOGGER.warn("Project JSON 'LastOpened' is not a number or string: {}", lastOpenedElement);
                 }
-            } else Railroad.LOGGER.warn("Project JSON 'LastOpened' is not a primitive: {}", lastOpenedElement);
+            } else {
+                Railroad.LOGGER.warn("Project JSON 'LastOpened' is not a primitive: {}", lastOpenedElement);
+            }
         }
 
         if (json.has("Id")) {
@@ -319,8 +327,12 @@ public class RailroadProject implements Project {
                     this.id.set(idElement.getAsString());
                 } else if (idPrimitive.isNumber()) {
                     this.id.set(String.valueOf(idPrimitive.getAsNumber()));
-                } else Railroad.LOGGER.warn("Project JSON 'Id' is not a string or number: {}", idElement);
-            } else Railroad.LOGGER.warn("Project JSON 'Id' is not a string: {}", idElement);
+                } else {
+                    Railroad.LOGGER.warn("Project JSON 'Id' is not a string or number: {}", idElement);
+                }
+            } else {
+                Railroad.LOGGER.warn("Project JSON 'Id' is not a string: {}", idElement);
+            }
         }
 
         boolean hasIcon = false;
@@ -331,11 +343,14 @@ public class RailroadProject implements Project {
                 if (iconPrimitive.isString() && !iconElement.getAsString().isBlank()) {
                     this.icon.set(new Image(iconElement.getAsString()));
                     hasIcon = true;
-                } else if (!iconPrimitive.isString())
+                } else if (!iconPrimitive.isString()) {
                     Railroad.LOGGER.warn("Project JSON 'Icon' is not a string: {}", iconElement);
+                }
             } else if (iconElement.isJsonNull()) {
                 Railroad.LOGGER.warn("Project JSON 'Icon' is null, using default icon.");
-            } else Railroad.LOGGER.warn("Project JSON 'Icon' is not a primitive: {}", iconElement);
+            } else {
+                Railroad.LOGGER.warn("Project JSON 'Icon' is not a primitive: {}", iconElement);
+            }
         }
 
         if (json.has("Facets")) {
@@ -354,12 +369,22 @@ public class RailroadProject implements Project {
                                 FacetType<?> type = FacetManager.getType(typeId);
                                 if (type != null) {
                                     this.facets.add(Railroad.GSON.fromJson(dataElement, Facet.class));
-                                } else Railroad.LOGGER.warn("Invalid project facet type: {}", typeId);
-                            } else Railroad.LOGGER.warn("Invalid project facet JSON: {}", facetJson);
-                        } else Railroad.LOGGER.warn("Project facet JSON missing 'Type' or 'Data': {}", facetJson);
-                    } else Railroad.LOGGER.warn("Invalid project facet JSON element: {}", facetElement);
+                                } else {
+                                    Railroad.LOGGER.warn("Invalid project facet type: {}", typeId);
+                                }
+                            } else {
+                                Railroad.LOGGER.warn("Invalid project facet JSON: {}", facetJson);
+                            }
+                        } else {
+                            Railroad.LOGGER.warn("Project facet JSON missing 'Type' or 'Data': {}", facetJson);
+                        }
+                    } else {
+                        Railroad.LOGGER.warn("Invalid project facet JSON element: {}", facetElement);
+                    }
                 }
-            } else Railroad.LOGGER.warn("Project facets JSON is not an array: {}", facetsElement);
+            } else {
+                Railroad.LOGGER.warn("Project facets JSON is not an array: {}", facetsElement);
+            }
         }
 
         if (json.has("Description")) {
@@ -370,9 +395,13 @@ public class RailroadProject implements Project {
                     this.description.set(descriptionElement.getAsString());
                 } else if (descriptionPrimitive.isNumber()) {
                     this.description.set(String.valueOf(descriptionPrimitive.getAsNumber()));
-                } else
-                    Railroad.LOGGER.warn("Project JSON 'Description' is not a string or number: {}", descriptionElement);
-            } else Railroad.LOGGER.warn("Project JSON 'Description' is not a primitive: {}", descriptionElement);
+                } else {
+                    Railroad.LOGGER.warn("Project JSON 'Description' is not a string or number: {}",
+                        descriptionElement);
+                }
+            } else {
+                Railroad.LOGGER.warn("Project JSON 'Description' is not a primitive: {}", descriptionElement);
+            }
         }
 
         if (json.has("License")) {
@@ -384,14 +413,18 @@ public class RailroadProject implements Project {
                     if (license != null) {
                         this.license.set(license);
                     } else {
-                        Railroad.LOGGER.warn("Project JSON 'License' has invalid SPDX ID: {}", licenseElement.getAsString());
+                        Railroad.LOGGER.warn("Project JSON 'License' has invalid SPDX ID: {}",
+                            licenseElement.getAsString());
                     }
                 }
-            } else Railroad.LOGGER.warn("Project JSON 'License' is not a primitive: {}", licenseElement);
+            } else {
+                Railroad.LOGGER.warn("Project JSON 'License' is not a primitive: {}", licenseElement);
+            }
         }
 
-        if (!hasIcon)
+        if (!hasIcon) {
             this.icon.set(createIcon());
+        }
     }
 
     @Override
@@ -480,7 +513,8 @@ public class RailroadProject implements Project {
                 gradleManager.runBuildTaskAsync("build", jdk, future);
             } else if (hasFacet(FacetManager.MAVEN)) {
                 // TODO: Implement Maven build support
-                future.completeExceptionally(new UnsupportedOperationException("Maven build support is not implemented yet."));
+                future.completeExceptionally(
+                    new UnsupportedOperationException("Maven build support is not implemented yet."));
             } else {
                 future.completeExceptionally(new IllegalStateException("Project does not have a build facet."));
             }

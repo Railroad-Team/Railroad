@@ -47,24 +47,29 @@ public record UpdateGradlePropertiesStep(FilesService files) implements Creation
         files.updateKeyPairInPropertiesFile(propsFile, "org.gradle.jvmargs", "-Xmx4G");
 
         MappingChannel mappingChannel = ctx.data().get(MinecraftProjectKeys.MAPPING_CHANNEL, MappingChannel.class);
-        if (mappingChannel == null)
+        if (mappingChannel == null) {
             mappingChannel = UpdateGradleFilesStep.getDefaultMappingChannel(projectType);
+        }
         String channelId = mappingChannel.id().toLowerCase(Locale.ROOT);
-        if (channelId.equals("mojmap"))
+        if (channelId.equals("mojmap")) {
             channelId = "official";
+        }
 
         String mappingVersion = ctx.data().getAsString(MinecraftProjectKeys.MAPPING_VERSION);
         if (mappingVersion == null)
             throw new IllegalStateException("Mapping version not set in project context");
 
-        MinecraftVersion minecraftVersion = ctx.data().get(MinecraftProjectKeys.MINECRAFT_VERSION, MinecraftVersion.class);
+        MinecraftVersion minecraftVersion = ctx.data().get(MinecraftProjectKeys.MINECRAFT_VERSION,
+            MinecraftVersion.class);
         if (minecraftVersion == null)
             throw new IllegalStateException("Minecraft version not set in project context");
 
         String modId = ctx.data().getAsString(MinecraftProjectKeys.MOD_ID);
         String modName = ctx.data().getAsString(MinecraftProjectKeys.MOD_NAME);
         License license = ctx.data().getOrDefault(ProjectData.DefaultKeys.LICENSE, LicenseRegistry.LGPL, License.class);
-        String licenseStr = license == LicenseRegistry.CUSTOM ? ctx.data().getAsString(ProjectData.DefaultKeys.LICENSE_CUSTOM) : license.getSpdxId();
+        String licenseStr = license == LicenseRegistry.CUSTOM
+            ? ctx.data().getAsString(ProjectData.DefaultKeys.LICENSE_CUSTOM)
+            : license.getSpdxId();
 
         String version = ctx.data().getAsString(MavenProjectKeys.VERSION);
         String groupId = ctx.data().getAsString(MavenProjectKeys.GROUP_ID);
@@ -73,7 +78,8 @@ public record UpdateGradlePropertiesStep(FilesService files) implements Creation
         String description = ctx.data().getAsString(ProjectData.DefaultKeys.DESCRIPTION, "");
 
         if (projectType.equals(ProjectTypeRegistry.FABRIC)) {
-            FabricLoaderVersion loaderVersion = ctx.data().get(FabricProjectKeys.FABRIC_LOADER_VERSION, FabricLoaderVersion.class);
+            FabricLoaderVersion loaderVersion = ctx.data().get(FabricProjectKeys.FABRIC_LOADER_VERSION,
+                FabricLoaderVersion.class);
             if (loaderVersion == null)
                 throw new IllegalStateException("Fabric Loader version not set in project context");
 
@@ -90,8 +96,12 @@ public record UpdateGradlePropertiesStep(FilesService files) implements Creation
 
             files.updateKeyPairInPropertiesFile(propsFile, "mod_version", version);
             files.updateKeyPairInPropertiesFile(propsFile, "maven_group", groupId);
-            files.updateKeyPairInPropertiesFile(propsFile, "archives_base_name", ctx.data().getAsString(MavenProjectKeys.ARTIFACT_ID, modId));
-        } else if (projectType.equals(ProjectTypeRegistry.FORGE) || projectType.equals(ProjectTypeRegistry.NEOFORGE)) {// TODO: Confirm for neoforge
+            files.updateKeyPairInPropertiesFile(propsFile, "archives_base_name",
+                ctx.data().getAsString(MavenProjectKeys.ARTIFACT_ID, modId));
+        } else if (projectType.equals(ProjectTypeRegistry.FORGE) || projectType.equals(ProjectTypeRegistry.NEOFORGE)) {// TODO:
+                                                                                                                       // Confirm
+                                                                                                                       // for
+                                                                                                                       // neoforge
             files.updateKeyPairInPropertiesFile(propsFile, "mapping_channel", channelId);
             files.updateKeyPairInPropertiesFile(propsFile, "mapping_version", mappingVersion);
 
@@ -104,8 +114,7 @@ public record UpdateGradlePropertiesStep(FilesService files) implements Creation
 
             files.updateKeyPairInPropertiesFile(propsFile, "mod_authors", authors);
             files.updateKeyPairInPropertiesFile(propsFile, "mod_description", "'''" + description + "'''");
-        } else {
+        } else
             throw new IllegalStateException("Unsupported project type: " + projectType.getName());
-        }
     }
 }

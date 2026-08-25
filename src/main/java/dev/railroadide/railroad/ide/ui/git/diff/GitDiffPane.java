@@ -142,11 +142,10 @@ public class GitDiffPane extends RRBorderPane {
             return DiffResult.placeholder(PLACEHOLDER_FAILED_KEY);
         }
 
-        if (diffTextOpt.isEmpty()) {
+        if (diffTextOpt.isEmpty())
             return DiffResult.placeholder(gitManager.getGitRepository() == null
                 ? PLACEHOLDER_NO_REPO_KEY
                 : PLACEHOLDER_FAILED_KEY);
-        }
 
         String diffText = diffTextOpt.orElse("");
         if (diffText.isBlank())
@@ -201,7 +200,8 @@ public class GitDiffPane extends RRBorderPane {
         return builder.create();
     }
 
-    private static void appendLineStyles(StyleSpansBuilder<Collection<String>> builder, RenderLine line, boolean hasNewline) {
+    private static void appendLineStyles(StyleSpansBuilder<Collection<String>> builder, RenderLine line,
+        boolean hasNewline) {
         String text = line.text();
         if (text.isEmpty()) {
             builder.add(styleForKind(line.kind()), hasNewline ? 1 : 0);
@@ -301,7 +301,8 @@ public class GitDiffPane extends RRBorderPane {
                         case DELETION -> LineKind.DELETION;
                     };
                     String text = prefixForKind(kind) + hunkLine.content();
-                    lines.add(new RenderLine(text, kind, hunkLine.oldLineNumber(), hunkLine.newLineNumber(), languageId));
+                    lines.add(
+                        new RenderLine(text, kind, hunkLine.oldLineNumber(), hunkLine.newLineNumber(), languageId));
                 }
             }
 
@@ -340,7 +341,8 @@ public class GitDiffPane extends RRBorderPane {
     }
 
     private static String formatHunkHeader(DiffHunk hunk) {
-        String header = "@@ -%d,%d +%d,%d @@".formatted(hunk.oldStart(), hunk.oldCount(), hunk.newStart(), hunk.newCount());
+        String header = "@@ -%d,%d +%d,%d @@".formatted(hunk.oldStart(), hunk.oldCount(), hunk.newStart(),
+            hunk.newCount());
         if (hunk.sectionHeader() != null && !hunk.sectionHeader().isBlank()) {
             header = header + " " + hunk.sectionHeader();
         }
@@ -435,7 +437,7 @@ public class GitDiffPane extends RRBorderPane {
     }
 
     private record RenderLine(String text, LineKind kind, Integer oldLineNumber, Integer newLineNumber,
-                              String languageId) {
+        String languageId) {
     }
 
     private static String resolveTitle(Path path) {
@@ -447,12 +449,7 @@ public class GitDiffPane extends RRBorderPane {
     }
 
     private enum LineKind {
-        FILE_HEADER(false),
-        HUNK_HEADER(false),
-        META(false),
-        CONTEXT(true),
-        ADDITION(true),
-        DELETION(true);
+        FILE_HEADER(false), HUNK_HEADER(false), META(false), CONTEXT(true), ADDITION(true), DELETION(true);
 
         private final boolean codeLine;
 

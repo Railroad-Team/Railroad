@@ -25,12 +25,14 @@ class CoreInspectionRulesTest {
     @Test
     void coreProvidersExposeExpectedRuleIds() {
         assertRuleIds(new CoreDuplicateDeclarationInspection(), Set.of("SEM_DUPLICATE_DECLARATION"));
-        assertRuleIds(new CoreImportInspection(), Set.of("SEM_DUPLICATE_IMPORT", "SEM_AMBIGUOUS_IMPORT", "SEM_UNRESOLVED_IMPORT"));
+        assertRuleIds(new CoreImportInspection(),
+            Set.of("SEM_DUPLICATE_IMPORT", "SEM_AMBIGUOUS_IMPORT", "SEM_UNRESOLVED_IMPORT"));
         assertRuleIds(new CoreNameResolutionInspection(), Set.of("SEM_UNRESOLVED_NAME", "SEM_AMBIGUOUS_NAME"));
         assertRuleIds(new CoreTypeResolutionInspection(), Set.of("SEM_UNRESOLVED_TYPE"));
         assertRuleIds(new CoreMemberResolutionInspection(), Set.of("SEM_UNRESOLVED_MEMBER"));
         assertRuleIds(new CoreCallResolutionInspection(), Set.of("SEM_UNRESOLVED_CALL"));
-        assertRuleIds(new CoreAccessibilityInspection(), Set.of("SEM_INACCESSIBLE_TYPE", "SEM_INACCESSIBLE_MEMBER", "SEM_INACCESSIBLE_CALL"));
+        assertRuleIds(new CoreAccessibilityInspection(),
+            Set.of("SEM_INACCESSIBLE_TYPE", "SEM_INACCESSIBLE_MEMBER", "SEM_INACCESSIBLE_CALL"));
         assertRuleIds(new CoreInheritanceInspection(), Set.of(
             "SEM_INVALID_INHERITANCE",
             "SEM_MISSING_IMPLEMENTATION",
@@ -44,15 +46,18 @@ class CoreInspectionRulesTest {
             "SEM_UNREACHABLE_CATCH",
             "SEM_INVALID_EXCEPTION_TYPE",
             "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE"));
-        assertRuleIds(new CoreDefiniteAssignmentInspection(), Set.of("SEM_UNASSIGNED_VARIABLE", "SEM_ILLEGAL_FINAL_ASSIGNMENT", "SEM_UNINITIALIZED_FINAL_FIELD"));
+        assertRuleIds(new CoreDefiniteAssignmentInspection(),
+            Set.of("SEM_UNASSIGNED_VARIABLE", "SEM_ILLEGAL_FINAL_ASSIGNMENT", "SEM_UNINITIALIZED_FINAL_FIELD"));
         assertRuleIds(new CoreAssignmentInspection(), Set.of("SEM_INCOMPATIBLE_ASSIGNMENT"));
         assertRuleIds(new CoreImplicitNumericConversionInspection(), Set.of("SEM_IMPLICIT_NUMERIC_CONVERSION"));
         assertRuleIds(new CoreNegativeHexIntInLongContextInspection(), Set.of("SEM_NEGATIVE_HEX_INT_IN_LONG_CONTEXT"));
         assertRuleIds(new CoreOverlyStrongTypeCastInspection(), Set.of("SEM_OVERLY_STRONG_TYPE_CAST"));
-        assertRuleIds(new CoreCastConflictingWithInstanceofInspection(), Set.of("SEM_CAST_CONFLICTING_WITH_INSTANCEOF"));
+        assertRuleIds(new CoreCastConflictingWithInstanceofInspection(),
+            Set.of("SEM_CAST_CONFLICTING_WITH_INSTANCEOF"));
         assertRuleIds(new CoreWildcardImportInspection(), Set.of("SEM_WILDCARD_IMPORT"));
         assertRuleIds(new CoreEmptyCatchInspection(), Set.of("SEM_EMPTY_CATCH"));
-        assertRuleIds(new CorePublicClassNotNamedAfterFileInspection(), Set.of("SEM_PUBLIC_CLASS_NOT_NAMED_AFTER_FILE"));
+        assertRuleIds(new CorePublicClassNotNamedAfterFileInspection(),
+            Set.of("SEM_PUBLIC_CLASS_NOT_NAMED_AFTER_FILE"));
         assertRuleIds(new CoreLowerCaseClassNameInspection(), Set.of("SEM_LOWERCASE_CLASS_NAME"));
         assertRuleIds(new CoreMethodNamedTODOInspection(), Set.of("SEM_METHOD_NAMED_TODO"));
         assertRuleIds(new CoreMethodNamedUnderscoreInspection(), Set.of("SEM_METHOD_NAMED_UNDERSCORE"));
@@ -64,20 +69,26 @@ class CoreInspectionRulesTest {
         assertRuleIds(new CoreFieldNameSameAsClassInspection(), Set.of("SEM_FIELD_NAME_SAME_AS_CLASS_NAME"));
         assertRuleIds(new CoreParameterNamedUnderscoreInspection(), Set.of("SEM_PARAMETER_NAME_UNDERSCORE"));
         assertRuleIds(new CoreUnreachableCodeInspection(), Set.of("SEM_UNREACHABLE_CODE"));
-        assertRuleIds(new CoreAssertionCanBeReplacedWithIfStatementInspection(), Set.of("SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT"));
+        assertRuleIds(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            Set.of("SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT"));
         assertRuleIds(new CoreAssertionWithSideEffectsInspection(), Set.of("SEM_ASSERTION_WITH_SIDE_EFFECTS"));
-        assertRuleIds(new CoreFeatureEnvyInspection(), Set.of("SEM_FEATURE_ENVY_MANIPULATE", "SEM_FEATURE_ENVY_TIGHTLY_COUPLED"));
+        assertRuleIds(new CoreFeatureEnvyInspection(),
+            Set.of("SEM_FEATURE_ENVY_MANIPULATE", "SEM_FEATURE_ENVY_TIGHTLY_COUPLED"));
         assertRuleIds(new CoreInitializationInspection(), Set.of(
             "SEM_OVERRIDABLE_METHOD_DURING_CONSTRUCTION",
             "SEM_OVERRIDDEN_METHOD_DURING_CONSTRUCTION"));
-        assertRuleIds(new CoreThisReferenceEscapedObjectConstructionInspection(), Set.of("SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION"));
+        assertRuleIds(new CoreThisReferenceEscapedObjectConstructionInspection(),
+            Set.of("SEM_THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION"));
         assertRuleIds(new CoreFieldCanBeLocalVariableInspection(), Set.of("SEM_FIELD_CAN_BE_LOCAL_VARIABLE"));
         assertRuleIds(new CoreFunctionalInterfaceInspection(), Set.of("SEM_INTERFACE_SHOULD_BE_FUNCTIONAL"));
-        assertRuleIds(new CoreOptionalGetWithoutIsPresentCheckInspection(), Set.of("SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK"));
-        assertRuleIds(new CoreAutoCloseableWithoutTryWithResourcesInspection(), Set.of("SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES"));
+        assertRuleIds(new CoreOptionalGetWithoutIsPresentCheckInspection(),
+            Set.of("SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK"));
+        assertRuleIds(new CoreAutoCloseableWithoutTryWithResourcesInspection(),
+            Set.of("SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES"));
         assertRuleIds(new CoreInfiniteRecursionInspection(), Set.of("SEM_INFINITE_RECURSION"));
         assertRuleIds(new CoreBigDecimalEqualsInspection(), Set.of("SEM_BIG_DECIMAL_EQUALS"));
-        assertRuleIds(new CoreSerializableClassWithUnconstructableAncestorInspection(), Set.of("SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR"));
+        assertRuleIds(new CoreSerializableClassWithUnconstructableAncestorInspection(),
+            Set.of("SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR"));
         assertRuleIds(new CoreRedundantInterfaceDeclarationInspection(), Set.of("SEM_REDUNDANT_INTERFACE_DECLARATION"));
     }
 
@@ -113,8 +124,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_UNRESOLVED_NAME".equals(diagnostic.code())),
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -156,13 +166,15 @@ class CoreInspectionRulesTest {
 
     @Test
     void corePublicClassNotNamedAfterFileRuleEmitsDiagnostic() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CorePublicClassNotNamedAfterFileInspection(), Path.of("Example.java"), """
-            public class Wrong {
-            }
-            """);
+        List<SemanticDiagnostic> diagnostics = runProvider(new CorePublicClassNotNamedAfterFileInspection(),
+            Path.of("Example.java"), """
+                public class Wrong {
+                }
+                """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_PUBLIC_CLASS_NOT_NAMED_AFTER_FILE".equals(d.code())));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("Public class 'Wrong' must be declared in a file named 'Example.java'")));
+        assertTrue(diagnostics.stream().anyMatch(
+            d -> d.message().contains("Public class 'Wrong' must be declared in a file named 'Example.java'")));
     }
 
     @Test
@@ -582,93 +594,107 @@ class CoreInspectionRulesTest {
 
     @Test
     void coreAssertionRuleEmitsDiagnosticForPublicMethod() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            class Example {
-                public void run(int value) {
-                    assert value > 0;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                class Example {
+                    public void run(int value) {
+                        assert value > 0;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
     void coreAssertionRuleEmitsDiagnosticWhenMessagePresent() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            class Example {
-                private void validate(int value) {
-                    assert value > 0 : "value must be positive";
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                class Example {
+                    private void validate(int value) {
+                        assert value > 0 : "value must be positive";
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
     void coreAssertionRuleEmitsDiagnosticForProtectedMethod() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            class Example {
-                protected void run(int value) {
-                    assert value > 0;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                class Example {
+                    protected void run(int value) {
+                        assert value > 0;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
     void coreAssertionRuleEmitsDiagnosticForInterfaceMethod() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            interface Example {
-                default void run(int value) {
-                    assert value > 0;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                interface Example {
+                    default void run(int value) {
+                        assert value > 0;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
     void coreAssertionRuleEmitsDiagnosticForPublicConstructor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            class Example {
-                public Example(int value) {
-                    assert value > 0;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                class Example {
+                    public Example(int value) {
+                        assert value > 0;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
     void coreAssertionRuleDoesNotEmitDiagnosticForPrivateHelperWithoutMessage() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            class Example {
-                private void validate(int value) {
-                    assert value > 0;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                class Example {
+                    private void validate(int value) {
+                        assert value > 0;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
     void coreAssertionRuleDoesNotEmitDiagnosticForPackagePrivateMethodWithoutMessage() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(), """
-            class Example {
-                void validate(int value) {
-                    assert value > 0;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
+            """
+                class Example {
+                    void validate(int value) {
+                        assert value > 0;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT".equals(d.code())));
     }
 
     @Test
@@ -745,7 +771,7 @@ class CoreInspectionRulesTest {
             }
             """;
         var model = JavaSemanticAnalyzer.analyzeFacts(source);
-        JavaRuleContext context = new JavaRuleContext(Path.of("Example.java"), source, model);
+        var context = new JavaRuleContext(Path.of("Example.java"), source, model);
         List<String> expressions = new ArrayList<>();
         context.traverse(node -> {
             if (node.kind().id().contains("EXPRESSION") && node.start() <= node.end()) {
@@ -755,8 +781,7 @@ class CoreInspectionRulesTest {
         });
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreMemberResolutionInspection(), source);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_UNRESOLVED_MEMBER".equals(diagnostic.code())),
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_MEMBER".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n"))
                 + "\n" + String.join("\n", expressions));
     }
@@ -819,9 +844,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_INACCESSIBLE_MEMBER".equals(diagnostic.code())
-                || "SEM_INACCESSIBLE_CALL".equals(diagnostic.code())),
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_INACCESSIBLE_MEMBER".equals(diagnostic.code())
+            || "SEM_INACCESSIBLE_CALL".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -839,8 +863,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_INACCESSIBLE_CALL".equals(diagnostic.code())),
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_INACCESSIBLE_CALL".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -938,7 +961,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INVALID_OVERRIDE".equals(d.code()) && d.message().contains("value")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_INVALID_OVERRIDE".equals(d.code()) && d.message().contains("value")));
     }
 
     @Test
@@ -949,9 +973,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())
-                && d.message().contains("clone()")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())
+            && d.message().contains("clone()")));
     }
 
     @Test
@@ -962,8 +985,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())));
     }
 
     @Test
@@ -974,9 +997,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())
-                && d.message().contains("finalize()")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())
+            && d.message().contains("finalize()")));
     }
 
     @Test
@@ -987,8 +1009,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD".equals(d.code())));
     }
 
     @Test
@@ -1003,10 +1025,9 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_OVERLY_STRONG_TYPE_CAST".equals(d.code())
-                && d.message().contains("ArrayList")
-                && d.message().contains("List")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_OVERLY_STRONG_TYPE_CAST".equals(d.code())
+            && d.message().contains("ArrayList")
+            && d.message().contains("List")));
     }
 
     @Test
@@ -1021,8 +1042,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_OVERLY_STRONG_TYPE_CAST".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_OVERLY_STRONG_TYPE_CAST".equals(d.code())));
     }
 
     @Test
@@ -1041,9 +1061,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE".equals(d.code())
-                && d.message().contains("reset()")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE".equals(d.code())
+            && d.message().contains("reset()")));
     }
 
     @Test
@@ -1063,8 +1082,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE".equals(d.code())));
     }
 
     @Test
@@ -1088,8 +1106,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE".equals(d.code())));
     }
 
     @Test
@@ -1102,7 +1119,8 @@ class CoreInspectionRulesTest {
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ILLEGAL_MODIFIER".equals(d.code())));
         assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("top-level type declarations")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'final' cannot be combined with 'volatile'")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'final' cannot be combined with 'volatile'")));
     }
 
     @Test
@@ -1117,8 +1135,10 @@ class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ILLEGAL_MODIFIER".equals(d.code())));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'abstract' cannot be combined with 'final'")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'default' is only allowed on interface methods")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'abstract' cannot be combined with 'final'")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'default' is only allowed on interface methods")));
     }
 
     @Test
@@ -1170,12 +1190,18 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'private' is not allowed on interface fields")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'protected' is not allowed on interface methods")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'final' is not allowed on interface methods")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'static' interface methods must have a body")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'private' is not allowed on annotation type elements")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on enum constructors")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'private' is not allowed on interface fields")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'protected' is not allowed on interface methods")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'final' is not allowed on interface methods")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'static' interface methods must have a body")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'private' is not allowed on annotation type elements")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on enum constructors")));
     }
 
     @Test
@@ -1188,11 +1214,14 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on record components")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'final' is not allowed on record components")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on record components")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'final' is not allowed on record components")));
         assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on parameters")));
         assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("duplicate modifier 'final'")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on local variables")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'public' is not allowed on local variables")));
     }
 
     @Test
@@ -1212,9 +1241,12 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'private' is not allowed on interface member types")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'abstract' methods are only allowed in abstract classes and interfaces")));
-        assertFalse(diagnostics.stream().anyMatch(d -> d.message().contains("'default' is only allowed on interface methods")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'private' is not allowed on interface member types")));
+        assertTrue(diagnostics.stream().anyMatch(
+            d -> d.message().contains("'abstract' methods are only allowed in abstract classes and interfaces")));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'default' is only allowed on interface methods")));
     }
 
     @Test
@@ -1241,10 +1273,13 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("'break' is only allowed inside loops or switch statements")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("continue label 'outer' must target a loop")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'break' is only allowed inside loops or switch statements")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("continue label 'outer' must target a loop")));
         assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("void methods cannot return a value")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("non-void method 'value' must return a value")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("non-void method 'value' must return a value")));
     }
 
     @Test
@@ -1260,7 +1295,8 @@ class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_MISSING_RETURN".equals(d.code())));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("method 'run' must return 'int' on all paths")));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("method 'run' must return 'int' on all paths")));
     }
 
     @Test
@@ -1300,15 +1336,13 @@ class CoreInspectionRulesTest {
             "dev/railroadide/railroad/java/cli/impl/JarCLIBuilder.java");
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreInheritanceInspection(),
             sourceFile,
             Files.readString(sourceFile),
-            symbolIndex
-        );
+            symbolIndex);
         List<SemanticDiagnostic> inheritanceErrors = diagnostics.stream()
             .filter(diagnostic -> Set.of("SEM_INVALID_OVERRIDE", "SEM_MISSING_IMPLEMENTATION")
                 .contains(diagnostic.code()))
@@ -1469,9 +1503,12 @@ class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INVALID_EXCEPTION_TYPE".equals(d.code())));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("declared thrown type 'java.lang.String' must extend Throwable")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("caught type 'java.lang.String' must extend Throwable")));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("Unhandled checked exception 'java.io.IOException'")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("declared thrown type 'java.lang.String' must extend Throwable")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("caught type 'java.lang.String' must extend Throwable")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("Unhandled checked exception 'java.io.IOException'")));
     }
 
     @Test
@@ -1497,8 +1534,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_UNCAUGHT_CHECKED_EXCEPTION".equals(d.code())),
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNCAUGHT_CHECKED_EXCEPTION".equals(d.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -1543,7 +1579,8 @@ class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("declares disallowed exception 'java.lang.Exception'")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("declares disallowed exception 'java.lang.Exception'")));
     }
 
     @Test
@@ -1556,7 +1593,8 @@ class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
-        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("declares disallowed exception 'java.lang.RuntimeException'")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("declares disallowed exception 'java.lang.RuntimeException'")));
     }
 
     @Test
@@ -1568,7 +1606,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
     }
 
     @Test
@@ -1601,7 +1640,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE".equals(d.code())));
     }
 
     @Test
@@ -1644,7 +1684,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FEATURE_ENVY_MANIPULATE".equals(d.code())), "Expected SEM_FEATURE_ENVY_MANIPULATE diagnostic");
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FEATURE_ENVY_MANIPULATE".equals(d.code())),
+            "Expected SEM_FEATURE_ENVY_MANIPULATE diagnostic");
     }
 
     @Test
@@ -1664,7 +1705,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FEATURE_ENVY_TIGHTLY_COUPLED".equals(d.code())), "Expected SEM_FEATURE_ENVY_TIGHTLY_COUPLED diagnostic");
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_FEATURE_ENVY_TIGHTLY_COUPLED".equals(d.code())),
+            "Expected SEM_FEATURE_ENVY_TIGHTLY_COUPLED diagnostic");
     }
 
     @Test
@@ -1813,9 +1855,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
-                && d.message().contains("Child")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
+            && d.message().contains("Child")));
     }
 
     @Test
@@ -1830,9 +1871,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
-                && d.message().contains("Child")));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
+            && d.message().contains("Child")));
     }
 
     @Test
@@ -1850,9 +1890,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
-                && d.message().contains("Child")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
+            && d.message().contains("Child")));
     }
 
     @Test
@@ -1868,9 +1907,8 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
-                && d.message().contains("Child")));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INTERFACE_SHOULD_BE_FUNCTIONAL".equals(d.code())
+            && d.message().contains("Child")));
     }
 
     @Test
@@ -1934,14 +1972,13 @@ class CoreInspectionRulesTest {
         String source = Files.readString(sourceFile);
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreAssignmentInspection(), sourceFile, source, symbolIndex);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
 
         Path parserFile = sourceRoot.resolve(
@@ -1949,9 +1986,9 @@ class CoreInspectionRulesTest {
         String parserSource = Files.readString(parserFile);
         List<SemanticDiagnostic> parserDiagnostics = runProvider(
             new CoreAssignmentInspection(), parserFile, parserSource, symbolIndex);
-        assertFalse(parserDiagnostics.stream().anyMatch(diagnostic ->
-                "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())
-                    && diagnostic.message().contains("JavaTokenType")),
+        assertFalse(
+            parserDiagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())
+                && diagnostic.message().contains("JavaTokenType")),
             () -> parserDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
 
         Path indexerFile = sourceRoot.resolve(
@@ -1959,8 +1996,8 @@ class CoreInspectionRulesTest {
         String indexerSource = Files.readString(indexerFile);
         List<SemanticDiagnostic> indexerDiagnostics = runProvider(
             new CoreAssignmentInspection(), indexerFile, indexerSource, symbolIndex);
-        assertFalse(indexerDiagnostics.stream().anyMatch(diagnostic ->
-                "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
+        assertFalse(
+            indexerDiagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
             () -> indexerDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
 
         Path gitLocatorFile = sourceRoot.resolve(
@@ -1968,8 +2005,9 @@ class CoreInspectionRulesTest {
         String gitLocatorSource = Files.readString(gitLocatorFile);
         List<SemanticDiagnostic> gitLocatorDiagnostics = runProvider(
             new CoreAssignmentInspection(), gitLocatorFile, gitLocatorSource, symbolIndex);
-        assertFalse(gitLocatorDiagnostics.stream().anyMatch(diagnostic ->
-                "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
+        assertFalse(
+            gitLocatorDiagnostics.stream()
+                .anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
             () -> gitLocatorDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
 
         Path formComponentFile = sourceRoot.resolve(
@@ -1977,8 +2015,9 @@ class CoreInspectionRulesTest {
         String formComponentSource = Files.readString(formComponentFile);
         List<SemanticDiagnostic> formComponentDiagnostics = runProvider(
             new CoreAssignmentInspection(), formComponentFile, formComponentSource, symbolIndex);
-        assertFalse(formComponentDiagnostics.stream().anyMatch(diagnostic ->
-                "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())
+        assertFalse(
+            formComponentDiagnostics.stream()
+                .anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())
                     && diagnostic.message().contains("ValidationResult")),
             () -> formComponentDiagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
@@ -1991,8 +2030,7 @@ class CoreInspectionRulesTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(List.of(compiledClasses)),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
         String source = Files.readString(sourcePath);
 
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
@@ -2003,8 +2041,7 @@ class CoreInspectionRulesTest {
             "Cannot resolve call 'toList'",
             "Cannot assign 'boolean' to 'java.lang.Runnable'",
             "Cannot assign 'javafx.scene.Node' to 'javafx.scene.layout.VBox'",
-            "Cannot assign 'javafx.scene.Node' to 'javafx.scene.layout.HBox'"
-        ).contains(diagnostic.message())),
+            "Cannot assign 'javafx.scene.Node' to 'javafx.scene.layout.HBox'").contains(diagnostic.message())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -2050,8 +2087,7 @@ class CoreInspectionRulesTest {
             "Cannot resolve type 'INFO'",
             "Cannot resolve type 'ERROR'",
             "Cannot resolve name 'INFO'",
-            "Cannot resolve name 'ERROR'"
-        ).contains(diagnostic.message())),
+            "Cannot resolve name 'ERROR'").contains(diagnostic.message())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -2060,14 +2096,13 @@ class CoreInspectionRulesTest {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourcePath = sourceRoot.resolve("dev/railroadide/railroad/window/AlertBuilder.java").normalize();
         List<Path> runtimeClasspath = Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
-                .map(Path::of)
-                .filter(Files::exists)
-                .toList();
+            .map(Path::of)
+            .filter(Files::exists)
+            .toList();
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(runtimeClasspath),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
         String source = Files.readString(sourcePath);
 
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
@@ -2082,8 +2117,7 @@ class CoreInspectionRulesTest {
             "Cannot resolve name 'INFO'",
             "Cannot resolve name 'SUCCESS'",
             "Cannot resolve name 'WARNING'",
-            "Cannot resolve name 'ERROR'"
-        ).contains(diagnostic.message())),
+            "Cannot resolve name 'ERROR'").contains(diagnostic.message())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -2091,14 +2125,13 @@ class CoreInspectionRulesTest {
     void realFluentBuildersAndSemanticNodeAccessorsResolve() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         List<Path> runtimeClasspath = Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
-                .map(Path::of)
-                .filter(Files::exists)
-                .toList();
+            .map(Path::of)
+            .filter(Files::exists)
+            .toList();
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(runtimeClasspath),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
         List<Path> sourcePaths = List.of(
             sourceRoot.resolve("dev/railroadide/railroad/vcs/git/GitCommands.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/diagnostics/inspections/CoreAccessibilityInspection.java"),
@@ -2112,7 +2145,8 @@ class CoreInspectionRulesTest {
             sourceRoot.resolve("dev/railroadide/railroad/gradle/ui/deps/GradleDependencyTreeBuilder.java"),
             sourceRoot.resolve("dev/railroadide/railroad/gradle/ui/task/GradleTaskTreeBuilder.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/diagnostics/inspections/CoreImportInspection.java"),
-            sourceRoot.resolve("dev/railroadide/railroad/ide/diagnostics/inspections/CoreNameResolutionInspection.java"),
+            sourceRoot
+                .resolve("dev/railroadide/railroad/ide/diagnostics/inspections/CoreNameResolutionInspection.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/projectexplorer/PathTreeCell.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/projectexplorer/ProjectExplorerPane.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/ui/git/commit/changes/FileItem.java"),
@@ -2127,8 +2161,7 @@ class CoreInspectionRulesTest {
             sourceRoot.resolve("dev/railroadide/railroad/form/impl/FileChooserComponent.java"),
             sourceRoot.resolve("dev/railroadide/railroad/form/impl/RadioButtonGroupComponent.java"),
             sourceRoot.resolve("dev/railroadide/railroad/form/impl/TextAreaComponent.java"),
-            sourceRoot.resolve("dev/railroadide/railroad/form/impl/TextFieldComponent.java")
-        );
+            sourceRoot.resolve("dev/railroadide/railroad/form/impl/TextFieldComponent.java"));
 
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
         for (Path sourcePath : sourcePaths) {
@@ -2138,21 +2171,18 @@ class CoreInspectionRulesTest {
                     new CoreCallResolutionInspection(),
                     new CoreNameResolutionInspection(),
                     new CoreMemberResolutionInspection(),
-                    new CoreAccessibilityInspection()
-                ), sourcePath, source, symbolIndex));
+                    new CoreAccessibilityInspection()), sourcePath, source, symbolIndex));
             } else {
                 diagnostics.addAll(runProvider(
                     new CoreCallResolutionInspection(), sourcePath, source, symbolIndex));
             }
         }
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-                Set.of(
-                    "SEM_UNRESOLVED_CALL",
-                    "SEM_UNRESOLVED_NAME",
-                    "SEM_UNRESOLVED_MEMBER",
-                    "SEM_INACCESSIBLE_MEMBER"
-                ).contains(diagnostic.code())),
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> Set.of(
+            "SEM_UNRESOLVED_CALL",
+            "SEM_UNRESOLVED_NAME",
+            "SEM_UNRESOLVED_MEMBER",
+            "SEM_INACCESSIBLE_MEMBER").contains(diagnostic.code())),
             () -> diagnostics.stream()
                 .map(diagnostic -> diagnostic.startOffset() + " " + diagnostic.message())
                 .collect(Collectors.joining("\n")));
@@ -2168,8 +2198,7 @@ class CoreInspectionRulesTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(runtimeClasspath),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
         List<Path> sourcePaths = List.of(
             sourceRoot.resolve("dev/railroadide/railroad/form/impl/CheckBoxComponent.java"),
             sourceRoot.resolve("dev/railroadide/railroad/form/impl/ComboBoxComponent.java"),
@@ -2185,7 +2214,8 @@ class CoreInspectionRulesTest {
             sourceRoot.resolve("dev/railroadide/railroad/ide/classparser/ClassStubVisitor.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/classparser/Type.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/diagnostics/inspections/CoreImportInspection.java"),
-            sourceRoot.resolve("dev/railroadide/railroad/ide/diagnostics/inspections/CoreNameResolutionInspection.java"),
+            sourceRoot
+                .resolve("dev/railroadide/railroad/ide/diagnostics/inspections/CoreNameResolutionInspection.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/diagnostics/JavaDiagnosticsProvider.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/diagnostics/JdtDiagnosticsProvider.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/projectexplorer/PathTreeCell.java"),
@@ -2208,23 +2238,21 @@ class CoreInspectionRulesTest {
             sourceRoot.resolve("dev/railroadide/railroad/switchboard/repositories/MinecraftVersionRepository.java"),
             sourceRoot.resolve("dev/railroadide/railroad/switchboard/SwitchboardClient.java"),
             sourceRoot.resolve("dev/railroadide/railroad/utility/ImageUtils.java"),
-            Path.of("src/test/java/dev/railroadide/railroad/plugin/PluginManagerTest.java").toAbsolutePath().normalize()
-        );
+            Path.of("src/test/java/dev/railroadide/railroad/plugin/PluginManagerTest.java").toAbsolutePath()
+                .normalize());
         Set<String> errorCodes = Set.of(
             "SEM_UNRESOLVED_MEMBER",
             "SEM_INACCESSIBLE_MEMBER",
             "SEM_UNRESOLVED_TYPE",
             "SEM_UNRESOLVED_CALL",
             "SEM_UNRESOLVED_NAME",
-            "SEM_INACCESSIBLE_CALL"
-        );
+            "SEM_INACCESSIBLE_CALL");
         List<JavaInspectionRuleProvider> providers = List.of(
             new CoreMemberResolutionInspection(),
             new CoreTypeResolutionInspection(),
             new CoreCallResolutionInspection(),
             new CoreNameResolutionInspection(),
-            new CoreAccessibilityInspection()
-        );
+            new CoreAccessibilityInspection());
 
         List<String> errors = new ArrayList<>();
         for (Path sourcePath : sourcePaths) {
@@ -2250,8 +2278,7 @@ class CoreInspectionRulesTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(runtimeClasspath),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
         List<Path> sourcePaths = List.of(
             sourceRoot.resolve("dev/railroadide/railroad/utility/FileUtils.java"),
             sourceRoot.resolve("dev/railroadide/railroad/project/onboarding/ProjectValidators.java"),
@@ -2277,25 +2304,33 @@ class CoreInspectionRulesTest {
             sourceRoot.resolve("dev/railroadide/railroad/theme/ThemeManager.java"),
             sourceRoot.resolve("dev/railroadide/railroad/plugin/PluginLoader.java"),
             sourceRoot.resolve("dev/railroadide/railroad/gradle/service/impl/ToolingGradleModelService.java"),
-            sourceRoot.resolve("dev/railroadide/railroad/ide/language/impl/index/JavaLanguageIndexContextContributor.java"),
+            sourceRoot
+                .resolve("dev/railroadide/railroad/ide/language/impl/index/JavaLanguageIndexContextContributor.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/projectexplorer/task/WatchTask.java"),
             sourceRoot.resolve("dev/railroadide/railroad/project/facet/detector/JavaFacetDetector.java"),
             sourceRoot.resolve("dev/railroadide/railroad/localization/L18n.java"),
-            sourceRoot.resolve("dev/railroadide/railroad/project/onboarding/creation/service/ToolingGradleService.java"),
+            sourceRoot
+                .resolve("dev/railroadide/railroad/project/onboarding/creation/service/ToolingGradleService.java"),
             sourceRoot.resolve("dev/railroadide/railroad/project/data/ProjectDataStore.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/ui/setup/TerminalFactory.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/runconfig/RunConfiguration.java"),
-            sourceRoot.resolve("dev/railroadide/railroad/ide/runconfig/defaults/JavaApplicationRunConfigurationType.java"),
+            sourceRoot
+                .resolve("dev/railroadide/railroad/ide/runconfig/defaults/JavaApplicationRunConfigurationType.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/sst/project/JavaJdkSymbolIndex.java"),
             sourceRoot.resolve("dev/railroadide/railroad/plugin/defaults/FileSystemDocument.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/sst/project/JavaProjectSemanticIndexer.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/language/index/ProjectLanguageIndexService.java"),
-            Path.of("src/test/java/dev/railroadide/railroad/ide/sst/impl/java/JavaParserTestSupport.java").toAbsolutePath().normalize(),
-            Path.of("src/test/java/dev/railroadide/railroad/ide/sst/impl/java/JavaLexerTest.java").toAbsolutePath().normalize(),
-            Path.of("src/test/java/dev/railroadide/railroad/plugin/PluginManagerTest.java").toAbsolutePath().normalize(),
-            Path.of("src/test/java/dev/railroadide/railroad/ide/sst/project/ProjectLanguageIndexServiceTest.java").toAbsolutePath().normalize(),
-            Path.of("src/test/resources/dev/railroadide/railroad/ide/sst/impl/java/corpus/valid/06_statements_control_flow.java").toAbsolutePath().normalize()
-        );
+            Path.of("src/test/java/dev/railroadide/railroad/ide/sst/impl/java/JavaParserTestSupport.java")
+                .toAbsolutePath().normalize(),
+            Path.of("src/test/java/dev/railroadide/railroad/ide/sst/impl/java/JavaLexerTest.java").toAbsolutePath()
+                .normalize(),
+            Path.of("src/test/java/dev/railroadide/railroad/plugin/PluginManagerTest.java").toAbsolutePath()
+                .normalize(),
+            Path.of("src/test/java/dev/railroadide/railroad/ide/sst/project/ProjectLanguageIndexServiceTest.java")
+                .toAbsolutePath().normalize(),
+            Path.of(
+                "src/test/resources/dev/railroadide/railroad/ide/sst/impl/java/corpus/valid/06_statements_control_flow.java")
+                .toAbsolutePath().normalize());
 
         List<String> unhandled = new ArrayList<>();
         for (Path sourcePath : sourcePaths) {
@@ -2321,8 +2356,7 @@ class CoreInspectionRulesTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(runtimeClasspath),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
         List<Path> sourcePaths = List.of(
             sourceRoot.resolve("dev/railroadide/railroad/form/FormSection.java"),
             sourceRoot.resolve("dev/railroadide/railroad/form/impl/RadioButtonGroupComponent.java"),
@@ -2341,13 +2375,19 @@ class CoreInspectionRulesTest {
             sourceRoot.resolve("dev/railroadide/railroad/switchboard/cache/impl/JsonCacheManager.java"),
             sourceRoot.resolve("dev/railroadide/railroad/project/creation/modjson/adapter/MixinListTypeAdapter.java"),
             sourceRoot.resolve("dev/railroadide/railroad/project/creation/modjson/adapter/PersonListTypeAdapter.java"),
-            sourceRoot.resolve("dev/railroadide/railroad/project/creation/modjson/adapter/EntrypointListTypeAdapter.java"),
+            sourceRoot
+                .resolve("dev/railroadide/railroad/project/creation/modjson/adapter/EntrypointListTypeAdapter.java"),
             sourceRoot.resolve("dev/railroadide/railroad/window/AlertBuilder.java"),
-            Path.of("src/test/java/dev/railroadide/railroad/ide/language/index/ProjectLanguageIndexCoordinatorTest.java").toAbsolutePath().normalize(),
-            Path.of("src/test/java/dev/railroadide/railroad/ide/sst/impl/java/JavaProjectParityTest.java").toAbsolutePath().normalize(),
-            Path.of("src/test/java/dev/railroadide/railroad/ide/sst/project/ProjectLanguageIndexServiceTest.java").toAbsolutePath().normalize(),
-            Path.of("src/test/resources/dev/railroadide/railroad/ide/sst/impl/java/corpus/valid/07_expressions_all_forms.java").toAbsolutePath().normalize()
-        );
+            Path.of(
+                "src/test/java/dev/railroadide/railroad/ide/language/index/ProjectLanguageIndexCoordinatorTest.java")
+                .toAbsolutePath().normalize(),
+            Path.of("src/test/java/dev/railroadide/railroad/ide/sst/impl/java/JavaProjectParityTest.java")
+                .toAbsolutePath().normalize(),
+            Path.of("src/test/java/dev/railroadide/railroad/ide/sst/project/ProjectLanguageIndexServiceTest.java")
+                .toAbsolutePath().normalize(),
+            Path.of(
+                "src/test/resources/dev/railroadide/railroad/ide/sst/impl/java/corpus/valid/07_expressions_all_forms.java")
+                .toAbsolutePath().normalize());
 
         List<String> incompatible = new ArrayList<>();
         for (Path sourcePath : sourcePaths) {
@@ -2371,14 +2411,13 @@ class CoreInspectionRulesTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(
                 Path.of("src/main/java").toAbsolutePath().normalize()),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreCallResolutionInspection(), sourcePath, source, symbolIndex);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-                "Cannot resolve call 'name'".equals(diagnostic.message())),
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "Cannot resolve call 'name'".equals(diagnostic.message())),
             () -> diagnostics.stream()
                 .filter(diagnostic -> "Cannot resolve call 'name'".equals(diagnostic.message()))
                 .map(diagnostic -> diagnostic.startOffset() + " " + diagnostic.message())
@@ -2393,15 +2432,13 @@ class CoreInspectionRulesTest {
         String source = Files.readString(sourcePath);
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreCallResolutionInspection(), sourcePath, source, symbolIndex);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-                "SEM_UNRESOLVED_CALL".equals(diagnostic.code())
-                    && diagnostic.startOffset() < 7_000),
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code())
+            && diagnostic.startOffset() < 7_000),
             () -> diagnostics.stream()
                 .filter(diagnostic -> diagnostic.startOffset() < 7_000)
                 .map(diagnostic -> diagnostic.startOffset() + " " + diagnostic.message())
@@ -2416,17 +2453,15 @@ class CoreInspectionRulesTest {
         String source = Files.readString(sourcePath);
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreCallResolutionInspection(), sourcePath, source, symbolIndex);
 
         assertFalse(diagnostics.stream().anyMatch(diagnostic -> Set.of(
-                "Cannot resolve call 'LexError'",
-                "Cannot resolve call 'getKey'",
-                "Cannot resolve call 'length'"
-            ).contains(diagnostic.message())),
+            "Cannot resolve call 'LexError'",
+            "Cannot resolve call 'getKey'",
+            "Cannot resolve call 'length'").contains(diagnostic.message())),
             () -> diagnostics.stream()
                 .filter(diagnostic -> Set.of("LexError", "getKey", "length").stream()
                     .anyMatch(diagnostic.message()::contains))
@@ -2447,15 +2482,14 @@ class CoreInspectionRulesTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(runtimeClasspath),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreCallResolutionInspection(), sourcePath, source, symbolIndex);
 
         Set<String> calls = Set.of("rule", "id", "getValue", "setValue", "values");
         assertFalse(diagnostics.stream().anyMatch(diagnostic -> calls.stream()
-                .anyMatch(call -> ("Cannot resolve call '" + call + "'").equals(diagnostic.message()))),
+            .anyMatch(call -> ("Cannot resolve call '" + call + "'").equals(diagnostic.message()))),
             () -> diagnostics.stream()
                 .filter(diagnostic -> calls.stream()
                     .anyMatch(call -> ("Cannot resolve call '" + call + "'").equals(diagnostic.message())))
@@ -2471,15 +2505,14 @@ class CoreInspectionRulesTest {
         String source = Files.readString(sourcePath);
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreCallResolutionInspection(), sourcePath, source, symbolIndex);
 
         Set<String> calls = Set.of("getValue", "averageNanos");
         assertFalse(diagnostics.stream().anyMatch(diagnostic -> calls.stream()
-                .anyMatch(call -> ("Cannot resolve call '" + call + "'").equals(diagnostic.message()))),
+            .anyMatch(call -> ("Cannot resolve call '" + call + "'").equals(diagnostic.message()))),
             () -> diagnostics.stream()
                 .filter(diagnostic -> calls.stream()
                     .anyMatch(call -> ("Cannot resolve call '" + call + "'").equals(diagnostic.message())))
@@ -2499,15 +2532,14 @@ class CoreInspectionRulesTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(runtimeClasspath),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreCallResolutionInspection(), sourcePath, source, symbolIndex);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-                "Cannot resolve call 'debug'".equals(diagnostic.message())
-                    || "Cannot resolve call 'error'".equals(diagnostic.message())),
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "Cannot resolve call 'debug'".equals(diagnostic.message())
+                || "Cannot resolve call 'error'".equals(diagnostic.message())),
             () -> diagnostics.stream()
                 .filter(diagnostic -> diagnostic.message().contains("call 'debug'")
                     || diagnostic.message().contains("call 'error'"))
@@ -2525,12 +2557,10 @@ class CoreInspectionRulesTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(runtimeClasspath),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
         List<Path> sourcePaths = List.of(
             sourceRoot.resolve("dev/railroadide/railroad/ide/ui/setup/PaneIconBarFactory.java"),
-            sourceRoot.resolve("dev/railroadide/railroad/ide/ui/codeeditor/CodeEditorPane.java")
-        );
+            sourceRoot.resolve("dev/railroadide/railroad/ide/ui/codeeditor/CodeEditorPane.java"));
 
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
         for (Path sourcePath : sourcePaths) {
@@ -2541,7 +2571,7 @@ class CoreInspectionRulesTest {
         Set<String> calls = Set.of(
             "getStyleClass", "getChildren", "add", "remove", "namedThreadFactory", "length");
         assertFalse(diagnostics.stream().anyMatch(diagnostic -> calls.stream()
-                .anyMatch(call -> ("Cannot resolve call '" + call + "'").equals(diagnostic.message()))),
+            .anyMatch(call -> ("Cannot resolve call '" + call + "'").equals(diagnostic.message()))),
             () -> diagnostics.stream()
                 .filter(diagnostic -> calls.stream()
                     .anyMatch(call -> ("Cannot resolve call '" + call + "'").equals(diagnostic.message())))
@@ -2573,8 +2603,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_DUPLICATE_DECLARATION".equals(diagnostic.code())));
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_DUPLICATE_DECLARATION".equals(diagnostic.code())));
     }
 
     @Test
@@ -2596,8 +2625,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_DUPLICATE_DECLARATION".equals(diagnostic.code())));
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_DUPLICATE_DECLARATION".equals(diagnostic.code())));
     }
 
     @Test
@@ -2611,8 +2639,7 @@ class CoreInspectionRulesTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_DUPLICATE_DECLARATION".equals(diagnostic.code())));
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_DUPLICATE_DECLARATION".equals(diagnostic.code())));
     }
 
     @Test
@@ -2658,7 +2685,7 @@ class CoreInspectionRulesTest {
             "src/main/java/dev/railroadide/railroad/config/ConfigHandler.java").toAbsolutePath().normalize();
         String source = Files.readString(sourceFile);
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreControlFlowInspection(), sourceFile, source);
-        JavaRuleContext context = new JavaRuleContext(sourceFile, source, JavaSemanticAnalyzer.analyzeFacts(source));
+        var context = new JavaRuleContext(sourceFile, source, JavaSemanticAnalyzer.analyzeFacts(source));
         List<String> yieldAncestors = new ArrayList<>();
         context.traverse(node -> {
             if (!"JAVA_YIELD_STATEMENT".equals(node.kind().id()))
@@ -2745,27 +2772,31 @@ class CoreInspectionRulesTest {
 
     @Test
     void coreConditionalExpressionWithIdenticalBranchesEmitsDiagnosticWhenTernaryHasSameBranch() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
-            class Example {
-                int run(boolean flag, int value) {
-                    return flag ? value : value;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
+                class Example {
+                    int run(boolean flag, int value) {
+                        return flag ? value : value;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
     }
 
     @Test
     void coreConditionalExpressionWithIdenticalBranchesDoesNotEmitDiagnosticWhenTernaryHasDifferentBranch() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
-            class Example {
-                int run(boolean flag, int valueA, int valueB) {
-                    return flag ? valueA : valueB;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
+                class Example {
+                    int run(boolean flag, int valueA, int valueB) {
+                        return flag ? valueA : valueB;
+                    }
                 }
-            }
-            """);
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
     }
 }

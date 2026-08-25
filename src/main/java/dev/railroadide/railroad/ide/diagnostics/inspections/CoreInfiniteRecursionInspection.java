@@ -32,9 +32,7 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
                 JavaSemanticRules.INFINITE_RECURSION.defaultSeverity(),
                 JavaSemanticRules.INFINITE_RECURSION.messageTemplate(),
                 Set.of("core", "recursion"),
-                CoreInfiniteRecursionInspection::reportInfiniteRecursion
-            )
-        );
+                CoreInfiniteRecursionInspection::reportInfiniteRecursion));
     }
 
     private static void reportInfiniteRecursion(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
@@ -55,7 +53,8 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
         }
     }
 
-    private static boolean isImmediatelyInfiniteRecursive(JavaRuleContext context, Symbol methodSymbol, SyntaxNode body) {
+    private static boolean isImmediatelyInfiniteRecursive(JavaRuleContext context, Symbol methodSymbol,
+        SyntaxNode body) {
         FlowAnalysisResult result = analyzeFlow(context, body, methodSymbol);
         return result.isInfiniteRecursive()
             && !result.canCompleteNormally()
@@ -70,9 +69,11 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
             case "JAVA_EXPRESSION_STATEMENT" -> analyzeExpressionStatement(context, node, methodSymbol);
             case "JAVA_IF_STATEMENT" -> analyzeIfStatement(context, node, methodSymbol);
             case "JAVA_FOR_STATEMENT", "JAVA_WHILE_STATEMENT", "JAVA_DO_WHILE_STATEMENT" ->
-                FlowAnalysisResult.fallsThrough(); // Conservatively assume loops can complete normally and don't cause infinite recursion
+                FlowAnalysisResult.fallsThrough(); // Conservatively assume loops can complete normally and don't cause
+                                                   // infinite recursion
             case "JAVA_THROW_STATEMENT" ->
-                FlowAnalysisResult.stops(); // Throwing an exception stops normal execution and thus can't be part of an infinite recursion
+                FlowAnalysisResult.stops(); // Throwing an exception stops normal execution and thus can't be part of an
+                                            // infinite recursion
             default -> FlowAnalysisResult.fallsThrough();
         };
     }
@@ -84,8 +85,9 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
                 continue;
 
             FlowAnalysisResult result = analyzeFlow(context, child, methodSymbol);
-            if (result.canExitWithoutRecursing())
+            if (result.canExitWithoutRecursing()) {
                 canExitWithoutRecursing = true;
+            }
 
             if (result.isInfiniteRecursive()) {
                 if (canExitWithoutRecursing)
@@ -95,13 +97,15 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
             }
 
             if (!result.canCompleteNormally())
-                return new FlowAnalysisResult(false, false, canExitWithoutRecursing || result.canExitWithoutRecursing());
+                return new FlowAnalysisResult(false, false,
+                    canExitWithoutRecursing || result.canExitWithoutRecursing());
         }
 
         return new FlowAnalysisResult(false, true, canExitWithoutRecursing);
     }
 
-    private static FlowAnalysisResult analyzeReturnStatement(JavaRuleContext context, SyntaxNode returnStatement, Symbol methodSymbol) {
+    private static FlowAnalysisResult analyzeReturnStatement(JavaRuleContext context, SyntaxNode returnStatement,
+        Symbol methodSymbol) {
         for (SyntaxNode child : returnStatement.children()) {
             if (child instanceof SyntaxToken)
                 continue;
@@ -113,7 +117,8 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
         return FlowAnalysisResult.stops();
     }
 
-    private static FlowAnalysisResult analyzeExpressionStatement(JavaRuleContext context, SyntaxNode expressionStatement, Symbol methodSymbol) {
+    private static FlowAnalysisResult analyzeExpressionStatement(JavaRuleContext context,
+        SyntaxNode expressionStatement, Symbol methodSymbol) {
         for (SyntaxNode child : expressionStatement.children()) {
             if (child instanceof SyntaxToken)
                 continue;
@@ -125,7 +130,8 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
         return FlowAnalysisResult.fallsThrough();
     }
 
-    private static FlowAnalysisResult analyzeIfStatement(JavaRuleContext context, SyntaxNode ifStatement, Symbol methodSymbol) {
+    private static FlowAnalysisResult analyzeIfStatement(JavaRuleContext context, SyntaxNode ifStatement,
+        Symbol methodSymbol) {
         SyntaxNode thenBranch = context.thenBranchOf(ifStatement);
         SyntaxNode elseBranch = context.elseBranchOf(ifStatement);
 
@@ -133,20 +139,17 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
             return FlowAnalysisResult.fallsThrough();
 
         FlowAnalysisResult thenResult = analyzeFlow(context, thenBranch, methodSymbol);
-        if (elseBranch == null) {
+        if (elseBranch == null)
             return new FlowAnalysisResult(
                 false,
                 true,
-                thenResult.canExitWithoutRecursing()
-            );
-        }
+                thenResult.canExitWithoutRecursing());
 
         FlowAnalysisResult elseResult = analyzeFlow(context, elseBranch, methodSymbol);
         return new FlowAnalysisResult(
             thenResult.isInfiniteRecursive() && elseResult.isInfiniteRecursive(),
             thenResult.canCompleteNormally() || elseResult.canCompleteNormally(),
-            thenResult.canExitWithoutRecursing() || elseResult.canExitWithoutRecursing()
-        );
+            thenResult.canExitWithoutRecursing() || elseResult.canExitWithoutRecursing());
     }
 
     private static boolean containsDirectSelfCall(JavaRuleContext context, SyntaxNode node, Symbol methodSymbol) {
@@ -202,8 +205,10 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
             return false;
 
         for (int i = 0; i < params1.size(); i++) {
-            String type1 = context.resolveQualifiedTypeName(context.directChild(params1.get(i), JavaSyntaxKinds.TYPE_REFERENCE.id()));
-            String type2 = context.resolveQualifiedTypeName(context.directChild(params2.get(i), JavaSyntaxKinds.TYPE_REFERENCE.id()));
+            String type1 = context
+                .resolveQualifiedTypeName(context.directChild(params1.get(i), JavaSyntaxKinds.TYPE_REFERENCE.id()));
+            String type2 = context
+                .resolveQualifiedTypeName(context.directChild(params2.get(i), JavaSyntaxKinds.TYPE_REFERENCE.id()));
 
             if (!Objects.equals(type1, type2))
                 return false;
@@ -212,7 +217,8 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
         return true;
     }
 
-    private record FlowAnalysisResult(boolean isInfiniteRecursive, boolean canCompleteNormally, boolean canExitWithoutRecursing) {
+    private record FlowAnalysisResult(boolean isInfiniteRecursive, boolean canCompleteNormally,
+        boolean canExitWithoutRecursing) {
         private static FlowAnalysisResult recurses() {
             return new FlowAnalysisResult(true, false, false);
         }

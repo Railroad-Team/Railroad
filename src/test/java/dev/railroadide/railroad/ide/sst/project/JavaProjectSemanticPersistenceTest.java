@@ -19,15 +19,15 @@ class JavaProjectSemanticPersistenceTest {
         Path aFile = root.resolve("src/main/java/demo/A.java");
         Files.createDirectories(aFile.getParent());
         Files.writeString(aFile, """
-                package demo;
+            package demo;
 
-                class A {
-                    static int VALUE;
-                }
-                """);
+            class A {
+                static int VALUE;
+            }
+            """);
 
         JavaProjectSemanticIndex index = new JavaProjectSemanticIndexer().build(root);
-        JavaProjectSemanticPersistence persistence = new JavaProjectSemanticPersistence();
+        var persistence = new JavaProjectSemanticPersistence();
         persistence.save(root, index);
 
         JavaProjectSemanticIndex loaded = persistence.loadIfCurrent(root);
@@ -44,23 +44,23 @@ class JavaProjectSemanticPersistenceTest {
         Path aFile = root.resolve("src/main/java/demo/A.java");
         Files.createDirectories(aFile.getParent());
         Files.writeString(aFile, """
-                package demo;
+            package demo;
 
-                class A {
-                }
-                """);
+            class A {
+            }
+            """);
 
-        JavaProjectSemanticIndexer indexer = new JavaProjectSemanticIndexer();
-        JavaProjectSemanticPersistence persistence = new JavaProjectSemanticPersistence();
+        var indexer = new JavaProjectSemanticIndexer();
+        var persistence = new JavaProjectSemanticPersistence();
         persistence.save(root, indexer.build(root));
 
         Files.writeString(aFile, """
-                package demo;
+            package demo;
 
-                class A {
-                    static int VALUE;
-                }
-                """);
+            class A {
+                static int VALUE;
+            }
+            """);
 
         JavaProjectSemanticIndex loaded = persistence.loadIfCurrent(root);
 
@@ -72,8 +72,8 @@ class JavaProjectSemanticPersistenceTest {
         Path root = tempDir.resolve("project");
         Path aFile = writeSource(root, "A.java", "class A {}");
         writeSource(root, "B.java", "class B {}");
-        JavaProjectSemanticIndexer indexer = new JavaProjectSemanticIndexer();
-        JavaProjectSemanticPersistence persistence = new JavaProjectSemanticPersistence();
+        var indexer = new JavaProjectSemanticIndexer();
+        var persistence = new JavaProjectSemanticPersistence();
         persistence.save(root, indexer.build(root));
 
         Files.writeString(aFile, "class A { static int VALUE; }");
@@ -91,8 +91,8 @@ class JavaProjectSemanticPersistenceTest {
         Path root = tempDir.resolve("project");
         Path aFile = writeSource(root, "A.java", "class A {}");
         Path bFile = writeSource(root, "B.java", "class B {}");
-        JavaProjectSemanticIndexer indexer = new JavaProjectSemanticIndexer();
-        JavaProjectSemanticPersistence persistence = new JavaProjectSemanticPersistence();
+        var indexer = new JavaProjectSemanticIndexer();
+        var persistence = new JavaProjectSemanticPersistence();
         JavaProjectSemanticIndex initial = indexer.build(root);
         persistence.save(root, initial);
 

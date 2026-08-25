@@ -12,11 +12,10 @@ import java.util.List;
 import java.util.Optional;
 
 public record IfStatement(
-        Span span,
-        Expression condition,
-        Statement thenStatement,
-        Optional<Statement> elseStatement
-) implements Statement {
+    Span span,
+    Expression condition,
+    Statement thenStatement,
+    Optional<Statement> elseStatement) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.IF_STATEMENT;

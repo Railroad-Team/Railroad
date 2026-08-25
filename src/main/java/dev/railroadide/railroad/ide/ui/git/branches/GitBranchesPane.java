@@ -38,17 +38,17 @@ public class GitBranchesPane extends RRVBox {
     }
 
     private static HBox createSectionHeader(String localizationKey, javafx.scene.control.ListView<?> listView) {
-        HBox header = new HBox();
+        var header = new HBox();
         header.getStyleClass().add("git-branches-section-header");
 
-        LocalizedLabel title = new LocalizedLabel(localizationKey);
+        var title = new LocalizedLabel(localizationKey);
         title.getStyleClass().add("git-branches-section-title");
 
-        Label count = new Label();
+        var count = new Label();
         count.getStyleClass().add("git-branches-section-count");
         count.textProperty().bind(Bindings.size(listView.getItems()).asString());
 
-        Region spacer = new Region();
+        var spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         header.getChildren().addAll(title, spacer, count);

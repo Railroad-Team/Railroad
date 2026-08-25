@@ -21,7 +21,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
  */
 public class RRTextField extends TextField implements TextFieldControl {
 
-    public static final String[] DEFAULT_STYLE_CLASSES = { "rr-text-field", "text-field" };
+    public static final String[] DEFAULT_STYLE_CLASSES = {"rr-text-field", "text-field"};
 
     private TextFieldSize size = TextFieldSize.MEDIUM;
     private ValidationState validationState = ValidationState.NONE;
@@ -30,7 +30,8 @@ public class RRTextField extends TextField implements TextFieldControl {
     @Getter
     private HBox container;
 
-    private final LocalizedTextProperty localizedPromptText = new LocalizedTextProperty(this, "localizedPromptText", null);
+    private final LocalizedTextProperty localizedPromptText = new LocalizedTextProperty(this, "localizedPromptText",
+        null);
 
     /**
      * Constructs a new text field with empty text and default styling.
@@ -43,7 +44,7 @@ public class RRTextField extends TextField implements TextFieldControl {
      * Constructs a new text field with localized placeholder text and a prefix icon.
      *
      * @param localizationKey the localization key for the placeholder text
-     * @param prefixIcon      the icon to display before the text field
+     * @param prefixIcon the icon to display before the text field
      */
     public RRTextField(String localizationKey, Ikon prefixIcon) {
         this(localizationKey);
@@ -54,7 +55,7 @@ public class RRTextField extends TextField implements TextFieldControl {
      * Constructs a new text field with localized placeholder text.
      *
      * @param localizationKey the localization key for the placeholder text
-     * @param args            optional formatting arguments for the localized text
+     * @param args optional formatting arguments for the localized text
      */
     public RRTextField(String localizationKey, Object... args) {
         super();
@@ -198,7 +199,8 @@ public class RRTextField extends TextField implements TextFieldControl {
             case SUCCESS -> getStyleClass().add("success");
             case ERROR -> getStyleClass().add("error");
             case WARNING -> getStyleClass().add("warning");
-            default -> {}
+            default -> {
+            }
         }
     }
 
@@ -212,12 +214,12 @@ public class RRTextField extends TextField implements TextFieldControl {
      */
     @Override
     public void clearWithAnimation() {
-        FadeTransition fade = new FadeTransition(Duration.millis(200), this);
+        var fade = new FadeTransition(Duration.millis(200), this);
         fade.setFromValue(1.0);
         fade.setToValue(0.5);
         fade.setOnFinished(e -> {
             setText("");
-            FadeTransition fadeBack = new FadeTransition(Duration.millis(200), this);
+            var fadeBack = new FadeTransition(Duration.millis(200), this);
             fadeBack.setFromValue(0.5);
             fadeBack.setToValue(1.0);
             fadeBack.play();

@@ -18,14 +18,13 @@ class JavaSyntaxParserTest {
     void carriesCallerSuppliedDocumentIdentity() {
         DocumentId documentId = DocumentId.create();
         DocumentUri documentUri = DocumentUri.virtual("memory", "tests/Identified.java");
-        DocumentVersion documentVersion = new DocumentVersion(7);
+        var documentVersion = new DocumentVersion(7);
 
         SyntaxTree tree = JavaSyntaxParser.parse(
             documentId,
             documentUri,
             documentVersion,
-            "class Identified {}"
-        );
+            "class Identified {}");
 
         assertEquals(documentId, tree.documentId());
         assertEquals(documentUri, tree.documentUri());
@@ -34,14 +33,13 @@ class JavaSyntaxParserTest {
 
     @Test
     void parsesAndRetainsTheExactTextSnapshot() {
-        TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+        var snapshot = new TextDocumentSnapshot(
             DocumentId.create(),
             DocumentUri.virtual("memory", "tests/Snapshot.java"),
             new DocumentVersion(4),
             "java",
             "class Snapshot {}",
-            StandardCharsets.UTF_16LE
-        );
+            StandardCharsets.UTF_16LE);
 
         SyntaxTree tree = JavaSyntaxParser.parse(snapshot);
 
@@ -54,21 +52,19 @@ class JavaSyntaxParserTest {
                 snapshot.version(),
                 "kotlin",
                 "class Snapshot",
-                StandardCharsets.UTF_8
-            )
-        ));
+                StandardCharsets.UTF_8)));
     }
 
     @Test
     void roundTripsSourceTextFromSyntaxTree() {
         String source = """
-                package demo;
-                import java.util.List;
-                // keep this comment
-                class A {
-                    int x = 1;
-                }
-                """;
+            package demo;
+            import java.util.List;
+            // keep this comment
+            class A {
+                int x = 1;
+            }
+            """;
 
         SyntaxTree tree = JavaSyntaxParser.parse(source);
         assertEquals(source, JavaParserTestSupport.syntaxText(tree));
@@ -77,11 +73,11 @@ class JavaSyntaxParserTest {
     @Test
     void includesExpectedTopLevelStructureKinds() {
         String source = """
-                package demo;
-                import java.util.List;
-                class A {}
-                record R(int x) {}
-                """;
+            package demo;
+            import java.util.List;
+            class A {}
+            record R(int x) {}
+            """;
 
         SyntaxTree tree = JavaSyntaxParser.parse(source);
         List<String> topLevelKinds = tree.root().children().stream().map(node -> node.kind().id()).toList();
@@ -105,11 +101,11 @@ class JavaSyntaxParserTest {
     @Test
     void nestedGenericClosersDoNotConsumeFollowingImplementedType() {
         String source = """
-                import java.io.Serializable;
-                import java.util.Comparator;
-                import java.util.List;
-                class Example implements Comparator<List<String>>, Serializable {}
-                """;
+            import java.io.Serializable;
+            import java.util.Comparator;
+            import java.util.List;
+            class Example implements Comparator<List<String>>, Serializable {}
+            """;
 
         JavaSyntaxParser.ParseResult result = JavaSyntaxParser.parseWithDiagnostics(source);
 
@@ -120,28 +116,28 @@ class JavaSyntaxParserTest {
     @Test
     void incrementalParseReusesTailForInTypeEdit() {
         String oldSource = """
-                package demo;
-                import java.util.List;
-                class A {
-                    int x = 1;
-                }
-                class B {}
-                """;
+            package demo;
+            import java.util.List;
+            class A {
+                int x = 1;
+            }
+            class B {}
+            """;
         String newSource = """
-                package demo;
-                import java.util.List;
-                class A {
-                    int x = 12;
-                }
-                class B {}
-                """;
+            package demo;
+            import java.util.List;
+            class A {
+                int x = 12;
+            }
+            class B {}
+            """;
 
         int editStart = oldSource.indexOf("1;");
-        JavaSyntaxParser.TextEdit edit = new JavaSyntaxParser.TextEdit(editStart, 1, "12");
+        var edit = new JavaSyntaxParser.TextEdit(editStart, 1, "12");
         SyntaxTree previousTree = JavaSyntaxParser.parse(oldSource);
 
-        JavaSyntaxParser.IncrementalParseResult result =
-                JavaSyntaxParser.parseIncremental(previousTree, oldSource, newSource, edit);
+        JavaSyntaxParser.IncrementalParseResult result = JavaSyntaxParser.parseIncremental(previousTree, oldSource,
+            newSource, edit);
 
         assertFalse(result.fullReparse());
         assertEquals(previousTree.documentId(), result.tree().documentId());
@@ -154,22 +150,22 @@ class JavaSyntaxParserTest {
     @Test
     void incrementalParseFallsBackForImportEdit() {
         String oldSource = """
-                package demo;
-                import java.util.List;
-                class A {}
-                """;
+            package demo;
+            import java.util.List;
+            class A {}
+            """;
         String newSource = """
-                package demo;
-                import java.util.ArrayList;
-                class A {}
-                """;
+            package demo;
+            import java.util.ArrayList;
+            class A {}
+            """;
 
         int editStart = oldSource.indexOf("List");
-        JavaSyntaxParser.TextEdit edit = new JavaSyntaxParser.TextEdit(editStart, 4, "ArrayList");
+        var edit = new JavaSyntaxParser.TextEdit(editStart, 4, "ArrayList");
         SyntaxTree previousTree = JavaSyntaxParser.parse(oldSource);
 
-        JavaSyntaxParser.IncrementalParseResult result =
-                JavaSyntaxParser.parseIncremental(previousTree, oldSource, newSource, edit);
+        JavaSyntaxParser.IncrementalParseResult result = JavaSyntaxParser.parseIncremental(previousTree, oldSource,
+            newSource, edit);
 
         assertTrue(result.fullReparse());
         assertEquals(previousTree.documentId(), result.tree().documentId());
@@ -182,22 +178,20 @@ class JavaSyntaxParserTest {
     void incrementalParseAcceptsOnlyALaterCallerSuppliedVersion() {
         String oldSource = "class A { int value = 1; }";
         String newSource = "class A { int value = 2; }";
-        DocumentVersion previousVersion = new DocumentVersion(10);
+        var previousVersion = new DocumentVersion(10);
         SyntaxTree previousTree = JavaSyntaxParser.parse(
             DocumentId.create(),
             DocumentUri.virtual("memory", "tests/A.java"),
             previousVersion,
-            oldSource
-        );
-        JavaSyntaxParser.TextEdit edit = new JavaSyntaxParser.TextEdit(oldSource.indexOf("1"), 1, "2");
+            oldSource);
+        var edit = new JavaSyntaxParser.TextEdit(oldSource.indexOf("1"), 1, "2");
 
         JavaSyntaxParser.IncrementalParseResult result = JavaSyntaxParser.parseIncremental(
             previousTree,
             new DocumentVersion(15),
             oldSource,
             newSource,
-            edit
-        );
+            edit);
 
         assertEquals(new DocumentVersion(15), result.tree().documentVersion());
         assertThrows(
@@ -207,68 +201,59 @@ class JavaSyntaxParserTest {
                 previousVersion,
                 oldSource,
                 newSource,
-                edit
-            )
-        );
+                edit));
     }
 
     @Test
     void incrementalParseUsesSnapshotContentIdentityAndVersionAtomically() {
         String oldSource = "class A { int value = 1; }";
         String newSource = "class A { int value = 20; }";
-        TextDocumentSnapshot previousSnapshot = new TextDocumentSnapshot(
+        var previousSnapshot = new TextDocumentSnapshot(
             DocumentId.create(),
             DocumentUri.virtual("memory", "tests/A.java"),
             new DocumentVersion(5),
             "java",
             oldSource,
-            StandardCharsets.UTF_8
-        );
+            StandardCharsets.UTF_8);
         SyntaxTree previousTree = JavaSyntaxParser.parse(previousSnapshot);
-        TextDocumentSnapshot newSnapshot = new TextDocumentSnapshot(
+        var newSnapshot = new TextDocumentSnapshot(
             previousSnapshot.id(),
             DocumentUri.virtual("memory", "renamed/A.java"),
             new DocumentVersion(9),
             "java",
             newSource,
-            StandardCharsets.UTF_16
-        );
-        JavaSyntaxParser.TextEdit edit = new JavaSyntaxParser.TextEdit(oldSource.indexOf("1"), 1, "20");
+            StandardCharsets.UTF_16);
+        var edit = new JavaSyntaxParser.TextEdit(oldSource.indexOf("1"), 1, "20");
 
-        JavaSyntaxParser.IncrementalParseResult result =
-            JavaSyntaxParser.parseIncremental(previousTree, newSnapshot, edit);
+        JavaSyntaxParser.IncrementalParseResult result = JavaSyntaxParser.parseIncremental(previousTree, newSnapshot,
+            edit);
 
         assertSame(newSnapshot, result.tree().documentSnapshot());
         assertEquals(newSource, JavaParserTestSupport.syntaxText(result.tree()));
 
-        TextDocumentSnapshot wrongIdentity = new TextDocumentSnapshot(
+        var wrongIdentity = new TextDocumentSnapshot(
             DocumentId.create(),
             newSnapshot.uri(),
             newSnapshot.version(),
             "java",
             newSource,
-            StandardCharsets.UTF_8
-        );
-        TextDocumentSnapshot staleVersion = new TextDocumentSnapshot(
+            StandardCharsets.UTF_8);
+        var staleVersion = new TextDocumentSnapshot(
             previousSnapshot.id(),
             newSnapshot.uri(),
             previousSnapshot.version(),
             "java",
             newSource,
-            StandardCharsets.UTF_8
-        );
+            StandardCharsets.UTF_8);
         assertThrows(
             IllegalArgumentException.class,
-            () -> JavaSyntaxParser.parseIncremental(previousTree, wrongIdentity, edit)
-        );
+            () -> JavaSyntaxParser.parseIncremental(previousTree, wrongIdentity, edit));
         assertThrows(
             IllegalArgumentException.class,
-            () -> JavaSyntaxParser.parseIncremental(previousTree, staleVersion, edit)
-        );
+            () -> JavaSyntaxParser.parseIncremental(previousTree, staleVersion, edit));
         assertThrows(
             IllegalArgumentException.class,
-            () -> JavaSyntaxParser.parseIncremental(previousTree, "not the old source", newSource, edit)
-        );
+            () -> JavaSyntaxParser.parseIncremental(previousTree, "not the old source", newSource, edit));
     }
 
     private static long countKind(List<String> kinds, String kindId) {

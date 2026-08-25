@@ -43,15 +43,15 @@ class ProjectLanguageIndexCoordinatorTest {
             """);
 
         ProjectLanguageIndexService indexService = createIndexService();
-        ProjectLanguageIndexCoordinator coordinator = new ProjectLanguageIndexCoordinator(
+        var coordinator = new ProjectLanguageIndexCoordinator(
             new DefaultProjectIndexContextResolver().resolve(new TestProject(root)),
             indexService,
-            List.of(new JavaLanguageSupport())
-        );
+            List.of(new JavaLanguageSupport()));
 
         coordinator.warmIndexes();
 
-        JavaProjectSemanticIndex index = indexService.currentTyped(new TestProject(root), JavaLanguageSupport.LANGUAGE_ID);
+        JavaProjectSemanticIndex index = indexService.currentTyped(new TestProject(root),
+            JavaLanguageSupport.LANGUAGE_ID);
         assertNotNull(index);
         assertEquals(1, index.lookupQualifiedName("demo.A").size());
     }
@@ -67,11 +67,10 @@ class ProjectLanguageIndexCoordinatorTest {
         Path aFile = root.resolve("src/main/java/demo/A.java");
 
         ProjectLanguageIndexService indexService = createIndexService();
-        ProjectLanguageIndexCoordinator coordinator = new ProjectLanguageIndexCoordinator(
+        var coordinator = new ProjectLanguageIndexCoordinator(
             new DefaultProjectIndexContextResolver().resolve(new TestProject(root)),
             indexService,
-            List.of(new JavaLanguageSupport())
-        );
+            List.of(new JavaLanguageSupport()));
         coordinator.warmIndexes();
 
         Files.writeString(aFile, """
@@ -84,13 +83,15 @@ class ProjectLanguageIndexCoordinatorTest {
 
         coordinator.handleFileChange(aFile, StandardWatchEventKinds.ENTRY_MODIFY);
 
-        JavaProjectSemanticIndex updated = indexService.currentTyped(new TestProject(root), JavaLanguageSupport.LANGUAGE_ID);
+        JavaProjectSemanticIndex updated = indexService.currentTyped(new TestProject(root),
+            JavaLanguageSupport.LANGUAGE_ID);
         assertNotNull(updated);
         assertEquals(1, updated.lookupMember("demo.A", "VALUE").size());
 
         coordinator.handleFileChange(aFile, StandardWatchEventKinds.ENTRY_DELETE);
 
-        JavaProjectSemanticIndex removed = indexService.currentTyped(new TestProject(root), JavaLanguageSupport.LANGUAGE_ID);
+        JavaProjectSemanticIndex removed = indexService.currentTyped(new TestProject(root),
+            JavaLanguageSupport.LANGUAGE_ID);
         assertNotNull(removed);
         assertTrue(removed.lookupQualifiedName("demo.A").isEmpty());
     }
@@ -101,7 +102,7 @@ class ProjectLanguageIndexCoordinatorTest {
             LanguageSupportRegistry.register(support);
         }
 
-        ProjectLanguageIndexService indexService = new ProjectLanguageIndexService();
+        var indexService = new ProjectLanguageIndexService();
         indexService.registerIndexer(support.createIndexer());
         indexService.registerPersistence(support.createPersistence());
         return indexService;

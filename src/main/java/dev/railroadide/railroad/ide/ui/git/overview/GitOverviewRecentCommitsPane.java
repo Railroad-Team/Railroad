@@ -37,8 +37,7 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
     private final AtomicInteger requestedCount = new AtomicInteger(0);
     private final SimpleLongProperty elapsedTick = new SimpleLongProperty();
     private final Timeline elapsedTimeline = new Timeline(
-        new KeyFrame(Duration.seconds(1), $ -> elapsedTick.set(elapsedTick.get() + 1))
-    );
+        new KeyFrame(Duration.seconds(1), _ -> elapsedTick.set(elapsedTick.get() + 1)));
 
     public GitOverviewRecentCommitsPane(Project project) {
         getStyleClass().add("git-overview-recent-commits-pane");
@@ -58,10 +57,9 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
             }
         });
 
-        heightProperty().addListener((obs, oldHeight, newHeight) ->
-            updateCommitLimitFromHeight(gitManager));
-        skinProperty().addListener((obs, oldSkin, newSkin) ->
-            Platform.runLater(() -> updateCommitLimitFromHeight(gitManager)));
+        heightProperty().addListener((obs, oldHeight, newHeight) -> updateCommitLimitFromHeight(gitManager));
+        skinProperty()
+            .addListener((obs, oldSkin, newSkin) -> Platform.runLater(() -> updateCommitLimitFromHeight(gitManager)));
 
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(runnable -> {
             var thread = new Thread(runnable, "GitOverviewRecentCommitsPane-Commits-Fetcher");
@@ -70,26 +68,26 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
         });
 
         AtomicReference<ScheduledFuture<?>> future = new AtomicReference<>();
-        sceneProperty().addListener((obs, oldScene, newScene) ->
-            onSceneChanged(newScene, future, executor, gitManager));
-        gitManager.lastFetchTimestampProperty().addListener((observable, oldValue, newValue) ->
-            requestCommits(gitManager, Math.max(1, requestedCount.get())));
+        sceneProperty()
+            .addListener((obs, oldScene, newScene) -> onSceneChanged(newScene, future, executor, gitManager));
+        gitManager.lastFetchTimestampProperty().addListener(
+            (observable, oldValue, newValue) -> requestCommits(gitManager, Math.max(1, requestedCount.get())));
 
         ShutdownHooks.addHook(executor::shutdownNow);
     }
 
     private void onSceneChanged(Scene newScene,
-                                AtomicReference<ScheduledFuture<?>> futureRef,
-                                ScheduledExecutorService executor,
-                                GitManager gitManager) {
+        AtomicReference<ScheduledFuture<?>> futureRef,
+        ScheduledExecutorService executor,
+        GitManager gitManager) {
         ScheduledFuture<?> previousFuture = futureRef.getAndSet(null);
         if (previousFuture != null) {
             previousFuture.cancel(false);
         }
 
         if (newScene != null) {
-            ScheduledFuture<?> newFuture = executor.scheduleAtFixedRate(() ->
-                requestCommits(gitManager, Math.max(1, requestedCount.get())), 0, 1, TimeUnit.MINUTES);
+            ScheduledFuture<?> newFuture = executor.scheduleAtFixedRate(
+                () -> requestCommits(gitManager, Math.max(1, requestedCount.get())), 0, 1, TimeUnit.MINUTES);
             futureRef.set(newFuture);
         }
     }
@@ -128,9 +126,8 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> {
         if (requestedCount.getAndSet(clamped) == clamped)
             return;
 
-        gitManager.getRecentCommits(clamped).thenAccept(optCommits ->
-            optCommits.map(GitCommitPage::commits).ifPresent(commits ->
-                Platform.runLater(() -> getItems().setAll(commits))));
+        gitManager.getRecentCommits(clamped).thenAccept(optCommits -> optCommits.map(GitCommitPage::commits)
+            .ifPresent(commits -> Platform.runLater(() -> getItems().setAll(commits))));
     }
 
     private static class GitOverviewRecentCommitCell extends ListCell<GitCommit> {

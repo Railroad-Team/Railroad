@@ -16,8 +16,7 @@ public class GitCommitPane extends RRVBox {
         getChildren().addAll(
             gitCommitHeader,
             gitCommitChanges,
-            gitCommitActions
-        );
+            gitCommitActions);
 
         VBox.setVgrow(gitCommitChanges, Priority.ALWAYS);
     }

@@ -12,13 +12,12 @@ public class PathTreeItemComparator implements Comparator<TreeItem<PathItem>>, S
         boolean isDir1 = Files.isDirectory(item1.getValue().getPath());
         boolean isDir2 = Files.isDirectory(item2.getValue().getPath());
 
-        if (isDir1 && !isDir2) {
+        if (isDir1 && !isDir2)
             return -1;
-        } else if (!isDir1 && isDir2) {
+        else if (!isDir1 && isDir2)
             return 1;
-        } else {
+        else
             return item1.getValue().getPath().getFileName().toString()
                 .compareToIgnoreCase(item2.getValue().getPath().getFileName().toString());
-        }
     }
 }

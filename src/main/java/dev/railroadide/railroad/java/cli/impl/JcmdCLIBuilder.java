@@ -166,7 +166,7 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
      * Adds a diagnostic command to be executed.
      *
      * @param command The name of the diagnostic command (e.g., "GC.heap_info").
-     * @param args    Optional arguments for the command.
+     * @param args Optional arguments for the command.
      * @return This builder instance.
      */
     public JcmdCLIBuilder addDiagnosticCommand(String command, String... args) {
@@ -203,8 +203,9 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
             case HELP -> command.add("-h");
             case LIST -> command.add("-l");
             case COMMAND -> {
-                if (target.value() != null)
+                if (target.value() != null) {
                     command.add(target.value());
+                }
                 if (commandFile != null) {
                     command.add("-f");
                     command.add(commandFile.toString());
@@ -247,9 +248,7 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
      * Represents the operation mode for the {@code jcmd} command.
      */
     private enum Mode {
-        COMMAND,
-        LIST,
-        HELP
+        COMMAND, LIST, HELP
     }
 
     /**
@@ -273,8 +272,6 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
      * Represents the type of target for the {@code jcmd} command.
      */
     private enum TargetType {
-        NONE,
-        PID,
-        MAIN_CLASS
+        NONE, PID, MAIN_CLASS
     }
 }

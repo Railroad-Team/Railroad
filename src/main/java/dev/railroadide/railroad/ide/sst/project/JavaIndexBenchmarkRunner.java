@@ -24,7 +24,7 @@ public final class JavaIndexBenchmarkRunner {
         List<Path> sources = sourceFiles(projectRoot);
 
         System.out.printf("Java index benchmark: root=%s, sourceFiles=%d%n", projectRoot, sources.size());
-        JavaProjectSemanticPersistence persistence = new JavaProjectSemanticPersistence();
+        var persistence = new JavaProjectSemanticPersistence();
         Timed<JavaProjectSemanticIndex> persisted = time(
             () -> persistence.loadIfCurrent(projectRoot, sources));
         print("persisted project index load", persisted.elapsedNanos(),
@@ -58,8 +58,7 @@ public final class JavaIndexBenchmarkRunner {
     private static List<Path> sourceFiles(Path projectRoot) throws IOException {
         List<Path> roots = List.of(
             projectRoot.resolve("src/main/java"),
-            projectRoot.resolve("src/test/java")
-        );
+            projectRoot.resolve("src/test/java"));
         List<Path> files = new ArrayList<>();
         for (Path root : roots) {
             if (!Files.isDirectory(root))

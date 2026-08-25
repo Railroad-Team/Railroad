@@ -12,128 +12,134 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CoreSerializationInspectionTest {
     @Test
     void coreSerializationRuleEmitsDiagnosticForDirectAncestorWithoutNoArgConstructor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            import java.io.Serializable;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                import java.io.Serializable;
 
-            class Base {
-                Base(int value) {}
-            }
+                class Base {
+                    Base(int value) {}
+                }
 
-            class Child extends Base implements Serializable {
-                Child() { super(1); }
-            }
-            """);
+                class Child extends Base implements Serializable {
+                    Child() { super(1); }
+                }
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
 
     @Test
     void coreSerializationRuleEmitsDiagnosticForIndirectNonSerializableAncestor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            import java.io.Serializable;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                import java.io.Serializable;
 
-            class Base {
-                Base(String value) {}
-            }
+                class Base {
+                    Base(String value) {}
+                }
 
-            class Mid extends Base implements Serializable {
-                Mid() { super("x"); }
-            }
+                class Mid extends Base implements Serializable {
+                    Mid() { super("x"); }
+                }
 
-            class Leaf extends Mid implements Serializable {
-                Leaf() {}
-            }
-            """);
+                class Leaf extends Mid implements Serializable {
+                    Leaf() {}
+                }
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
 
     @Test
     void coreSerializationRuleEmitsDiagnosticForPrivateNoArgConstructor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            import java.io.Serializable;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                import java.io.Serializable;
 
-            class Base {
-                private Base() {}
-            }
+                class Base {
+                    private Base() {}
+                }
 
-            class Child extends Base implements Serializable {
-                Child() { super(); }
-            }
-            """);
+                class Child extends Base implements Serializable {
+                    Child() { super(); }
+                }
+                """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
 
     @Test
     void coreSerializationRuleDoesNotEmitDiagnosticForImplicitDefaultConstructor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            import java.io.Serializable;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                import java.io.Serializable;
 
-            class Base {
-            }
+                class Base {
+                }
 
-            class Child extends Base implements Serializable {
-            }
-            """);
+                class Child extends Base implements Serializable {
+                }
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
 
     @Test
     void coreSerializationRuleDoesNotEmitDiagnosticForAccessibleProtectedNoArgConstructor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            import java.io.Serializable;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                import java.io.Serializable;
 
-            class Base {
-                protected Base() {}
-            }
+                class Base {
+                    protected Base() {}
+                }
 
-            class Child extends Base implements Serializable {
-            }
-            """);
+                class Child extends Base implements Serializable {
+                }
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
 
     @Test
     void coreSerializationRuleDoesNotEmitDiagnosticForNestedAncestorImplicitPackagePrivateNoArgConstructor() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            import java.io.Serializable;
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                import java.io.Serializable;
 
-            class Outer {
-                static class Base {
+                class Outer {
+                    static class Base {
+                    }
                 }
-            }
 
-            class Child extends Outer.Base implements Serializable {
-            }
-            """);
+                class Child extends Outer.Base implements Serializable {
+                }
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
 
     @Test
     void coreSerializationRuleDoesNotEmitDiagnosticForNonSerializableClass() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreSerializableClassWithUnconstructableAncestorInspection(), """
-            class Base {
-                Base(int value) {}
-            }
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreSerializableClassWithUnconstructableAncestorInspection(), """
+                class Base {
+                    Base(int value) {}
+                }
 
-            class Child extends Base {
-                Child() { super(1); }
-            }
-            """);
+                class Child extends Base {
+                    Child() { super(1); }
+                }
+                """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
-
 
 }

@@ -19,7 +19,8 @@ public interface FormComponentBuilder<C extends FormComponent<?, ?, ?, ?>, V ext
 
     <X> B addTransformer(ObservableValue<V> fromComponent, Consumer<X> toComponentFunction, Function<W, X> valueMapper);
 
-    <U extends Node, X> B addTransformer(ObservableValue<V> fromComponent, ObservableValue<U> toComponent, Function<W, X> valueMapper);
+    <U extends Node, X> B addTransformer(ObservableValue<V> fromComponent, ObservableValue<U> toComponent,
+        Function<W, X> valueMapper);
 
     B visible(BooleanBinding visible);
 

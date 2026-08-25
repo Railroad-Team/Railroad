@@ -40,7 +40,8 @@ public class RRButton extends Button {
     private final BooleanProperty isSquare = new SimpleBooleanProperty(this, "isSquare", false);
     private final BooleanProperty isOutlined = new SimpleBooleanProperty(this, "isOutlined", false);
     private final BooleanProperty isFlat = new SimpleBooleanProperty(this, "isFlat", false);
-    private final ObjectProperty<ButtonVariant> variant = new SimpleObjectProperty<>(this, "variant", ButtonVariant.PRIMARY);
+    private final ObjectProperty<ButtonVariant> variant = new SimpleObjectProperty<>(this, "variant",
+        ButtonVariant.PRIMARY);
     private final ObjectProperty<ButtonSize> size = new SimpleObjectProperty<>(this, "size", ButtonSize.MEDIUM);
 
     public RRButton() {
@@ -133,7 +134,7 @@ public class RRButton extends Button {
         loadingSpinner.setIconSize(16);
         loadingSpinner.getStyleClass().add("loading-spinner");
 
-        setOnMousePressed($ -> {
+        setOnMousePressed(_ -> {
             if (!getIsLoading()) {
                 var scale = new ScaleTransition(Duration.millis(100), this);
                 scale.setToX(0.95);
@@ -142,7 +143,7 @@ public class RRButton extends Button {
             }
         });
 
-        setOnMouseReleased($ -> {
+        setOnMouseReleased(_ -> {
             if (!getIsLoading()) {
                 var scale = new ScaleTransition(Duration.millis(100), this);
                 scale.setToX(1.0);
@@ -151,7 +152,7 @@ public class RRButton extends Button {
             }
         });
 
-        isLoading.addListener($ -> {
+        isLoading.addListener(_ -> {
             if (getIsLoading()) {
                 onLoading();
             } else {
@@ -159,11 +160,11 @@ public class RRButton extends Button {
             }
         });
 
-        variant.addListener($ -> updateStyle());
-        size.addListener($ -> updateStyle());
-        isSquare.addListener($ -> updateStyle());
-        isOutlined.addListener($ -> updateStyle());
-        isFlat.addListener($ -> updateStyle());
+        variant.addListener(_ -> updateStyle());
+        size.addListener(_ -> updateStyle());
+        isSquare.addListener(_ -> updateStyle());
+        isOutlined.addListener(_ -> updateStyle());
+        isFlat.addListener(_ -> updateStyle());
 
         updateStyle();
         updateContent();
@@ -174,7 +175,7 @@ public class RRButton extends Button {
      * The text will automatically update when the application language changes.
      *
      * @param localizationKey the localization key for the text
-     * @param args            optional formatting arguments for the localized text
+     * @param args optional formatting arguments for the localized text
      */
     public void setLocalizedText(String localizationKey, Object... args) {
         localizedText.setTranslation(localizationKey, args);
@@ -230,6 +231,7 @@ public class RRButton extends Button {
      * - The "loading" CSS class is removed
      * <p>
      * Example usage:
+     *
      * <pre>
      * RRButton button = RRButton.primary("Save");
      * button.setOnAction(e -> {
@@ -347,14 +349,17 @@ public class RRButton extends Button {
         styleClass.removeAll("primary", "secondary", "ghost", "danger", "success", "warning");
         styleClass.removeAll("small", "medium", "large");
 
-        if (isSquare.get())
+        if (isSquare.get()) {
             styleClass.add("square");
+        }
 
-        if (isOutlined.get())
+        if (isOutlined.get()) {
             styleClass.add("outlined");
+        }
 
-        if (isFlat.get())
+        if (isFlat.get()) {
             styleClass.add("flat");
+        }
 
         switch (variant.get()) {
             case PRIMARY -> styleClass.add("primary");

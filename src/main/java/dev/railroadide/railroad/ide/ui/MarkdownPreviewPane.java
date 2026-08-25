@@ -56,8 +56,7 @@ public class MarkdownPreviewPane extends RRVBox {
 
         preview.setDarkMode(ThemeManager.getTheme().contains("dark"));
 
-        Settings.THEME.addListener((ignored, newThemeName) ->
-            preview.setDarkMode(newThemeName.contains("dark")));
+        Settings.THEME.addListener((_, newThemeName) -> preview.setDarkMode(newThemeName.contains("dark")));
 
         showContent(splitView(), topRow);
     }
@@ -92,8 +91,9 @@ public class MarkdownPreviewPane extends RRVBox {
         getChildren().clear();
         getChildren().addAll(topRow, content);
         VBox.setVgrow(content, Priority.ALWAYS);
-        if (textEditorPane != null)
+        if (textEditorPane != null) {
             textEditorPane.scrollToPixel(0, 0);
+        }
     }
 
     private HBox createViewButtons() {
@@ -104,17 +104,17 @@ public class MarkdownPreviewPane extends RRVBox {
         var switchButtons = new RRHBox(codeView, splitView, previewView);
         switchButtons.setAlignment(Pos.TOP_RIGHT);
 
-        codeView.setOnAction($ -> {
+        codeView.setOnAction(_ -> {
             markdownButtons.setVisible(true);
             showContent(codeView(), topRow);
         });
 
-        splitView.setOnAction($ -> {
+        splitView.setOnAction(_ -> {
             markdownButtons.setVisible(true);
             showContent(splitView(), topRow);
         });
 
-        previewView.setOnAction($ -> {
+        previewView.setOnAction(_ -> {
             // hide markdown buttons in preview-only mode
             markdownButtons.setVisible(false);
             showContent(previewView(), topRow);
@@ -136,7 +136,7 @@ public class MarkdownPreviewPane extends RRVBox {
             headingMenu.getItems().add(item);
         }
 
-        headingButton.setOnAction($ -> {
+        headingButton.setOnAction(_ -> {
             if (!headingMenu.isShowing()) {
                 headingMenu.show(headingButton, Side.BOTTOM, 0, 0);
             } else {
@@ -161,10 +161,9 @@ public class MarkdownPreviewPane extends RRVBox {
         Button orderedListButton = createButton(FontAwesomeSolid.LIST_OL);
         setButtonOnAction(orderedListButton, "1. ");
 
-        //TODO implement task list in markdown
-        //Button taskListButton = createButton(FontAwesomeSolid.TASKS);
-        //setButtonOnAction(taskListButton, "- [ ]");
-
+        // TODO implement task list in markdown
+        // Button taskListButton = createButton(FontAwesomeSolid.TASKS);
+        // setButtonOnAction(taskListButton, "- [ ]");
 
         return new RRHBox(headingButton, boldButton, italicButton, quoteButton, codeButton, linkButton,
             unorderedListButton, orderedListButton);
@@ -179,7 +178,7 @@ public class MarkdownPreviewPane extends RRVBox {
 
         var item = new CustomMenuItem(preview, true);
 
-        item.setOnAction($ -> {
+        item.setOnAction(_ -> {
             headingMenu.hide();
             textEditorPane.insertText(textEditorPane.getCaretPosition(), "#".repeat(level) + " ");
             textEditorPane.requestFocus();
@@ -196,7 +195,7 @@ public class MarkdownPreviewPane extends RRVBox {
     }
 
     private void setButtonOnAction(Button button, String prefix) {
-        button.setOnAction($ -> {
+        button.setOnAction(_ -> {
             if (textEditorPane != null) {
                 textEditorPane.insertText(textEditorPane.getCaretPosition(), prefix + " ");
                 textEditorPane.requestFocus();
@@ -205,7 +204,7 @@ public class MarkdownPreviewPane extends RRVBox {
     }
 
     private void setButtonOnAction(Button button, String prefix, String postfix) {
-        button.setOnAction($ -> {
+        button.setOnAction(_ -> {
             if (textEditorPane != null) {
                 int caretPosition = textEditorPane.getCaretPosition();
                 textEditorPane.insertText(caretPosition, prefix + postfix);

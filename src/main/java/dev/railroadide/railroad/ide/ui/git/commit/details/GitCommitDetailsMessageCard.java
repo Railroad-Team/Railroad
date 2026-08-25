@@ -40,7 +40,8 @@ public class GitCommitDetailsMessageCard extends RRVBox {
         var dotText = new Text("•");
         dotText.getStyleClass().add("git-commit-details-message-dot");
 
-        var filesChangedText = new LocalizedText("railroad.git.commit.details.files_changed", additionsDeletions.size());
+        var filesChangedText = new LocalizedText("railroad.git.commit.details.files_changed",
+            additionsDeletions.size());
         filesChangedText.getStyleClass().add("git-commit-details-files-changed");
 
         var statsHBox = new RRHBox(6);

@@ -132,8 +132,7 @@ public class IDESetup {
                 "Git Branches", FontAwesomeSolid.CODE_BRANCH.getDescription(),
                 "Git Remotes", FontAwesomeSolid.GLOBE.getDescription(),
                 "Git Sync", FontAwesomeSolid.SYNC.getDescription(),
-                "Git Stash", FontAwesomeSolid.BOX.getDescription()
-            )));
+                "Git Stash", FontAwesomeSolid.BOX.getDescription())));
 
         var bottomBar = new RRVBox();
         var bottomIcons = PaneIconBarFactory.create(
@@ -143,20 +142,18 @@ public class IDESetup {
             1,
             Map.of(
                 "Console", FontAwesomeSolid.PLAY_CIRCLE.getDescription(),
-                "Terminal", FontAwesomeSolid.TERMINAL.getDescription()
-            )
-        );
+                "Terminal", FontAwesomeSolid.TERMINAL.getDescription()));
         bottomBar.getChildren().addAll(
             bottomIcons,
-            new StatusBarPane()
-        );
+            new StatusBarPane());
         root.setBottom(bottomBar);
 
         KeybindHandler.registerCapture(KeybindContexts.of("railroad:ide"), root);
         return new Scene(root);
     }
 
-    private static void openGradleTab(Project project, Facet<?> facet, DetachableTabPane rightPane, RRBorderPane root, SplitPane mainSplit) {
+    private static void openGradleTab(Project project, Facet<?> facet, DetachableTabPane rightPane, RRBorderPane root,
+        SplitPane mainSplit) {
         Platform.runLater(() -> {
             if (facet.getType() == FacetManager.GRADLE) {
                 if (rightPane.getTabs().stream().noneMatch(tab -> tab.getContent() instanceof GradleToolsPane)) {
@@ -167,14 +164,14 @@ public class IDESetup {
                         mainSplit,
                         Orientation.VERTICAL,
                         2,
-                        Map.of("Gradle", RailroadBrandsIcon.GRADLE.getDescription())
-                    ));
+                        Map.of("Gradle", RailroadBrandsIcon.GRADLE.getDescription())));
                 }
             }
         });
     }
 
-    public static void showEditRunConfigurationsWindow(@NotNull Project project, @Nullable RunConfiguration<?> runConfiguration) {
+    public static void showEditRunConfigurationsWindow(@NotNull Project project,
+        @Nullable RunConfiguration<?> runConfiguration) {
         var editorPane = new RunConfigurationEditorPane(project);
         WindowBuilder.create()
             .owner(Railroad.WINDOW_MANAGER.getPrimaryStage())
@@ -205,7 +202,8 @@ public class IDESetup {
                 Scene ideScene = IDESetup.createIDEScene(project);
                 Stage ideStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
                 ThemeManager.prepareSceneTransition(ideStage.getScene(), ideScene);
-                ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion() + " - " + project.getAlias());
+                ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()
+                    + " - " + project.getAlias());
                 ideStage.setScene(ideScene);
                 ideStage.setResizable(true);
                 ideStage.setMaximized(true);
@@ -223,7 +221,6 @@ public class IDESetup {
             }
         });
     }
-
 
     /**
      * Find the best tab pane for files (CodeArea) in the given parent.
@@ -246,7 +243,9 @@ public class IDESetup {
             return welcomePane;
 
         // If no welcome tab exists, reuse a pane that already hosts file-like content.
-        return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof TextEditorPane || tab.getContent() instanceof CodeArea || tab.getContent() instanceof ImageViewerPane || tab.getContent() instanceof MarkdownPreviewPane);
+        return findBestPaneForFiles(parent,
+            tab -> tab.getContent() instanceof TextEditorPane || tab.getContent() instanceof CodeArea
+                || tab.getContent() instanceof ImageViewerPane || tab.getContent() instanceof MarkdownPreviewPane);
     }
 
     /**
@@ -258,7 +257,8 @@ public class IDESetup {
      * @return The best tab pane for images
      */
     public static Optional<DetachableTabPane> findBestPaneForImages(Parent parent) { // TODO: Priority based search
-        return findBestPaneForFiles(parent, tab -> tab.getContent() instanceof ImageViewerPane || tab.getContent() instanceof CodeArea);
+        return findBestPaneForFiles(parent,
+            tab -> tab.getContent() instanceof ImageViewerPane || tab.getContent() instanceof CodeArea);
     }
 
     /**
@@ -277,7 +277,7 @@ public class IDESetup {
      * Find the best tab pane for the files that match the given predicate in the given parent.
      * If a tab pane with a file that matches the predicate is found, it will be returned.
      *
-     * @param parent    The parent to search in
+     * @param parent The parent to search in
      * @param predicate The predicate to match the file
      * @return The best tab pane for the files that match the predicate
      */
@@ -292,17 +292,19 @@ public class IDESetup {
      * If a tab pane with a file that matches the predicate is found, it will be returned.
      * If no tab pane with a file that matches the predicate is found, the first tab pane found will be returned.
      *
-     * @param parent        The parent to search in
+     * @param parent The parent to search in
      * @param bestCandidate The best candidate found so far
-     * @param predicate     The predicate to match the file
+     * @param predicate The predicate to match the file
      * @return The best tab pane for the files that match the predicate
      */
-    private static Optional<DetachableTabPane> findBestPaneFor(Parent parent, AtomicReference<DetachableTabPane> bestCandidate, Predicate<Tab> predicate) {
+    private static Optional<DetachableTabPane> findBestPaneFor(Parent parent,
+        AtomicReference<DetachableTabPane> bestCandidate, Predicate<Tab> predicate) {
         if (parent instanceof DetachableTabPane tabPane) {
             if (tabPane.getTabs().stream().anyMatch(predicate))
                 return Optional.of(tabPane);
-            else if (bestCandidate.get() == null || tabPane.getTabs().size() < bestCandidate.get().getTabs().size())
+            else if (bestCandidate.get() == null || tabPane.getTabs().size() < bestCandidate.get().getTabs().size()) {
                 bestCandidate.set(tabPane);
+            }
         }
 
         if (parent.getChildrenUnmodifiable().isEmpty())

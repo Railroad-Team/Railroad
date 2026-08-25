@@ -31,8 +31,7 @@ class RailroadProjectDiagnosticsRegressionTest {
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
             JavaLibrarySymbolIndex.build(runtimeClasspath),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
         List<Path> sourceFiles = sourceFiles(scanRoot);
         List<JavaInspectionRuleProvider> errorProviders = errorProviders();
 
@@ -42,7 +41,7 @@ class RailroadProjectDiagnosticsRegressionTest {
         try {
             for (Path sourceFile : sourceFiles) {
                 futures.add(executor.submit(() -> JavaInspectionTestSupport.runProviders(
-                        errorProviders, sourceFile, Files.readString(sourceFile), symbolIndex).stream()
+                    errorProviders, sourceFile, Files.readString(sourceFile), symbolIndex).stream()
                     .filter(diagnostic -> diagnostic.severity() == SemanticDiagnostic.Severity.ERROR)
                     .map(diagnostic -> scanRoot.relativize(sourceFile) + ":"
                         + diagnostic.startOffset() + " " + diagnostic.code() + " " + diagnostic.message())
@@ -92,7 +91,6 @@ class RailroadProjectDiagnosticsRegressionTest {
             new CoreMemberResolutionInspection(),
             new CoreModifierInspection(),
             new CoreNameResolutionInspection(),
-            new CoreTypeResolutionInspection()
-        );
+            new CoreTypeResolutionInspection());
     }
 }

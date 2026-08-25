@@ -29,29 +29,37 @@ import java.util.function.Function;
  * @see FormComponent#directoryChooser(String, String)
  * @see Builder
  */
-public class DirectoryChooserComponent extends FormComponent<FormDirectoryChooser, DirectoryChooserComponent.Data, TextField, String> {
+public class DirectoryChooserComponent
+    extends
+        FormComponent<FormDirectoryChooser, DirectoryChooserComponent.Data, TextField, String> {
     /**
      * Constructs a new directory chooser component.
      *
-     * @param dataKey            the key to store the data in the form data
-     * @param data               the data for the directory chooser
-     * @param validator          the validator for the directory chooser
-     * @param listener           the listener for the directory chooser
-     * @param bindTextFieldTo    the property to bind the text field to
+     * @param dataKey the key to store the data in the form data
+     * @param data the data for the directory chooser
+     * @param validator the validator for the directory chooser
+     * @param listener the listener for the directory chooser
+     * @param bindTextFieldTo the property to bind the text field to
      * @param bindBrowseButtonTo the property to bind the browse button to
-     * @param transformers       the transformers for the directory chooser
-     * @param keyTypedHandler    the key typed handler for the directory chooser
-     * @param visible            the visibility of the directory chooser
+     * @param transformers the transformers for the directory chooser
+     * @param keyTypedHandler the key typed handler for the directory chooser
+     * @param visible the visibility of the directory chooser
      */
-    public DirectoryChooserComponent(String dataKey, Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, Property<BrowseButton> bindBrowseButtonTo, List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
-        super(dataKey, data, dataCurrent -> new FormDirectoryChooser(dataCurrent.label, dataCurrent.required, dataCurrent.defaultPath, dataCurrent.includeButton), validator, listener, transformers, visible);
+    public DirectoryChooserComponent(String dataKey, Data data, FormComponentValidator<TextField> validator,
+        FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo,
+        Property<BrowseButton> bindBrowseButtonTo, List<FormTransformer<TextField, String, ?>> transformers,
+        EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
+        super(dataKey, data, dataCurrent -> new FormDirectoryChooser(dataCurrent.label, dataCurrent.required,
+            dataCurrent.defaultPath, dataCurrent.includeButton), validator, listener, transformers, visible);
 
         if (bindTextFieldTo != null) {
-            bindTextFieldTo.bind(componentProperty().map(FormDirectoryChooser::getPrimaryComponent).map(FormDirectoryChooser.TextFieldWithButton::getTextField));
+            bindTextFieldTo.bind(componentProperty().map(FormDirectoryChooser::getPrimaryComponent)
+                .map(FormDirectoryChooser.TextFieldWithButton::getTextField));
         }
 
         if (bindBrowseButtonTo != null) {
-            bindBrowseButtonTo.bind(componentProperty().map(FormDirectoryChooser::getPrimaryComponent).map(FormDirectoryChooser.TextFieldWithButton::getBrowseButton));
+            bindBrowseButtonTo.bind(componentProperty().map(FormDirectoryChooser::getPrimaryComponent)
+                .map(FormDirectoryChooser.TextFieldWithButton::getBrowseButton));
         }
 
         if (keyTypedHandler != null) {
@@ -71,7 +79,8 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
 
     @Override
     public ObservableValue<TextField> getValidationNode() {
-        return componentProperty().map(FormDirectoryChooser::getPrimaryComponent).map(FormDirectoryChooser.TextFieldWithButton::getTextField);
+        return componentProperty().map(FormDirectoryChooser::getPrimaryComponent)
+            .map(FormDirectoryChooser.TextFieldWithButton::getTextField);
     }
 
     @Override
@@ -83,8 +92,8 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
             }
 
             if (newValue != null) {
-                listenerRef.set((observable1, oldValue1, newValue1) ->
-                    listener.changed(newValue.getPrimaryComponent().getTextField(), observable1, oldValue1, newValue1));
+                listenerRef.set((observable1, oldValue1, newValue1) -> listener
+                    .changed(newValue.getPrimaryComponent().getTextField(), observable1, oldValue1, newValue1));
 
                 newValue.getPrimaryComponent().getTextField().textProperty().addListener(listenerRef.get());
             }
@@ -97,8 +106,7 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
             .map(FormDirectoryChooser::getPrimaryComponent)
             .map(FormDirectoryChooser.TextFieldWithButton::getTextField)
             .flatMap(TextField::textProperty)
-            .addListener((observable, oldValue, newValue) ->
-                formData.addProperty(dataKey, newValue));
+            .addListener((observable, oldValue, newValue) -> formData.addProperty(dataKey, newValue));
 
         formData.addProperty(dataKey, componentProperty()
             .map(FormDirectoryChooser::getPrimaryComponent)
@@ -131,7 +139,7 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
          * Constructs a new builder for a directory chooser component.
          *
          * @param dataKey the key to store the data in the form data
-         * @param label   the label for the directory chooser
+         * @param label the label for the directory chooser
          */
         public Builder(@NotNull String dataKey, @NotNull String label) {
             this.dataKey = dataKey;
@@ -245,15 +253,17 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
         /**
          * Adds a transformer to the directory chooser.
          *
-         * @param fromComponent       the observable value of the component to transform
+         * @param fromComponent the observable value of the component to transform
          * @param toComponentFunction the function to set the value of the component
-         * @param valueMapper         the function to map the value
-         * @param <W>                 the type of the component
+         * @param valueMapper the function to map the value
+         * @param <W> the type of the component
          * @return this builder
          */
         @Override
-        public <X> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<X> toComponentFunction, Function<String, X> valueMapper) {
-            this.transformers.add(new FormTransformer<>(fromComponent, TextField::getText, toComponentFunction, valueMapper));
+        public <X> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<X> toComponentFunction,
+            Function<String, X> valueMapper) {
+            this.transformers
+                .add(new FormTransformer<>(fromComponent, TextField::getText, toComponentFunction, valueMapper));
             return this;
         }
 
@@ -261,20 +271,21 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
          * Adds a transformer to the directory chooser.
          *
          * @param fromComponent the observable value of the component to transform
-         * @param toComponent   the observable value of the component to set the value to
-         * @param valueMapper   the function to map the value
-         * @param <U>           the type of the component
-         * @param <W>           the type of the value
+         * @param toComponent the observable value of the component to set the value to
+         * @param valueMapper the function to map the value
+         * @param <U> the type of the component
+         * @param <W> the type of the value
          * @return this builder
          */
         @Override
-        public <U extends Node, X> Builder addTransformer(ObservableValue<TextField> fromComponent, ObservableValue<U> toComponent, Function<String, X> valueMapper) {
+        public <U extends Node, X> Builder addTransformer(ObservableValue<TextField> fromComponent,
+            ObservableValue<U> toComponent, Function<String, X> valueMapper) {
             this.transformers.add(new FormTransformer<>(fromComponent, TextField::getText, value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());
-                } else {
-                    throw new IllegalArgumentException("Unsupported component type: " + toComponent.getValue().getClass().getName());
-                }
+                } else
+                    throw new IllegalArgumentException(
+                        "Unsupported component type: " + toComponent.getValue().getClass().getName());
             }, valueMapper));
             return this;
         }
@@ -309,7 +320,8 @@ public class DirectoryChooserComponent extends FormComponent<FormDirectoryChoose
          */
         @Override
         public DirectoryChooserComponent build() {
-            return new DirectoryChooserComponent(dataKey, data, validator, listener, bindTextFieldTo, bindBrowseButtonTo, transformers, keyTypedHandler, visible);
+            return new DirectoryChooserComponent(dataKey, data, validator, listener, bindTextFieldTo,
+                bindBrowseButtonTo, transformers, keyTypedHandler, visible);
         }
     }
 

@@ -33,8 +33,7 @@ public final class TerminalFactory {
         "Microsoft.WindowsTerminal_8wekyb3d8bbwe",
         "Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe",
         "Microsoft.WindowsTerminalDev_8wekyb3d8bbwe",
-        "Microsoft.WindowsTerminalCanary_8wekyb3d8bbwe"
-    );
+        "Microsoft.WindowsTerminalCanary_8wekyb3d8bbwe");
 
     private TerminalFactory() {
     }
@@ -68,8 +67,7 @@ public final class TerminalFactory {
                 "powershell.exe -NoLogo -NoExit -Command " +
                     "\"[Console]::InputEncoding=[System.Text.UTF8Encoding]::new($false); " +
                     "[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false); " +
-                    "chcp 65001 > $null\""
-            );
+                    "chcp 65001 > $null\"");
         }
 
         return terminalConfig;
@@ -138,8 +136,8 @@ public final class TerminalFactory {
                 return;
 
             registerWindowListener(terminal, newScene.getWindow());
-            newScene.windowProperty().addListener((sceneObs, oldWindow, newWindow) ->
-                registerWindowListener(terminal, newWindow));
+            newScene.windowProperty()
+                .addListener((sceneObs, oldWindow, newWindow) -> registerWindowListener(terminal, newWindow));
         });
     }
 
@@ -237,7 +235,8 @@ public final class TerminalFactory {
                 if (defaultsFont.isPresent())
                     return defaultsFont;
             } catch (Exception exception) {
-                Railroad.LOGGER.debug("Failed to resolve Windows Terminal font settings from {}", settingsPath, exception);
+                Railroad.LOGGER.debug("Failed to resolve Windows Terminal font settings from {}", settingsPath,
+                    exception);
             }
         }
 
@@ -263,7 +262,8 @@ public final class TerminalFactory {
         }
 
         candidates.add(localAppDataPath.resolve("Microsoft").resolve("Windows Terminal").resolve("settings.json"));
-        candidates.add(localAppDataPath.resolve("Microsoft").resolve("Windows Terminal Preview").resolve("settings.json"));
+        candidates
+            .add(localAppDataPath.resolve("Microsoft").resolve("Windows Terminal Preview").resolve("settings.json"));
 
         candidates.addAll(findInstalledWindowsTerminalPackageSettings(packagesPath));
 

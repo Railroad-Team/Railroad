@@ -15,13 +15,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record InterfaceDeclaration(
-        Span span,
-        List<Modifier> modifiers,
-        List<Annotation> annotations,
-        NameExpression name,
-        List<TypeParameter> typeParameters,
-        List<TypeRef> extendsTypes,
-        List<ClassBodyDeclaration> declarations) implements TypeDeclaration {
+    Span span,
+    List<Modifier> modifiers,
+    List<Annotation> annotations,
+    NameExpression name,
+    List<TypeParameter> typeParameters,
+    List<TypeRef> extendsTypes,
+    List<ClassBodyDeclaration> declarations) implements TypeDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.INTERFACE_DECLARATION;

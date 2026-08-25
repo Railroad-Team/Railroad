@@ -29,13 +29,16 @@ public class Keybind {
     /**
      * Creates a Keybind instance. Should not be called directly. See {@link Keybind.Builder}
      *
-     * @param id          The id of the keybind. Used for the localization key and to save inside settings.json
-     * @param category    The category of the keybind. Used to group keybinds in the settings menu.
-     * @param defaultKeys The default key(s) for this keybind. These each contain a KeyCode and an optional array of Modifiers.
-     * @param contexts    The contexts in which this keybind is valid.
-     * @param actions     A map of contexts to actions, when the keybind is pressed in that context, the corresponding action will be executed.
+     * @param id The id of the keybind. Used for the localization key and to save inside settings.json
+     * @param category The category of the keybind. Used to group keybinds in the settings menu.
+     * @param defaultKeys The default key(s) for this keybind. These each contain a KeyCode and an optional array of
+     *            Modifiers.
+     * @param contexts The contexts in which this keybind is valid.
+     * @param actions A map of contexts to actions, when the keybind is pressed in that context, the corresponding
+     *            action will be executed.
      */
-    private Keybind(String id, KeybindCategory category, List<KeybindData> defaultKeys, List<KeybindContexts.KeybindContext> contexts, Map<KeybindContexts.KeybindContext, Consumer<Node>> actions) {
+    private Keybind(String id, KeybindCategory category, List<KeybindData> defaultKeys,
+        List<KeybindContexts.KeybindContext> contexts, Map<KeybindContexts.KeybindContext, Consumer<Node>> actions) {
         this.id = id;
         this.category = category;
         this.defaultKeys = defaultKeys;
@@ -46,7 +49,7 @@ public class Keybind {
     /**
      * Adds a key combination to the keybind with the given KeyCode and optional modifiers.
      *
-     * @param keyCode   The primary key code for the keybind, e.g., KeyCode.A, KeyCode.ENTER, etc.
+     * @param keyCode The primary key code for the keybind, e.g., KeyCode.A, KeyCode.ENTER, etc.
      * @param modifiers Optional modifiers for the keybind, such as Control, Shift, Alt, or Shortcut.
      */
     public void addKey(KeyCode keyCode, KeyCombination.Modifier... modifiers) {
@@ -56,7 +59,7 @@ public class Keybind {
     /**
      * Removes a key combination from the keybind.
      *
-     * @param keyCode   The primary key code for the keybind, e.g., KeyCode.A, KeyCode.ENTER, etc.
+     * @param keyCode The primary key code for the keybind, e.g., KeyCode.A, KeyCode.ENTER, etc.
      * @param modifiers Optional modifiers for the keybind, such as Control, Shift, Alt, or Shortcut.
      */
     public void removeKey(KeyCode keyCode, KeyCombination.Modifier... modifiers) {
@@ -83,15 +86,21 @@ public class Keybind {
             KeyCode keyCode = key.keyCode();
             KeyCombination.Modifier[] modifiers = key.modifiers();
 
-            if (keyCode != keyEvent.getCode()) continue;
+            if (keyCode != keyEvent.getCode())
+                continue;
 
-            if (modifiers == null) return true;
+            if (modifiers == null)
+                return true;
 
             for (KeyCombination.Modifier modifier : modifiers) {
-                if (!keyEvent.isShortcutDown() && modifier == KeyCombination.SHORTCUT_DOWN) continue;
-                if (!keyEvent.isControlDown() && modifier == KeyCombination.CONTROL_DOWN) continue;
-                if (!keyEvent.isShiftDown() && modifier == KeyCombination.SHIFT_DOWN) continue;
-                if (!keyEvent.isAltDown() && modifier == KeyCombination.ALT_DOWN) continue;
+                if (!keyEvent.isShortcutDown() && modifier == KeyCombination.SHORTCUT_DOWN)
+                    continue;
+                if (!keyEvent.isControlDown() && modifier == KeyCombination.CONTROL_DOWN)
+                    continue;
+                if (!keyEvent.isShiftDown() && modifier == KeyCombination.SHIFT_DOWN)
+                    continue;
+                if (!keyEvent.isAltDown() && modifier == KeyCombination.ALT_DOWN)
+                    continue;
             }
 
             return true;
@@ -140,7 +149,7 @@ public class Keybind {
         /**
          * Adds a default key to the keybind. This key will be used if no other keys are set.
          *
-         * @param keyCode   The primary key code for the keybind.
+         * @param keyCode The primary key code for the keybind.
          * @param modifiers Optional modifiers for the keybind, such as Control, Shift, Alt, or Shortcut.
          * @return the modified Builder instance.
          */
@@ -175,7 +184,7 @@ public class Keybind {
          * Adds an action to be executed when the keybind is pressed in a specific context.
          *
          * @param context The context in which the action should be executed.
-         * @param action  The action to be executed when the keybind is pressed in the specified context.
+         * @param action The action to be executed when the keybind is pressed in the specified context.
          * @return the modified Builder instance.
          */
         public Builder addAction(KeybindContexts.KeybindContext context, Consumer<Node> action) {
@@ -193,8 +202,9 @@ public class Keybind {
             if (id == null || category == null || actions.isEmpty())
                 throw new IllegalStateException("Keybind must have an ID, category and at least one action defined.");
 
-            if (!ignoreAll)
+            if (!ignoreAll) {
                 validContexts.add(KeybindContexts.ALL);
+            }
 
             return new Keybind(id, category, defaultKeys, validContexts, actions);
         }

@@ -141,13 +141,13 @@ public class RunConfigurationEditorPane extends RRVBox {
         topButtonBar.getStyleClass().add("run-configuration-editor-top-bar");
 
         var addButton = createTopBarButton(FontAwesomeSolid.PLUS);
-        addButton.setOnAction($ -> {
+        addButton.setOnAction(_ -> {
             ContextMenu contextMenu = createAddContextMenu(project);
             contextMenu.show(addButton, Side.BOTTOM, 0, 0);
         });
 
         var removeButton = createTopBarButton(FontAwesomeSolid.MINUS);
-        removeButton.setOnAction($ -> {
+        removeButton.setOnAction(_ -> {
             RunConfiguration<?> selectedConfig = selectedConfiguration.get();
             if (selectedConfig != null) {
                 configurations.remove(selectedConfig);

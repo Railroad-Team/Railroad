@@ -42,9 +42,12 @@ class CoreDefiniteAssignmentInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("value")));
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(d.code()) && d.message().contains("once")));
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(d.code()) && d.message().contains("parameter")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("value")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(d.code()) && d.message().contains("once")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(d.code()) && d.message().contains("parameter")));
         assertFalse(diagnostics.stream().anyMatch(d -> d.message().contains("assignedInBranches")));
     }
 
@@ -59,8 +62,8 @@ class CoreDefiniteAssignmentInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(diagnostic.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(diagnostic.code())));
     }
 
     @Test
@@ -81,8 +84,8 @@ class CoreDefiniteAssignmentInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_UNINITIALIZED_FINAL_FIELD".equals(diagnostic.code())),
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "SEM_UNINITIALIZED_FINAL_FIELD".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -96,8 +99,8 @@ class CoreDefiniteAssignmentInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_UNINITIALIZED_FINAL_FIELD".equals(diagnostic.code())),
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "SEM_UNINITIALIZED_FINAL_FIELD".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -107,8 +110,7 @@ class CoreDefiniteAssignmentInspectionTest {
             Path.of("src/main/java/dev/railroadide/railroad/project/RailroadProject.java"),
             Path.of("src/main/java/dev/railroadide/railroad/ide/sst/impl/java/JavaLexer.java"),
             Path.of("src/main/java/dev/railroadide/railroad/project/License.java"),
-            Path.of("src/main/java/dev/railroadide/railroad/form/FormTransformer.java")
-        );
+            Path.of("src/main/java/dev/railroadide/railroad/form/FormTransformer.java"));
         List<String> errors = new ArrayList<>();
         for (Path sourceFile : sourceFiles) {
             runProvider(new CoreDefiniteAssignmentInspection(), sourceFile, Files.readString(sourceFile)).stream()
@@ -125,8 +127,7 @@ class CoreDefiniteAssignmentInspectionTest {
         List<Path> sourceFiles = List.of(
             Path.of("src/main/java/dev/railroadide/railroad/ide/sst/impl/java/JavaLexer.java"),
             Path.of("src/main/java/dev/railroadide/railroad/ide/projectexplorer/task/WatchTask.java"),
-            Path.of("src/main/java/dev/railroadide/railroad/config/ConfigHandler.java")
-        );
+            Path.of("src/main/java/dev/railroadide/railroad/config/ConfigHandler.java"));
         List<String> errors = new ArrayList<>();
         for (Path sourceFile : sourceFiles) {
             String source = Files.readString(sourceFile);
@@ -163,8 +164,10 @@ class CoreDefiniteAssignmentInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromWhile")));
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromDoWhile")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromWhile")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromDoWhile")));
     }
 
     @Test
@@ -192,8 +195,10 @@ class CoreDefiniteAssignmentInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromLabeledBlock")));
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromLabeledLoop")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromLabeledBlock")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fromLabeledLoop")));
     }
 
     @Test
@@ -239,9 +244,12 @@ class CoreDefiniteAssignmentInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("assignedValue")));
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fallthroughValue")));
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("missingDefaultValue")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("assignedValue")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("fallthroughValue")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("missingDefaultValue")));
     }
 
     @Test
@@ -266,7 +274,8 @@ class CoreDefiniteAssignmentInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("updatedValue")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("updatedValue")));
         assertEquals(1, diagnostics.stream()
             .filter(d -> "SEM_UNASSIGNED_VARIABLE".equals(d.code()) && d.message().contains("updatedValue"))
             .count());
@@ -291,7 +300,8 @@ class CoreDefiniteAssignmentInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_UNINITIALIZED_FINAL_FIELD".equals(d.code()) && d.message().contains("value")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNINITIALIZED_FINAL_FIELD".equals(d.code()) && d.message().contains("value")));
         assertFalse(diagnostics.stream().anyMatch(d -> d.message().contains("'initialized'")));
     }
 
@@ -307,7 +317,8 @@ class CoreDefiniteAssignmentInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(d.code()) && d.message().contains("value")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_ILLEGAL_FINAL_ASSIGNMENT".equals(d.code()) && d.message().contains("value")));
     }
 
     @Test
@@ -329,8 +340,8 @@ class CoreDefiniteAssignmentInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_UNINITIALIZED_FINAL_FIELD".equals(d.code()) && d.message().contains("value")));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_UNINITIALIZED_FINAL_FIELD".equals(d.code()) && d.message().contains("value")));
     }
-
 
 }

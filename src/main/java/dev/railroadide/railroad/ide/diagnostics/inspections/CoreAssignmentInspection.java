@@ -21,22 +21,21 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
     private static final String JAVA_METHOD_REFERENCE_EXPRESSION = "JAVA_METHOD_REFERENCE_EXPRESSION";
 
     private static final List<JavaInspectionRule> RULES = List.of(
-            new SimpleJavaInspectionRule(
-                    JavaSemanticRules.INCOMPATIBLE_ASSIGNMENT.id(),
-                    JavaSemanticRules.INCOMPATIBLE_ASSIGNMENT.defaultSeverity(),
-                    JavaSemanticRules.INCOMPATIBLE_ASSIGNMENT.messageTemplate(),
-                    Set.of("core", "assignments", "types"),
-                    (context, reporter) -> context.traverse(node -> {
-                        String kindId = node.kind().id();
-                        if (JAVA_VARIABLE_DECLARATOR.equals(kindId)) {
-                            reportVariableDeclarator(context, reporter, node);
-                            return;
-                        }
-                        if (JAVA_ASSIGNMENT_EXPRESSION.equals(kindId))
-                            reportAssignmentExpression(context, reporter, node);
-                    })
-            )
-    );
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.INCOMPATIBLE_ASSIGNMENT.id(),
+            JavaSemanticRules.INCOMPATIBLE_ASSIGNMENT.defaultSeverity(),
+            JavaSemanticRules.INCOMPATIBLE_ASSIGNMENT.messageTemplate(),
+            Set.of("core", "assignments", "types"),
+            (context, reporter) -> context.traverse(node -> {
+                String kindId = node.kind().id();
+                if (JAVA_VARIABLE_DECLARATOR.equals(kindId)) {
+                    reportVariableDeclarator(context, reporter, node);
+                    return;
+                }
+                if (JAVA_ASSIGNMENT_EXPRESSION.equals(kindId)) {
+                    reportAssignmentExpression(context, reporter, node);
+                }
+            })));
 
     @Override
     public String id() {
@@ -47,7 +46,8 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
     public List<JavaInspectionRule> rules() {
         return RULES;
     }
-    private static void reportVariableDeclarator(JavaRuleContext context, JavaInspectionRuleReporter reporter, SyntaxNode node) {
+    private static void reportVariableDeclarator(JavaRuleContext context, JavaInspectionRuleReporter reporter,
+        SyntaxNode node) {
         Type declaredType = context.declaredTypeOfVariable(node);
         SyntaxNode initializer = context.firstDirectExpressionChild(node);
         if (initializer == null)
@@ -57,15 +57,18 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
         if (isUnknownLike(declaredType) || isUnknownLike(sourceType))
             return;
         if (isPolyExpression(initializer)) {
-            if (!context.isFunctionalInterface(declaredType))
+            if (!context.isFunctionalInterface(declaredType)) {
                 reporter.report(node, sourceType.displayName(), declaredType.displayName());
+            }
             return;
         }
-        if (!context.isAssignable(declaredType, sourceType))
+        if (!context.isAssignable(declaredType, sourceType)) {
             reporter.report(node, sourceType.displayName(), declaredType.displayName());
+        }
     }
 
-    private static void reportAssignmentExpression(JavaRuleContext context, JavaInspectionRuleReporter reporter, SyntaxNode node) {
+    private static void reportAssignmentExpression(JavaRuleContext context, JavaInspectionRuleReporter reporter,
+        SyntaxNode node) {
         List<SyntaxNode> expressionChildren = context.directExpressionChildren(node);
         if (expressionChildren.size() < 2)
             return;
@@ -75,12 +78,14 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
         if (isUnknownLike(leftType) || isUnknownLike(rightType))
             return;
         if (isPolyExpression(expressionChildren.get(1))) {
-            if (!context.isFunctionalInterface(leftType))
+            if (!context.isFunctionalInterface(leftType)) {
                 reporter.report(node, rightType.displayName(), leftType.displayName());
+            }
             return;
         }
-        if (!context.isAssignable(leftType, rightType))
+        if (!context.isAssignable(leftType, rightType)) {
             reporter.report(node, rightType.displayName(), leftType.displayName());
+        }
     }
 
     private static boolean isPolyExpression(SyntaxNode expression) {

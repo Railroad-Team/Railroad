@@ -20,8 +20,7 @@ public class GitOverviewPane extends RRVBox {
         getChildren().addAll(
             headerPane,
             identityPane,
-            recentCommitsPane
-        );
+            recentCommitsPane);
 
         VBox.setVgrow(recentCommitsPane, Priority.ALWAYS);
     }

@@ -3,9 +3,16 @@ import org.gradle.internal.os.OperatingSystem
 plugins {
     id 'java'
     id 'application'
+    id 'com.diffplug.spotless' version '8.10.0'
     id 'org.openjfx.javafxplugin' version '0.1.0'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '9.4.3'
     id 'org.beryx.runtime' version '2.0.0'
+}
+
+sourceSets {
+    formatter {
+        java.srcDir 'src/formatter/java'
+    }
 }
 
 group 'dev.railroadide'
@@ -112,10 +119,78 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:6.0.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:6.0.0'
     testRuntimeOnly 'org.projectlombok:lombok:1.18.42'
+    testImplementation sourceSets.formatter.output
 }
 
 test {
     useJUnitPlatform()
+    dependsOn tasks.named('formatterClasses')
+}
+
+spotless {
+    if (!providers.gradleProperty('formatAll').isPresent())
+        ratchetFrom providers.gradleProperty('formatRatchetFrom').getOrElse('HEAD')
+
+    java {
+        target 'src/main/java/**/*.java', 'src/test/java/**/*.java', 'src/formatter/java/**/*.java'
+        eclipse().configFile('config/format/railroad-eclipse-formatter.xml')
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+def semanticStyleSources = files('src/main/java', 'src/test/java', 'src/formatter/java')
+def semanticStyleArguments = { String mode ->
+    def arguments = [mode]
+    if (providers.gradleProperty('formatAll').isPresent()) {
+        arguments.add('--all')
+    } else {
+        arguments.addAll([
+            '--ratchet-from',
+            providers.gradleProperty('formatRatchetFrom').getOrElse('HEAD'),
+            projectDir.absolutePath
+        ])
+    }
+    arguments.addAll(semanticStyleSources.files.collect { it.absolutePath })
+    arguments
+}
+
+tasks.register('semanticFormat', JavaExec) {
+    group = 'formatting'
+    description = 'Applies Railroad-specific syntax-aware Java style rules.'
+    dependsOn tasks.named('formatterClasses')
+    classpath = sourceSets.formatter.runtimeClasspath
+    mainClass = 'dev.railroadide.railroad.formatter.RailroadJavaStyle'
+    args semanticStyleArguments('--apply')
+}
+
+tasks.register('semanticFormatCheck', JavaExec) {
+    group = 'verification'
+    description = 'Checks Railroad-specific syntax-aware Java style rules.'
+    dependsOn tasks.named('formatterClasses')
+    classpath = sourceSets.formatter.runtimeClasspath
+    mainClass = 'dev.railroadide.railroad.formatter.RailroadJavaStyle'
+    args semanticStyleArguments('--check')
+}
+
+tasks.named('spotlessApply') {
+    mustRunAfter tasks.named('semanticFormat')
+}
+
+tasks.named('spotlessCheck') {
+    mustRunAfter tasks.named('semanticFormatCheck')
+}
+
+tasks.register('format') {
+    group = 'formatting'
+    description = 'Applies all Railroad Java formatting and style rules.'
+    dependsOn tasks.named('semanticFormat'), tasks.named('spotlessApply')
+}
+
+tasks.register('formatCheck') {
+    group = 'verification'
+    description = 'Checks all Railroad Java formatting and style rules.'
+    dependsOn tasks.named('semanticFormatCheck'), tasks.named('spotlessCheck')
 }
 
 jar {

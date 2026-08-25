@@ -38,7 +38,9 @@ public class ClassStubVisitor extends ClassVisitor {
             this.superClass = signatureVisitor.superClass;
             this.interfaces = signatureVisitor.interfaces;
         } else {
-            this.superClass = (superName == null) ? null : Type.fromAsmType(org.objectweb.asm.Type.getObjectType(superName));
+            this.superClass = (superName == null)
+                ? null
+                : Type.fromAsmType(org.objectweb.asm.Type.getObjectType(superName));
             this.interfaces = Arrays.stream(interfaces)
                 .map(org.objectweb.asm.Type::getObjectType)
                 .map(Type::fromAsmType)
@@ -58,8 +60,9 @@ public class ClassStubVisitor extends ClassVisitor {
         if (signature != null) {
             Type[] genericFieldType = new Type[1];
             new SignatureReader(signature).acceptType(new TypeSignatureVisitor(type -> genericFieldType[0] = type));
-            if (genericFieldType[0] != null)
+            if (genericFieldType[0] != null) {
                 fieldType = genericFieldType[0];
+            }
         }
         Type resolvedFieldType = fieldType;
         List<AnnotationStub> fieldAnnotations = new ArrayList<>();
@@ -79,10 +82,10 @@ public class ClassStubVisitor extends ClassVisitor {
     }
 
     @Override
-    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        if (name.equals("<clinit>")) {
+    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+        String[] exceptions) {
+        if (name.equals("<clinit>"))
             return null; // Skip static initializer
-        }
 
         List<Type> parameterTypes;
         Type returnType;
@@ -111,41 +114,40 @@ public class ClassStubVisitor extends ClassVisitor {
         }
 
         List<Type> descriptorThrownTypes = exceptions == null
-                ? List.of()
-                : Arrays.stream(exceptions)
+            ? List.of()
+            : Arrays.stream(exceptions)
                 .map(internalName -> Type.fromAsmType(org.objectweb.asm.Type.getObjectType(internalName)))
                 .toList();
         List<Type> thrownTypes = signatureThrownTypes.isEmpty()
-            ? descriptorThrownTypes : signatureThrownTypes;
+            ? descriptorThrownTypes
+            : signatureThrownTypes;
         List<AnnotationStub> methodAnnotations = new ArrayList<>();
         return new MethodStubVisitor(
-                access,
-                name,
-                parameterTypes,
-                returnType,
-                parameterNames,
-                parameterAnnotations,
-                methodAnnotations,
-                methodTypeParameters,
-                thrownTypes
-        );
+            access,
+            name,
+            parameterTypes,
+            returnType,
+            parameterNames,
+            parameterAnnotations,
+            methodAnnotations,
+            methodTypeParameters,
+            thrownTypes);
     }
 
     public ClassStub createClassStub() {
-        if (className == null) {
+        if (className == null)
             return null; // Class name is not available
-        }
 
-        //    String packageName,
-        //    String className,
-        //    List<TypeParameter> typeParameters,
-        //    Type superClass,
-        //    List<Type> interfaces,
-        //    List<FieldStub> fields,
-        //    List<MethodStub> methods,
-        //    List<ConstructorStub> constructors,
-        //    int modifiers,
-        //    List<AnnotationStub> annotations
+        // String packageName,
+        // String className,
+        // List<TypeParameter> typeParameters,
+        // Type superClass,
+        // List<Type> interfaces,
+        // List<FieldStub> fields,
+        // List<MethodStub> methods,
+        // List<ConstructorStub> constructors,
+        // int modifiers,
+        // List<AnnotationStub> annotations
         return new ClassStub(
             packageName,
             className,
@@ -156,8 +158,7 @@ public class ClassStubVisitor extends ClassVisitor {
             methods,
             constructors,
             modifiers,
-            annotations
-        );
+            annotations);
     }
 
     private static class AnnotationStubVisitor extends AnnotationVisitor {
@@ -294,8 +295,9 @@ public class ClassStubVisitor extends ClassVisitor {
         @Override
         public void visitTypeArgument() {
             Type.ClassType parent = this.typeStack.peek();
-            if (parent != null)
+            if (parent != null) {
                 parent.typeArguments().add(new Type.WildcardType(null, true));
+            }
         }
 
         @Override
@@ -370,7 +372,10 @@ public class ClassStubVisitor extends ClassVisitor {
         private final List<Type> thrownTypes;
         private int parameterIndex = 0;
 
-        public MethodStubVisitor(int access, String name, List<Type> parameterTypes, Type returnType, List<String> parameterNames, List<List<AnnotationStub>> parameterAnnotations, List<AnnotationStub> methodAnnotations, List<TypeParameter> finalMethodTypeParameters, List<Type> thrownTypes) {
+        public MethodStubVisitor(int access, String name, List<Type> parameterTypes, Type returnType,
+            List<String> parameterNames, List<List<AnnotationStub>> parameterAnnotations,
+            List<AnnotationStub> methodAnnotations, List<TypeParameter> finalMethodTypeParameters,
+            List<Type> thrownTypes) {
             super(Opcodes.ASM9);
             this.access = access;
             this.name = name;

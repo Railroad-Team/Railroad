@@ -16,15 +16,14 @@ import java.util.List;
 import java.util.Optional;
 
 public record ClassDeclaration(
-        Span span,
-        List<Modifier> modifiers,
-        List<Annotation> annotations,
-        NameExpression name,
-        List<TypeParameter> typeParameters,
-        Optional<TypeRef> extendsType,
-        List<TypeRef> implementsTypes,
-        List<ClassBodyDeclaration> members
-) implements TypeDeclaration {
+    Span span,
+    List<Modifier> modifiers,
+    List<Annotation> annotations,
+    NameExpression name,
+    List<TypeParameter> typeParameters,
+    Optional<TypeRef> extendsType,
+    List<TypeRef> implementsTypes,
+    List<ClassBodyDeclaration> members) implements TypeDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.CLASS_DECLARATION;

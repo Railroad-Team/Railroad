@@ -17,14 +17,12 @@ public final class CoreCallResolutionInspection implements JavaInspectionRulePro
     public static final String ID = "railroad:core-call-resolution";
 
     private static final List<JavaInspectionRule> RULES = List.of(
-            new SimpleJavaInspectionRule(
-                    JavaSemanticRules.UNRESOLVED_CALL.id(),
-                    JavaSemanticRules.UNRESOLVED_CALL.defaultSeverity(),
-                    JavaSemanticRules.UNRESOLVED_CALL.messageTemplate(),
-                    Set.of("core", "calls"),
-                    CoreCallResolutionInspection::reportUnresolvedCalls
-            )
-    );
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.UNRESOLVED_CALL.id(),
+            JavaSemanticRules.UNRESOLVED_CALL.defaultSeverity(),
+            JavaSemanticRules.UNRESOLVED_CALL.messageTemplate(),
+            Set.of("core", "calls"),
+            CoreCallResolutionInspection::reportUnresolvedCalls));
 
     @Override
     public String id() {
@@ -47,15 +45,14 @@ public final class CoreCallResolutionInspection implements JavaInspectionRulePro
 
                 SyntaxNode memberNode = context.selectorNameNode(node);
                 String callName = memberNode == null
-                        ? context.firstIdentifierLikeTokenText(node)
-                        : context.canonicalQualifiedName(memberNode);
+                    ? context.firstIdentifierLikeTokenText(node)
+                    : context.canonicalQualifiedName(memberNode);
                 if (callName == null || callName.isBlank())
                     return;
                 Railroad.LOGGER.warn(
                     "Unresolved method invocation detail for {}: {}",
                     callName,
-                    context.describeMethodInvocationResolution(node)
-                );
+                    context.describeMethodInvocationResolution(node));
                 reporter.report(memberNode == null ? node : memberNode, callName);
                 return;
             }

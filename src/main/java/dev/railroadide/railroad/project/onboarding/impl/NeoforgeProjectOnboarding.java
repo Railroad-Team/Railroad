@@ -51,7 +51,8 @@ import java.util.function.Function;
 // TODO: Make it so the display test and client side only options are in their own steps
 // TODO: Fix the comboboxes not being immediately populated and instead having the data fetched completely async
 public class NeoforgeProjectOnboarding {
-    private static final ExpiringCache<List<MinecraftVersion>> NEOFORGE_MINECRAFT_VERSIONS_CACHE = new ExpiringCache<>(Duration.ofHours(3));
+    private static final ExpiringCache<List<MinecraftVersion>> NEOFORGE_MINECRAFT_VERSIONS_CACHE = new ExpiringCache<>(
+        Duration.ofHours(3));
 
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
@@ -82,8 +83,7 @@ public class NeoforgeProjectOnboarding {
         var process = OnboardingProcess.createBasic(
             flow,
             new OnboardingContext(executor),
-            ctx -> onFinish(ctx, scene)
-        );
+            ctx -> onFinish(ctx, scene));
 
         process.run(scene);
     }
@@ -110,7 +110,8 @@ public class NeoforgeProjectOnboarding {
         data.set(MinecraftProjectKeys.MOD_NAME, ctx.get(MinecraftProjectKeys.MOD_NAME));
         data.set(MinecraftProjectKeys.MAIN_CLASS, ctx.get(MinecraftProjectKeys.MAIN_CLASS));
         data.set(ForgeProjectKeys.USE_MIXINS, Boolean.TRUE.equals(ctx.get(ForgeProjectKeys.USE_MIXINS)));
-        data.set(ForgeProjectKeys.USE_ACCESS_TRANSFORMER, Boolean.TRUE.equals(ctx.get(ForgeProjectKeys.USE_ACCESS_TRANSFORMER)));
+        data.set(ForgeProjectKeys.USE_ACCESS_TRANSFORMER,
+            Boolean.TRUE.equals(ctx.get(ForgeProjectKeys.USE_ACCESS_TRANSFORMER)));
         data.set(ForgeProjectKeys.GEN_RUN_FOLDERS, Boolean.TRUE.equals(ctx.get(ForgeProjectKeys.GEN_RUN_FOLDERS)));
 
         if (ctx.contains(ProjectData.DefaultKeys.AUTHOR)) {
@@ -170,8 +171,7 @@ public class NeoforgeProjectOnboarding {
         serviceRegistry.get(GradleService.class).setOutputStream(creationPane.getTaos());
         creationPane.initService(new ProjectCreationService(Services.PROJECT_CREATION_PIPELINE.createProject(
             ProjectTypeRegistry.NEOFORGE,
-            serviceRegistry
-        ), creationPane.getContext()));
+            serviceRegistry), creationPane.getContext()));
 
         scene.setRoot(creationPane);
     }
@@ -257,7 +257,7 @@ public class NeoforgeProjectOnboarding {
 
     private OnboardingStep createMinecraftVersionStep() {
         ObservableList<MinecraftVersion> availableVersions = FXCollections.observableArrayList();
-        AtomicLong nextInvalidationTime = new AtomicLong(0L);
+        var nextInvalidationTime = new AtomicLong(0L);
 
         return OnboardingFormStep.builder()
             .id("minecraft_version")
@@ -265,7 +265,9 @@ public class NeoforgeProjectOnboarding {
             .description("railroad.project.creation.minecraft_version.description")
             .appendSection("railroad.project.creation.section.minecraft_version",
                 described(
-                    FormComponent.comboBox(MinecraftProjectKeys.MINECRAFT_VERSION, "railroad.project.creation.minecraft_version", MinecraftVersion.class)
+                    FormComponent
+                        .comboBox(MinecraftProjectKeys.MINECRAFT_VERSION, "railroad.project.creation.minecraft_version",
+                            MinecraftVersion.class)
                         .items(() -> availableVersions)
                         .defaultValue(() -> determineDefaultMinecraftVersion(availableVersions))
                         .keyFunction(MinecraftVersion::id)
@@ -276,11 +278,10 @@ public class NeoforgeProjectOnboarding {
             .onEnter(ctx -> {
                 long now = System.currentTimeMillis();
                 if (availableVersions.isEmpty() || now > nextInvalidationTime.get()) {
-                    NEOFORGE_MINECRAFT_VERSIONS_CACHE.getIfPresent().ifPresent(values ->
-                        Platform.runLater(() -> {
-                            availableVersions.setAll(values);
-                            ctx.markForRefresh(MinecraftProjectKeys.MINECRAFT_VERSION);
-                        }));
+                    NEOFORGE_MINECRAFT_VERSIONS_CACHE.getIfPresent().ifPresent(values -> Platform.runLater(() -> {
+                        availableVersions.setAll(values);
+                        ctx.markForRefresh(MinecraftProjectKeys.MINECRAFT_VERSION);
+                    }));
 
                     resolveNeoforgeMinecraftVersions().whenComplete((versions, throwable) -> {
                         if (throwable != null) {
@@ -310,7 +311,9 @@ public class NeoforgeProjectOnboarding {
             .description("railroad.project.creation.neoforge_version.description")
             .appendSection("railroad.project.creation.section.neoforge_version",
                 described(
-                    FormComponent.comboBox(ForgeProjectKeys.FORGE_VERSION, "railroad.project.creation.neoforge_version", String.class)
+                    FormComponent
+                        .comboBox(ForgeProjectKeys.FORGE_VERSION, "railroad.project.creation.neoforge_version",
+                            String.class)
                         .required()
                         .items(() -> availableVersions)
                         .defaultValue(() -> {
@@ -338,7 +341,8 @@ public class NeoforgeProjectOnboarding {
 
                 fetchNeoforgeVersions(minecraftVersion).whenComplete((payload, throwable) -> {
                     if (throwable != null) {
-                        Railroad.LOGGER.error("Failed to fetch Neoforge versions for Minecraft {}", minecraftVersion, throwable);
+                        Railroad.LOGGER.error("Failed to fetch Neoforge versions for Minecraft {}", minecraftVersion,
+                            throwable);
                         return;
                     }
 
@@ -361,7 +365,9 @@ public class NeoforgeProjectOnboarding {
             .description("railroad.project.creation.mapping_channel.description")
             .appendSection("railroad.project.creation.section.mapping_channel",
                 described(
-                    FormComponent.comboBox(MinecraftProjectKeys.MAPPING_CHANNEL, "railroad.project.creation.mapping_channel", MappingChannel.class)
+                    FormComponent
+                        .comboBox(MinecraftProjectKeys.MAPPING_CHANNEL, "railroad.project.creation.mapping_channel",
+                            MappingChannel.class)
                         .required()
                         .items(() -> availableChannels)
                         .defaultValue(() -> {
@@ -400,7 +406,9 @@ public class NeoforgeProjectOnboarding {
             .description("railroad.project.creation.mapping_version.description")
             .appendSection("railroad.project.creation.section.mapping_version",
                 described(
-                    FormComponent.comboBox(MinecraftProjectKeys.MAPPING_VERSION, "railroad.project.creation.mapping_version", String.class)
+                    FormComponent
+                        .comboBox(MinecraftProjectKeys.MAPPING_VERSION, "railroad.project.creation.mapping_version",
+                            String.class)
                         .required()
                         .items(() -> availableVersions)
                         .defaultValue(() -> {
@@ -472,10 +480,12 @@ public class NeoforgeProjectOnboarding {
                     FormComponent.checkBox(ForgeProjectKeys.USE_MIXINS, "railroad.project.creation.use_mixins"),
                     "railroad.project.creation.use_mixins.info"),
                 described(
-                    FormComponent.checkBox(ForgeProjectKeys.USE_ACCESS_TRANSFORMER, "railroad.project.creation.use_access_transformer"),
+                    FormComponent.checkBox(ForgeProjectKeys.USE_ACCESS_TRANSFORMER,
+                        "railroad.project.creation.use_access_transformer"),
                     "railroad.project.creation.use_access_transformer.info"),
                 described(
-                    FormComponent.checkBox(ForgeProjectKeys.GEN_RUN_FOLDERS, "railroad.project.creation.gen_run_folders"),
+                    FormComponent.checkBox(ForgeProjectKeys.GEN_RUN_FOLDERS,
+                        "railroad.project.creation.gen_run_folders"),
                     "railroad.project.creation.gen_run_folders.info"))
             .onEnter(ctx -> {
                 String projectName = ctx.get(ProjectData.DefaultKeys.NAME);
@@ -500,8 +510,8 @@ public class NeoforgeProjectOnboarding {
         ObservableList<License> availableLicenses = FXCollections.observableArrayList();
         ObjectProperty<ComboBox<License>> licenseComboBox = new SimpleObjectProperty<>();
         BooleanProperty showCustomLicense = new SimpleBooleanProperty(false);
-        ChangeListener<License> licenseSelectionListener = (observable, oldValue, newValue) ->
-            showCustomLicense.set(newValue == LicenseRegistry.CUSTOM);
+        ChangeListener<License> licenseSelectionListener = (observable, oldValue, newValue) -> showCustomLicense
+            .set(newValue == LicenseRegistry.CUSTOM);
 
         licenseComboBox.addListener((observable, oldValue, newValue) -> {
             if (oldValue != null) {
@@ -524,7 +534,8 @@ public class NeoforgeProjectOnboarding {
             .description("railroad.project.creation.license.description")
             .appendSection("railroad.project.creation.section.license",
                 described(
-                    FormComponent.comboBox(ProjectData.DefaultKeys.LICENSE, "railroad.project.creation.license", License.class)
+                    FormComponent
+                        .comboBox(ProjectData.DefaultKeys.LICENSE, "railroad.project.creation.license", License.class)
                         .required()
                         .bindComboBoxTo(licenseComboBox)
                         .keyFunction(License::getSpdxId)
@@ -543,7 +554,8 @@ public class NeoforgeProjectOnboarding {
                         }),
                     "railroad.project.creation.license.info"),
                 described(
-                    FormComponent.textField(ProjectData.DefaultKeys.LICENSE_CUSTOM, "railroad.project.creation.license.custom")
+                    FormComponent
+                        .textField(ProjectData.DefaultKeys.LICENSE_CUSTOM, "railroad.project.creation.license.custom")
                         .visible(customLicenseVisible)
                         .promptText("railroad.project.creation.license.custom.prompt")
                         .validator(ProjectValidators::validateCustomLicense),
@@ -554,7 +566,8 @@ public class NeoforgeProjectOnboarding {
                     .sorted(Comparator.comparing(License::getName))
                     .toList();
 
-                if (availableLicenses.size() != newValues.size() || !ListUtils.isEqualList(availableLicenses, newValues)) {
+                if (availableLicenses.size() != newValues.size()
+                    || !ListUtils.isEqualList(availableLicenses, newValues)) {
                     availableLicenses.clear();
                     availableLicenses.addAll(newValues);
                     ctx.markForRefresh(ProjectData.DefaultKeys.LICENSE);
@@ -581,8 +594,8 @@ public class NeoforgeProjectOnboarding {
         String defaultAuthor = !isNullOrBlank(configuredAuthor)
             ? configuredAuthor
             : Optional.ofNullable(System.getProperty("user.name"))
-            .filter(name -> !isNullOrBlank(name))
-            .orElse("");
+                .filter(name -> !isNullOrBlank(name))
+                .orElse("");
 
         return OnboardingFormStep.builder()
             .id("optional_details")
@@ -611,7 +624,8 @@ public class NeoforgeProjectOnboarding {
                         .validator(ProjectValidators::validateIssues),
                     "railroad.project.creation.issues_url.info"),
                 described(
-                    FormComponent.textField(ForgeProjectKeys.UPDATE_JSON_URL, "railroad.project.creation.update_json_url")
+                    FormComponent
+                        .textField(ForgeProjectKeys.UPDATE_JSON_URL, "railroad.project.creation.update_json_url")
                         .promptText("railroad.project.creation.update_json_url.prompt")
                         .validator(ProjectValidators::validateUpdateJsonUrl),
                     "railroad.project.creation.update_json_url.info"),
@@ -621,7 +635,9 @@ public class NeoforgeProjectOnboarding {
                         .validator(field -> ProjectValidators.validateGenericUrl(field, "display_url")),
                     "railroad.project.creation.display_url.info"),
                 described(
-                    FormComponent.comboBox(ForgeProjectKeys.DISPLAY_TEST, "railroad.project.creation.display_test", DisplayTest.class)
+                    FormComponent
+                        .comboBox(ForgeProjectKeys.DISPLAY_TEST, "railroad.project.creation.display_test",
+                            DisplayTest.class)
                         .items(() -> Arrays.asList(DisplayTest.values()))
                         .defaultValue(() -> DisplayTest.MATCH_VERSION)
                         .keyFunction(DisplayTest::name)
@@ -629,17 +645,21 @@ public class NeoforgeProjectOnboarding {
                         .translate(false),
                     "railroad.project.creation.display_test.info"),
                 described(
-                    FormComponent.checkBox(ForgeProjectKeys.CLIENT_SIDE_ONLY, "railroad.project.creation.client_side_only"),
+                    FormComponent.checkBox(ForgeProjectKeys.CLIENT_SIDE_ONLY,
+                        "railroad.project.creation.client_side_only"),
                     "railroad.project.creation.client_side_only.info"))
             .build();
     }
 
-    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder, String descriptionKey) {
+    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder,
+        String descriptionKey) {
         return OnboardingFormStep.component(builder, createDescriptionCustomizer(descriptionKey));
     }
 
-    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, String descriptionKey) {
-        return OnboardingFormStep.component(builder, builder != null ? builder.dataKey() : null, transformer, reverseTransformer, createDescriptionCustomizer(descriptionKey));
+    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder,
+        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, String descriptionKey) {
+        return OnboardingFormStep.component(builder, builder != null ? builder.dataKey() : null, transformer,
+            reverseTransformer, createDescriptionCustomizer(descriptionKey));
     }
 
     private static Consumer<FormComponent<?, ?, ?, ?>> createDescriptionCustomizer(String descriptionKey) {
@@ -685,17 +705,15 @@ public class NeoforgeProjectOnboarding {
     }
 
     private static CompletableFuture<List<MinecraftVersion>> resolveNeoforgeMinecraftVersions() {
-        return NEOFORGE_MINECRAFT_VERSIONS_CACHE.getAsync(() ->
-            SwitchboardRepositories.NEOFORGE.getAllVersions()
-                .thenApply(versions -> versions.stream()
-                    .map(NeoforgeProjectOnboarding::extractMinecraftVersionId)
-                    .flatMap(Optional::stream)
-                    .map(NeoforgeProjectOnboarding::lookupMinecraftVersion)
-                    .flatMap(Optional::stream)
-                    .distinct()
-                    .sorted(Comparator.reverseOrder())
-                    .toList())
-        );
+        return NEOFORGE_MINECRAFT_VERSIONS_CACHE.getAsync(() -> SwitchboardRepositories.NEOFORGE.getAllVersions()
+            .thenApply(versions -> versions.stream()
+                .map(NeoforgeProjectOnboarding::extractMinecraftVersionId)
+                .flatMap(Optional::stream)
+                .map(NeoforgeProjectOnboarding::lookupMinecraftVersion)
+                .flatMap(Optional::stream)
+                .distinct()
+                .sorted(Comparator.reverseOrder())
+                .toList()));
     }
 
     private static CompletableFuture<NeoforgeVersionsPayload> fetchNeoforgeVersions(MinecraftVersion version) {
@@ -706,8 +724,10 @@ public class NeoforgeProjectOnboarding {
         CompletableFuture<List<String>> versionsFuture = SwitchboardRepositories.NEOFORGE.getVersionsFor(minecraftId);
         CompletableFuture<String> latestFuture = SwitchboardRepositories.NEOFORGE.getLatestVersionFor(minecraftId);
 
-        return versionsFuture.thenCombine(latestFuture, (versions, latest) ->
-                new NeoforgeVersionsPayload(version, versions == null ? List.of() : versions, latest))
+        return versionsFuture
+            .thenCombine(latestFuture,
+                (versions, latest) -> new NeoforgeVersionsPayload(version, versions == null ? List.of() : versions,
+                    latest))
             .exceptionally(throwable -> {
                 Railroad.LOGGER.error("Failed to fetch Neoforge versions for Minecraft {}", version, throwable);
                 return new NeoforgeVersionsPayload(version, List.of(), null);
@@ -765,7 +785,8 @@ public class NeoforgeProjectOnboarding {
             return false;
 
         String lower = version.toLowerCase(Locale.ROOT);
-        return lower.contains("beta") || lower.contains("alpha") || lower.contains("rc") || lower.contains("25w14craftmine");
+        return lower.contains("beta") || lower.contains("alpha") || lower.contains("rc")
+            || lower.contains("25w14craftmine");
     }
 
     private static boolean isNullOrBlank(String value) {

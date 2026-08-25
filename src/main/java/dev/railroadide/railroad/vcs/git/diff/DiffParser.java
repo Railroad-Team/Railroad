@@ -30,7 +30,7 @@ public final class DiffParser {
         String[] lines = rawDiff.split("\r?\n");
         for (String line : lines) {
             if (line.startsWith("diff --git")) {
-                //noinspection ConstantValue
+                // noinspection ConstantValue
                 if (currentHunk != null && currentFile != null) {
                     currentFile.hunks().add(currentHunk);
                     currentHunk = null;
@@ -46,7 +46,8 @@ public final class DiffParser {
                 Path normalizedOldPath = Path.of(oldPath).normalize();
                 Path normalizedNewPath = Path.of(newPath).normalize();
 
-                currentFile = new DiffFile(normalizedOldPath, normalizedNewPath, false, new ArrayList<>(), new ArrayList<>());
+                currentFile = new DiffFile(normalizedOldPath, normalizedNewPath, false, new ArrayList<>(),
+                    new ArrayList<>());
             } else if (currentFile != null && line.startsWith("@@ ")) {
                 if (currentHunk != null) {
                     currentFile.hunks().add(currentHunk);
@@ -96,8 +97,7 @@ public final class DiffParser {
                         oldLineNumber,
                         newLineNumber,
                         content,
-                        false
-                    ));
+                        false));
                 } else if (line.startsWith("\\ No newline at end of file")) {
                     if (!currentHunk.lines().isEmpty()) {
                         currentHunk.lines().add(DiffHunkLine.noNewlineAtEnd(currentHunk.lines().removeLast()));
@@ -131,7 +131,7 @@ public final class DiffParser {
             }
         }
 
-        //noinspection ConstantValue
+        // noinspection ConstantValue
         if (currentHunk != null && currentFile != null) {
             currentFile.hunks().add(currentHunk);
         }

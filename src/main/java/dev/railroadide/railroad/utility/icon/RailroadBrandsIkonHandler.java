@@ -32,8 +32,9 @@ public class RailroadBrandsIkonHandler extends AbstractIkonHandler {
     @Override
     public InputStream getFontResourceAsStream() {
         InputStream in = AppResources.getResourceAsStream(FONT_RESOURCE);
-        if (in == null)
+        if (in == null) {
             Railroad.LOGGER.error("RailroadBrandIcons: FONT NOT FOUND at {}", FONT_RESOURCE);
+        }
 
         return in;
     }

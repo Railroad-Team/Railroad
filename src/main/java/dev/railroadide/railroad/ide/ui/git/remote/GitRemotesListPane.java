@@ -31,8 +31,7 @@ import java.util.function.Consumer;
 public class GitRemotesListPane extends RRListView<GitRemote> {
     private final LongProperty elapsedTick = new SimpleLongProperty();
     private final Timeline elapsedTimeline = new Timeline(
-        new KeyFrame(Duration.seconds(1), $ -> elapsedTick.set(elapsedTick.get() + 1))
-    );
+        new KeyFrame(Duration.seconds(1), _ -> elapsedTick.set(elapsedTick.get() + 1)));
 
     public GitRemotesListPane(GitManager gitManager) {
         getStyleClass().add("git-remotes-list");
@@ -47,7 +46,7 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
             }
         });
 
-        setCellFactory(ignored -> new GitRemoteListCell(gitManager, elapsedTick));
+        setCellFactory(_ -> new GitRemoteListCell(gitManager, elapsedTick));
         setItems(FXCollections.observableArrayList(gitManager.getRemotes()));
         gitManager.repoStatusProperty().addListener((observable, oldValue, newValue) -> {
             List<GitRemote> remotes = gitManager.getRemotes();
@@ -132,7 +131,8 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
             this.remote = remote;
             remoteNameText.setText(remote.name());
             protocolText.setText(remote.protocol().name().toLowerCase(Locale.ROOT));
-            urlsCountText.setKeyAndArgs("railroad.git.remotes.list.urls_count", gitManager.getRemoteUrls(remote).size());
+            urlsCountText.setKeyAndArgs("railroad.git.remotes.list.urls_count",
+                gitManager.getRemoteUrls(remote).size());
 
             boolean isUpstream = gitManager.getUpstream().map(GitUpstream::remoteName).orElse("").equals(remote.name());
             if (isUpstream) {
@@ -156,14 +156,12 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
         }
 
         private void refreshLastFetchText() {
-            if (remote == null) {
+            if (remote == null)
                 return;
-            }
 
             lastFetchTimeText.setKeyAndArgs(
                 "railroad.git.remotes.list.fetched_time",
-                TimeFormatter.formatElapsed(gitManager.getLastFetchTimestamp(remote))
-            );
+                TimeFormatter.formatElapsed(gitManager.getLastFetchTimestamp(remote)));
         }
     }
 }

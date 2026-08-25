@@ -14,10 +14,10 @@ public interface FormComponentChangeListener<T extends Node, U> {
     /**
      * Handles the change in the form component.
      *
-     * @param node       The form component.
+     * @param node The form component.
      * @param observable The observable value of the form component.
-     * @param oldValue   The old value of the form component.
-     * @param newValue   The new value of the form component.
+     * @param oldValue The old value of the form component.
+     * @param newValue The new value of the form component.
      */
     void changed(T node, ObservableValue<? extends U> observable, U oldValue, U newValue);
 }

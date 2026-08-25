@@ -42,10 +42,9 @@ class ProjectLanguageIndexServiceTest {
 
                 class A {
                 }
-                """
-        );
+                """);
 
-        TestJavaProjectIndexAccess service = new TestJavaProjectIndexAccess();
+        var service = new TestJavaProjectIndexAccess();
         JavaProjectSemanticIndex first = service.index(root);
         JavaProjectSemanticIndex second = service.index(root);
 
@@ -61,10 +60,9 @@ class ProjectLanguageIndexServiceTest {
 
                 class A {
                 }
-                """
-        );
+                """);
 
-        TestJavaProjectIndexAccess service = new TestJavaProjectIndexAccess();
+        var service = new TestJavaProjectIndexAccess();
         JavaProjectSemanticIndex initial = service.index(root);
 
         Files.writeString(root.resolve("src/main/java/demo/B.java"), """
@@ -89,10 +87,9 @@ class ProjectLanguageIndexServiceTest {
 
                 class A {
                 }
-                """
-        );
+                """);
 
-        TestJavaProjectIndexAccess service = new TestJavaProjectIndexAccess();
+        var service = new TestJavaProjectIndexAccess();
         service.index(root);
 
         Path aFile = root.resolve("src/main/java/demo/A.java");
@@ -124,10 +121,9 @@ class ProjectLanguageIndexServiceTest {
 
                 class B {
                 }
-                """
-        );
+                """);
 
-        TestJavaProjectIndexAccess service = new TestJavaProjectIndexAccess();
+        var service = new TestJavaProjectIndexAccess();
         service.index(root);
 
         Path bFile = root.resolve("src/main/java/demo/B.java");
@@ -146,10 +142,9 @@ class ProjectLanguageIndexServiceTest {
 
                 class A {
                 }
-                """
-        );
+                """);
 
-        TestJavaProjectIndexAccess service = new TestJavaProjectIndexAccess();
+        var service = new TestJavaProjectIndexAccess();
         JavaProjectSemanticIndex initial = service.index(root);
         assertTrue(service.hasIndex(root));
 
@@ -169,13 +164,12 @@ class ProjectLanguageIndexServiceTest {
 
                 class A {
                 }
-                """
-        );
+                """);
 
-        TestJavaProjectIndexAccess writer = new TestJavaProjectIndexAccess();
+        var writer = new TestJavaProjectIndexAccess();
         JavaProjectSemanticIndex initial = writer.index(root);
 
-        TestJavaProjectIndexAccess reader = new TestJavaProjectIndexAccess();
+        var reader = new TestJavaProjectIndexAccess();
         JavaProjectSemanticIndex reloaded = reader.index(root);
 
         assertNotSame(initial, reloaded);
@@ -190,10 +184,9 @@ class ProjectLanguageIndexServiceTest {
 
                 class A {
                 }
-                """
-        );
+                """);
 
-        TestJavaProjectIndexAccess writer = new TestJavaProjectIndexAccess();
+        var writer = new TestJavaProjectIndexAccess();
         writer.index(root);
 
         Path aFile = root.resolve("src/main/java/demo/A.java");
@@ -205,7 +198,7 @@ class ProjectLanguageIndexServiceTest {
             }
             """);
 
-        TestJavaProjectIndexAccess reader = new TestJavaProjectIndexAccess();
+        var reader = new TestJavaProjectIndexAccess();
         JavaProjectSemanticIndex reloaded = reader.index(root);
 
         assertEquals(1, reloaded.lookupMember("demo.A", "VALUE").size());
@@ -217,8 +210,7 @@ class ProjectLanguageIndexServiceTest {
             "src/main/java/demo/A.java", """
                 package demo;
                 class A {}
-                """
-        );
+                """);
         new TestJavaProjectIndexAccess().index(root);
 
         writeProjectSource(root, "src/main/java/demo/B.java", """
@@ -231,7 +223,8 @@ class ProjectLanguageIndexServiceTest {
         assertEquals(1, reloaded.lookupQualifiedName("demo.B").size());
     }
 
-    private Path createProject(String relativePath, String source, String... additionalPathAndSourcePairs) throws Exception {
+    private Path createProject(String relativePath, String source, String... additionalPathAndSourcePairs)
+        throws Exception {
         Path root = tempDir.resolve("project-" + System.nanoTime());
         writeProjectSource(root, relativePath, source);
         for (int index = 0; index < additionalPathAndSourcePairs.length; index += 2) {
@@ -282,8 +275,8 @@ class ProjectLanguageIndexServiceTest {
         private JavaProjectSemanticIndex.SourceFileIndex updateFile(Path projectRoot, Path file) {
             Path normalizedRoot = normalize(projectRoot);
             Path normalizedFile = normalize(file);
-            JavaProjectSemanticIndex.SourceFileIndex indexedFile =
-                indexService.updateFile(context(normalizedRoot), LANGUAGE_ID, normalizedFile);
+            JavaProjectSemanticIndex.SourceFileIndex indexedFile = indexService.updateFile(context(normalizedRoot),
+                LANGUAGE_ID, normalizedFile);
             if (indexedFile == null) {
                 JavaProjectSemanticIndex rebuilt = rebuild(normalizedRoot);
                 return rebuilt.getFile(normalizedFile)

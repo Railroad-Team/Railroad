@@ -37,8 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ProjectListCell extends ListCell<Project> {
     private static final LongProperty ELAPSED_TICK = new SimpleLongProperty();
     private static final Timeline ELAPSED_TIMELINE = new Timeline(
-        new KeyFrame(Duration.seconds(1), $ -> ELAPSED_TICK.set(ELAPSED_TICK.get() + 1))
-    );
+        new KeyFrame(Duration.seconds(1), _ -> ELAPSED_TICK.set(ELAPSED_TICK.get() + 1)));
     private static final AtomicInteger ATTACHED_CELLS = new AtomicInteger();
 
     static {
@@ -54,7 +53,7 @@ public class ProjectListCell extends ListCell<Project> {
     private final Label lastOpenedLabel = new Label();
     private final RRButton ellipsisButton = new RRButton();
     private final HBox facetTagsBox = new HBox();
-    private final InvalidationListener elapsedTickListener = $ -> refreshElapsedText();
+    private final InvalidationListener elapsedTickListener = _ -> refreshElapsedText();
 
     /**
      * Constructs a new ProjectListCell with modern styling and context menu functionality.
@@ -101,7 +100,7 @@ public class ProjectListCell extends ListCell<Project> {
 
         var dropdown = new ContextMenu();
         var openItem = new MenuItem("Open");
-        openItem.setOnAction($ -> {
+        openItem.setOnAction(_ -> {
             Project project = getItem();
             if (project != null) {
                 project.open();
@@ -109,7 +108,7 @@ public class ProjectListCell extends ListCell<Project> {
         });
 
         var removeItem = new MenuItem("Remove");
-        removeItem.setOnAction($ -> {
+        removeItem.setOnAction(_ -> {
             Project project = getItem();
             if (project != null) {
                 Railroad.PROJECT_MANAGER.removeProject(project);
@@ -117,7 +116,7 @@ public class ProjectListCell extends ListCell<Project> {
         });
 
         dropdown.getItems().addAll(openItem, removeItem);
-        ellipsisButton.setOnAction($ -> dropdown.show(ellipsisButton, Side.BOTTOM, 0, 0));
+        ellipsisButton.setOnAction(_ -> dropdown.show(ellipsisButton, Side.BOTTOM, 0, 0));
 
         ELAPSED_TICK.addListener(new WeakInvalidationListener(elapsedTickListener));
         sceneProperty().addListener((obs, oldScene, newScene) -> {
@@ -155,7 +154,7 @@ public class ProjectListCell extends ListCell<Project> {
             for (Facet<?> facet : project.getFacets()) {
                 if (facet != null && facet.getType() != null) {
                     // Use the FacetType's name for the tag
-                    Label tagLabel = new Label(facet.getType().name());
+                    var tagLabel = new Label(facet.getType().name());
                     tagLabel.getStyleClass().add("project-list-facet-tag");
                     tagLabel.getStyleClass().add("facet-" + facet.getType().id());
                     String description = facet.getType().description();

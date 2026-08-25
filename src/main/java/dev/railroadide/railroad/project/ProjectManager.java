@@ -34,7 +34,8 @@ public final class ProjectManager {
             if (projectObj.getId().equals(project.getId())) {
                 found = true;
                 projectObj.setLastOpened(project.getLastOpened());
-                Railroad.LOGGER.info("Starting update project: {} last opened to: {}", project.getId(), project.getLastOpened());
+                Railroad.LOGGER.info("Starting update project: {} last opened to: {}", project.getId(),
+                    project.getLastOpened());
             }
         }
 

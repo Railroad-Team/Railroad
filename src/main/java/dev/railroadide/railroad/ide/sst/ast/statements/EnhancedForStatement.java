@@ -12,10 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record EnhancedForStatement(
-        Span span,
-        Parameter localVariableDeclaration, // Cannot have an initializer
-        Expression iterationExpression,
-        Statement body) implements ForStatement {
+    Span span,
+    Parameter localVariableDeclaration, // Cannot have an initializer
+    Expression iterationExpression,
+    Statement body) implements ForStatement {
     @Override
     public AstKind kind() {
         return AstKind.ENHANCED_FOR_STATEMENT;

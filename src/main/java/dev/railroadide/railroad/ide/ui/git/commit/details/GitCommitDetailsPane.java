@@ -35,7 +35,8 @@ public class GitCommitDetailsPane extends RRVBox {
         commit.addListener((obs, oldCommit, newCommit) -> updateCommitDetails(newCommit));
 
         reloadCommitMetadata();
-        project.getGitManager().commitMetadataRevisionProperty().addListener((obs, oldRevision, newRevision) -> reloadCommitMetadata());
+        project.getGitManager().commitMetadataRevisionProperty()
+            .addListener((obs, oldRevision, newRevision) -> reloadCommitMetadata());
     }
 
     private LocalizedText createEmptyState() {

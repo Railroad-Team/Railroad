@@ -90,12 +90,14 @@ public class PathTreeCell extends TreeCell<PathItem> {
 
         var openIn = new Menu("Open In");
         var openInExplorer = new MenuItem("Explorer");
-        if (System.getProperty("os.name").toLowerCase().contains("mac"))
+        if (System.getProperty("os.name").toLowerCase().contains("mac")) {
             openInExplorer.setText("Finder");
-        else if (System.getProperty("os.name").toLowerCase().contains("linux"))
+        } else if (System.getProperty("os.name").toLowerCase().contains("linux")) {
             openInExplorer.setText("File Manager");
-        if (!Desktop.isDesktopSupported())
+        }
+        if (!Desktop.isDesktopSupported()) {
             openInExplorer.setDisable(true);
+        }
 
         var openInTerminal = new MenuItem("Terminal");
 
@@ -213,7 +215,8 @@ public class PathTreeCell extends TreeCell<PathItem> {
 
                 Files.move(editingPath, newValue.getPath());
                 getItem().setPath(newValue.getPath());
-                Railroad.EVENT_BUS.publish(new DocumentRenamedEvent(new FileSystemDocument(newName, newValue.getPath(), languageId), oldName, newName));
+                Railroad.EVENT_BUS.publish(new DocumentRenamedEvent(
+                    new FileSystemDocument(newName, newValue.getPath(), languageId), oldName, newName));
             } catch (IOException exception) {
                 cancelEdit();
                 messageProperty.setValue("Renaming %s failed".formatted(editingPath.getFileName()));

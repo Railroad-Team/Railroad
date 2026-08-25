@@ -24,34 +24,34 @@ class JavaParserCorpusTest {
     @TestFactory
     List<DynamicTest> validCorpusSyntaxRoundTrips() throws IOException {
         return manifestEntries().stream()
-                .filter(entry -> entry.kind().equals("valid"))
-                .map(entry -> DynamicTest.dynamicTest("syntax roundtrip: " + entry.relativePath(), () -> {
-                    String source = readCorpusSource(entry);
-                    JavaSyntaxAssertions.assertRoundTrip(source);
-                }))
-                .toList();
+            .filter(entry -> entry.kind().equals("valid"))
+            .map(entry -> DynamicTest.dynamicTest("syntax roundtrip: " + entry.relativePath(), () -> {
+                String source = readCorpusSource(entry);
+                JavaSyntaxAssertions.assertRoundTrip(source);
+            }))
+            .toList();
     }
 
     @TestFactory
     List<DynamicTest> validCorpusHasNoSyntaxRecoveryArtifacts() throws IOException {
         return manifestEntries().stream()
-                .filter(entry -> entry.kind().equals("valid"))
-                .map(entry -> DynamicTest.dynamicTest("syntax strict: " + entry.relativePath(), () -> {
-                    String source = readCorpusSource(entry);
-                    JavaSyntaxAssertions.assertParsesWithoutRecovery(source);
-                }))
-                .toList();
+            .filter(entry -> entry.kind().equals("valid"))
+            .map(entry -> DynamicTest.dynamicTest("syntax strict: " + entry.relativePath(), () -> {
+                String source = readCorpusSource(entry);
+                JavaSyntaxAssertions.assertParsesWithoutRecovery(source);
+            }))
+            .toList();
     }
 
     @TestFactory
     List<DynamicTest> recoveryCorpusProducesRecoveryMarkersAndSyntaxTrees() throws IOException {
         return manifestEntries().stream()
-                .filter(entry -> entry.kind().equals("recovery"))
-                .map(entry -> DynamicTest.dynamicTest("recovery: " + entry.relativePath(), () -> {
-                    String source = readCorpusSource(entry);
-                    JavaSyntaxAssertions.assertParsesWithRecovery(source);
-                }))
-                .toList();
+            .filter(entry -> entry.kind().equals("recovery"))
+            .map(entry -> DynamicTest.dynamicTest("recovery: " + entry.relativePath(), () -> {
+                String source = readCorpusSource(entry);
+                JavaSyntaxAssertions.assertParsesWithRecovery(source);
+            }))
+            .toList();
     }
 
     private static List<CorpusEntry> manifestEntries() throws IOException {
@@ -63,13 +63,13 @@ class JavaParserCorpusTest {
         assertEquals(MANIFEST_HEADER, lines.get(0).trim(), "Unexpected corpus manifest header");
 
         List<CorpusEntry> entries = lines.stream()
-                .skip(1)
-                .map(String::trim)
-                .filter(line -> !line.isEmpty())
-                .filter(line -> !line.startsWith("#"))
-                .map(JavaParserCorpusTest::parseManifestLine)
-                .sorted(Comparator.comparing(CorpusEntry::relativePath))
-                .toList();
+            .skip(1)
+            .map(String::trim)
+            .filter(line -> !line.isEmpty())
+            .filter(line -> !line.startsWith("#"))
+            .map(JavaParserCorpusTest::parseManifestLine)
+            .sorted(Comparator.comparing(CorpusEntry::relativePath))
+            .toList();
         assertFalse(entries.isEmpty(), "Corpus manifest has no entries: " + manifestPath);
         return List.copyOf(entries);
     }
@@ -97,23 +97,22 @@ class JavaParserCorpusTest {
     }
 
     private record CorpusEntry(
-            String relativePath,
-            String kind,
-            String features
-    ) {
+        String relativePath,
+        String kind,
+        String features) {
     }
 
     private static Path corpusRoot() {
         URL url = Objects.requireNonNull(
-                JavaParserCorpusTest.class.getResource(CORPUS_RESOURCE_ROOT),
-                "Missing parser corpus resources at " + CORPUS_RESOURCE_ROOT
-        );
+            JavaParserCorpusTest.class.getResource(CORPUS_RESOURCE_ROOT),
+            "Missing parser corpus resources at " + CORPUS_RESOURCE_ROOT);
         try {
             return Path.of(url.toURI());
         } catch (URISyntaxException exception) {
             throw new IllegalStateException("Invalid corpus resource URI: " + url, exception);
         } catch (IllegalArgumentException exception) {
-            throw new UncheckedIOException(new IOException("Unable to resolve corpus resource path: " + url, exception));
+            throw new UncheckedIOException(
+                new IOException("Unable to resolve corpus resource path: " + url, exception));
         }
     }
 }

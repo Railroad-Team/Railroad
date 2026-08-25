@@ -141,7 +141,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             if (event.getCode() == KeyCode.N && event.isControlDown()) {
                 event.consume();
 
-                CreateFileDialog.open(getScene().getWindow(), item.getPath(), event.isShiftDown() ? FileCreateType.FOLDER : FileCreateType.FILE);
+                CreateFileDialog.open(getScene().getWindow(), item.getPath(),
+                    event.isShiftDown() ? FileCreateType.FOLDER : FileCreateType.FILE);
                 return;
             }
 
@@ -205,7 +206,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
                 // we need to find the cells that match the path and set them to not cut
                 TreeItem<PathItem> rootItem = treeView.getRoot();
-                TreeItem<PathItem> item = ((ProjectExplorerPane) treeView.getParent()).findOrCreateTreeItem(rootItem, path);
+                TreeItem<PathItem> item = ((ProjectExplorerPane) treeView.getParent()).findOrCreateTreeItem(rootItem,
+                    path);
                 if (item == null)
                     continue;
 
@@ -300,9 +302,9 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         if (support == null) {
             FileUtils.openInDefaultApplication(path);
             Railroad.EVENT_BUS.publish(new DocumentEvent(
-                new FileSystemDocument(path.getFileName().toString(), path, LanguageSupportRegistry.resolveLanguageId(path)),
-                DocumentEvent.EventType.OPENED
-            ));
+                new FileSystemDocument(path.getFileName().toString(), path,
+                    LanguageSupportRegistry.resolveLanguageId(path)),
+                DocumentEvent.EventType.OPENED));
             return;
         }
 
@@ -332,7 +334,9 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             EditorOpenView editorOpenView = support.open(project, path);
             if (editorOpenView == null) {
                 FileUtils.openInDefaultApplication(path);
-                Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(path.getFileName().toString(), path, support.languageId()), DocumentEvent.EventType.OPENED));
+                Railroad.EVENT_BUS.publish(
+                    new DocumentEvent(new FileSystemDocument(path.getFileName().toString(), path, support.languageId()),
+                        DocumentEvent.EventType.OPENED));
                 return;
             }
 
@@ -511,9 +515,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 addPathToTree(path);
             } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
                 removePathFromTree(path);
-            }/* else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-
-            }*/
+            } /*
+               * else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
+               *
+               * }
+               */
 
             String searchValue = searchField.getText();
             if (!searchValue.isBlank()) {
@@ -530,7 +536,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             if (item != null && item.isLeaf()) {
                 Dragboard dragboard = cell.startDragAndDrop(TransferMode.COPY);
                 var content = new ClipboardContent();
-                @SuppressWarnings("ArraysAsListWithZeroOrOneArgument") // Using List.of would produce an unmodifiable list
+                @SuppressWarnings("ArraysAsListWithZeroOrOneArgument") // Using List.of would produce an unmodifiable
+                                                                       // list
                 List<File> files = Arrays.asList(item.getValue().getPath().toFile());
                 content.putFiles(files);
                 dragboard.setContent(content);
@@ -540,7 +547,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         cell.setOnDragOver(event -> {
             TreeItem<PathItem> item = cell.getTreeItem();
-            if ((item != null && !item.isLeaf()) && event.getGestureSource() != cell && event.getDragboard().hasFiles()) {
+            if ((item != null && !item.isLeaf()) && event.getGestureSource() != cell
+                && event.getDragboard().hasFiles()) {
                 Path targetPath = cell.getTreeItem().getValue().getPath();
                 var sourceCell = (PathTreeCell) event.getGestureSource();
                 Path sourceParentPath = sourceCell.getTreeItem().getValue().getPath().getParent();
@@ -554,7 +562,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         cell.setOnDragEntered(event -> {
             TreeItem<PathItem> item = cell.getTreeItem();
-            if ((item != null && !item.isLeaf()) && event.getGestureSource() != cell && event.getDragboard().hasFiles()) {
+            if ((item != null && !item.isLeaf()) && event.getGestureSource() != cell
+                && event.getDragboard().hasFiles()) {
                 Path targetPath = cell.getTreeItem().getValue().getPath();
                 var sourceCell = (PathTreeCell) event.getGestureSource(); // TODO: This breaks if from external source
                 Path sourceParentPath = sourceCell.getTreeItem().getValue().getPath().getParent();
@@ -578,8 +587,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 Path sourcePath = dragboard.getFiles().getFirst().toPath();
                 var targetPath = Path.of(
                     cell.getTreeItem().getValue().getPath().toAbsolutePath().toString(),
-                    sourcePath.getFileName().toString()
-                );
+                    sourcePath.getFileName().toString());
 
                 if (Files.exists(targetPath, LinkOption.NOFOLLOW_LINKS)) {
                     Platform.runLater(() -> {
@@ -681,9 +689,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
     private boolean isPathMatched(Path path, List<Path> matchedPaths) {
         for (Path matchedPath : matchedPaths) {
-            if (matchedPath.startsWith(path)) {
+            if (matchedPath.startsWith(path))
                 return true;
-            }
         }
 
         return false;
@@ -702,7 +709,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 }
 
                 @Override
-                public @NotNull FileVisitResult preVisitDirectory(@NotNull Path dir, @NotNull BasicFileAttributes attrs) {
+                public @NotNull FileVisitResult preVisitDirectory(@NotNull Path dir,
+                    @NotNull BasicFileAttributes attrs) {
                     addPathToTree(dir);
                     return FileVisitResult.CONTINUE;
                 }
@@ -730,7 +738,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private void addPathToTree(Path path) {
         TreeItem<PathItem> parentItem = findTreeItem(path.getParent());
         if (parentItem != null && isMissingPath(parentItem, path)) {
-            PathItem newItem = new PathItem(path);
+            var newItem = new PathItem(path);
             TreeItem<PathItem> newTreeItem = new PathTreeItem(newItem);
             parentItem.getChildren().add(newTreeItem);
             sortTreeItems(parentItem);
@@ -751,23 +759,20 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     private TreeItem<PathItem> findTreeItemRecursive(TreeItem<PathItem> currentItem, Path path) {
-        if (currentItem.getValue().getPath().equals(path)) {
+        if (currentItem.getValue().getPath().equals(path))
             return currentItem;
-        }
 
         for (TreeItem<PathItem> child : getLoadedChildren(currentItem)) {
             TreeItem<PathItem> result = findTreeItemRecursive(child, path);
-            if (result != null) {
+            if (result != null)
                 return result;
-            }
         }
         return null;
     }
 
     private static ObservableList<TreeItem<PathItem>> getLoadedChildren(TreeItem<PathItem> item) {
-        if (item instanceof PathTreeItem pathTreeItem && !pathTreeItem.areChildrenLoaded()) {
+        if (item instanceof PathTreeItem pathTreeItem && !pathTreeItem.areChildrenLoaded())
             return FXCollections.emptyObservableList();
-        }
 
         return item.getChildren();
     }
@@ -783,9 +788,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
     private boolean isMissingPath(TreeItem<PathItem> parentItem, Path path) {
         for (TreeItem<PathItem> child : parentItem.getChildren()) {
-            if (child.getValue().getPath().equals(path)) {
+            if (child.getValue().getPath().equals(path))
                 return false;
-            }
         }
 
         return true;

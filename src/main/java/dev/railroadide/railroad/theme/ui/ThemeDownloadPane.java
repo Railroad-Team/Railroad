@@ -88,7 +88,7 @@ public class ThemeDownloadPane {
         refreshButton.setIcon(FontAwesomeSolid.SYNC_ALT);
         refreshButton.setButtonSize(ButtonSize.SMALL);
         refreshButton.setVariant(ButtonVariant.GHOST);
-        refreshButton.setOnAction($ -> loadThemes());
+        refreshButton.setOnAction(_ -> loadThemes());
 
         sectionHeader.getChildren().addAll(themesLabel, refreshButton);
 
@@ -124,7 +124,8 @@ public class ThemeDownloadPane {
 
         // Load themes in background to avoid blocking UI
         CompletableFuture.runAsync(() -> {
-            List<Theme> themes = ThemeDownloadManager.fetchThemes("https://api.github.com/repos/Railroad-Team/Themes/contents");
+            List<Theme> themes = ThemeDownloadManager
+                .fetchThemes("https://api.github.com/repos/Railroad-Team/Themes/contents");
 
             Platform.runLater(() -> {
                 themeListView.getItems().clear();

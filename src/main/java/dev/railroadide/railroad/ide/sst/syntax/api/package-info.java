@@ -12,12 +12,13 @@
  * <p>
  * Prefer this package when writing inspections. It gives you:
  * <ul>
- *     <li>stable source offsets for diagnostics</li>
- *     <li>direct access to parser kinds and tokens</li>
- *     <li>a tree shape that matches the semantic model</li>
+ * <li>stable source offsets for diagnostics</li>
+ * <li>direct access to parser kinds and tokens</li>
+ * <li>a tree shape that matches the semantic model</li>
  * </ul>
  * <p>
  * A common inspection flow is:
+ *
  * <pre>{@code
  * SyntaxTree tree = context.syntaxTree();
  * SyntaxNode root = tree.root();

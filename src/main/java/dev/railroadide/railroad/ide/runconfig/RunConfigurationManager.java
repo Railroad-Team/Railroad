@@ -129,8 +129,8 @@ public class RunConfigurationManager {
     /**
      * Checks if a run configuration name is duplicate within the same type.
      *
-     * @param name         The name to check.
-     * @param type         The run configuration type.
+     * @param name The name to check.
+     * @param type The run configuration type.
      * @param excludeUUIDs UUIDs to exclude from the check.
      * @return True if the name can be accepted, false otherwise.
      */
@@ -164,7 +164,8 @@ public class RunConfigurationManager {
                     RunConfiguration<?> config = RunConfiguration.fromJson(element.getAsJsonObject());
                     runConfigurations.add(config);
                 } catch (Exception exception) {
-                    Railroad.LOGGER.error("Failed to load run configuration for project: {}", this.project.path(), exception);
+                    Railroad.LOGGER.error("Failed to load run configuration for project: {}", this.project.path(),
+                        exception);
                 }
             }
 

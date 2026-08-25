@@ -34,10 +34,10 @@ public final class JavaProjectSemanticIndexer {
 
         try (Stream<Path> paths = Files.walk(projectRoot)) {
             List<Path> javaFiles = paths
-                    .filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().endsWith(".java"))
-                    .sorted(Comparator.naturalOrder())
-                    .toList();
+                .filter(Files::isRegularFile)
+                .filter(path -> path.getFileName().toString().endsWith(".java"))
+                .sorted(Comparator.naturalOrder())
+                .toList();
             return build(javaFiles);
         } catch (IOException exception) {
             throw new UncheckedIOException("Failed to build semantic index for " + projectRoot, exception);
@@ -61,10 +61,12 @@ public final class JavaProjectSemanticIndexer {
         ExecutorService executor = Executors.newFixedThreadPool(parallelism);
         List<Future<JavaProjectSemanticIndex.SourceFileIndex>> futures = new ArrayList<>(files.size());
         try {
-            for (Path sourceFile : files)
+            for (Path sourceFile : files) {
                 futures.add(executor.submit(() -> indexFile(sourceFile)));
-            for (Future<JavaProjectSemanticIndex.SourceFileIndex> future : futures)
+            }
+            for (Future<JavaProjectSemanticIndex.SourceFileIndex> future : futures) {
                 builder.putFile(future.get());
+            }
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Java project indexing was interrupted", exception);

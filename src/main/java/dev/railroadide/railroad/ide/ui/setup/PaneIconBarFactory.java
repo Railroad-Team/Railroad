@@ -29,8 +29,7 @@ public final class PaneIconBarFactory {
         SplitPane split,
         Orientation orientation,
         int originalIndex,
-        Map<String, String> iconsByName
-    ) {
+        Map<String, String> iconsByName) {
         var bar = orientation == Orientation.HORIZONTAL ? new RRHBox(4) : new RRVBox(4);
         bar.getStyleClass().add("icon-bar-" + orientation.name().toLowerCase(Locale.ROOT));
 
@@ -64,7 +63,9 @@ public final class PaneIconBarFactory {
 
         Consumer<Tab> removeButtonFor = tab -> {
             var btn = btnMap.remove(tab);
-            if (btn != null) bar.getChildren().remove(btn);
+            if (btn != null) {
+                bar.getChildren().remove(btn);
+            }
         };
 
         pane.getTabs().addListener((ListChangeListener<Tab>) change -> {

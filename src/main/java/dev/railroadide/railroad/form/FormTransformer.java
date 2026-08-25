@@ -29,29 +29,30 @@ public class FormTransformer<T extends Node, V, W> {
     /**
      * Creates a new instance of the FormTransformer class.
      *
-     * @param fromComponent         The component to transform from.
+     * @param fromComponent The component to transform from.
      * @param fromComponentFunction The function to get the value from the component.
-     * @param toComponentFunction   The function to set the value to the component.
-     * @param valueMapper           The function to map the value to the component.
+     * @param toComponentFunction The function to set the value to the component.
+     * @param valueMapper The function to map the value to the component.
      */
-    public FormTransformer(@NotNull ObservableValue<T> fromComponent, @NotNull Function<T, V> fromComponentFunction, @NotNull Consumer<W> toComponentFunction, @NotNull Function<V, W> valueMapper) {
+    public FormTransformer(@NotNull ObservableValue<T> fromComponent, @NotNull Function<T, V> fromComponentFunction,
+        @NotNull Consumer<W> toComponentFunction, @NotNull Function<V, W> valueMapper) {
         this(fromComponent, fromComponentFunction, toComponentFunction,
             value -> CompletableFuture.completedFuture(valueMapper.apply(value)),
             false);
     }
 
     public static <T extends Node, V, W> FormTransformer<T, V, W> async(@NotNull ObservableValue<T> fromComponent,
-                                                                        @NotNull Function<T, V> fromComponentFunction,
-                                                                        @NotNull Consumer<W> toComponentFunction,
-                                                                        @NotNull Function<V, CompletableFuture<W>> futureMapper) {
+        @NotNull Function<T, V> fromComponentFunction,
+        @NotNull Consumer<W> toComponentFunction,
+        @NotNull Function<V, CompletableFuture<W>> futureMapper) {
         return new FormTransformer<>(fromComponent, fromComponentFunction, toComponentFunction, futureMapper, true);
     }
 
     private FormTransformer(@NotNull ObservableValue<T> fromComponent,
-                            @NotNull Function<T, V> fromComponentFunction,
-                            @NotNull Consumer<W> toComponentFunction,
-                            @NotNull Function<V, CompletableFuture<W>> futureMapper,
-                            boolean asynchronous) {
+        @NotNull Function<T, V> fromComponentFunction,
+        @NotNull Consumer<W> toComponentFunction,
+        @NotNull Function<V, CompletableFuture<W>> futureMapper,
+        boolean asynchronous) {
         this.fromComponent.bind(fromComponent);
         this.fromComponentFunction = fromComponentFunction;
         this.toComponentFunction = toComponentFunction;
@@ -64,12 +65,14 @@ public class FormTransformer<T extends Node, V, W> {
      */
     public void transformSync() {
         if (asynchronous) {
-            Railroad.LOGGER.warn("FormTransformer#transformSync called on asynchronous transformer; falling back to async execution");
+            Railroad.LOGGER.warn(
+                "FormTransformer#transformSync called on asynchronous transformer; falling back to async execution");
             transform();
             return;
         }
 
-        CompletableFuture<W> future = this.futureMapper.apply(this.fromComponentFunction.apply(this.fromComponent.get()));
+        CompletableFuture<W> future = this.futureMapper
+            .apply(this.fromComponentFunction.apply(this.fromComponent.get()));
         if (future == null)
             return;
 

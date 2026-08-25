@@ -29,9 +29,8 @@ public final class GitLog {
     }
 
     private static void configure() {
-        if (!(LoggerFactory.getILoggerFactory() instanceof LoggerContext context)) {
+        if (!(LoggerFactory.getILoggerFactory() instanceof LoggerContext context))
             return;
-        }
 
         var gitLogger = context.getLogger(LOGGER_NAME);
         if (gitLogger.getAppender(APPENDER_NAME) == null) {

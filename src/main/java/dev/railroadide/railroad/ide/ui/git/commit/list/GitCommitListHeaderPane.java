@@ -20,8 +20,7 @@ public class GitCommitListHeaderPane extends RRVBox {
 
         this.searchField = new RRTextField("railroad.git.commit.search.placeholder");
         this.searchField.getStyleClass().add("git-commit-search-field");
-        this.searchField.textProperty().addListener((obs, oldText, newText) ->
-            commitListView.setSearchFilter(newText));
+        this.searchField.textProperty().addListener((obs, oldText, newText) -> commitListView.setSearchFilter(newText));
 
         searchVbox.getChildren().addAll(searchLabel, this.searchField);
         getChildren().add(searchVbox);

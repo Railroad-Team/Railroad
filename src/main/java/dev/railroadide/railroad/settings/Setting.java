@@ -147,7 +147,7 @@ public class Setting<T> {
      * Constructs a new Setting builder with the specified type and ID.
      *
      * @param type The class type of the setting's value.
-     * @param id   The unique identifier for the setting.
+     * @param id The unique identifier for the setting.
      * @return A new Builder instance for creating a Setting with the specified type and ID.
      */
     public static <T> Builder<T> builder(Class<T> type, String id) {
@@ -168,15 +168,17 @@ public class Setting<T> {
     /**
      * Constructs a new Setting instance.
      *
-     * @param id           Unique identifier for the setting.
-     * @param treePath     The tree path for the setting.
-     * @param codec        The codec used for serialization/deserialization.
-     * @param type         The type of the setting's value.
-     * @param canBeNull    Indicates if the setting's value can be null.
+     * @param id Unique identifier for the setting.
+     * @param treePath The tree path for the setting.
+     * @param codec The codec used for serialization/deserialization.
+     * @param type The type of the setting's value.
+     * @param canBeNull Indicates if the setting's value can be null.
      * @param defaultValue The default value for the setting, can be null if allowed.
      */
-    public Setting(String id, String treePath, SettingCodec<T, ?> codec, Class<T> type, boolean canBeNull, @Nullable T defaultValue, SettingCategory category,
-                   @Nullable String title, @Nullable String description, boolean hasTitle, boolean hasDescription, boolean persisted) {
+    public Setting(String id, String treePath, SettingCodec<T, ?> codec, Class<T> type, boolean canBeNull,
+        @Nullable T defaultValue, SettingCategory category,
+        @Nullable String title, @Nullable String description, boolean hasTitle, boolean hasDescription,
+        boolean persisted) {
         this.id = id;
         this.treePath = treePath;
         this.codec = codec;
@@ -208,7 +210,8 @@ public class Setting<T> {
      * Gets the current value of the setting wrapped in an Optional.
      * If the value is null and the setting does not allow nulls, it returns an empty Optional.
      *
-     * @return An Optional containing the current value of the setting, or empty if the value is null and cannot be null.
+     * @return An Optional containing the current value of the setting, or empty if the value is null and cannot be
+     *         null.
      */
     public Optional<T> getOptional() {
         return canBeNull ? Optional.ofNullable(value) : Optional.ofNullable(getOrDefaultValue());
@@ -227,11 +230,13 @@ public class Setting<T> {
     }
 
     /**
-     * Gets the current value of the setting, or throws an IllegalStateException with a custom message if the value is null.
+     * Gets the current value of the setting, or throws an IllegalStateException with a custom message if the value is
+     * null.
      *
      * @param message The message to include in the exception if the value is null.
      * @return The current value of the setting.
-     * @throws IllegalStateException If the value is null and cannot be null, or if the exception supplier throws an exception.
+     * @throws IllegalStateException If the value is null and cannot be null, or if the exception supplier throws an
+     *             exception.
      */
     public T getOrThrow(String message) throws IllegalStateException {
         return getOptional().orElseThrow(() -> new IllegalStateException(message));
@@ -364,7 +369,8 @@ public class Setting<T> {
             setValue(value);
             return value;
         } catch (ClassCastException exception) {
-            throw new IllegalStateException("Codec for setting '" + this.id + "' does not support reading from node", exception);
+            throw new IllegalStateException("Codec for setting '" + this.id + "' does not support reading from node",
+                exception);
         }
     }
 

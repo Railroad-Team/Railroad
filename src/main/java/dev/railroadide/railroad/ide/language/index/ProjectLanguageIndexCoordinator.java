@@ -23,14 +23,14 @@ public final class ProjectLanguageIndexCoordinator {
     private final List<LanguageSupport> supports;
 
     public ProjectLanguageIndexCoordinator(Project project) {
-        this(new DefaultProjectIndexContextResolver().resolve(project), Services.PROJECT_LANGUAGE_INDEX_SERVICE, LanguageSupportRegistry.all());
+        this(new DefaultProjectIndexContextResolver().resolve(project), Services.PROJECT_LANGUAGE_INDEX_SERVICE,
+            LanguageSupportRegistry.all());
     }
 
     public ProjectLanguageIndexCoordinator(
         ProjectIndexContext context,
         ProjectLanguageIndexService indexService,
-        Collection<LanguageSupport> supports
-    ) {
+        Collection<LanguageSupport> supports) {
         this.context = Objects.requireNonNull(context, "context");
         this.indexService = Objects.requireNonNull(indexService, "indexService");
         this.supports = List.copyOf(Objects.requireNonNull(supports, "supports"));
@@ -48,8 +48,7 @@ public final class ProjectLanguageIndexCoordinator {
                     "Failed to warm project index for language {} in {}",
                     support.languageId(),
                     context.projectRoot(),
-                    exception
-                );
+                    exception);
             }
 
             try {
@@ -59,8 +58,7 @@ public final class ProjectLanguageIndexCoordinator {
                     "Failed to warm additional indexes for language {} in {}",
                     support.languageId(),
                     context.projectRoot(),
-                    exception
-                );
+                    exception);
             }
         }
     }
@@ -90,8 +88,7 @@ public final class ProjectLanguageIndexCoordinator {
                 "Failed to update project index for language {} and path {}",
                 support.languageId(),
                 path,
-                exception
-            );
+                exception);
         }
     }
 

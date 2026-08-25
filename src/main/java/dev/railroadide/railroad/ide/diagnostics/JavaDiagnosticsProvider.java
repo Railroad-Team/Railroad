@@ -24,7 +24,8 @@ import java.util.Objects;
 /**
  * Diagnostics provider backed by the SST semantic analyzer.
  */
-public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable JavaSymbolIndex projectIndex) implements DiagnosticsProvider {
+public record JavaDiagnosticsProvider(Project project, Path filePath,
+    @Nullable JavaSymbolIndex projectIndex) implements DiagnosticsProvider {
     public JavaDiagnosticsProvider(Path filePath) {
         this(null, filePath, null);
     }
@@ -84,17 +85,18 @@ public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable 
                 column,
                 diagnostic.message(),
                 diagnostic.code(),
-                sourceFile
-            ));
+                sourceFile));
         }
 
         return List.copyOf(diagnostics);
     }
 
-    private List<SemanticDiagnostic> runRegisteredInspections(String document, SemanticModel semanticModel, JavaSymbolIndex symbolIndex) {
+    private List<SemanticDiagnostic> runRegisteredInspections(String document, SemanticModel semanticModel,
+        JavaSymbolIndex symbolIndex) {
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
-        JavaRuleContext context = new JavaRuleContext(filePath, document, semanticModel, symbolIndex);
-        JavaInspectionReporter reporter = diagnostic -> diagnostics.add(Objects.requireNonNull(diagnostic, "diagnostic"));
+        var context = new JavaRuleContext(filePath, document, semanticModel, symbolIndex);
+        JavaInspectionReporter reporter = diagnostic -> diagnostics
+            .add(Objects.requireNonNull(diagnostic, "diagnostic"));
 
         for (JavaInspectionRuleProvider provider : sortedRuleProviders()) {
             if (provider == null)
@@ -103,7 +105,8 @@ public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable 
             try {
                 JavaInspectionRuleEngine.runRules(provider, context, reporter);
             } catch (Exception exception) {
-                Railroad.LOGGER.error("Plugin Java inspection rule provider '{}' failed for {}", provider.id(), filePath, exception);
+                Railroad.LOGGER.error("Plugin Java inspection rule provider '{}' failed for {}", provider.id(),
+                    filePath, exception);
             }
         }
 
@@ -112,17 +115,18 @@ public record JavaDiagnosticsProvider(Project project, Path filePath, @Nullable 
 
     private static List<JavaInspectionRuleProvider> sortedRuleProviders() {
         return JavaInspectionRegistries.ruleProviderEntries().entrySet().stream()
-                .sorted(java.util.Map.Entry.comparingByKey())
-                .map(java.util.Map.Entry::getValue)
-                .toList();
+            .sorted(java.util.Map.Entry.comparingByKey())
+            .map(java.util.Map.Entry::getValue)
+            .toList();
     }
 
     private static long computeLine(char[] source, int position) {
         long line = 1;
         int bound = Math.clamp(source.length, 0, position);
         for (int index = 0; index < bound; index++) {
-            if (source[index] == '\n')
+            if (source[index] == '\n') {
                 line++;
+            }
         }
         return line;
     }

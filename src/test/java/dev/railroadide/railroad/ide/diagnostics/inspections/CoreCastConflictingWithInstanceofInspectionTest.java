@@ -22,10 +22,9 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -40,8 +39,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -56,8 +54,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -72,8 +69,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -88,8 +84,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -104,8 +99,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -124,8 +118,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -141,8 +134,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -159,8 +151,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -176,8 +167,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -192,10 +182,9 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -210,8 +199,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -228,10 +216,9 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -247,10 +234,9 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -266,10 +252,9 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -284,8 +269,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -300,8 +284,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -318,10 +301,9 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -336,10 +318,9 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -354,10 +335,9 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
 
     @Test
@@ -372,8 +352,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
+        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())));
     }
 
     @Test
@@ -390,11 +369,9 @@ class CoreCastConflictingWithInstanceofInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
-                && d.message().contains("Integer")
-                && d.message().contains("String")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_CAST_CONFLICTING_WITH_INSTANCEOF".equals(d.code())
+            && d.message().contains("Integer")
+            && d.message().contains("String")));
     }
-
 
 }

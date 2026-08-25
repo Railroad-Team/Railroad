@@ -46,7 +46,7 @@ public class GitRemoteDetailsPane extends RRVBox {
         this.remote.addListener((observable, oldValue, newValue) -> updateContent(newValue));
         this.remote.set(remote);
 
-        fetchElapsedAnimation = new Timeline(new KeyFrame(Duration.seconds(1), $ -> refreshLastFetchedText()));
+        fetchElapsedAnimation = new Timeline(new KeyFrame(Duration.seconds(1), _ -> refreshLastFetchedText()));
         fetchElapsedAnimation.setCycleCount(Timeline.INDEFINITE);
         sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene == null) {
@@ -58,7 +58,8 @@ public class GitRemoteDetailsPane extends RRVBox {
         });
 
         if (this.gitManager != null) {
-            this.gitManager.repoStatusProperty().addListener((obs, oldStatus, newStatus) -> updateContent(this.remote.get()));
+            this.gitManager.repoStatusProperty()
+                .addListener((obs, oldStatus, newStatus) -> updateContent(this.remote.get()));
         }
     }
 
@@ -176,9 +177,8 @@ public class GitRemoteDetailsPane extends RRVBox {
 
     private void refreshLastFetchedText() {
         GitRemote currentRemote = this.remote.get();
-        if (currentRemote == null || gitManager == null) {
+        if (currentRemote == null || gitManager == null)
             return;
-        }
 
         long lastFetchTimestamp = gitManager.getLastFetchTimestamp(currentRemote);
         if (lastFetchTimestamp > 0L) {

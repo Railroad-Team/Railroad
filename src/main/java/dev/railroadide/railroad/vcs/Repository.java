@@ -47,7 +47,7 @@ public class Repository {
      *
      * @param path The local file system path where the repository will be cloned.
      * @return A CompletableFuture that resolves to true if the cloning operation
-     * was successful, or false otherwise.
+     *         was successful, or false otherwise.
      */
     public CompletableFuture<Boolean> cloneRepo(Path path) {
         return this.connection.cloneRepo(this, path);

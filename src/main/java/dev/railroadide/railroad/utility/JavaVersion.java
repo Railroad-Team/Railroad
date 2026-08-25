@@ -63,9 +63,8 @@ public record JavaVersion(int major, int minor) implements Comparable<JavaVersio
     }
 
     public String toReleaseString() {
-        if (major < 45) {
+        if (major < 45)
             return major + "." + minor;
-        }
 
         int releaseNumber = major - 44;
         String base;

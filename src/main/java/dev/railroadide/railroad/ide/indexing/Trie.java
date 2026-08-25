@@ -20,9 +20,8 @@ public class Trie {
         TrieNode node = root;
         for (char c : prefix.toCharArray()) {
             node = node.children.get(c);
-            if (node == null) {
+            if (node == null)
                 return results;
-            }
         }
 
         findAllWords(node, new StringBuilder(prefix), results);

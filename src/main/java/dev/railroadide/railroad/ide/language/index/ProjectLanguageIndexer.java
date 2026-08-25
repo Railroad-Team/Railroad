@@ -3,10 +3,7 @@ package dev.railroadide.railroad.ide.language.index;
 import java.nio.file.Path;
 import java.util.Collection;
 
-public interface ProjectLanguageIndexer<
-    I extends ProjectLanguageIndex<F>,
-    F extends LanguageFileIndex
-> {
+public interface ProjectLanguageIndexer<I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> {
     String languageId();
 
     boolean supports(Path file);

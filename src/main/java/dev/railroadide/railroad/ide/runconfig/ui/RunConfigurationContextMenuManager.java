@@ -11,7 +11,8 @@ import javafx.scene.control.ContextMenu;
 public final class RunConfigurationContextMenuManager {
     private static ContextMenu currentlyShown;
 
-    private RunConfigurationContextMenuManager() {}
+    private RunConfigurationContextMenuManager() {
+    }
 
     public static synchronized void show(Node anchor, ContextMenu menu, Side side) {
         if (currentlyShown != null && currentlyShown != menu) {

@@ -18,7 +18,7 @@ public interface SettingsService {
     /**
      * Retrieves the value of a given setting.
      *
-     * @param <T>     The type of the setting's value.
+     * @param <T> The type of the setting's value.
      * @param setting The setting whose value is to be retrieved.
      * @return The value of the specified setting.
      */
@@ -27,8 +27,8 @@ public interface SettingsService {
     /**
      * Retrieves the value of a setting by its unique identifier and type.
      *
-     * @param <V>  The type of the setting's value.
-     * @param id   The unique identifier of the setting.
+     * @param <V> The type of the setting's value.
+     * @param id The unique identifier of the setting.
      * @param type The class type of the setting's value.
      * @return The value of the setting.
      */
@@ -37,8 +37,8 @@ public interface SettingsService {
     /**
      * Sets the value of a setting by its unique identifier and type.
      *
-     * @param <T>   The type of the setting's value.
-     * @param id    The unique identifier of the setting.
+     * @param <T> The type of the setting's value.
+     * @param id The unique identifier of the setting.
      * @param clazz The class type of the setting's value.
      * @param value The new value to set for the setting.
      */
@@ -55,7 +55,7 @@ public interface SettingsService {
     /**
      * Sets the boolean value of a setting by its unique identifier.
      *
-     * @param id    The unique identifier of the setting.
+     * @param id The unique identifier of the setting.
      * @param value The new boolean value to set for the setting.
      */
     void setBooleanValue(String id, boolean value);
@@ -71,7 +71,7 @@ public interface SettingsService {
     /**
      * Sets the string value of a setting by its unique identifier.
      *
-     * @param id    The unique identifier of the setting.
+     * @param id The unique identifier of the setting.
      * @param value The new string value to set for the setting.
      */
     void setStringValue(String id, String value);
@@ -87,7 +87,7 @@ public interface SettingsService {
     /**
      * Sets the integer value of a setting by its unique identifier.
      *
-     * @param id    The unique identifier of the setting.
+     * @param id The unique identifier of the setting.
      * @param value The new integer value to set for the setting.
      */
     void setIntValue(String id, int value);
@@ -103,7 +103,7 @@ public interface SettingsService {
     /**
      * Sets the double value of a setting by its unique identifier.
      *
-     * @param id    The unique identifier of the setting.
+     * @param id The unique identifier of the setting.
      * @param value The new double value to set for the setting.
      */
     void setDoubleValue(String id, double value);
@@ -119,7 +119,7 @@ public interface SettingsService {
     /**
      * Sets the float value of a setting by its unique identifier.
      *
-     * @param id    The unique identifier of the setting.
+     * @param id The unique identifier of the setting.
      * @param value The new float value to set for the setting.
      */
     void setFloatValue(String id, float value);
@@ -135,7 +135,7 @@ public interface SettingsService {
     /**
      * Sets the long value of a setting by its unique identifier.
      *
-     * @param id    The unique identifier of the setting.
+     * @param id The unique identifier of the setting.
      * @param value The new long value to set for the setting.
      */
     void setLongValue(String id, long value);
@@ -143,8 +143,8 @@ public interface SettingsService {
     /**
      * Retrieves a setting by its unique identifier and type.
      *
-     * @param <T>  The type of the setting's value.
-     * @param id   The unique identifier of the setting.
+     * @param <T> The type of the setting's value.
+     * @param id The unique identifier of the setting.
      * @param type The class type of the setting's value.
      * @return The setting associated with the given identifier and type.
      */
@@ -154,7 +154,7 @@ public interface SettingsService {
      * Retrieves the codec associated with a setting by its unique identifier.
      *
      * @param <T> The type of the setting's value.
-     * @param id  The unique identifier of the setting.
+     * @param id The unique identifier of the setting.
      * @return The codec associated with the setting.
      */
     <T> SettingCodec<T, ?> getCodec(String id);

@@ -11,13 +11,11 @@ import java.util.Objects;
 public record ProjectIndexContext(
     Project project,
     Path projectRoot,
-    Map<String, LanguageIndexContext> languages
-) {
+    Map<String, LanguageIndexContext> languages) {
     public ProjectIndexContext(
         Project project,
         Path projectRoot,
-        Map<String, LanguageIndexContext> languages
-    ) {
+        Map<String, LanguageIndexContext> languages) {
         this.project = Objects.requireNonNull(project, "project");
         this.projectRoot = normalize(projectRoot);
         this.languages = Map.copyOf(Objects.requireNonNull(languages, "languages"));

@@ -21,9 +21,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
         "catch",
         "synchronized",
         "try",
-        "do"
-    );
-
+        "do");
 
     public JavaCodeEditorPane(Project project, Path item, CodeEditorConfig config) {
         super(project, item, config);
@@ -83,8 +81,9 @@ public class JavaCodeEditorPane extends CodeEditorPane {
             char next = index + 1 < caret ? text.charAt(index + 1) : '\0';
 
             if (inLineComment) {
-                if (current == '\n' || current == '\r')
+                if (current == '\n' || current == '\r') {
                     inLineComment = false;
+                }
                 continue;
             }
 

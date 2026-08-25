@@ -33,9 +33,7 @@ public class CoreAssertionWithSideEffectsInspection implements JavaInspectionRul
                 JavaSemanticRules.ASSERTION_WITH_SIDE_EFFECTS.defaultSeverity(),
                 JavaSemanticRules.ASSERTION_WITH_SIDE_EFFECTS.messageTemplate(),
                 Set.of("core", "assertions"),
-                CoreAssertionWithSideEffectsInspection::reportAssertionsWithSideEffects
-            )
-        );
+                CoreAssertionWithSideEffectsInspection::reportAssertionsWithSideEffects));
     }
 
     private static void reportAssertionsWithSideEffects(JavaRuleContext context, JavaInspectionRuleReporter reporter) {

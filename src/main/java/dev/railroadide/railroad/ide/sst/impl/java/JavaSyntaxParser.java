@@ -21,8 +21,7 @@ public final class JavaSyntaxParser {
         JavaSyntaxKinds.ENUM_DECLARATION.id(),
         JavaSyntaxKinds.ANNOTATION_TYPE_DECLARATION.id(),
         JavaSyntaxKinds.RECORD_DECLARATION.id(),
-        JavaSyntaxKinds.EMPTY_TYPE_DECLARATION.id()
-    );
+        JavaSyntaxKinds.EMPTY_TYPE_DECLARATION.id());
     private static final String EOF_KIND_ID = JavaSyntaxKinds.tokenKind(JavaTokenType.EOF).id();
     private static final String MISSING_TOKEN_KIND_ID = SyntaxKind.MISSING_TOKEN.id();
     private static final String MISSING_TOKEN_PREFIX = "JAVA_MISSING_";
@@ -47,16 +46,14 @@ public final class JavaSyntaxParser {
         DocumentId documentId,
         DocumentUri documentUri,
         DocumentVersion documentVersion,
-        CharSequence source
-    ) {
+        CharSequence source) {
         return parse(new TextDocumentSnapshot(
             documentId,
             documentUri,
             documentVersion,
             "java",
             source,
-            StandardCharsets.UTF_8
-        ));
+            StandardCharsets.UTF_8));
     }
 
     public static SyntaxTree parse(TextDocumentSnapshot documentSnapshot) {
@@ -77,8 +74,7 @@ public final class JavaSyntaxParser {
     public static SyntaxTree parse(
         DocumentId documentId,
         DocumentUri documentUri,
-        Lexer<JavaTokenType> lexer
-    ) {
+        Lexer<JavaTokenType> lexer) {
         return parse(documentId, documentUri, DocumentVersion.initial(), lexer);
     }
 
@@ -86,8 +82,7 @@ public final class JavaSyntaxParser {
         DocumentId documentId,
         DocumentUri documentUri,
         DocumentVersion documentVersion,
-        Lexer<JavaTokenType> lexer
-    ) {
+        Lexer<JavaTokenType> lexer) {
         Objects.requireNonNull(documentId, "documentId");
         Objects.requireNonNull(documentUri, "documentUri");
         Objects.requireNonNull(documentVersion, "documentVersion");
@@ -98,15 +93,13 @@ public final class JavaSyntaxParser {
             documentVersion,
             "java",
             SyntaxInternalFactory.sourceText(root),
-            StandardCharsets.UTF_8
-        );
+            StandardCharsets.UTF_8);
         return SyntaxInternalFactory.treeFromGreenRoot(documentSnapshot, root);
     }
 
     public static SyntaxTree parse(
         TextDocumentSnapshot documentSnapshot,
-        Lexer<JavaTokenType> lexer
-    ) {
+        Lexer<JavaTokenType> lexer) {
         documentSnapshot = requireJavaSnapshot(documentSnapshot);
         GreenNode root = new JavaGreenParser(Objects.requireNonNull(lexer, "lexer")).parseGreenTree();
         return SyntaxInternalFactory.treeFromGreenRoot(documentSnapshot, root);
@@ -123,8 +116,7 @@ public final class JavaSyntaxParser {
     public static ParseResult parseWithDiagnostics(
         DocumentId documentId,
         DocumentUri documentUri,
-        CharSequence source
-    ) {
+        CharSequence source) {
         return parseWithDiagnostics(documentId, documentUri, DocumentVersion.initial(), source);
     }
 
@@ -132,16 +124,14 @@ public final class JavaSyntaxParser {
         DocumentId documentId,
         DocumentUri documentUri,
         DocumentVersion documentVersion,
-        CharSequence source
-    ) {
+        CharSequence source) {
         return parseWithDiagnostics(new TextDocumentSnapshot(
             documentId,
             documentUri,
             documentVersion,
             "java",
             source,
-            StandardCharsets.UTF_8
-        ));
+            StandardCharsets.UTF_8));
     }
 
     public static ParseResult parseWithDiagnostics(TextDocumentSnapshot documentSnapshot) {
@@ -160,8 +150,7 @@ public final class JavaSyntaxParser {
     public static ParseResult parseWithDiagnostics(
         DocumentId documentId,
         DocumentUri documentUri,
-        Lexer<JavaTokenType> lexer
-    ) {
+        Lexer<JavaTokenType> lexer) {
         return parseWithDiagnostics(documentId, documentUri, DocumentVersion.initial(), lexer);
     }
 
@@ -169,16 +158,14 @@ public final class JavaSyntaxParser {
         DocumentId documentId,
         DocumentUri documentUri,
         DocumentVersion documentVersion,
-        Lexer<JavaTokenType> lexer
-    ) {
+        Lexer<JavaTokenType> lexer) {
         SyntaxTree tree = parse(documentId, documentUri, documentVersion, lexer);
         return new ParseResult(tree, collectSyntaxDiagnostics(tree.root()));
     }
 
     public static ParseResult parseWithDiagnostics(
         TextDocumentSnapshot documentSnapshot,
-        Lexer<JavaTokenType> lexer
-    ) {
+        Lexer<JavaTokenType> lexer) {
         SyntaxTree tree = parse(documentSnapshot, lexer);
         return new ParseResult(tree, collectSyntaxDiagnostics(tree.root()));
     }
@@ -187,8 +174,7 @@ public final class JavaSyntaxParser {
         SyntaxTree previousTree,
         CharSequence previousSource,
         CharSequence newSource,
-        TextEdit edit
-    ) {
+        TextEdit edit) {
         Objects.requireNonNull(previousTree, "previousTree");
         verifyPreviousSource(previousTree, previousSource);
         TextDocumentSnapshot previousSnapshot = previousTree.documentSnapshot();
@@ -198,8 +184,7 @@ public final class JavaSyntaxParser {
             previousSnapshot.version().next(),
             previousSnapshot.languageId(),
             newSource,
-            previousSnapshot.encoding()
-        ), edit);
+            previousSnapshot.encoding()), edit);
     }
 
     public static IncrementalParseResult parseIncremental(
@@ -207,8 +192,7 @@ public final class JavaSyntaxParser {
         DocumentVersion newVersion,
         CharSequence previousSource,
         CharSequence newSource,
-        TextEdit edit
-    ) {
+        TextEdit edit) {
         Objects.requireNonNull(previousTree, "previousTree");
         verifyPreviousSource(previousTree, previousSource);
         TextDocumentSnapshot previousSnapshot = previousTree.documentSnapshot();
@@ -218,8 +202,7 @@ public final class JavaSyntaxParser {
             Objects.requireNonNull(newVersion, "newVersion"),
             previousSnapshot.languageId(),
             newSource,
-            previousSnapshot.encoding()
-        ), edit);
+            previousSnapshot.encoding()), edit);
     }
 
     /**
@@ -234,8 +217,7 @@ public final class JavaSyntaxParser {
     public static IncrementalParseResult parseIncremental(
         SyntaxTree previousTree,
         TextDocumentSnapshot newSnapshot,
-        TextEdit edit
-    ) {
+        TextEdit edit) {
         Objects.requireNonNull(previousTree, "previousTree");
         newSnapshot = requireJavaSnapshot(newSnapshot);
         edit = Objects.requireNonNull(edit, "edit");
@@ -243,11 +225,9 @@ public final class JavaSyntaxParser {
         TextDocumentSnapshot previousSnapshot = previousTree.documentSnapshot();
         if (!newSnapshot.id().equals(previousSnapshot.id()))
             throw new IllegalArgumentException("newSnapshot must have the same document identity as previousTree");
-        if (!newSnapshot.version().isAfter(previousSnapshot.version())) {
+        if (!newSnapshot.version().isAfter(previousSnapshot.version()))
             throw new IllegalArgumentException(
-                "newSnapshot version must be later than previous tree version " + previousSnapshot.version()
-            );
-        }
+                "newSnapshot version must be later than previous tree version " + previousSnapshot.version());
 
         String previousSource = previousSnapshot.text();
         String newSource = newSnapshot.text();
@@ -257,7 +237,8 @@ public final class JavaSyntaxParser {
         validateEdit(edit, oldLength, newLength);
 
         ReusePlan fallbackPlan = planReuse(previousTree, previousSource, newSource, edit);
-        Optional<TopLevelReparseWindow> incrementalWindow = selectTopLevelWindow(previousTree.root(), edit, oldLength, newLength);
+        Optional<TopLevelReparseWindow> incrementalWindow = selectTopLevelWindow(previousTree.root(), edit, oldLength,
+            newLength);
         if (incrementalWindow.isEmpty()) {
             SyntaxTree reparsed = parse(newSnapshot);
             return new IncrementalParseResult(reparsed, fallbackPlan, true);
@@ -272,10 +253,9 @@ public final class JavaSyntaxParser {
                 window.oldReparseEnd(),
                 edit,
                 oldLength,
-                newLength
-            );
+                newLength);
             return new IncrementalParseResult(incrementalTree, incrementalPlan, false);
-        } catch (RuntimeException ignored) {
+        } catch (RuntimeException _) {
             SyntaxTree reparsed = parse(newSnapshot);
             return new IncrementalParseResult(reparsed, fallbackPlan, true);
         }
@@ -285,8 +265,7 @@ public final class JavaSyntaxParser {
         SyntaxTree previousTree,
         CharSequence previousSource,
         CharSequence newSource,
-        TextEdit edit
-    ) {
+        TextEdit edit) {
         Objects.requireNonNull(previousTree, "previousTree");
         Objects.requireNonNull(previousSource, "previousSource");
         Objects.requireNonNull(newSource, "newSource");
@@ -301,13 +280,15 @@ public final class JavaSyntaxParser {
 
         SyntaxNode root = previousTree.root();
         SyntaxNode coveringNode = findSmallestCoveringNode(root, oldEditStart, oldEditEnd);
-        if (coveringNode == null)
+        if (coveringNode == null) {
             coveringNode = root;
+        }
 
         if (coveringNode instanceof SyntaxToken) {
             Optional<SyntaxNode> parent = coveringNode.parent();
-            if (parent.isPresent())
+            if (parent.isPresent()) {
                 coveringNode = parent.get();
+            }
         }
 
         int oldReparseStart = clamp(coveringNode.start(), 0, oldLength);
@@ -321,8 +302,7 @@ public final class JavaSyntaxParser {
         int oldReparseEnd,
         TextEdit edit,
         int oldLength,
-        int newLength
-    ) {
+        int newLength) {
         int clampedOldStart = clamp(oldReparseStart, 0, oldLength);
         int clampedOldEnd = clamp(oldReparseEnd, clampedOldStart, oldLength);
         int newReparseStart = clamp(mapOldOffsetToNew(clampedOldStart, edit), 0, newLength);
@@ -330,7 +310,8 @@ public final class JavaSyntaxParser {
         int delta = edit.lengthDelta();
         List<ReuseCandidate> candidates = new ArrayList<>();
         collectReuseCandidates(root, clampedOldStart, clampedOldEnd, delta, candidates);
-        return new ReusePlan(clampedOldStart, clampedOldEnd, newReparseStart, newReparseEnd, delta, List.copyOf(candidates));
+        return new ReusePlan(clampedOldStart, clampedOldEnd, newReparseStart, newReparseEnd, delta,
+            List.copyOf(candidates));
     }
 
     private static void validateEdit(TextEdit edit, int oldLength, int newLength) {
@@ -343,23 +324,22 @@ public final class JavaSyntaxParser {
             throw new IllegalArgumentException("edit removedLength exceeds previous source length");
 
         int expectedNewLength = oldLength - removedLength + edit.insertedText().length();
-        if (expectedNewLength != newLength) {
+        if (expectedNewLength != newLength)
             throw new IllegalArgumentException("new source length does not match edit delta: expected " +
                 expectedNewLength + ", got " + newLength);
-        }
     }
 
     private static Optional<TopLevelReparseWindow> selectTopLevelWindow(
         SyntaxNode root,
         TextEdit edit,
         int oldLength,
-        int newLength
-    ) {
+        int newLength) {
         List<SyntaxNode> topLevelChildren = root.children();
         if (topLevelChildren.isEmpty())
             return Optional.empty();
 
-        int affectedChildIndex = findAffectedTopLevelChild(topLevelChildren, edit.startOffset(), edit.oldEndOffset(), oldLength);
+        int affectedChildIndex = findAffectedTopLevelChild(topLevelChildren, edit.startOffset(), edit.oldEndOffset(),
+            oldLength);
         if (affectedChildIndex < 0)
             return Optional.empty();
 
@@ -382,14 +362,14 @@ public final class JavaSyntaxParser {
         if (newReparseStart > newReparseEnd)
             return Optional.empty();
 
-        return Optional.of(new TopLevelReparseWindow(affectedChildIndex, oldReparseStart, oldReparseEnd, newReparseStart, newReparseEnd));
+        return Optional.of(new TopLevelReparseWindow(affectedChildIndex, oldReparseStart, oldReparseEnd,
+            newReparseStart, newReparseEnd));
     }
 
     private static SyntaxTree reparseTopLevelTail(
         SyntaxTree previousTree,
         TextDocumentSnapshot newSnapshot,
-        TopLevelReparseWindow window
-    ) {
+        TopLevelReparseWindow window) {
         List<SyntaxNode> previousChildren = previousTree.root().children();
         List<GreenElement> mergedChildren = new ArrayList<>(previousChildren.size());
         for (int index = 0; index < window.startChildIndex(); index++) {
@@ -414,19 +394,16 @@ public final class JavaSyntaxParser {
 
     private static void verifyPreviousSource(SyntaxTree previousTree, CharSequence previousSource) {
         previousSource = Objects.requireNonNull(previousSource, "previousSource");
-        if (!previousTree.documentSnapshot().text().contentEquals(previousSource)) {
+        if (!previousTree.documentSnapshot().text().contentEquals(previousSource))
             throw new IllegalArgumentException(
-                "previousSource must match the immutable snapshot carried by previousTree"
-            );
-        }
+                "previousSource must match the immutable snapshot carried by previousTree");
     }
 
     private static int findAffectedTopLevelChild(
         List<SyntaxNode> topLevelChildren,
         int oldEditStart,
         int oldEditEnd,
-        int oldLength
-    ) {
+        int oldLength) {
         int probeStart = oldEditStart;
         int probeEnd = oldEditEnd;
         if (probeStart == probeEnd) {
@@ -492,8 +469,7 @@ public final class JavaSyntaxParser {
         int oldReparseStart,
         int oldReparseEnd,
         int delta,
-        List<ReuseCandidate> candidates
-    ) {
+        List<ReuseCandidate> candidates) {
         if (node instanceof SyntaxToken || node.width() == 0) {
             for (SyntaxNode child : node.children()) {
                 collectReuseCandidates(child, oldReparseStart, oldReparseEnd, delta, candidates);
@@ -532,16 +508,14 @@ public final class JavaSyntaxParser {
                     "JAVA_ERROR_NODE",
                     "Recovered syntax error node",
                     node.start(),
-                    node.end()
-                ));
+                    node.end()));
             } else if (node instanceof SyntaxToken && isMissingTokenKind(kindId)) {
                 diagnostics.add(new SyntaxDiagnostic(
                     SyntaxDiagnostic.Severity.ERROR,
                     "JAVA_MISSING_TOKEN",
                     "Inserted missing token",
                     node.start(),
-                    node.end()
-                ));
+                    node.end()));
             }
 
             for (SyntaxNode child : node.children()) {
@@ -561,15 +535,13 @@ public final class JavaSyntaxParser {
         int oldReparseStart,
         int oldReparseEnd,
         int newReparseStart,
-        int newReparseEnd
-    ) {
+        int newReparseEnd) {
     }
 
     public record TextEdit(
         int startOffset,
         int removedLength,
-        String insertedText
-    ) {
+        String insertedText) {
         public TextEdit {
             if (startOffset < 0)
                 throw new IllegalArgumentException("startOffset cannot be negative");
@@ -592,8 +564,7 @@ public final class JavaSyntaxParser {
         int oldStartOffset,
         int oldEndOffset,
         int newStartOffset,
-        int newEndOffset
-    ) {
+        int newEndOffset) {
     }
 
     public record ReusePlan(
@@ -602,21 +573,18 @@ public final class JavaSyntaxParser {
         int newReparseStart,
         int newReparseEnd,
         int lengthDelta,
-        List<ReuseCandidate> candidates
-    ) {
+        List<ReuseCandidate> candidates) {
     }
 
     public record IncrementalParseResult(
         SyntaxTree tree,
         ReusePlan reusePlan,
-        boolean fullReparse
-    ) {
+        boolean fullReparse) {
     }
 
     public record ParseResult(
         SyntaxTree tree,
-        List<SyntaxDiagnostic> diagnostics
-    ) {
+        List<SyntaxDiagnostic> diagnostics) {
         public ParseResult {
             tree = Objects.requireNonNull(tree, "tree");
             diagnostics = List.copyOf(Objects.requireNonNull(diagnostics, "diagnostics"));

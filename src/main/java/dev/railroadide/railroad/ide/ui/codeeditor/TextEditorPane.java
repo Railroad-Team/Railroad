@@ -99,7 +99,7 @@ public class TextEditorPane extends CodeArea {
         if (watchService != null) {
             try {
                 watchService.close();
-            } catch (IOException ignored) {
+            } catch (IOException _) {
                 // Nothing to do here
             }
         }
@@ -376,9 +376,9 @@ public class TextEditorPane extends CodeArea {
                 if (!key.reset())
                     break;
             }
-        } catch (InterruptedException ignored) {
+        } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
-        } catch (ClosedWatchServiceException ignored) {
+        } catch (ClosedWatchServiceException _) {
             // watcher closed during shutdown
         }
     }
@@ -441,8 +441,7 @@ public class TextEditorPane extends CodeArea {
             detectChangeType(inserted, removed),
             removed,
             inserted,
-            new DocumentModifiedEvent.Range(start.getKey(), start.getValue(), end.getKey(), end.getValue())
-        );
+            new DocumentModifiedEvent.Range(start.getKey(), start.getValue(), end.getKey(), end.getValue()));
     }
 
     private static DocumentModifiedEvent.Change.Type detectChangeType(String inserted, String removed) {

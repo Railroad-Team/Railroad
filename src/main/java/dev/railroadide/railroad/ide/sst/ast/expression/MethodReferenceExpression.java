@@ -11,11 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record MethodReferenceExpression(
-        Span span,
-        Expression expression,
-        List<TypeRef> typeArguments,
-        NameExpression name
-) implements Expression {
+    Span span,
+    Expression expression,
+    List<TypeRef> typeArguments,
+    NameExpression name) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.METHOD_REFERENCE_EXPRESSION;

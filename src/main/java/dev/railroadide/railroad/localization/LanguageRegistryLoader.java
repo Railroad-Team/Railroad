@@ -33,13 +33,13 @@ public final class LanguageRegistryLoader {
         }
     }
 
-
     private static void discoverFromFileSystem(URL url) throws Exception {
         String protocol = url.getProtocol();
         if ("file".equals(protocol)) {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(url.toURI()), "*.lang")) {
-                for (Path path : stream)
+                for (Path path : stream) {
                     tryRegisterFromFileName(path.getFileName().toString());
+                }
             }
         } else if ("jar".equals(protocol)) {
             String spec = url.toString();
@@ -50,8 +50,9 @@ public final class LanguageRegistryLoader {
             try (FileSystem fileSystem = FileSystems.newFileSystem(jarUri, Map.of())) {
                 Path dir = fileSystem.getPath(inJarPath);
                 try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.lang")) {
-                    for (Path path : stream)
+                    for (Path path : stream) {
                         tryRegisterFromFileName(path.getFileName().toString());
+                    }
                 }
             }
         } else {
@@ -61,17 +62,15 @@ public final class LanguageRegistryLoader {
 
     private static void tryRegisterFromFileName(String fileName) {
         Matcher matcher = FILE_PATTERN.matcher(fileName);
-        if (!matcher.matches()) {
+        if (!matcher.matches())
             return;
-        }
 
         String lang = matcher.group(1);
         String country = matcher.group(2);
 
         String fullCode = (lang + "_" + country).toUpperCase(Locale.ROOT);
-        if (Language.REGISTRY.contains(fullCode)) {
+        if (Language.REGISTRY.contains(fullCode))
             return;
-        }
 
         Locale locale = Locale.forLanguageTag(lang + "-" + country.toUpperCase(Locale.ROOT));
         String displayName = locale.getDisplayName(locale);

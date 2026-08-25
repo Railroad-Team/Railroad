@@ -21,7 +21,8 @@ public record RenameClassesStep(FilesService files) implements CreationStep {
         .addOption(new DefaultConfigurationOption(DefaultPrinterConfiguration.ConfigOption.INDENT_CASE_IN_SWITCH, true))
         .addOption(new DefaultConfigurationOption(DefaultPrinterConfiguration.ConfigOption.PRINT_COMMENTS, true))
         .addOption(new DefaultConfigurationOption(DefaultPrinterConfiguration.ConfigOption.PRINT_JAVADOC, true))
-        .addOption(new DefaultConfigurationOption(DefaultPrinterConfiguration.ConfigOption.SPACE_AROUND_OPERATORS, true));
+        .addOption(
+            new DefaultConfigurationOption(DefaultPrinterConfiguration.ConfigOption.SPACE_AROUND_OPERATORS, true));
 
     @Override
     public String id() {
@@ -88,7 +89,8 @@ public record RenameClassesStep(FilesService files) implements CreationStep {
             reporter.info("Updating client main class content...");
             String clientContent = files.readString(newClientMainClassPath);
             CompilationUnit clientCompilationUnit = StaticJavaParser.parse(clientContent);
-            clientCompilationUnit.getClassByName("ExampleModClient").ifPresent(c -> c.setName(mainClassName + "Client"));
+            clientCompilationUnit.getClassByName("ExampleModClient")
+                .ifPresent(c -> c.setName(mainClassName + "Client"));
             clientCompilationUnit.setPackageDeclaration(groupId + "." + modId);
             files.writeString(newClientMainClassPath, clientCompilationUnit.toString(DEFAULT_PRINTER_CONFIGURATION));
 

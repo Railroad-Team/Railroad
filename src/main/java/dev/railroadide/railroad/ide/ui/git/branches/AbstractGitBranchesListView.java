@@ -58,8 +58,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         Project project,
         String styleClass,
         Function<Project, List<T>> branchProvider,
-        Callback<ListView<T>, ListCell<T>> cellFactory
-    ) {
+        Callback<ListView<T>, ListCell<T>> cellFactory) {
         this.project = project;
 
         Callback<ListView<T>, ListCell<T>> newCellFactory = cellFactory == null ? null : listView -> {
@@ -79,7 +78,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
 
         filterText.addListener((observable, oldValue, newValue) -> {
             String lowerCaseFilter = newValue == null ? "" : newValue.toLowerCase(Locale.ROOT);
-            setItems(new FilteredList<>(branches, branch -> branch.name().toLowerCase(Locale.ROOT).contains(lowerCaseFilter)));
+            setItems(new FilteredList<>(branches,
+                branch -> branch.name().toLowerCase(Locale.ROOT).contains(lowerCaseFilter)));
         });
     }
 
@@ -174,8 +174,10 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         row.setAlignment(Pos.CENTER_LEFT);
 
         var checkoutButton = createActionButton("railroad.git.branches.actions.checkout", FontAwesomeSolid.CHECK);
-        var setUpstreamButton = createActionButton("railroad.git.branches.actions.set_upstream", FontAwesomeSolid.CODE_BRANCH);
-        var unsetUpstreamButton = createActionButton("railroad.git.branches.actions.unset_upstream", FontAwesomeSolid.TIMES);
+        var setUpstreamButton = createActionButton("railroad.git.branches.actions.set_upstream",
+            FontAwesomeSolid.CODE_BRANCH);
+        var unsetUpstreamButton = createActionButton("railroad.git.branches.actions.unset_upstream",
+            FontAwesomeSolid.TIMES);
         var renameButton = createActionButton("railroad.git.branches.actions.rename", FontAwesomeSolid.PENCIL_ALT);
         var deleteButton = createActionButton("railroad.git.branches.actions.delete", FontAwesomeSolid.TRASH);
 
@@ -188,7 +190,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         GitBranch.LocalGitBranch localBranch = null;
         if (branch instanceof GitBranch.LocalGitBranch candidateLocalBranch) {
             localBranch = candidateLocalBranch;
-            boolean hasUpstream = candidateLocalBranch.remoteName() != null && !candidateLocalBranch.remoteName().isBlank();
+            boolean hasUpstream = candidateLocalBranch.remoteName() != null
+                && !candidateLocalBranch.remoteName().isBlank();
             showSetUpstream = !hasUpstream;
             showUnsetUpstream = hasUpstream;
 
@@ -217,8 +220,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
             setUpstreamButton,
             unsetUpstreamButton,
             renameButton,
-            deleteButton
-        );
+            deleteButton);
 
         for (Node actionButton : row.getChildren()) {
             if (actionButton instanceof Region region) {
@@ -241,7 +243,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         var content = new RRVBox();
         content.getStyleClass().add("git-branch-set-upstream-dialog-content");
 
-        var localBranchLabel = new LocalizedText("railroad.git.branches.set_upstream_dialog.local_branch", localBranch.name());
+        var localBranchLabel = new LocalizedText("railroad.git.branches.set_upstream_dialog.local_branch",
+            localBranch.name());
         localBranchLabel.getStyleClass().add("git-branch-set-upstream-local-branch-label");
         content.getChildren().add(localBranchLabel);
 
@@ -278,12 +281,10 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         var confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
         if (confirmButton != null) {
             validateUpstreamSelection(upstreamComboBox.getEditor().getText(), remoteBranches, errorText, confirmButton);
-            upstreamComboBox.getEditor().textProperty().addListener((obs, oldText, newText) ->
-                validateUpstreamSelection(newText, remoteBranches, errorText, confirmButton)
-            );
-            upstreamComboBox.valueProperty().addListener((obs, oldValue, newValue) ->
-                validateUpstreamSelection(newValue, remoteBranches, errorText, confirmButton)
-            );
+            upstreamComboBox.getEditor().textProperty().addListener((obs, oldText,
+                newText) -> validateUpstreamSelection(newText, remoteBranches, errorText, confirmButton));
+            upstreamComboBox.valueProperty().addListener((obs, oldValue,
+                newValue) -> validateUpstreamSelection(newValue, remoteBranches, errorText, confirmButton));
         }
     }
 
@@ -291,8 +292,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         @Nullable String selectedUpstream,
         List<String> remoteBranches,
         LocalizedText errorText,
-        RRButton confirmButton
-    ) {
+        RRButton confirmButton) {
         String value = Objects.requireNonNullElse(selectedUpstream, "").trim();
         if (value.isBlank()) {
             errorText.setKeyAndArgs("");
@@ -312,15 +312,13 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
 
     private void openUnsetUpstreamDialog(GitBranch.LocalGitBranch localBranch) {
         String upstream = localBranch.remoteName();
-        if (upstream == null || upstream.isBlank()) {
+        if (upstream == null || upstream.isBlank())
             return;
-        }
 
         var content = new LocalizedText(
             "railroad.git.branches.unset_upstream_dialog.content",
             localBranch.name(),
-            upstream
-        );
+            upstream);
         content.getStyleClass().add("git-branch-unset-upstream-dialog-content");
 
         var cancelButton = new RRButton("railroad.generic.cancel");
@@ -337,8 +335,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
             .buttons(cancelButton, confirmButton);
         Stage dialog = WindowBuilder.createDialog("railroad.git.branches.unset_upstream_dialog.title", dialogBuilder);
 
-        cancelButton.setOnAction($ -> dialog.close());
-        confirmButton.setOnAction($ -> {
+        cancelButton.setOnAction(_ -> dialog.close());
+        confirmButton.setOnAction(_ -> {
             project.getGitManager().unsetBranchUpstream(localBranch.name());
             dialog.close();
         });
@@ -348,7 +346,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         var content = new RRVBox();
         content.getStyleClass().add("git-branch-rename-dialog-content");
 
-        var currentBranchLabel = new LocalizedText("railroad.git.branches.rename_dialog.current_branch", localBranch.name());
+        var currentBranchLabel = new LocalizedText("railroad.git.branches.rename_dialog.current_branch",
+            localBranch.name());
         currentBranchLabel.getStyleClass().add("git-branch-rename-current-branch-label");
         content.getChildren().add(currentBranchLabel);
 
@@ -384,9 +383,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         var confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
         if (confirmButton != null) {
             validateRenameBranchName(localBranch.name(), newNameField.getText(), errorText, confirmButton);
-            newNameField.textProperty().addListener((obs, oldText, newText) ->
-                validateRenameBranchName(localBranch.name(), newText, errorText, confirmButton)
-            );
+            newNameField.textProperty().addListener((obs, oldText,
+                newText) -> validateRenameBranchName(localBranch.name(), newText, errorText, confirmButton));
         }
     }
 
@@ -399,8 +397,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         String currentName,
         @Nullable String proposedName,
         LocalizedText errorText,
-        RRButton confirmButton
-    ) {
+        RRButton confirmButton) {
         String value = Objects.requireNonNullElse(proposedName, "").trim();
         if (value.isBlank()) {
             errorText.setKeyAndArgs("");
@@ -462,17 +459,15 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
     }
 
     private void openDeleteBranchDialog(GitBranch.LocalGitBranch localBranch) {
-        if (localBranch.isCurrent()) {
+        if (localBranch.isCurrent())
             return;
-        }
 
         var content = new RRVBox();
         content.getStyleClass().add("git-branch-delete-dialog-content");
 
         var infoText = new LocalizedText(
             "railroad.git.branches.delete_dialog.content",
-            localBranch.name()
-        );
+            localBranch.name());
         infoText.getStyleClass().add("git-branch-delete-dialog-info-text");
         content.getChildren().add(infoText);
 
@@ -499,8 +494,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
             .buttons(cancelButton, confirmButton);
         Stage dialog = WindowBuilder.createDialog("railroad.git.branches.delete_dialog.title", dialogBuilder);
 
-        cancelButton.setOnAction($ -> dialog.close());
-        confirmButton.setOnAction($ -> {
+        cancelButton.setOnAction(_ -> dialog.close());
+        confirmButton.setOnAction(_ -> {
             if ("CONFIRM".equals(confirmField.getText())) {
                 project.getGitManager().deleteBranch(localBranch.name(), false);
                 dialog.close();
@@ -533,8 +528,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         GitManager gitManager,
         Optional<GitCommit> fromCommit,
         String targetBranchName,
-        GitRepoStatus repoStatus
-    ) {
+        GitRepoStatus repoStatus) {
         var content = new RRVBox();
         content.getStyleClass().add("git-commit-checkout-uncommitted-changes-dialog-content");
 
@@ -544,22 +538,19 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
 
         var unstagedChangesText = new LocalizedText(
             "railroad.git.commit.details.checkout_commit_dialog.unstaged_changes",
-            repoStatus.changes().stream().filter(GitFileChange::isUnstaged).count()
-        );
+            repoStatus.changes().stream().filter(GitFileChange::isUnstaged).count());
         unstagedChangesText.getStyleClass().add("git-commit-checkout-unstaged-changes-text");
         content.getChildren().add(unstagedChangesText);
 
         var stagedChangesText = new LocalizedText(
             "railroad.git.commit.details.checkout_commit_dialog.staged_changes",
-            repoStatus.changes().stream().filter(GitFileChange::isStaged).count()
-        );
+            repoStatus.changes().stream().filter(GitFileChange::isStaged).count());
         stagedChangesText.getStyleClass().add("git-commit-checkout-staged-changes-text");
         content.getChildren().add(stagedChangesText);
 
         var untrackedChangesText = new LocalizedText(
             "railroad.git.commit.details.checkout_commit_dialog.untracked_changes",
-            repoStatus.changes().stream().filter(GitFileChange::isUntracked).count()
-        );
+            repoStatus.changes().stream().filter(GitFileChange::isUntracked).count());
         untrackedChangesText.getStyleClass().add("git-commit-checkout-untracked-changes-text");
         content.getChildren().add(untrackedChangesText);
 
@@ -567,7 +558,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         cancelButton.setVariant(ButtonVariant.SECONDARY);
         cancelButton.getStyleClass().add("git-commit-checkout-uncommitted-changes-cancel-button");
 
-        var stashAndCheckoutButton = new RRButton("railroad.git.commit.details.checkout_commit_dialog.stash_and_checkout");
+        var stashAndCheckoutButton = new RRButton(
+            "railroad.git.commit.details.checkout_commit_dialog.stash_and_checkout");
         stashAndCheckoutButton.setVariant(ButtonVariant.PRIMARY);
         stashAndCheckoutButton.getStyleClass().add("git-commit-checkout-uncommitted-changes-stash-and-checkout-button");
 
@@ -579,23 +571,27 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
             .title("railroad.git.commit.details.checkout_commit_dialog.subtitle")
             .contentNode(content)
             .buttons(cancelButton, stashAndCheckoutButton, forceCheckoutButton);
-        Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.checkout_commit_dialog.title", dialogBuilder);
+        Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.checkout_commit_dialog.title",
+            dialogBuilder);
 
-        cancelButton.setOnAction($ -> dialog.close());
+        cancelButton.setOnAction(_ -> dialog.close());
 
-        stashAndCheckoutButton.setOnAction($ -> {
-            gitManager.stashChanges("Railroad: before checkout " + fromCommit.map(GitCommit::shortHash).orElse("HEAD"), true);
+        stashAndCheckoutButton.setOnAction(_ -> {
+            gitManager.stashChanges("Railroad: before checkout " + fromCommit.map(GitCommit::shortHash).orElse("HEAD"),
+                true);
             gitManager.checkoutBranch(targetBranchName);
             dialog.close();
         });
 
-        forceCheckoutButton.setOnAction($ -> {
-            var discardTextField = new RRTextField("railroad.git.commit.details.checkout_commit_dialog.force_checkout.confirmation_placeholder");
+        forceCheckoutButton.setOnAction(_ -> {
+            var discardTextField = new RRTextField(
+                "railroad.git.commit.details.checkout_commit_dialog.force_checkout.confirmation_placeholder");
             discardTextField.getStyleClass().add("git-commit-checkout-force-checkout-confirmation-text-field");
 
             var forceContent = new RRVBox();
             forceContent.getStyleClass().add("git-commit-checkout-force-checkout-dialog-content");
-            var forceInfoText = new LocalizedText("railroad.git.commit.details.checkout_commit_dialog.force_checkout_info");
+            var forceInfoText = new LocalizedText(
+                "railroad.git.commit.details.checkout_commit_dialog.force_checkout_info");
             forceInfoText.getStyleClass().add("git-commit-checkout-force-checkout-info-text");
             forceContent.getChildren().add(forceInfoText);
             forceContent.getChildren().add(discardTextField);
@@ -625,14 +621,14 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
 
             Stage forceDialog = WindowBuilder.createDialog(
                 "railroad.git.commit.details.checkout_commit_dialog.force_checkout_title",
-                forceDialogBuilder
-            );
+                forceDialogBuilder);
             forceDialogRef.set(forceDialog);
 
             var confirmButton = (RRButton) forceDialog.getScene().lookup(".rr-button.primary");
             if (confirmButton != null) {
                 confirmButton.setDisable(true);
-                discardTextField.textProperty().addListener((obs, oldText, newText) -> confirmButton.setDisable(!newText.equals("FORCE")));
+                discardTextField.textProperty()
+                    .addListener((obs, oldText, newText) -> confirmButton.setDisable(!newText.equals("FORCE")));
             }
         });
     }
@@ -684,17 +680,23 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
 
     private void appendCommitRows(List<Node> rows, @Nullable GitBranchLastCommit lastCommit) {
         if (lastCommit == null) {
-            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_hash", "railroad.git.branches.no_commit_hash"));
-            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_message", "railroad.generic.unknown"));
-            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_author", "railroad.generic.unknown"));
-            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_author_email", "railroad.generic.unknown"));
-            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_time", "railroad.git.branches.last.never"));
+            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_hash",
+                "railroad.git.branches.no_commit_hash"));
+            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_message",
+                "railroad.generic.unknown"));
+            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_author",
+                "railroad.generic.unknown"));
+            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_author_email",
+                "railroad.generic.unknown"));
+            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_time",
+                "railroad.git.branches.last.never"));
             return;
         }
 
         String hash = lastCommit.hash();
         if (hash == null || hash.isBlank()) {
-            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_hash", "railroad.git.branches.no_commit_hash"));
+            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_hash",
+                "railroad.git.branches.no_commit_hash"));
         } else {
             rows.add(createTextDetailsRow("railroad.git.branches.details.last_commit_hash", hash));
         }
@@ -702,12 +704,15 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         rows.add(createTextDetailsRow("railroad.git.branches.details.last_commit_message", lastCommit.message()));
 
         GitAuthor author = lastCommit.author();
-        rows.add(createTextDetailsRow("railroad.git.branches.details.last_commit_author", author == null ? null : author.name()));
-        rows.add(createTextDetailsRow("railroad.git.branches.details.last_commit_author_email", author == null ? null : author.email()));
+        rows.add(createTextDetailsRow("railroad.git.branches.details.last_commit_author",
+            author == null ? null : author.name()));
+        rows.add(createTextDetailsRow("railroad.git.branches.details.last_commit_author_email",
+            author == null ? null : author.email()));
 
         Long timestampSeconds = lastCommit.timestampEpochSeconds();
         if (timestampSeconds == null) {
-            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_time", "railroad.git.branches.last.never"));
+            rows.add(createLocalizedDetailsRow("railroad.git.branches.details.last_commit_time",
+                "railroad.git.branches.last.never"));
             return;
         }
 
@@ -722,11 +727,10 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         Runnable refresh = () -> value.setKey(
             "railroad.git.branches.details.last_commit_time_value",
             formattedDateTime,
-            TimeFormatter.formatElapsed(timestampMillis)
-        );
+            TimeFormatter.formatElapsed(timestampMillis));
         refresh.run();
 
-        var elapsedTimeline = new Timeline(new KeyFrame(Duration.seconds(1), $ -> refresh.run()));
+        var elapsedTimeline = new Timeline(new KeyFrame(Duration.seconds(1), _ -> refresh.run()));
         elapsedTimeline.setCycleCount(Timeline.INDEFINITE);
         value.sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene == null) {
@@ -750,7 +754,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
 
     private void updateBranches(Project project, Function<Project, List<T>> branchProvider) {
         branches.setAll(branchProvider.apply(project));
-        setItems(new FilteredList<>(branches, branch -> branch.name().toLowerCase(Locale.ROOT).contains(filterText.get().toLowerCase(Locale.ROOT))));
+        setItems(new FilteredList<>(branches,
+            branch -> branch.name().toLowerCase(Locale.ROOT).contains(filterText.get().toLowerCase(Locale.ROOT))));
     }
 
     public void filterBranches(String newValue) {

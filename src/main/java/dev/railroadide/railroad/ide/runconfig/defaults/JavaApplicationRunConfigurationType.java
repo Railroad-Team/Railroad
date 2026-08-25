@@ -32,25 +32,30 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
     }
 
     @Override
-    public CompletableFuture<Void> run(Project project, RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> run(Project project,
+        RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
         return execute(project, configuration, false).whenComplete((unused, throwable) -> {
             if (throwable != null) {
-                Railroad.LOGGER.error("Failed to start run session for configuration: {}", configuration.data().getName(), throwable);
+                Railroad.LOGGER.error("Failed to start run session for configuration: {}",
+                    configuration.data().getName(), throwable);
             }
         });
     }
 
     @Override
-    public CompletableFuture<Void> debug(Project project, RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> debug(Project project,
+        RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
         return execute(project, configuration, true).whenComplete((unused, throwable) -> {
             if (throwable != null) {
-                Railroad.LOGGER.error("Failed to start debug session for configuration: {}", configuration.data().getName(), throwable);
+                Railroad.LOGGER.error("Failed to start debug session for configuration: {}",
+                    configuration.data().getName(), throwable);
             }
         });
     }
 
     @Override
-    public CompletableFuture<Void> stop(Project project, RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> stop(Project project,
+        RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
         Process process = runningProcesses.get(configuration);
         if (process != null && process.isAlive()) {
             process.destroy();
@@ -70,7 +75,7 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
     public JavaApplicationRunConfigurationData createDataInstance(@UnknownNullability Project project) {
         var data = new JavaApplicationRunConfigurationData();
         data.setName("New Java Application");
-        data.setJdk(/*project.getJDKManager().getDefaultJDK()*/ JDKManager.getDefaultJDK()); // TODO
+        data.setJdk(/* project.getJDKManager().getDefaultJDK() */ JDKManager.getDefaultJDK()); // TODO
         data.setWorkingDirectory(project.path());
         return data;
     }
@@ -80,7 +85,8 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         return JavaApplicationRunConfigurationData.class;
     }
 
-    private CompletableFuture<Void> execute(Project project, RunConfiguration<JavaApplicationRunConfigurationData> configuration, boolean debug) {
+    private CompletableFuture<Void> execute(Project project,
+        RunConfiguration<JavaApplicationRunConfigurationData> configuration, boolean debug) {
         JavaApplicationRunConfigurationData data = configuration.data();
         final JDK jdk = data.getJdk();
         final String mainClass = data.getMainClass();
@@ -103,7 +109,8 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
             return CompletableFuture.failedFuture(new IllegalStateException("Working directory is not specified"));
 
         if (Files.notExists(workingDirectory) || !Files.isDirectory(workingDirectory))
-            return CompletableFuture.failedFuture(new IllegalStateException("Working directory does not exist or is not a directory: " + workingDirectory));
+            return CompletableFuture.failedFuture(new IllegalStateException(
+                "Working directory does not exist or is not a directory: " + workingDirectory));
 
         CompletableFuture<Void> buildFuture = CompletableFuture.completedFuture(null);
         if (buildBeforeRun) {
@@ -116,10 +123,11 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
             });
         }
 
-        return buildFuture.thenCompose(ignored -> CompletableFuture.supplyAsync(() -> {
+        return buildFuture.thenCompose(_ -> CompletableFuture.supplyAsync(() -> {
             try {
                 final int debugPort = debug ? findFreePort() : -1;
-                String[] command = buildCommand(jdk, mainClass, classpathEntries, programArguments, vmOptions, debug, debugPort);
+                String[] command = buildCommand(jdk, mainClass, classpathEntries, programArguments, vmOptions, debug,
+                    debugPort);
                 ProcessBuilder builder = new ProcessBuilder(command)
                     .directory(workingDirectory.toFile())
                     .redirectOutput(ProcessBuilder.Redirect.PIPE)
@@ -136,7 +144,8 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
 
                 if (debug && debugPort > 0) {
                     // TODO: trigger IDE debugger attachment here
-                    Railroad.LOGGER.debug("DEBUG: IDE should attach debugger to port {} for configuration: {}", debugPort, configuration.data().getName());
+                    Railroad.LOGGER.debug("DEBUG: IDE should attach debugger to port {} for configuration: {}",
+                        debugPort, configuration.data().getName());
                 }
 
                 process.onExit().thenAccept(p -> {
@@ -156,8 +165,8 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
     }
 
     private static String[] buildCommand(JDK jdk, String mainClass,
-                                         String[] classpathEntries, String[] programArguments,
-                                         String[] vmOptions, boolean debug, int debugPort) {
+        String[] classpathEntries, String[] programArguments,
+        String[] vmOptions, boolean debug, int debugPort) {
         String javaExecutable = jdk.path().resolve("bin").resolve(JDKManager.JAVA_EXECUTABLE_NAME).toString();
         String[] vm = vmOptions == null ? new String[0] : vmOptions;
         String[] args = programArguments == null ? new String[0] : programArguments;
@@ -167,9 +176,8 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         command.add(javaExecutable);
 
         if (debug) {
-            if (debugPort <= 0) {
+            if (debugPort <= 0)
                 throw new IllegalStateException("Debug port must be provided when debug mode is enabled.");
-            }
             command.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=%d".formatted(debugPort));
         }
 

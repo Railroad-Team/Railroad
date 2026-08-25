@@ -53,7 +53,7 @@ public class GitOverviewIdentityPane extends RRVBox {
         identityGrid.add(new TextFlow(userNameText), 1, row);
         GridPane.setValignment(identityGrid.getChildren().getLast(), VPos.CENTER);
         row++;
-        Region separator0 = new Region();
+        var separator0 = new Region();
         separator0.getStyleClass().add("git-overview-grid-row-separator");
         identityGrid.add(separator0, 0, row, 2, 1);
         row++;
@@ -63,7 +63,7 @@ public class GitOverviewIdentityPane extends RRVBox {
         identityGrid.add(new TextFlow(userEmailText), 1, row);
         GridPane.setValignment(identityGrid.getChildren().getLast(), VPos.CENTER);
         row++;
-        Region separator1 = new Region();
+        var separator1 = new Region();
         separator1.getStyleClass().add("git-overview-grid-row-separator");
         identityGrid.add(separator1, 0, row, 2, 1);
         row++;
@@ -73,7 +73,7 @@ public class GitOverviewIdentityPane extends RRVBox {
         identityGrid.add(new TextFlow(signedText), 1, row);
         GridPane.setValignment(identityGrid.getChildren().getLast(), VPos.CENTER);
         row++;
-        Region separator2 = new Region();
+        var separator2 = new Region();
         separator2.getStyleClass().add("git-overview-grid-row-separator");
         identityGrid.add(separator2, 0, row, 2, 1);
         row++;
@@ -108,7 +108,6 @@ public class GitOverviewIdentityPane extends RRVBox {
     }
 
     private void listenForUpdates(GitManager gitManager) {
-        gitManager.gitIdentityProperty().addListener((obs, oldIdentity, newIdentity) ->
-            updateIdentityInfo(gitManager));
+        gitManager.gitIdentityProperty().addListener((obs, oldIdentity, newIdentity) -> updateIdentityInfo(gitManager));
     }
 }

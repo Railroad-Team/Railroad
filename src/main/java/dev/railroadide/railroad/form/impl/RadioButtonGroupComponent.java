@@ -26,13 +26,15 @@ import java.util.function.Supplier;
  *
  * @param <E> enum type
  */
-public class RadioButtonGroupComponent<E extends Enum<E>> extends FormComponent<FormRadioButtonGroup<E>, RadioButtonGroupComponent.Data<E>, FormRadioButtonGroup<E>, E> {
+public class RadioButtonGroupComponent<E extends Enum<E>>
+    extends
+        FormComponent<FormRadioButtonGroup<E>, RadioButtonGroupComponent.Data<E>, FormRadioButtonGroup<E>, E> {
     public RadioButtonGroupComponent(String dataKey,
-                                     Data<E> data,
-                                     FormComponentValidator<FormRadioButtonGroup<E>> validator,
-                                     FormComponentChangeListener<FormRadioButtonGroup<E>, E> listener,
-                                     List<FormTransformer<FormRadioButtonGroup<E>, E, ?>> transformers,
-                                     @Nullable BooleanBinding visible) {
+        Data<E> data,
+        FormComponentValidator<FormRadioButtonGroup<E>> validator,
+        FormComponentChangeListener<FormRadioButtonGroup<E>, E> listener,
+        List<FormTransformer<FormRadioButtonGroup<E>, E, ?>> transformers,
+        @Nullable BooleanBinding visible) {
         super(dataKey, data, currentData -> {
             var component = new FormRadioButtonGroup<>(
                 currentData.label,
@@ -40,8 +42,7 @@ public class RadioButtonGroupComponent<E extends Enum<E>> extends FormComponent<
                 currentData.options(),
                 currentData.optionLabelProvider,
                 currentData.translateOptions,
-                currentData.spacing
-            );
+                currentData.spacing);
 
             E defaultSelection = currentData.selectedSupplier.get();
             if (defaultSelection != null) {
@@ -66,8 +67,8 @@ public class RadioButtonGroupComponent<E extends Enum<E>> extends FormComponent<
             }
 
             if (newComponent != null) {
-                ChangeListener<E> changeListener = (obs, oldValue, newValue) ->
-                    listener.changed(newComponent, obs, oldValue, newValue);
+                ChangeListener<E> changeListener = (obs, oldValue, newValue) -> listener.changed(newComponent, obs,
+                    oldValue, newValue);
                 listenerRef.set(changeListener);
                 newComponent.valueProperty().addListener(changeListener);
             }
@@ -80,12 +81,10 @@ public class RadioButtonGroupComponent<E extends Enum<E>> extends FormComponent<
 
         Runnable attachListener = () -> {
             FormRadioButtonGroup<E> component = componentProperty().get();
-            if (component == null) {
+            if (component == null)
                 return;
-            }
 
-            ChangeListener<E> changeListener = (observable, oldValue, newValue) ->
-                formData.add(dataKey, newValue);
+            ChangeListener<E> changeListener = (observable, oldValue, newValue) -> formData.add(dataKey, newValue);
             valueListener.set(changeListener);
             component.valueProperty().addListener(changeListener);
             formData.add(dataKey, component.getValue());
@@ -111,7 +110,9 @@ public class RadioButtonGroupComponent<E extends Enum<E>> extends FormComponent<
     /**
      * Builder for {@link RadioButtonGroupComponent}.
      */
-    public static class Builder<E extends Enum<E>> implements FormComponentBuilder<RadioButtonGroupComponent<E>, FormRadioButtonGroup<E>, E, Builder<E>> {
+    public static class Builder<E extends Enum<E>>
+        implements
+            FormComponentBuilder<RadioButtonGroupComponent<E>, FormRadioButtonGroup<E>, E, Builder<E>> {
         private final String dataKey;
         private final Data<E> data;
         private final List<FormTransformer<FormRadioButtonGroup<E>, E, ?>> transformers = new ArrayList<>();
@@ -140,7 +141,7 @@ public class RadioButtonGroupComponent<E extends Enum<E>> extends FormComponent<
                     data.translateOptions(true);
                     return;
                 }
-            } catch (NoSuchMethodException ignored) {
+            } catch (NoSuchMethodException _) {
                 // Default fallback handled below.
             }
 
@@ -207,13 +208,16 @@ public class RadioButtonGroupComponent<E extends Enum<E>> extends FormComponent<
         }
 
         @Override
-        public <X> Builder<E> addTransformer(ObservableValue<FormRadioButtonGroup<E>> fromComponent, Consumer<X> toComponentFunction, Function<E, X> valueMapper) {
-            transformers.add(new FormTransformer<>(fromComponent, FormRadioButtonGroup::getValue, toComponentFunction, valueMapper));
+        public <X> Builder<E> addTransformer(ObservableValue<FormRadioButtonGroup<E>> fromComponent,
+            Consumer<X> toComponentFunction, Function<E, X> valueMapper) {
+            transformers.add(
+                new FormTransformer<>(fromComponent, FormRadioButtonGroup::getValue, toComponentFunction, valueMapper));
             return this;
         }
 
         @Override
-        public <U extends Node, X> Builder<E> addTransformer(ObservableValue<FormRadioButtonGroup<E>> fromComponent, ObservableValue<U> toComponent, Function<E, X> valueMapper) {
+        public <U extends Node, X> Builder<E> addTransformer(ObservableValue<FormRadioButtonGroup<E>> fromComponent,
+            ObservableValue<U> toComponent, Function<E, X> valueMapper) {
             transformers.add(new FormTransformer<>(fromComponent, FormRadioButtonGroup::getValue, value -> {
                 Node target = toComponent.getValue();
                 if (target instanceof HasSetValue hasSetValue) {
