@@ -1,12 +1,15 @@
 package dev.railroadide.railroad.project.facet.detector;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.data.JavaFacetData;
 import dev.railroadide.railroad.utility.JavaVersion;
+import dev.railroadide.railroadplugin.dto.RailroadJavaLanguageSettings;
+import dev.railroadide.railroadplugin.dto.RailroadProject;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
@@ -71,10 +74,13 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             return JavaVersion.fromMajor(-1);
 
         return project.getGradleManager().getGradleModelService().getCachedModel()
-            .map(gradleBuildModel -> {
+            .map(GradleBuildModel::project)
+            .map(RailroadProject::javaLanguageSettings)
+            .map(RailroadJavaLanguageSettings::getJdk)
+            .map(InstalledJdk::getJavaVersion)
+            .map(javaVersion -> {
                 try {
-                    InstalledJdk jdk = gradleBuildModel.project().javaLanguageSettings().getJdk();
-                    return JavaVersion.fromMajor(Integer.parseInt(jdk.getJavaVersion().getMajorVersion()));
+                    return JavaVersion.fromMajor(Integer.parseInt(javaVersion.getMajorVersion()));
                 } catch (NumberFormatException exception) {
                     Railroad.LOGGER.error("Error parsing Java version from Gradle model for project: {}",
                         project.getAlias(), exception);
