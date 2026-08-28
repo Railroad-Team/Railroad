@@ -11,7 +11,6 @@ import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.ide.ui.IDEDockItem;
 import dev.railroadide.railroad.ide.ui.IDEWorkspaceActions;
 import dev.railroadide.railroad.localization.L18n;
-import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.keybinds.Keybind;
@@ -93,7 +92,7 @@ public final class IDEMenuBarFactory {
             if (file == null)
                 return;
 
-            Services.IDE_STATE.openDocument(new FileSystemDocument(file.toPath()));
+            Services.EDITOR_TAB_MANAGER.open(file.toPath());
         });
 
         var openProjectItem = new LocalizedMenuItem("railroad.menu.file.open_project");

@@ -117,6 +117,17 @@ public final class DocumentIdentityRegistry {
     }
 
     /**
+     * Resolves a stable identity together with the supplied current URI.
+     *
+     * @param uri physical or virtual document URI
+     * @return logical identity and current address
+     */
+    public synchronized DocumentIdentity identify(DocumentUri uri) {
+        uri = Objects.requireNonNull(uri, "uri");
+        return new DocumentIdentity(getOrCreate(uri), canonicalUri(uri));
+    }
+
+    /**
      * Returns the identity associated with {@code path}, allocating one when necessary.
      * Equivalent spellings of the same existing physical file return the same identity.
      *
@@ -177,6 +188,18 @@ public final class DocumentIdentityRegistry {
         uri = Objects.requireNonNull(uri, "uri");
         Optional<Path> filePath = uri.filePath();
         return filePath.isPresent() ? find(filePath.get()) : Optional.ofNullable(idsByUri.get(uri));
+    }
+
+    /**
+     * Finds a registered identity together with its current address without allocating.
+     *
+     * @param uri physical or virtual document URI
+     * @return registered logical identity and current address, if known
+     */
+    public synchronized Optional<DocumentIdentity> findIdentity(DocumentUri uri) {
+        uri = Objects.requireNonNull(uri, "uri");
+        DocumentUri canonicalUri = canonicalUri(uri);
+        return find(canonicalUri).map(documentId -> new DocumentIdentity(documentId, canonicalUri));
     }
 
     /**
@@ -346,5 +369,13 @@ public final class DocumentIdentityRegistry {
         } catch (IOException exception) {
             throw new UncheckedIOException("Failed to resolve document path " + path, exception);
         }
+    }
+
+    private static DocumentUri canonicalUri(DocumentUri uri) {
+        return uri.filePath()
+            .map(DocumentIdentityRegistry::normalize)
+            .map(DocumentIdentityRegistry::resolve)
+            .map(DocumentUri::fromPath)
+            .orElse(uri);
     }
 }

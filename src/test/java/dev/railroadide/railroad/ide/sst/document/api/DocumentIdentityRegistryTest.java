@@ -123,6 +123,20 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
+    void identityRetainsItsLogicalIdWhenItsCurrentUriChanges() {
+        var registry = new DocumentIdentityRegistry();
+        DocumentIdentity identity = registry.identify(DocumentUri.virtual("memory", "before"));
+        DocumentUri newUri = DocumentUri.virtual("memory", "after");
+
+        registry.rebind(identity.id(), identity.uri(), newUri);
+        DocumentIdentity rebound = registry.findIdentity(newUri).orElseThrow();
+
+        assertEquals(identity.id(), rebound.id());
+        assertEquals(newUri, rebound.uri());
+        assertEquals(rebound, identity.at(newUri));
+    }
+
+    @Test
     void rebindPreservesIdentityAcrossVirtualUriChanges() {
         DocumentUri previous = DocumentUri.virtual("generated", "first/Generated.java");
         DocumentUri current = DocumentUri.virtual("generated", "second/Generated.java");

@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui;
 
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
+import com.panemu.tiwulfx.control.dock.DetachableTabPaneFactory;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.IDELayoutState;
@@ -28,6 +29,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
+import javafx.stage.WindowEvent;
 
 import java.lang.ref.WeakReference;
 import java.util.Collections;
@@ -224,7 +226,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             replaceEditorPane(editorPane);
 
             activeViewMode = resolvedMode;
-            restoreModeLayout(layoutsByMode.getOrDefault(resolvedMode, IDELayoutState.ModeLayout.defaults()),
+            restoreModeLayout(resolvedMode,
+                layoutsByMode.getOrDefault(resolvedMode, IDELayoutState.ModeLayout.defaults()),
                 editorPane);
             layoutInitialized = true;
             layoutsByMode.put(resolvedMode, captureModeLayout(resolvedMode));
@@ -280,7 +283,10 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             bottomVisible);
     }
 
-    private void restoreModeLayout(IDELayoutState.ModeLayout layout, DetachableTabPane editorPane) {
+    private void restoreModeLayout(
+        WorkspaceMode viewMode,
+        IDELayoutState.ModeLayout layout,
+        DetachableTabPane editorPane) {
         setDockVisible(mainSplit, leftPane, layout.leftDockVisible(), 0);
         setDockVisible(mainSplit, rightPane, layout.rightDockVisible() && !rightPane.getTabs().isEmpty(), 2);
         setDockVisible(centerBottomSplit, bottomPane, layout.bottomDockVisible(), 1);
@@ -291,7 +297,9 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         }
 
         selectTab(leftPane, layout.selectedLeftTab());
-        selectTab(editorPane, layout.selectedEditorTab());
+        if (viewMode != WorkspaceModes.CODE) {
+            selectTab(editorPane, layout.selectedEditorTab());
+        }
         selectTab(rightPane, layout.selectedRightTab());
         selectTab(bottomPane, layout.selectedBottomTab());
     }
@@ -579,7 +587,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             }
 
             IDELayoutState.ModeLayout defaults = IDELayoutState.ModeLayout.defaults();
-            restoreModeLayout(defaults, getOrCreateEditorPane(editorPanesByMode, activeViewMode));
+            restoreModeLayout(activeViewMode, defaults, getOrCreateEditorPane(editorPanesByMode, activeViewMode));
             layoutsByMode.put(activeViewMode, captureModeLayout(activeViewMode));
         } finally {
             layoutTransitioning = false;
@@ -655,6 +663,26 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     }
 
     private void trackOwnedTabs(DetachableTabPane pane) {
+        pane.setDetachableTabPaneFactory(new DetachableTabPaneFactory() {
+            @Override
+            protected void init(DetachableTabPane detachedPane) {
+                trackOwnedTabs(detachedPane);
+            }
+        });
+        pane.setStageFactory((priorPane, tab) -> {
+            var stage = new DetachableTabPane.TabStage(priorPane, tab);
+            stage.addEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST, event -> {
+                List<Tab> detachedTabs = stage.getScene().getRoot().lookupAll(".tab-pane").stream()
+                    .filter(DetachableTabPane.class::isInstance)
+                    .map(DetachableTabPane.class::cast)
+                    .flatMap(detachedPane -> List.copyOf(detachedPane.getTabs()).stream())
+                    .toList();
+                if (detachedTabs.stream().anyMatch(detachedTab -> !IDETabLifecycle.requestClose(detachedTab))) {
+                    event.consume();
+                }
+            });
+            return stage;
+        });
         pane.getTabs().forEach(this::trackOwnedTab);
         ListChangeListener<Tab> listener = change -> {
             while (change.next()) {
