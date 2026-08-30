@@ -100,7 +100,7 @@ public class JfrCLIBuilder implements CLIBuilder<Process, JfrCLIBuilder> {
      * Adds a "view" subcommand to the JFR CLI with the specified view name and recording file.
      *
      * @param viewName the name of the view; must not be null
-     * @param file     the recording file to view; must not be null
+     * @param file the recording file to view; must not be null
      * @return the current `JfrCLIBuilder` instance
      * @throws NullPointerException if the view name or file is null
      */
@@ -164,7 +164,7 @@ public class JfrCLIBuilder implements CLIBuilder<Process, JfrCLIBuilder> {
     /**
      * Adds a "scrub" subcommand to the JFR CLI with the specified input and output files.
      *
-     * @param inputFile  the input file to scrub; must not be null
+     * @param inputFile the input file to scrub; must not be null
      * @param outputFile the output file to save the scrubbed data; must not be null
      * @return the current `JfrCLIBuilder` instance
      * @throws NullPointerException if the input or output file is null
@@ -196,7 +196,7 @@ public class JfrCLIBuilder implements CLIBuilder<Process, JfrCLIBuilder> {
      * Adds an "assemble" subcommand to the JFR CLI with the specified repository and output file.
      *
      * @param repository the repository path; must not be null
-     * @param file       the output file to save the assembled data; must not be null
+     * @param file the output file to save the assembled data; must not be null
      * @return the current `JfrCLIBuilder` instance
      * @throws NullPointerException if the repository or output file is null
      */
@@ -389,7 +389,7 @@ public class JfrCLIBuilder implements CLIBuilder<Process, JfrCLIBuilder> {
      * Adds an option and its value to the "configure" subcommand.
      *
      * @param option the option name; must not be null
-     * @param value  the option value; must not be null
+     * @param value the option value; must not be null
      * @return the current `JfrCLIBuilder` instance
      * @throws NullPointerException if the option or value is null
      */
@@ -404,7 +404,7 @@ public class JfrCLIBuilder implements CLIBuilder<Process, JfrCLIBuilder> {
      * Adds an event setting and its value to the "configure" subcommand.
      *
      * @param setting the event setting name; must not be null
-     * @param value   the event setting value; must not be null
+     * @param value the event setting value; must not be null
      * @return the current `JfrCLIBuilder` instance
      * @throws NullPointerException if the setting or value is null
      */
@@ -628,16 +628,8 @@ public class JfrCLIBuilder implements CLIBuilder<Process, JfrCLIBuilder> {
     }
 
     private enum Subcommand {
-        PRINT("print"),
-        VIEW("view"),
-        CONFIGURE("configure"),
-        METADATA("metadata"),
-        SUMMARY("summary"),
-        SCRUB("scrub"),
-        ASSEMBLE("assemble"),
-        DISASSEMBLE("disassemble"),
-        VERSION("version"),
-        HELP("--help");
+        PRINT("print"), VIEW("view"), CONFIGURE("configure"), METADATA("metadata"), SUMMARY("summary"), SCRUB(
+            "scrub"), ASSEMBLE("assemble"), DISASSEMBLE("disassemble"), VERSION("version"), HELP("--help");
 
         private final String command;
 

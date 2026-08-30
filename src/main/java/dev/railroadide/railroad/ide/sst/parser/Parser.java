@@ -151,7 +151,7 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
      * Expects the next token to be of the given type, advancing if it is.
      * If not found, reports an error and returns a missing token.
      *
-     * @param expectedType     the expected token type
+     * @param expectedType the expected token type
      * @param messageIfMissing optional message if the token is missing
      * @return the matched token or a missing token if not found
      */
@@ -168,19 +168,19 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
      * If not found, reports an error and returns a missing token.
      *
      * @param messageIfMissing optional message if the token is missing
-     * @param expectedTypes    the expected token types
+     * @param expectedTypes the expected token types
      * @return the matched token or a missing token if not found
      */
     @SafeVarargs
     protected final Token<T> expectAny(String messageIfMissing, T... expectedTypes) {
         T found = lookaheadType(1);
         for (T expectedType : expectedTypes) {
-            if (found == expectedType) {
+            if (found == expectedType)
                 return advance();
-            }
         }
 
-        reportErrorAt(current(), messageIfMissing != null ? messageIfMissing : ("Expected one of " + Arrays.toString(expectedTypes)));
+        reportErrorAt(current(),
+            messageIfMissing != null ? messageIfMissing : ("Expected one of " + Arrays.toString(expectedTypes)));
         return new Token.MissingToken<>(expectedTypes.length > 0 ? expectedTypes[0] : found, current());
     }
 
@@ -199,7 +199,7 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
      * to a parse that might fail later.
      *
      * @param attempt the function to attempt parsing
-     * @param <R>     the type of the result
+     * @param <R> the type of the result
      * @return the result of the parse attempt, or null if it failed
      */
     protected <R> R tryParse(Function<Parser<T, N, E>, R> attempt) {
@@ -229,7 +229,7 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
     /**
      * Reports an error at the specified token's position.
      *
-     * @param where   the token where the error occurred
+     * @param where the token where the error occurred
      * @param message the error message to report
      */
     protected void reportErrorAt(Token<T> where, String message) {
@@ -250,7 +250,8 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
     protected void synchronize(Set<T> followSet) {
         while (!isAtEnd()) {
             // If the current token starts a new construct or is in the follow set, stop skipping.
-            if (followSet.contains(lookaheadType(1)) || startsSyncBoundary(previous(), current())) return;
+            if (followSet.contains(lookaheadType(1)) || startsSyncBoundary(previous(), current()))
+                return;
             advance();
         }
     }
@@ -281,16 +282,17 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
      * Parses a list of elements while the given condition holds true.
      * This is useful for parsing lists or sequences of elements.
      *
-     * @param cont    the predicate that determines if more elements can be parsed
+     * @param cont the predicate that determines if more elements can be parsed
      * @param element the function to parse each element
-     * @param <R>     the type of the elements in the list
+     * @param <R> the type of the elements in the list
      * @return a list of parsed elements
      */
     protected <R> List<R> many(Predicate<Token<T>> cont, Function<Parser<T, N, E>, R> element) {
         List<R> out = new ArrayList<>();
         while (!isAtEnd() && cont.test(current())) {
             R r = element.apply(this);
-            if (r == null) break; // element parse declined
+            if (r == null)
+                break; // element parse declined
             out.add(r);
         }
 
@@ -301,16 +303,17 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
      * Parses a list of elements separated by a given separator token.
      * This is useful for parsing comma-separated lists or similar constructs.
      *
-     * @param separator     the token type that separates elements
+     * @param separator the token type that separates elements
      * @param allowTrailing if true, allows a trailing separator without an element after it
-     * @param element       the function to parse each element
-     * @param <R>           the type of the elements in the list
+     * @param element the function to parse each element
+     * @param <R> the type of the elements in the list
      * @return a list of parsed elements, possibly empty if no elements were found
      */
     protected <R> List<R> separatedList(T separator, boolean allowTrailing, Function<Parser<T, N, E>, R> element) {
         List<R> out = new ArrayList<>();
         R first = element.apply(this);
-        if (first == null) return out;
+        if (first == null)
+            return out;
         out.add(first);
 
         while (match(separator)) {
@@ -370,10 +373,9 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
     private Token<T> eof() {
         // LA ensures this only happens at end; pull from lexer to get proper offset/line/col
         var t = lexer.lookahead(1);
-        if (t.channel() == TokenChannel.TRIVIA) {
+        if (t.channel() == TokenChannel.TRIVIA)
             // force a default EOF token if lexer puts EOF on default channel anyway
             return new Token.MissingToken<>(null, lexer.offset(), lexer.line(), lexer.column());
-        }
 
         return t;
     }
@@ -385,8 +387,9 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
      * @param newSize the new size to shrink the diagnostics list to
      */
     private void shrinkProblems(int newSize) {
-        while (diagnostics.size() > newSize)
+        while (diagnostics.size() > newSize) {
             diagnostics.removeLast();
+        }
     }
 
     /**
@@ -399,7 +402,8 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
     protected final boolean nextIsAny(T... types) {
         T la1 = lookaheadType(1);
         for (T t : types) {
-            if (la1 == t) return true;
+            if (la1 == t)
+                return true;
         }
 
         return false;
@@ -473,7 +477,7 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
      * Creates a span from the given start position to the given end position.
      *
      * @param start the start span
-     * @param end   the end span
+     * @param end the end span
      * @return a new span from start to end
      */
     protected Span spanBetween(Span start, Span end) {
@@ -484,7 +488,7 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
      * Checks if the token at the given offset matches any of the specified types.
      *
      * @param offset the lookahead offset (1 for next token, 2 for token after that, etc.)
-     * @param types  the token types to check against
+     * @param types the token types to check against
      * @return true if the token at the offset matches any of the types, false otherwise
      */
     public boolean nextIsAnyAt(int offset, T... types) {
@@ -511,7 +515,8 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
         private final List<ParseDiagnostic> diagnosticsCopy;
         private boolean active = true;
 
-        private Marker(Lexer.Snapshot lexSnapshot, ArrayDeque<Token<T>> laCopy, Token<T> prevCopy, List<ParseDiagnostic> diagnosticsCopy) {
+        private Marker(Lexer.Snapshot lexSnapshot, ArrayDeque<Token<T>> laCopy, Token<T> prevCopy,
+            List<ParseDiagnostic> diagnosticsCopy) {
             this.lexSnapshot = lexSnapshot;
             this.laCopy = laCopy;
             this.prevCopy = prevCopy;
@@ -532,7 +537,8 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
          * After this call, the marker is no longer active.
          */
         public void rollback() {
-            if (!active) return;
+            if (!active)
+                return;
             lexer.restore(lexSnapshot);
             lookaheadBuffer.clear();
             lookaheadBuffer.addAll(laCopy);
@@ -563,32 +569,37 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
          * Constructs a new ParseDiagnostic with the given parameters.
          *
          * @param severity the severity of the diagnostic (ERROR or WARNING)
-         * @param message  the diagnostic message
-         * @param offset   the offset in the source code where the diagnostic occurred
-         * @param line     the line number in the source code where the diagnostic occurred
-         * @param column   the column number in the source code where the diagnostic occurred
+         * @param message the diagnostic message
+         * @param offset the offset in the source code where the diagnostic occurred
+         * @param line the line number in the source code where the diagnostic occurred
+         * @param column the column number in the source code where the diagnostic occurred
          */
         public ParseDiagnostic {
             Objects.requireNonNull(severity, "Severity cannot be null");
             Objects.requireNonNull(message, "Message cannot be null");
 
-            if (offset < 0) throw new IllegalArgumentException("Offset cannot be negative");
-            if (line < 1) throw new IllegalArgumentException("Line number must be at least 1");
-            if (column < 1) throw new IllegalArgumentException("Column number must be at least 1");
+            if (offset < 0)
+                throw new IllegalArgumentException("Offset cannot be negative");
+            if (line < 1)
+                throw new IllegalArgumentException("Line number must be at least 1");
+            if (column < 1)
+                throw new IllegalArgumentException("Column number must be at least 1");
         }
 
         /**
          * Severity levels for parse diagnostics.
          */
-        public enum Severity {ERROR, WARNING}
+        public enum Severity {
+            ERROR, WARNING
+        }
 
         /**
          * Creates a new error diagnostic with the given message and position.
          *
-         * @param msg  the error message
-         * @param off  the offset in the source code
+         * @param msg the error message
+         * @param off the offset in the source code
          * @param line the line number in the source code
-         * @param col  the column number in the source code
+         * @param col the column number in the source code
          * @return a new ParseDiagnostic with ERROR severity
          */
         public static ParseDiagnostic error(String msg, int off, int line, int col) {
@@ -598,10 +609,10 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
         /**
          * Creates a new warning diagnostic with the given message and position.
          *
-         * @param msg  the warning message
-         * @param off  the offset in the source code
+         * @param msg the warning message
+         * @param off the offset in the source code
          * @param line the line number in the source code
-         * @param col  the column number in the source code
+         * @param col the column number in the source code
          * @return a new ParseDiagnostic with WARNING severity
          */
         public static ParseDiagnostic warning(String msg, int off, int line, int col) {

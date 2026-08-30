@@ -8,7 +8,8 @@ import java.util.function.Consumer;
  * Decorates raw git output callbacks with parsed progress events.
  */
 public final class GitProgressListener implements GitOutputListener {
-    public static final GitProgressListener NO_OP = new GitProgressListener(GitOutputListener.NO_OP, $ -> {}, null);
+    public static final GitProgressListener NO_OP = new GitProgressListener(GitOutputListener.NO_OP, _ -> {
+    }, null);
 
     private final GitOutputListener raw;
     private final Consumer<GitProgressEvent> sink;
@@ -74,8 +75,7 @@ public final class GitProgressListener implements GitOutputListener {
                 currentPhase = name;
             }
 
-            // TODO: Replace 'ignored' with '_' in java 25
-            if (event instanceof GitProgressEvent.Percentage(String phase, int ignored)) {
+            if (event instanceof GitProgressEvent.Percentage(String phase, int _)) {
                 currentPhase = phase;
             }
 

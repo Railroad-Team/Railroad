@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.diagnostics;
 
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
@@ -26,6 +27,7 @@ import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import javafx.scene.image.Image;
+import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
 import javax.tools.Diagnostic;
@@ -49,19 +51,19 @@ class JavaDiagnosticsProviderTest {
         JavaInspectionRuleProvider core = JavaInspectionRegistries.getRuleProvider(CoreNameResolutionInspection.ID);
         assertNotNull(core);
 
-        JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider();
-        TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+        var provider = new JavaDiagnosticsProvider();
+        var snapshot = new TextDocumentSnapshot(
             DocumentId.create(),
             DocumentUri.fromPath(Path.of("Example.java")),
             DocumentVersion.initial(),
             JavaLanguageSupport.LANGUAGE_ID,
             """
-                class Example {
-                    void run() {
-                        missing = 1;
+                    class Example {
+                        void run() {
+                            missing = 1;
+                        }
                     }
-                }
-            """,
+                """,
             StandardCharsets.UTF_8);
 
         List<TextEditorDiagnostic> diagnostics = provider.compute(snapshot);
@@ -76,8 +78,8 @@ class JavaDiagnosticsProviderTest {
 
         try {
             JavaInspectionRegistries.registerRuleProvider(id, provider);
-            JavaDiagnosticsProvider providerRunner = new JavaDiagnosticsProvider();
-            TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+            var providerRunner = new JavaDiagnosticsProvider();
+            var snapshot = new TextDocumentSnapshot(
                 DocumentId.create(),
                 DocumentUri.fromPath(Path.of("Example.java")),
                 DocumentVersion.initial(),
@@ -89,8 +91,9 @@ class JavaDiagnosticsProviderTest {
             assertTrue(diagnostics.stream().anyMatch(diagnostic -> PLUGIN_RULE_ID.equals(diagnostic.code())));
             assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.WARNING));
         } finally {
-            if (JavaInspectionRegistries.containsRuleProvider(id))
+            if (JavaInspectionRegistries.containsRuleProvider(id)) {
                 JavaInspectionRegistries.unregisterRuleProvider(id);
+            }
         }
     }
 
@@ -98,50 +101,51 @@ class JavaDiagnosticsProviderTest {
     void supportsRuleSettingsOverridesAndDisabling() {
         try {
             JavaInspectionRuleSettings.setRuleEnabled("SEM_UNRESOLVED_NAME", false);
-            JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider();
-            TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+            var provider = new JavaDiagnosticsProvider();
+            var snapshot = new TextDocumentSnapshot(
                 DocumentId.create(),
                 DocumentUri.fromPath(Path.of("Example.java")),
                 DocumentVersion.initial(),
                 JavaLanguageSupport.LANGUAGE_ID,
                 """
-                    class Example {
-                        void run() {
-                            missing = 1;
+                        class Example {
+                            void run() {
+                                missing = 1;
+                            }
                         }
-                    }
-                """,
+                    """,
                 StandardCharsets.UTF_8);
 
             List<EditorDiagnostic.TextEditorDiagnostic> disabledDiagnostics = provider.compute(snapshot);
-            assertFalse(disabledDiagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code())));
+            assertFalse(
+                disabledDiagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code())));
         } finally {
             JavaInspectionRuleSettings.resetAll();
         }
 
         try {
             JavaInspectionRuleSettings.setSeverityOverride("SEM_UNRESOLVED_NAME",
-                    SemanticDiagnostic.Severity.INFO);
-            JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider();
-            TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+                SemanticDiagnostic.Severity.INFO);
+            var provider = new JavaDiagnosticsProvider();
+            var snapshot = new TextDocumentSnapshot(
                 DocumentId.create(),
                 DocumentUri.fromPath(Path.of("Example.java")),
                 DocumentVersion.initial(),
                 JavaLanguageSupport.LANGUAGE_ID,
                 """
-                    class Example {
-                        void run() {
-                            missing = 1;
+                        class Example {
+                            void run() {
+                                missing = 1;
+                            }
                         }
-                    }
-                """,
+                    """,
                 StandardCharsets.UTF_8);
 
             List<EditorDiagnostic.TextEditorDiagnostic> overriddenDiagnostics = provider.compute(snapshot);
             EditorDiagnostic.TextEditorDiagnostic unresolved = overriddenDiagnostics.stream()
-                    .filter(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code()))
-                    .findFirst()
-                    .orElse(null);
+                .filter(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code()))
+                .findFirst()
+                .orElse(null);
             assertNotNull(unresolved);
             assertEquals(Diagnostic.Kind.NOTE, unresolved.kind());
         } finally {
@@ -155,8 +159,8 @@ class JavaDiagnosticsProviderTest {
         Path projectRoot = Path.of(".").toAbsolutePath().normalize();
         Path file = projectRoot.resolve("src/main/java/dev/railroadide/railroad/vcs/git/GitCommands.java");
         ProjectDiagnosticsContext context = ProjectDiagnosticsContext.create(new TestProject(projectRoot));
-        JavaDiagnosticsProvider provider = new JavaDiagnosticsProvider(context);
-        TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+        var provider = new JavaDiagnosticsProvider(context);
+        var snapshot = new TextDocumentSnapshot(
             DocumentId.create(),
             DocumentUri.fromPath(file),
             DocumentVersion.initial(),
@@ -165,21 +169,25 @@ class JavaDiagnosticsProviderTest {
             StandardCharsets.UTF_8);
 
         List<String> unresolved = provider.compute(snapshot).stream()
-                .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code()))
-                .filter(diagnostic -> diagnostic.message(null).contains("'addArgs'")
-                        || diagnostic.message(null).contains("'build'"))
-                .map(diagnostic -> "line " + diagnostic.location().line() + ": " + diagnostic.location().column())
-                .toList();
+            .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code()))
+            .filter(diagnostic -> diagnostic.message(null).contains("'addArgs'")
+                || diagnostic.message(null).contains("'build'"))
+            .map(diagnostic -> "line " + diagnostic.location().line() + ": " + diagnostic.location().column())
+            .toList();
 
         assertTrue(unresolved.isEmpty(), () -> String.join(System.lineSeparator(), unresolved));
     }
 
     private static void ensureJavaLanguageSupportRegistered() {
-        if (!LanguageSupportRegistry.contains(JavaLanguageSupport.LANGUAGE_ID))
-            LanguageSupportRegistry.register(new JavaLanguageSupport());
+        WorkspaceModes.initialize();
 
-        if (!Services.PROJECT_LANGUAGE_INDEX_SERVICE.hasIndexer(JavaLanguageSupport.LANGUAGE_ID))
+        if (!LanguageSupportRegistry.contains(JavaLanguageSupport.LANGUAGE_ID)) {
+            LanguageSupportRegistry.register(new JavaLanguageSupport());
+        }
+
+        if (!Services.PROJECT_LANGUAGE_INDEX_SERVICE.hasIndexer(JavaLanguageSupport.LANGUAGE_ID)) {
             Services.PROJECT_LANGUAGE_INDEX_SERVICE.registerIndexer(new JavaLanguageSupport().createIndexer());
+        }
     }
 
     private static final class TestJavaInspectionRuleProvider implements JavaInspectionRuleProvider {
@@ -224,6 +232,11 @@ class JavaDiagnosticsProviderTest {
 
     private record TestProject(Path path) implements Project {
         @Override
+        public Path getPath() {
+            return path;
+        }
+
+        @Override
         public String getAlias() {
             return path.getFileName() == null ? path.toString() : path.getFileName().toString();
         }
@@ -244,7 +257,12 @@ class JavaDiagnosticsProviderTest {
         }
 
         @Override
-        public void open() {
+        public void open(Stage stage) {
+            throw unsupported();
+        }
+
+        @Override
+        public void close() {
             throw unsupported();
         }
 

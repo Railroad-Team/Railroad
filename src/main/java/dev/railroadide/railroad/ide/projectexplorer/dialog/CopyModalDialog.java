@@ -10,7 +10,6 @@ public class CopyModalDialog {
             "railroad.dialog.copy.title",
             "railroad.dialog.copy.message",
             () -> replaceProperty.set(true),
-            () -> replaceProperty.set(false)
-        );
+            () -> replaceProperty.set(false));
     }
 }

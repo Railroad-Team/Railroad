@@ -43,7 +43,7 @@ public class AccountListCell extends ListCell<Object> {
         container.getStyleClass().add("account-list-cell-container");
         container.setAlignment(Pos.CENTER_LEFT);
 
-        selectedProperty().addListener((observable, oldValue, newValue) -> {
+        selectedProperty().addListener((_, _, newValue) -> {
             if (newValue) {
                 container.getStyleClass().add("selected");
             } else {

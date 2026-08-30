@@ -10,18 +10,20 @@ import java.util.List;
 import java.util.Map;
 
 public class KeybindHandler {
-    private static final Registry<Keybind> KEYBIND_REGISTRY = RegistryManager.createOrderedRegistry("keybinds", Keybind.class);
+    private static final Registry<Keybind> KEYBIND_REGISTRY = RegistryManager.createOrderedRegistry("keybinds",
+        Keybind.class);
 
     /**
      * Registers the provided node to capture key events.
      *
-     * @param context     The context of the node.
+     * @param context The context of the node.
      * @param captureNode The node that will capture key events.
-     * @param <T>         The type of the node, which must extend Node.
+     * @param <T> The type of the node, which must extend Node.
      */
     public static <T extends Node> void registerCapture(KeybindContexts.KeybindContext context, T captureNode) {
         KEYBIND_REGISTRY.values().forEach(keybind -> {
-            if (keybind.getValidContexts().contains(context) || keybind.getValidContexts().contains(KeybindContexts.ALL)) {
+            if (keybind.getValidContexts().contains(context)
+                || keybind.getValidContexts().contains(KeybindContexts.ALL)) {
                 captureNode.addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
                     if (keybind.matches(keyEvent)) {
                         keybind.getActions().forEach((keybindContext, action) -> {
@@ -38,7 +40,8 @@ public class KeybindHandler {
     /**
      * Returns a map of all keybinds with their default key combinations.
      *
-     * @return A map where the key is the keybind ID and the value is a list of KeybindData representing the default key combinations.
+     * @return A map where the key is the keybind ID and the value is a list of KeybindData representing the default key
+     *         combinations.
      */
     public static Map<String, List<KeybindData>> getDefaults() {
         var map = new HashMap<String, List<KeybindData>>();

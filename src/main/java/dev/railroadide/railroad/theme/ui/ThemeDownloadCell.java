@@ -89,7 +89,7 @@ public class ThemeDownloadCell extends ListCell<Theme> {
     }
 
     private void setupEventHandlers() {
-        downloadButton.setOnAction(e -> {
+        downloadButton.setOnAction(_ -> {
             Theme theme = themeProperty.get();
             if (theme != null) {
                 boolean success = ThemeDownloadManager.downloadTheme(theme);
@@ -97,7 +97,7 @@ public class ThemeDownloadCell extends ListCell<Theme> {
             }
         });
 
-        previewButton.setOnAction(e -> {
+        previewButton.setOnAction(_ -> {
             Theme theme = themeProperty.get();
             if (theme != null) {
                 new ThemeExamplePane(theme.getName().replace(".css", ""));
@@ -106,21 +106,19 @@ public class ThemeDownloadCell extends ListCell<Theme> {
     }
 
     private void setupPropertyBindings() {
-        ObservableValue<String> themeName = themeProperty.map(theme ->
-            WordUtils.capitalize(
-                theme.getName()
-                    .replace("\"", "")
-                    .replace(".css", "")
-                    .replace("-", " ")
-            ));
+        ObservableValue<String> themeName = themeProperty.map(theme -> WordUtils.capitalize(
+            theme.getName()
+                .replace("\"", "")
+                .replace(".css", "")
+                .replace("-", " ")));
         themeNameLabel.textProperty().bind(themeName);
 
         ObservableValue<String> themeSize = themeProperty.map(theme -> {
             if (theme.getSize() > 0) {
                 double sizeKB = theme.getSize() / 1024.0;
-                if (sizeKB < 1024) {
+                if (sizeKB < 1024)
                     return String.format("%.1f KB", sizeKB);
-                } else {
+                else {
                     double sizeMB = sizeKB / 1024.0;
                     return String.format("%.1f MB", sizeMB);
                 }
@@ -129,7 +127,7 @@ public class ThemeDownloadCell extends ListCell<Theme> {
         });
         themeSizeLabel.textProperty().bind(themeSize);
 
-        themeProperty.addListener((observable, oldValue, newValue) -> {
+        themeProperty.addListener((_, _, newValue) -> {
             if (newValue != null) {
                 boolean isDownloaded = ThemeDownloadManager.isDownloaded(newValue);
                 updateButtonStates(isDownloaded);

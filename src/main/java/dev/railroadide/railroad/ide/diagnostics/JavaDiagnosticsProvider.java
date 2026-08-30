@@ -29,7 +29,8 @@ import java.util.Optional;
 /**
  * Diagnostics provider backed by the SST semantic analyzer.
  */
-public record JavaDiagnosticsProvider(Project project, @Nullable JavaSymbolIndex projectIndex) implements DiagnosticsProvider<TextEditorDiagnostic> {
+public record JavaDiagnosticsProvider(Project project,
+    @Nullable JavaSymbolIndex projectIndex) implements DiagnosticsProvider<TextEditorDiagnostic> {
     public JavaDiagnosticsProvider() {
         this(null, null);
     }
@@ -45,8 +46,7 @@ public record JavaDiagnosticsProvider(Project project, @Nullable JavaSymbolIndex
     @Override
     public @NotNull List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
         Optional<String> snapshotText = TextDocumentSnapshot.unwrap(
-            snapshot, LanguageSupportRegistry.get(JavaLanguageSupport.LANGUAGE_ID).get()
-        );
+            snapshot, LanguageSupportRegistry.get(JavaLanguageSupport.LANGUAGE_ID).get());
         if (snapshotText.isEmpty())
             return List.of();
 
@@ -65,7 +65,8 @@ public record JavaDiagnosticsProvider(Project project, @Nullable JavaSymbolIndex
             semanticModel = JavaSemanticAnalyzer.analyzeFacts(document);
         }
 
-        List<SemanticDiagnostic> semanticDiagnostics = runRegisteredInspections(snapshot.uri().filePath().get(), document, semanticModel, symbolIndex);
+        List<SemanticDiagnostic> semanticDiagnostics = runRegisteredInspections(snapshot.uri().filePath().get(),
+            document, semanticModel, symbolIndex);
         char[] source = document.toCharArray();
 
         List<TextEditorDiagnostic> diagnostics = new ArrayList<>();
@@ -83,18 +84,18 @@ public record JavaDiagnosticsProvider(Project project, @Nullable JavaSymbolIndex
                     TextLocation.from((TextDocumentSnapshot) snapshot, start, end),
                     kind,
                     diagnostic.code(),
-                    diagnostic.message()
-                )
-            );
+                    diagnostic.message()));
         }
 
         return List.copyOf(diagnostics);
     }
 
-    private List<SemanticDiagnostic> runRegisteredInspections(Path filePath, String document, SemanticModel semanticModel, JavaSymbolIndex symbolIndex) {
+    private List<SemanticDiagnostic> runRegisteredInspections(Path filePath, String document,
+        SemanticModel semanticModel, JavaSymbolIndex symbolIndex) {
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
-        JavaRuleContext context = new JavaRuleContext(filePath, document, semanticModel, symbolIndex);
-        JavaInspectionReporter reporter = diagnostic -> diagnostics.add(Objects.requireNonNull(diagnostic, "diagnostic"));
+        var context = new JavaRuleContext(filePath, document, semanticModel, symbolIndex);
+        JavaInspectionReporter reporter = diagnostic -> diagnostics
+            .add(Objects.requireNonNull(diagnostic, "diagnostic"));
 
         for (JavaInspectionRuleProvider provider : sortedRuleProviders()) {
             if (provider == null)
@@ -103,7 +104,8 @@ public record JavaDiagnosticsProvider(Project project, @Nullable JavaSymbolIndex
             try {
                 JavaInspectionRuleEngine.runRules(provider, context, reporter);
             } catch (Exception exception) {
-                Railroad.LOGGER.error("Plugin Java inspection rule provider '{}' failed for {}", provider.id(), filePath, exception);
+                Railroad.LOGGER.error("Plugin Java inspection rule provider '{}' failed for {}", provider.id(),
+                    filePath, exception);
             }
         }
 
@@ -112,8 +114,8 @@ public record JavaDiagnosticsProvider(Project project, @Nullable JavaSymbolIndex
 
     private static List<JavaInspectionRuleProvider> sortedRuleProviders() {
         return JavaInspectionRegistries.ruleProviderEntries().entrySet().stream()
-                .sorted(java.util.Map.Entry.comparingByKey())
-                .map(java.util.Map.Entry::getValue)
-                .toList();
+            .sorted(java.util.Map.Entry.comparingByKey())
+            .map(java.util.Map.Entry::getValue)
+            .toList();
     }
 }

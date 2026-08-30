@@ -19,8 +19,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
     }
 
     @Test
@@ -33,8 +33,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
     }
 
     @Test
@@ -47,8 +47,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
     }
 
     @Test
@@ -61,8 +61,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
     }
 
     @Test
@@ -75,8 +75,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())));
     }
 
     @Test
@@ -89,8 +89,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -103,8 +103,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -119,8 +119,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -134,8 +134,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -150,8 +150,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -167,8 +167,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -183,8 +183,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -236,8 +236,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -271,8 +271,8 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
+        assertFalse(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())));
     }
 
     @Test
@@ -291,14 +291,14 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())
                 && d.message().contains("'if' condition is always 'true'")));
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT".equals(d.code())
                 && d.message().contains("'if' condition is always 'false'")));
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT".equals(d.code())
                 && d.message().contains("'p' is known to be 'true'")
                 && d.message().contains("always 'true'")));
     }
@@ -331,7 +331,9 @@ class CoreConstantConditionalExpressionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().noneMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())),
+        assertTrue(
+            diagnostics.stream()
+                .noneMatch(d -> "SEM_CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL".equals(d.code())),
             "while(true) should be ignored as an intentional infinite loop idiom");
     }
 
@@ -353,6 +355,5 @@ class CoreConstantConditionalExpressionInspectionTest {
 
         assertTrue(diagnostics.isEmpty(), "Dynamic conditions should not be flagged as constant");
     }
-
 
 }

@@ -23,7 +23,8 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
     }
 
     @Override
-    public CompletableFuture<Void> debug(Project project, RunConfiguration<CompoundRunConfigurationData> configuration) {
+    public CompletableFuture<Void> debug(Project project,
+        RunConfiguration<CompoundRunConfigurationData> configuration) {
         return executeChildren(project, configuration, true);
     }
 
@@ -70,13 +71,14 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
     }
 
     private List<RunConfiguration<?>> getResolvedChildren(Project project,
-                                                          RunConfiguration<CompoundRunConfigurationData> configuration) {
-        List<RunConfiguration<?>> resolved =
-            configuration.data().resolveConfigurations(project.getRunConfigManager().getConfigurations());
+        RunConfiguration<CompoundRunConfigurationData> configuration) {
+        List<RunConfiguration<?>> resolved = configuration.data()
+            .resolveConfigurations(project.getRunConfigManager().getConfigurations());
         List<RunConfiguration<?>> valid = new ArrayList<>(resolved.size());
         for (RunConfiguration<?> child : resolved) {
             if (child == null) {
-                Railroad.LOGGER.warn("Null run configuration found in compound run configuration: {}", configuration.data().getName());
+                Railroad.LOGGER.warn("Null run configuration found in compound run configuration: {}",
+                    configuration.data().getName());
                 continue;
             }
 
@@ -87,8 +89,8 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
     }
 
     private CompletableFuture<Void> executeChildren(Project project,
-                                                    RunConfiguration<CompoundRunConfigurationData> configuration,
-                                                    boolean debug) {
+        RunConfiguration<CompoundRunConfigurationData> configuration,
+        boolean debug) {
         var children = getResolvedChildren(project, configuration);
         if (children.isEmpty())
             return CompletableFuture.completedFuture(null);
@@ -98,7 +100,8 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
                 .filter(child -> {
                     boolean supported = child.isDebuggingSupported(project);
                     if (!supported) {
-                        Railroad.LOGGER.warn("Skipping '{}' in compound configuration '{}' because it does not support debugging.",
+                        Railroad.LOGGER.warn(
+                            "Skipping '{}' in compound configuration '{}' because it does not support debugging.",
                             child.data().getName(), configuration.data().getName());
                     }
 
@@ -109,14 +112,14 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
                 return CompletableFuture.completedFuture(null);
         }
 
-        return configuration.data().getRunMode() == CompoundRunConfigurationData.RunMode.PARALLEL ?
-            runParallel(children, project, debug) :
-            runSequential(children, project, debug);
+        return configuration.data().getRunMode() == CompoundRunConfigurationData.RunMode.PARALLEL
+            ? runParallel(children, project, debug)
+            : runSequential(children, project, debug);
     }
 
     private CompletableFuture<Void> runParallel(List<RunConfiguration<?>> children,
-                                                Project project,
-                                                boolean debug) {
+        Project project,
+        boolean debug) {
         List<CompletableFuture<Void>> futures = new ArrayList<>(children.size());
         for (RunConfiguration<?> child : children) {
             futures.add(invokeChild(child, project, debug));
@@ -126,19 +129,19 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
     }
 
     private CompletableFuture<Void> runSequential(List<RunConfiguration<?>> children,
-                                                  Project project,
-                                                  boolean debug) {
+        Project project,
+        boolean debug) {
         CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
         for (RunConfiguration<?> child : children) {
-            chain = chain.thenCompose(ignored -> invokeChild(child, project, debug));
+            chain = chain.thenCompose(_ -> invokeChild(child, project, debug));
         }
 
         return chain;
     }
 
     private CompletableFuture<Void> invokeChild(RunConfiguration<?> child,
-                                                Project project,
-                                                boolean debug) {
+        Project project,
+        boolean debug) {
         try {
             return debug ? child.debug(project) : child.run(project);
         } catch (Throwable throwable) {

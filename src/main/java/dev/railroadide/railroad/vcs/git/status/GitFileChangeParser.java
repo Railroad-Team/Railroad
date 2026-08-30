@@ -34,17 +34,14 @@ public final class GitFileChangeParser {
         // Rename or Copy
         boolean expectsSecondPath = (x == 'R' || x == 'C' || y == 'R' || y == 'C');
         Path repoRoot = repo.root();
-        if (expectsSecondPath && nextRecord != null && !nextRecord.isEmpty()) {
+        if (expectsSecondPath && nextRecord != null && !nextRecord.isEmpty())
             return new GitFileChange(
                 repoRoot.resolve(nextRecord).normalize(),
                 repoRoot.resolve(filePath).normalize(),
-                x, y
-            );
-        }
+                x, y);
 
         return new GitFileChange(
             repoRoot.resolve(filePath).normalize(),
-            x, y
-        );
+            x, y);
     }
 }

@@ -25,7 +25,8 @@ class CoreAutoCloseableInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -43,7 +44,8 @@ class CoreAutoCloseableInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -63,7 +65,8 @@ class CoreAutoCloseableInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -82,7 +85,8 @@ class CoreAutoCloseableInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -98,7 +102,8 @@ class CoreAutoCloseableInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -116,7 +121,8 @@ class CoreAutoCloseableInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -136,7 +142,8 @@ class CoreAutoCloseableInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -158,7 +165,8 @@ class CoreAutoCloseableInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -180,7 +188,8 @@ class CoreAutoCloseableInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -197,7 +206,8 @@ class CoreAutoCloseableInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -219,7 +229,8 @@ class CoreAutoCloseableInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -237,7 +248,8 @@ class CoreAutoCloseableInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
 
     @Test
@@ -255,8 +267,8 @@ class CoreAutoCloseableInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
-
 
 }

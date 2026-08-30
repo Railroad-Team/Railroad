@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.welcome.project.ui;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ui.RRCard;
 import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.scene.layout.Priority;
 
 public class NewProjectPane extends RRCard {
@@ -24,5 +26,7 @@ public class NewProjectPane extends RRCard {
 
         projectDetailsPane.projectTypeProperty().bind(
             projectTypePane.getProjectTypeListView().getSelectionModel().selectedItemProperty());
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Welcome.NEW_PROJECT, this);
     }
 }

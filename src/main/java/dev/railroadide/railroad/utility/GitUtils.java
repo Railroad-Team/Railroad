@@ -13,7 +13,7 @@ public class GitUtils {
     /**
      * Clones a Git repository from the specified URI to the given destination path.
      *
-     * @param uri  The URI of the Git repository to clone.
+     * @param uri The URI of the Git repository to clone.
      * @param dest The destination path where the repository should be cloned.
      * @return A CompletableFuture that completes with true if the clone was successful, false otherwise.
      */
@@ -39,7 +39,7 @@ public class GitUtils {
     public static boolean isGitRepository(Path path) {
         try (Git git = Git.open(path.toFile())) {
             return git.getRepository().getDirectory() != null;
-        } catch (Exception ignored) {
+        } catch (Exception _) {
             return false;
         }
     }

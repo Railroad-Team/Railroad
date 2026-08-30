@@ -38,7 +38,7 @@ public record DocumentId(UUID value) {
      *
      * @param value UUID text previously returned by {@link #toString()}
      * @return parsed document identity
-     * @throws NullPointerException     if {@code value} is {@code null}
+     * @throws NullPointerException if {@code value} is {@code null}
      * @throws IllegalArgumentException if {@code value} is blank or not a UUID
      */
     public static DocumentId parse(String value) {
@@ -57,7 +57,7 @@ public record DocumentId(UUID value) {
     @Override
     public boolean equals(Object other) {
         if (other instanceof DocumentId)
-            return this.value.equals(((DocumentId)other).value);
+            return this.value.equals(((DocumentId) other).value);
         return false;
     }
 }

@@ -15,13 +15,12 @@ import java.util.List;
 import java.util.Optional;
 
 public record Parameter(
-        Span span,
-        List<Modifier> modifiers,
-        List<Annotation> annotations,
-        Optional<TypeRef> type,
-        boolean isVarArgs,
-        NameExpression name
-) implements AstNode {
+    Span span,
+    List<Modifier> modifiers,
+    List<Annotation> annotations,
+    Optional<TypeRef> type,
+    boolean isVarArgs,
+    NameExpression name) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.PARAMETER;

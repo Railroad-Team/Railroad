@@ -11,8 +11,7 @@ public record MetadataCacheEntry<T>(
     Instant lastFetched,
     TypeToken<@NotNull T> dataClass,
     Duration ttl,
-    String etag
-) {
+    String etag) {
     public boolean isExpired() {
         return Instant.now().isAfter(lastFetched.plus(ttl));
     }

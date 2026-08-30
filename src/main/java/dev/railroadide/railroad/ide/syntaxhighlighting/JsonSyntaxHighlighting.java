@@ -20,8 +20,7 @@ public class JsonSyntaxHighlighting {
             + "|(?<STRING>" + STRING + ")"
             + "|(?<NUMBER>" + NUMBER + ")"
             + "|(?<BOOLEAN>" + BOOLEAN + ")"
-            + "|(?<NULL>" + NULL + ")"
-    );
+            + "|(?<NULL>" + NULL + ")");
 
     public static StyleSpans<Collection<String>> computeHighlighting(String text) {
         long start = System.currentTimeMillis();
@@ -29,12 +28,15 @@ public class JsonSyntaxHighlighting {
         int lastKwEnd = 0;
         var spansBuilder = new StyleSpansBuilder<Collection<String>>();
         while (matcher.find()) {
-            String styleClass =
-                matcher.group("KEY") != null ? "name" :
-                    matcher.group("STRING") != null ? "string" :
-                        matcher.group("NUMBER") != null ? "number" :
-                            matcher.group("BOOLEAN") != null ? "keyword" :
-                                matcher.group("NULL") != null ? "keyword" : null;
+            String styleClass = matcher.group("KEY") != null
+                ? "name"
+                : matcher.group("STRING") != null
+                    ? "string"
+                    : matcher.group("NUMBER") != null
+                        ? "number"
+                        : matcher.group("BOOLEAN") != null
+                            ? "keyword"
+                            : matcher.group("NULL") != null ? "keyword" : null;
             spansBuilder.add(Collections.emptyList(), matcher.start() - lastKwEnd);
             spansBuilder.add(Collections.singleton(styleClass), matcher.end() - matcher.start());
             lastKwEnd = matcher.end();

@@ -53,18 +53,19 @@ class JavaAssignmentAndCallResolutionInspectionTest {
             }
             """;
         var model = JavaSemanticAnalyzer.analyzeFacts(source);
-        JavaRuleContext context = new JavaRuleContext(Path.of("Example.java"), source, model);
+        var context = new JavaRuleContext(Path.of("Example.java"), source, model);
         List<String> inferredTypes = new ArrayList<>();
         context.traverse(node -> {
-            if (Set.of("JAVA_CLASS_LITERAL_EXPRESSION", "JAVA_METHOD_INVOCATION_EXPRESSION").contains(node.kind().id())) {
+            if (Set.of("JAVA_CLASS_LITERAL_EXPRESSION", "JAVA_METHOD_INVOCATION_EXPRESSION")
+                .contains(node.kind().id())) {
                 inferredTypes.add(node.kind().id() + "="
                     + context.inferredType(node).map(type -> type.displayName() + type).orElse("<none>"));
             }
         });
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n"))
                 + "\n" + String.join("\n", inferredTypes));
     }
@@ -94,8 +95,8 @@ class JavaAssignmentAndCallResolutionInspectionTest {
 
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -116,7 +117,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
             }
             """;
         var model = JavaSemanticAnalyzer.analyzeFacts(source);
-        JavaRuleContext context = new JavaRuleContext(Path.of("Example.java"), source, model);
+        var context = new JavaRuleContext(Path.of("Example.java"), source, model);
         List<String> binaryTypes = new ArrayList<>();
         context.traverse(node -> {
             if ("JAVA_BINARY_EXPRESSION".equals(node.kind().id())) {
@@ -126,8 +127,8 @@ class JavaAssignmentAndCallResolutionInspectionTest {
         });
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n"))
                 + "\n" + String.join("\n", binaryTypes));
     }
@@ -135,7 +136,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
     @Test
     void assignmentRuleTreatsJvmAndSourceNestedTypeNamesAsEquivalent() {
         String source = "class Example {}";
-        JavaRuleContext context = new JavaRuleContext(
+        var context = new JavaRuleContext(
             Path.of("Example.java"), source, JavaSemanticAnalyzer.analyzeFacts(source));
 
         assertTrue(context.isAssignable(
@@ -164,14 +165,13 @@ class JavaAssignmentAndCallResolutionInspectionTest {
             javafx.beans.property.StringProperty.class.getProtectionDomain().getCodeSource().getLocation().toURI());
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             JavaLibrarySymbolIndex.build(List.of(javafxJar)),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreAssignmentInspection(), Path.of("Example.java"), source, symbolIndex);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -216,8 +216,8 @@ class JavaAssignmentAndCallResolutionInspectionTest {
             }
             """);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -251,18 +251,19 @@ class JavaAssignmentAndCallResolutionInspectionTest {
             }
             """;
         var model = JavaSemanticAnalyzer.analyzeFacts(source);
-        JavaRuleContext context = new JavaRuleContext(Path.of("Example.java"), source, model);
+        var context = new JavaRuleContext(Path.of("Example.java"), source, model);
         List<String> inferredTypes = new ArrayList<>();
         context.traverse(node -> {
-            if (Set.of("JAVA_METHOD_INVOCATION_EXPRESSION", "JAVA_METHOD_REFERENCE_EXPRESSION").contains(node.kind().id())) {
+            if (Set.of("JAVA_METHOD_INVOCATION_EXPRESSION", "JAVA_METHOD_REFERENCE_EXPRESSION")
+                .contains(node.kind().id())) {
                 inferredTypes.add(source.substring(node.start(), node.end()) + "="
                     + context.inferredType(node).map(Object::toString).orElse("<none>"));
             }
         });
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n"))
                 + "\n" + String.join("\n", inferredTypes));
     }
@@ -446,8 +447,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
 
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCallResolutionInspection(), source);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-                "SEM_UNRESOLVED_CALL".equals(diagnostic.code())),
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code())),
             () -> diagnostics.stream()
                 .map(diagnostic -> diagnostic.startOffset() + " " + diagnostic.message())
                 .collect(Collectors.joining("\n")));
@@ -472,8 +472,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
 
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCallResolutionInspection(), source);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-                "SEM_UNRESOLVED_CALL".equals(diagnostic.code())),
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -579,8 +578,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
             new CoreCallResolutionInspection(), Path.of("Example.java"), source,
             JavaJdkSymbolIndex.fromCurrentRuntime());
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-                "SEM_UNRESOLVED_CALL".equals(diagnostic.code())),
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -636,8 +634,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
 
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCallResolutionInspection(), source);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-                "SEM_UNRESOLVED_CALL".equals(diagnostic.code())),
+        assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -695,14 +692,13 @@ class JavaAssignmentAndCallResolutionInspectionTest {
         Files.writeString(useFile, useSource);
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
-            JavaJdkSymbolIndex.fromCurrentRuntime()
-        ));
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
 
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreAssignmentInspection(), useFile, useSource, symbolIndex);
 
-        assertFalse(diagnostics.stream().anyMatch(diagnostic ->
-            "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 

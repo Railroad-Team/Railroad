@@ -6,14 +6,13 @@ import java.nio.CharBuffer;
 /**
  * A validated, half-open range of content within a {@link TextDocumentSnapshot}.
  */
-public final class TextRange extends Range<TextDocumentSnapshot>
-{
+public final class TextRange extends Range<TextDocumentSnapshot> {
     public TextRange(int start, int end) {
         super(start, end);
     }
 
     /**
-     *  Returns a read-only view over this range within the snapshot.
+     * Returns a read-only view over this range within the snapshot.
      */
     public CharBuffer content(TextDocumentSnapshot snapshot) {
         return CharBuffer.wrap(snapshot.text())

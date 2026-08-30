@@ -2,7 +2,6 @@ package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
-import dev.railroadide.railroad.ui.RRTextArea;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Text;
 
@@ -29,13 +28,12 @@ public class DiagnosticPane extends BorderPane {
         var line = 0;
         var column = diagnostic.location().range().start;
 
-        if (diagnostic instanceof TextEditorDiagnostic textDiagnostic)
-        {
+        if (diagnostic instanceof TextEditorDiagnostic textDiagnostic) {
             line = (int) textDiagnostic.location().line();
             column = (int) textDiagnostic.location().column();
         }
 
-        var messageText = createMessageArea(message);
+        var messageText = new Text(message);
         var locationText = new Text("Line " + line + ", Column " + column);
 
         setTop(locationText);
@@ -59,13 +57,13 @@ public class DiagnosticPane extends BorderPane {
             message.append(diagnostic.getMessage(null)).append("\n");
         }
 
-        var messageText = createMessageArea(message.toString().stripTrailing());
+        var messageText = new Text(message.toString());
         var locationText = new Text("Multiple errors");
 
         setTop(locationText);
         setCenter(messageText);
         getStyleClass().add("diagnostic-pane");
-        if (diagnostics.stream().anyMatch(d -> d.getKind() == Diagnostic.Kind.ERROR)) {
+        if (diagnostics.stream().anyMatch(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR)) {
             getStyleClass().add("error");
         } else {
             getStyleClass().add("warning");
@@ -80,17 +78,5 @@ public class DiagnosticPane extends BorderPane {
     @SafeVarargs
     public DiagnosticPane(Diagnostic<? extends JavaFileObject>... diagnostics) {
         this(List.of(diagnostics));
-    }
-
-    private static RRTextArea createMessageArea(String message) {
-        var messageArea = new RRTextArea();
-        messageArea.setText(message);
-        messageArea.setEditable(false);
-        messageArea.setWrapText(true);
-        messageArea.setFocusTraversable(true);
-        messageArea.setPrefColumnCount(50);
-        messageArea.setPrefRowCount(Math.clamp(message.lines().toArray().length + 1, 2, 8));
-        messageArea.getStyleClass().add("diagnostic-pane-message");
-        return messageArea;
     }
 }

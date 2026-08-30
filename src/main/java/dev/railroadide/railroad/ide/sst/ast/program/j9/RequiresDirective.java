@@ -10,11 +10,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record RequiresDirective(
-        Span span,
-        boolean isStatic,
-        boolean isTransitive,
-        NameExpression moduleName
-) implements ModuleDirective {
+    Span span,
+    boolean isStatic,
+    boolean isTransitive,
+    NameExpression moduleName) implements ModuleDirective {
     @Override
     public AstKind kind() {
         return AstKind.REQUIRES_DIRECTIVE;

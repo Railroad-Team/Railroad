@@ -1,13 +1,15 @@
 package dev.railroadide.railroad.ide.ui.git.remote;
 
-import dev.railroadide.railroad.utility.DesktopUtils;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRTextField;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
+import dev.railroadide.railroad.utility.DesktopUtils;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
@@ -32,6 +34,7 @@ public class GitRemoteActionsPane extends RRVBox {
     private GitRemote selectedRemote;
 
     public GitRemoteActionsPane(GitManager gitManager) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_REMOTE_ACTIONS, this);
         this.gitManager = gitManager;
 
         getStyleClass().add("git-remote-actions-pane");
@@ -46,40 +49,42 @@ public class GitRemoteActionsPane extends RRVBox {
         removeRemoteButton.setVariant(ButtonVariant.DANGER);
         fetchButton = new RRButton("railroad.git.remotes.actions.button.fetch", FontAwesomeSolid.DOWNLOAD);
         pruneButton = new RRButton("railroad.git.remotes.actions.button.prune", FontAwesomeSolid.BROOM);
-        openInBrowserButton = new RRButton("railroad.git.remotes.actions.button.open_in_browser", FontAwesomeSolid.GLOBE);
+        openInBrowserButton = new RRButton("railroad.git.remotes.actions.button.open_in_browser",
+            FontAwesomeSolid.GLOBE);
 
         var primaryActionsBox = new RRHBox(fetchAllButton, pruneAllButton, addRemoteButton);
         primaryActionsBox.getStyleClass().add("git-remotes-actions-primary-actions");
         primaryActionsBox.setAlignment(Pos.CENTER);
 
-        var secondaryActionsBox = new RRHBox(editRemoteButton, removeRemoteButton, fetchButton, pruneButton, openInBrowserButton);
+        var secondaryActionsBox = new RRHBox(editRemoteButton, removeRemoteButton, fetchButton, pruneButton,
+            openInBrowserButton);
         secondaryActionsBox.getStyleClass().add("git-remotes-actions-secondary-actions");
         secondaryActionsBox.setAlignment(Pos.CENTER);
 
         getChildren().addAll(primaryActionsBox, secondaryActionsBox);
         setAlignment(Pos.TOP_CENTER);
 
-        fetchAllButton.setOnAction(event -> gitManager.fetchAllRemotes());
-        pruneAllButton.setOnAction(event -> gitManager.pruneAllRemotes());
-        addRemoteButton.setOnAction(event -> openAddRemoteDialog());
+        fetchAllButton.setOnAction(_ -> gitManager.fetchAllRemotes());
+        pruneAllButton.setOnAction(_ -> gitManager.pruneAllRemotes());
+        addRemoteButton.setOnAction(_ -> openAddRemoteDialog());
 
-        editRemoteButton.setOnAction(event -> {
+        editRemoteButton.setOnAction(_ -> {
             GitRemote remote = resolveRemoteForAction();
             if (remote != null) {
                 openEditRemoteDialog(remote);
             }
         });
 
-        removeRemoteButton.setOnAction(event -> {
+        removeRemoteButton.setOnAction(_ -> {
             GitRemote remote = resolveRemoteForAction();
             if (remote != null) {
                 openRemoveRemoteDialog(remote);
             }
         });
 
-        fetchButton.setOnAction(event -> gitManager.fetch());
-        pruneButton.setOnAction(event -> gitManager.gc());
-        openInBrowserButton.setOnAction(event -> {
+        fetchButton.setOnAction(_ -> gitManager.fetch());
+        pruneButton.setOnAction(_ -> gitManager.gc());
+        openInBrowserButton.setOnAction(_ -> {
             GitRemote remote = resolveRemoteForAction();
             if (remote == null)
                 return;
@@ -130,7 +135,8 @@ public class GitRemoteActionsPane extends RRVBox {
         var errorText = new LocalizedText("");
         errorText.getStyleClass().add("git-remote-actions-dialog-error-text");
 
-        content.getChildren().addAll(nameLabel, nameField, fetchUrlLabel, fetchUrlField, pushUrlLabel, pushUrlField, errorText);
+        content.getChildren().addAll(nameLabel, nameField, fetchUrlLabel, fetchUrlField, pushUrlLabel, pushUrlField,
+            errorText);
 
         DialogBuilder dialogBuilder = DialogBuilder.create()
             .title("railroad.git.remotes.actions.add_dialog.subtitle")
@@ -153,18 +159,20 @@ public class GitRemoteActionsPane extends RRVBox {
         if (confirmButton == null)
             return;
 
-        Runnable validator = () -> validateAddRemoteInput(nameField, fetchUrlField, pushUrlField, errorText, confirmButton);
+        Runnable validator = () -> validateAddRemoteInput(nameField, fetchUrlField, pushUrlField, errorText,
+            confirmButton);
         validator.run();
-        nameField.textProperty().addListener((obs, oldText, newText) -> validator.run());
-        fetchUrlField.textProperty().addListener((obs, oldText, newText) -> validator.run());
-        pushUrlField.textProperty().addListener((obs, oldText, newText) -> validator.run());
+        nameField.textProperty().addListener((_, _, _) -> validator.run());
+        fetchUrlField.textProperty().addListener((_, _, _) -> validator.run());
+        pushUrlField.textProperty().addListener((_, _, _) -> validator.run());
     }
 
     private void openEditRemoteDialog(GitRemote remote) {
         var content = new RRVBox();
         content.getStyleClass().add("git-remote-edit-dialog-content");
 
-        var currentRemoteText = new LocalizedText("railroad.git.remotes.actions.edit_dialog.current_remote", remote.name());
+        var currentRemoteText = new LocalizedText("railroad.git.remotes.actions.edit_dialog.current_remote",
+            remote.name());
 
         var nameLabel = new LocalizedText("railroad.git.remotes.actions.edit_dialog.name.label");
         var nameField = new RRTextField("railroad.git.remotes.actions.edit_dialog.name.placeholder");
@@ -181,7 +189,8 @@ public class GitRemoteActionsPane extends RRVBox {
         var errorText = new LocalizedText("");
         errorText.getStyleClass().add("git-remote-actions-dialog-error-text");
 
-        content.getChildren().addAll(currentRemoteText, nameLabel, nameField, fetchUrlLabel, fetchUrlField, pushUrlLabel, pushUrlField, errorText);
+        content.getChildren().addAll(currentRemoteText, nameLabel, nameField, fetchUrlLabel, fetchUrlField,
+            pushUrlLabel, pushUrlField, errorText);
 
         DialogBuilder dialogBuilder = DialogBuilder.create()
             .title("railroad.git.remotes.actions.edit_dialog.subtitle")
@@ -204,11 +213,12 @@ public class GitRemoteActionsPane extends RRVBox {
         if (confirmButton == null)
             return;
 
-        Runnable validator = () -> validateEditRemoteInput(remote.name(), nameField, fetchUrlField, pushUrlField, errorText, confirmButton);
+        Runnable validator = () -> validateEditRemoteInput(remote.name(), nameField, fetchUrlField, pushUrlField,
+            errorText, confirmButton);
         validator.run();
-        nameField.textProperty().addListener((obs, oldText, newText) -> validator.run());
-        fetchUrlField.textProperty().addListener((obs, oldText, newText) -> validator.run());
-        pushUrlField.textProperty().addListener((obs, oldText, newText) -> validator.run());
+        nameField.textProperty().addListener((_, _, _) -> validator.run());
+        fetchUrlField.textProperty().addListener((_, _, _) -> validator.run());
+        pushUrlField.textProperty().addListener((_, _, _) -> validator.run());
     }
 
     private void openRemoveRemoteDialog(GitRemote remote) {
@@ -235,15 +245,15 @@ public class GitRemoteActionsPane extends RRVBox {
             .buttons(cancelButton, confirmButton);
         Stage dialog = WindowBuilder.createDialog("railroad.git.remotes.actions.remove_dialog.title", dialogBuilder);
 
-        cancelButton.setOnAction($ -> dialog.close());
-        confirmButton.setOnAction($ -> {
+        cancelButton.setOnAction(_ -> dialog.close());
+        confirmButton.setOnAction(_ -> {
             if (remote.name().equals(confirmationField.getText())) {
                 gitManager.removeRemote(remote.name());
                 dialog.close();
             }
         });
 
-        confirmationField.textProperty().addListener((obs, oldText, newText) -> {
+        confirmationField.textProperty().addListener((_, _, newText) -> {
             boolean matches = remote.name().equals(newText);
             confirmButton.setDisable(!matches);
 
@@ -260,7 +270,8 @@ public class GitRemoteActionsPane extends RRVBox {
     }
 
     private boolean isEditRemoteInputValid(String currentName, String newName, String fetchUrl, String pushUrl) {
-        return !newName.isBlank() && !fetchUrl.isBlank() && !pushUrl.isBlank() && isRemoteNameAvailable(newName, currentName);
+        return !newName.isBlank() && !fetchUrl.isBlank() && !pushUrl.isBlank()
+            && isRemoteNameAvailable(newName, currentName);
     }
 
     private void validateAddRemoteInput(
@@ -268,8 +279,7 @@ public class GitRemoteActionsPane extends RRVBox {
         RRTextField fetchUrlField,
         RRTextField pushUrlField,
         LocalizedText errorText,
-        RRButton confirmButton
-    ) {
+        RRButton confirmButton) {
         String name = nameField.getText() == null ? "" : nameField.getText().trim();
         String fetchUrl = fetchUrlField.getText() == null ? "" : fetchUrlField.getText().trim();
         String pushUrl = pushUrlField.getText() == null ? "" : pushUrlField.getText().trim();
@@ -311,8 +321,7 @@ public class GitRemoteActionsPane extends RRVBox {
         RRTextField fetchUrlField,
         RRTextField pushUrlField,
         LocalizedText errorText,
-        RRButton confirmButton
-    ) {
+        RRButton confirmButton) {
         String name = nameField.getText() == null ? "" : nameField.getText().trim();
         String fetchUrl = fetchUrlField.getText() == null ? "" : fetchUrlField.getText().trim();
         String pushUrl = pushUrlField.getText() == null ? "" : pushUrlField.getText().trim();

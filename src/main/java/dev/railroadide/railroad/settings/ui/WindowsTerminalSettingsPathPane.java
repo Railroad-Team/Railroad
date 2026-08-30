@@ -23,14 +23,16 @@ public class WindowsTerminalSettingsPathPane extends RRHBox {
         getStyleClass().add("windows-terminal-settings-path-pane");
         browseButton.textFieldProperty().set(pathField);
         browseButton.browseTypeProperty().set(BrowseButton.BrowseType.FILE);
-        browseButton.defaultLocationProperty().set(path != null ? path.getParent() : Path.of(System.getProperty("user.home")));
+        browseButton.defaultLocationProperty()
+            .set(path != null ? path.getParent() : Path.of(System.getProperty("user.home")));
         browseButton.selectionModeProperty().set(BrowseButton.BrowseSelectionMode.SINGLE);
         browseButton.parentWindowProperty().bind(sceneProperty().flatMap(Scene::windowProperty));
 
-        pathField.setLocalizedPlaceholder("railroad.settings.appearance.terminal.windows_terminal_settings_path.placeholder");
-        settingsPath.addListener((observable, oldValue, newValue) ->
-            pathField.setText(newValue == null ? "" : Objects.toString(newValue)));
-        pathField.textProperty().addListener((obs, oldText, newText) -> {
+        pathField.setLocalizedPlaceholder(
+            "railroad.settings.appearance.terminal.windows_terminal_settings_path.placeholder");
+        settingsPath
+            .addListener((_, _, newValue) -> pathField.setText(newValue == null ? "" : Objects.toString(newValue)));
+        pathField.textProperty().addListener((_, _, newText) -> {
             if (newText == null || newText.isBlank()) {
                 setSettingsPath(null);
             } else {

@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import dev.railroadide.logger.Logger;
 import dev.railroadide.railroad.ide.DefaultDocumentEditorStateService;
 import dev.railroadide.railroad.ide.DefaultIDEStateService;
+import dev.railroadide.railroad.ide.DefaultWorkspaceService;
 import dev.railroadide.railroad.ide.diagnostics.LanguageInspectionRegistries;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
 import dev.railroadide.railroad.localization.L18n;
@@ -14,25 +15,33 @@ import dev.railroadide.railroad.plugin.spi.services.ApplicationInfoService;
 import dev.railroadide.railroad.plugin.spi.services.DocumentEditorStateService;
 import dev.railroadide.railroad.plugin.spi.services.IDEStateService;
 import dev.railroadide.railroad.plugin.spi.services.VCSService;
+import dev.railroadide.railroad.plugin.spi.services.WorkspaceService;
 import dev.railroadide.railroad.project.creation.ProjectCreationPipelineService;
 import dev.railroadide.railroad.project.creation.ProjectServiceRegistry;
 import dev.railroadide.railroad.project.creation.service.*;
 import dev.railroadide.railroad.project.onboarding.creation.DefaultProjectCreationPipelineService;
 import dev.railroadide.railroad.project.onboarding.creation.service.*;
 import dev.railroadide.railroad.registry.Registry;
+import dev.railroadide.railroad.ui.UIManager;
 import dev.railroadide.railroad.utility.DiscardingOutputStream;
 import javafx.application.HostServices;
 import javafx.beans.property.ObjectProperty;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 /**
  * Provides access to various services used in the Railroad application.
  * This class serves as a central point to retrieve instances of different services.
  */
 public class Services {
+    private static final String APPLICATION_VERSION = loadApplicationVersion();
+
     public static final ApplicationInfoService APPLICATION_INFO = new ApplicationInfoService() {
         @Override
         public String getVersion() {
-            return "0.0.3";
+            return APPLICATION_VERSION;
         }
 
         @Override
@@ -46,7 +55,26 @@ public class Services {
         }
     };
 
+    private static String loadApplicationVersion() {
+        var properties = new Properties();
+        try (InputStream input = Services.class.getResourceAsStream("/railroad-version.properties")) {
+            if (input != null) {
+                properties.load(input);
+                String version = properties.getProperty("version");
+                if (version != null && !version.isBlank())
+                    return version;
+            }
+        } catch (IOException _) {
+            // Fall back to manifest metadata below.
+        }
+
+        String manifestVersion = Services.class.getPackage().getImplementationVersion();
+        return manifestVersion == null || manifestVersion.isBlank() ? "development" : manifestVersion;
+    }
+
     public static final DefaultIDEStateService IDE_STATE = DefaultIDEStateService.getInstance();
+
+    public static final DefaultWorkspaceService WORKSPACE = new DefaultWorkspaceService();
 
     public static final DefaultDocumentEditorStateService DOCUMENT_EDITOR_STATE = new DefaultDocumentEditorStateService();
 
@@ -67,25 +95,28 @@ public class Services {
         }
     };
 
-    public static final ProjectServiceRegistry PROJECT_SERVICE_REGISTRY = new ProjectServiceRegistry() {{
-        bind(ChecksumService.class, new MessageDigestChecksumService());
-        bind(FilesService.class, new NioFilesService());
-        bind(GitService.class, new JGitService());
-        bind(GradleService.class, new ToolingGradleService(new DiscardingOutputStream()));
-        bind(HttpService.class, new OkHttpService(Railroad.HTTP_CLIENT));
-        bind(TemplateEngineService.class, new GroovyTemplateEngineService());
-        bind(ZipService.class, new NioZipService());
-    }};
+    public static final ProjectServiceRegistry PROJECT_SERVICE_REGISTRY = new ProjectServiceRegistry() {
+        {
+            bind(ChecksumService.class, new MessageDigestChecksumService());
+            bind(FilesService.class, new NioFilesService());
+            bind(GitService.class, new JGitService());
+            bind(GradleService.class, new ToolingGradleService(new DiscardingOutputStream()));
+            bind(HttpService.class, new OkHttpService(Railroad.HTTP_CLIENT));
+            bind(TemplateEngineService.class, new GroovyTemplateEngineService());
+            bind(ZipService.class, new NioZipService());
+        }
+    };
 
     public static final DefaultProjectCreationPipelineService PROJECT_CREATION_PIPELINE = new DefaultProjectCreationPipelineService();
     public static final ProjectLanguageIndexService PROJECT_LANGUAGE_INDEX_SERVICE = new ProjectLanguageIndexService();
-    public static final Registry<LanguageInspectionProvider> LANGUAGE_INSPECTION_PROVIDER_REGISTRY =
-            LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY;
+    public static final Registry<LanguageInspectionProvider> LANGUAGE_INSPECTION_PROVIDER_REGISTRY = LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY;
+
+    public static final UIManager UI_MANAGER = new UIManager();
 
     /**
      * Retrieves a service instance by its class type.
      *
-     * @param <T>          The type of the service to retrieve.
+     * @param <T> The type of the service to retrieve.
      * @param serviceClass The class type of the service to retrieve.
      * @return An instance of the requested service.
      */
@@ -94,29 +125,32 @@ public class Services {
         if (serviceClass == null)
             throw new IllegalArgumentException("Service class cannot be null.");
 
-        if (serviceClass == ApplicationInfoService.class) {
+        if (serviceClass == ApplicationInfoService.class)
             return (T) APPLICATION_INFO;
-        } else if (serviceClass == IDEStateService.class) {
+        else if (serviceClass == IDEStateService.class)
             return (T) IDE_STATE;
-        } else if (serviceClass == VCSService.class) {
+        else if (serviceClass == WorkspaceService.class)
+            return (T) WORKSPACE;
+        else if (serviceClass == VCSService.class)
             return (T) Railroad.REPOSITORY_MANAGER;
-        } else if (serviceClass == HostServices.class) {
+        else if (serviceClass == HostServices.class)
             return (T) Railroad.getHostServicess();
-        } else if (serviceClass == DocumentEditorStateService.class) {
+        else if (serviceClass == DocumentEditorStateService.class)
             return (T) DOCUMENT_EDITOR_STATE;
-        } else if (serviceClass == LocalizationService.class) {
+        else if (serviceClass == LocalizationService.class)
             return (T) LOCALIZATION_SERVICE;
-        } else if (serviceClass == Logger.class) {
+        else if (serviceClass == Logger.class)
             return (T) Railroad.LOGGER;
-        } else if (serviceClass == Gson.class) {
+        else if (serviceClass == Gson.class)
             return (T) Railroad.GSON;
-        } else if (serviceClass == ProjectServiceRegistry.class) {
+        else if (serviceClass == ProjectServiceRegistry.class)
             return (T) PROJECT_SERVICE_REGISTRY;
-        } else if (serviceClass == ProjectCreationPipelineService.class) {
+        else if (serviceClass == ProjectCreationPipelineService.class)
             return (T) PROJECT_CREATION_PIPELINE;
-        } else if (serviceClass == ProjectLanguageIndexService.class) {
+        else if (serviceClass == ProjectLanguageIndexService.class)
             return (T) PROJECT_LANGUAGE_INDEX_SERVICE;
-        }
+        else if (serviceClass == UIManager.class)
+            return (T) UI_MANAGER;
 
         throw new IllegalArgumentException("Service " + serviceClass.getName() + " is not available.");
     }

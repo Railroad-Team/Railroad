@@ -16,7 +16,7 @@ public class CommitTreeItem extends RRCheckBoxTreeItem<ChangeItem> {
 
         Consumer<Boolean> selectionHandler = item.getSelectionHandler();
         if (selectionHandler != null) {
-            selectedProperty().addListener((observable, oldValue, newValue) -> selectionHandler.accept(newValue));
+            selectedProperty().addListener((_, _, newValue) -> selectionHandler.accept(newValue));
         }
     }
 
@@ -38,9 +38,8 @@ public class CommitTreeItem extends RRCheckBoxTreeItem<ChangeItem> {
             if (!(onlyChild instanceof CommitTreeItem commitChild))
                 return;
 
-            if (!(commitChild.getValue() instanceof DirectoryItem(
-                Project project, Path path, List<GitFileChange> changes, String displayTitle
-            )))
+            if (!(commitChild
+                .getValue() instanceof DirectoryItem(Project project, Path path, List<GitFileChange> changes, String displayTitle)))
                 return;
 
             String mergedTitle = parentDir.displayTitle() + "/" + displayTitle;

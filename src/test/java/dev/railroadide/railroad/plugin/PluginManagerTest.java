@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.plugin;
 
-import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRegistries;
 import dev.railroadide.railroad.ide.diagnostics.LanguageInspectionRegistries;
+import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRegistries;
 import dev.railroadide.railroad.plugin.defaults.DefaultPluginDescriptor;
 import dev.railroadide.railroad.plugin.spi.PluginDescriptor;
 import dev.railroadide.railroad.plugin.spi.deps.MavenDeps;
@@ -20,24 +20,25 @@ class PluginManagerTest {
     void loadsRegistersAndUnregistersJavaInspectionRuleProviders() {
         PluginDescriptor descriptor = testDescriptor("plugin-lifecycle-" + UUID.randomUUID());
         JavaInspectionRuleProvider provider = PluginManager.loadJavaInspectionRuleProviders(
-                TestJavaInspectionRuleProvider.class.getClassLoader()
-        ).stream()
-                .filter(candidate -> TestJavaInspectionRuleProvider.PROVIDER_ID.equals(candidate.id()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Test service provider was not discovered"));
+            TestJavaInspectionRuleProvider.class.getClassLoader()).stream()
+            .filter(candidate -> TestJavaInspectionRuleProvider.PROVIDER_ID.equals(candidate.id()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Test service provider was not discovered"));
 
         String registrationId = PluginManager.javaInspectionRuleProviderRegistrationId(descriptor, provider);
-        PluginLoadResult loadResult = new PluginLoadResult(Path.of("test-plugin.jar"), descriptor);
+        var loadResult = new PluginLoadResult(Path.of("test-plugin.jar"), descriptor);
 
         try {
-            List<String> registeredIds = PluginManager.registerJavaInspectionRuleProviders(descriptor, List.of(provider));
+            List<String> registeredIds = PluginManager.registerJavaInspectionRuleProviders(descriptor,
+                List.of(provider));
             loadResult.setJavaInspectionRuleProviderRegistrationIds(registeredIds);
 
             assertEquals(List.of(registrationId), registeredIds);
             assertTrue(JavaInspectionRegistries.containsRuleProvider(registrationId));
             assertSame(provider, JavaInspectionRegistries.getRuleProvider(registrationId));
             assertTrue(LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.contains(registrationId));
-            assertSame(provider, LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.get(registrationId));
+            assertSame(provider,
+                LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.get(registrationId));
 
             PluginManager.unregisterJavaInspectionRuleProviders(loadResult);
 
@@ -45,8 +46,9 @@ class PluginManagerTest {
             assertFalse(LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.contains(registrationId));
             assertTrue(loadResult.javaInspectionRuleProviderRegistrationIds().isEmpty());
         } finally {
-            if (JavaInspectionRegistries.containsRuleProvider(registrationId))
+            if (JavaInspectionRegistries.containsRuleProvider(registrationId)) {
                 JavaInspectionRegistries.unregisterRuleProvider(registrationId);
+            }
         }
     }
 
@@ -56,9 +58,8 @@ class PluginManagerTest {
         JavaInspectionRuleProvider provider = new TestJavaInspectionRuleProvider();
         String registrationId = PluginManager.javaInspectionRuleProviderRegistrationId(descriptor, provider);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                PluginManager.registerJavaInspectionRuleProviders(descriptor, List.of(provider, provider))
-        );
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+            () -> PluginManager.registerJavaInspectionRuleProviders(descriptor, List.of(provider, provider)));
 
         assertTrue(exception.getMessage().contains(registrationId));
         assertFalse(JavaInspectionRegistries.containsRuleProvider(registrationId));
@@ -66,10 +67,10 @@ class PluginManagerTest {
 
     private static PluginDescriptor testDescriptor(String pluginId) {
         return DefaultPluginDescriptor.builder(pluginId)
-                .name("Test Plugin")
-                .version("1.0.0")
-                .mainClass("dev.railroadide.railroad.plugin.TestPlugin")
-                .dependencies(new MavenDeps(List.of(), List.of()))
-                .build();
+            .name("Test Plugin")
+            .version("1.0.0")
+            .mainClass("dev.railroadide.railroad.plugin.TestPlugin")
+            .dependencies(new MavenDeps(List.of(), List.of()))
+            .build();
     }
 }

@@ -18,14 +18,12 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
     public static final String ID = "railroad:core-member-resolution";
 
     private static final List<JavaInspectionRule> RULES = List.of(
-            new SimpleJavaInspectionRule(
-                    JavaSemanticRules.UNRESOLVED_MEMBER.id(),
-                    JavaSemanticRules.UNRESOLVED_MEMBER.defaultSeverity(),
-                    JavaSemanticRules.UNRESOLVED_MEMBER.messageTemplate(),
-                    Set.of("core", "members"),
-                    CoreMemberResolutionInspection::reportUnresolvedMembers
-            )
-    );
+        new SimpleJavaInspectionRule(
+            JavaSemanticRules.UNRESOLVED_MEMBER.id(),
+            JavaSemanticRules.UNRESOLVED_MEMBER.defaultSeverity(),
+            JavaSemanticRules.UNRESOLVED_MEMBER.messageTemplate(),
+            Set.of("core", "members"),
+            CoreMemberResolutionInspection::reportUnresolvedMembers));
 
     @Override
     public String id() {
@@ -64,10 +62,9 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
         SyntaxNode current = node.parent().orElse(null);
         while (current != null && "JAVA_FIELD_ACCESS_EXPRESSION".equals(current.kind().id())) {
             if (context.resolvedSymbol(current)
-                    .map(symbol -> isTypeSymbol(symbol.kind()))
-                    .orElse(false)) {
+                .map(symbol -> isTypeSymbol(symbol.kind()))
+                .orElse(false))
                 return true;
-            }
             current = current.parent().orElse(null);
         }
         return false;

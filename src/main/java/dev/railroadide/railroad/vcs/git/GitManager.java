@@ -3,6 +3,7 @@ package dev.railroadide.railroad.vcs.git;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
 import dev.railroadide.railroad.utility.ShutdownHooks;
+import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
 import dev.railroadide.railroad.vcs.git.branch.GitBranch;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchLastCommit;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchStatus;
@@ -21,7 +22,6 @@ import dev.railroadide.railroad.vcs.git.stash.GitStashEntry;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
 import dev.railroadide.railroad.vcs.git.status.GitRepoStatus;
 import dev.railroadide.railroad.vcs.git.util.*;
-import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -50,6 +50,8 @@ public class GitManager {
 
     private final ObjectProperty<GitRepoStatus> repoStatus = new SimpleObjectProperty<>();
     private final BooleanProperty active = new SimpleBooleanProperty(false);
+    private final ObjectProperty<GitRepositoryState> repositoryState = new SimpleObjectProperty<>(
+        GitRepositoryState.DETECTING);
     private final ObjectProperty<GitRepository> gitRepository = new SimpleObjectProperty<>();
     private final ObjectProperty<GitIdentity> gitIdentity = new SimpleObjectProperty<>();
     private final ObjectProperty<List<GitRemote>> remotes = new SimpleObjectProperty<>(List.of());
@@ -57,7 +59,8 @@ public class GitManager {
     private final ObjectProperty<GitPullStrategy> pullStrategy = new SimpleObjectProperty<>();
     private final ObjectProperty<GitPushStrategy> pushStrategy = new SimpleObjectProperty<>();
     private final LongProperty commitMetadataRevision = new SimpleLongProperty(0L);
-    private final MapProperty<String, Long> remoteFetchTimestamps = new SimpleMapProperty<>(FXCollections.observableHashMap());
+    private final MapProperty<String, Long> remoteFetchTimestamps = new SimpleMapProperty<>(
+        FXCollections.observableHashMap());
 
     private volatile ScheduledFuture<?> autoRefreshFuture;
 
@@ -86,7 +89,7 @@ public class GitManager {
      */
     public GitManager(Project project, GitClient gitClient) {
         this(project, gitClient, Executors.newSingleThreadScheduledExecutor(runnable -> {
-            var thread = new Thread(runnable, "railroad-git-manager-" + project.path());
+            var thread = new Thread(runnable, "railroad-git-manager-" + project.getPath());
             thread.setDaemon(true);
             return thread;
         }));
@@ -96,27 +99,70 @@ public class GitManager {
      * Detects repository for the current project path and updates manager state.
      */
     public void detectRepository() {
-        this.executorService.submit(() -> this.gitClient.detectRepository(this.project.path()).ifPresentOrElse(repository -> {
-            runOnFxThread(() -> {
-                this.gitRepository.set(repository);
-                this.active.set(true);
-                startAutoRefresh();
+        Path projectPath = this.project.getPath();
+        JavaFXUtils.runOnApplicationThread(this::beginRepositoryDetection);
+
+        try {
+            this.executorService.submit(() -> {
+                Optional<GitRepository> detectedRepository;
+                try {
+                    detectedRepository = this.gitClient.detectRepository(projectPath);
+                } catch (Exception exception) {
+                    GitLog.LOGGER.error("Failed to detect Git repository for project path: {}", projectPath, exception);
+                    JavaFXUtils.runOnApplicationThread(() -> clearRepositoryState(GitRepositoryState.FAILED));
+                    return;
+                }
+
+                if (detectedRepository.isEmpty()) {
+                    JavaFXUtils.runOnApplicationThread(() -> clearRepositoryState(GitRepositoryState.UNAVAILABLE));
+                    return;
+                }
+
+                GitRepository repository = detectedRepository.orElseThrow();
+                JavaFXUtils.runOnApplicationThread(() -> completeRepositoryDetection(repository));
+                try {
+                    refreshStatusInternal(repository);
+                    loadIdentity();
+                    fetch(repository);
+                } catch (Exception exception) {
+                    GitLog.LOGGER.warn(
+                        "Git repository was detected, but its initial data could not be refreshed: {}",
+                        repository.root(),
+                        exception);
+                }
             });
-            refreshStatusInternal(repository);
-            loadIdentity();
-            fetch(repository);
-        }, () -> runOnFxThread(() -> {
-            this.gitRepository.set(null);
-            this.active.set(false);
-            this.repoStatus.set(null);
-            this.gitIdentity.set(null);
-            this.remotes.set(List.of());
-            this.upstream.set(null);
-            this.pullStrategy.set(null);
-            this.pushStrategy.set(null);
-            this.remoteFetchTimestamps.clear();
-            stopAutoRefresh();
-        })));
+        } catch (RejectedExecutionException exception) {
+            GitLog.LOGGER.error("Could not schedule Git repository detection for project path: {}", projectPath,
+                exception);
+            JavaFXUtils.runOnApplicationThread(() -> clearRepositoryState(GitRepositoryState.FAILED));
+        }
+    }
+
+    private void beginRepositoryDetection() {
+        stopAutoRefresh();
+        active.set(false);
+        repositoryState.set(GitRepositoryState.DETECTING);
+    }
+
+    private void completeRepositoryDetection(GitRepository repository) {
+        gitRepository.set(repository);
+        active.set(true);
+        repositoryState.set(GitRepositoryState.AVAILABLE);
+        startAutoRefresh();
+    }
+
+    private void clearRepositoryState(GitRepositoryState state) {
+        gitRepository.set(null);
+        active.set(false);
+        repoStatus.set(null);
+        gitIdentity.set(null);
+        remotes.set(List.of());
+        upstream.set(null);
+        pullStrategy.set(null);
+        pushStrategy.set(null);
+        remoteFetchTimestamps.clear();
+        stopAutoRefresh();
+        repositoryState.set(state);
     }
 
     /**
@@ -138,8 +184,7 @@ public class GitManager {
             this::refreshStatusInternal,
             0,
             intervalMillis,
-            TimeUnit.MILLISECONDS
-        );
+            TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -186,6 +231,24 @@ public class GitManager {
      */
     public BooleanProperty activeProperty() {
         return active;
+    }
+
+    /**
+     * Exposes repository detection state.
+     *
+     * @return observable detection state property
+     */
+    public ReadOnlyObjectProperty<GitRepositoryState> repositoryStateProperty() {
+        return repositoryState;
+    }
+
+    /**
+     * Gets the current repository detection state.
+     *
+     * @return current detection state
+     */
+    public GitRepositoryState getRepositoryState() {
+        return repositoryState.get();
     }
 
     /**
@@ -242,9 +305,9 @@ public class GitManager {
     public GitSettings getOrCreateGitSettings() {
         ProjectDataStore dataStore = project.getDataStore();
         Optional<GitSettings> settingsOpt = dataStore.readJson(SETTINGS_PATH, GitSettings.class);
-        if (settingsOpt.isPresent()) {
+        if (settingsOpt.isPresent())
             return settingsOpt.get();
-        } else {
+        else {
             var settings = new GitSettings();
             settings.setAutoRefreshIntervalMillis(DEFAULT_AUTO_REFRESH_INTERVAL_MILLIS);
             dataStore.writeJson(SETTINGS_PATH, settings);
@@ -348,7 +411,7 @@ public class GitManager {
 
     private void refreshStatusInternal(@Nullable GitRepository repository) {
         if (repository == null) {
-            runOnFxThread(() -> {
+            JavaFXUtils.runOnApplicationThread(() -> {
                 this.repoStatus.set(null);
                 this.remotes.set(List.of());
                 this.upstream.set(null);
@@ -365,16 +428,16 @@ public class GitManager {
             ? this.gitClient.getPullStrategy(repository, status.branch())
             : null;
         GitPushStrategy currentPushStrategy = this.gitClient.getPushStrategy(repository);
-        runOnFxThread(() -> {
+        JavaFXUtils.runOnApplicationThread(() -> {
             this.repoStatus.set(status);
             this.remotes.set(currentRemotes);
             this.upstream.set(currentUpstream);
             this.pullStrategy.set(currentPullStrategy);
             this.pushStrategy.set(currentPushStrategy);
         });
-//            GitLog.LOGGER.debug("Loaded {} changes from Git repository at {}",
-//                status.changes().size(),
-//                repository.root());
+        // GitLog.LOGGER.debug("Loaded {} changes from Git repository at {}",
+        // status.changes().size(),
+        // repository.root());
     }
 
     private void fetch(@Nullable GitRepository repository) {
@@ -389,7 +452,8 @@ public class GitManager {
             }
         });
         String remoteName = this.gitClient.getUpstream(repository).map(GitUpstream::remoteName).orElse("");
-        runOnFxThread(() -> this.remoteFetchTimestamps.put(remoteName, System.currentTimeMillis()));
+        JavaFXUtils
+            .runOnApplicationThread(() -> this.remoteFetchTimestamps.put(remoteName, System.currentTimeMillis()));
         refreshStatusInternal(repository);
     }
 
@@ -485,7 +549,7 @@ public class GitManager {
         this.executorService.submit(() -> {
             try {
                 GitIdentity identity = this.gitClient.getIdentity();
-                runOnFxThread(() -> this.gitIdentity.set(identity));
+                JavaFXUtils.runOnApplicationThread(() -> this.gitIdentity.set(identity));
                 GitLog.LOGGER.debug("Loaded Git identity: {}", identity);
             } catch (Exception exception) {
                 GitLog.LOGGER.warn("Failed to load Git identity", exception);
@@ -516,8 +580,7 @@ public class GitManager {
     public CompletableFuture<CommitListMetadata> getCommitListMetadata() {
         return CompletableFuture.supplyAsync(() -> new CommitListMetadata(
             getHeadCommitHash(),
-            getTagsByCommit()
-        ), executorService);
+            getTagsByCommit()), executorService);
     }
 
     /**
@@ -1130,7 +1193,8 @@ public class GitManager {
         List<String> localBranchNames = getAllLocalBranchNames();
         List<GitBranch.LocalGitBranch> localBranches = new ArrayList<>();
         for (String branchName : localBranchNames) {
-            @Nullable String remoteName = getRemoteTrackingBranch(branchName);
+            @Nullable
+            String remoteName = getRemoteTrackingBranch(branchName);
             boolean isCurrent = branchName.equals(getCurrentBranch());
             int[] aheadBehind = remoteName != null ? getAheadBehindCounts(branchName, remoteName) : new int[]{0, 0};
             int aheadCount = aheadBehind[0];
@@ -1143,8 +1207,7 @@ public class GitManager {
                 lastCommitHash,
                 lastCommitTimestampEpochSeconds,
                 lastCommitMessage,
-                lastCommitAuthor
-            );
+                lastCommitAuthor);
 
             GitBranchStatus status = determineBranchStatus(branchName, true);
             localBranches.add(new GitBranch.LocalGitBranch(
@@ -1154,8 +1217,7 @@ public class GitManager {
                 aheadCount,
                 behindCount,
                 lastCommit,
-                status
-            ));
+                status));
         }
 
         return localBranches;
@@ -1186,15 +1248,13 @@ public class GitManager {
                 lastCommitHash,
                 null,
                 lastCommitMessage,
-                lastCommitAuthor
-            );
+                lastCommitAuthor);
             GitBranchStatus status = determineBranchStatus(branchName, false);
             remoteBranches.add(new GitBranch.RemoteGitBranch(
                 branchName,
                 remoteName,
                 lastCommit,
-                status
-            ));
+                status));
         }
 
         return remoteBranches;
@@ -1210,27 +1270,25 @@ public class GitManager {
     public GitBranchStatus determineBranchStatus(String branchName, boolean local) {
         boolean hasUncommittedChanges = hasUncommittedChanges(branchName);
         if (local) {
-            if (hasUncommittedChanges) {
+            if (hasUncommittedChanges)
                 return GitBranchStatus.DIRTY;
-            } else {
+            else {
                 String remoteName = getRemoteTrackingBranch(branchName);
                 if (remoteName != null) {
                     int[] aheadBehind = getAheadBehindCounts(branchName, remoteName);
                     int aheadCount = aheadBehind[0];
                     int behindCount = aheadBehind[1];
-                    if (aheadCount > 0 && behindCount > 0) {
+                    if (aheadCount > 0 && behindCount > 0)
                         return GitBranchStatus.DIRTY;
-                    } else if (aheadCount > 0) {
+                    else if (aheadCount > 0)
                         return GitBranchStatus.LOCAL;
-                    } else if (behindCount > 0) {
+                    else if (behindCount > 0)
                         return GitBranchStatus.REMOTE;
-                    }
                 }
                 return GitBranchStatus.CLEAN;
             }
-        } else {
+        } else
             return hasUncommittedChanges ? GitBranchStatus.DIRTY : GitBranchStatus.CLEAN;
-        }
     }
 
     /**
@@ -1393,15 +1451,16 @@ public class GitManager {
             return List.of();
 
         if (remote.fetchUrl() != null && !remote.fetchUrl().isBlank()
-            && Objects.equals(remote.fetchUrl(), remote.pushUrl())) {
+            && Objects.equals(remote.fetchUrl(), remote.pushUrl()))
             return List.of(remote.fetchUrl());
-        }
 
         List<String> urls = new ArrayList<>(2);
-        if (remote.fetchUrl() != null && !remote.fetchUrl().isBlank())
+        if (remote.fetchUrl() != null && !remote.fetchUrl().isBlank()) {
             urls.add(remote.fetchUrl());
-        if (remote.pushUrl() != null && !remote.pushUrl().isBlank())
+        }
+        if (remote.pushUrl() != null && !remote.pushUrl().isBlank()) {
             urls.add(remote.pushUrl());
+        }
         return List.copyOf(urls);
     }
 
@@ -1435,7 +1494,8 @@ public class GitManager {
                 });
                 refreshStatusInternal();
                 for (GitRemote remote : getRemotes()) {
-                    runOnFxThread(() -> this.remoteFetchTimestamps.put(remote.name(), System.currentTimeMillis()));
+                    JavaFXUtils.runOnApplicationThread(
+                        () -> this.remoteFetchTimestamps.put(remote.name(), System.currentTimeMillis()));
                 }
             }
         });
@@ -1603,14 +1663,6 @@ public class GitManager {
             return remotes.getFirst();
 
         return null;
-    }
-
-    private void runOnFxThread(Runnable action) {
-        if (Platform.isFxApplicationThread()) {
-            action.run();
-        } else {
-            Platform.runLater(action);
-        }
     }
 
     /**

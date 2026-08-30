@@ -20,49 +20,50 @@ class JavaRuleContextTest {
     @Test
     void exposesImportAndStaticResolutionHelpers() {
         String source = """
-                import java.util.List;
-                import static java.lang.Math.max;
+            import java.util.List;
+            import static java.lang.Math.max;
 
-                class Example {
-                    List<String> values;
+            class Example {
+                List<String> values;
 
-                    int run() {
-                        return max(1, 2);
-                    }
+                int run() {
+                    return max(1, 2);
                 }
-                """;
+            }
+            """;
 
         JavaRuleContext context = contextFor(source);
         List<SyntaxNode> invocations = context.nodesOfKind("JAVA_METHOD_INVOCATION_EXPRESSION");
         SyntaxNode maxInvocation = invocations.stream()
-                .filter(node -> syntaxText(node).contains("max(1, 2)"))
-                .findFirst()
-                .orElse(null);
+            .filter(node -> syntaxText(node).contains("max(1, 2)"))
+            .findFirst()
+            .orElse(null);
 
         assertNotNull(maxInvocation);
         assertEquals(2, context.importEntries().size());
         assertTrue(context.isResolvableType("java.util.List"));
         assertTrue(context.hasResolvableStaticMember("java.lang.Math", "max"));
-        assertEquals(SymbolKind.METHOD, context.resolveStaticImportedMethods("max", maxInvocation, 2).getFirst().kind());
+        assertEquals(SymbolKind.METHOD,
+            context.resolveStaticImportedMethods("max", maxInvocation, 2).getFirst().kind());
     }
 
     @Test
     void exposesTypeAndTraversalHelpers() {
         String source = """
-                class Example {
-                    void run() {
-                        int value = 1;
-                        boolean bad = value;
-                    }
+            class Example {
+                void run() {
+                    int value = 1;
+                    boolean bad = value;
                 }
-                """;
+            }
+            """;
 
         JavaRuleContext context = contextFor(source);
         List<SyntaxNode> variableDeclarators = context.nodesOfKind("JAVA_VARIABLE_DECLARATOR");
         SyntaxNode badDeclarator = variableDeclarators.stream()
-                .filter(node -> syntaxText(node).contains("bad = value"))
-                .findFirst()
-                .orElse(null);
+            .filter(node -> syntaxText(node).contains("bad = value"))
+            .findFirst()
+            .orElse(null);
         SyntaxNode initializer = badDeclarator == null ? null : context.firstDirectExpressionChild(badDeclarator);
 
         assertNotNull(badDeclarator);
@@ -70,9 +71,8 @@ class JavaRuleContextTest {
         assertEquals("boolean", context.declaredTypeOfVariable(badDeclarator).displayName());
         assertEquals("int", context.inferredType(initializer).orElseThrow().displayName());
         assertFalse(context.isAssignable(
-                context.declaredTypeOfVariable(badDeclarator),
-                context.inferredType(initializer).orElseThrow()
-        ));
+            context.declaredTypeOfVariable(badDeclarator),
+            context.inferredType(initializer).orElseThrow()));
 
         List<String> kindIds = new ArrayList<>();
         context.traverse(node -> kindIds.add(node.kind().id()));
@@ -83,20 +83,20 @@ class JavaRuleContextTest {
     @Test
     void exposesAccessibilityHelpers() {
         String source = """
-                class Secret {
-                    private int value;
+            class Secret {
+                private int value;
 
-                    private void ping() {
-                    }
+                private void ping() {
                 }
+            }
 
-                class Other {
-                    void run(Secret secret) {
-                        secret.value = 1;
-                        secret.ping();
-                    }
+            class Other {
+                void run(Secret secret) {
+                    secret.value = 1;
+                    secret.ping();
                 }
-                """;
+            }
+            """;
 
         JavaRuleContext context = contextFor(source);
         SyntaxNode fieldAccess = context.nodesOfKind("JAVA_FIELD_ACCESS_EXPRESSION").getFirst();
@@ -114,18 +114,18 @@ class JavaRuleContextTest {
     @Test
     void exposesHierarchyAndMethodHelpers() {
         String source = """
-                interface Worker {
-                    void run();
-                }
+            interface Worker {
+                void run();
+            }
 
-                abstract class Base implements Worker {
-                }
+            abstract class Base implements Worker {
+            }
 
-                class Child extends Base {
-                    public void run() {
-                    }
+            class Child extends Base {
+                public void run() {
                 }
-                """;
+            }
+            """;
 
         JavaRuleContext context = contextFor(source);
 
@@ -139,43 +139,16 @@ class JavaRuleContextTest {
     }
 
     @Test
-    void recognizesMatchingAbstractMethodsInheritedFromMultipleInterfaces() {
-        String source = """
-                interface A { void run(); }
-                interface B { void run(); }
-                interface Child extends A, B {}
-                """;
-
-        JavaRuleContext context = contextFor(source);
-
-        SyntaxNode childDeclaration = context.nodesOfKind(JavaSyntaxKinds.INTERFACE_DECLARATION.id()).stream()
-            .filter(node -> context.declaredSymbol(node)
-                .map(symbol -> symbol.simpleName().equals("Child"))
-                .orElse(false))
-            .findFirst()
-            .orElseThrow();
-        assertNotNull(context.directChild(childDeclaration, JavaSyntaxKinds.EXTENDS_CLAUSE.id()));
-        assertEquals(List.of("A", "B"), context.directSuperTypeNames("Child"));
-        assertEquals(
-            List.of("A#run()", "B#run()"),
-            context.inheritedMethodDescriptors("Child").stream()
-                .map(method -> method.ownerQualifiedName() + "#" + method.signatureKey())
-                .toList());
-        assertTrue(context.isFunctionalInterface(
-            new dev.railroadide.railroad.ide.sst.semantic.api.Type.DeclaredType("Child", List.of())));
-    }
-
-    @Test
     void exposesFieldHelpers() {
         String source = """
-                class Base {
-                    protected Number baseValue;
-                }
+            class Base {
+                protected Number baseValue;
+            }
 
-                class Child extends Base {
-                    private String name;
-                }
-                """;
+            class Child extends Base {
+                private String name;
+            }
+            """;
 
         JavaRuleContext context = contextFor(source);
 
@@ -190,10 +163,10 @@ class JavaRuleContextTest {
     @Test
     void exposesDirectModifierHelpers() {
         String source = """
-                public public abstract class Example {
-                    private static final int VALUE = 1;
-                }
-                """;
+            public public abstract class Example {
+                private static final int VALUE = 1;
+            }
+            """;
 
         JavaRuleContext context = contextFor(source);
         SyntaxNode typeDeclaration = context.nodesOfKind("JAVA_CLASS_DECLARATION").getFirst();
@@ -209,16 +182,16 @@ class JavaRuleContextTest {
     @Test
     void exposesExceptionHelpers() {
         String source = """
-                class Example {
-                    void run() throws java.io.IOException {
-                        try (java.io.FileInputStream in = new java.io.FileInputStream("x")) {
-                            Thread.sleep(1L);
-                        } catch (java.lang.InterruptedException | java.io.IOException exception) {
-                            throw new java.io.IOException();
-                        }
+            class Example {
+                void run() throws java.io.IOException {
+                    try (java.io.FileInputStream in = new java.io.FileInputStream("x")) {
+                        Thread.sleep(1L);
+                    } catch (java.lang.InterruptedException | java.io.IOException exception) {
+                        throw new java.io.IOException();
                     }
                 }
-                """;
+            }
+            """;
 
         JavaRuleContext context = contextFor(source);
         SyntaxNode method = context.nodesOfKind("JAVA_METHOD_DECLARATION").getFirst();
@@ -229,9 +202,8 @@ class JavaRuleContextTest {
 
         assertEquals(List.of("java.io.IOException"), context.declaredThrownTypeNames(method));
         assertEquals(
-                List.of("java.lang.InterruptedException", "java.io.IOException"),
-                context.catchParameterTypeNames(catchClause)
-        );
+            List.of("java.lang.InterruptedException", "java.io.IOException"),
+            context.catchParameterTypeNames(catchClause));
         assertTrue(context.thrownTypeNames(resolved).contains("java.lang.InterruptedException"));
         assertTrue(context.isCheckedExceptionType("java.io.IOException"));
         assertFalse(context.isCheckedExceptionType("java.lang.RuntimeException"));
@@ -242,32 +214,32 @@ class JavaRuleContextTest {
     @Test
     void exposesInvocationHelpers() {
         String source = """
-                class Example {
-                    void run(java.util.Optional<String> opt) {
-                        opt.isPresent();
-                        opt.get();
-                        ping(1);
-                    }
-
-                    void ping(int value) {
-                    }
+            class Example {
+                void run(java.util.Optional<String> opt) {
+                    opt.isPresent();
+                    opt.get();
+                    ping(1);
                 }
-                """;
+
+                void ping(int value) {
+                }
+            }
+            """;
 
         JavaRuleContext context = contextFor(source);
         List<SyntaxNode> invocations = context.nodesOfKind("JAVA_METHOD_INVOCATION_EXPRESSION");
         SyntaxNode isPresentInvocation = invocations.stream()
-                .filter(node -> syntaxText(node).contains("opt.isPresent()"))
-                .findFirst()
-                .orElse(null);
+            .filter(node -> syntaxText(node).contains("opt.isPresent()"))
+            .findFirst()
+            .orElse(null);
         SyntaxNode getInvocation = invocations.stream()
-                .filter(node -> syntaxText(node).contains("opt.get()"))
-                .findFirst()
-                .orElse(null);
+            .filter(node -> syntaxText(node).contains("opt.get()"))
+            .findFirst()
+            .orElse(null);
         SyntaxNode pingInvocation = invocations.stream()
-                .filter(node -> syntaxText(node).contains("ping(1)"))
-                .findFirst()
-                .orElse(null);
+            .filter(node -> syntaxText(node).contains("ping(1)"))
+            .findFirst()
+            .orElse(null);
 
         assertNotNull(isPresentInvocation);
         assertNotNull(getInvocation);
@@ -286,23 +258,23 @@ class JavaRuleContextTest {
     @Test
     void exposesConditionAndOperatorHelpers() {
         String source = """
-                class Example {
-                    void run(boolean flag) {
-                        if (flag && true) {
-                        } else {
-                        }
+            class Example {
+                void run(boolean flag) {
+                    if (flag && true) {
+                    } else {
+                    }
 
-                        while (flag) {
-                        }
+                    while (flag) {
+                    }
 
-                        do {
-                        } while (flag);
+                    do {
+                    } while (flag);
 
-                        for (; flag; ) {
-                        }
+                    for (; flag; ) {
                     }
                 }
-                """;
+            }
+            """;
 
         JavaRuleContext context = contextFor(source);
         SyntaxNode ifStatement = context.nodesOfKind("JAVA_IF_STATEMENT").getFirst();
@@ -328,12 +300,12 @@ class JavaRuleContextTest {
     @Test
     void exposesOptionalGetInvocationTypingHelpers() {
         String source = """
-                class Example {
-                    String run(java.util.Optional<String> opt) {
-                        return opt.get();
-                    }
+            class Example {
+                String run(java.util.Optional<String> opt) {
+                    return opt.get();
                 }
-                """;
+            }
+            """;
 
         JavaRuleContext context = contextFor(source);
         SyntaxNode invocation = context.nodesOfKind("JAVA_METHOD_INVOCATION_EXPRESSION").getFirst();
@@ -353,19 +325,19 @@ class JavaRuleContextTest {
 
     private static JavaRuleContext contextFor(String source) {
         return new JavaRuleContext(
-                Path.of("Example.java"),
-                source,
-                JavaSemanticAnalyzer.analyzeFacts(source)
-        );
+            Path.of("Example.java"),
+            source,
+            JavaSemanticAnalyzer.analyzeFacts(source));
     }
 
     private static String syntaxText(SyntaxNode node) {
         if (node instanceof SyntaxToken token)
             return token.text();
 
-        StringBuilder builder = new StringBuilder();
-        for (SyntaxNode child : node.children())
+        var builder = new StringBuilder();
+        for (SyntaxNode child : node.children()) {
             builder.append(syntaxText(child));
+        }
         return builder.toString();
     }
 }

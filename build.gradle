@@ -3,13 +3,29 @@ import org.gradle.internal.os.OperatingSystem
 plugins {
     id 'java'
     id 'application'
+    id 'com.diffplug.spotless' version '8.10.0'
     id 'org.openjfx.javafxplugin' version '0.1.0'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '9.4.3'
     id 'org.beryx.runtime' version '2.0.0'
 }
 
+sourceSets {
+    formatter {
+        java.srcDir 'src/formatter/java'
+    }
+}
+
 group 'dev.railroadide'
-version '0.0.3'
+version '0.1.0'
+
+def macOsBundleVersion = providers.provider {
+    def components = project.version.toString().split('\\.', -1)
+    if (components.length != 3 || !components.every { it ==~ /\d+/ }) {
+        throw new GradleException("Project version must use major.minor.patch format: ${project.version}")
+    }
+
+    "${components[0].toInteger() + 1}.${components[1]}.${components[2]}"
+}
 
 repositories {
     mavenLocal()
@@ -22,36 +38,44 @@ repositories {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+    options.release = 25
 }
 
-tasks.withType(Test).configureEach {
-    // The project-wide semantic regression retains the complete binary symbol index.
-    maxHeapSize = '4g'
+processResources {
+    inputs.property('applicationVersion', project.version)
+    filesMatching('railroad-version.properties') {
+        expand(applicationVersion: project.version)
+    }
 }
 
 application {
     mainClass = 'dev.railroadide.railroad.RailroadLauncher'
     applicationDefaultJvmArgs = [
             '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
+            '-Dslf4j.internal.report.stream=stdout',
             '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
-            '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED'
+            '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
+            '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
     ]
 }
 
 tasks.named("run") {
     jvmArgs '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
+            '-Dslf4j.internal.report.stream=stdout',
             '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
-            '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED'
+            '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
+            '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
 }
 
 javafx {
-    version = '21'
+    version = '25'
     modules = ['javafx.controls', 'javafx.swing', 'javafx.web', 'javafx.fxml', 'javafx.graphics', 'javafx.media']
 }
 
@@ -112,10 +136,79 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:6.0.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:6.0.0'
     testRuntimeOnly 'org.projectlombok:lombok:1.18.42'
+    testImplementation sourceSets.formatter.output
 }
 
 test {
     useJUnitPlatform()
+    dependsOn tasks.named('formatterClasses')
+}
+
+spotless {
+    if (!providers.gradleProperty('formatAll').isPresent())
+        ratchetFrom providers.gradleProperty('formatRatchetFrom').getOrElse('HEAD')
+
+    java {
+        target 'src/main/java/**/*.java', 'src/test/java/**/*.java', 'src/formatter/java/**/*.java'
+        eclipse().configFile('config/format/railroad-eclipse-formatter.xml')
+        lineEndings = 'UNIX'
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+def semanticStyleSources = files('src/main/java', 'src/test/java', 'src/formatter/java')
+def semanticStyleArguments = { String mode ->
+    def arguments = [mode]
+    if (providers.gradleProperty('formatAll').isPresent()) {
+        arguments.add('--all')
+    } else {
+        arguments.addAll([
+            '--ratchet-from',
+            providers.gradleProperty('formatRatchetFrom').getOrElse('HEAD'),
+            projectDir.absolutePath
+        ])
+    }
+    arguments.addAll(semanticStyleSources.files.collect { it.absolutePath })
+    arguments
+}
+
+tasks.register('semanticFormat', JavaExec) {
+    group = 'formatting'
+    description = 'Applies Railroad-specific syntax-aware Java style rules.'
+    dependsOn tasks.named('formatterClasses')
+    classpath = sourceSets.formatter.runtimeClasspath
+    mainClass = 'dev.railroadide.railroad.formatter.RailroadJavaStyle'
+    args semanticStyleArguments('--apply')
+}
+
+tasks.register('semanticFormatCheck', JavaExec) {
+    group = 'verification'
+    description = 'Checks Railroad-specific syntax-aware Java style rules.'
+    dependsOn tasks.named('formatterClasses')
+    classpath = sourceSets.formatter.runtimeClasspath
+    mainClass = 'dev.railroadide.railroad.formatter.RailroadJavaStyle'
+    args semanticStyleArguments('--check')
+}
+
+tasks.named('spotlessApply') {
+    mustRunAfter tasks.named('semanticFormat')
+}
+
+tasks.named('spotlessCheck') {
+    mustRunAfter tasks.named('semanticFormatCheck')
+}
+
+tasks.register('format') {
+    group = 'formatting'
+    description = 'Applies all Railroad Java formatting and style rules.'
+    dependsOn tasks.named('semanticFormat'), tasks.named('spotlessApply')
+}
+
+tasks.register('formatCheck') {
+    group = 'verification'
+    description = 'Checks all Railroad Java formatting and style rules.'
+    dependsOn tasks.named('semanticFormatCheck'), tasks.named('spotlessCheck')
 }
 
 jar {
@@ -148,8 +241,10 @@ runtime {
     launcher {
         jvmArgs = [
                 '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
+                '-Dslf4j.internal.report.stream=stdout',
                 '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
-                '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED'
+                '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
+                '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
         ]
     }
 
@@ -159,8 +254,7 @@ runtime {
         description = 'Railroad IDE - A Modern Java IDE for Minecraft Modding'
 
         def currentOs = OperatingSystem.current()
-        if (!currentOs.macOsX)
-            appVersion = project.version.toString()
+        appVersion = project.version.toString()
 
         def imgType = currentOs.windows ? 'ico' : currentOs.macOsX ? 'icns' : 'png'
         def iconPath = file("src/main/resources/assets/railroad/images/logo.$imgType").absolutePath
@@ -181,7 +275,8 @@ runtime {
         } else if (currentOs.macOsX) {
             installerOptions += ['--mac-package-name', 'railroad']
             installerOptions += ['--type', 'dmg']
-            appVersion = '1.0.3'
+            // Apple bundle versions require a major version greater than zero.
+            appVersion = macOsBundleVersion.get()
         }
     }
 }
@@ -213,14 +308,4 @@ tasks.register('runJavaParserMemoryProfile', JavaExec) {
     description = 'Profiles green tree and red wrapper memory characteristics for Java syntax parser.'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxMemoryProfileRunner'
-}
-
-tasks.register('runJavaIndexBenchmark', JavaExec) {
-    group = 'verification'
-    description = 'Measures persisted and cold Java semantic index startup paths.'
-    classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'dev.railroadide.railroad.ide.sst.project.JavaIndexBenchmarkRunner'
-    if (project.hasProperty('indexBenchmarkArgs')) {
-        args project.property('indexBenchmarkArgs').toString().split(' ')
-    }
 }

@@ -15,7 +15,7 @@ class DocumentVersionTest {
 
     @Test
     void nextProducesAStrictlyLaterVersion() {
-        DocumentVersion current = new DocumentVersion(41);
+        var current = new DocumentVersion(41);
         DocumentVersion next = current.next();
 
         assertEquals(new DocumentVersion(42), next);
@@ -26,7 +26,7 @@ class DocumentVersionTest {
 
     @Test
     void decimalExternalFormRoundTrips() {
-        DocumentVersion version = new DocumentVersion(123456789);
+        var version = new DocumentVersion(123456789);
 
         assertEquals("123456789", version.toString());
         assertEquals(version, DocumentVersion.parse(version.toString()));

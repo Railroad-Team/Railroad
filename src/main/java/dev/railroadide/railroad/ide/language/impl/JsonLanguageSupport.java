@@ -20,12 +20,10 @@ public final class JsonLanguageSupport extends BaseLanguageSupport {
         var editor = new JsonCodeEditorPane(
             project,
             file,
-            CodeEditorConfig.fromLanguageSupport(project, file, this, JsonSyntaxHighlighting::computeHighlighting)
-        );
+            CodeEditorConfig.fromLanguageSupport(project, file, this, JsonSyntaxHighlighting::computeHighlighting));
         return new EditorOpenView(
             editor,
             editor,
-            languageId()
-        );
+            languageId());
     }
 }

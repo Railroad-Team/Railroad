@@ -15,8 +15,7 @@ public record CodeEditorConfig(
     @Nullable CompletionProvider completionProvider,
     @Nullable DiagnosticsProvider diagnosticsProvider,
     @Nullable SignatureHelpProvider signatureHelpProvider,
-    @Nullable SyntaxHighlightingProvider highlightingProvider
-) {
+    @Nullable SyntaxHighlightingProvider highlightingProvider) {
     public CodeEditorConfig {
         Objects.requireNonNull(languageId, "languageId");
     }
@@ -25,8 +24,7 @@ public record CodeEditorConfig(
         Project project,
         Path filePath,
         LanguageSupport languageSupport,
-        @Nullable SyntaxHighlightingProvider highlightingProvider
-    ) {
+        @Nullable SyntaxHighlightingProvider highlightingProvider) {
         Objects.requireNonNull(project, "project");
         Objects.requireNonNull(filePath, "filePath");
         Objects.requireNonNull(languageSupport, "languageSupport");
@@ -46,7 +44,6 @@ public record CodeEditorConfig(
             completionProvider,
             diagnosticsProvider,
             signatureHelpProvider,
-            highlightingProvider
-        );
+            highlightingProvider);
     }
 }

@@ -23,23 +23,29 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
     ```
 
 4. Make your changes
-5. Commit your changes
+5. Format and verify your changes
+
+    ```shell
+    ./gradlew format formatCheck
+    ```
+
+6. Commit your changes
 
     ```shell
     ./git commit -m "Your message"
     ```
 
-6. Push your changes
+7. Push your changes
 
     ```shell
     ./git push origin <YOUR_BRANCH_NAME>
     ```
 
-7. Create a pull request
-8. Wait for the maintainers to review your pull request
-9. Make changes if the maintainers request them
-10. Get your pull request merged
-11. Celebrate your success
+8. Create a pull request
+9. Wait for the maintainers to review your pull request
+10. Make changes if the maintainers request them
+11. Get your pull request merged
+12. Celebrate your success
 
 > [!IMPORTANT]
 > When you create a fork, please fork to your personal github, rather than an organization, as our code reviewers will

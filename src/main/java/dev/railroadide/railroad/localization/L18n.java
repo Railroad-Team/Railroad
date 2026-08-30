@@ -177,7 +177,7 @@ public class L18n {
      * Localizes a string and formats it with the given arguments.
      * This is equivalent to String.format(L18n.localize(key), args...).
      *
-     * @param key  the localization key
+     * @param key the localization key
      * @param args the format arguments
      * @return the localized and formatted string
      */

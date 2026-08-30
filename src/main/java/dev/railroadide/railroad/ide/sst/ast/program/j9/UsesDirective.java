@@ -10,9 +10,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record UsesDirective(
-        Span span,
-        NameExpression serviceName
-) implements ModuleDirective {
+    Span span,
+    NameExpression serviceName) implements ModuleDirective {
     @Override
     public AstKind kind() {
         return AstKind.USES_DIRECTIVE;

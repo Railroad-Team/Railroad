@@ -16,8 +16,7 @@ public record DiffHunkLine(
     @Nullable Integer oldLineNumber,
     @Nullable Integer newLineNumber,
     String content,
-    boolean noNewlineAtEnd
-) {
+    boolean noNewlineAtEnd) {
     /**
      * Returns a copy with the no-newline marker enabled.
      *
@@ -30,16 +29,13 @@ public record DiffHunkLine(
             line.oldLineNumber(),
             line.newLineNumber(),
             line.content(),
-            true
-        );
+            true);
     }
 
     /**
      * Type of line represented in a diff hunk.
      */
     public enum LineType {
-        CONTEXT,
-        ADDITION,
-        DELETION
+        CONTEXT, ADDITION, DELETION
     }
 }

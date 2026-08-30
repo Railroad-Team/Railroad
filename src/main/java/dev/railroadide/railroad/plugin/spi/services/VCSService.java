@@ -50,8 +50,8 @@ public interface VCSService {
      */
     default <T extends VCSProfile> ObservableList<T> getProfiles(Class<T> profileType) {
         return getProfiles().filtered(profileType::isInstance)
-                .stream()
-                .map(profileType::cast)
-                .collect(Collectors.toCollection(FXCollections::observableArrayList));
+            .stream()
+            .map(profileType::cast)
+            .collect(Collectors.toCollection(FXCollections::observableArrayList));
     }
 }

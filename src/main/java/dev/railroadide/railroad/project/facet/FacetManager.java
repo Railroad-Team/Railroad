@@ -43,8 +43,7 @@ public class FacetManager {
             .name("Java")
             .description("Java programming language support")
             .build(),
-        new JavaFacetDetector()
-    );
+        new JavaFacetDetector());
     /**
      * The facet type for Gradle build system support.
      */
@@ -53,8 +52,7 @@ public class FacetManager {
             .name("Gradle")
             .description("Gradle build system support")
             .build(),
-        new GradleFacetDetector()
-    );
+        new GradleFacetDetector());
     /**
      * The facet type for Maven build system support.
      */
@@ -63,8 +61,7 @@ public class FacetManager {
             .name("Maven")
             .description("Maven build system support")
             .build(),
-        new MavenFacetDetector()
-    );
+        new MavenFacetDetector());
     /**
      * The facet type for Fabric modding platform support.
      */
@@ -73,8 +70,7 @@ public class FacetManager {
             .name("Fabric")
             .description("Fabric modding platform support")
             .build(),
-        new FabricFacetDetector()
-    );
+        new FabricFacetDetector());
 
     private FacetManager() {
         throw new UnsupportedOperationException("FacetManager is a utility class and cannot be instantiated");
@@ -115,9 +111,8 @@ public class FacetManager {
      * @param detector the facet detector to register
      */
     public static void registerDetector(FacetDetector<?> detector) {
-        if (detector == null) {
+        if (detector == null)
             throw new IllegalArgumentException("Facet detector must not be null");
-        }
 
         DETECTORS.add(detector);
     }
@@ -162,16 +157,15 @@ public class FacetManager {
                     Railroad.LOGGER.error(
                         "Facet detector {} failed for project at {}",
                         detector.getClass().getSimpleName(),
-                        project.path(),
-                        error
-                    );
+                        project.getPath(),
+                        error);
                 }
             }
 
             if (facets.isEmpty()) {
-                Railroad.LOGGER.warn("No facets detected for project at {}", project.path());
+                Railroad.LOGGER.warn("No facets detected for project at {}", project.getPath());
             } else {
-                Railroad.LOGGER.info("Detected {} facets for project at {}", facets.size(), project.path());
+                Railroad.LOGGER.info("Detected {} facets for project at {}", facets.size(), project.getPath());
             }
 
             return List.copyOf(facets.values());

@@ -84,7 +84,7 @@ body:
     attributes:
       label: "Java Version"
       description: "Java version used with Railroad IDE"
-      placeholder: "OpenJDK 21.0.5"
+      placeholder: "OpenJDK 25.0.1"
 
   - type: input
     id: javafx-version

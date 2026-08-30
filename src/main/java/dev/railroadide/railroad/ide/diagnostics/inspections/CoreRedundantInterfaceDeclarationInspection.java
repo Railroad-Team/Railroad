@@ -28,12 +28,11 @@ public class CoreRedundantInterfaceDeclarationInspection implements JavaInspecti
                 JavaSemanticRules.REDUNDANT_INTERFACE_DECLARATION.defaultSeverity(),
                 JavaSemanticRules.REDUNDANT_INTERFACE_DECLARATION.messageTemplate(),
                 Set.of("core", "code-quality"),
-                CoreRedundantInterfaceDeclarationInspection::reportRedundantInterfaceDeclaration
-            )
-        );
+                CoreRedundantInterfaceDeclarationInspection::reportRedundantInterfaceDeclaration));
     }
 
-    private static void reportRedundantInterfaceDeclaration(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportRedundantInterfaceDeclaration(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         for (Map.Entry<String, SyntaxNode> entry : context.localTypeDeclarations().entrySet()) {
             String ownerQualifiedName = entry.getKey();
             SyntaxNode declarationNode = entry.getValue();
@@ -47,12 +46,14 @@ public class CoreRedundantInterfaceDeclarationInspection implements JavaInspecti
                 InterfaceRef candidate = directInterfaces.get(i);
                 String candidateQualifiedName = candidate.qualifiedName();
                 if (!seenQualifiedNames.add(candidateQualifiedName)) {
-                    reporter.report(candidate.node(), context.simpleTypeName(ownerQualifiedName), context.simpleTypeName(candidateQualifiedName));
+                    reporter.report(candidate.node(), context.simpleTypeName(ownerQualifiedName),
+                        context.simpleTypeName(candidateQualifiedName));
                     continue;
                 }
 
                 if (directSuperclass != null && context.isSubtype(directSuperclass, candidateQualifiedName)) {
-                    reporter.report(candidate.node(), context.simpleTypeName(ownerQualifiedName), context.simpleTypeName(candidateQualifiedName));
+                    reporter.report(candidate.node(), context.simpleTypeName(ownerQualifiedName),
+                        context.simpleTypeName(candidateQualifiedName));
                     continue;
                 }
 
@@ -66,7 +67,8 @@ public class CoreRedundantInterfaceDeclarationInspection implements JavaInspecti
                         continue;
 
                     if (context.isSubtype(otherQualifiedName, candidateQualifiedName)) {
-                        reporter.report(candidate.node(), context.simpleTypeName(ownerQualifiedName), context.simpleTypeName(candidateQualifiedName));
+                        reporter.report(candidate.node(), context.simpleTypeName(ownerQualifiedName),
+                            context.simpleTypeName(candidateQualifiedName));
                         break;
                     }
                 }
@@ -76,7 +78,9 @@ public class CoreRedundantInterfaceDeclarationInspection implements JavaInspecti
 
     private static String directSuperclass(JavaRuleContext context, SyntaxNode declarationNode) {
         String kindId = declarationNode.kind().id();
-        if (!Objects.equals(JavaSyntaxKinds.CLASS_DECLARATION.id(), kindId) && !Objects.equals(JavaSyntaxKinds.ENUM_DECLARATION.id(), kindId) && !Objects.equals(JavaSyntaxKinds.RECORD_DECLARATION.id(), kindId))
+        if (!Objects.equals(JavaSyntaxKinds.CLASS_DECLARATION.id(), kindId)
+            && !Objects.equals(JavaSyntaxKinds.ENUM_DECLARATION.id(), kindId)
+            && !Objects.equals(JavaSyntaxKinds.RECORD_DECLARATION.id(), kindId))
             return null;
 
         SyntaxNode clauseNode = context.directChild(declarationNode, JavaSyntaxKinds.EXTENDS_CLAUSE.id());
@@ -101,15 +105,15 @@ public class CoreRedundantInterfaceDeclarationInspection implements JavaInspecti
         String kindId = declarationNode.kind().id();
 
         SyntaxNode clauseNode;
-        if (Objects.equals(JavaSyntaxKinds.INTERFACE_DECLARATION.id(), kindId) || Objects.equals(JavaSyntaxKinds.ANNOTATION_TYPE_DECLARATION.id(), kindId)) {
+        if (Objects.equals(JavaSyntaxKinds.INTERFACE_DECLARATION.id(), kindId)
+            || Objects.equals(JavaSyntaxKinds.ANNOTATION_TYPE_DECLARATION.id(), kindId)) {
             clauseNode = context.directChild(declarationNode, JavaSyntaxKinds.EXTENDS_CLAUSE.id());
         } else if (Objects.equals(JavaSyntaxKinds.CLASS_DECLARATION.id(), kindId)
             || Objects.equals(JavaSyntaxKinds.ENUM_DECLARATION.id(), kindId)
             || Objects.equals(JavaSyntaxKinds.RECORD_DECLARATION.id(), kindId)) {
             clauseNode = context.directChild(declarationNode, JavaSyntaxKinds.IMPLEMENTS_CLAUSE.id());
-        } else {
+        } else
             return List.of();
-        }
 
         if (clauseNode == null)
             return List.of();

@@ -10,7 +10,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public sealed interface CaseItem extends AstNode permits CaseItem.CaseConstant, CaseItem.CasePattern, CaseItem.CaseNull {
+public sealed interface CaseItem extends AstNode
+    permits CaseItem.CaseConstant, CaseItem.CasePattern, CaseItem.CaseNull {
     record CaseConstant(Span span, Expression expression) implements CaseItem {
         @Override
         public AstKind kind() {

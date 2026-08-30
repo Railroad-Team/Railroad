@@ -19,9 +19,8 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
     private static final String JAVA_NAME_EXPRESSION = "JAVA_NAME_EXPRESSION";
 
     private static final List<JavaInspectionRule> RULES = List.of(
-            rule(JavaSemanticRules.UNRESOLVED_NAME),
-            rule(JavaSemanticRules.AMBIGUOUS_NAME)
-    );
+        rule(JavaSemanticRules.UNRESOLVED_NAME),
+        rule(JavaSemanticRules.AMBIGUOUS_NAME));
 
     @Override
     public String id() {
@@ -35,17 +34,16 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
 
     private static JavaInspectionRule rule(JavaSemanticRule semanticRule) {
         return new SimpleJavaInspectionRule(
-                semanticRule.id(),
-                semanticRule.defaultSeverity(),
-                semanticRule.messageTemplate(),
-                Set.of("core", "names"),
-                switch (semanticRule.id()) {
-                    case "SEM_UNRESOLVED_NAME" -> CoreNameResolutionInspection::reportUnresolvedNames;
-                    case "SEM_AMBIGUOUS_NAME" -> CoreNameResolutionInspection::reportAmbiguousNames;
-                    default -> (context, reporter) -> {
-                    };
-                }
-        );
+            semanticRule.id(),
+            semanticRule.defaultSeverity(),
+            semanticRule.messageTemplate(),
+            Set.of("core", "names"),
+            switch (semanticRule.id()) {
+                case "SEM_UNRESOLVED_NAME" -> CoreNameResolutionInspection::reportUnresolvedNames;
+                case "SEM_AMBIGUOUS_NAME" -> CoreNameResolutionInspection::reportAmbiguousNames;
+                default -> (context, reporter) -> {
+                };
+            });
     }
 
     private static void reportUnresolvedNames(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
@@ -86,10 +84,9 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
         SyntaxNode current = node.parent().orElse(null);
         while (current != null && "JAVA_FIELD_ACCESS_EXPRESSION".equals(current.kind().id())) {
             if (context.resolvedSymbol(current)
-                    .map(symbol -> isTypeSymbol(symbol.kind()))
-                    .orElse(false)) {
+                .map(symbol -> isTypeSymbol(symbol.kind()))
+                .orElse(false))
                 return true;
-            }
             current = current.parent().orElse(null);
         }
         return false;
@@ -114,10 +111,11 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
 
             String simpleName = context.lastSegment(qualifiedName);
             List<?> candidates = context.isMethodNameReference(node)
-                    ? context.resolveStaticImportedMethods(simpleName, node, -1)
-                    : context.resolveStaticImportedFields(simpleName, node);
-            if (candidates.size() > 1)
+                ? context.resolveStaticImportedMethods(simpleName, node, -1)
+                : context.resolveStaticImportedFields(simpleName, node);
+            if (candidates.size() > 1) {
                 reporter.report(node, simpleName);
+            }
         });
     }
 }

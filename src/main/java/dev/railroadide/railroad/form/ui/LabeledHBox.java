@@ -36,7 +36,7 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
      *
      * @param labelKey The key of the label.
      * @param required Whether the field is required.
-     * @param params   The parameters to pass to the primary component.
+     * @param params The parameters to pass to the primary component.
      */
     public LabeledHBox(@NotNull String labelKey, boolean required, Map<String, Object> params) {
         super();
@@ -97,13 +97,13 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
     }
 
     private void checkAndSwitchLayout() {
-        if (label.getText().isEmpty()) return;
+        if (label.getText().isEmpty())
+            return;
 
         // Get the actual width needed for the label text
         double textWidth = label.getFont().getSize() * label.getText().length() * 0.6; // Rough estimate
         double availableWidth = getWidth() - 30; // Account for padding and spacing
-        double componentMinWidth = primaryComponent instanceof Region ?
-            ((Region) primaryComponent).getMinWidth() : 100;
+        double componentMinWidth = primaryComponent instanceof Region ? ((Region) primaryComponent).getMinWidth() : 100;
 
         // Check if we need vertical layout (not enough space for horizontal)
         boolean needsVertical = availableWidth < (textWidth + componentMinWidth + 20); // 20px buffer
@@ -122,8 +122,8 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
     /**
      * Creates a label.
      *
-     * @param hBox     The HBox to add the label to.
-     * @param label    The label text.
+     * @param hBox The HBox to add the label to.
+     * @param label The label text.
      * @param required Whether the field is required.
      * @return The created label.
      */

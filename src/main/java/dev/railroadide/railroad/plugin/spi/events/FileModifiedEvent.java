@@ -13,7 +13,7 @@ public record FileModifiedEvent(Document file, List<Change> changes) implements 
     /**
      * Constructs a new FileModifiedEvent.
      *
-     * @param file    The file associated with this event. Must not be null.
+     * @param file The file associated with this event. Must not be null.
      * @param changes The list of changes made to the file. Must not be null or empty.
      * @throws IllegalArgumentException if file is null or changes is null or empty.
      */
@@ -34,10 +34,10 @@ public record FileModifiedEvent(Document file, List<Change> changes) implements 
         /**
          * Constructs a new Change.
          *
-         * @param type        The type of change (added, removed, modified). Must not be null.
-         * @param oldContent  The content before the change. Must not be null.
-         * @param newContent  The content after the change. Must not be null.
-         * @param range       The range in the file where the change occurred. Must not be null.
+         * @param type The type of change (added, removed, modified). Must not be null.
+         * @param oldContent The content before the change. Must not be null.
+         * @param newContent The content after the change. Must not be null.
+         * @param range The range in the file where the change occurred. Must not be null.
          * @throws IllegalArgumentException if type, oldContent, newContent, or range is null.
          */
         public Change {
@@ -81,16 +81,15 @@ public record FileModifiedEvent(Document file, List<Change> changes) implements 
         /**
          * Constructs a new Range.
          *
-         * @param startLine   The starting line of the range (0-based).
-         * @param endLine     The ending line of the range (0-based).
+         * @param startLine The starting line of the range (0-based).
+         * @param endLine The ending line of the range (0-based).
          * @param startColumn The starting column of the range (0-based).
-         * @param endColumn   The ending column of the range (0-based).
+         * @param endColumn The ending column of the range (0-based).
          * @throws IllegalArgumentException if any of the indices are negative.
          */
         public Range {
-            if (startLine < 0 || endLine < 0 || startColumn < 0 || endColumn < 0) {
+            if (startLine < 0 || endLine < 0 || startColumn < 0 || endColumn < 0)
                 throw new IllegalArgumentException("Line and column indices must be non-negative");
-            }
         }
     }
 }

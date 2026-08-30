@@ -105,7 +105,8 @@ public class JavapCLIBuilder implements CLIBuilder<Process, JavapCLIBuilder> {
     }
 
     /**
-     * Enables verbose output, including stack size, number of locals, and args for methods. Corresponds to the {@code -verbose} option.
+     * Enables verbose output, including stack size, number of locals, and args for methods. Corresponds to the
+     * {@code -verbose} option.
      *
      * @return This builder instance.
      */
@@ -125,7 +126,8 @@ public class JavapCLIBuilder implements CLIBuilder<Process, JavapCLIBuilder> {
     }
 
     /**
-     * Specifies the minimum visibility level of members to print. Corresponds to options like {@code -public}, {@code -protected}, {@code -package}, {@code -private}.
+     * Specifies the minimum visibility level of members to print. Corresponds to options like {@code -public},
+     * {@code -protected}, {@code -package}, {@code -private}.
      *
      * @param visibility The minimum visibility level.
      * @return This builder instance.
@@ -409,10 +411,7 @@ public class JavapCLIBuilder implements CLIBuilder<Process, JavapCLIBuilder> {
      */
     @Getter
     public enum Visibility {
-        PUBLIC("-public"),
-        PROTECTED("-protected"),
-        PACKAGE("-package"),
-        PRIVATE("-private");
+        PUBLIC("-public"), PROTECTED("-protected"), PACKAGE("-package"), PRIVATE("-private");
 
         private final String flag;
 

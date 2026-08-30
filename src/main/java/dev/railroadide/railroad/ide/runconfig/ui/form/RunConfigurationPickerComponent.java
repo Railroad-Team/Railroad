@@ -20,14 +20,16 @@ import java.util.function.Supplier;
 /**
  * Form component wrapping {@link FormRunConfigurationPicker}.
  */
-public class RunConfigurationPickerComponent extends FormComponent<FormRunConfigurationPicker, RunConfigurationPickerComponent.Data, FormRunConfigurationPicker, RunConfiguration<?>[]> {
+public class RunConfigurationPickerComponent
+    extends
+        FormComponent<FormRunConfigurationPicker, RunConfigurationPickerComponent.Data, FormRunConfigurationPicker, RunConfiguration<?>[]> {
     private final Supplier<List<RunConfiguration<?>>> initialSelectionSupplier;
 
     public RunConfigurationPickerComponent(String dataKey,
-                                           Data data,
-                                           FormComponentValidator<FormRunConfigurationPicker> validator,
-                                           FormComponentChangeListener<FormRunConfigurationPicker, RunConfiguration<?>[]> listener,
-                                           BooleanBinding visible) {
+        Data data,
+        FormComponentValidator<FormRunConfigurationPicker> validator,
+        FormComponentChangeListener<FormRunConfigurationPicker, RunConfiguration<?>[]> listener,
+        BooleanBinding visible) {
         super(dataKey,
             data,
             currentData -> new FormRunConfigurationPicker(
@@ -49,16 +51,17 @@ public class RunConfigurationPickerComponent extends FormComponent<FormRunConfig
     }
 
     @Override
-    protected void applyListener(FormComponentChangeListener<FormRunConfigurationPicker, RunConfiguration<?>[]> listener) {
+    protected void applyListener(
+        FormComponentChangeListener<FormRunConfigurationPicker, RunConfiguration<?>[]> listener) {
         AtomicReference<ChangeListener<RunConfiguration<?>[]>> listenerRef = new AtomicReference<>();
-        componentProperty().addListener((observable, oldValue, newValue) -> {
+        componentProperty().addListener((_, oldValue, newValue) -> {
             if (oldValue != null && listenerRef.get() != null) {
                 oldValue.valueProperty().removeListener(listenerRef.get());
             }
 
             if (newValue != null) {
-                ChangeListener<RunConfiguration<?>[]> changeListener = (obs, oldArr, newArr) ->
-                    listener.changed(newValue, obs, oldArr, newArr);
+                ChangeListener<RunConfiguration<?>[]> changeListener = (obs, oldArr, newArr) -> listener
+                    .changed(newValue, obs, oldArr, newArr);
                 listenerRef.set(changeListener);
                 newValue.valueProperty().addListener(changeListener);
             }
@@ -67,7 +70,7 @@ public class RunConfigurationPickerComponent extends FormComponent<FormRunConfig
 
     @Override
     protected void bindToFormData(FormData formData) {
-        componentProperty().addListener((observable, oldValue, newValue) -> {
+        componentProperty().addListener((_, _, newValue) -> {
             if (newValue != null) {
                 registerBinding(newValue, formData);
             }
@@ -88,8 +91,8 @@ public class RunConfigurationPickerComponent extends FormComponent<FormRunConfig
     }
 
     private void registerBinding(FormRunConfigurationPicker picker, FormData formData) {
-        picker.valueProperty().addListener((observable, oldValue, newValue) ->
-            formData.add(dataKey, newValue == null ? new RunConfiguration[0] : newValue));
+        picker.valueProperty().addListener(
+            (_, _, newValue) -> formData.add(dataKey, newValue == null ? new RunConfiguration[0] : newValue));
         formData.add(dataKey, picker.getValue());
     }
 
@@ -97,7 +100,9 @@ public class RunConfigurationPickerComponent extends FormComponent<FormRunConfig
         return new Builder(dataKey);
     }
 
-    public static class Builder implements FormComponentBuilder<RunConfigurationPickerComponent, FormRunConfigurationPicker, RunConfiguration<?>[], Builder> {
+    public static class Builder
+        implements
+            FormComponentBuilder<RunConfigurationPickerComponent, FormRunConfigurationPicker, RunConfiguration<?>[], Builder> {
         private final String dataKey;
         private final Data data = new Data();
         private FormComponentValidator<FormRunConfigurationPicker> validator;
@@ -143,19 +148,24 @@ public class RunConfigurationPickerComponent extends FormComponent<FormRunConfig
         }
 
         @Override
-        public Builder listener(FormComponentChangeListener<FormRunConfigurationPicker, RunConfiguration<?>[]> listener) {
+        public Builder listener(
+            FormComponentChangeListener<FormRunConfigurationPicker, RunConfiguration<?>[]> listener) {
             this.listener = listener;
             return this;
         }
 
         @Override
-        public <X> Builder addTransformer(ObservableValue<FormRunConfigurationPicker> fromComponent, Consumer<X> toComponentFunction, Function<RunConfiguration<?>[], X> valueMapper) {
-            throw new UnsupportedOperationException("Transformers are not supported for RunConfigurationPickerComponent.");
+        public <X> Builder addTransformer(ObservableValue<FormRunConfigurationPicker> fromComponent,
+            Consumer<X> toComponentFunction, Function<RunConfiguration<?>[], X> valueMapper) {
+            throw new UnsupportedOperationException(
+                "Transformers are not supported for RunConfigurationPickerComponent.");
         }
 
         @Override
-        public <U extends Node, X> Builder addTransformer(ObservableValue<FormRunConfigurationPicker> fromComponent, ObservableValue<U> toComponent, Function<RunConfiguration<?>[], X> valueMapper) {
-            throw new UnsupportedOperationException("Transformers are not supported for RunConfigurationPickerComponent.");
+        public <U extends Node, X> Builder addTransformer(ObservableValue<FormRunConfigurationPicker> fromComponent,
+            ObservableValue<U> toComponent, Function<RunConfiguration<?>[], X> valueMapper) {
+            throw new UnsupportedOperationException(
+                "Transformers are not supported for RunConfigurationPickerComponent.");
         }
 
         @Override
@@ -177,12 +187,15 @@ public class RunConfigurationPickerComponent extends FormComponent<FormRunConfig
             if (data.labelKey == null)
                 throw new IllegalStateException("labelKey must be set");
 
-            FormComponentValidator<FormRunConfigurationPicker> validatorToUse = validator != null ? validator : picker -> {
-                if (data.required && picker.getSelectedConfigurations().isEmpty())
-                    return ValidationResult.error("railroad.runconfig.compound.configuration.configurations.validation.required");
+            FormComponentValidator<FormRunConfigurationPicker> validatorToUse = validator != null
+                ? validator
+                : picker -> {
+                    if (data.required && picker.getSelectedConfigurations().isEmpty())
+                        return ValidationResult
+                            .error("railroad.runconfig.compound.configuration.configurations.validation.required");
 
-                return ValidationResult.ok();
-            };
+                    return ValidationResult.ok();
+                };
 
             return new RunConfigurationPickerComponent(dataKey, data, validatorToUse, listener, visible);
         }

@@ -14,8 +14,7 @@ public record GitFileChange(
     Path path,
     Path oldPath,
     char indexStatus,
-    char workTreeStatus
-) {
+    char workTreeStatus) {
     /**
      * Creates a change without an explicit source path.
      *

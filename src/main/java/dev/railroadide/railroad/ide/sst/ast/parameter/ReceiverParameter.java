@@ -12,11 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record ReceiverParameter(
-        Span span,
-        List<Annotation> annotations,
-        TypeRef type,
-        ReceiverType receiverType
-) implements AstNode {
+    Span span,
+    List<Annotation> annotations,
+    TypeRef type,
+    ReceiverType receiverType) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.RECEIVER_PARAMETER;
@@ -36,7 +35,6 @@ public record ReceiverParameter(
     }
 
     public enum ReceiverType {
-        THIS,
-        SUPER
+        THIS, SUPER
     }
 }

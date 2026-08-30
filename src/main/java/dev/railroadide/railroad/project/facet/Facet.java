@@ -3,7 +3,8 @@ package dev.railroadide.railroad.project.facet;
 import lombok.Data;
 
 /**
- * Represents a project facet, which is a modular aspect or characteristic of a project (such as Java, Gradle, or Fabric support).
+ * Represents a project facet, which is a modular aspect or characteristic of a project (such as Java, Gradle, or Fabric
+ * support).
  * Each facet is associated with a {@link FacetType} and may hold additional data describing the facet.
  *
  * @param <D> the type of data associated with this facet
@@ -21,9 +22,8 @@ public class Facet<D> {
      * @throws IllegalArgumentException if type is null
      */
     public Facet(FacetType<D> type, D data) {
-        if (type == null) {
+        if (type == null)
             throw new IllegalArgumentException("Facet type must not be null");
-        }
 
         this.type = type;
         this.data = data;

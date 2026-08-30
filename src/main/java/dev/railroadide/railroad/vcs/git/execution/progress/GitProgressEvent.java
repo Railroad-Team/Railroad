@@ -9,14 +9,16 @@ public sealed interface GitProgressEvent {
      *
      * @param text message text
      */
-    record Message(String text) implements GitProgressEvent {}
+    record Message(String text) implements GitProgressEvent {
+    }
 
     /**
      * Named progress phase update.
      *
      * @param name phase name
      */
-    record Phase(String name) implements GitProgressEvent {}
+    record Phase(String name) implements GitProgressEvent {
+    }
 
     /**
      * Percentage progress update for a specific phase.
@@ -24,5 +26,6 @@ public sealed interface GitProgressEvent {
      * @param phase phase name
      * @param percent completion percentage
      */
-    record Percentage(String phase, int percent) implements GitProgressEvent {}
+    record Percentage(String phase, int percent) implements GitProgressEvent {
+    }
 }

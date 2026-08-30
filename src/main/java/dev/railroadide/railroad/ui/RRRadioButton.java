@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ui;
 
+import dev.railroadide.railroad.ui.animation.UIAnimations;
 import dev.railroadide.railroad.ui.localized.LocalizedTextProperty;
+import javafx.animation.RotateTransition;
 import javafx.animation.ScaleTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -19,6 +21,7 @@ public class RRRadioButton extends RadioButton {
 
     private Node originalGraphic;
     private FontIcon loadingSpinner;
+    private RotateTransition loadingSpinnerAnimation;
 
     private final BooleanProperty isLoading = new SimpleBooleanProperty(this, "isLoading", false);
 
@@ -61,8 +64,9 @@ public class RRRadioButton extends RadioButton {
         loadingSpinner = new FontIcon(FontAwesomeSolid.SYNC_ALT);
         loadingSpinner.setIconSize(16);
         loadingSpinner.getStyleClass().add("loading-spinner");
+        loadingSpinnerAnimation = UIAnimations.spinner(loadingSpinner);
 
-        setOnMousePressed($ -> {
+        setOnMousePressed(_ -> {
             if (!getIsLoading()) {
                 var scale = new ScaleTransition(Duration.millis(100), this);
                 scale.setToX(0.95);
@@ -71,7 +75,7 @@ public class RRRadioButton extends RadioButton {
             }
         });
 
-        setOnMouseReleased($ -> {
+        setOnMouseReleased(_ -> {
             if (!getIsLoading()) {
                 var scale = new ScaleTransition(Duration.millis(100), this);
                 scale.setToX(1.0);
@@ -80,7 +84,7 @@ public class RRRadioButton extends RadioButton {
             }
         });
 
-        isLoading.addListener($ -> {
+        isLoading.addListener(_ -> {
             if (getIsLoading()) {
                 onLoading();
             } else {
@@ -96,7 +100,7 @@ public class RRRadioButton extends RadioButton {
      * The text will automatically update when the application language changes.
      *
      * @param localizationKey the localization key for the text
-     * @param args            optional formatting arguments for the localized text
+     * @param args optional formatting arguments for the localized text
      */
     public void setLocalizedText(String localizationKey, Object... args) {
         localizedText.setTranslation(localizationKey, args);
@@ -152,12 +156,15 @@ public class RRRadioButton extends RadioButton {
         }
 
         setGraphic(loadingContent);
+        loadingSpinnerAnimation.playFromStart();
     }
 
     /**
      * Called when the button has stopped loading
      */
     protected void onNotLoading() {
+        loadingSpinnerAnimation.stop();
+        loadingSpinner.setRotate(0);
         setDisable(false);
         getStyleClass().remove("loading");
 

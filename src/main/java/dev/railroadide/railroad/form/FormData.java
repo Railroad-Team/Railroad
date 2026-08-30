@@ -15,7 +15,7 @@ public class FormData {
     /**
      * Adds a key-value pair to the form data.
      *
-     * @param key   the key
+     * @param key the key
      * @param value the value
      */
     public void add(String key, Object value) {
@@ -25,7 +25,7 @@ public class FormData {
     /**
      * Adds a key-value pair to the form data.
      *
-     * @param key   the key
+     * @param key the key
      * @param value the value (as a string)
      */
     public void addProperty(String key, String value) {
@@ -35,7 +35,7 @@ public class FormData {
     /**
      * Adds a key-value pair to the form data.
      *
-     * @param key   the key
+     * @param key the key
      * @param value the value (as an integer)
      */
     public void addProperty(String key, int value) {
@@ -45,7 +45,7 @@ public class FormData {
     /**
      * Adds a key-value pair to the form data.
      *
-     * @param key   the key
+     * @param key the key
      * @param value the value (as a boolean)
      */
     public void addProperty(String key, boolean value) {
@@ -55,7 +55,7 @@ public class FormData {
     /**
      * Adds a key-value pair to the form data.
      *
-     * @param key   the key
+     * @param key the key
      * @param value the value (as a double)
      */
     public void addProperty(String key, double value) {
@@ -65,7 +65,7 @@ public class FormData {
     /**
      * Adds a key-value pair to the form data.
      *
-     * @param key   the key
+     * @param key the key
      * @param value the value (as a float)
      */
     public void addProperty(String key, float value) {
@@ -75,7 +75,7 @@ public class FormData {
     /**
      * Adds a key-value pair to the form data.
      *
-     * @param key   the key
+     * @param key the key
      * @param value the value (as a long)
      */
     public void addProperty(String key, long value) {
@@ -85,7 +85,7 @@ public class FormData {
     /**
      * Adds a key-value pair to the form data.
      *
-     * @param key   the key
+     * @param key the key
      * @param value the value (as a short)
      */
     public void addProperty(String key, short value) {
@@ -95,7 +95,7 @@ public class FormData {
     /**
      * Adds a key-value pair to the form data.
      *
-     * @param key   the key
+     * @param key the key
      * @param value the value (as a byte)
      */
     public void addProperty(String key, byte value) {
@@ -105,7 +105,7 @@ public class FormData {
     /**
      * Adds a key-value pair to the form data.
      *
-     * @param key   the key
+     * @param key the key
      * @param value the value (as a char)
      */
     public void addProperty(String key, char value) {
@@ -244,9 +244,9 @@ public class FormData {
     /**
      * Gets the value of the specified key and casts it to the specified enum type.
      *
-     * @param key      the key
+     * @param key the key
      * @param enumType the enum type
-     * @param <T>      the enum type
+     * @param <T> the enum type
      * @return the value
      * @throws ClassCastException if the value cannot be cast to the specified enum type
      */
@@ -257,9 +257,9 @@ public class FormData {
     /**
      * Gets the value of the specified key and casts it to the specified class.
      *
-     * @param key   the key
+     * @param key the key
      * @param clazz the class
-     * @param <T>   the type
+     * @param <T> the type
      * @return the value
      * @throws ClassCastException if the value cannot be cast to the specified class
      */

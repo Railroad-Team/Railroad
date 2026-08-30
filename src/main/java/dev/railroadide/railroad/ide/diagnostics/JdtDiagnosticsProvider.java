@@ -27,8 +27,7 @@ public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditor
     @Override
     public @NotNull List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
         Optional<String> snapshotText = TextDocumentSnapshot.unwrap(
-            snapshot, LanguageSupportRegistry.get(JavaLanguageSupport.LANGUAGE_ID).get()
-        );
+            snapshot, LanguageSupportRegistry.get(JavaLanguageSupport.LANGUAGE_ID).get());
         if (snapshotText.isEmpty())
             return List.of();
 
@@ -41,8 +40,7 @@ public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditor
         parser.setStatementsRecovery(true);
         parser.setSource(source);
         parser.setUnitName(
-            snapshot.uri().filePath().get().getFileName().toString()
-        );
+            snapshot.uri().filePath().get().getFileName().toString());
 
         Map<String, String> options = JavaCore.getOptions();
         JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);
@@ -53,7 +51,8 @@ public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditor
         return toDiagnostics(unit.getProblems(), source, snapshot);
     }
 
-    private static List<TextEditorDiagnostic> toDiagnostics(IProblem[] problems, char[] source, DocumentSnapshot snapshot) {
+    private static List<TextEditorDiagnostic> toDiagnostics(IProblem[] problems, char[] source,
+        DocumentSnapshot snapshot) {
         if (problems == null || problems.length == 0)
             return List.of();
 
@@ -75,9 +74,7 @@ public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditor
                     TextLocation.from((TextDocumentSnapshot) snapshot, start, end),
                     kind,
                     code,
-                    message
-                )
-            );
+                    message));
         }
 
         return diagnostics;

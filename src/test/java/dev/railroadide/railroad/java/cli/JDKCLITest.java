@@ -17,7 +17,7 @@ class JDKCLITest {
 
     @Test
     void launchBuildersReferenceProvidedJdk() {
-        JDKCLI cli = new JDKCLI(jdk);
+        var cli = new JDKCLI(jdk);
         assertBuilderHasJdk(cli.launchMainClass(Path.of("Main.class")), "launchMainClass");
         assertBuilderHasJdk(cli.launchJar(Path.of("app.jar")), "launchJar");
         assertBuilderHasJdk(cli.launchModule("module.name"), "launchModule");
@@ -26,7 +26,7 @@ class JDKCLITest {
 
     @Test
     void toolBuildersReferenceProvidedJdk() {
-        JDKCLI cli = new JDKCLI(jdk);
+        var cli = new JDKCLI(jdk);
         Map<String, Object> builders = new LinkedHashMap<>();
         builders.put("jar", cli.jar());
         builders.put("jarsigner", cli.jarsigner());

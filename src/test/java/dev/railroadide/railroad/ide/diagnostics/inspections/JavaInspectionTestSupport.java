@@ -29,8 +29,7 @@ final class JavaInspectionTestSupport {
     static List<SemanticDiagnostic> runProvider(
         JavaInspectionRuleProvider provider,
         Path filePath,
-        String document
-    ) {
+        String document) {
         return runProvider(provider, filePath, document, null);
     }
 
@@ -38,13 +37,12 @@ final class JavaInspectionTestSupport {
         JavaInspectionRuleProvider provider,
         Path filePath,
         String document,
-        JavaSymbolIndex symbolIndex
-    ) {
+        JavaSymbolIndex symbolIndex) {
         JavaInspectionRuleSettings.resetAll();
         var model = symbolIndex == null
             ? JavaSemanticAnalyzer.analyzeFacts(document)
             : JavaSemanticAnalyzer.analyzeFacts(document, symbolIndex);
-        JavaRuleContext context = new JavaRuleContext(filePath, document, model, symbolIndex);
+        var context = new JavaRuleContext(filePath, document, model, symbolIndex);
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
         JavaInspectionReporter reporter = diagnostics::add;
         JavaInspectionRuleEngine.runRules(provider, context, reporter);
@@ -55,11 +53,10 @@ final class JavaInspectionTestSupport {
         List<? extends JavaInspectionRuleProvider> providers,
         Path filePath,
         String document,
-        JavaSymbolIndex symbolIndex
-    ) {
+        JavaSymbolIndex symbolIndex) {
         JavaInspectionRuleSettings.resetAll();
         var model = JavaSemanticAnalyzer.analyzeFacts(document, symbolIndex);
-        JavaRuleContext context = new JavaRuleContext(filePath, document, model, symbolIndex);
+        var context = new JavaRuleContext(filePath, document, model, symbolIndex);
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
         JavaInspectionReporter reporter = diagnostics::add;
         providers.forEach(provider -> JavaInspectionRuleEngine.runRules(provider, context, reporter));

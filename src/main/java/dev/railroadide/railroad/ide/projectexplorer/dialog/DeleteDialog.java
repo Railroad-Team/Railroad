@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+// TODO: Should use the IDEStateService to delete the document
 public class DeleteDialog {
     public static void open(Path path) {
         WindowBuilder.createDialog(
@@ -21,7 +22,7 @@ public class DeleteDialog {
                 try {
                     boolean wasRegularFile = Files.isRegularFile(path);
                     FileSystemDocument document = wasRegularFile
-                        ? new FileSystemDocument(path.getFileName().toString(), path, LanguageSupportRegistry.resolveLanguageId(path))
+                        ? new FileSystemDocument(path)
                         : null;
 
                     if (Files.isDirectory(path)) {
@@ -38,7 +39,6 @@ public class DeleteDialog {
                 }
             },
             () -> {
-            }
-        );
+            });
     }
 }

@@ -20,7 +20,6 @@ import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
 import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
-import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
@@ -71,8 +70,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     protected final ExecutorService worker = Executors.newFixedThreadPool(
         Math.max(2, Runtime.getRuntime().availableProcessors() / 2),
-        namedThreadFactory("railroad-code-editor-worker-%d")
-    );
+        namedThreadFactory("railroad-code-editor-worker-%d"));
+    private final ShutdownHooks.Registration workerShutdownRegistration;
+    private boolean codeEditorClosed;
 
     // region Diagnostics state
     protected static final Duration DIAGNOSTIC_DEBOUNCE = Duration.ofMillis(300);
@@ -83,8 +83,6 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     protected volatile List<TextEditorDiagnostic> visibleDiagnostics = List.of();
     protected final Popup diagnosticPopup = new Popup();
-    protected volatile boolean hoveringDiagnosticPopup = false;
-    protected final PauseTransition diagnosticHideDelay = new PauseTransition(javafx.util.Duration.millis(180));
     // endregion
 
     // region Syntax Highlighting state
@@ -133,12 +131,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             ? config.highlightingProvider()
             : text -> StyleSpans.singleton(Collections.emptyList(), text.length());
 
-        diagnosticPopup.setAutoHide(false);
-        diagnosticPopup.setAutoFix(true);
-        diagnosticHideDelay.setOnFinished(event -> {
-            if (!hoveringDiagnosticPopup)
-                diagnosticPopup.hide();
-        });
+        diagnosticPopup.setAutoHide(true);
 
         signaturePopup.setAutoHide(false);
         signaturePopup.setAutoFix(true);
@@ -164,7 +157,24 @@ public abstract class CodeEditorPane extends TextEditorPane {
         installBracketHighlighting();
         installDiagnosticPopupHandlers();
 
-        ShutdownHooks.addHook(worker::shutdownNow);
+        workerShutdownRegistration = ShutdownHooks.registerHook(worker::shutdownNow);
+    }
+
+    @Override
+    public void close() {
+        if (codeEditorClosed)
+            return;
+
+        codeEditorClosed = true;
+        workerShutdownRegistration.close();
+        worker.shutdownNow();
+        diagnosticPopup.hide();
+        signaturePopup.hide();
+        Popup completionPopup = activeCompletionPopup.getAndSet(null);
+        if (completionPopup != null) {
+            completionPopup.hide();
+        }
+        super.close();
     }
 
     // region Paragraph Graphics
@@ -193,9 +203,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         Diagnostic.Kind severity = lineSeverity.get(line + 1);
         if (severity != null) {
-            FontAwesomeSolid iconType = severity == Diagnostic.Kind.ERROR ?
-                FontAwesomeSolid.CIRCLE_EXCLAMATION :
-                FontAwesomeSolid.TRIANGLE_EXCLAMATION;
+            FontAwesomeSolid iconType = severity == Diagnostic.Kind.ERROR
+                ? FontAwesomeSolid.CIRCLE_EXCLAMATION
+                : FontAwesomeSolid.TRIANGLE_EXCLAMATION;
             Color color = severity == Diagnostic.Kind.ERROR ? Color.RED : Color.YELLOW;
 
             var icon = new MFXFontIcon(iconType, 12, color);
@@ -203,8 +213,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
             String tooltipText = lineDiagnosticMessages.getOrDefault(
                 line + 1,
-                severity == Diagnostic.Kind.ERROR ? "Error" : "Warning"
-            );
+                severity == Diagnostic.Kind.ERROR ? "Error" : "Warning");
             Tooltip.install(icon, new Tooltip(tooltipText));
         }
 
@@ -260,14 +269,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         int generation = diagnosticsGeneration.incrementAndGet();
 
-        TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+        var snapshot = new TextDocumentSnapshot(
             DocumentId.create(),
             DocumentUri.fromPath(filePath),
             DocumentVersion.parse(Integer.toString(generation)),
             languageId,
             text,
-            StandardCharsets.UTF_8
-        );
+            StandardCharsets.UTF_8);
 
         CompletableFuture.supplyAsync(() -> diagnosticsProvider.compute(snapshot), worker)
             .thenAccept(result -> Platform.runLater(() -> applyDiagnosticsIfLatest(generation, result, snapshot)))
@@ -277,7 +285,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
             });
     }
 
-    private void applyDiagnosticsIfLatest(int generation, List<TextEditorDiagnostic> diagnostics, DocumentSnapshot snapshot) {
+    private void applyDiagnosticsIfLatest(int generation, List<TextEditorDiagnostic> diagnostics,
+        DocumentSnapshot snapshot) {
         if (diagnosticsGeneration.get() != generation)
             return;
 
@@ -288,8 +297,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
         boolean lineDecorationsChanged = recomputeLineDecorations();
         applyEditorStyles();
         restoreBracketHighlight();
-        if (lineDecorationsChanged)
+        if (lineDecorationsChanged) {
             requestLayout();
+        }
     }
 
     private void logDiagnostics(List<TextEditorDiagnostic> diagnostics, DocumentSnapshot snapshot) {
@@ -301,8 +311,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             filePath,
             languageId,
             diagnostics.size(),
-            diagnostics.size() == 1 ? "" : "s"
-        );
+            diagnostics.size() == 1 ? "" : "s");
 
         for (TextEditorDiagnostic diagnostic : diagnostics) {
             Railroad.LOGGER.warn(
@@ -314,8 +323,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 diagnostic.location().range().end,
                 nullToEmpty(diagnostic.code()),
                 filePath,
-                singleLine(diagnostic.message(Locale.getDefault()))
-            );
+                singleLine(diagnostic.message(Locale.getDefault())));
         }
     }
 
@@ -329,12 +337,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private void installDiagnosticPopupHandlers() {
         addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_BEGIN, this::handleMouseOverText);
-        addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_END, event -> scheduleDiagnosticHide());
+        addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_END, event -> diagnosticPopup.hide());
         addEventHandler(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
-        focusedProperty().addListener((obs, oldValue, newValue) -> {
-            if (!newValue)
-                diagnosticPopup.hide();
-        });
     }
 
     private EditorDiagnostic findDiagnosticAt(int index) {
@@ -350,21 +354,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     private void showDiagnosticPopup(EditorDiagnostic diagnostic, double screenX, double screenY) {
-        diagnosticHideDelay.stop();
-        hoveringDiagnosticPopup = false;
         diagnosticPopup.getContent().clear();
-        DiagnosticPane diagnosticPane = new DiagnosticPane(diagnostic);
-        diagnosticPane.setOnMouseEntered(event -> {
-            diagnosticHideDelay.stop();
-            hoveringDiagnosticPopup = true;
-        });
-        diagnosticPane.setOnMouseExited(event -> {
-            hoveringDiagnosticPopup = false;
-            Point2D screenPosition = new Point2D(event.getScreenX(), event.getScreenY());
-            if (!isMouseOverDiagnostic(screenPosition))
-                scheduleDiagnosticHide();
-        });
-        diagnosticPopup.getContent().add(diagnosticPane);
+        diagnosticPopup.getContent().add(new DiagnosticPane(diagnostic));
         diagnosticPopup.show(this, screenX, screenY);
     }
 
@@ -385,27 +376,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
         int index = hit(event.getX(), event.getY())
             .getCharacterIndex()
             .orElse(-1);
-        if (!hoveringDiagnosticPopup && (index < 0 || findDiagnosticAt(index) == null)) {
-            scheduleDiagnosticHide();
-        } else {
-            diagnosticHideDelay.stop();
+        if (index < 0 || findDiagnosticAt(index) == null) {
+            diagnosticPopup.hide();
         }
-    }
-
-    private boolean isMouseOverDiagnostic(Point2D screenPosition) {
-        Point2D local = screenToLocal(screenPosition);
-        if (local == null)
-            return false;
-
-        int index = hit(local.getX(), local.getY())
-            .getCharacterIndex()
-            .orElse(-1);
-        return index >= 0 && findDiagnosticAt(index) != null;
-    }
-
-    private void scheduleDiagnosticHide() {
-        diagnosticHideDelay.stop();
-        diagnosticHideDelay.playFromStart();
     }
     // endregion
 
@@ -642,7 +615,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         signatureTextFlow.getChildren().clear();
 
         String owner = help.ownerQualified().isBlank() ? help.ownerDisplay() : help.ownerQualified();
-        StringBuilder headerBuilder = new StringBuilder();
+        var headerBuilder = new StringBuilder();
         if (help.constructor()) {
             headerBuilder.append("new ");
             if (!owner.isBlank()) {
@@ -668,7 +641,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
         for (int i = 0; i < parameterCount; i++) {
             SignatureHelp.ParameterInfo parameter = parameters.get(i);
             boolean highlight = highlightIndex == i ||
-                (help.varargs() && i == parameterCount - 1 && highlightIndex >= parameterCount - 1 && highlightIndex >= 0);
+                (help.varargs() && i == parameterCount - 1 && highlightIndex >= parameterCount - 1
+                    && highlightIndex >= 0);
 
             String paramLabel = parameter.type() + (parameter.name().isBlank() ? "" : " " + parameter.name());
             var paramText = new Text(paramLabel);
@@ -851,7 +825,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
     // endregion
 
-    //region Styles
+    // region Styles
     private void applyEditorStyles() {
         if (lastHighlight == null)
             return;
@@ -867,8 +841,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private static StyleSpans<Collection<String>> mergeDiagnosticStyles(
         StyleSpans<Collection<String>> baseSpans,
-        List<TextEditorDiagnostic> diagnostics
-    ) {
+        List<TextEditorDiagnostic> diagnostics) {
         if (baseSpans == null || diagnostics == null || diagnostics.isEmpty())
             return baseSpans;
 
@@ -892,7 +865,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (events.isEmpty())
             return baseSpans;
 
-        StyleSpansBuilder<Collection<String>> builder = new StyleSpansBuilder<>(baseSpans.getSpanCount() + events.size());
+        StyleSpansBuilder<Collection<String>> builder = new StyleSpansBuilder<>(
+            baseSpans.getSpanCount() + events.size());
         Iterator<Map.Entry<Integer, int[]>> iterator = events.entrySet().iterator();
         Map.Entry<Integer, int[]> nextEvent = iterator.hasNext() ? iterator.next() : null;
         int currentPosition = 0;
@@ -926,7 +900,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     private static void registerDiagnosticEvent(TreeMap<Integer, int[]> events, int offset, boolean error, int delta) {
-        int[] deltas = events.computeIfAbsent(offset, ignored -> new int[2]);
+        int[] deltas = events.computeIfAbsent(offset, _ -> new int[2]);
         if (error) {
             deltas[0] += delta;
         } else {
@@ -950,8 +924,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private static boolean styleSpansEqual(
         StyleSpans<Collection<String>> left,
-        StyleSpans<Collection<String>> right
-    ) {
+        StyleSpans<Collection<String>> right) {
         if (left == right)
             return true;
 
@@ -985,7 +958,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 continue;
 
             Diagnostic.Kind kind = diagnostic.kind();
-            Diagnostic.Kind effectiveKind = kind == Diagnostic.Kind.ERROR ? Diagnostic.Kind.ERROR : Diagnostic.Kind.WARNING;
+            Diagnostic.Kind effectiveKind = kind == Diagnostic.Kind.ERROR
+                ? Diagnostic.Kind.ERROR
+                : Diagnostic.Kind.WARNING;
             Diagnostic.Kind existing = updatedSeverity.get(line);
             if (existing != Diagnostic.Kind.ERROR) {
                 updatedSeverity.put(line, effectiveKind);

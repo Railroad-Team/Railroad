@@ -18,8 +18,7 @@ public class DirectoryListPane extends AbstractPathListPane {
             initialDirectories,
             "railroad.settings.directories.empty",
             "railroad.settings.directories.add.tooltip",
-            "railroad.settings.directories.remove.tooltip"
-        );
+            "railroad.settings.directories.remove.tooltip");
         getStyleClass().add("directory-list-pane");
     }
 

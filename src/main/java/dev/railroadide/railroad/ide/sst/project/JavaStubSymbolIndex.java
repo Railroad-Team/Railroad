@@ -16,8 +16,10 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private final Map<String, List<JavaProjectSemanticIndex.SymbolDescriptor>> symbolsByQualifiedName;
     private final Map<String, List<JavaProjectSemanticIndex.SymbolDescriptor>> membersByOwnerQualifiedName;
 
-    public JavaStubSymbolIndex(Map<String, ClassStub> classStubsByQualifiedName, Map<String, Path> sourceByQualifiedName) {
-        this.classStubsByQualifiedName = Map.copyOf(Objects.requireNonNull(classStubsByQualifiedName, "classStubsByQualifiedName"));
+    public JavaStubSymbolIndex(Map<String, ClassStub> classStubsByQualifiedName,
+        Map<String, Path> sourceByQualifiedName) {
+        this.classStubsByQualifiedName = Map
+            .copyOf(Objects.requireNonNull(classStubsByQualifiedName, "classStubsByQualifiedName"));
 
         Set<String> declaredQualifiedNames = new LinkedHashSet<>();
         Set<String> typeNames = new LinkedHashSet<>();
@@ -29,15 +31,17 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         for (Map.Entry<String, ClassStub> entry : this.classStubsByQualifiedName.entrySet()) {
             String qualifiedName = entry.getKey();
             ClassStub stub = entry.getValue();
-            Path sourceFile = Objects.requireNonNull(sourceByQualifiedName.get(qualifiedName), "Missing source for " + qualifiedName);
+            Path sourceFile = Objects.requireNonNull(sourceByQualifiedName.get(qualifiedName),
+                "Missing source for " + qualifiedName);
             declaredQualifiedNames.add(qualifiedName);
             typeNames.add(qualifiedName);
             int typeNameSeparator = Math.max(qualifiedName.lastIndexOf('.'), qualifiedName.lastIndexOf('$'));
             typeNames.add(typeNameSeparator < 0 ? qualifiedName : qualifiedName.substring(typeNameSeparator + 1));
-            if (stub.packageName() != null && !stub.packageName().isBlank())
+            if (stub.packageName() != null && !stub.packageName().isBlank()) {
                 packages.add(stub.packageName());
+            }
 
-            JavaProjectSemanticIndex.SymbolDescriptor typeDescriptor = new JavaProjectSemanticIndex.SymbolDescriptor(
+            var typeDescriptor = new JavaProjectSemanticIndex.SymbolDescriptor(
                 toTypeKind(stub),
                 stub.name(),
                 qualifiedName,
@@ -45,13 +49,12 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
                 null,
                 sourceFile,
                 java.lang.reflect.Modifier.isStatic(stub.modifiers()),
-                true
-            );
+                true);
             index(symbolsBySimpleName, typeDescriptor.simpleName(), typeDescriptor);
             index(symbolsByQualifiedName, qualifiedName, typeDescriptor);
 
             for (FieldStub field : stub.fields()) {
-                JavaProjectSemanticIndex.SymbolDescriptor descriptor = new JavaProjectSemanticIndex.SymbolDescriptor(
+                var descriptor = new JavaProjectSemanticIndex.SymbolDescriptor(
                     SymbolKind.FIELD,
                     field.name(),
                     qualifiedName + "#" + field.name(),
@@ -59,15 +62,14 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
                     null,
                     sourceFile,
                     java.lang.reflect.Modifier.isStatic(field.modifiers()),
-                    false
-                );
+                    false);
                 index(symbolsBySimpleName, descriptor.simpleName(), descriptor);
                 index(symbolsByQualifiedName, descriptor.qualifiedName(), descriptor);
                 index(membersByOwnerQualifiedName, qualifiedName, descriptor);
             }
 
             for (MethodStub method : stub.methods()) {
-                JavaProjectSemanticIndex.SymbolDescriptor descriptor = new JavaProjectSemanticIndex.SymbolDescriptor(
+                var descriptor = new JavaProjectSemanticIndex.SymbolDescriptor(
                     SymbolKind.METHOD,
                     method.name(),
                     qualifiedName + "#" + method.name(),
@@ -75,15 +77,14 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
                     renderSignature(method),
                     sourceFile,
                     java.lang.reflect.Modifier.isStatic(method.modifiers()),
-                    false
-                );
+                    false);
                 index(symbolsBySimpleName, descriptor.simpleName(), descriptor);
                 index(symbolsByQualifiedName, descriptor.qualifiedName(), descriptor);
                 index(membersByOwnerQualifiedName, qualifiedName, descriptor);
             }
 
             for (ConstructorStub constructor : stub.constructors()) {
-                JavaProjectSemanticIndex.SymbolDescriptor descriptor = new JavaProjectSemanticIndex.SymbolDescriptor(
+                var descriptor = new JavaProjectSemanticIndex.SymbolDescriptor(
                     SymbolKind.CONSTRUCTOR,
                     stub.name(),
                     qualifiedName + "#<init>",
@@ -91,8 +92,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
                     renderSignature(constructor),
                     sourceFile,
                     false,
-                    false
-                );
+                    false);
                 index(symbolsBySimpleName, descriptor.simpleName(), descriptor);
                 index(symbolsByQualifiedName, descriptor.qualifiedName(), descriptor);
                 index(membersByOwnerQualifiedName, qualifiedName, descriptor);
@@ -152,18 +152,16 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private static void index(
         Map<String, List<JavaProjectSemanticIndex.SymbolDescriptor>> index,
         String key,
-        JavaProjectSemanticIndex.SymbolDescriptor descriptor
-    ) {
+        JavaProjectSemanticIndex.SymbolDescriptor descriptor) {
         if (key == null || key.isBlank())
             return;
 
-        index.computeIfAbsent(key, $ -> new ArrayList<>()).add(descriptor);
+        index.computeIfAbsent(key, _ -> new ArrayList<>()).add(descriptor);
     }
 
     private static List<JavaProjectSemanticIndex.SymbolDescriptor> lookup(
         Map<String, List<JavaProjectSemanticIndex.SymbolDescriptor>> index,
-        String key
-    ) {
+        String key) {
         if (key == null || key.isBlank())
             return List.of();
 
@@ -201,10 +199,11 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     }
 
     private static String renderSignature(List<dev.railroadide.railroad.ide.classparser.Type> parameterTypes) {
-        StringBuilder builder = new StringBuilder("(");
+        var builder = new StringBuilder("(");
         for (int index = 0; index < parameterTypes.size(); index++) {
-            if (index > 0)
+            if (index > 0) {
                 builder.append(", ");
+            }
             builder.append(renderType(parameterTypes.get(index)));
         }
         builder.append(')');
@@ -214,7 +213,8 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private static String renderType(dev.railroadide.railroad.ide.classparser.Type type) {
         return switch (type) {
             case dev.railroadide.railroad.ide.classparser.Type.PrimitiveType primitive -> primitive.name();
-            case dev.railroadide.railroad.ide.classparser.Type.ArrayType array -> renderType(array.componentType()) + "[]";
+            case dev.railroadide.railroad.ide.classparser.Type.ArrayType array ->
+                renderType(array.componentType()) + "[]";
             case dev.railroadide.railroad.ide.classparser.Type.ClassType clazz -> clazz.name();
             case dev.railroadide.railroad.ide.classparser.Type.TypeVariable variable -> variable.name();
             case dev.railroadide.railroad.ide.classparser.Type.WildcardType wildcard ->

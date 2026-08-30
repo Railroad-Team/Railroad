@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.project.onboarding.ui;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.project.onboarding.step.OnboardingStep;
 import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.geometry.Pos;
@@ -81,6 +83,8 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
 
         setBottom(buttonBar);
         setContent(content);
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.ProjectOnboarding.ONBOARDING, this);
     }
 
     private Node createProgressContainer() {
@@ -93,9 +97,9 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
     }
 
     private StackPane createBusyOverlay() {
-        ProgressIndicator indicator = new ProgressIndicator();
+        var indicator = new ProgressIndicator();
         indicator.getStyleClass().add("onboarding-busy-indicator");
-        StackPane overlay = new StackPane(indicator);
+        var overlay = new StackPane(indicator);
         overlay.getStyleClass().add("onboarding-busy-overlay");
         overlay.setVisible(false);
         overlay.setManaged(false);

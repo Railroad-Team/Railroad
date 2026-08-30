@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.plugin.defaults;
 
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.plugin.spi.event.Event;
 import dev.railroadide.railroad.plugin.spi.event.EventBus;
 import dev.railroadide.railroad.plugin.spi.event.EventListener;
@@ -14,14 +15,20 @@ public class DefaultEventBus implements EventBus {
     @Override
     public void publish(Event event) {
         Class<?> eventType = event.getClass();
-        for (Map.Entry<Class<? extends Event>, CopyOnWriteArrayList<EventListener<? extends Event>>> entry : subscribers.entrySet()) {
+        for (Map.Entry<Class<? extends Event>, CopyOnWriteArrayList<EventListener<? extends Event>>> entry : subscribers
+            .entrySet()) {
             if (entry.getKey().isAssignableFrom(eventType)) {
                 CopyOnWriteArrayList<EventListener<? extends Event>> listeners = entry.getValue();
                 for (EventListener<? extends Event> listener : listeners) {
                     // Suppress unchecked cast warning, as we know the type is correct
                     @SuppressWarnings("unchecked")
                     EventListener<Event> typedListener = (EventListener<Event>) listener;
-                    typedListener.handle(event);
+                    try {
+                        typedListener.handle(event);
+                    } catch (RuntimeException exception) {
+                        Railroad.LOGGER.error("Event listener failed while handling {}", eventType.getName(),
+                            exception);
+                    }
                 }
             }
         }

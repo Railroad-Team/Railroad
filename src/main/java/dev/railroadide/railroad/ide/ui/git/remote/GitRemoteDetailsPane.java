@@ -1,8 +1,10 @@
 package dev.railroadide.railroad.ide.ui.git.remote;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.ui.RRGridPane;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.utility.TimeFormatter;
 import dev.railroadide.railroad.vcs.git.GitManager;
@@ -36,6 +38,7 @@ public class GitRemoteDetailsPane extends RRVBox {
     private final Timeline fetchElapsedAnimation;
 
     public GitRemoteDetailsPane(GitManager gitManager, GitRemote remote) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_REMOTE_DETAILS, this);
         this.gitManager = gitManager;
 
         getStyleClass().add("git-remote-details-pane");
@@ -43,12 +46,12 @@ public class GitRemoteDetailsPane extends RRVBox {
 
         configureGrid();
 
-        this.remote.addListener((observable, oldValue, newValue) -> updateContent(newValue));
+        this.remote.addListener((_, _, newValue) -> updateContent(newValue));
         this.remote.set(remote);
 
-        fetchElapsedAnimation = new Timeline(new KeyFrame(Duration.seconds(1), $ -> refreshLastFetchedText()));
+        fetchElapsedAnimation = new Timeline(new KeyFrame(Duration.seconds(1), _ -> refreshLastFetchedText()));
         fetchElapsedAnimation.setCycleCount(Timeline.INDEFINITE);
-        sceneProperty().addListener((obs, oldScene, newScene) -> {
+        sceneProperty().addListener((_, _, newScene) -> {
             if (newScene == null) {
                 fetchElapsedAnimation.stop();
             } else {
@@ -58,7 +61,7 @@ public class GitRemoteDetailsPane extends RRVBox {
         });
 
         if (this.gitManager != null) {
-            this.gitManager.repoStatusProperty().addListener((obs, oldStatus, newStatus) -> updateContent(this.remote.get()));
+            this.gitManager.repoStatusProperty().addListener((_, _, _) -> updateContent(this.remote.get()));
         }
     }
 
@@ -176,9 +179,8 @@ public class GitRemoteDetailsPane extends RRVBox {
 
     private void refreshLastFetchedText() {
         GitRemote currentRemote = this.remote.get();
-        if (currentRemote == null || gitManager == null) {
+        if (currentRemote == null || gitManager == null)
             return;
-        }
 
         long lastFetchTimestamp = gitManager.getLastFetchTimestamp(currentRemote);
         if (lastFetchTimestamp > 0L) {

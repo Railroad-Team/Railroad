@@ -15,7 +15,8 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
-    private JavaLibrarySymbolIndex(Map<String, ClassStub> classStubsByQualifiedName, Map<String, Path> sourceByQualifiedName) {
+    private JavaLibrarySymbolIndex(Map<String, ClassStub> classStubsByQualifiedName,
+        Map<String, Path> sourceByQualifiedName) {
         super(classStubsByQualifiedName, sourceByQualifiedName);
     }
 
@@ -30,7 +31,8 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         return new JavaLibrarySymbolIndex(stubsByQualifiedName, sourceByQualifiedName);
     }
 
-    private static void scanRoot(Path root, Map<String, ClassStub> stubsByQualifiedName, Map<String, Path> sourceByQualifiedName) {
+    private static void scanRoot(Path root, Map<String, ClassStub> stubsByQualifiedName,
+        Map<String, Path> sourceByQualifiedName) {
         if (root == null || Files.notExists(root) || !Files.isReadable(root))
             return;
 
@@ -45,7 +47,8 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         }
     }
 
-    private static void scanDirectory(Path root, Map<String, ClassStub> stubsByQualifiedName, Map<String, Path> sourceByQualifiedName) {
+    private static void scanDirectory(Path root, Map<String, ClassStub> stubsByQualifiedName,
+        Map<String, Path> sourceByQualifiedName) {
         try (var paths = Files.walk(root)) {
             paths.filter(Files::isRegularFile)
                 .filter(path -> path.getFileName().toString().endsWith(".class"))
@@ -60,8 +63,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         Path classFile,
         Path origin,
         Map<String, ClassStub> stubsByQualifiedName,
-        Map<String, Path> sourceByQualifiedName
-    ) {
+        Map<String, Path> sourceByQualifiedName) {
         try {
             indexStub(ClassStubParser.parse(classFile), origin, stubsByQualifiedName, sourceByQualifiedName);
         } catch (ClassScanException exception) {
@@ -72,8 +74,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
     private static void scanArchive(
         Path archive,
         Map<String, ClassStub> stubsByQualifiedName,
-        Map<String, Path> sourceByQualifiedName
-    ) {
+        Map<String, Path> sourceByQualifiedName) {
         try (JarFile jarFile = new JarFile(archive.toFile())) {
             Enumeration<JarEntry> entries = jarFile.entries();
             while (entries.hasMoreElements()) {
@@ -86,7 +87,8 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
                     continue;
 
                 try (InputStream input = jarFile.getInputStream(entry)) {
-                    indexStub(ClassStubParser.parse(new ClassReader(input)), archive, stubsByQualifiedName, sourceByQualifiedName);
+                    indexStub(ClassStubParser.parse(new ClassReader(input)), archive, stubsByQualifiedName,
+                        sourceByQualifiedName);
                 } catch (Exception exception) {
                     Railroad.LOGGER.warn("Ignoring unreadable class entry {} in {}", entryName, archive, exception);
                 }
@@ -100,8 +102,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         ClassStub stub,
         Path origin,
         Map<String, ClassStub> stubsByQualifiedName,
-        Map<String, Path> sourceByQualifiedName
-    ) {
+        Map<String, Path> sourceByQualifiedName) {
         String qualifiedName = stub.getFullName();
         if (qualifiedName == null || qualifiedName.isBlank())
             return;

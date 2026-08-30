@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.commit;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.vcs.git.commit.GitCommitData;
 
 public class GitCommitActionsPane extends RRVBox {
@@ -14,6 +16,7 @@ public class GitCommitActionsPane extends RRVBox {
     private final RRTextArea commitDescriptionArea;
 
     public GitCommitActionsPane(Project project, GitCommitChangesPane gitCommitChanges) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT_ACTIONS, this);
         this.project = project;
         this.gitCommitChanges = gitCommitChanges;
 

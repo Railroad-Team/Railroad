@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ui;
 
+import dev.railroadide.railroad.ui.animation.UIAnimations;
 import dev.railroadide.railroad.ui.localized.LocalizedTextProperty;
+import javafx.animation.RotateTransition;
 import javafx.animation.ScaleTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -18,6 +20,7 @@ public class RRCheckBox extends CheckBox {
 
     private Node originalGraphic;
     private FontIcon loadingSpinner;
+    private RotateTransition loadingSpinnerAnimation;
 
     private final BooleanProperty isLoading = new SimpleBooleanProperty(this, "isLoading", false);
     public boolean getIsLoading() {
@@ -60,8 +63,9 @@ public class RRCheckBox extends CheckBox {
         loadingSpinner = new FontIcon(FontAwesomeSolid.SYNC_ALT);
         loadingSpinner.setIconSize(16);
         loadingSpinner.getStyleClass().add("loading-spinner");
+        loadingSpinnerAnimation = UIAnimations.spinner(loadingSpinner);
 
-        setOnMousePressed($ -> {
+        setOnMousePressed(_ -> {
             if (!getIsLoading()) {
                 var scale = new ScaleTransition(Duration.millis(100), this);
                 scale.setToX(0.95);
@@ -70,7 +74,7 @@ public class RRCheckBox extends CheckBox {
             }
         });
 
-        setOnMouseReleased($ -> {
+        setOnMouseReleased(_ -> {
             if (!getIsLoading()) {
                 var scale = new ScaleTransition(Duration.millis(100), this);
                 scale.setToX(1.0);
@@ -79,7 +83,7 @@ public class RRCheckBox extends CheckBox {
             }
         });
 
-        isLoading.addListener($ -> {
+        isLoading.addListener(_ -> {
             if (getIsLoading()) {
                 onLoading();
             } else {
@@ -95,7 +99,7 @@ public class RRCheckBox extends CheckBox {
      * The text will automatically update when the application language changes.
      *
      * @param localizationKey the localization key for the text
-     * @param args            optional formatting arguments for the localized text
+     * @param args optional formatting arguments for the localized text
      */
     public void setLocalizedText(String localizationKey, Object... args) {
         localizedText.setTranslation(localizationKey, args);
@@ -136,6 +140,7 @@ public class RRCheckBox extends CheckBox {
      * - The "loading" CSS class is removed
      * <p>
      * Example usage:
+     *
      * <pre>
      * RRCheckBox checkbox = new RRCheckBox();
      * checkbox.setOnAction(e -> {
@@ -176,12 +181,15 @@ public class RRCheckBox extends CheckBox {
         }
 
         setGraphic(loadingContent);
+        loadingSpinnerAnimation.playFromStart();
     }
 
     /**
      * Called when the button has stopped loading
      */
     protected void onNotLoading() {
+        loadingSpinnerAnimation.stop();
+        loadingSpinner.setRotate(0);
         setDisable(false);
         getStyleClass().remove("loading");
 

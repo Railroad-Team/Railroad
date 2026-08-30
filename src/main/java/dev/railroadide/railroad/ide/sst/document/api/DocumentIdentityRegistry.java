@@ -55,7 +55,7 @@ public final class DocumentIdentityRegistry {
      * @param documentId logical document identity
      * @return current document version
      * @throws IllegalStateException if the identity is not owned by this registry or has
-     *                               been released
+     *             been released
      */
     public synchronized DocumentVersion currentVersion(DocumentId documentId) {
         documentId = Objects.requireNonNull(documentId, "documentId");
@@ -71,7 +71,7 @@ public final class DocumentIdentityRegistry {
      * @param documentId logical document identity
      * @return newly allocated version
      * @throws IllegalStateException if the identity is unknown, released, or its version
-     *                               is exhausted
+     *             is exhausted
      */
     public synchronized DocumentVersion advanceVersion(DocumentId documentId) {
         DocumentVersion next = currentVersion(documentId).next();
@@ -84,7 +84,7 @@ public final class DocumentIdentityRegistry {
      * forward but can never move backward.
      *
      * @param documentId logical document identity
-     * @param version    persisted or externally allocated version
+     * @param version persisted or externally allocated version
      * @throws IllegalArgumentException if {@code version} is earlier than existing state
      */
     public synchronized void restoreVersion(DocumentId documentId, DocumentVersion version) {
@@ -92,10 +92,9 @@ public final class DocumentIdentityRegistry {
         version = Objects.requireNonNull(version, "version");
         rejectReleased(documentId);
         DocumentVersion current = versionsById.get(documentId);
-        if (current != null && version.isBefore(current)) {
+        if (current != null && version.isBefore(current))
             throw new IllegalArgumentException(
                 "Document version cannot move backward from " + current + " to " + version);
-        }
         versionsById.put(documentId, version);
     }
 
@@ -112,7 +111,7 @@ public final class DocumentIdentityRegistry {
         if (filePath.isPresent())
             return getOrCreate(filePath.get());
 
-        DocumentId documentId = idsByUri.computeIfAbsent(uri, ignored -> create());
+        DocumentId documentId = idsByUri.computeIfAbsent(uri, _ -> create());
         ensureVersion(documentId);
         return documentId;
     }
@@ -161,8 +160,9 @@ public final class DocumentIdentityRegistry {
             return Optional.of(existing);
 
         existing = findEquivalentPhysicalFile(resolved);
-        if (existing != null)
+        if (existing != null) {
             registerSpellings(existing, normalized, resolved);
+        }
 
         return Optional.ofNullable(existing);
     }
@@ -194,13 +194,11 @@ public final class DocumentIdentityRegistry {
             .map(entry -> entry.getKey());
     }
 
-
-
     /**
      * Associates an existing identity with a physical path.
      *
      * @param documentId identity owned by this workspace
-     * @param path       physical document path
+     * @param path physical document path
      * @throws IllegalStateException if the path is already associated with another ID
      */
     public synchronized void associate(DocumentId documentId, Path path) {
@@ -208,8 +206,9 @@ public final class DocumentIdentityRegistry {
         Path normalized = normalize(path);
         Path resolved = resolve(normalized);
         DocumentId existing = findRegistered(normalized, resolved);
-        if (existing == null)
+        if (existing == null) {
             existing = findEquivalentPhysicalFile(resolved);
+        }
 
         if (existing != null && !existing.equals(documentId))
             throw new IllegalStateException("Document path is already associated with another identity: " + path);
@@ -222,7 +221,7 @@ public final class DocumentIdentityRegistry {
      * Associates an existing identity with a physical or virtual URI.
      *
      * @param documentId identity owned by this workspace
-     * @param uri        current document URI
+     * @param uri current document URI
      * @throws IllegalStateException if the URI is already associated with another ID
      */
     public synchronized void associate(DocumentId documentId, DocumentUri uri) {
@@ -246,18 +245,17 @@ public final class DocumentIdentityRegistry {
      * Moves the physical association for a document while preserving its identity.
      * The filesystem move itself remains the caller's responsibility.
      *
-     * @param documentId   identity being moved
+     * @param documentId identity being moved
      * @param previousPath previous physical path
-     * @param newPath      new physical path
+     * @param newPath new physical path
      * @throws IllegalStateException if the old association is missing or belongs to a
-     *                               different document, or the new path belongs to another document
+     *             different document, or the new path belongs to another document
      */
     public synchronized void rebind(DocumentId documentId, Path previousPath, Path newPath) {
         rebind(
             documentId,
             DocumentUri.fromPath(previousPath),
-            DocumentUri.fromPath(newPath)
-        );
+            DocumentUri.fromPath(newPath));
     }
 
     /**
@@ -265,11 +263,11 @@ public final class DocumentIdentityRegistry {
      * aliases registered for the previous location are forgotten. Moving filesystem
      * content remains the caller's responsibility.
      *
-     * @param documentId  identity being moved
+     * @param documentId identity being moved
      * @param previousUri previous document URI
-     * @param newUri      new document URI
+     * @param newUri new document URI
      * @throws IllegalStateException if the previous URI is not owned by the supplied ID,
-     *                               or the new URI belongs to another document
+     *             or the new URI belongs to another document
      */
     public synchronized void rebind(DocumentId documentId, DocumentUri previousUri, DocumentUri newUri) {
         documentId = Objects.requireNonNull(documentId, "documentId");
@@ -277,7 +275,8 @@ public final class DocumentIdentityRegistry {
         newUri = Objects.requireNonNull(newUri, "newUri");
         DocumentId previous = find(previousUri).orElse(null);
         if (!documentId.equals(previous))
-            throw new IllegalStateException("Previous URI is not associated with the supplied identity: " + previousUri);
+            throw new IllegalStateException(
+                "Previous URI is not associated with the supplied identity: " + previousUri);
 
         DocumentId existing = find(newUri).orElse(null);
         if (existing != null && !documentId.equals(existing))

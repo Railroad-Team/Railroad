@@ -17,25 +17,23 @@ class DocumentSnapshotTest {
         assertTrue(DocumentSnapshot.class.isSealed());
         assertEquals(
             Set.of(TextDocumentSnapshot.class, BinaryDocumentSnapshot.class),
-            Set.of(DocumentSnapshot.class.getPermittedSubclasses())
-        );
+            Set.of(DocumentSnapshot.class.getPermittedSubclasses()));
     }
 
     @Test
     void textSnapshotCopiesMutableInputAndCarriesMetadata() {
         DocumentId id = DocumentId.create();
         DocumentUri uri = DocumentUri.virtual("generated", "sources/Example.java");
-        DocumentVersion version = new DocumentVersion(8);
-        StringBuilder source = new StringBuilder("class Example {}");
+        var version = new DocumentVersion(8);
+        var source = new StringBuilder("class Example {}");
 
-        TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+        var snapshot = new TextDocumentSnapshot(
             id,
             uri,
             version,
             "java",
             source,
-            StandardCharsets.UTF_16
-        );
+            StandardCharsets.UTF_16);
         source.replace(0, source.length(), "changed");
 
         assertEquals(id, snapshot.id());
@@ -50,14 +48,13 @@ class DocumentSnapshotTest {
     void textSnapshotAlsoAcceptsPhysicalDocumentLocations() {
         DocumentUri physicalUri = DocumentUri.fromPath(Path.of("Example.java").toAbsolutePath());
 
-        TextDocumentSnapshot snapshot = new TextDocumentSnapshot(
+        var snapshot = new TextDocumentSnapshot(
             DocumentId.create(),
             physicalUri,
             DocumentVersion.initial(),
             "java",
             "class Example {}",
-            StandardCharsets.UTF_8
-        );
+            StandardCharsets.UTF_8);
 
         assertTrue(snapshot.uri().isFile());
     }
@@ -65,13 +62,12 @@ class DocumentSnapshotTest {
     @Test
     void binarySnapshotCopiesInputsAndExposesIndependentReadOnlyViews() {
         byte[] content = {1, 2, 3, 4};
-        BinaryDocumentSnapshot snapshot = new BinaryDocumentSnapshot(
+        var snapshot = new BinaryDocumentSnapshot(
             DocumentId.create(),
             DocumentUri.virtual("memory", "images/icon.bin"),
             DocumentVersion.initial(),
             "application/octet-stream",
-            content
-        );
+            content);
         content[0] = (byte) 99;
 
         ByteBuffer first = snapshot.bytes();
@@ -94,13 +90,12 @@ class DocumentSnapshotTest {
         source.position(1);
         source.limit(3);
 
-        BinaryDocumentSnapshot snapshot = new BinaryDocumentSnapshot(
+        var snapshot = new BinaryDocumentSnapshot(
             DocumentId.create(),
             DocumentUri.virtual("archive", "library.jar!/asset.dat"),
             new DocumentVersion(2),
             "binary",
-            source
-        );
+            source);
 
         assertEquals(1, source.position());
         assertArrayEquals(new byte[]{20, 30}, snapshot.copyBytes());
@@ -113,16 +108,12 @@ class DocumentSnapshotTest {
         DocumentVersion version = DocumentVersion.initial();
 
         assertThrows(IllegalArgumentException.class, () -> new TextDocumentSnapshot(
-            id, uri, version, "  ", "", StandardCharsets.UTF_8
-        ));
+            id, uri, version, "  ", "", StandardCharsets.UTF_8));
         assertThrows(NullPointerException.class, () -> new TextDocumentSnapshot(
-            id, uri, version, "java", null, StandardCharsets.UTF_8
-        ));
+            id, uri, version, "java", null, StandardCharsets.UTF_8));
         assertThrows(IllegalArgumentException.class, () -> new BinaryDocumentSnapshot(
-            id, uri, version, "\t", new byte[0]
-        ));
+            id, uri, version, "\t", new byte[0]));
         assertThrows(NullPointerException.class, () -> new BinaryDocumentSnapshot(
-            id, uri, version, "binary", (byte[]) null
-        ));
+            id, uri, version, "binary", (byte[]) null));
     }
 }

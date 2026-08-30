@@ -18,7 +18,7 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'temurin'
       - name: Install fakeroot for jpackage
         run: |
@@ -40,7 +40,7 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'temurin'
       - name: Add IP to cloudflare whitelist
         uses: xiaotianxt/bypass-cloudflare-for-github-action@v1.1.1
@@ -52,7 +52,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: build/jpackage/*.msi, build/jpackage/*.exe, build/jpackage/*.zip
+          path: |
+            build/jpackage/*.msi
+            build/jpackage/*.exe
+            build/jpackage/*.zip
+          if-no-files-found: error
 
   build-mac:
     runs-on: macos-latest
@@ -62,7 +66,7 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'temurin'
       - name: Add IP to cloudflare whitelist
         uses: xiaotianxt/bypass-cloudflare-for-github-action@v1.1.1
@@ -75,13 +79,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mac-build
-          path: build/jpackage/*.dmg, build/jpackage/*.pkg, build/jpackage/*.zip
+          path: |
+            build/jpackage/*.dmg
+            build/jpackage/*.pkg
+            build/jpackage/*.zip
+          if-no-files-found: error
 
   release:
     runs-on: self-hosted
     permissions:
       contents: write
-    needs: build-linux
+    needs: [build-linux, build-windows, build-mac]
     steps:
       - name: Download Linux Build
         uses: actions/download-artifact@v5

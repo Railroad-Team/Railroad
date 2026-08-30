@@ -5,6 +5,7 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.ui.RRNavigationItem;
 import dev.railroadide.railroad.ui.RRSidebar;
+import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.Separator;
@@ -40,7 +41,7 @@ public class WelcomeLeftPane extends RRSidebar {
 
         listView = new RRListView<>();
         listView.getItems().addAll(MenuType.values());
-        listView.setCellFactory(param -> new MenuTypeCell());
+        listView.setCellFactory(_ -> new MenuTypeCell());
         listView.getStyleClass().add("welcome-left-pane-list");
         listView.setFixedCellSize(44);
         listView.setFocusTraversable(false);
@@ -53,15 +54,16 @@ public class WelcomeLeftPane extends RRSidebar {
 
         getChildren().clear();
         getChildren().addAll(topBox, separator, listView);
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Welcome.WELCOME_LEFT, this);
     }
 
     @Getter
     public enum MenuType {
-        HOME("railroad.home.welcome.home", FontAwesomeSolid.HOME),
-        NEW_PROJECT("railroad.home.welcome.newproject", FontAwesomeSolid.PLUS),
-        OPEN_PROJECT("railroad.home.welcome.openproject", FontAwesomeSolid.FOLDER_OPEN),
-        IMPORT_PROJECT("railroad.home.welcome.importproject", FontAwesomeSolid.FILE_IMPORT),
-        SETTINGS("railroad.home.welcome.settings", FontAwesomeSolid.COG);
+        HOME("railroad.home.welcome.home", FontAwesomeSolid.HOME), NEW_PROJECT("railroad.home.welcome.newproject",
+            FontAwesomeSolid.PLUS), OPEN_PROJECT("railroad.home.welcome.openproject",
+                FontAwesomeSolid.FOLDER_OPEN), IMPORT_PROJECT("railroad.home.welcome.importproject",
+                    FontAwesomeSolid.FILE_IMPORT), SETTINGS("railroad.home.welcome.settings", FontAwesomeSolid.COG);
 
         private final String key;
         private final Ikon icon;

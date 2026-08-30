@@ -214,5 +214,4 @@ class CoreOptionalGetInspectionTest {
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
     }
 
-
 }

@@ -31,13 +31,13 @@ public class FacetTypeAdapter extends TypeAdapter<Facet<?>> {
         in.beginObject();
         while (in.hasNext()) {
             switch (in.nextName()) {
-                case FIELD_ID:
+                case FIELD_ID :
                     id = in.nextString();
                     break;
-                case FIELD_DATA:
+                case FIELD_DATA :
                     dataElem = JsonParser.parseReader(in);
                     break;
-                default:
+                default :
                     in.skipValue();
             }
         }

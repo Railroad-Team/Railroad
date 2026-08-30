@@ -83,7 +83,7 @@ public class SettingsSearchHandler {
      * Styles a node based on the search query
      *
      * @param node The node to style
-     * @param <T>  The type of the node
+     * @param <T> The type of the node
      * @return The styled node
      */
     public <T extends Node> T styleNode(T node) {
@@ -134,7 +134,7 @@ public class SettingsSearchHandler {
      * Styles the provided nodes
      *
      * @param nodes The nodes to style
-     * @param <T>   The type of the nodes
+     * @param <T> The type of the nodes
      * @return The styled nodes
      */
     @SafeVarargs

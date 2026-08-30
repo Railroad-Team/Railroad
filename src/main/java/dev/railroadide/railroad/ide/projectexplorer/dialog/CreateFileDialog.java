@@ -54,7 +54,7 @@ public class CreateFileDialog {
         });
 
         var listView = new RRListView<TypeSelection>();
-        listView.setCellFactory(param -> new TypeSelectorCell());
+        listView.setCellFactory(_ -> new TypeSelectorCell());
         listView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 textField.setText(switch (type) {
@@ -66,7 +66,8 @@ public class CreateFileDialog {
 
         listView.getItems().addAll(switch (type) {
             case JAVA_CLASS ->
-                new TypeSelection[]{TypeSelection.JAVA_CLASS, TypeSelection.JAVA_INTERFACE, TypeSelection.JAVA_ENUM, TypeSelection.JAVA_ANNOTATION};
+                new TypeSelection[]{TypeSelection.JAVA_CLASS, TypeSelection.JAVA_INTERFACE, TypeSelection.JAVA_ENUM,
+                    TypeSelection.JAVA_ANNOTATION};
             case JSON -> new TypeSelection[]{TypeSelection.JSON};
             case TXT -> new TypeSelection[]{TypeSelection.TXT};
             default -> new TypeSelection[0];
@@ -75,7 +76,7 @@ public class CreateFileDialog {
         listView.getSelectionModel().selectFirst();
 
         var okButton = new RRButton("railroad.generic.ok");
-        okButton.setOnAction(event -> {
+        okButton.setOnAction(_ -> {
             dialog.hide();
 
             TypeSelection selectedItem = listView.getSelectionModel().getSelectedItem();
@@ -140,35 +141,29 @@ public class CreateFileDialog {
 
                 }
             }
-            """),
-        JAVA_INTERFACE("Java Interface", "java", null, """
+            """), JAVA_INTERFACE("Java Interface", "java", null, """
             package <package_loc>.<class_name>;
 
             public interface <class_name> {
 
             }
-            """),
-        JAVA_ENUM("Java Enum", "java", null, """
+            """), JAVA_ENUM("Java Enum", "java", null, """
             package <package_loc>.<class_name>;
 
             public enum <class_name> {
 
             }
-            """),
-        JAVA_ANNOTATION("Java Annotation", "java", null, """
+            """), JAVA_ANNOTATION("Java Annotation", "java", null, """
             package <package_loc>.<class_name>;
 
             public @interface <class_name> {
 
             }
-            """),
-        JSON("JSON File", "json", null, """
+            """), JSON("JSON File", "json", null, """
             {
 
             }
-            """),
-        TXT("Text File", "txt", null, "");
-
+            """), TXT("Text File", "txt", null, "");
 
         private final String name;
         private final String extension;

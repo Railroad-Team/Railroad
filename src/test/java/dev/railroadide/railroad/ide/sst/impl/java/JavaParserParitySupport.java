@@ -12,13 +12,12 @@ import java.util.*;
 
 final class JavaParserParitySupport {
     static final Set<String> TOP_LEVEL_TYPE_KIND_IDS = Set.of(
-            JavaSyntaxKinds.CLASS_DECLARATION.id(),
-            JavaSyntaxKinds.INTERFACE_DECLARATION.id(),
-            JavaSyntaxKinds.ENUM_DECLARATION.id(),
-            JavaSyntaxKinds.ANNOTATION_TYPE_DECLARATION.id(),
-            JavaSyntaxKinds.RECORD_DECLARATION.id(),
-            JavaSyntaxKinds.EMPTY_TYPE_DECLARATION.id()
-    );
+        JavaSyntaxKinds.CLASS_DECLARATION.id(),
+        JavaSyntaxKinds.INTERFACE_DECLARATION.id(),
+        JavaSyntaxKinds.ENUM_DECLARATION.id(),
+        JavaSyntaxKinds.ANNOTATION_TYPE_DECLARATION.id(),
+        JavaSyntaxKinds.RECORD_DECLARATION.id(),
+        JavaSyntaxKinds.EMPTY_TYPE_DECLARATION.id());
 
     private static final String MISSING_TOKEN_PREFIX = "JAVA_MISSING_";
     private static final String MODULE_DIRECTIVE_SUFFIX = "_DIRECTIVE";
@@ -35,8 +34,8 @@ final class JavaParserParitySupport {
 
             try (var stream = Files.walk(root)) {
                 stream.filter(Files::isRegularFile)
-                        .filter(path -> path.toString().endsWith(".java"))
-                        .forEach(files::add);
+                    .filter(path -> path.toString().endsWith(".java"))
+                    .forEach(files::add);
             }
         }
 
@@ -50,11 +49,10 @@ final class JavaParserParitySupport {
         TopLevelShape syntaxTopLevelShape = topLevelShapeFromSyntax(syntaxTree);
         SyntaxDiagnostics syntaxDiagSummary = summarizeSyntaxDiagnostics(syntaxTree);
         return new ParityResult(
-                source,
-                syntaxText,
-                syntaxTopLevelShape,
-                syntaxDiagSummary
-        );
+            source,
+            syntaxText,
+            syntaxTopLevelShape,
+            syntaxDiagSummary);
     }
 
     static List<String> syntaxOnlyIssues(ParityResult result) {
@@ -65,15 +63,15 @@ final class JavaParserParitySupport {
 
         if (result.syntaxDiagnostics().errors() != 0) {
             issues.add("syntax parser produced recovery markers (errors=" + result.syntaxDiagnostics().errors() +
-                    ", missingTokens=" + result.syntaxDiagnostics().missingTokens() +
-                    ", errorNodes=" + result.syntaxDiagnostics().errorNodes() + ")");
+                ", missingTokens=" + result.syntaxDiagnostics().missingTokens() +
+                ", errorNodes=" + result.syntaxDiagnostics().errorNodes() + ")");
         }
 
         return List.copyOf(issues);
     }
 
     static String formatIssues(Path sourcePath, List<String> issues, ParityResult result) {
-        StringBuilder builder = new StringBuilder();
+        var builder = new StringBuilder();
         builder.append(sourcePath).append('\n');
         builder.append("syntaxTopLevel=").append(result.syntaxTopLevelShape()).append('\n');
         builder.append("syntaxDiagnostics=").append(result.syntaxDiagnostics()).append('\n');
@@ -89,9 +87,9 @@ final class JavaParserParitySupport {
 
     private static SyntaxDiagnostics summarizeSyntaxDiagnostics(SyntaxTree syntaxTree) {
         long missingTokens = JavaParserTestSupport.collectSyntaxTokens(syntaxTree).stream()
-                .map(token -> token.kind().id())
-                .filter(kindId -> kindId.equals(SyntaxKind.MISSING_TOKEN.id()) || kindId.startsWith(MISSING_TOKEN_PREFIX))
-                .count();
+            .map(token -> token.kind().id())
+            .filter(kindId -> kindId.equals(SyntaxKind.MISSING_TOKEN.id()) || kindId.startsWith(MISSING_TOKEN_PREFIX))
+            .count();
 
         long errorNodes = countNodesOfKind(syntaxTree.root(), JavaSyntaxKinds.ERROR.id());
         long errors = missingTokens + errorNodes;
@@ -104,8 +102,9 @@ final class JavaParserParitySupport {
         stack.push(root);
         while (!stack.isEmpty()) {
             SyntaxNode node = stack.pop();
-            if (node.kind().id().equals(kindId))
+            if (node.kind().id().equals(kindId)) {
                 count++;
+            }
             for (SyntaxNode child : node.children()) {
                 stack.push(child);
             }
@@ -144,8 +143,9 @@ final class JavaParserParitySupport {
         while (!stack.isEmpty()) {
             SyntaxNode node = stack.pop();
             String kindId = node.kind().id();
-            if (kindId.startsWith("JAVA_MODULE_") && kindId.endsWith(MODULE_DIRECTIVE_SUFFIX))
+            if (kindId.startsWith("JAVA_MODULE_") && kindId.endsWith(MODULE_DIRECTIVE_SUFFIX)) {
                 count++;
+            }
             for (SyntaxNode child : node.children()) {
                 stack.push(child);
             }
@@ -158,22 +158,20 @@ final class JavaParserParitySupport {
     }
 
     record TopLevelShape(
-            int packageDeclarations,
-            int importDeclarations,
-            int typeDeclarations,
-            int moduleDeclarations,
-            int moduleDirectives
-    ) {
+        int packageDeclarations,
+        int importDeclarations,
+        int typeDeclarations,
+        int moduleDeclarations,
+        int moduleDirectives) {
     }
 
     record SyntaxDiagnostics(long errors, long warnings, long missingTokens, long errorNodes) {
     }
 
     record ParityResult(
-            String source,
-            String syntaxText,
-            TopLevelShape syntaxTopLevelShape,
-            SyntaxDiagnostics syntaxDiagnostics
-    ) {
+        String source,
+        String syntaxText,
+        TopLevelShape syntaxTopLevelShape,
+        SyntaxDiagnostics syntaxDiagnostics) {
     }
 }

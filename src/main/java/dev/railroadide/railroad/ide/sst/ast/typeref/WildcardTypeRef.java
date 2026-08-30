@@ -11,10 +11,9 @@ import java.util.List;
 import java.util.Optional;
 
 public record WildcardTypeRef(
-        Span span,
-        Variance variance,
-        Optional<TypeRef> bound
-) implements TypeRef {
+    Span span,
+    Variance variance,
+    Optional<TypeRef> bound) implements TypeRef {
     @Override
     public AstKind kind() {
         return AstKind.WILDCARD_TYPE;
@@ -33,8 +32,6 @@ public record WildcardTypeRef(
     }
 
     public enum Variance {
-        SUPER,
-        EXTENDS,
-        UNBOUNDED
+        SUPER, EXTENDS, UNBOUNDED
     }
 }

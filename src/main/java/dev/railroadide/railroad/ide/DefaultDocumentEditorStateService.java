@@ -70,4 +70,3 @@ public class DefaultDocumentEditorStateService implements DocumentEditorStateSer
         return new Cursor(line, column);
     }
 }
-

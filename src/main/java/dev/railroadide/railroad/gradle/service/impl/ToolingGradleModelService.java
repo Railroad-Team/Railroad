@@ -11,6 +11,7 @@ import dev.railroadide.railroad.utility.function.ThrowingSupplier;
 import dev.railroadide.railroadplugin.dto.FabricDataModel;
 import dev.railroadide.railroadplugin.dto.RailroadProject;
 import org.gradle.tooling.GradleConnector;
+import org.gradle.tooling.LongRunningOperation;
 import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.UnknownModelException;
 import org.gradle.tooling.model.build.BuildEnvironment;
@@ -45,9 +46,9 @@ public class ToolingGradleModelService implements GradleModelService {
     /**
      * Creates a new ToolingGradleModelService.
      *
-     * @param project     the project for which to load the Gradle model
+     * @param project the project for which to load the Gradle model
      * @param environment the Gradle environment configuration
-     * @param executor    the executor to use for asynchronous operations
+     * @param executor the executor to use for asynchronous operations
      */
     public ToolingGradleModelService(Project project, GradleEnvironment environment, Executor executor) {
         this.project = Objects.requireNonNull(project);
@@ -57,23 +58,27 @@ public class ToolingGradleModelService implements GradleModelService {
 
     public static GradleBuildModel loadModel(Project project, GradleEnvironment environment) {
         GradleConnector connector = GradleConnector.newConnector()
-            .forProjectDirectory(project.path().toFile());
+            .forProjectDirectory(project.getPath().toFile());
         configureConnector(connector, environment);
 
         Path initScriptPath = null;
         try (ProjectConnection connection = connector.connect()) {
             initScriptPath = writeInitScript();
             String[] initScriptArgs = {"--init-script", initScriptPath.toAbsolutePath().toString()};
-            connection.newBuild().withArguments(initScriptArgs).run();
+            configureJvm(connection.newBuild(), environment)
+                .withArguments(initScriptArgs)
+                .run();
 
-            BuildEnvironment buildEnvironment = connection.model(BuildEnvironment.class)
+            BuildEnvironment buildEnvironment = configureJvm(connection.model(BuildEnvironment.class), environment)
                 .withArguments(initScriptArgs)
                 .get();
-            GradleBuild gradleBuild = connection.model(GradleBuild.class)
+            GradleBuild gradleBuild = configureJvm(connection.model(GradleBuild.class), environment)
                 .withArguments(initScriptArgs)
                 .get();
-            RailroadProject gradleProject = requestOptionalModel(connection, RailroadProject.class, initScriptArgs);
-            FabricDataModel fabricDataModel = requestOptionalModel(connection, FabricDataModel.class, initScriptArgs);
+            RailroadProject gradleProject = requestOptionalModel(
+                connection, RailroadProject.class, initScriptArgs, environment);
+            FabricDataModel fabricDataModel = requestOptionalModel(
+                connection, FabricDataModel.class, initScriptArgs, environment);
 
             String gradleVersion = buildEnvironment.getGradle().getGradleVersion();
             Path rootDir = gradleBuild.getRootProject().getProjectDirectory().toPath();
@@ -85,7 +90,7 @@ public class ToolingGradleModelService implements GradleModelService {
             if (initScriptPath != null) {
                 try {
                     Files.deleteIfExists(initScriptPath);
-                } catch (Exception ignored) {
+                } catch (Exception _) {
                 }
             }
         }
@@ -95,16 +100,18 @@ public class ToolingGradleModelService implements GradleModelService {
         try {
             Path path = Files.createTempFile("gradle-init-script", ".gradle");
             path.toFile().deleteOnExit();
-            Files.copy(AppResources.getResourceAsStream("scripts/init-gradle-plugin.gradle"), path, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(AppResources.getResourceAsStream("scripts/init-gradle-plugin.gradle"), path,
+                StandardCopyOption.REPLACE_EXISTING);
             return path;
         } catch (Exception exception) {
             throw new RuntimeException("Failed to write Gradle init script", exception);
         }
     }
 
-    private static <T> T requestOptionalModel(ProjectConnection connection, Class<T> modelClass, String[] initScriptArgs) {
+    private static <T> T requestOptionalModel(ProjectConnection connection, Class<T> modelClass,
+        String[] initScriptArgs, GradleEnvironment environment) {
         try {
-            return connection.model(modelClass)
+            return configureJvm(connection.model(modelClass), environment)
                 .withArguments(initScriptArgs)
                 .get();
         } catch (UnknownModelException exception) {
@@ -116,7 +123,7 @@ public class ToolingGradleModelService implements GradleModelService {
     /**
      * Configures the given GradleConnector based on the provided GradleEnvironment.
      *
-     * @param connector   the GradleConnector to configure
+     * @param connector the GradleConnector to configure
      * @param environment the GradleEnvironment containing configuration settings
      */
     public static void configureConnector(GradleConnector connector, GradleEnvironment environment) {
@@ -129,9 +136,11 @@ public class ToolingGradleModelService implements GradleModelService {
             environment.installationPath().ifPresent(path -> connector.useInstallation(path.toFile()));
             environment.userHomePath().ifPresent(path -> connector.useGradleUserHomeDir(path.toFile()));
         }
+    }
 
-        // TODO: Enable setting Java home via environment.jvm() when custom JVM support is implemented.
-        // environment.jvm().ifPresent(jvm -> connector.setJavaHome(jvm.javaHome().toFile()));
+    private static <T extends LongRunningOperation> T configureJvm(T operation, GradleEnvironment environment) {
+        environment.jvm().ifPresent(jvm -> operation.setJavaHome(jvm.path().toFile()));
+        return operation;
     }
 
     private static <T> Supplier<T> safely(ThrowingSupplier<T> supplier) {
@@ -170,8 +179,8 @@ public class ToolingGradleModelService implements GradleModelService {
                 return ongoingRefresh;
 
             refresh = CompletableFuture.supplyAsync(
-                    safely(() -> ToolingGradleModelService.loadModel(this.project, this.environment)),
-                    executor)
+                safely(() -> ToolingGradleModelService.loadModel(this.project, this.environment)),
+                executor)
                 .orTimeout(modelTimeout.toMillis(), TimeUnit.MILLISECONDS);
             ongoingRefresh = refresh;
         }
@@ -182,8 +191,8 @@ public class ToolingGradleModelService implements GradleModelService {
     }
 
     private void completeRefresh(CompletableFuture<GradleBuildModel> refresh,
-                                 GradleBuildModel model,
-                                 Throwable throwable) {
+        GradleBuildModel model,
+        Throwable throwable) {
         synchronized (lock) {
             if (throwable == null && model != null) {
                 cachedModel.set(model);
@@ -194,16 +203,15 @@ public class ToolingGradleModelService implements GradleModelService {
             if (throwable == null && model != null) {
                 listeners.forEach(listener -> notifyListener(
                     () -> listener.modelReloadSucceeded(model),
-                    "success"
-                ));
+                    "success"));
             } else {
                 Throwable error = throwable != null
                     ? throwable
                     : new IllegalStateException("Failed to load model");
+                Railroad.LOGGER.error("Failed to reload Gradle model", error);
                 listeners.forEach(listener -> notifyListener(
                     () -> listener.modelReloadFailed(error),
-                    "failure"
-                ));
+                    "failure"));
             }
         } finally {
             synchronized (lock) {

@@ -11,11 +11,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record UnaryExpression(
-        Span span,
-        LexerToken<JavaTokenType> operator,
-        Expression expression,
-        boolean isPrefix
-) implements Expression {
+    Span span,
+    LexerToken<JavaTokenType> operator,
+    Expression expression,
+    boolean isPrefix) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.BINARY_EXPRESSION;

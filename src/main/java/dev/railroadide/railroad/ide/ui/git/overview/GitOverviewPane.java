@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.overview;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -11,6 +13,7 @@ public class GitOverviewPane extends RRVBox {
     private final GitOverviewRecentCommitsPane recentCommitsPane;
 
     public GitOverviewPane(Project project) {
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_OVERVIEW, this);
         getStyleClass().add("git-overview-pane-root");
 
         this.headerPane = new GitOverviewHeaderPane(project);
@@ -20,8 +23,7 @@ public class GitOverviewPane extends RRVBox {
         getChildren().addAll(
             headerPane,
             identityPane,
-            recentCommitsPane
-        );
+            recentCommitsPane);
 
         VBox.setVgrow(recentCommitsPane, Priority.ALWAYS);
     }

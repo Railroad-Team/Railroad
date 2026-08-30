@@ -15,6 +15,5 @@ public record GitBranchLastCommit(
     @Nullable String hash,
     @Nullable Long timestampEpochSeconds,
     @Nullable String message,
-    @Nullable GitAuthor author
-) {
+    @Nullable GitAuthor author) {
 }

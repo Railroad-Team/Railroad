@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import javafx.application.Platform;
@@ -26,6 +28,7 @@ public class GitCommitDetailsPane extends RRVBox {
 
     public GitCommitDetailsPane(Project project) {
         super();
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT_DETAILS, this);
         this.project = project;
         getStyleClass().add("git-commit-details-root");
 
@@ -35,7 +38,8 @@ public class GitCommitDetailsPane extends RRVBox {
         commit.addListener((obs, oldCommit, newCommit) -> updateCommitDetails(newCommit));
 
         reloadCommitMetadata();
-        project.getGitManager().commitMetadataRevisionProperty().addListener((obs, oldRevision, newRevision) -> reloadCommitMetadata());
+        project.getGitManager().commitMetadataRevisionProperty()
+            .addListener((obs, oldRevision, newRevision) -> reloadCommitMetadata());
     }
 
     private LocalizedText createEmptyState() {

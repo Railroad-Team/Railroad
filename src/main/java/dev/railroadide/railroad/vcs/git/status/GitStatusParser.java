@@ -17,8 +17,7 @@ public final class GitStatusParser {
     }
 
     private static final Pattern AHEAD_BEHIND = Pattern.compile(
-        "\\[.*?(?:ahead\\s+(\\d+))?.*?\\s*(?:behind\\s+(\\d+))?.*?\\]"
-    );
+        "\\[.*?(?:ahead\\s+(\\d+))?.*?\\s*(?:behind\\s+(\\d+))?.*?\\]");
 
     /**
      * Parses porcelain-v1-z status output into a repository status snapshot.
@@ -53,8 +52,7 @@ public final class GitStatusParser {
             branchInfo.branch,
             branchInfo.ahead,
             branchInfo.behind,
-            List.copyOf(changes)
-        );
+            List.copyOf(changes));
     }
 
     private static BranchInfo parseBranchHeader(String header) {

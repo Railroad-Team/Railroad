@@ -25,16 +25,15 @@ import java.util.List;
 public class GitSyncCommitsList extends RRListView<GitCommit> {
     private final LongProperty elapsedTick = new SimpleLongProperty();
     private final Timeline elapsedTimeline = new Timeline(
-        new KeyFrame(Duration.seconds(1), $ -> elapsedTick.set(elapsedTick.get() + 1))
-    );
+        new KeyFrame(Duration.seconds(1), _ -> elapsedTick.set(elapsedTick.get() + 1)));
     private String noCommitsTextKey;
 
     public GitSyncCommitsList() {
         getStyleClass().add("git-sync-commits-list");
-        setCellFactory(listView -> new GitSyncCommitCell(elapsedTick));
+        setCellFactory(_ -> new GitSyncCommitCell(elapsedTick));
 
         elapsedTimeline.setCycleCount(Timeline.INDEFINITE);
-        sceneProperty().addListener((obs, oldScene, newScene) -> {
+        sceneProperty().addListener((_, _, newScene) -> {
             if (newScene == null) {
                 elapsedTimeline.stop();
             } else {
@@ -43,7 +42,7 @@ public class GitSyncCommitsList extends RRListView<GitCommit> {
             }
         });
 
-        getItems().addListener((ListChangeListener<? super GitCommit>) change -> updatePlaceholder());
+        getItems().addListener((ListChangeListener<? super GitCommit>) _ -> updatePlaceholder());
     }
 
     public void setNoCommitsText(String noCommitsTextKey) {
@@ -91,7 +90,7 @@ public class GitSyncCommitsList extends RRListView<GitCommit> {
         private final Text author = new Text();
         private final Text date = new Text();
         private long commitTimestampMillis = -1L;
-        private final InvalidationListener elapsedTickListener = obs -> refreshDate();
+        private final InvalidationListener elapsedTickListener = _ -> refreshDate();
 
         public GitSyncCommitCellPane(ReadOnlyLongProperty elapsedTick) {
             getStyleClass().add("git-sync-commit-cell-pane");

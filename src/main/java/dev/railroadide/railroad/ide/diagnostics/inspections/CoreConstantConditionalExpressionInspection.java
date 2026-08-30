@@ -23,8 +23,7 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         "JAVA_CONSTRUCTOR_DECLARATION",
         "JAVA_RECORD_COMPACT_CONSTRUCTOR",
         "JAVA_INSTANCE_INITIALIZER",
-        "JAVA_STATIC_INITIALIZER"
-    );
+        "JAVA_STATIC_INITIALIZER");
     private static final Set<String> DATA_FLOW_BARRIER_KINDS = Set.of(
         "JAVA_CLASS_DECLARATION",
         "JAVA_INTERFACE_DECLARATION",
@@ -34,8 +33,7 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         "JAVA_METHOD_DECLARATION",
         "JAVA_CONSTRUCTOR_DECLARATION",
         "JAVA_RECORD_COMPACT_CONSTRUCTOR",
-        "JAVA_LAMBDA_EXPRESSION"
-    );
+        "JAVA_LAMBDA_EXPRESSION");
 
     @Override
     public String id() {
@@ -50,26 +48,23 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
                 JavaSemanticRules.CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL.defaultSeverity(),
                 JavaSemanticRules.CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL.messageTemplate(),
                 Set.of("core", "constant-conditions"),
-                CoreConstantConditionalExpressionInspection::reportConstantConditionalExpressionsWithHardcodedLiterals
-            ),
+                CoreConstantConditionalExpressionInspection::reportConstantConditionalExpressionsWithHardcodedLiterals),
             new SimpleJavaInspectionRule(
                 JavaSemanticRules.CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT.id(),
                 JavaSemanticRules.CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT.defaultSeverity(),
                 JavaSemanticRules.CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT.messageTemplate(),
                 Set.of("core", "constant-conditions"),
-                CoreConstantConditionalExpressionInspection::reportConstantConditionalExpressionsWithCompileTimeConstants
-            ),
+                CoreConstantConditionalExpressionInspection::reportConstantConditionalExpressionsWithCompileTimeConstants),
             new SimpleJavaInspectionRule(
                 JavaSemanticRules.CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT.id(),
                 JavaSemanticRules.CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT.defaultSeverity(),
                 JavaSemanticRules.CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT.messageTemplate(),
                 Set.of("core", "constant-conditions"),
-                CoreConstantConditionalExpressionInspection::reportConstantConditionalExpressionsWithDataFlowConstants
-            )
-        );
+                CoreConstantConditionalExpressionInspection::reportConstantConditionalExpressionsWithDataFlowConstants));
     }
 
-    private static void reportConstantConditionalExpressionsWithHardcodedLiterals(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportConstantConditionalExpressionsWithHardcodedLiterals(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         context.traverse(node -> {
             String kindId = node.kind().id();
 
@@ -126,7 +121,8 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         return null;
     }
 
-    private static void checkAndReportLiteral(JavaRuleContext context, JavaInspectionRuleReporter reporter, SyntaxNode conditionNode, String conditionType) {
+    private static void checkAndReportLiteral(JavaRuleContext context, JavaInspectionRuleReporter reporter,
+        SyntaxNode conditionNode, String conditionType) {
         SyntaxNode inner = unwrapExpression(context, conditionNode);
         if (inner == null)
             return;
@@ -143,7 +139,8 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         }
     }
 
-    private static void reportConstantConditionalExpressionsWithCompileTimeConstants(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportConstantConditionalExpressionsWithCompileTimeConstants(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         context.traverse(node -> {
             String kindId = node.kind().id();
 
@@ -175,7 +172,8 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
     }
 
     @SuppressWarnings("ConstantValue")
-    private static Boolean evaluateBooleanConstant(JavaRuleContext context, SyntaxNode node, Set<SyntaxNode> visitedDeclarators) {
+    private static Boolean evaluateBooleanConstant(JavaRuleContext context, SyntaxNode node,
+        Set<SyntaxNode> visitedDeclarators) {
         if (node == null)
             return null;
 
@@ -261,7 +259,8 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         return null;
     }
 
-    private static void reportConstantConditionalExpressionsWithDataFlowConstants(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportConstantConditionalExpressionsWithDataFlowConstants(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         for (SyntaxNode root : context.nodesOfKinds(DATA_FLOW_ROOT_KINDS)) {
             SyntaxNode blockNode = context.directChild(root, JavaSyntaxKinds.BLOCK.id());
             if (blockNode != null) {
@@ -270,7 +269,8 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         }
     }
 
-    private static void analyzeBlockForDataFlowConstants(JavaRuleContext context, JavaInspectionRuleReporter reporter, SyntaxNode blockNode, Map<String, Boolean> knownFacts) {
+    private static void analyzeBlockForDataFlowConstants(JavaRuleContext context, JavaInspectionRuleReporter reporter,
+        SyntaxNode blockNode, Map<String, Boolean> knownFacts) {
         if (blockNode == null || DATA_FLOW_BARRIER_KINDS.contains(blockNode.kind().id()))
             return;
 
@@ -391,7 +391,8 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         }
     }
 
-    private static Boolean evaluateInitializerAsBooleanConstant(JavaRuleContext context, SyntaxNode declaratorNode, Map<String, Boolean> knownFacts) {
+    private static Boolean evaluateInitializerAsBooleanConstant(JavaRuleContext context, SyntaxNode declaratorNode,
+        Map<String, Boolean> knownFacts) {
         SyntaxNode initializer = initializerOf(context, declaratorNode);
 
         if (initializer == null)
@@ -453,7 +454,8 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         return context.firstIdentifierLikeTokenText(inner);
     }
 
-    private static void applyExpressionFacts(JavaRuleContext context, SyntaxNode expression, Map<String, Boolean> knownFacts) {
+    private static void applyExpressionFacts(JavaRuleContext context, SyntaxNode expression,
+        Map<String, Boolean> knownFacts) {
         SyntaxNode inner = unwrapExpression(context, expression);
         if (inner == null || !Objects.equals(inner.kind().id(), JavaSyntaxKinds.ASSIGNMENT_EXPRESSION.id()))
             return;
@@ -478,8 +480,7 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         JavaRuleContext context,
         JavaInspectionRuleReporter reporter,
         SyntaxNode conditionNode,
-        Map<String, Boolean> knownFacts
-    ) {
+        Map<String, Boolean> knownFacts) {
         BooleanFact fact = extractBooleanFact(context, conditionNode);
         if (fact == null)
             return;
@@ -518,7 +519,8 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         return null;
     }
 
-    private static Boolean evaluateNamedBooleanConstant(JavaRuleContext context, SyntaxNode node, Set<SyntaxNode> visitedDeclarators) {
+    private static Boolean evaluateNamedBooleanConstant(JavaRuleContext context, SyntaxNode node,
+        Set<SyntaxNode> visitedDeclarators) {
         Symbol symbol = context.resolvedSymbol(node).orElse(null);
         if (symbol == null)
             return null;
@@ -540,7 +542,8 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         }
     }
 
-    private static Boolean evaluateBooleanDataFlowConstant(JavaRuleContext context, SyntaxNode node, Map<String, Boolean> knownFacts) {
+    private static Boolean evaluateBooleanDataFlowConstant(JavaRuleContext context, SyntaxNode node,
+        Map<String, Boolean> knownFacts) {
         if (node == null)
             return null;
 
@@ -562,9 +565,8 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
                 List<SyntaxNode> expressions = context.directExpressionChildren(inner);
                 for (SyntaxNode expression : expressions) {
                     if (evaluateBooleanDataFlowConstant(context, expression, knownFacts) == null
-                        && evaluateBooleanConstant(context, unwrapExpression(context, expression)) == null) {
+                        && evaluateBooleanConstant(context, unwrapExpression(context, expression)) == null)
                         return null;
-                    }
                 }
             }
 
@@ -638,7 +640,6 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         return null;
     }
 
-
     private static boolean isAssignableTo(JavaRuleContext context, SyntaxNode node, Set<String> trackedVariables) {
         String kindId = node.kind().id();
         if (Objects.equals(JavaSyntaxKinds.ASSIGNMENT_EXPRESSION.id(), kindId)) {
@@ -710,7 +711,8 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
 
     private static String firstNonTriviaTokenText(SyntaxNode node) {
         for (SyntaxToken token : JavaSemanticAnalyzer.leafTokens(node)) {
-            if (!JavaSemanticAnalyzer.isTriviaToken(token) && !JavaSemanticAnalyzer.isMissingTokenKind(token.kind().id()))
+            if (!JavaSemanticAnalyzer.isTriviaToken(token)
+                && !JavaSemanticAnalyzer.isMissingTokenKind(token.kind().id()))
                 return token.text();
         }
 

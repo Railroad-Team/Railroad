@@ -9,40 +9,44 @@
  * through {@link dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter}.
  * <p>
  * Minimal rule shape:
- * <pre>{@code
- * public final class MyRules implements JavaInspectionRuleProvider {
- *     @Override
- *     public String id() {
- *         return "example.rules";
- *     }
  *
- *     @Override
- *     public List<JavaInspectionRule> rules() {
- *         return List.of(new JavaInspectionRule() {
- *             @Override
- *             public String id() {
- *                 return "example.rules:no-wildcards";
- *             }
+ * <pre>
+ * {
+ *     &#64;code
+ *     public final class MyRules implements JavaInspectionRuleProvider {
+ *         &#64;Override
+ *         public String id() {
+ *             return "example.rules";
+ *         }
  *
- *             @Override
- *             public Severity defaultSeverity() {
- *                 return Severity.WARNING;
- *             }
- *
- *             @Override
- *             public String messageTemplate() {
- *                 return "Avoid wildcard imports";
- *             }
- *
- *             @Override
- *             public void evaluate(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
- *                 for (var node : context.nodesOfKind("JAVA_IMPORT_DECLARATION")) {
- *                     // detect and report
+ *         &#64;Override
+ *         public List<JavaInspectionRule> rules() {
+ *             return List.of(new JavaInspectionRule() {
+ *                 &#64;Override
+ *                 public String id() {
+ *                     return "example.rules:no-wildcards";
  *                 }
- *             }
- *         });
+ *
+ *                 &#64;Override
+ *                 public Severity defaultSeverity() {
+ *                     return Severity.WARNING;
+ *                 }
+ *
+ *                 &#64;Override
+ *                 public String messageTemplate() {
+ *                     return "Avoid wildcard imports";
+ *                 }
+ *
+ *                 @Override
+ *                 public void evaluate(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+ *                     for (var node : context.nodesOfKind("JAVA_IMPORT_DECLARATION")) {
+ *                         // detect and report
+ *                     }
+ *                 }
+ *             });
+ *         }
  *     }
  * }
- * }</pre>
+ * </pre>
  */
 package dev.railroadide.railroad.plugin.spi.inspection;

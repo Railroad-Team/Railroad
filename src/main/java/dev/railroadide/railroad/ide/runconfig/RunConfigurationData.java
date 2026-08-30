@@ -41,16 +41,14 @@ public abstract class RunConfigurationData {
 
                         return ValidationResult.ok();
                     })
-                    .build()
-                )
-                .appendComponent(FormComponent.checkBox("allowMultipleInstances", "railroad.runconfig.general.allowMultipleInstances.label")
+                    .build())
+                .appendComponent(FormComponent
+                    .checkBox("allowMultipleInstances", "railroad.runconfig.general.allowMultipleInstances.label")
                     .selected(allowMultipleInstances)
-                    .build()
-                )
-                .appendComponent(FormComponent.checkBox("showConsoleOnRun", "railroad.runconfig.general.showConsoleOnRun.label")
-                    .selected(showConsoleOnRun)
-                    .build()
-                )
-            );
+                    .build())
+                .appendComponent(
+                    FormComponent.checkBox("showConsoleOnRun", "railroad.runconfig.general.showConsoleOnRun.label")
+                        .selected(showConsoleOnRun)
+                        .build()));
     }
 }

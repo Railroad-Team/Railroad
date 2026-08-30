@@ -17,10 +17,12 @@ public class MappingChannelRegistry {
     public static final MappingChannel MOJMAP = register("official", MappingChannel.builder()
         .versionLister(minecraftVersion -> {
             try {
-                if (SwitchboardRepositories.MINECRAFT.getVersionSync("1.14.4").map(minecraftVersion::equals).orElse(false))
+                if (SwitchboardRepositories.MINECRAFT.getVersionSync("1.14.4").map(minecraftVersion::equals)
+                    .orElse(false))
                     return Collections.emptyList();
             } catch (ExecutionException | InterruptedException exception) {
-                Railroad.LOGGER.error("Failed to check Minecraft version 1.14.4 for Mojang mappings support", exception);
+                Railroad.LOGGER.error("Failed to check Minecraft version 1.14.4 for Mojang mappings support",
+                    exception);
                 return Collections.emptyList();
             }
 
@@ -33,8 +35,7 @@ public class MappingChannelRegistry {
             "railroad:switchboard/parchment",
             minecraftVersionId -> SwitchboardRepositories.PARCHMENT.getVersionsForSync(minecraftVersionId).stream()
                 .map(ParchmentVersion::version)
-                .toList()
-        )));
+                .toList())));
 
     public static void initialize() {
         // Intentionally left blank
@@ -50,7 +51,8 @@ public class MappingChannelRegistry {
                 try {
                     return channel.supports(minecraftVersion);
                 } catch (Exception exception) {
-                    Railroad.LOGGER.error("Failed to check if mapping channel {} supports Minecraft version {}", channel.id(), minecraftVersion.id(), exception);
+                    Railroad.LOGGER.error("Failed to check if mapping channel {} supports Minecraft version {}",
+                        channel.id(), minecraftVersion.id(), exception);
                     return false;
                 }
             })
@@ -59,23 +61,24 @@ public class MappingChannelRegistry {
 
     private static Function<MinecraftVersion, List<String>> fromRepository(
         String registryId,
-        ThrowingFunction<String, List<String>> versionFetcher
-    ) {
+        ThrowingFunction<String, List<String>> versionFetcher) {
         return minecraftVersion -> fetchVersions(registryId, minecraftVersion.id(), versionFetcher);
     }
 
     private static <T> List<T> fetchVersions(
         String registryId,
         String minecraftVersionId,
-        ThrowingFunction<String, List<T>> fetcher
-    ) {
+        ThrowingFunction<String, List<T>> fetcher) {
         try {
             return fetcher.apply(minecraftVersionId);
         } catch (ExecutionException exception) {
-            throw new IllegalStateException("Failed to fetch versions from registry " + registryId + " for " + minecraftVersionId, exception);
+            throw new IllegalStateException(
+                "Failed to fetch versions from registry " + registryId + " for " + minecraftVersionId, exception);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while fetching versions from registry " + registryId + " for " + minecraftVersionId, exception);
+            throw new IllegalStateException(
+                "Interrupted while fetching versions from registry " + registryId + " for " + minecraftVersionId,
+                exception);
         }
     }
 

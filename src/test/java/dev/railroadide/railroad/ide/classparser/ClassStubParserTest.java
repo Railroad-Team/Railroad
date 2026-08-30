@@ -73,7 +73,8 @@ class ClassStubParserTest {
         assertEquals("X", thrown.name());
     }
 
-    private static dev.railroadide.railroad.ide.classparser.stub.ClassStub parseRuntimeClass(String classFile) throws Exception {
+    private static dev.railroadide.railroad.ide.classparser.stub.ClassStub parseRuntimeClass(String classFile)
+        throws Exception {
         Path javaHome = Path.of(System.getProperty("java.home")).toAbsolutePath().normalize();
         Path jmod = javaHome.resolve("jmods").resolve("java.base.jmod");
         if (Files.isRegularFile(jmod)) {
@@ -86,7 +87,7 @@ class ClassStubParserTest {
         FileSystem fileSystem;
         try {
             fileSystem = FileSystems.getFileSystem(URI.create("jrt:/"));
-        } catch (Exception ignored) {
+        } catch (Exception _) {
             fileSystem = FileSystems.newFileSystem(URI.create("jrt:/"), Collections.emptyMap());
         }
 

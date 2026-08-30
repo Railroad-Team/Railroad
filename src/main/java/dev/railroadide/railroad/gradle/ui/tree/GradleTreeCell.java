@@ -20,11 +20,9 @@ public class GradleTreeCell extends TreeCell<GradleTreeElement> {
             setGraphic(null);
         } else {
             setText(item.getName());
-            icon.getStyleClass().removeIf(styleClass ->
-                styleClass.equals("gradle-project-element") ||
-                    styleClass.equals("gradle-tasks-group-element") ||
-                    styleClass.equals("gradle-task-element")
-            );
+            icon.getStyleClass().removeIf(styleClass -> styleClass.equals("gradle-project-element") ||
+                styleClass.equals("gradle-tasks-group-element") ||
+                styleClass.equals("gradle-task-element"));
             icon.getStyleClass().add(item.getStyleClass());
             icon.setIconCode(item.getIcon());
             setGraphic(icon);
@@ -35,8 +33,7 @@ public class GradleTreeCell extends TreeCell<GradleTreeElement> {
                     if (item instanceof GradleTaskElement taskElement) {
                         var runConfiguration = GradleTaskContextMenu.getOrCreateRunConfig(
                             taskElement.getProject(),
-                            taskElement.getTask()
-                        );
+                            taskElement.getTask());
                         runConfiguration.run(taskElement.getProject());
                     }
                 }

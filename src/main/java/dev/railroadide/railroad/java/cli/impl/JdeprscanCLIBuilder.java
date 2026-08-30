@@ -17,7 +17,8 @@ import java.util.concurrent.TimeUnit;
  * for usages of deprecated APIs, including specifying class paths, releases, and verbosity.
  * </p>
  *
- * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/jdeprscan.html">jdeprscan command documentation</a>
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/jdeprscan.html">jdeprscan command
+ *      documentation</a>
  */
 public class JdeprscanCLIBuilder implements CLIBuilder<Process, JdeprscanCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "jdeprscan.exe" : "jdeprscan";

@@ -24,8 +24,7 @@ public final class GitListeners {
     public static GitOutputListener withProgress(
         GitOutputListener raw,
         Consumer<GitProgressEvent> sink,
-        String defaultPhase
-    ) {
+        String defaultPhase) {
         return new GitProgressListener(raw, sink, defaultPhase);
     }
 }

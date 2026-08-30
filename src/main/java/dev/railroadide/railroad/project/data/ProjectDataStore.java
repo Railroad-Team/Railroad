@@ -35,7 +35,7 @@ public final class ProjectDataStore {
      * Ensures the per-project data directory exists and returns it.
      */
     public Path dataDirectory() {
-        Path projectPath = project.path();
+        Path projectPath = project.getPath();
         if (projectPath == null)
             throw new IllegalStateException("Project path is not set yet");
 
@@ -257,8 +257,7 @@ public final class ProjectDataStore {
                 service,
                 StandardWatchEventKinds.ENTRY_CREATE,
                 StandardWatchEventKinds.ENTRY_DELETE,
-                StandardWatchEventKinds.ENTRY_MODIFY
-            );
+                StandardWatchEventKinds.ENTRY_MODIFY);
         } catch (IOException exception) {
             Railroad.LOGGER.warn("Failed to register directory {} for project data watcher", dir, exception);
         }
@@ -289,8 +288,9 @@ public final class ProjectDataStore {
 
                     if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
                         try {
-                            if (Files.isDirectory(child))
+                            if (Files.isDirectory(child)) {
                                 registerDirectoryRecursive(child);
+                            }
                         } catch (IOException exception) {
                             Railroad.LOGGER.warn("Failed to register new directory {} for watcher", child, exception);
                         }

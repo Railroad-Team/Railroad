@@ -20,8 +20,10 @@ public class BrowseButton extends RRButton {
     private final ObjectProperty<Window> parentWindow = new SimpleObjectProperty<>();
     private final ObjectProperty<TextField> textField = new SimpleObjectProperty<>();
     private final ObjectProperty<BrowseType> browseType = new SimpleObjectProperty<>(BrowseType.FILE);
-    private final ObjectProperty<BrowseSelectionMode> selectionMode = new SimpleObjectProperty<>(BrowseSelectionMode.SINGLE);
-    private final ObjectProperty<Path> defaultLocation = new SimpleObjectProperty<>(Path.of(System.getProperty("user.home")));
+    private final ObjectProperty<BrowseSelectionMode> selectionMode = new SimpleObjectProperty<>(
+        BrowseSelectionMode.SINGLE);
+    private final ObjectProperty<Path> defaultLocation = new SimpleObjectProperty<>(
+        Path.of(System.getProperty("user.home")));
 
     public BrowseButton() {
         super("railroad.generic.browse");
@@ -31,12 +33,14 @@ public class BrowseButton extends RRButton {
                 return;
 
             BrowseSelectionMode selectionMode = this.selectionMode.getValue();
-            if (selectionMode == null)
+            if (selectionMode == null) {
                 selectionMode = BrowseSelectionMode.SINGLE;
+            }
 
             Path defaultLocation = this.defaultLocation.getValue();
-            if (defaultLocation == null)
+            if (defaultLocation == null) {
                 defaultLocation = Path.of(System.getProperty("user.home"));
+            }
 
             switch (browseType.getValue()) {
                 case FILE -> {
@@ -93,7 +97,7 @@ public class BrowseButton extends RRButton {
      * Creates a {@link DirectoryChooser} for selecting directories.
      *
      * @param defaultPath The initial directory to open.
-     * @param title       The title of the dialog.
+     * @param title The title of the dialog.
      * @return A {@link DirectoryChooser} instance.
      */
     public static DirectoryChooser folderBrowser(File defaultPath, String title) {
@@ -108,11 +112,12 @@ public class BrowseButton extends RRButton {
      * Creates a {@link FileChooser} for selecting files.
      *
      * @param defaultPath The initial directory to open.
-     * @param title       The title of the dialog.
-     * @param filter      An optional file extension filter.
+     * @param title The title of the dialog.
+     * @param filter An optional file extension filter.
      * @return A {@link FileChooser} instance.
      */
-    public static FileChooser fileBrowser(File defaultPath, String title, @Nullable FileChooser.ExtensionFilter filter) {
+    public static FileChooser fileBrowser(File defaultPath, String title,
+        @Nullable FileChooser.ExtensionFilter filter) {
         var fileChooser = new FileChooser();
         fileChooser.setTitle(title);
         fileChooser.setInitialDirectory(defaultPath);
@@ -127,7 +132,7 @@ public class BrowseButton extends RRButton {
      * Creates a {@link FileChooser} for selecting image files.
      *
      * @param defaultPath The initial directory to open.
-     * @param title       The title of the dialog.
+     * @param title The title of the dialog.
      * @return A {@link FileChooser} instance configured for image files.
      */
     public static FileChooser imageBrowser(File defaultPath, String title) {
@@ -180,9 +185,7 @@ public class BrowseButton extends RRButton {
      * Enum representing the type of browsing operation.
      */
     public enum BrowseType {
-        FILE,
-        DIRECTORY,
-        IMAGE
+        FILE, DIRECTORY, IMAGE
     }
 
     /**
@@ -190,7 +193,6 @@ public class BrowseButton extends RRButton {
      * SINGLE allows selecting one item, MULTIPLE allows selecting multiple items.
      */
     public enum BrowseSelectionMode {
-        SINGLE,
-        MULTIPLE
+        SINGLE, MULTIPLE
     }
 }

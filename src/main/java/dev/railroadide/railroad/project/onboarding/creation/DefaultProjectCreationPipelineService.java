@@ -37,7 +37,8 @@ public final class DefaultProjectCreationPipelineService implements ProjectCreat
     }
 
     @Override
-    public void registerDefaultProviders(@NotNull CreationStepRegistry registry, @NotNull ProjectType type, @NotNull ProjectServiceRegistry services) {
+    public void registerDefaultProviders(@NotNull CreationStepRegistry registry, @NotNull ProjectType type,
+        @NotNull ProjectServiceRegistry services) {
         if (type.equals(ProjectTypeRegistry.FABRIC)) {
             registry.addAll(
                 new CreateDirectoriesStep(services.get(FilesService.class)),
@@ -54,8 +55,7 @@ public final class DefaultProjectCreationPipelineService implements ProjectCreat
                 new UpdateGradleFilesStep(services.get(FilesService.class), services.get(HttpService.class),
                     services.get(TemplateEngineService.class), "dev", false),
                 new RunGenSourcesStep(services.get(GradleService.class)),
-                new InitGitStep(services.get(GitService.class))
-            );
+                new InitGitStep(services.get(GitService.class)));
         } else if (type.equals(ProjectTypeRegistry.FORGE) || type.equals(ProjectTypeRegistry.NEOFORGE)) {
             registry.addAll(
                 new CreateDirectoriesStep(services.get(FilesService.class)),
@@ -73,8 +73,7 @@ public final class DefaultProjectCreationPipelineService implements ProjectCreat
                 new CreateMixinsJsonStep(services.get(FilesService.class)),
                 new CreateAccessTransformerStep(services.get(FilesService.class)),
                 new SetupForgeGradleWrapperStep(services.get(GradleService.class)),
-                new InitGitStep(services.get(GitService.class))
-            );
+                new InitGitStep(services.get(GitService.class)));
         }
     }
 }

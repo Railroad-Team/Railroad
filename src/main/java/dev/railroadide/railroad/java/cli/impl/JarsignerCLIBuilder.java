@@ -17,7 +17,8 @@ import java.util.concurrent.TimeUnit;
  * including keystore details, passwords, algorithms, and verbose output.
  * </p>
  *
- * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/jarsigner.html">jarsigner command documentation</a>
+ * @see <a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/jarsigner.html">jarsigner command
+ *      documentation</a>
  */
 public class JarsignerCLIBuilder implements CLIBuilder<Process, JarsignerCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "jarsigner.exe" : "jarsigner";
@@ -90,7 +91,7 @@ public class JarsignerCLIBuilder implements CLIBuilder<Process, JarsignerCLIBuil
      * Configures the builder to sign a JAR file with a specified alias.
      *
      * @param jarFile The path to the JAR file to sign.
-     * @param alias   The alias of the signer in the keystore.
+     * @param alias The alias of the signer in the keystore.
      * @return This builder instance.
      */
     public JarsignerCLIBuilder sign(Path jarFile, String alias) {
@@ -107,7 +108,7 @@ public class JarsignerCLIBuilder implements CLIBuilder<Process, JarsignerCLIBuil
      * Configures the builder to sign a JAR file with a specified alias.
      *
      * @param jarFile The path to the JAR file to sign.
-     * @param alias   The alias of the signer in the keystore.
+     * @param alias The alias of the signer in the keystore.
      * @return This builder instance.
      */
     public JarsignerCLIBuilder sign(String jarFile, String alias) {
@@ -592,10 +593,11 @@ public class JarsignerCLIBuilder implements CLIBuilder<Process, JarsignerCLIBuil
     }
 
     /**
-     * Adds a cryptographic service provider by name and an argument. Corresponds to the {@code -addprovider} and {@code -providerArg} options.
+     * Adds a cryptographic service provider by name and an argument. Corresponds to the {@code -addprovider} and
+     * {@code -providerArg} options.
      *
      * @param providerName The name of the provider to add.
-     * @param providerArg  An argument for the provider.
+     * @param providerArg An argument for the provider.
      * @return This builder instance.
      */
     public JarsignerCLIBuilder addProvider(String providerName, String providerArg) {
@@ -619,9 +621,10 @@ public class JarsignerCLIBuilder implements CLIBuilder<Process, JarsignerCLIBuil
     }
 
     /**
-     * Specifies the class name of the cryptographic service provider and an argument. Corresponds to the {@code -providerClass} and {@code -providerArg} options.
+     * Specifies the class name of the cryptographic service provider and an argument. Corresponds to the
+     * {@code -providerClass} and {@code -providerArg} options.
      *
-     * @param className   The class name of the provider.
+     * @param className The class name of the provider.
      * @param providerArg An argument for the provider.
      * @return This builder instance.
      */
@@ -735,14 +738,14 @@ public class JarsignerCLIBuilder implements CLIBuilder<Process, JarsignerCLIBuil
      *
      * @param option The command-line option for the password (e.g., "-storepass", "-keypass").
      * @param source The source of the password (direct, environment variable, or file).
-     * @param value  The password value, environment variable name, or file path.
+     * @param value The password value, environment variable name, or file path.
      * @return This builder instance.
      */
     private JarsignerCLIBuilder addPasswordArgument(String option, PasswordSource source, String value) {
         Objects.requireNonNull(option, "Option cannot be null");
         Objects.requireNonNull(source, "Password source cannot be null");
         Objects.requireNonNull(value, "Password value cannot be null");
-        StringBuilder builder = new StringBuilder(option);
+        var builder = new StringBuilder(option);
         if (!source.getSuffix().isEmpty()) {
             builder.append(source.getSuffix());
         }
@@ -757,9 +760,7 @@ public class JarsignerCLIBuilder implements CLIBuilder<Process, JarsignerCLIBuil
      */
     @Getter
     public enum VerboseDetail {
-        ALL("all"),
-        GROUPED("grouped"),
-        SUMMARY("summary");
+        ALL("all"), GROUPED("grouped"), SUMMARY("summary");
 
         private final String token;
 
@@ -773,9 +774,7 @@ public class JarsignerCLIBuilder implements CLIBuilder<Process, JarsignerCLIBuil
      */
     @Getter
     private enum PasswordSource {
-        DIRECT(""),
-        ENVIRONMENT(":env"),
-        FILE(":file");
+        DIRECT(""), ENVIRONMENT(":env"), FILE(":file");
 
         private final String suffix;
 
@@ -789,9 +788,7 @@ public class JarsignerCLIBuilder implements CLIBuilder<Process, JarsignerCLIBuil
      */
     @Getter
     private enum OperationMode {
-        SIGN(null),
-        VERIFY("-verify"),
-        VERSION("-version");
+        SIGN(null), VERIFY("-verify"), VERSION("-version");
 
         private final String flag;
 

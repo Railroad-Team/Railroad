@@ -267,7 +267,7 @@ public class RmicCLIBuilder implements CLIBuilder<Process, RmicCLIBuilder> {
      *
      * @param className the class to process; must not be null or blank
      * @return the current {@link RmicCLIBuilder} instance
-     * @throws NullPointerException     if the class name is null
+     * @throws NullPointerException if the class name is null
      * @throws IllegalArgumentException if the class name is blank
      */
     public RmicCLIBuilder addClassName(String className) {

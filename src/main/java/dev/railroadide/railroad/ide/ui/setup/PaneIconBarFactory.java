@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui.setup;
 
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
+import dev.railroadide.railroad.ide.ui.IDEDockTab;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
 import javafx.collections.ListChangeListener;
@@ -28,18 +29,23 @@ public final class PaneIconBarFactory {
         DetachableTabPane pane,
         SplitPane split,
         Orientation orientation,
-        int originalIndex,
-        Map<String, String> iconsByName
-    ) {
+        int originalIndex) {
         var bar = orientation == Orientation.HORIZONTAL ? new RRHBox(4) : new RRVBox(4);
         bar.getStyleClass().add("icon-bar-" + orientation.name().toLowerCase(Locale.ROOT));
 
         Map<Tab, ToggleButton> btnMap = new LinkedHashMap<>();
+        Runnable updateButtonStates = () -> {
+            boolean paneVisible = split.getItems().contains(pane);
+            Tab selectedTab = pane.getSelectionModel().getSelectedItem();
+            btnMap.forEach((tab, button) -> button.setSelected(paneVisible && tab == selectedTab));
+        };
 
         Consumer<Tab> addButtonFor = tab -> {
-            String name = tab.getText();
-            String icon = iconsByName.getOrDefault(name, FontAwesomeSolid.EYE.getDescription());
+            var icon = tab instanceof IDEDockTab dockTab ? dockTab.getDockItem().icon() : FontAwesomeSolid.EYE;
             var btn = new ToggleButton("", new FontIcon(icon));
+            if (tab instanceof IDEDockTab dockTab) {
+                btn.setId("dock-item-button:" + dockTab.getDockItem().id());
+            }
             btn.getStyleClass().add("icon-button");
 
             btn.setOnAction(e -> {
@@ -48,23 +54,25 @@ public final class PaneIconBarFactory {
 
                 if (isVisible && selected == tab) {
                     split.getItems().remove(pane);
-                    btnMap.values().forEach(b -> b.setSelected(false));
                 } else {
                     if (!isVisible) {
                         split.getItems().add(Math.min(originalIndex, split.getItems().size()), pane);
                     }
                     pane.getSelectionModel().select(tab);
-                    btnMap.values().forEach(b -> b.setSelected(b == btn));
                 }
+                updateButtonStates.run();
             });
 
             btnMap.put(tab, btn);
             bar.getChildren().add(btn);
+            updateButtonStates.run();
         };
 
         Consumer<Tab> removeButtonFor = tab -> {
-            var btn = btnMap.remove(tab);
-            if (btn != null) bar.getChildren().remove(btn);
+            Node btn = btnMap.remove(tab);
+            if (btn != null) {
+                bar.getChildren().remove(btn);
+            }
         };
 
         pane.getTabs().addListener((ListChangeListener<Tab>) change -> {
@@ -80,14 +88,9 @@ public final class PaneIconBarFactory {
 
         pane.getTabs().forEach(addButtonFor);
 
-        pane.getSelectionModel().selectedItemProperty().addListener((obs, oldT, newT) -> {
-            btnMap.forEach((tab, btn) -> btn.setSelected(tab == newT));
-        });
-
-        Tab init = pane.getSelectionModel().getSelectedItem();
-        if (init != null) {
-            btnMap.get(init).setSelected(true);
-        }
+        pane.getSelectionModel().selectedItemProperty().addListener((_, _, _) -> updateButtonStates.run());
+        split.getItems().addListener((ListChangeListener<Node>) _ -> updateButtonStates.run());
+        updateButtonStates.run();
 
         return bar;
     }

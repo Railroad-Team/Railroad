@@ -62,7 +62,7 @@ public class ProjectValidators {
             return result;
 
         Path path = Path.of(text);
-        try (var ignored = new JarFile(path.toFile())) {
+        try (var _ = new JarFile(path.toFile())) {
             return ValidationResult.ok();
         } catch (IOException exception) {
             return ValidationResult.error("railroad.project.creation.location.error.invalid_jar");
@@ -93,7 +93,7 @@ public class ProjectValidators {
                 }
 
                 Files.deleteIfExists(path);
-            } catch (IOException ignored) {
+            } catch (IOException _) {
                 return ValidationResult.error("railroad.project.creation.location.error.cannot_create");
             }
         }
@@ -103,15 +103,15 @@ public class ProjectValidators {
                 return ValidationResult.error("railroad.project.creation.location.error.not_directory");
 
             try (var stream = Files.newDirectoryStream(path)) {
-                // TODO: Do not validate if the directory is empty because we're going to create a new directory inside it
+                // TODO: Do not validate if the directory is empty because we're going to create a new directory inside
+                // it
                 if (stream.iterator().hasNext())
                     return ValidationResult.warning("railroad.project.creation.location.warning.not_empty");
-            } catch (IOException ignored) {
+            } catch (IOException _) {
                 return ValidationResult.error("railroad.project.creation.location.error.not_readable");
             }
-        } else if (Files.isDirectory(path)) {
+        } else if (Files.isDirectory(path))
             return ValidationResult.error("railroad.project.creation.location.error.is_directory");
-        }
 
         if (text.contains("OneDrive"))
             return ValidationResult.warning("railroad.project.creation.location.warning.onedrive");
@@ -352,14 +352,16 @@ public class ProjectValidators {
     }
 
     public static String getRepairedPath(String path) {
-        while (path.endsWith(" "))
+        while (path.endsWith(" ")) {
             path = path.substring(0, path.length() - 1);
+        }
 
         path = path.replace("/", "\\");
 
         // Remove trailing backslashes
-        while (path.endsWith("\\"))
+        while (path.endsWith("\\")) {
             path = path.substring(0, path.length() - 1);
+        }
 
         // remove any whitespace before a backslash
         path = path.replaceAll("\\s+\\\\", "\\");
@@ -384,7 +386,7 @@ public class ProjectValidators {
         if (projectName == null || projectName.isBlank())
             return "";
 
-        StringBuilder builder = new StringBuilder();
+        var builder = new StringBuilder();
         boolean capitalizeNext = true;
         for (char c : projectName.toCharArray()) {
             if (Character.isWhitespace(c) || c == '-' || c == '_') {

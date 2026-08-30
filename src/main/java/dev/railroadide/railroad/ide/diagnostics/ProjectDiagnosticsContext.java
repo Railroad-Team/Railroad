@@ -18,8 +18,7 @@ import java.util.Objects;
 public record ProjectDiagnosticsContext(
     Project project,
     ProjectIndexContext indexContext,
-    @Nullable JavaSymbolIndex javaSymbolIndex
-) {
+    @Nullable JavaSymbolIndex javaSymbolIndex) {
     public ProjectDiagnosticsContext {
         project = Objects.requireNonNull(project, "project");
         indexContext = Objects.requireNonNull(indexContext, "indexContext");

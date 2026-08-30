@@ -7,6 +7,7 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix3x2d;
@@ -154,7 +155,7 @@ public class WindowManager {
     public void registerChildWindow(Stage stage) {
         childWindows.add(stage);
         trackWindowEvents(stage);
-        stage.setOnCloseRequest(event -> {
+        stage.addEventHandler(WindowEvent.WINDOW_HIDDEN, _ -> {
             childWindows.remove(stage);
             untrackWindowEvents(stage);
         });

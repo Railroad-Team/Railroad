@@ -37,41 +37,51 @@ public class JarApplicationRunConfigurationData extends RunConfigurationData {
     public Form createConfigurationForm(Project project, RunConfiguration<?> configuration) {
         return createBaseFormBuilder(project, configuration)
             .appendSection(FormSection.create("railroad.runconfig.jar_application.configuration.section.title")
-                .appendComponent(FormComponent.fileChooser("jarPath", "railroad.runconfig.jar_application.configuration.jarPath.label")
+                .appendComponent(FormComponent
+                    .fileChooser("jarPath", "railroad.runconfig.jar_application.configuration.jarPath.label")
                     .required()
                     .defaultPath(this.jarPath)
                     .validator(ProjectValidators::validateJarFilePath)
                     .build())
-                .appendComponent(FormComponent.textField("vmOptions", "railroad.runconfig.jar_application.configuration.vmOptions.label")
+                .appendComponent(FormComponent
+                    .textField("vmOptions", "railroad.runconfig.jar_application.configuration.vmOptions.label")
                     .required()
                     .text(() -> StringUtils.stringArrayToString(this.vmOptions, " "))
                     .promptText("railroad.runconfig.jar_application.configuration.vmOptions.prompt")
                     .build())
-                .appendComponent(FormComponent.textField("programArguments", "railroad.runconfig.jar_application.configuration.programArguments.label")
+                .appendComponent(FormComponent
+                    .textField("programArguments",
+                        "railroad.runconfig.jar_application.configuration.programArguments.label")
                     .required()
                     .text(() -> StringUtils.stringArrayToString(this.programArguments, " "))
                     .promptText("railroad.runconfig.jar_application.configuration.programArguments.prompt")
                     .build())
-                .appendComponent(FormComponent.directoryChooser("workingDirectory", "railroad.runconfig.jar_application.configuration.workingDirectory.label")
+                .appendComponent(FormComponent
+                    .directoryChooser("workingDirectory",
+                        "railroad.runconfig.jar_application.configuration.workingDirectory.label")
                     .required()
                     .defaultPath(this.workingDirectory)
                     .validator(ProjectValidators::validateDirectoryPath)
                     .build())
-                .appendComponent(FormComponent.textField("environmentVariables", "railroad.runconfig.jar_application.configuration.envVariables.label")
+                .appendComponent(FormComponent
+                    .textField("environmentVariables",
+                        "railroad.runconfig.jar_application.configuration.envVariables.label")
                     .required()
                     .text(() -> StringUtils.environmentVariablesToString(this.environmentVariables))
                     .promptText("railroad.runconfig.jar_application.configuration.envVariables.prompt")
-                    .validator(textField -> !StringUtils.isValidEnvironmentVariablesString(textField.getText()) ?
-                        ValidationResult.error("railroad.runconfig.jar_application.configuration.envVariables.invalid") :
-                        ValidationResult.ok())
+                    .validator(textField -> !StringUtils.isValidEnvironmentVariablesString(textField.getText())
+                        ? ValidationResult
+                            .error("railroad.runconfig.jar_application.configuration.envVariables.invalid")
+                        : ValidationResult.ok())
                     .build())
-                .appendComponent(FormComponent.comboBox("jre", "railroad.runconfig.jar_application.configuration.jre.label", JDK.class)
+                .appendComponent(FormComponent
+                    .comboBox("jre", "railroad.runconfig.jar_application.configuration.jre.label", JDK.class)
                     .required()
                     .defaultValue(this::getJre)
                     .items(JDKManager::getAvailableJDKs)
                     .translate(false)
                     .buttonCell(new DetectedJdkListPane.JdkCell())
-                    .cellFactory($ -> new DetectedJdkListPane.JdkCell())
+                    .cellFactory(_ -> new DetectedJdkListPane.JdkCell())
                     .keyFunction(jre -> jre != null ? jre.path().toString() : "")
                     .valueOfFunction(jdkPath -> JDKManager.getAvailableJDKs()
                         .stream()
@@ -89,7 +99,8 @@ public class JarApplicationRunConfigurationData extends RunConfigurationData {
         this.vmOptions = StringUtils.stringToStringArray(formData.get("vmOptions", String.class), " ");
         this.programArguments = StringUtils.stringToStringArray(formData.get("programArguments", String.class), " ");
         this.workingDirectory = Path.of(formData.get("workingDirectory", String.class));
-        this.environmentVariables = StringUtils.stringToEnvironmentVariables(formData.get("environmentVariables", String.class));
+        this.environmentVariables = StringUtils
+            .stringToEnvironmentVariables(formData.get("environmentVariables", String.class));
         this.jre = formData.get("jre", JDK.class);
     }
 }

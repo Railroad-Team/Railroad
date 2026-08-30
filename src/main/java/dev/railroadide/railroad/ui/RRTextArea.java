@@ -7,9 +7,10 @@ import javafx.scene.control.TextArea;
  * A modern text area component with consistent styling and localization support.
  */
 public class RRTextArea extends TextArea {
-    public static final String[] DEFAULT_STYLE_CLASSES = { "rr-text-area", "text-area" };
+    public static final String[] DEFAULT_STYLE_CLASSES = {"rr-text-area", "text-area"};
 
-    private final LocalizedTextProperty localizedPromptText = new LocalizedTextProperty(this, "localizedPromptText", null);
+    private final LocalizedTextProperty localizedPromptText = new LocalizedTextProperty(this, "localizedPromptText",
+        null);
 
     /**
      * Constructs a new text area with empty text and default styling.

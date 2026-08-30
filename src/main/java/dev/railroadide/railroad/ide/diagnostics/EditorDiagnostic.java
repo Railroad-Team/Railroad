@@ -12,8 +12,7 @@ import java.util.Locale;
  * Immutable diagnostic representation understood by the editor UI.
  */
 public sealed interface EditorDiagnostic<L extends Location<?>>
-    permits EditorDiagnostic.TextEditorDiagnostic, EditorDiagnostic.BinaryEditorDiagnostic
-{
+    permits EditorDiagnostic.TextEditorDiagnostic, EditorDiagnostic.BinaryEditorDiagnostic {
     public L location();
 
     public Diagnostic.Kind kind();
@@ -26,8 +25,7 @@ public sealed interface EditorDiagnostic<L extends Location<?>>
         TextLocation location,
         Diagnostic.Kind kind,
         String code,
-        String message
-    ) implements EditorDiagnostic<TextLocation> {
+        String message) implements EditorDiagnostic<TextLocation> {
 
         @Override
         public String message(Locale locale) {
@@ -39,8 +37,7 @@ public sealed interface EditorDiagnostic<L extends Location<?>>
         BinaryLocation location,
         Diagnostic.Kind kind,
         String code,
-        String message
-    ) implements EditorDiagnostic<BinaryLocation> {
+        String message) implements EditorDiagnostic<BinaryLocation> {
 
         @Override
         public String message(Locale locale) {

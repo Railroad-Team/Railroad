@@ -11,12 +11,12 @@ import java.util.*;
  * This is the bridge between the concrete syntax tree and higher-level inspection logic.
  * It stores:
  * <ul>
- *     <li>the parsed {@linkplain #syntaxTree() syntax tree}</li>
- *     <li>the {@linkplain #rootScope() root lexical scope}</li>
- *     <li>declared symbols for syntax nodes</li>
- *     <li>resolved symbols for references</li>
- *     <li>inferred types for expressions and other typed constructs</li>
- *     <li>semantic diagnostics produced during analysis</li>
+ * <li>the parsed {@linkplain #syntaxTree() syntax tree}</li>
+ * <li>the {@linkplain #rootScope() root lexical scope}</li>
+ * <li>declared symbols for syntax nodes</li>
+ * <li>resolved symbols for references</li>
+ * <li>inferred types for expressions and other typed constructs</li>
+ * <li>semantic diagnostics produced during analysis</li>
  * </ul>
  * <p>
  * Inspection authors usually access these capabilities through
@@ -32,13 +32,12 @@ public final class SemanticModel {
     private final List<SemanticDiagnostic> diagnostics;
 
     private SemanticModel(
-            SyntaxTree syntaxTree,
-            Scope rootScope,
-            Map<SyntaxNode, Symbol> declaredSymbols,
-            Map<SyntaxNode, Symbol> resolvedSymbols,
-            Map<SyntaxNode, Type> inferredTypes,
-            List<SemanticDiagnostic> diagnostics
-    ) {
+        SyntaxTree syntaxTree,
+        Scope rootScope,
+        Map<SyntaxNode, Symbol> declaredSymbols,
+        Map<SyntaxNode, Symbol> resolvedSymbols,
+        Map<SyntaxNode, Type> inferredTypes,
+        List<SemanticDiagnostic> diagnostics) {
         this.syntaxTree = Objects.requireNonNull(syntaxTree, "syntaxTree");
         this.rootScope = Objects.requireNonNull(rootScope, "rootScope");
         this.declaredSymbols = copyIdentityMap(declaredSymbols, "declaredSymbols");
@@ -217,7 +216,8 @@ public final class SemanticModel {
          * @return immutable semantic model
          */
         public SemanticModel build() {
-            return new SemanticModel(syntaxTree, rootScope, declaredSymbols, resolvedSymbols, inferredTypes, diagnostics);
+            return new SemanticModel(syntaxTree, rootScope, declaredSymbols, resolvedSymbols, inferredTypes,
+                diagnostics);
         }
     }
 }

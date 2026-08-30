@@ -6,14 +6,13 @@ import java.nio.ByteBuffer;
 /**
  * A validated, half-open range of content within a {@link BinaryDocumentSnapshot}.
  */
-public final class BinaryRange extends Range<BinaryDocumentSnapshot>
-{
+public final class BinaryRange extends Range<BinaryDocumentSnapshot> {
     public BinaryRange(int start, int end) {
         super(start, end);
     }
 
     /**
-     *  Returns a read-only view over this range within the snapshot.
+     * Returns a read-only view over this range within the snapshot.
      */
     public ByteBuffer content(BinaryDocumentSnapshot snapshot) {
         return snapshot.bytes().slice(start, length());

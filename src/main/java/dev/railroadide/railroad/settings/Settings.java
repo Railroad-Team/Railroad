@@ -36,118 +36,132 @@ public final class Settings {
         .canBeNull(false)
         .build());
 
-    public static final Setting<Language> LANGUAGE = registerSetting(Setting.builder(Language.class, "railroad:language")
-        .treePath("general")
-        .category(SettingCategory.simple("railroad:general.language"))
-        .codec(SettingCodecs.LANGUAGE)
-        .defaultValue(Languages.EN_US)
-        .noTitle()
-        .noDescription()
-        .addListener((oldValue, newValue) -> L18n.loadLanguage(newValue))
-        .canBeNull(false)
-        .build());
+    public static final Setting<Language> LANGUAGE = registerSetting(
+        Setting.builder(Language.class, "railroad:language")
+            .treePath("general")
+            .category(SettingCategory.simple("railroad:general.language"))
+            .codec(SettingCodecs.LANGUAGE)
+            .defaultValue(Languages.EN_US)
+            .noTitle()
+            .noDescription()
+            .addListener((oldValue, newValue) -> L18n.loadLanguage(newValue))
+            .canBeNull(false)
+            .build());
 
-    public static final Setting<Boolean> AUTO_PAIR_INSIDE_STRINGS = registerSetting(Setting.builder(Boolean.class, "railroad:auto_pair_inside_strings")
-        .treePath("ide")
-        .category(SettingCategory.simple("railroad:ide.code_style"))
-        .codec(DefaultSettingCodecs.BOOLEAN)
-        .defaultValue(true)
-        .build());
+    public static final Setting<Boolean> AUTO_PAIR_INSIDE_STRINGS = registerSetting(
+        Setting.builder(Boolean.class, "railroad:auto_pair_inside_strings")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.code_style"))
+            .codec(DefaultSettingCodecs.BOOLEAN)
+            .defaultValue(true)
+            .build());
 
-    public static final Setting<Boolean> SWITCH_TO_IDE_AFTER_IMPORT = registerSetting(Setting.builder(Boolean.class, "railroad:switch_to_ide_after_import")
-        .treePath("projects")
-        .category(SettingCategory.simple("railroad:projects.import"))
-        .codec(DefaultSettingCodecs.BOOLEAN)
-        .defaultValue(true)
-        .build());
+    public static final Setting<Boolean> SWITCH_TO_IDE_AFTER_IMPORT = registerSetting(
+        Setting.builder(Boolean.class, "railroad:switch_to_ide_after_import")
+            .treePath("projects")
+            .category(SettingCategory.simple("railroad:projects.import"))
+            .codec(DefaultSettingCodecs.BOOLEAN)
+            .defaultValue(true)
+            .build());
 
-    public static final Setting<String> DEFAULT_PROJECT_GROUP_ID = registerSetting(Setting.builder(String.class, "railroad:projects.default_group_id")
-        .treePath("projects")
-        .category(SettingCategory.simple("railroad:projects.defaults.group_id"))
-        .codec(DefaultSettingCodecs.STRING)
-        .defaultValue("")
-        .canBeNull(true)
-        .build());
+    public static final Setting<String> DEFAULT_PROJECT_GROUP_ID = registerSetting(
+        Setting.builder(String.class, "railroad:projects.default_group_id")
+            .treePath("projects")
+            .category(SettingCategory.simple("railroad:projects.defaults.group_id"))
+            .codec(DefaultSettingCodecs.STRING)
+            .defaultValue("")
+            .canBeNull(true)
+            .build());
 
-    public static final Setting<String> DEFAULT_PROJECT_VERSION = registerSetting(Setting.builder(String.class, "railroad:projects.default_version")
-        .treePath("projects")
-        .category(SettingCategory.simple("railroad:projects.defaults.version"))
-        .codec(DefaultSettingCodecs.STRING)
-        .defaultValue("")
-        .canBeNull(true)
-        .build());
+    public static final Setting<String> DEFAULT_PROJECT_VERSION = registerSetting(
+        Setting.builder(String.class, "railroad:projects.default_version")
+            .treePath("projects")
+            .category(SettingCategory.simple("railroad:projects.defaults.version"))
+            .codec(DefaultSettingCodecs.STRING)
+            .defaultValue("")
+            .canBeNull(true)
+            .build());
 
-    public static final Setting<String> DEFAULT_PROJECT_AUTHOR = registerSetting(Setting.builder(String.class, "railroad:projects.default_author")
-        .treePath("projects")
-        .category(SettingCategory.simple("railroad:projects.defaults.author"))
-        .codec(DefaultSettingCodecs.STRING)
-        .defaultValue("")
-        .canBeNull(true)
-        .build());
+    public static final Setting<String> DEFAULT_PROJECT_AUTHOR = registerSetting(
+        Setting.builder(String.class, "railroad:projects.default_author")
+            .treePath("projects")
+            .category(SettingCategory.simple("railroad:projects.defaults.author"))
+            .codec(DefaultSettingCodecs.STRING)
+            .defaultValue("")
+            .canBeNull(true)
+            .build());
 
-    public static final Setting<Map<String, List<KeybindData>>> KEYBINDS = registerSetting(Setting.builder(new TypeToken<Map<String, List<KeybindData>>>() {
+    public static final Setting<Map<String, List<KeybindData>>> KEYBINDS = registerSetting(
+        Setting.builder(new TypeToken<Map<String, List<KeybindData>>>() {
         }, "railroad:keybinds")
-        .hasTitle(false)
-        .hasDescription(false)
-        .category(SettingCategory.builder("railroad:keybinds")
+            .hasTitle(false)
+            .hasDescription(false)
+            .category(SettingCategory.builder("railroad:keybinds")
+                .noDescription()
+                .build())
+            .defaultValue(KeybindHandler.getDefaults())
+            .canBeNull(false)
+            .codec(SettingCodecs.KEYBINDS)
+            .treePath("keybinds")
+            .build());
+
+    public static final Setting<Map<PluginDescriptor, Boolean>> ENABLED_PLUGINS = registerSetting(
+        Setting.builder((Class<Map<PluginDescriptor, Boolean>>) (Class<?>) Map.class, "railroad:enabled_plugins")
+            .treePath("plugins")
+            .category(SettingCategory.builder("railroad:plugins")
+                .noDescription()
+                .build())
+            .codec(SettingCodecs.ENABLED_PLUGINS)
+            .noTitle()
             .noDescription()
-            .build())
-        .defaultValue(KeybindHandler.getDefaults())
-        .canBeNull(false)
-        .codec(SettingCodecs.KEYBINDS)
-        .treePath("keybinds")
-        .build());
+            .persisted(false)
+            .addListener((oldValue, newValue) -> {
+                if (newValue == null) {
+                    newValue = new HashMap<>();
+                }
 
-    public static final Setting<Map<PluginDescriptor, Boolean>> ENABLED_PLUGINS = registerSetting(Setting.builder((Class<Map<PluginDescriptor, Boolean>>) (Class<?>) Map.class, "railroad:enabled_plugins")
-        .treePath("plugins")
-        .category(SettingCategory.builder("railroad:plugins")
-            .noDescription()
-            .build())
-        .codec(SettingCodecs.ENABLED_PLUGINS)
-        .noTitle()
-        .noDescription()
-        .persisted(false)
-        .addListener((oldValue, newValue) -> {
-            if (newValue == null) {
-                newValue = new HashMap<>();
-            }
+                for (Map.Entry<PluginDescriptor, Boolean> entry : newValue.entrySet()) {
+                    PluginDescriptor plugin = entry.getKey();
+                    boolean enabled = entry.getValue();
 
-            for (Map.Entry<PluginDescriptor, Boolean> entry : newValue.entrySet()) {
-                PluginDescriptor plugin = entry.getKey();
-                boolean enabled = entry.getValue();
-
-                if (PluginManager.isPluginEnabledForce(plugin) != enabled) {
-                    if (enabled) {
-                        PluginManager.enablePlugin(plugin);
-                    } else {
-                        PluginManager.disablePlugin(plugin);
+                    if (PluginManager.isPluginEnabledForce(plugin) != enabled) {
+                        if (enabled) {
+                            PluginManager.enablePlugin(plugin);
+                        } else {
+                            PluginManager.disablePlugin(plugin);
+                        }
                     }
                 }
-            }
-        })
-        .defaultValue(new HashMap<>())
-        .build());
+            })
+            .defaultValue(new HashMap<>())
+            .build());
 
-    public static final Setting<List<Path>> ADDITIONAL_JDK_SCAN_PATHS = registerSetting(Setting.builder(new TypeToken<List<Path>>() {}, "railroad:additional_jdk_scan_paths")
-        .treePath("ide")
-        .category(SettingCategory.simple("railroad:ide.jdk_management"))
-        .codec(SettingCodecs.DIRECTORY_PATH_LIST)
-        .defaultValue(List.of())
-        .build());
+    public static final Setting<List<Path>> ADDITIONAL_JDK_SCAN_PATHS = registerSetting(
+        Setting.builder(new TypeToken<List<Path>>() {
+        }, "railroad:additional_jdk_scan_paths")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.jdk_management"))
+            .codec(SettingCodecs.DIRECTORY_PATH_LIST)
+            .defaultValue(List.of())
+            .build());
 
-    public static final Setting<List<Path>> EXCLUDED_JDK_SCAN_PATHS = registerSetting(Setting.builder(new TypeToken<List<Path>>() {}, "railroad:excluded_jdk_scan_paths")
-        .treePath("ide")
-        .category(SettingCategory.simple("railroad:ide.jdk_management"))
-        .codec(SettingCodecs.DIRECTORY_PATH_LIST)
-        .defaultValue(List.of())
-        .build());
+    public static final Setting<List<Path>> EXCLUDED_JDK_SCAN_PATHS = registerSetting(
+        Setting.builder(new TypeToken<List<Path>>() {
+        }, "railroad:excluded_jdk_scan_paths")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.jdk_management"))
+            .codec(SettingCodecs.DIRECTORY_PATH_LIST)
+            .defaultValue(List.of())
+            .build());
 
-    public static final Setting<List<Path>> ADDITIONAL_JDKS = registerSetting(Setting.builder(new TypeToken<List<Path>>() {}, "railroad:additional_jdks")
-        .treePath("ide")
-        .category(SettingCategory.simple("railroad:ide.jdk_management"))
-        .codec(SettingCodecs.FILE_PATH_LIST)
-        .defaultValue(List.of())
-        .build());
+    public static final Setting<List<Path>> ADDITIONAL_JDKS = registerSetting(
+        Setting.builder(new TypeToken<List<Path>>() {
+        }, "railroad:additional_jdks")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.jdk_management"))
+            .codec(SettingCodecs.FILE_PATH_LIST)
+            .defaultValue(List.of())
+            .build());
 
     public static final Setting<JavaInspectionRuleSettingsState> JAVA_INSPECTION_RULE_SETTINGS = registerSetting(
         Setting.builder(JavaInspectionRuleSettingsState.class, "railroad:java_inspection_rule_settings")
@@ -163,105 +177,126 @@ public final class Settings {
             .noDescription()
             .canBeNull(false)
             .addListener((oldValue, newValue) -> {
-                if (newValue == null)
+                if (newValue == null) {
                     newValue = JavaInspectionRuleSettingsState.empty();
+                }
                 JavaInspectionRuleSettings.replaceAll(newValue);
                 ConfigHandler.saveConfig();
             })
             .build());
 
-    public static final Setting<Long> JAVA_VERSION_DETECTION_TIMEOUT_MS = registerSetting(Setting.builder(Long.class, "railroad:java_version_detection_timeout_ms")
-        .treePath("ide")
-        .category(SettingCategory.simple("railroad:ide.jdk_management"))
-        .codec(DefaultSettingCodecs.LONG)
-        .defaultValue(3000L)
-        .build());
+    public static final Setting<Long> JAVA_VERSION_DETECTION_TIMEOUT_MS = registerSetting(
+        Setting.builder(Long.class, "railroad:java_version_detection_timeout_ms")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.jdk_management"))
+            .codec(DefaultSettingCodecs.LONG)
+            .defaultValue(3000L)
+            .build());
 
-    public static final Setting<Path> WINDOWS_TERMINAL_SETTINGS_PATH = registerSetting(Setting.builder(Path.class, "railroad:windows_terminal_settings_path")
-        .treePath("appearance")
-        .category(SettingCategory.simple("railroad:appearance.terminal"))
-        .codec(SettingCodecs.WINDOWS_TERMINAL_SETTINGS_PATH)
-        .defaultValue(null)
-        .canBeNull(true)
-        .build());
+    public static final Setting<Path> WINDOWS_TERMINAL_SETTINGS_PATH = registerSetting(
+        Setting.builder(Path.class, "railroad:windows_terminal_settings_path")
+            .treePath("appearance")
+            .category(SettingCategory.simple("railroad:appearance.terminal"))
+            .codec(SettingCodecs.WINDOWS_TERMINAL_SETTINGS_PATH)
+            .defaultValue(null)
+            .canBeNull(true)
+            .build());
 
-    public static final Setting<TerminalFontMode> TERMINAL_FONT_MODE = registerSetting(Setting.builder(TerminalFontMode.class, "railroad:terminal_font_mode")
-        .treePath("appearance")
-        .category(SettingCategory.simple("railroad:appearance.terminal"))
-        .codec(SettingCodecs.TERMINAL_FONT_MODE)
-        .defaultValue(TerminalFontMode.AUTO)
-        .canBeNull(false)
-        .build());
+    public static final Setting<TerminalFontMode> TERMINAL_FONT_MODE = registerSetting(
+        Setting.builder(TerminalFontMode.class, "railroad:terminal_font_mode")
+            .treePath("appearance")
+            .category(SettingCategory.simple("railroad:appearance.terminal"))
+            .codec(SettingCodecs.TERMINAL_FONT_MODE)
+            .defaultValue(TerminalFontMode.AUTO)
+            .canBeNull(false)
+            .build());
 
-    public static final Setting<String> TERMINAL_INSTALLED_FONT = registerSetting(Setting.builder(String.class, "railroad:terminal_installed_font")
-        .treePath("appearance")
-        .category(SettingCategory.simple("railroad:appearance.terminal"))
-        .codec(SettingCodecs.INSTALLED_FONT)
-        .defaultValue(null)
-        .canBeNull(true)
-        .build());
+    public static final Setting<String> TERMINAL_INSTALLED_FONT = registerSetting(
+        Setting.builder(String.class, "railroad:terminal_installed_font")
+            .treePath("appearance")
+            .category(SettingCategory.simple("railroad:appearance.terminal"))
+            .codec(SettingCodecs.INSTALLED_FONT)
+            .defaultValue(null)
+            .canBeNull(true)
+            .build());
 
-    public static final Setting<String> TERMINAL_CUSTOM_FONT_FAMILY = registerSetting(Setting.builder(String.class, "railroad:terminal_custom_font_family")
-        .treePath("appearance")
-        .category(SettingCategory.simple("railroad:appearance.terminal"))
-        .codec(SettingCodecs.TERMINAL_CUSTOM_FONT_FAMILY)
-        .defaultValue("")
-        .canBeNull(true)
-        .build());
+    public static final Setting<String> TERMINAL_CUSTOM_FONT_FAMILY = registerSetting(
+        Setting.builder(String.class, "railroad:terminal_custom_font_family")
+            .treePath("appearance")
+            .category(SettingCategory.simple("railroad:appearance.terminal"))
+            .codec(SettingCodecs.TERMINAL_CUSTOM_FONT_FAMILY)
+            .defaultValue("")
+            .canBeNull(true)
+            .build());
 
-    public static final Setting<Long> GIT_BINARY_SEARCH_COMMAND_TIMEOUT_MS = registerSetting(Setting.builder(Long.class, "railroad:git_binary_command_search_timeout_ms")
-        .treePath("vcs")
-        .category(SettingCategory.simple("railroad:vcs"))
-        .codec(DefaultSettingCodecs.LONG)
-        .defaultValue(5000L)
-        .build());
+    public static final Setting<Long> GIT_BINARY_SEARCH_COMMAND_TIMEOUT_MS = registerSetting(
+        Setting.builder(Long.class, "railroad:git_binary_command_search_timeout_ms")
+            .treePath("vcs")
+            .category(SettingCategory.simple("railroad:vcs"))
+            .codec(DefaultSettingCodecs.LONG)
+            .defaultValue(5000L)
+            .build());
 
-    public static final Setting<Long> GIT_VERSION_COMMAND_TIMEOUT_MS = registerSetting(Setting.builder(Long.class, "railroad:git_version_command_timeout_ms")
-        .treePath("vcs")
-        .category(SettingCategory.simple("railroad:vcs"))
-        .codec(DefaultSettingCodecs.LONG)
-        .defaultValue(5000L)
-        .build());
+    public static final Setting<Long> GIT_VERSION_COMMAND_TIMEOUT_MS = registerSetting(
+        Setting.builder(Long.class, "railroad:git_version_command_timeout_ms")
+            .treePath("vcs")
+            .category(SettingCategory.simple("railroad:vcs"))
+            .codec(DefaultSettingCodecs.LONG)
+            .defaultValue(5000L)
+            .build());
 
-    public static final Setting<Path> GIT_EXECUTABLE_PATH = registerSetting(Setting.builder(Path.class, "railroad:git_executable_path")
-        .treePath("vcs")
-        .category(SettingCategory.simple("railroad:vcs"))
-        .codec(SettingCodecs.GIT_EXECUTABLE_PATH)
-        .defaultValue(null)
-        .canBeNull(true)
-        .build());
+    public static final Setting<Path> GIT_EXECUTABLE_PATH = registerSetting(
+        Setting.builder(Path.class, "railroad:git_executable_path")
+            .treePath("vcs")
+            .category(SettingCategory.simple("railroad:vcs"))
+            .codec(SettingCodecs.GIT_EXECUTABLE_PATH)
+            .defaultValue(null)
+            .canBeNull(true)
+            .build());
 
-    public static final Setting<IndentMode> INDENT_MODE = registerSetting(Setting.builder(IndentMode.class, "railroad:indent_mode")
-        .treePath("ide")
-        .category(SettingCategory.simple("railroad:ide.code_style"))
-        .codec(DefaultSettingCodecs.ofEnum("railroad:indent_mode", IndentMode.class))
-        .defaultValue(IndentMode.TABS)
-        .canBeNull(false)
-        .build());
+    public static final Setting<IndentMode> INDENT_MODE = registerSetting(
+        Setting.builder(IndentMode.class, "railroad:indent_mode")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.code_style"))
+            .codec(DefaultSettingCodecs.ofEnum("railroad:indent_mode", IndentMode.class))
+            .defaultValue(IndentMode.TABS)
+            .canBeNull(false)
+            .build());
 
-    public static final Setting<Integer> INDENT_WIDTH = registerSetting(Setting.builder(Integer.class, "railroad:indent_width")
-        .treePath("ide")
-        .category(SettingCategory.simple("railroad:ide.code_style"))
-        .codec(DefaultSettingCodecs.INTEGER)
-        .defaultValue(4)
-        .canBeNull(false)
-        .build());
+    public static final Setting<Integer> INDENT_WIDTH = registerSetting(
+        Setting.builder(Integer.class, "railroad:indent_width")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.code_style"))
+            .codec(DefaultSettingCodecs.INTEGER)
+            .defaultValue(4)
+            .canBeNull(false)
+            .build());
 
-    public static final Setting<Integer> TAB_WIDTH = registerSetting(Setting.builder(Integer.class, "railroad:tab_width")
-        .treePath("ide")
-        .category(SettingCategory.simple("railroad:ide.code_style"))
-        .codec(DefaultSettingCodecs.INTEGER)
-        .defaultValue(4)
-        .canBeNull(false)
-        .build());
+    public static final Setting<Integer> TAB_WIDTH = registerSetting(
+        Setting.builder(Integer.class, "railroad:tab_width")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.code_style"))
+            .codec(DefaultSettingCodecs.INTEGER)
+            .defaultValue(4)
+            .canBeNull(false)
+            .build());
 
-    public static final Setting<String> EDITOR_FONT_FAMILY = registerSetting(Setting.builder(String.class, "railroad:editor_font_family")
-        .treePath("ide")
-        .category(SettingCategory.simple("railroad:ide.code_style"))
-        .codec(SettingCodecs.EDITOR_FONT_FAMILY)
-        .defaultValue("JetBrains Mono")
-        .canBeNull(false)
-        .build());
+    public static final Setting<String> EDITOR_FONT_FAMILY = registerSetting(
+        Setting.builder(String.class, "railroad:editor_font_family")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.code_style"))
+            .codec(SettingCodecs.EDITOR_FONT_FAMILY)
+            .defaultValue("JetBrains Mono")
+            .canBeNull(false)
+            .build());
+
+    public static final Setting<Boolean> OPEN_LAST_PROJECT_ON_START = registerSetting(
+        Setting.builder(Boolean.class, "railroad:open_last_project_on_start")
+            .treePath("projects")
+            .category(SettingCategory.simple("railroad:projects.project"))
+            .codec(DefaultSettingCodecs.BOOLEAN)
+            .defaultValue(false)
+            .build());
 
     public static void initialize() {
         // intentionally empty - triggers class loading and static init

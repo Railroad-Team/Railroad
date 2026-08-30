@@ -22,8 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class GradleRunConfigurationType extends RunConfigurationType<GradleRunConfigurationData> {
-    private final Map<RunConfiguration<GradleRunConfigurationData>, GradleExecutionHandle> executions =
-        new ConcurrentHashMap<>();
+    private final Map<RunConfiguration<GradleRunConfigurationData>, GradleExecutionHandle> executions = new ConcurrentHashMap<>();
     private final ExecutorService handleCloser = Executors.newSingleThreadExecutor(runnable -> {
         var thread = new Thread(runnable, "gradle-handle-closer");
         thread.setDaemon(true);
@@ -73,8 +72,8 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
     public GradleRunConfigurationData createDataInstance(@UnknownNullability Project project) {
         var data = new GradleRunConfigurationData();
         data.setName("New Gradle Configuration");
-        data.setGradleProjectPath(project.path());
-        data.setJavaHome(/*project.getJDKManager().getDefaultJDK()*/ JDKManager.getDefaultJDK()); // TODO
+        data.setGradleProjectPath(project.getPath());
+        data.setJavaHome(/* project.getJDKManager().getDefaultJDK() */ JDKManager.getDefaultJDK()); // TODO
         return data;
     }
 
@@ -84,7 +83,8 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
     }
 
     public record GradleExecutionHandle(ProjectConnection connection, CancellationTokenSource cancellationTokenSource)
-        implements AutoCloseable {
+        implements
+            AutoCloseable {
         @Override
         public void close() {
             cancellationTokenSource.cancel();
@@ -133,13 +133,14 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
     }
 
     private void executeGradleBuild(RunConfiguration<GradleRunConfigurationData> configuration,
-                                    CompletableFuture<Void> future) {
+        CompletableFuture<Void> future) {
         GradleRunConfigurationData data = configuration.data();
         String task = requireTask(data);
         Path gradleProjectPath = requireGradleProjectPath(data);
         Map<String, String> environmentVariables = new HashMap<>(System.getenv());
-        if (data.getEnvironmentVariables() != null)
+        if (data.getEnvironmentVariables() != null) {
             environmentVariables.putAll(data.getEnvironmentVariables());
+        }
         String[] vmOptions = data.getVmOptions() == null ? new String[0] : data.getVmOptions();
         JDK javaHome = requireJavaHome(data);
 
@@ -179,7 +180,8 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                 });
         } catch (BuildException exception) {
             closeHandle(executions.remove(configuration));
-            future.completeExceptionally(new RuntimeException("Gradle build failed: " + exception.getMessage(), exception));
+            future.completeExceptionally(
+                new RuntimeException("Gradle build failed: " + exception.getMessage(), exception));
         } catch (GradleConnectionException exception) {
             future.completeExceptionally(exception);
         } catch (Throwable throwable) {

@@ -58,7 +58,8 @@ public class LayoutParser {
 
         Token token = tokens.removeFirst();
         if (token.type() != Token.Type.IDENTIFIER)
-            throw new LayoutParseException("Expected identifier, but got: '" + token.value() + "' at line " + token.startLine() + " column " + token.startColumn());
+            throw new LayoutParseException("Expected identifier, but got: '" + token.value() + "' at line "
+                + token.startLine() + " column " + token.startColumn());
 
         var item = new LayoutItem(token.value());
         var tree = new Tree<>(new Node<>(item));
@@ -79,7 +80,8 @@ public class LayoutParser {
                 case COMMA -> {
                     if (parent.getChildren().isEmpty() && parent.getValue().getProperties().isEmpty()) {
                         tree.print();
-                        throw new LayoutParseException("Unexpected comma at line " + token.startLine() + " column " + token.startColumn());
+                        throw new LayoutParseException(
+                            "Unexpected comma at line " + token.startLine() + " column " + token.startColumn());
                     }
 
                     parent = stack.peek();
@@ -88,7 +90,8 @@ public class LayoutParser {
                     String[] parts = token.value().split(":");
                     if (parts.length != 2) {
                         tree.print();
-                        throw new LayoutParseException("Invalid property object: '" + token.value() + "' at line " + token.startLine() + " column " + token.startColumn());
+                        throw new LayoutParseException("Invalid property object: '" + token.value() + "' at line "
+                            + token.startLine() + " column " + token.startColumn());
                     }
 
                     Tree<LayoutItem> subTree = constructTree(tokenize(parts[1]));
@@ -98,7 +101,8 @@ public class LayoutParser {
                     String[] parts = token.value().split(":");
                     if (parts.length != 2) {
                         tree.print();
-                        throw new LayoutParseException("Invalid property array: '" + token.value() + "' at line " + token.startLine() + " column " + token.startColumn());
+                        throw new LayoutParseException("Invalid property array: '" + token.value() + "' at line "
+                            + token.startLine() + " column " + token.startColumn());
                     }
 
                     parent.getValue().setProperty(parts[0], parts[1]);
@@ -107,30 +111,35 @@ public class LayoutParser {
                     String[] parts = token.value().split(":");
                     if (parts.length != 2) {
                         tree.print();
-                        throw new LayoutParseException("Invalid property string: '" + token.value() + "' at line " + token.startLine() + " column " + token.startColumn());
+                        throw new LayoutParseException("Invalid property string: '" + token.value() + "' at line "
+                            + token.startLine() + " column " + token.startColumn());
                     }
 
-                    parent.getValue().setProperty(parts[0], parts[1].substring(1, parts[1].length() - 1).replace("\\\\", "\\"));
+                    parent.getValue().setProperty(parts[0],
+                        parts[1].substring(1, parts[1].length() - 1).replace("\\\\", "\\"));
                 }
                 case PROPERTY_NUMBER -> {
                     String[] parts = token.value().split(":");
                     if (parts.length != 2) {
                         tree.print();
-                        throw new LayoutParseException("Invalid property number: '" + token.value() + "' at line " + token.startLine() + " column " + token.startColumn());
+                        throw new LayoutParseException("Invalid property number: '" + token.value() + "' at line "
+                            + token.startLine() + " column " + token.startColumn());
                     }
 
                     try {
                         parent.getValue().setProperty(parts[0], Double.parseDouble(parts[1]));
                     } catch (NumberFormatException exception) {
                         tree.print();
-                        throw new LayoutParseException("Invalid number: '" + parts[1] + "' at line " + token.startLine() + " column " + token.startColumn(), exception);
+                        throw new LayoutParseException("Invalid number: '" + parts[1] + "' at line " + token.startLine()
+                            + " column " + token.startColumn(), exception);
                     }
                 }
                 case PROPERTY_BOOLEAN -> {
                     String[] parts = token.value().split(":");
                     if (parts.length != 2) {
                         tree.print();
-                        throw new LayoutParseException("Invalid property boolean: '" + token.value() + "' at line " + token.startLine() + " column " + token.startColumn());
+                        throw new LayoutParseException("Invalid property boolean: '" + token.value() + "' at line "
+                            + token.startLine() + " column " + token.startColumn());
                     }
 
                     parent.getValue().setProperty(parts[0], Boolean.parseBoolean(parts[1]));
@@ -145,12 +154,14 @@ public class LayoutParser {
                 case EOF -> {
                     if (stack.size() != 1) {
                         tree.print();
-                        throw new LayoutParseException("Unmatched opening brace '{' at line " + token.startLine() + " column " + token.startColumn());
+                        throw new LayoutParseException("Unmatched opening brace '{' at line " + token.startLine()
+                            + " column " + token.startColumn());
                     }
                 }
                 default -> {
                     tree.print();
-                    throw new LayoutParseException("Unexpected token: (" + token.type() + ", " + token.value() + ") at line " + token.startLine() + " column " + token.startColumn());
+                    throw new LayoutParseException("Unexpected token: (" + token.type() + ", " + token.value()
+                        + ") at line " + token.startLine() + " column " + token.startColumn());
                 }
             }
         }
@@ -164,7 +175,8 @@ public class LayoutParser {
         int column = 1;
 
         while (!content.isEmpty()) {
-            if (content.startsWith(" ") || content.startsWith("\n") || content.startsWith("\r") || content.startsWith("\t")) {
+            if (content.startsWith(" ") || content.startsWith("\n") || content.startsWith("\r")
+                || content.startsWith("\t")) {
                 if (content.startsWith("\n")) {
                     line++;
                     column = 1;
@@ -212,9 +224,11 @@ public class LayoutParser {
                     column = newColumn;
                 } else {
                     if (definitiveEnd == -1)
-                        throw new LayoutParseException("Invalid identifier: '" + content + "' at line " + line + " column " + column);
+                        throw new LayoutParseException(
+                            "Invalid identifier: '" + content + "' at line " + line + " column " + column);
 
-                    tokens.add(new Token(Token.Type.IDENTIFIER, content.substring(0, definitiveEnd).trim(), line, column, line, column + definitiveEnd));
+                    tokens.add(new Token(Token.Type.IDENTIFIER, content.substring(0, definitiveEnd).trim(), line,
+                        column, line, column + definitiveEnd));
                     column += definitiveEnd;
                     content = content.substring(definitiveEnd).trim();
                 }
@@ -222,9 +236,11 @@ public class LayoutParser {
                 // look for the end of the number by finding a %
                 int end = content.indexOf("%");
                 if (end == -1)
-                    throw new LayoutParseException("Invalid number: '" + content + "' at line " + line + " column " + column);
+                    throw new LayoutParseException(
+                        "Invalid number: '" + content + "' at line " + line + " column " + column);
 
-                tokens.add(new Token(Token.Type.PERCENT, content.substring(0, end + 1).trim(), line, column, line, column + end));
+                tokens.add(new Token(Token.Type.PERCENT, content.substring(0, end + 1).trim(), line, column, line,
+                    column + end));
                 column += end + 1;
                 content = content.substring(end + 1).trim();
             } else if (content.contains(":")) {
@@ -256,7 +272,8 @@ public class LayoutParser {
         return tokens;
     }
 
-    private static Pair<Token, String> extractProperty(String content, int line, int column) throws LayoutParseException {
+    private static Pair<Token, String> extractProperty(String content, int line, int column)
+        throws LayoutParseException {
         int colonIndex = content.indexOf(":");
         String property = content.substring(0, colonIndex).trim();
         String value = content.substring(colonIndex + 1).trim();
@@ -265,41 +282,49 @@ public class LayoutParser {
             if (endIndex != -1) {
                 String subContent = value.substring(0, endIndex + 1).trim();
                 return new Pair<>(
-                    new Token(Token.Type.PROPERTY_OBJECT, property + ":" + subContent, line, column, line, column + colonIndex + endIndex),
+                    new Token(Token.Type.PROPERTY_OBJECT, property + ":" + subContent, line, column, line,
+                        column + colonIndex + endIndex),
                     value.substring(endIndex + 1).trim());
             } else
-                throw new LayoutParseException("Invalid property value: '" + value + "' at line " + line + " column " + column);
+                throw new LayoutParseException(
+                    "Invalid property value: '" + value + "' at line " + line + " column " + column);
         } else if (value.startsWith("[")) {
             int endIndex = findClosingBracketIndex(value);
             if (endIndex != -1) {
                 String subContent = value.substring(0, endIndex + 1).trim();
                 return new Pair<>(
-                    new Token(Token.Type.PROPERTY_ARRAY, property + ":" + subContent, line, column, line, column + colonIndex + endIndex),
+                    new Token(Token.Type.PROPERTY_ARRAY, property + ":" + subContent, line, column, line,
+                        column + colonIndex + endIndex),
                     value.substring(endIndex + 1).trim());
             } else
-                throw new LayoutParseException("Invalid property value: '" + value + "' at line " + line + " column " + column);
+                throw new LayoutParseException(
+                    "Invalid property value: '" + value + "' at line " + line + " column " + column);
         } else if (Character.isDigit(value.charAt(0))) {
             String number = extractNumber(value);
             return new Pair<>(
-                new Token(Token.Type.PROPERTY_NUMBER, property + ":" + number, line, column, line, column + colonIndex + number.length()),
+                new Token(Token.Type.PROPERTY_NUMBER, property + ":" + number, line, column, line,
+                    column + colonIndex + number.length()),
                 value.substring(value.indexOf(number) + number.length()).trim());
         } else if (value.startsWith("\"")) {
             int endIndex = value.indexOf("\"", 1);
             if (endIndex != -1) {
                 String subContent = value.substring(0, endIndex + 1).replace("\\", "\\\\").trim();
                 return new Pair<>(
-                    new Token(Token.Type.PROPERTY_STRING, property + ":" + subContent, line, column, line, column + colonIndex + endIndex),
+                    new Token(Token.Type.PROPERTY_STRING, property + ":" + subContent, line, column, line,
+                        column + colonIndex + endIndex),
                     value.substring(endIndex + 1).trim());
             } else
-                throw new LayoutParseException("Invalid property value: '" + value + "' at line " + line + " column " + column);
+                throw new LayoutParseException(
+                    "Invalid property value: '" + value + "' at line " + line + " column " + column);
         } else if (value.startsWith("true") || value.startsWith("false")) {
             int beginIndex = value.contains(" ") ? value.indexOf(" ") : value.length();
             return new Pair<>(
-                new Token(Token.Type.PROPERTY_BOOLEAN, property + ":" + value.substring(0, beginIndex), line, column, line, column + colonIndex + beginIndex),
+                new Token(Token.Type.PROPERTY_BOOLEAN, property + ":" + value.substring(0, beginIndex), line, column,
+                    line, column + colonIndex + beginIndex),
                 value.substring(beginIndex).trim());
-        } else {
-            throw new LayoutParseException("Invalid property value: '" + value + "' at line " + line + " column " + column);
-        }
+        } else
+            throw new LayoutParseException(
+                "Invalid property value: '" + value + "' at line " + line + " column " + column);
     }
 
     private static int findClosingBraceIndex(String content) {
@@ -356,13 +381,13 @@ public class LayoutParser {
     }
 
     public static Layout loadLayout(Project project) {
-        Path projectPath = project.path();
+        Path projectPath = project.getPath();
         Path layoutPath = projectPath.resolve(".railroad").resolve(".railayout");
 
         try {
             return parse(layoutPath);
         } catch (LayoutParseException exception) {
-            Railroad.LOGGER.error("Failed to load layout for project: {}", project.path(), exception);
+            Railroad.LOGGER.error("Failed to load layout for project: {}", project.getPath(), exception);
             return new Layout(new Tree<>(new Node<>(new LayoutItem("error"))));
         }
     }
@@ -370,17 +395,8 @@ public class LayoutParser {
     public record Token(Type type, String value, int startLine, int startColumn, int endLine, int endColumn) {
         @Getter
         public enum Type {
-            OPEN_BRACE("{"),
-            CLOSE_BRACE("}"),
-            COMMA(","),
-            PERCENT("%"),
-            IDENTIFIER(""),
-            PROPERTY_OBJECT(":"),
-            PROPERTY_ARRAY(":"),
-            PROPERTY_STRING(":"),
-            PROPERTY_NUMBER(":"),
-            PROPERTY_BOOLEAN(":"),
-            EOF("");
+            OPEN_BRACE("{"), CLOSE_BRACE("}"), COMMA(","), PERCENT("%"), IDENTIFIER(""), PROPERTY_OBJECT(
+                ":"), PROPERTY_ARRAY(":"), PROPERTY_STRING(":"), PROPERTY_NUMBER(":"), PROPERTY_BOOLEAN(":"), EOF("");
 
             private final String value;
 

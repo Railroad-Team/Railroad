@@ -37,7 +37,7 @@ final class JavaParserTestSupport {
         if (node instanceof SyntaxToken token)
             return token.text();
 
-        StringBuilder builder = new StringBuilder();
+        var builder = new StringBuilder();
         for (SyntaxNode child : node.children()) {
             builder.append(syntaxText(child));
         }

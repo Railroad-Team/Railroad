@@ -23,9 +23,7 @@ public class CoreBigDecimalEqualsInspection implements JavaInspectionRuleProvide
             JavaSemanticRules.BIG_DECIMAL_EQUALS.defaultSeverity(),
             JavaSemanticRules.BIG_DECIMAL_EQUALS.messageTemplate(),
             Set.of("core", "numeric-precision"),
-            CoreBigDecimalEqualsInspection::reportBigDecimalEquals
-        )
-    );
+            CoreBigDecimalEqualsInspection::reportBigDecimalEquals));
 
     @Override
     public String id() {
@@ -97,8 +95,9 @@ public class CoreBigDecimalEqualsInspection implements JavaInspectionRuleProvide
             case DECLARED -> {
                 String typeName = type.displayName();
                 int genericStart = typeName.indexOf('<');
-                if (genericStart >= 0)
+                if (genericStart >= 0) {
                     typeName = typeName.substring(0, genericStart);
+                }
 
                 yield context.resolveQualifiedTypeName(typeName);
             }

@@ -14,14 +14,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record EnumDeclaration(
-        Span span,
-        List<Modifier> modifiers,
-        List<Annotation> annotations,
-        NameExpression name,
-        List<TypeRef> implementedInterfaces,
-        List<EnumConstantDeclaration> constants,
-        List<ClassBodyDeclaration> bodyDeclarations
-) implements TypeDeclaration {
+    Span span,
+    List<Modifier> modifiers,
+    List<Annotation> annotations,
+    NameExpression name,
+    List<TypeRef> implementedInterfaces,
+    List<EnumConstantDeclaration> constants,
+    List<ClassBodyDeclaration> bodyDeclarations) implements TypeDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.ENUM_DECLARATION;

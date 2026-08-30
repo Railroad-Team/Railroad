@@ -17,10 +17,13 @@ public class RRCheckBoxTreeItem<T> extends TreeItem<T> {
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected", false);
     private final BooleanProperty indeterminate = new SimpleBooleanProperty(this, "indeterminate", false);
     private final BooleanProperty disabled = new SimpleBooleanProperty(this, "disabled", false);
-    private final BooleanProperty propagateSelectionToChildren = new SimpleBooleanProperty(this, "propagateSelectionToChildren", true);
-    private final BooleanProperty propagateSelectionToParent = new SimpleBooleanProperty(this, "propagateSelectionToParent", true);
+    private final BooleanProperty propagateSelectionToChildren = new SimpleBooleanProperty(this,
+        "propagateSelectionToChildren", true);
+    private final BooleanProperty propagateSelectionToParent = new SimpleBooleanProperty(this,
+        "propagateSelectionToParent", true);
     private boolean updatingState;
-    private final ChangeListener<Boolean> childStateListener = (observable, oldValue, newValue) -> updateStateFromChildren();
+    private final ChangeListener<Boolean> childStateListener = (observable, oldValue,
+        newValue) -> updateStateFromChildren();
     private final ListChangeListener<TreeItem<T>> childrenListener = change -> {
         while (change.next()) {
             if (change.wasRemoved()) {
@@ -245,7 +248,9 @@ public class RRCheckBoxTreeItem<T> extends TreeItem<T> {
         boolean noneSelected = selectedCount == 0 && indeterminateCount == 0;
         if (allSelected) {
             setSelectionState(true, false);
-        } else setSelectionState(false, !noneSelected);
+        } else {
+            setSelectionState(false, !noneSelected);
+        }
 
         updateParentState();
     }

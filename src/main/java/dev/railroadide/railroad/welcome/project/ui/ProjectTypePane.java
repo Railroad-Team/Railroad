@@ -14,7 +14,8 @@ public class ProjectTypePane extends RRVBox {
     private final ScrollPane projectTypesScroller;
     @Getter
     private final RRListView<ProjectType> projectTypeListView;
-    private final ObservableList<ProjectType> allProjectTypes = FXCollections.observableArrayList(ProjectType.REGISTRY.values());
+    private final ObservableList<ProjectType> allProjectTypes = FXCollections
+        .observableArrayList(ProjectType.REGISTRY.values());
 
     public ProjectTypePane() {
         super();
@@ -27,7 +28,7 @@ public class ProjectTypePane extends RRVBox {
 
         projectTypeListView = new RRListView<>();
         projectTypeListView.getStyleClass().add("project-type-list");
-        projectTypeListView.setCellFactory(param -> new ProjectTypeCell());
+        projectTypeListView.setCellFactory(_ -> new ProjectTypeCell());
         projectTypeListView.getItems().addAll(allProjectTypes);
         projectTypeListView.getSelectionModel().selectFirst();
         projectTypeListView.setListViewSize(RRListView.ListViewSize.MEDIUM);

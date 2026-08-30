@@ -69,8 +69,9 @@ public record DocumentUri(URI value) {
     public static DocumentUri virtual(String scheme, String path) {
         scheme = requireComponent(scheme, "scheme").toLowerCase(Locale.ROOT);
         path = requireComponent(path, "path");
-        if (!path.startsWith("/"))
+        if (!path.startsWith("/")) {
             path = "/" + path;
+        }
 
         try {
             return new DocumentUri(new URI(scheme, null, path, null));
@@ -104,7 +105,7 @@ public record DocumentUri(URI value) {
      *
      * @return physical path, or empty for non-file document schemes
      * @throws IllegalArgumentException if a malformed file URI cannot be represented by
-     * the current filesystem provider
+     *             the current filesystem provider
      */
     public Optional<Path> filePath() {
         return isFile() ? Optional.of(Path.of(value)) : Optional.empty();

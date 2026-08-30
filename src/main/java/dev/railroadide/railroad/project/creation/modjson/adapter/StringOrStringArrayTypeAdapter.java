@@ -15,10 +15,10 @@ public class StringOrStringArrayTypeAdapter extends TypeAdapter<List<String>> {
     public List<String> read(JsonReader in) throws IOException {
         JsonToken token = in.peek();
 
-        if (token == JsonToken.STRING) {
+        if (token == JsonToken.STRING)
             // JSON is a single string (e.g., "client")
             return Collections.singletonList(in.nextString());
-        } else if (token == JsonToken.BEGIN_ARRAY) {
+        else if (token == JsonToken.BEGIN_ARRAY) {
             // JSON is an array of strings (e.g., ["client", "server"])
             in.beginArray();
             List<String> list = new ArrayList<>();

@@ -2,7 +2,7 @@
 
 ![Railroad IDE Logo](/src/main/resources/assets/railroad/images/logo.png)
 
-![Static Badge](https://img.shields.io/badge/java-21-orange?logo=openjdk&label=Java)
+![Static Badge](https://img.shields.io/badge/java-25-orange?logo=openjdk&label=Java)
 ![Static Badge](https://img.shields.io/badge/JavaFX-grey?logo=openjdk)
 
 Railroad IDE is a JavaFX-powered IDE built to streamline Minecraft mod development on Forge, Fabric, and NeoForge. The
@@ -39,9 +39,9 @@ modders actually need:
 
 ## Requirements
 
-- Java 21 (Temurin, Oracle, or any compatible JDK)
+- Java 25 (Temurin, Oracle, or any compatible JDK)
 - Git
-- Gradle 8 or newer — or use the included Gradle wrapper scripts
+- Gradle 9.1 or newer — or use the included Gradle wrapper scripts
 - Optional: IntelliJ IDEA with the Lombok plugin for the best contributor experience
 
 ## Quick Start

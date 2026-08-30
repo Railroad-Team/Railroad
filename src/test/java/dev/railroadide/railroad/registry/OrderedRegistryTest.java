@@ -12,8 +12,7 @@ class OrderedRegistryTest {
     void preservesRegistrationOrder() {
         Registry<String> registry = RegistryManager.createOrderedRegistry(
             "test:ordered-registry-" + System.nanoTime(),
-            String.class
-        );
+            String.class);
 
         registry.register("b", "second");
         registry.register("a", "first");

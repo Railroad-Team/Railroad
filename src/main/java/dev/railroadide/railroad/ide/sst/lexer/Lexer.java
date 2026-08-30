@@ -53,7 +53,8 @@ public interface Lexer<T extends Enum<T>> extends Closeable {
         // Default implementation does nothing.
     }
 
-    interface Snapshot {}
+    interface Snapshot {
+    }
 
     record LexError(String message, int offset, int line, int column) {
         public LexError(String message, int offset) {

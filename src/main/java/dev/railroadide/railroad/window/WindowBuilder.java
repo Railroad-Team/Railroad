@@ -2,6 +2,7 @@ package dev.railroadide.railroad.window;
 
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.utility.MacUtils;
@@ -12,6 +13,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
+import javafx.stage.WindowEvent;
 import org.joml.Matrix3x2d;
 
 import java.io.InputStream;
@@ -42,11 +44,13 @@ public class WindowBuilder {
         return createAlert(alertType, title, subtitle, content, null);
     }
 
-    public static WindowBuilder createAlert(AlertType alertType, String title, String subtitle, String content, Runnable onClose) {
+    public static WindowBuilder createAlert(AlertType alertType, String title, String subtitle, String content,
+        Runnable onClose) {
         return createAlert(alertType, title, subtitle, content, null, onClose);
     }
 
-    public static WindowBuilder createAlert(AlertType alertType, String title, String subtitle, String content, Consumer<AlertBuilder<?>> alertModifier, Runnable onClose) {
+    public static WindowBuilder createAlert(AlertType alertType, String title, String subtitle, String content,
+        Consumer<AlertBuilder<?>> alertModifier, Runnable onClose) {
         AlertBuilder<?> alertBuilder = AlertBuilder.create()
             .alertType(alertType)
             .title(subtitle)
@@ -77,18 +81,19 @@ public class WindowBuilder {
             subtitle,
             StringUtils.exceptionToString(exception),
             alertBuilder -> alertBuilder.translateContent(false),
-            onClose
-        ).build();
+            onClose).build();
     }
 
-    public static Stage createDialog(String title, String subtitle, String content, Runnable onConfirm, Runnable onCancel) {
+    public static Stage createDialog(String title, String subtitle, String content, Runnable onConfirm,
+        Runnable onCancel) {
         return createDialog(title, subtitle, content, dialogBuilder -> {
             dialogBuilder.onConfirm(onConfirm);
             dialogBuilder.onCancel(onCancel);
         });
     }
 
-    public static Stage createDialog(String title, String subtitle, String content, Consumer<DialogBuilder> dialogModifier) {
+    public static Stage createDialog(String title, String subtitle, String content,
+        Consumer<DialogBuilder> dialogModifier) {
         DialogBuilder dialogBuilder = DialogBuilder.create()
             .title(subtitle)
             .content(content);
@@ -243,6 +248,13 @@ public class WindowBuilder {
 
         if (scene != null) {
             stage.setScene(scene);
+            stage.addEventHandler(WindowEvent.WINDOW_HIDDEN, _ -> {
+                try {
+                    Services.UI_MANAGER.releaseScene(scene);
+                } finally {
+                    ThemeManager.release(scene);
+                }
+            });
         }
 
         if (iconStream != null) {
@@ -255,12 +267,24 @@ public class WindowBuilder {
 
         stage.initModality(modality);
 
-        if (minWidth >= 0) stage.setMinWidth(minWidth);
-        if (minHeight >= 0) stage.setMinHeight(minHeight);
-        if (width >= 0) stage.setWidth(width);
-        if (height >= 0) stage.setHeight(height);
-        if (maxWidth >= 0) stage.setMaxWidth(maxWidth);
-        if (maxHeight >= 0) stage.setMaxHeight(maxHeight);
+        if (minWidth >= 0) {
+            stage.setMinWidth(minWidth);
+        }
+        if (minHeight >= 0) {
+            stage.setMinHeight(minHeight);
+        }
+        if (width >= 0) {
+            stage.setWidth(width);
+        }
+        if (height >= 0) {
+            stage.setHeight(height);
+        }
+        if (maxWidth >= 0) {
+            stage.setMaxWidth(maxWidth);
+        }
+        if (maxHeight >= 0) {
+            stage.setMaxHeight(maxHeight);
+        }
 
         // If caller did not specify an explicit size, use the scene's preferred size.
         if (scene != null && width < 0 && height < 0) {

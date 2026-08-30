@@ -25,7 +25,6 @@ public class ImageLanguageSupport extends BaseBinaryLanguageSupport {
         return new EditorOpenView(
             new ImageViewerPane(file),
             null,
-            languageId()
-        );
+            languageId());
     }
 }

@@ -119,7 +119,7 @@ public class JinfoCLIBuilder implements CLIBuilder<Process, JinfoCLIBuilder> {
     /**
      * Adds a flag to the `jinfo` command with an enabled or disabled state.
      *
-     * @param name    the name of the flag; must not be null
+     * @param name the name of the flag; must not be null
      * @param enabled whether the flag is enabled (true) or disabled (false)
      * @return the current `JinfoCLIBuilder` instance
      * @throws NullPointerException if the flag name is null
@@ -133,7 +133,7 @@ public class JinfoCLIBuilder implements CLIBuilder<Process, JinfoCLIBuilder> {
     /**
      * Adds a flag to the `jinfo` command with a specific value.
      *
-     * @param name  the name of the flag; must not be null
+     * @param name the name of the flag; must not be null
      * @param value the value of the flag; must not be null
      * @return the current `JinfoCLIBuilder` instance
      * @throws NullPointerException if the flag name or value is null

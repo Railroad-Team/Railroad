@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.projectexplorer.task;
 
 import javafx.concurrent.Task;
+import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -58,7 +59,8 @@ public class WatchTask extends Task<Void> {
                                 registerAll(child, watcher);
                             }
                         } catch (IOException exception) {
-                            updateMessage("Failed to register new directory: " + child + " due to " + exception.getMessage());
+                            updateMessage(
+                                "Failed to register new directory: " + child + " due to " + exception.getMessage());
                         }
                     }
                 }
@@ -83,7 +85,8 @@ public class WatchTask extends Task<Void> {
     private void registerAll(final Path start, WatchService watcher) throws IOException {
         Files.walkFileTree(start, new SimpleFileVisitor<>() {
             @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            public @NonNull FileVisitResult preVisitDirectory(@NonNull Path dir, @NonNull BasicFileAttributes attrs)
+                throws IOException {
                 register(dir, watcher);
                 return FileVisitResult.CONTINUE;
             }

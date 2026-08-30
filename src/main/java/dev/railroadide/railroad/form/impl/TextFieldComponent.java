@@ -39,23 +39,28 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
     /**
      * Constructs a new text field component.
      *
-     * @param dataKey         the key to store the data in the form data
-     * @param data            the data for the text field
-     * @param validator       the validator for the text field
-     * @param listener        the listener for the text field
+     * @param dataKey the key to store the data in the form data
+     * @param data the data for the text field
+     * @param validator the validator for the text field
+     * @param listener the listener for the text field
      * @param bindTextFieldTo the property to bind the text field to
-     * @param transformers    the transformers for the text field
+     * @param transformers the transformers for the text field
      * @param keyTypedHandler the key typed handler for the text field
-     * @param visible         the visibility of the text field
+     * @param visible the visibility of the text field
      */
-    public TextFieldComponent(String dataKey, Data data, FormComponentValidator<TextField> validator, FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo, List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
+    public TextFieldComponent(String dataKey, Data data, FormComponentValidator<TextField> validator,
+        FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo,
+        List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler,
+        @Nullable BooleanBinding visible) {
         super(dataKey, data, currentData -> {
-            var formTextField = new FormTextField(currentData.label, currentData.required, currentData.promptText, currentData.editable, currentData.translate, currentData.getAutoCompleteOptions());
+            var formTextField = new FormTextField(currentData.label, currentData.required, currentData.promptText,
+                currentData.editable, currentData.translate, currentData.getAutoCompleteOptions());
             if (currentData.text != null) {
                 new Thread(() -> {
                     String text = data.text.get();
-                    if (text != null)
+                    if (text != null) {
                         Platform.runLater(() -> formTextField.getPrimaryComponent().setText(text));
+                    }
                 }).start();
             }
 
@@ -96,8 +101,8 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
 
             if (newValue != null) {
                 TextField textField = newValue.getTextField();
-                listenerRef.set((observable1, oldValue1, newValue1) ->
-                    listener.changed(textField, observable1, oldValue1, newValue1));
+                listenerRef.set((observable1, oldValue1, newValue1) -> listener.changed(textField, observable1,
+                    oldValue1, newValue1));
 
                 textField.textProperty().addListener(listenerRef.get());
             }
@@ -109,8 +114,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
         componentProperty()
             .map(FormTextField::getPrimaryComponent)
             .flatMap(TextField::textProperty)
-            .addListener((observable, oldValue, newValue) ->
-                formData.addProperty(dataKey, newValue));
+            .addListener((observable, oldValue, newValue) -> formData.addProperty(dataKey, newValue));
 
         formData.addProperty(dataKey, componentProperty()
             .map(FormTextField::getPrimaryComponent)
@@ -141,7 +145,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * Constructs a new builder for a text field component.
          *
          * @param dataKey the key to store the data in the form data
-         * @param label   the label for the text field
+         * @param label the label for the text field
          */
         public Builder(@NotNull String dataKey, @NotNull String label) {
             this.dataKey = dataKey;
@@ -261,15 +265,17 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
         /**
          * Adds a transformer to the text field.
          *
-         * @param fromComponent       the observable value of the component to transform
+         * @param fromComponent the observable value of the component to transform
          * @param toComponentFunction the function to set the value of the component
-         * @param valueMapper         the function to map the value
-         * @param <X>                 the type of the component
+         * @param valueMapper the function to map the value
+         * @param <X> the type of the component
          * @return this builder
          */
         @Override
-        public <X> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<X> toComponentFunction, Function<String, X> valueMapper) {
-            this.transformers.add(new FormTransformer<>(fromComponent, TextField::getText, toComponentFunction, valueMapper));
+        public <X> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<X> toComponentFunction,
+            Function<String, X> valueMapper) {
+            this.transformers
+                .add(new FormTransformer<>(fromComponent, TextField::getText, toComponentFunction, valueMapper));
             return this;
         }
 
@@ -277,20 +283,21 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * Adds a transformer to the text field.
          *
          * @param fromComponent the observable value of the component to transform
-         * @param toComponent   the component to set the value to
-         * @param valueMapper   the function to map the value
-         * @param <U>           the type of the component
-         * @param <X>           the type of the value
+         * @param toComponent the component to set the value to
+         * @param valueMapper the function to map the value
+         * @param <U> the type of the component
+         * @param <X> the type of the value
          * @return this builder
          */
         @Override
-        public <U extends Node, X> Builder addTransformer(ObservableValue<TextField> fromComponent, ObservableValue<U> toComponent, Function<String, X> valueMapper) {
+        public <U extends Node, X> Builder addTransformer(ObservableValue<TextField> fromComponent,
+            ObservableValue<U> toComponent, Function<String, X> valueMapper) {
             this.transformers.add(new FormTransformer<>(fromComponent, TextField::getText, value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());
-                } else {
-                    throw new IllegalArgumentException("Unsupported component type: " + toComponent.getValue().getClass().getName());
-                }
+                } else
+                    throw new IllegalArgumentException(
+                        "Unsupported component type: " + toComponent.getValue().getClass().getName());
             }, valueMapper));
             return this;
         }
@@ -335,7 +342,8 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @return this builder
          */
         public Builder autoCompleteSuggestionsSupplier(Supplier<? extends Collection<String>> suggestionsSupplier) {
-            ensureAutoCompleteOptions().setSuggestionsSupplier(Objects.requireNonNull(suggestionsSupplier, "suggestionsSupplier"));
+            ensureAutoCompleteOptions()
+                .setSuggestionsSupplier(Objects.requireNonNull(suggestionsSupplier, "suggestionsSupplier"));
             return this;
         }
 
@@ -374,7 +382,8 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
         /**
          * Sets the cell factory used to render suggestions in the popup.
          */
-        public Builder autoCompleteSuggestionCellFactory(@Nullable Callback<ListView<String>, ListCell<String>> cellFactory) {
+        public Builder autoCompleteSuggestionCellFactory(
+            @Nullable Callback<ListView<String>, ListCell<String>> cellFactory) {
             ensureAutoCompleteOptions().setSuggestionCellFactory(cellFactory);
             return this;
         }
@@ -402,7 +411,8 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          */
         @Override
         public TextFieldComponent build() {
-            return new TextFieldComponent(dataKey, data, validator, listener, bindTextFieldTo, transformers, keyTypedHandler, visible);
+            return new TextFieldComponent(dataKey, data, validator, listener, bindTextFieldTo, transformers,
+                keyTypedHandler, visible);
         }
     }
 
@@ -495,9 +505,8 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
         }
 
         public AutoCompleteOptions getAutoCompleteOptions() {
-            if (autoCompleteOptions == null || !autoCompleteOptions.isConfigured()) {
+            if (autoCompleteOptions == null || !autoCompleteOptions.isConfigured())
                 return null;
-            }
             return autoCompleteOptions;
         }
     }

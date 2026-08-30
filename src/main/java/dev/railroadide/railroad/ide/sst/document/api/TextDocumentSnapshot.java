@@ -40,8 +40,7 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
         DocumentVersion version,
         String languageId,
         CharSequence text,
-        Charset encoding
-    ) {
+        Charset encoding) {
         this.id = Objects.requireNonNull(id, "id");
         this.uri = Objects.requireNonNull(uri, "uri");
         this.version = Objects.requireNonNull(version, "version");
@@ -103,8 +102,7 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
      * @param language Required language
      * @return content of the snapshot
      */
-    public static Optional<String> unwrap(DocumentSnapshot snapshot, LanguageSupport language)
-    {
+    public static Optional<String> unwrap(DocumentSnapshot snapshot, LanguageSupport language) {
         Optional<Path> filePath = snapshot.uri().filePath();
         if (!filePath.isPresent() || !language.supports(filePath.get()))
             return Optional.empty();

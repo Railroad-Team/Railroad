@@ -59,12 +59,13 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      *
      * @param informativeText The text of the information label.
      * @param informationType The type of the information label.
-     * @param bindTo          The property to bind the information label to.
-     * @param args            The arguments to format the text with.
+     * @param bindTo The property to bind the information label to.
+     * @param args The arguments to format the text with.
      * @see String#format(String, Object...)
      * @see InformationType
      */
-    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType, @Nullable StringProperty bindTo, Object... args) {
+    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType,
+        @Nullable StringProperty bindTo, Object... args) {
         addInformationLabel(informativeText, t -> TRUE_BINDING, informationType, bindTo, args);
     }
 
@@ -73,11 +74,12 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      *
      * @param informativeText The text of the information label.
      * @param informationType The type of the information label.
-     * @param args            The arguments to format the text with.
+     * @param args The arguments to format the text with.
      * @see String#format(String, Object...)
      * @see InformationType
      */
-    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType, Object... args) {
+    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType,
+        Object... args) {
         addInformationLabel(informativeText, informationType, null, args);
     }
 
@@ -85,7 +87,7 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * Adds an information label to the {@link InformativeLabeledHBox}.
      *
      * @param informativeText The text of the information label.
-     * @param args            The arguments to format the text with.
+     * @param args The arguments to format the text with.
      * @see String#format(String, Object...)
      * @see InformationType
      */
@@ -97,8 +99,8 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * Adds an information label to the {@link InformativeLabeledHBox}.
      *
      * @param informativeText The text of the information label.
-     * @param bindTo          The property to bind the information label to.
-     * @param args            The arguments to format the text with.
+     * @param bindTo The property to bind the information label to.
+     * @param args The arguments to format the text with.
      * @see String#format(String, Object...)
      * @see InformationType
      */
@@ -109,29 +111,33 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
     /**
      * Adds an information label to the {@link InformativeLabeledHBox}.
      *
-     * @param informativeText               The text of the information label.
+     * @param informativeText The text of the information label.
      * @param informativeTextVisibleBinding The binding that determines whether the information label should be visible.
-     * @param informationType               The type of the information label.
-     * @param args                          The arguments to format the text with.
+     * @param informationType The type of the information label.
+     * @param args The arguments to format the text with.
      * @see String#format(String, Object...)
      * @see InformationType
      */
-    public void addInformationLabel(@NotNull String informativeText, @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType, Object... args) {
+    public void addInformationLabel(@NotNull String informativeText,
+        @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType,
+        Object... args) {
         addInformationLabel(informativeText, informativeTextVisibleBinding, informationType, null, args);
     }
 
     /**
      * Adds an information label to the {@link InformativeLabeledHBox}.
      *
-     * @param informativeText               The text of the information label.
+     * @param informativeText The text of the information label.
      * @param informativeTextVisibleBinding The binding that determines whether the information label should be visible.
-     * @param informationType               The type of the information label.
-     * @param bindTo                        The property to bind the information label to.
-     * @param args                          The arguments to format the text with.
+     * @param informationType The type of the information label.
+     * @param bindTo The property to bind the information label to.
+     * @param args The arguments to format the text with.
      * @see String#format(String, Object...)
      * @see InformationType
      */
-    public void addInformationLabel(@NotNull String informativeText, @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType, @Nullable StringProperty bindTo, Object... args) {
+    public void addInformationLabel(@NotNull String informativeText,
+        @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType,
+        @Nullable StringProperty bindTo, Object... args) {
         var informationLabel = new InformationLabel(informativeText, informationType, args);
         informationLabel.visibleProperty().bind(informativeTextVisibleBinding.apply(labeledHBox.getPrimaryComponent()));
         informationLabels.add(informationLabel);
@@ -170,10 +176,7 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * The type of the information label.
      */
     public enum InformationType {
-        INFO,
-        NOTE,
-        WARNING,
-        ERROR
+        INFO, NOTE, WARNING, ERROR
     }
 
     /**
@@ -186,9 +189,9 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
         /**
          * Creates a new {@link InformationLabel} with the given key, type, and arguments.
          *
-         * @param key             The key of the label.
+         * @param key The key of the label.
          * @param informationType The type of the information label.
-         * @param args            The arguments to format the text with.
+         * @param args The arguments to format the text with.
          * @see String#format(String, Object...)
          * @see InformationType
          */

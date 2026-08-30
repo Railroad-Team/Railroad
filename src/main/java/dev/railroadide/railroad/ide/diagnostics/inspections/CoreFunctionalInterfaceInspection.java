@@ -18,7 +18,11 @@ import java.util.Set;
 public final class CoreFunctionalInterfaceInspection implements JavaInspectionRuleProvider {
     public static final String ID = "railroad:core-functional-interface";
 
-    private static final List<JavaInspectionRule> RULES = List.of(new SimpleJavaInspectionRule(JavaSemanticRules.INTERFACE_SHOULD_BE_FUNCTIONAL.id(), JavaSemanticRules.INTERFACE_SHOULD_BE_FUNCTIONAL.defaultSeverity(), JavaSemanticRules.INTERFACE_SHOULD_BE_FUNCTIONAL.messageTemplate(), Set.of("core", "interface"), CoreFunctionalInterfaceInspection::reportInterfaceShouldBeFunctional));
+    private static final List<JavaInspectionRule> RULES = List
+        .of(new SimpleJavaInspectionRule(JavaSemanticRules.INTERFACE_SHOULD_BE_FUNCTIONAL.id(),
+            JavaSemanticRules.INTERFACE_SHOULD_BE_FUNCTIONAL.defaultSeverity(),
+            JavaSemanticRules.INTERFACE_SHOULD_BE_FUNCTIONAL.messageTemplate(), Set.of("core", "interface"),
+            CoreFunctionalInterfaceInspection::reportInterfaceShouldBeFunctional));
 
     @Override
     public String id() {
@@ -30,34 +34,42 @@ public final class CoreFunctionalInterfaceInspection implements JavaInspectionRu
         return RULES;
     }
 
-    private static void reportInterfaceShouldBeFunctional(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+    private static void reportInterfaceShouldBeFunctional(JavaRuleContext context,
+        JavaInspectionRuleReporter reporter) {
         for (SyntaxNode node : context.nodesOfKind(JavaSyntaxKinds.INTERFACE_DECLARATION.id())) {
             Symbol declaredName = context.declaredSymbol(node).orElse(null);
-            if (declaredName == null) continue;
+            if (declaredName == null)
+                continue;
 
             String qualifiedName = declaredName.qualifiedName().orElse(null);
-            if (qualifiedName == null) continue;
+            if (qualifiedName == null)
+                continue;
 
-            if (hasAnnotation(context, node, "java.lang.FunctionalInterface")) continue;
+            if (hasAnnotation(context, node, "java.lang.FunctionalInterface"))
+                continue;
 
-            if (context.isFunctionalInterface(new Type.DeclaredType(qualifiedName, List.of())))
+            if (context.isFunctionalInterface(new Type.DeclaredType(qualifiedName, List.of()))) {
                 reporter.report(node, declaredName.simpleName());
+            }
         }
     }
 
     private static boolean hasAnnotation(JavaRuleContext context, SyntaxNode node, String qualifiedAnnotationName) {
         String simpleName = qualifiedAnnotationName.contains(".")
-                ? qualifiedAnnotationName.substring(qualifiedAnnotationName.lastIndexOf('.') + 1)
-                : qualifiedAnnotationName;
+            ? qualifiedAnnotationName.substring(qualifiedAnnotationName.lastIndexOf('.') + 1)
+            : qualifiedAnnotationName;
 
         for (SyntaxNode child : node.children()) {
-            if (!JavaSyntaxKinds.ANNOTATION.id().equals(child.kind().id())) continue;
+            if (!JavaSyntaxKinds.ANNOTATION.id().equals(child.kind().id()))
+                continue;
 
             SyntaxNode qualifiedNameNode = context.directChild(child, JavaSyntaxKinds.QUALIFIED_NAME.id());
-            if (qualifiedNameNode == null) continue;
+            if (qualifiedNameNode == null)
+                continue;
 
             String name = context.canonicalQualifiedName(qualifiedNameNode);
-            if (qualifiedAnnotationName.equals(name) || simpleName.equals(name)) return true;
+            if (qualifiedAnnotationName.equals(name) || simpleName.equals(name))
+                return true;
         }
         return false;
     }

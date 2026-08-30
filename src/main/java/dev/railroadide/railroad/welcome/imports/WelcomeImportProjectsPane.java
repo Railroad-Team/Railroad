@@ -1,12 +1,14 @@
 package dev.railroadide.railroad.welcome.imports;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.handler.SettingsHandler;
 import dev.railroadide.railroad.ui.*;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.GitUtils;
@@ -60,12 +62,12 @@ public class WelcomeImportProjectsPane extends RRHBox {
         getStyleClass().add("welcome-import-projects-pane");
         sidebar.getStyleClass().add("welcome-import-sidebar");
         sidebar.setAnimationsEnabled(false);
-        sidebar.setCellFactory(param -> new AccountListCell());
+        sidebar.setCellFactory(_ -> new AccountListCell());
         sidebar.getItems().add(REPO_URL_OPTION);
         sidebar.getItems().addAll(Railroad.REPOSITORY_MANAGER.getProfiles());
         sidebar.setFocusTraversable(false);
         sidebar.getSelectionModel().selectFirst();
-        sidebar.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> updateRightPane(newVal));
+        sidebar.getSelectionModel().selectedItemProperty().addListener((_, _, newVal) -> updateRightPane(newVal));
 
         repositoryListView.setCellFactory(param -> new ImportProjectListCell());
 
@@ -75,12 +77,15 @@ public class WelcomeImportProjectsPane extends RRHBox {
         getChildren().addAll(sidebar, rightPane);
         HBox.setHgrow(rightPane, Priority.ALWAYS);
         updateRightPane(sidebar.getSelectionModel().getSelectedItem());
-        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
+        searchField.textProperty().addListener((_, _, newVal) -> {
             currentFilter = newVal;
-            if (sidebar.getSelectionModel().getSelectedItem() instanceof VCSProfile profile && connectionCache.containsKey(profile)) {
+            if (sidebar.getSelectionModel().getSelectedItem() instanceof VCSProfile profile
+                && connectionCache.containsKey(profile)) {
                 filterRepositories(currentFilter);
             }
         });
+
+        Services.UI_MANAGER.assignWhileAttached(UIIds.Welcome.WELCOME_IMPORT_PROJECTS, this);
     }
 
     private static void showCloneLoading(CompletableFuture<Boolean> future, Path projectDir) {
@@ -100,18 +105,18 @@ public class WelcomeImportProjectsPane extends RRHBox {
         stage.setScene(new Scene(loadingBox, 300, 200));
         stage.setResizable(false);
 
-        stage.setOnCloseRequest(event -> {
+        stage.setOnCloseRequest(_ -> {
             if (!future.isDone()) {
                 future.cancel(true);
             }
         });
 
-        future.thenAcceptAsync(success -> {
+        future.thenAcceptAsync(_ -> {
             Platform.runLater(stage::close);
 
             var project = Railroad.PROJECT_MANAGER.newProject(new RailroadProject(projectDir));
             if (SettingsHandler.getValue(Settings.SWITCH_TO_IDE_AFTER_IMPORT)) {
-                Platform.runLater(() -> IDESetup.switchToIDE(project));
+                Platform.runLater(() -> IDESetup.switchToIDE(project, null));
             }
         }).exceptionally(exception -> {
             showError(exception);
@@ -138,7 +143,8 @@ public class WelcomeImportProjectsPane extends RRHBox {
     }
 
     private void filterRepositories(String filter) {
-        if (sidebar.getSelectionModel().getSelectedItem() instanceof VCSProfile profile && connectionCache.containsKey(profile)) {
+        if (sidebar.getSelectionModel().getSelectedItem() instanceof VCSProfile profile
+            && connectionCache.containsKey(profile)) {
             AbstractConnection connection = connectionCache.get(profile);
             List<Repository> baseList = connection.getRepositories();
             List<Repository> filtered = new ArrayList<>();
@@ -187,14 +193,13 @@ public class WelcomeImportProjectsPane extends RRHBox {
         connection.fetchRepositories();
         connectionCache.put(profile, connection);
 
-        connection.getRepositories().addListener((ListChangeListener<Repository>) change ->
-            Platform.runLater(() -> {
-                filterRepositories(currentFilter);
-                searchField.setDisable(false);
-                isLoading = false;
-                lastLoadedProfile = profile;
-                updateRightPane(profile);
-            }));
+        connection.getRepositories().addListener((ListChangeListener<Repository>) _ -> Platform.runLater(() -> {
+            filterRepositories(currentFilter);
+            searchField.setDisable(false);
+            isLoading = false;
+            lastLoadedProfile = profile;
+            updateRightPane(profile);
+        }));
     }
 
     private void updateRightPane(Object selected) {
@@ -225,7 +230,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
         var refreshIcon = new FontIcon(FontAwesomeSolid.SYNC_ALT);
         refreshIcon.setIconSize(16);
         refreshButton.setGraphic(refreshIcon);
-        refreshButton.setOnAction($ -> {
+        refreshButton.setOnAction(_ -> {
             if (selected instanceof VCSProfile profile) {
                 loadRepositoriesForProfile(profile, true);
             }
@@ -273,7 +278,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
             var cloneButton = new RRButton("railroad.importprojects.clone");
             cloneButton.getStyleClass().add("welcome-import-clone-button");
 
-            repositoryListView.getSelectionModel().selectedItemProperty().addListener((obs, oldRepo, newRepo) -> {
+            repositoryListView.getSelectionModel().selectedItemProperty().addListener((_, _, newRepo) -> {
                 if (newRepo != null) {
                     String baseDir = lastBaseDirectory != null ? lastBaseDirectory : System.getProperty("user.home");
                     String repoName = newRepo.getRepositoryName();
@@ -282,7 +287,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
                 }
             });
 
-            chooseDirButton.setOnAction($ -> {
+            chooseDirButton.setOnAction(_ -> {
                 var chooser = new DirectoryChooser();
                 File selectedDir = chooser.showDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
                 if (selectedDir != null) {
@@ -290,7 +295,9 @@ public class WelcomeImportProjectsPane extends RRHBox {
                     Repository repo = repositoryListView.getSelectionModel().getSelectedItem();
                     if (repo != null) {
                         String repoName = repo.getRepositoryName();
-                        repoName = repoName.contains("/") ? repoName.substring(repoName.lastIndexOf('/') + 1) : repoName;
+                        repoName = repoName.contains("/")
+                            ? repoName.substring(repoName.lastIndexOf('/') + 1)
+                            : repoName;
                         directoryField.setText(Path.of(lastBaseDirectory, repoName).toString());
                     } else {
                         directoryField.setText(lastBaseDirectory);
@@ -298,7 +305,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
                 }
             });
 
-            cloneButton.setOnAction($ -> {
+            cloneButton.setOnAction(_ -> {
                 String dir = directoryField.getText();
                 Repository repo = repositoryListView.getSelectionModel().getSelectedItem();
                 if (repo == null || dir == null || dir.isBlank()) {
@@ -307,7 +314,8 @@ public class WelcomeImportProjectsPane extends RRHBox {
                 }
 
                 Path projectDir = Path.of(dir);
-                if (Files.exists(projectDir) && Files.isDirectory(projectDir) && !FileUtils.isDirectoryEmpty(projectDir)) {
+                if (Files.exists(projectDir) && Files.isDirectory(projectDir)
+                    && !FileUtils.isDirectoryEmpty(projectDir)) {
                     showError("railroad.importprojects.clone.directory_not_empty");
                     return;
                 }
@@ -340,7 +348,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
             var cloneButton = new RRButton("railroad.importprojects.clone");
             cloneButton.getStyleClass().add("welcome-import-clone-button");
 
-            chooseDirButton.setOnAction($ -> {
+            chooseDirButton.setOnAction(_ -> {
                 var chooser = new DirectoryChooser();
                 File selectedDir = chooser.showDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
                 if (selectedDir != null) {
@@ -348,7 +356,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
                 }
             });
 
-            cloneButton.setOnAction($ -> {
+            cloneButton.setOnAction(_ -> {
                 String url = urlField.getText();
                 String dir = directoryField.getText();
                 if (url == null || url.isBlank()) {
@@ -365,7 +373,8 @@ public class WelcomeImportProjectsPane extends RRHBox {
                 }
 
                 Path projectDir = Path.of(dir).resolve(folderName);
-                if (Files.exists(projectDir) && Files.isDirectory(projectDir) && !FileUtils.isDirectoryEmpty(projectDir)) {
+                if (Files.exists(projectDir) && Files.isDirectory(projectDir)
+                    && !FileUtils.isDirectoryEmpty(projectDir)) {
                     showError("railroad.importprojects.clone.directory_not_empty");
                     return;
                 }

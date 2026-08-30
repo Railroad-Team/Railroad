@@ -60,11 +60,10 @@ public class TreeSitterJavaSyntaxHighlighting {
                 if (!cursor.gotoFirstChild()) {
                     nodes.add(currentNode);
 
-                    //String atNode = text.substring(start, end);
-                    //System.out.println(type + ": " + atNode);
+                    // String atNode = text.substring(start, end);
+                    // System.out.println(type + ": " + atNode);
 
-                    typeSwitch:
-                    switch (type) {
+                    typeSwitch : switch (type) {
                         case "line_comment" -> appendSpan(Collections.singleton("comment"), end - start);
                         case "decimal_integer_literal", "decimal_floating_point_literal" ->
                             appendSpan(Collections.singleton("number"), end - start);
@@ -79,9 +78,8 @@ public class TreeSitterJavaSyntaxHighlighting {
                                     copy.gotoNextSibling();
                                     copy.gotoFirstChild();
                                     TSNode nextNode = copy.currentNode();
-                                    if (nextNode == null || nextNode.getType().equals(".")) {
+                                    if (nextNode == null || nextNode.getType().equals("."))
                                         break;
-                                    }
                                 }
 
                                 TSNode n = nodes.get(i);
@@ -90,9 +88,8 @@ public class TreeSitterJavaSyntaxHighlighting {
                                 } else if (n.getType().equals("import")) {
                                     appendSpan(Collections.singleton("type"), end - start);
                                     break typeSwitch;
-                                } else {
+                                } else
                                     break;
-                                }
                             }
 
                             appendSpan(Collections.singleton("name"), end - start);
@@ -100,9 +97,9 @@ public class TreeSitterJavaSyntaxHighlighting {
                         case "type_identifier" -> appendSpan(Collections.singleton("type"), end - start);
                         case "package" -> appendSpan(Collections.singleton("package"), end - start);
                         case "public", "class", "implements", "static", "final", "private", "protected", "return",
-                             "void_type", "int_type", "double_type", "float_type", "short_type", "byte_type",
-                             "long_type", "boolean_type", "char_type", "instanceof", "if", "for", "do", "while",
-                             "new" -> appendSpan(Collections.singleton("modifier"), end - start);
+                            "void_type", "int_type", "double_type", "float_type", "short_type", "byte_type",
+                            "long_type", "boolean_type", "char_type", "instanceof", "if", "for", "do", "while",
+                            "new" -> appendSpan(Collections.singleton("modifier"), end - start);
                         case "import" -> appendSpan(Collections.singleton("import"), end - start);
                         case "string_fragment", "\"" -> appendSpan(Collections.singleton("string"), end - start);
                         default -> appendSpan(Collections.emptyList(), end - start);
@@ -137,8 +134,9 @@ public class TreeSitterJavaSyntaxHighlighting {
 
         private StyleSpans<Collection<String>> createStyles() {
             flushPendingSpan();
-            if (text.isEmpty())
+            if (text.isEmpty()) {
                 spansBuilder.add(Collections.emptyList(), 0);
+            }
             return spansBuilder.create();
         }
 

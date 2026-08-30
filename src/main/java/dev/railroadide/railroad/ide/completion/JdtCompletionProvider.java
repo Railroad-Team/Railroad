@@ -24,7 +24,7 @@ public record JdtCompletionProvider(Path filePath, String[] systemModulePaths) i
         if (range == null)
             return null;
 
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
+        ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setSource(document.toCharArray());
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
         parser.setResolveBindings(true);
@@ -34,7 +34,7 @@ public record JdtCompletionProvider(Path filePath, String[] systemModulePaths) i
         parser.setEnvironment(systemModulePaths, null, null, false);
 
         CompilationUnit unit = (CompilationUnit) parser.createAST(null);
-        NodeFinder finder = new NodeFinder(unit, range.start(), Math.max(1, range.length()));
+        var finder = new NodeFinder(unit, range.start(), Math.max(1, range.length()));
         ASTNode node = finder.getCoveredNode();
         if (node == null) {
             node = finder.getCoveringNode();
@@ -135,7 +135,7 @@ public record JdtCompletionProvider(Path filePath, String[] systemModulePaths) i
     }
 
     private void addMembers(ITypeBinding type, boolean staticContext, String currentPackage,
-                            LinkedHashSet<CompletionItem> results, Set<String> visited) {
+        LinkedHashSet<CompletionItem> results, Set<String> visited) {
         if (type == null)
             return;
 

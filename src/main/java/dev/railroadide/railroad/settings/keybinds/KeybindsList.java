@@ -123,9 +123,11 @@ public class KeybindsList extends RRVBox {
         Set<String> seenCategories = new LinkedHashSet<>();
         keybinds.keySet().forEach(id -> {
             Keybind keybind = KeybindHandler.getKeybind(id);
-            if (keybind == null) return;
+            if (keybind == null)
+                return;
             KeybindCategory category = keybind.getCategory();
-            if (category == null) return;
+            if (category == null)
+                return;
             if (seenCategories.add(category.id())) {
                 categoryBar.getChildren().add(createCategoryChip(category.titleKey(), category.id()));
             }
@@ -146,13 +148,13 @@ public class KeybindsList extends RRVBox {
     }
 
     private ToggleButton createCategoryChip(String localizationKey, String categoryId) {
-        ToggleButton chip = new ToggleButton();
+        var chip = new ToggleButton();
         chip.getStyleClass().add("keybinds-category-chip");
         chip.setToggleGroup(categoryToggleGroup);
         chip.setUserData(categoryId);
-        chip.textProperty().bind(Bindings.createStringBinding(() ->
-                localizationKey == null ? "" : L18n.localize(localizationKey),
-            L18n.currentLanguageProperty()));
+        chip.textProperty()
+            .bind(Bindings.createStringBinding(() -> localizationKey == null ? "" : L18n.localize(localizationKey),
+                L18n.currentLanguageProperty()));
         chip.setOnAction(event -> {
             activeCategoryId = categoryId;
             renderKeybindCards();
@@ -187,9 +189,8 @@ public class KeybindsList extends RRVBox {
     }
 
     private boolean matchesCategory(String keybindId) {
-        if (activeCategoryId == null || activeCategoryId.isBlank()) {
+        if (activeCategoryId == null || activeCategoryId.isBlank())
             return true;
-        }
         Keybind keybind = KeybindHandler.getKeybind(keybindId);
         return keybind != null &&
             keybind.getCategory() != null &&
@@ -197,7 +198,8 @@ public class KeybindsList extends RRVBox {
     }
 
     private boolean matchesSearch(String keybindId, String query) {
-        if (query.isBlank()) return true;
+        if (query.isBlank())
+            return true;
         String display = getDisplayName(keybindId).toLowerCase(Locale.ENGLISH);
         return display.contains(query) || keybindId.toLowerCase(Locale.ENGLISH).contains(query);
     }
@@ -251,16 +253,14 @@ public class KeybindsList extends RRVBox {
 
     private LocalizedLabel createSubtitleLabel(String keybindId) {
         String descriptionKey = localizationKeyFor(keybindId) + ".description";
-        if (L18n.isKeyValid(descriptionKey)) {
+        if (L18n.isKeyValid(descriptionKey))
             return new LocalizedLabel(descriptionKey);
-        }
 
         Keybind keybind = KeybindHandler.getKeybind(keybindId);
         if (keybind != null && keybind.getCategory() != null) {
             String categoryKey = keybind.getCategory().titleKey();
-            if (categoryKey != null && L18n.isKeyValid(categoryKey)) {
+            if (categoryKey != null && L18n.isKeyValid(categoryKey))
                 return new LocalizedLabel(categoryKey);
-            }
         }
 
         return null;
@@ -307,16 +307,14 @@ public class KeybindsList extends RRVBox {
 
     private String getDisplayName(String keybindId) {
         String key = localizationKeyFor(keybindId);
-        if (L18n.isKeyValid(key)) {
+        if (L18n.isKeyValid(key))
             return L18n.localize(key);
-        }
         return keybindId;
     }
 
     private String localizationKeyFor(String keybindId) {
-        if (keybindId == null || !keybindId.contains(":")) {
+        if (keybindId == null || !keybindId.contains(":"))
             return "railroad.settings.keybinds." + keybindId;
-        }
         return "railroad.settings.keybinds." + keybindId.split(":", 2)[1];
     }
 
@@ -367,12 +365,14 @@ public class KeybindsList extends RRVBox {
                 continue;
             }
 
+            KeybindHandler.getKeybind(id).getKeys().clear();
+
             for (JsonElement keyCombo : keyList) {
                 String[] parts = keyCombo.getAsString().split(";");
                 KeyCode keyCode = KeyCode.valueOf(parts[0]);
 
                 if (parts.length < 2 || parts[1].isBlank()) {
-                    KeybindHandler.getKeybind(id).addKey(keyCode, (KeyCombination.Modifier) null);
+                    KeybindHandler.getKeybind(id).addKey(keyCode);
                     continue;
                 }
 

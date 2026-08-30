@@ -18,28 +18,26 @@ class JavaLexerTest {
         List<Token<JavaTokenType>> tokens = JavaParserTestSupport.lexAll(source);
 
         List<JavaTokenType> significantTypes = tokens.stream()
-                .filter(token -> token.channel() == TokenChannel.DEFAULT)
-                .map(Token::type)
-                .toList();
+            .filter(token -> token.channel() == TokenChannel.DEFAULT)
+            .map(Token::type)
+            .toList();
 
         assertIterableEquals(
-                List.of(
-                        JavaTokenType.PACKAGE_KEYWORD,
-                        JavaTokenType.IDENTIFIER,
-                        JavaTokenType.SEMICOLON,
-                        JavaTokenType.CLASS_KEYWORD,
-                        JavaTokenType.IDENTIFIER,
-                        JavaTokenType.OPEN_BRACE,
-                        JavaTokenType.INT_KEYWORD,
-                        JavaTokenType.IDENTIFIER,
-                        JavaTokenType.EQUALS,
-                        JavaTokenType.NUMBER_INT_LITERAL,
-                        JavaTokenType.SEMICOLON,
-                        JavaTokenType.CLOSE_BRACE,
-                        JavaTokenType.EOF
-                ),
-                significantTypes
-        );
+            List.of(
+                JavaTokenType.PACKAGE_KEYWORD,
+                JavaTokenType.IDENTIFIER,
+                JavaTokenType.SEMICOLON,
+                JavaTokenType.CLASS_KEYWORD,
+                JavaTokenType.IDENTIFIER,
+                JavaTokenType.OPEN_BRACE,
+                JavaTokenType.INT_KEYWORD,
+                JavaTokenType.IDENTIFIER,
+                JavaTokenType.EQUALS,
+                JavaTokenType.NUMBER_INT_LITERAL,
+                JavaTokenType.SEMICOLON,
+                JavaTokenType.CLOSE_BRACE,
+                JavaTokenType.EOF),
+            significantTypes);
     }
 
     @Test
@@ -47,12 +45,10 @@ class JavaLexerTest {
         String source = "class A { // line comment\n/* block comment */ int x; }";
         List<Token<JavaTokenType>> tokens = JavaParserTestSupport.lexAll(source);
 
-        assertTrue(tokens.stream().anyMatch(token ->
-                token.type() == JavaTokenType.LINE_COMMENT && token.channel() == TokenChannel.TRIVIA
-        ));
-        assertTrue(tokens.stream().anyMatch(token ->
-                token.type() == JavaTokenType.BLOCK_COMMENT && token.channel() == TokenChannel.TRIVIA
-        ));
+        assertTrue(tokens.stream()
+            .anyMatch(token -> token.type() == JavaTokenType.LINE_COMMENT && token.channel() == TokenChannel.TRIVIA));
+        assertTrue(tokens.stream()
+            .anyMatch(token -> token.type() == JavaTokenType.BLOCK_COMMENT && token.channel() == TokenChannel.TRIVIA));
     }
 
     @Test
@@ -60,17 +56,16 @@ class JavaLexerTest {
         List<Token<JavaTokenType>> tokens = JavaParserTestSupport.lexAll(">> >>> >>= >>>=");
 
         List<JavaTokenType> significantTypes = tokens.stream()
-                .filter(token -> token.channel() == TokenChannel.DEFAULT)
-                .map(Token::type)
-                .toList();
+            .filter(token -> token.channel() == TokenChannel.DEFAULT)
+            .map(Token::type)
+            .toList();
 
         assertIterableEquals(List.of(
-                JavaTokenType.RIGHT_SHIFT,
-                JavaTokenType.UNSIGNED_RIGHT_SHIFT,
-                JavaTokenType.RIGHT_SHIFT_EQUALS,
-                JavaTokenType.UNSIGNED_RIGHT_SHIFT_EQUALS,
-                JavaTokenType.EOF
-        ), significantTypes);
+            JavaTokenType.RIGHT_SHIFT,
+            JavaTokenType.UNSIGNED_RIGHT_SHIFT,
+            JavaTokenType.RIGHT_SHIFT_EQUALS,
+            JavaTokenType.UNSIGNED_RIGHT_SHIFT_EQUALS,
+            JavaTokenType.EOF), significantTypes);
     }
 
     @Test

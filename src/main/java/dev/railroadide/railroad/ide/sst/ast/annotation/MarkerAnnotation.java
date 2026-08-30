@@ -10,9 +10,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record MarkerAnnotation(
-        Span span,
-        NameExpression name
-) implements Annotation {
+    Span span,
+    NameExpression name) implements Annotation {
     @Override
     public AstKind kind() {
         return AstKind.MARKER_ANNOTATION;

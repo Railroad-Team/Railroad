@@ -88,12 +88,12 @@ public class ThemeDownloadPane {
         refreshButton.setIcon(FontAwesomeSolid.SYNC_ALT);
         refreshButton.setButtonSize(ButtonSize.SMALL);
         refreshButton.setVariant(ButtonVariant.GHOST);
-        refreshButton.setOnAction($ -> loadThemes());
+        refreshButton.setOnAction(_ -> loadThemes());
 
         sectionHeader.getChildren().addAll(themesLabel, refreshButton);
 
         themeListView = new RRListView<>();
-        themeListView.setCellFactory(param -> new ThemeDownloadCell());
+        themeListView.setCellFactory(_ -> new ThemeDownloadCell());
         themeListView.getStyleClass().add("theme-download-list-view");
         VBox.setVgrow(themeListView, Priority.ALWAYS);
 
@@ -108,8 +108,8 @@ public class ThemeDownloadPane {
 
         var closeButton = new RRButton("railroad.generic.close");
         closeButton.setVariant(ButtonVariant.SECONDARY);
-        closeButton.setOnAction(e -> {
-            var target = (Node) e.getTarget();
+        closeButton.setOnAction(event -> {
+            var target = (Node) event.getTarget();
             var stage = (Stage) target.sceneProperty().get().getWindow();
             stage.close();
         });
@@ -124,7 +124,8 @@ public class ThemeDownloadPane {
 
         // Load themes in background to avoid blocking UI
         CompletableFuture.runAsync(() -> {
-            List<Theme> themes = ThemeDownloadManager.fetchThemes("https://api.github.com/repos/Railroad-Team/Themes/contents");
+            List<Theme> themes = ThemeDownloadManager
+                .fetchThemes("https://api.github.com/repos/Railroad-Team/Themes/contents");
 
             Platform.runLater(() -> {
                 themeListView.getItems().clear();

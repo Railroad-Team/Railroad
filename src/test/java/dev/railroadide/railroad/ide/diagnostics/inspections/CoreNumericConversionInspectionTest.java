@@ -141,11 +141,10 @@ class CoreNumericConversionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
-                && d.message().contains("widening")
-                && d.message().contains("'int'")
-                && d.message().contains("'long'")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+            && d.message().contains("widening")
+            && d.message().contains("'int'")
+            && d.message().contains("'long'")));
     }
 
     @Test
@@ -160,11 +159,10 @@ class CoreNumericConversionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
-                && d.message().contains("widening")
-                && d.message().contains("'int'")
-                && d.message().contains("'long'")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+            && d.message().contains("widening")
+            && d.message().contains("'int'")
+            && d.message().contains("'long'")));
     }
 
     @Test
@@ -178,11 +176,10 @@ class CoreNumericConversionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
-                && d.message().contains("widening")
-                && d.message().contains("'int'")
-                && d.message().contains("'long'")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+            && d.message().contains("widening")
+            && d.message().contains("'int'")
+            && d.message().contains("'long'")));
     }
 
     @Test
@@ -199,11 +196,10 @@ class CoreNumericConversionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
-                && d.message().contains("widening")
-                && d.message().contains("'int'")
-                && d.message().contains("'long'")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+            && d.message().contains("widening")
+            && d.message().contains("'int'")
+            && d.message().contains("'long'")));
     }
 
     @Test
@@ -220,11 +216,10 @@ class CoreNumericConversionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
-                && d.message().contains("widening")
-                && d.message().contains("'int'")
-                && d.message().contains("'long'")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+            && d.message().contains("widening")
+            && d.message().contains("'int'")
+            && d.message().contains("'long'")));
     }
 
     @Test
@@ -259,11 +254,10 @@ class CoreNumericConversionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
-                && d.message().contains("narrowing")
-                && d.message().contains("'int'")
-                && d.message().contains("'short'")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+            && d.message().contains("narrowing")
+            && d.message().contains("'int'")
+            && d.message().contains("'short'")));
     }
 
     @Test
@@ -277,11 +271,10 @@ class CoreNumericConversionInspectionTest {
             }
             """);
 
-        assertTrue(diagnostics.stream().anyMatch(d ->
-            "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
-                && d.message().contains("narrowing")
-                && d.message().contains("'int'")
-                && d.message().contains("'short'")));
+        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())
+            && d.message().contains("narrowing")
+            && d.message().contains("'int'")
+            && d.message().contains("'short'")));
     }
 
     @Test
@@ -345,6 +338,5 @@ class CoreNumericConversionInspectionTest {
 
         assertFalse(diagnostics.stream().anyMatch(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())));
     }
-
 
 }

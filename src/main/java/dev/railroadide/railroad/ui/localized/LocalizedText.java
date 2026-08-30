@@ -56,7 +56,7 @@ public class LocalizedText extends Text {
     /**
      * Sets both the key and the arguments for localization.
      *
-     * @param key  The localization key.
+     * @param key The localization key.
      * @param args The arguments to be used for localization.
      */
     public void setKeyAndArgs(final String key, final Object... args) {
