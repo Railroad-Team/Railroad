@@ -16,6 +16,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.text.Font;
 import javafx.util.Pair;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
 import org.fxmisc.richtext.model.PlainTextChange;
@@ -32,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
+@Slf4j
 public class TextEditorPane extends CodeArea implements AutoCloseable {
     private static final int[] FONT_SIZES = {6, 8, 10, 12, 14, 16, 18, 20, 24, 26, 28, 30, 36, 40, 48, 56, 60};
     private static final Duration SAVE_DELAY = Duration.ofMillis(400);
@@ -75,6 +77,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private final BiConsumer<String, String> fontFamilyListener = (_, _) -> applyEditorStyles();
     private volatile boolean dirty;
     private boolean closed;
+    private final Object saveLock = new Object();
 
     private int fontSizeIndex = 5;
 
@@ -101,17 +104,25 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
     @Override
     public void close() {
-        if (closed)
-            return;
+        synchronized (saveLock) {
+            if (closed)
+                return;
 
-        closed = true;
+            closed = true;
+
+            if(pendingSaveTask != null) {
+                pendingSaveTask.cancel(false);
+                pendingSaveTask = null;
+            }
+
+            // capture the editor directly as the pendingSnapshot may still be behind due to the multiPlainChanges debounce
+            persistSnapshot(getText());
+        }
+
         shutdownRegistration.close();
         Settings.TAB_WIDTH.removeListener(tabWidthListener);
         Settings.EDITOR_FONT_FAMILY.removeListener(fontFamilyListener);
-        if (pendingSaveTask != null) {
-            pendingSaveTask.cancel(false);
-            pendingSaveTask = null;
-        }
+
         watcherExecutor.shutdownNow();
         if (watchService != null) {
             try {
@@ -313,14 +324,21 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     }
 
     private void scheduleSave() {
-        synchronized (this) {
+        synchronized (saveLock) {
+            if(closed)
+                return;
+
             if (pendingSaveTask != null) {
                 pendingSaveTask.cancel(false);
             }
 
             pendingSaveTask = SAVE_EXECUTOR.schedule(() -> {
-                String snapshot = pendingSnapshot.get();
-                persistSnapshot(snapshot);
+                synchronized (saveLock) {
+                    if(closed)
+                        return;
+
+                    persistSnapshot(pendingSnapshot.get());
+                }
             }, SAVE_DELAY.toMillis(), TimeUnit.MILLISECONDS);
         }
     }
