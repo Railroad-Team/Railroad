@@ -292,7 +292,6 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         diagnosticPopup.hide();
 
-        logDiagnostics(diagnostics, snapshot);
         visibleDiagnostics = diagnostics;
         boolean lineDecorationsChanged = recomputeLineDecorations();
         applyEditorStyles();
@@ -300,39 +299,6 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (lineDecorationsChanged) {
             requestLayout();
         }
-    }
-
-    private void logDiagnostics(List<TextEditorDiagnostic> diagnostics, DocumentSnapshot snapshot) {
-        if (diagnostics == null || diagnostics.isEmpty())
-            return;
-
-        Railroad.LOGGER.warn(
-            "Diagnostics for {} (language {}, {} issue{})",
-            filePath,
-            languageId,
-            diagnostics.size(),
-            diagnostics.size() == 1 ? "" : "s");
-
-        for (TextEditorDiagnostic diagnostic : diagnostics) {
-            Railroad.LOGGER.warn(
-                "  [{}] line {}, column {}, offsets {}-{}, code '{}', source '{}': {}",
-                diagnostic.kind(),
-                diagnostic.location().line(),
-                diagnostic.location().column(),
-                diagnostic.location().range().start,
-                diagnostic.location().range().end,
-                nullToEmpty(diagnostic.code()),
-                filePath,
-                singleLine(diagnostic.message(Locale.getDefault())));
-        }
-    }
-
-    private static String singleLine(String value) {
-        return nullToEmpty(value).replace('\r', ' ').replace('\n', ' ');
-    }
-
-    private static String nullToEmpty(String value) {
-        return value == null ? "" : value;
     }
 
     private void installDiagnosticPopupHandlers() {
