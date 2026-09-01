@@ -52,7 +52,7 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
 
     @Override
     public ProjectDiagnosticsFeatureFactory<DiagnosticsProvider> projectDiagnosticsFactory() {
-        return (context, _path) -> new JavaDiagnosticsProvider(context);
+        return (context, _) -> new JavaDiagnosticsProvider(context);
     }
 
     @Override
