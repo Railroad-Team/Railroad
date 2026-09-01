@@ -56,8 +56,8 @@ public record DocumentId(UUID value) {
 
     @Override
     public boolean equals(Object other) {
-        if (other instanceof DocumentId)
-            return this.value.equals(((DocumentId) other).value);
+        if (other instanceof DocumentId otherDocId)
+            return this.value.equals(otherDocId.value);
         return false;
     }
 }
