@@ -16,6 +16,7 @@ import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
 import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.plugin.spi.events.DocumentRenamedEvent;
 import dev.railroadide.railroad.utility.FileUtils;
@@ -108,6 +109,7 @@ public class EditorTabManager {
             }
         });
         Railroad.EVENT_BUS.subscribe(DocumentRenamedEvent.class, this::handleRenamed);
+        Railroad.EVENT_BUS.subscribe(DocumentEvent.class, this::handleDocumentEvent);
     }
 
     public void open(Path path) {
@@ -444,7 +446,30 @@ public class EditorTabManager {
             if (editorTab.document() instanceof FileSystemDocument fileSystemDocument) {
                 fileSystemDocument.rebind(normalizedNewPath);
             }
+            if (editorTab.view().activeEditor() != null) {
+                editorTab.view().activeEditor().rebind(normalizedNewPath);
+            }
             editorTab.rebind(reboundIdentity, normalizedNewPath);
+        });
+        if (Platform.isFxApplicationThread()) {
+            update.run();
+        } else {
+            JavaFXUtils.runOnApplicationThread(update);
+        }
+    }
+
+    private void handleDocumentEvent(DocumentEvent event) {
+        if (!event.isDeletedEvent())
+            return;
+
+        Optional<Path> deletedPath = event.file().getUri().filePath();
+        if (deletedPath.isEmpty())
+            return;
+
+        Runnable update = () -> findOpen(deletedPath.get()).ifPresent(editorTab -> {
+            if (editorTab.view().activeEditor() != null) {
+                editorTab.view().activeEditor().markBackingFileDeleted();
+            }
         });
         if (Platform.isFxApplicationThread()) {
             update.run();

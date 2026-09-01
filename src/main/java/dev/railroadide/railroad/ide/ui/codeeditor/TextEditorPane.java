@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui.codeeditor;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.ui.editor.EditorSaveState;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
@@ -10,6 +11,10 @@ import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
 import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.scene.control.IndexRange;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -58,24 +63,34 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     }
 
     @Getter
-    protected final Path filePath;
+    protected volatile Path filePath;
     @Getter
     protected final String languageId;
 
     private final AtomicReference<String> lastSavedText = new AtomicReference<>("");
     private final AtomicReference<String> pendingSnapshot = new AtomicReference<>("");
     private final AtomicLong lastLocalWrite = new AtomicLong(0L);
+    private final AtomicLong pendingSnapshotVersion = new AtomicLong();
 
     private final ExecutorService watcherExecutor = Executors.newSingleThreadExecutor(
         namedThreadFactory("railroad-editor-watch-"));
 
     private WatchService watchService;
     private Subscription changeSubscription;
+    private Subscription dirtySubscription;
     private ScheduledFuture<?> pendingSaveTask;
     private final ShutdownHooks.Registration shutdownRegistration;
     private final BiConsumer<Integer, Integer> tabWidthListener = (_, _) -> applyEditorStyles();
     private final BiConsumer<String, String> fontFamilyListener = (_, _) -> applyEditorStyles();
-    private volatile boolean dirty;
+    private final ReadOnlyObjectWrapper<EditorSaveState> saveState = new ReadOnlyObjectWrapper<>(this, "saveState",
+        EditorSaveState.CLEAN);
+    private final ReadOnlyBooleanWrapper dirty = new ReadOnlyBooleanWrapper(this, "dirty");
+    private final ReadOnlyBooleanWrapper saving = new ReadOnlyBooleanWrapper(this, "saving");
+    private final ReadOnlyBooleanWrapper saved = new ReadOnlyBooleanWrapper(this, "saved");
+    private final ReadOnlyBooleanWrapper saveFailed = new ReadOnlyBooleanWrapper(this, "saveFailed");
+    private final AtomicLong editVersion = new AtomicLong();
+    private final AtomicLong savedVersion = new AtomicLong();
+    private volatile boolean backingFileMissing;
     private boolean closed;
     private final Object saveLock = new Object();
 
@@ -84,6 +99,10 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     public TextEditorPane(Path item, String languageId) {
         this.filePath = Objects.requireNonNull(item, "item");
         this.languageId = Objects.requireNonNull(languageId, "languageId");
+        dirty.bind(saveState.isNotEqualTo(EditorSaveState.CLEAN));
+        saving.bind(saveState.isEqualTo(EditorSaveState.SAVING));
+        saved.bind(saveState.isEqualTo(EditorSaveState.CLEAN));
+        saveFailed.bind(saveState.isEqualTo(EditorSaveState.ERROR));
 
         setParagraphGraphicFactory(LineNumberFactory.get(this));
         setMouseOverTextDelay(Duration.ofMillis(500));
@@ -110,13 +129,14 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
             closed = true;
 
-            if(pendingSaveTask != null) {
+            if (pendingSaveTask != null) {
                 pendingSaveTask.cancel(false);
                 pendingSaveTask = null;
             }
 
-            // capture the editor directly as the pendingSnapshot may still be behind due to the multiPlainChanges debounce
-            persistSnapshot(getText());
+            // capture the editor directly as the pendingSnapshot may still be behind due to the multiPlainChanges
+            // debounce
+            persistSnapshot(getText(), editVersion.get());
         }
 
         shutdownRegistration.close();
@@ -135,6 +155,10 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         if (changeSubscription != null) {
             changeSubscription.unsubscribe();
             changeSubscription = null;
+        }
+        if (dirtySubscription != null) {
+            dirtySubscription.unsubscribe();
+            dirtySubscription = null;
         }
     }
 
@@ -158,12 +182,12 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 lastSavedText.set("");
             }
 
-            dirty = false;
+            setSaveState(EditorSaveState.CLEAN);
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to read file {}", filePath, exception);
             replaceText("");
             lastSavedText.set("");
-            dirty = false;
+            setSaveState(EditorSaveState.CLEAN);
         }
     }
 
@@ -307,12 +331,16 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     }
 
     private void subscribeToChanges() {
+        dirtySubscription = plainTextChanges().subscribe(_ -> {
+            editVersion.incrementAndGet();
+            setSaveState(EditorSaveState.DIRTY);
+        });
         changeSubscription = multiPlainChanges()
             .successionEnds(CHANGE_DEBOUNCE)
             .subscribe(changes -> {
-                dirty = true;
                 String snapshot = getText();
                 pendingSnapshot.set(snapshot);
+                pendingSnapshotVersion.set(editVersion.get());
 
                 List<DocumentModifiedEvent.Change> diff = changes.stream()
                     .map(change -> buildChange(snapshot, change))
@@ -325,7 +353,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
     private void scheduleSave() {
         synchronized (saveLock) {
-            if(closed)
+            if (closed)
                 return;
 
             if (pendingSaveTask != null) {
@@ -334,23 +362,33 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
             pendingSaveTask = SAVE_EXECUTOR.schedule(() -> {
                 synchronized (saveLock) {
-                    if(closed)
+                    if (closed)
                         return;
 
-                    persistSnapshot(pendingSnapshot.get());
+                    persistSnapshot(pendingSnapshot.get(), pendingSnapshotVersion.get());
                 }
             }, SAVE_DELAY.toMillis(), TimeUnit.MILLISECONDS);
         }
     }
 
-    private void persistSnapshot(String snapshot) {
+    private void persistSnapshot(String snapshot, long snapshotVersion) {
         if (snapshot == null)
             return;
 
-        String lastSaved = lastSavedText.get();
-        if (snapshot.equals(lastSaved))
+        if (backingFileMissing) {
+            updateAfterSave(snapshotVersion, EditorSaveState.ERROR);
+            Railroad.LOGGER.warn("Not saving {} because its backing file was deleted", filePath);
             return;
+        }
 
+        String lastSaved = lastSavedText.get();
+        if (snapshot.equals(lastSaved)) {
+            savedVersion.set(snapshotVersion);
+            updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
+            return;
+        }
+
+        updateForVersion(snapshotVersion, EditorSaveState.SAVING);
         try {
             Path parent = filePath.getParent();
             if (parent != null) {
@@ -359,15 +397,78 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
             Files.writeString(filePath, snapshot, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             lastSavedText.set(snapshot);
-            dirty = false;
+            savedVersion.set(snapshotVersion);
             lastLocalWrite.set(System.nanoTime());
+            updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
             Railroad.EVENT_BUS.publish(new DocumentEvent(document(), DocumentEvent.EventType.SAVED));
-        } catch (IOException exception) {
+        } catch (IOException | RuntimeException exception) {
+            updateAfterSave(snapshotVersion, EditorSaveState.ERROR);
             Railroad.LOGGER.error("Failed to write file {}", filePath, exception);
         }
     }
 
+    private void updateForVersion(long version, EditorSaveState state) {
+        JavaFXUtils.runOnApplicationThread(() -> {
+            if (editVersion.get() == version) {
+                setSaveState(state);
+            }
+        });
+    }
+
+    private void updateAfterSave(long version, EditorSaveState currentVersionState) {
+        JavaFXUtils.runOnApplicationThread(() -> setSaveState(editVersion.get() == version
+            ? currentVersionState
+            : EditorSaveState.DIRTY));
+    }
+
+    private void setSaveState(EditorSaveState state) {
+        saveState.set(state);
+    }
+
+    public EditorSaveState saveState() {
+        return saveState.get();
+    }
+
+    public ReadOnlyObjectProperty<EditorSaveState> saveStateProperty() {
+        return saveState.getReadOnlyProperty();
+    }
+
+    public boolean dirty() {
+        return dirty.get();
+    }
+
+    public ReadOnlyBooleanProperty dirtyProperty() {
+        return dirty.getReadOnlyProperty();
+    }
+
+    public boolean saving() {
+        return saving.get();
+    }
+
+    public ReadOnlyBooleanProperty savingProperty() {
+        return saving.getReadOnlyProperty();
+    }
+
+    public boolean saved() {
+        return saved.get();
+    }
+
+    public ReadOnlyBooleanProperty savedProperty() {
+        return saved.getReadOnlyProperty();
+    }
+
+    public boolean saveFailed() {
+        return saveFailed.get();
+    }
+
+    public ReadOnlyBooleanProperty saveFailedProperty() {
+        return saveFailed.getReadOnlyProperty();
+    }
+
     private void publishFileModifiedEvent(List<DocumentModifiedEvent.Change> changes) {
+        if (backingFileMissing)
+            return;
+
         Railroad.EVENT_BUS.publish(new DocumentModifiedEvent(document(), changes));
     }
 
@@ -375,37 +476,122 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         return new FileSystemDocument(filePath.getFileName().toString(), filePath, languageId);
     }
 
+    /**
+     * Rebinds this editor after its backing file has been moved or renamed. The editor
+     * keeps its current in-memory content and begins saving and watching the new path.
+     */
+    public void rebind(Path newPath) {
+        Path normalizedPath = Objects.requireNonNull(newPath, "New path cannot be null")
+            .toAbsolutePath()
+            .normalize();
+        if (!Files.isRegularFile(normalizedPath))
+            throw new IllegalArgumentException("Invalid editor path: " + normalizedPath);
+
+        synchronized (saveLock) {
+            if (closed)
+                return;
+
+            if (pendingSaveTask != null) {
+                pendingSaveTask.cancel(false);
+                pendingSaveTask = null;
+            }
+
+            filePath = normalizedPath;
+            backingFileMissing = false;
+            String currentText = getText();
+            boolean contentDirty;
+            try {
+                contentDirty = !currentText.equals(Files.readString(normalizedPath));
+            } catch (IOException exception) {
+                contentDirty = true;
+                Railroad.LOGGER.warn("Failed to verify renamed editor file {}", normalizedPath, exception);
+            }
+            if (contentDirty && editVersion.get() == savedVersion.get()) {
+                editVersion.incrementAndGet();
+            }
+            if (!contentDirty) {
+                lastSavedText.set(currentText);
+                savedVersion.set(editVersion.get());
+            }
+            setSaveState(contentDirty ? EditorSaveState.DIRTY : EditorSaveState.CLEAN);
+            pendingSnapshot.set(currentText);
+            pendingSnapshotVersion.set(editVersion.get());
+            restartExternalWatcher();
+            if (contentDirty) {
+                scheduleSave();
+            }
+        }
+    }
+
+    /** Marks a deleted backing file without discarding the editor's in-memory text. */
+    public void markBackingFileDeleted() {
+        synchronized (saveLock) {
+            if (closed)
+                return;
+
+            backingFileMissing = true;
+            if (editVersion.get() == savedVersion.get()) {
+                editVersion.incrementAndGet();
+            }
+            setSaveState(EditorSaveState.ERROR);
+            pendingSnapshot.set(getText());
+            pendingSnapshotVersion.set(editVersion.get());
+            if (pendingSaveTask != null) {
+                pendingSaveTask.cancel(false);
+                pendingSaveTask = null;
+            }
+        }
+    }
+
+    public boolean isBackingFileMissing() {
+        return backingFileMissing;
+    }
+
     private void startExternalWatcher() {
-        Path parent = filePath.getParent();
+        Path watchedPath = filePath;
+        Path parent = watchedPath.getParent();
         if (parent == null)
             return;
 
         try {
-            watchService = parent.getFileSystem().newWatchService();
-            parent.register(watchService,
+            WatchService newWatchService = parent.getFileSystem().newWatchService();
+            parent.register(newWatchService,
                 StandardWatchEventKinds.ENTRY_MODIFY,
                 StandardWatchEventKinds.ENTRY_DELETE,
                 StandardWatchEventKinds.ENTRY_CREATE);
+            watchService = newWatchService;
+            watcherExecutor.submit(() -> watchLoop(newWatchService, watchedPath));
         } catch (IOException exception) {
-            Railroad.LOGGER.error("Failed to start watch service for {}", filePath, exception);
+            Railroad.LOGGER.error("Failed to start watch service for {}", watchedPath, exception);
             return;
         }
-
-        watcherExecutor.submit(this::watchLoop);
     }
 
-    private void watchLoop() {
+    private void restartExternalWatcher() {
+        WatchService previousWatchService = watchService;
+        watchService = null;
+        if (previousWatchService != null) {
+            try {
+                previousWatchService.close();
+            } catch (IOException exception) {
+                Railroad.LOGGER.warn("Failed to stop watcher for {}", filePath, exception);
+            }
+        }
+        startExternalWatcher();
+    }
+
+    private void watchLoop(WatchService activeWatchService, Path watchedPath) {
         try {
             while (!Thread.currentThread().isInterrupted()) {
-                WatchKey key = watchService.take();
+                WatchKey key = activeWatchService.take();
                 for (WatchEvent<?> event : key.pollEvents()) {
                     WatchEvent.Kind<?> kind = event.kind();
                     if (kind == StandardWatchEventKinds.OVERFLOW)
                         continue;
 
                     Path changed = (Path) event.context();
-                    if (changed != null && changed.equals(filePath.getFileName())) {
-                        handleExternalChange(kind);
+                    if (changed != null && changed.equals(watchedPath.getFileName())) {
+                        handleExternalChange(watchedPath, kind);
                     }
                 }
 
@@ -419,49 +605,62 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         }
     }
 
-    private void handleExternalChange(WatchEvent.Kind<?> kind) {
+    private void handleExternalChange(Path watchedPath, WatchEvent.Kind<?> kind) {
+        if (!filePath.equals(watchedPath))
+            return;
+
         long lastWriteNanos = lastLocalWrite.get();
         if (System.nanoTime() - lastWriteNanos < TimeUnit.MILLISECONDS.toNanos(250))
             return;
 
         if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
             Platform.runLater(() -> {
-                replaceText("");
-                lastSavedText.set("");
-                dirty = false;
+                if (filePath.equals(watchedPath)) {
+                    markBackingFileDeleted();
+                }
             });
-
             return;
         }
 
-        if (dirty)
+        if (hasUnsavedChanges())
             return;
 
         try {
-            if (!Files.exists(filePath)) {
+            if (!Files.exists(watchedPath)) {
                 Platform.runLater(() -> {
-                    replaceText("");
-                    lastSavedText.set("");
-                    dirty = false;
+                    if (filePath.equals(watchedPath)) {
+                        markBackingFileDeleted();
+                    }
                 });
-
                 return;
             }
 
-            String disk = Files.readString(filePath);
+            String disk = Files.readString(watchedPath);
             if (disk.equals(lastSavedText.get()))
                 return;
 
             Platform.runLater(() -> {
+                if (!filePath.equals(watchedPath) || backingFileMissing)
+                    return;
+
                 int caret = getCaretPosition();
                 replaceText(disk);
                 moveTo(Math.min(caret, getLength()));
                 lastSavedText.set(disk);
-                dirty = false;
+                markCurrentVersionSaved();
             });
         } catch (IOException exception) {
-            Railroad.LOGGER.error("Failed to reload file {}", filePath, exception);
+            Railroad.LOGGER.error("Failed to reload file {}", watchedPath, exception);
         }
+    }
+
+    private boolean hasUnsavedChanges() {
+        return editVersion.get() != savedVersion.get();
+    }
+
+    private void markCurrentVersionSaved() {
+        savedVersion.set(editVersion.get());
+        setSaveState(EditorSaveState.CLEAN);
     }
 
     private static DocumentModifiedEvent.Change buildChange(String text, PlainTextChange change) {

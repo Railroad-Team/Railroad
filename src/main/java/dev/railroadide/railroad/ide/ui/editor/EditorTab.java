@@ -3,6 +3,8 @@ package dev.railroadide.railroad.ide.ui.editor;
 import dev.railroadide.railroad.ide.language.EditorOpenView;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
+import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import javafx.beans.property.*;
 import javafx.scene.control.Tab;
@@ -21,6 +23,10 @@ public final class EditorTab {
     private final BooleanProperty pinned;
     private final BooleanProperty preview;
     private final ReadOnlyObjectWrapper<EditorSaveState> saveState;
+    private final ReadOnlyBooleanWrapper dirty;
+    private final ReadOnlyBooleanWrapper saving;
+    private final ReadOnlyBooleanWrapper saved;
+    private final ReadOnlyBooleanWrapper saveFailed;
 
     EditorTab(
         DocumentIdentity identity,
@@ -41,6 +47,23 @@ public final class EditorTab {
         this.pinned = new SimpleBooleanProperty(this, "pinned", pinned);
         this.preview = new SimpleBooleanProperty(this, "preview", preview);
         this.saveState = new ReadOnlyObjectWrapper<>(this, "saveState", EditorSaveState.CLEAN);
+        this.dirty = new ReadOnlyBooleanWrapper(this, "dirty");
+        this.saving = new ReadOnlyBooleanWrapper(this, "saving");
+        this.saved = new ReadOnlyBooleanWrapper(this, "saved");
+        this.saveFailed = new ReadOnlyBooleanWrapper(this, "saveFailed");
+
+        TextEditorPane editor = view.activeEditor();
+        if (editor != null) {
+            this.saveState.bind(editor.saveStateProperty());
+        }
+        this.dirty.bind(this.saveState.isNotEqualTo(EditorSaveState.CLEAN));
+        this.saving.bind(this.saveState.isEqualTo(EditorSaveState.SAVING));
+        this.saved.bind(this.saveState.isEqualTo(EditorSaveState.CLEAN));
+        this.saveFailed.bind(this.saveState.isEqualTo(EditorSaveState.ERROR));
+        if (document instanceof FileSystemDocument fileSystemDocument) {
+            fileSystemDocument.setDirty(this.dirty.get());
+            this.dirty.addListener((_, _, isDirty) -> fileSystemDocument.setDirty(isDirty));
+        }
 
         this.tab = new Tab(path.getFileName().toString(), view.content());
         this.tab.setId("editor:" + identity.id());
@@ -111,10 +134,44 @@ public final class EditorTab {
         return saveState.getReadOnlyProperty();
     }
 
+    public boolean dirty() {
+        return dirty.get();
+    }
+
+    public ReadOnlyBooleanProperty dirtyProperty() {
+        return dirty.getReadOnlyProperty();
+    }
+
+    public boolean saving() {
+        return saving.get();
+    }
+
+    public ReadOnlyBooleanProperty savingProperty() {
+        return saving.getReadOnlyProperty();
+    }
+
+    public boolean saved() {
+        return saved.get();
+    }
+
+    public ReadOnlyBooleanProperty savedProperty() {
+        return saved.getReadOnlyProperty();
+    }
+
+    public boolean saveFailed() {
+        return saveFailed.get();
+    }
+
+    public ReadOnlyBooleanProperty saveFailedProperty() {
+        return saveFailed.getReadOnlyProperty();
+    }
+
     void rebind(DocumentIdentity identity, Path path) {
         this.identity.set(Objects.requireNonNull(identity));
-        this.path.set(Objects.requireNonNull(path));
-        this.tab.setText(path.getFileName().toString());
+        Path normalizedPath = Objects.requireNonNull(path).toAbsolutePath().normalize();
+        this.path.set(normalizedPath);
+        this.tab.setText(normalizedPath.getFileName().toString());
+        this.tab.setId(normalizedPath.toString());
     }
 
     void setPinned(boolean pinned) {
@@ -129,7 +186,4 @@ public final class EditorTab {
         this.preview.set(preview);
     }
 
-    void setSaveState(EditorSaveState saveState) {
-        this.saveState.set(Objects.requireNonNull(saveState));
-    }
 }

@@ -20,12 +20,12 @@ The tab work should begin with correctness, then interaction features. Right now
 ## P0: Saving and Data Safety
 
 - [x] Flush and await pending saves before closing. `TextEditorPane.close()` currently cancels the pending save, so closing within the 400 ms delay can lose recent edits.
-- [ ] Expose observable `dirty`, `saving`, `saved`, and `saveFailed` states.
+- [x] Expose observable `dirty`, `saving`, `saved`, and `saveFailed` states.
 - [ ] Wire up Save, Save As, and Save All; the current menu items are constructed but have no actions.
 - [ ] On close, either complete autosave or show one consolidated Save/Discard/Cancel dialog for unsaved or failed documents.
 - [ ] Never silently discard a tab whose last save failed.
 - [ ] Handle external changes with Reload/Keep Mine/Compare instead of ignoring them while dirty.
-- [ ] Handle deletion and rename without clearing the editor silently or leaving stale tab IDs.
+- [x] Handle deletion and rename without clearing the editor silently or leaving stale tab IDs.
 
 ## P1: Tab Context Menu
 
