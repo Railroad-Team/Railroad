@@ -23,7 +23,7 @@ The tab work should begin with correctness, then interaction features. Right now
 - [x] Expose observable `dirty`, `saving`, `saved`, and `saveFailed` states.
 - [x] Wire up Save, Save As, and Save All; the current menu items are constructed but have no actions.
 - [x] On close, either complete autosave or show one consolidated Save/Discard/Cancel dialog for unsaved or failed documents.
-- [ ] Never silently discard a tab whose last save failed.
+- [x] Never silently discard a tab whose last save failed.
 - [ ] Handle external changes with Reload/Keep Mine/Compare instead of ignoring them while dirty.
 - [x] Handle deletion and rename without clearing the editor silently or leaving stale tab IDs.
 

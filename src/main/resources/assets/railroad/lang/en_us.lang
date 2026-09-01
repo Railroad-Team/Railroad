@@ -520,6 +520,9 @@ railroad.ide.save_failed.content=The following documents could not be saved:%n%n
 railroad.ide.close_unsaved.window_title=Unsaved Documents
 railroad.ide.close_unsaved.title=Some documents could not be saved
 railroad.ide.close_unsaved.content=The following documents still have unsaved changes. Save retries writing all of them; Discard closes Railroad without writing them.%n%n%s
+railroad.ide.close_tab_failed.window_title=Unsaved Document
+railroad.ide.close_tab_failed.title=This document could not be saved
+railroad.ide.close_tab_failed.content=Railroad could not save this document:%n%n%s%n%nChoose Save to retry, Discard to close without saving, or Cancel to keep the tab open.
 railroad.menu.file.exit=Exit
 railroad.menu.file.recent_projects=Recent Projects
 

@@ -14,6 +14,7 @@ import dev.railroadide.railroad.ide.ui.IDEContentRouter;
 import dev.railroadide.railroad.ide.ui.IDETabLifecycle;
 import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
 import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
+import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
@@ -21,16 +22,26 @@ import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.plugin.spi.events.DocumentRenamedEvent;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
+import dev.railroadide.railroad.window.DialogBuilder;
+import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
+import javafx.event.Event;
+import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
@@ -51,6 +62,8 @@ public class EditorTabManager {
     private final Map<DocumentId, ClosedEditorTab> pendingCloseSnapshots = new LinkedHashMap<>();
     private final Map<DetachableTabPane, ChangeListener<Tab>> selectionListeners = new IdentityHashMap<>();
     private final Map<DetachableTabPane, String> editorGroupIds = new IdentityHashMap<>();
+    private final Map<EditorTab, Stage> failedCloseDialogs = new IdentityHashMap<>();
+    private final Set<EditorTab> discardApprovedTabs = Collections.newSetFromMap(new IdentityHashMap<>());
     private boolean restoring;
     private boolean selectionUpdateScheduled;
     private EditorTab pendingSelection;
@@ -254,9 +267,7 @@ public class EditorTabManager {
             request.pinned(),
             request.preview());
         editorTab.tab().setId(normalizedPath.toString());
-        editorTab.tab().addEventHandler(
-            Tab.TAB_CLOSE_REQUEST_EVENT,
-            _ -> pendingCloseSnapshots.put(editorTab.documentId(), captureClosedTab(editorTab)));
+        editorTab.tab().addEventHandler(Tab.TAB_CLOSE_REQUEST_EVENT, event -> handleCloseRequest(editorTab, event));
         editorTab.tab().addEventHandler(Tab.CLOSED_EVENT, _ -> handleClosed(editorTab));
 
         openTabs.put(editorTab.documentId(), editorTab);
@@ -521,6 +532,12 @@ public class EditorTabManager {
         if (openTabs.remove(editorTab.documentId()) == null)
             return;
 
+        discardApprovedTabs.remove(editorTab);
+        Stage failedCloseDialog = failedCloseDialogs.remove(editorTab);
+        if (failedCloseDialog != null) {
+            failedCloseDialog.close();
+        }
+
         ClosedEditorTab closedTab = pendingCloseSnapshots.remove(editorTab.documentId());
         if (closedTab == null) {
             closedTab = captureClosedTab(editorTab);
@@ -532,6 +549,70 @@ public class EditorTabManager {
         if (Services.IDE_STATE.getActiveDocument() == null) {
             Services.DOCUMENT_EDITOR_STATE.setActiveEditor(null, null);
         }
+    }
+
+    private void handleCloseRequest(EditorTab editorTab, Event event) {
+        if (discardApprovedTabs.remove(editorTab)) {
+            pendingCloseSnapshots.put(editorTab.documentId(), captureClosedTab(editorTab));
+            return;
+        }
+
+        if (editorTab.dirty() && !save(editorTab)) {
+            event.consume();
+            showFailedCloseDialog(editorTab);
+            return;
+        }
+
+        pendingCloseSnapshots.put(editorTab.documentId(), captureClosedTab(editorTab));
+    }
+
+    private void showFailedCloseDialog(EditorTab editorTab) {
+        Stage existingDialog = failedCloseDialogs.get(editorTab);
+        if (existingDialog != null) {
+            existingDialog.toFront();
+            existingDialog.requestFocus();
+            return;
+        }
+
+        var content = new Label(L18n.localize("railroad.ide.close_tab_failed.content", editorTab.path()));
+        content.setWrapText(true);
+        content.setMaxWidth(560);
+
+        var saveButton = new RRButton("railroad.generic.save");
+        saveButton.setVariant(ButtonVariant.PRIMARY);
+        saveButton.setDefaultButton(true);
+        var discardButton = new RRButton("railroad.generic.discard");
+        discardButton.setVariant(ButtonVariant.DANGER);
+        var cancelButton = new RRButton("railroad.generic.cancel");
+        cancelButton.setVariant(ButtonVariant.SECONDARY);
+
+        Stage dialog = WindowBuilder.createDialog(
+            "railroad.ide.close_tab_failed.window_title",
+            new DialogBuilder()
+                .title("railroad.ide.close_tab_failed.title")
+                .contentNode(content)
+                .buttons(saveButton, discardButton, cancelButton));
+        failedCloseDialogs.put(editorTab, dialog);
+        dialog.addEventHandler(WindowEvent.WINDOW_HIDDEN, _ -> failedCloseDialogs.remove(editorTab, dialog));
+
+        saveButton.setOnAction(_ -> {
+            if (openTabs.get(editorTab.documentId()) != editorTab) {
+                dialog.close();
+            } else if (save(editorTab)) {
+                dialog.close();
+                requestClose(editorTab);
+            }
+        });
+        discardButton.setOnAction(_ -> {
+            var editor = editorTab.view().activeEditor();
+            if (editor != null) {
+                editor.discardChangesOnClose();
+            }
+            discardApprovedTabs.add(editorTab);
+            dialog.close();
+            requestClose(editorTab);
+        });
+        cancelButton.setOnAction(_ -> dialog.close());
     }
 
     private Optional<EditorTab> findOpen(Path path) {
@@ -597,7 +678,7 @@ public class EditorTabManager {
         Path normalizedSecond = second.toAbsolutePath().normalize();
         if (normalizedFirst.equals(normalizedSecond))
             return true;
-        if (java.io.File.separatorChar == '\\'
+        if (File.separatorChar == '\\'
             && normalizedFirst.toString().equalsIgnoreCase(normalizedSecond.toString()))
             return true;
 
@@ -620,6 +701,9 @@ public class EditorTabManager {
         editorGroupIds.clear();
         tabsByControl.clear();
         pendingCloseSnapshots.clear();
+        List.copyOf(failedCloseDialogs.values()).forEach(Stage::close);
+        failedCloseDialogs.clear();
+        discardApprovedTabs.clear();
         openTabs.clear();
         recentlyClosedTabs.clear();
         Services.DOCUMENT_EDITOR_STATE.setActiveEditor(null, null);
