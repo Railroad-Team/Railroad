@@ -56,6 +56,16 @@ public class EditorTabManager {
     private EditorTab pendingSelection;
     private long selectionGeneration;
 
+    public record SaveResult(List<EditorTab> failedTabs) {
+        public SaveResult {
+            failedTabs = List.copyOf(failedTabs);
+        }
+
+        public boolean successful() {
+            return failedTabs.isEmpty();
+        }
+    }
+
     private record TabOpenRequest(
         boolean activate,
         boolean openExternally,
@@ -359,6 +369,107 @@ public class EditorTabManager {
         Services.DOCUMENT_EDITOR_STATE.setActiveEditor(
             editorTab.view().activeEditor(),
             editorTab.view().languageId());
+    }
+
+    public Optional<EditorTab> activeTab() {
+        EditorTab activeTab = Optional.ofNullable(Services.IDE_STATE.getActiveDocument())
+            .map(Services.IDE_STATE::identifyDocument)
+            .map(DocumentIdentity::id)
+            .map(openTabs::get)
+            .orElse(null);
+        return Optional.ofNullable(activeTab != null ? activeTab : selectedManagedTab().orElse(null));
+    }
+
+    public SaveResult saveActive() {
+        EditorTab activeTab = activeTab().orElse(null);
+        if (activeTab == null || save(activeTab))
+            return new SaveResult(List.of());
+        return new SaveResult(List.of(activeTab));
+    }
+
+    public SaveResult saveAll() {
+        List<EditorTab> failedTabs = openTabs.values().stream()
+            .filter(EditorTab::dirty)
+            .filter(tab -> !save(tab))
+            .toList();
+        return new SaveResult(failedTabs);
+    }
+
+    public boolean hasUnsavedChanges() {
+        return openTabs.values().stream().anyMatch(EditorTab::dirty);
+    }
+
+    public boolean saveAsActive(Path targetPath) {
+        Objects.requireNonNull(targetPath, "Target path cannot be null");
+        EditorTab editorTab = activeTab().orElse(null);
+        if (editorTab == null)
+            return false;
+
+        var editor = editorTab.view().activeEditor();
+        if (editor == null)
+            return false;
+
+        Path normalizedTarget = targetPath.toAbsolutePath().normalize();
+        if (pathsMatch(editorTab.path(), normalizedTarget))
+            return save(editorTab);
+
+        Optional<DocumentIdentity> targetIdentity = Services.IDE_STATE.findDocumentIdentity(
+            DocumentUri.fromPath(normalizedTarget));
+        EditorTab conflictingTab = targetIdentity.map(DocumentIdentity::id).map(openTabs::get).orElse(null);
+        if (conflictingTab != null && conflictingTab != editorTab) {
+            Railroad.LOGGER.warn("Cannot save {} as {} because that document is already open", editorTab.path(),
+                normalizedTarget);
+            return false;
+        }
+
+        Path previousPath = editorTab.path();
+        DocumentId previousId = editorTab.documentId();
+        if (!editor.saveAs(normalizedTarget))
+            return false;
+
+        try {
+            DocumentIdentity reboundIdentity = targetIdentity
+                .filter(identity -> !identity.id().equals(previousId))
+                .orElseGet(() -> Services.IDE_STATE.rebindDocument(
+                    editorTab.identity(),
+                    DocumentUri.fromPath(normalizedTarget)));
+            if (editorTab.document() instanceof FileSystemDocument fileSystemDocument) {
+                fileSystemDocument.rebind(normalizedTarget);
+            }
+            replaceOpenTabIdentity(previousId, reboundIdentity.id(), editorTab);
+            editorTab.rebind(reboundIdentity, normalizedTarget);
+            return true;
+        } catch (RuntimeException exception) {
+            editor.rebind(previousPath);
+            Railroad.LOGGER.error("Failed to rebind editor from {} to {}", previousPath, normalizedTarget, exception);
+            return false;
+        }
+    }
+
+    public void discardUnsavedChangesOnClose() {
+        openTabs.values().stream()
+            .filter(EditorTab::dirty)
+            .map(EditorTab::view)
+            .map(view -> view.activeEditor())
+            .filter(Objects::nonNull)
+            .forEach(editor -> editor.discardChangesOnClose());
+    }
+
+    private boolean save(EditorTab editorTab) {
+        var editor = editorTab.view().activeEditor();
+        return editor == null || editor.saveNow();
+    }
+
+    private void replaceOpenTabIdentity(DocumentId previousId, DocumentId newId, EditorTab editorTab) {
+        if (previousId.equals(newId))
+            return;
+
+        var reboundTabs = new LinkedHashMap<DocumentId, EditorTab>();
+        openTabs.forEach((documentId, tab) -> reboundTabs.put(
+            documentId.equals(previousId) ? newId : documentId,
+            tab));
+        openTabs.clear();
+        openTabs.putAll(reboundTabs);
     }
 
     public List<EditorTabSessionState> captureSessionState() {

@@ -10,6 +10,7 @@ import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.ide.ui.IDEDockItem;
 import dev.railroadide.railroad.ide.ui.IDEWorkspaceActions;
+import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.RailroadProject;
@@ -27,11 +28,13 @@ import dev.railroadide.railroad.ui.localized.LocalizedRadioMenuItem;
 import dev.railroadide.railroad.utility.OperatingSystem;
 import dev.railroadide.railroad.vcs.git.GitRepositoryState;
 import dev.railroadide.railroad.window.DialogBuilder;
+import dev.railroadide.railroad.window.AlertType;
 import dev.railroadide.railroad.window.WindowBuilder;
 import dev.railroadide.railroad.window.WindowManager;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableBooleanValue;
 import javafx.collections.ListChangeListener;
+import javafx.event.Event;
 import javafx.collections.WeakListChangeListener;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
@@ -43,6 +46,7 @@ import javafx.scene.input.KeyCombination;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -129,16 +133,31 @@ public final class IDEMenuBarFactory {
         var saveItem = new LocalizedMenuItem("railroad.menu.file.save");
         saveItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
         saveItem.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN));
+        saveItem.setOnAction(_ -> showSaveFailures(Services.EDITOR_TAB_MANAGER.saveActive()));
 
         var saveAsItem = new LocalizedMenuItem("railroad.menu.file.save_as");
         saveAsItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
         saveAsItem
             .setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
+        saveAsItem.setOnAction(_ -> saveActiveAs());
+
+        var saveAllItem = new LocalizedMenuItem("railroad.menu.file.save_all");
+        saveAllItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
+        saveAllItem.setAccelerator(
+            new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN, KeyCombination.ALT_DOWN));
+        saveAllItem.setOnAction(_ -> showSaveFailures(Services.EDITOR_TAB_MANAGER.saveAll()));
 
         var exitItem = new LocalizedMenuItem("railroad.menu.file.exit");
         exitItem.setGraphic(new FontIcon(FontAwesomeSolid.SIGN_OUT_ALT));
         exitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.SHORTCUT_DOWN));
-        exitItem.setOnAction(_ -> Platform.exit());
+        exitItem.setOnAction(_ -> {
+            Stage stage = Railroad.WINDOW_MANAGER.getPrimaryStage();
+            var closeRequest = new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST);
+            Event.fireEvent(stage, closeRequest);
+            if (!closeRequest.isConsumed()) {
+                Platform.exit();
+            }
+        });
 
         var undoItem = new LocalizedMenuItem("railroad.menu.edit.undo");
         undoItem.setGraphic(new FontIcon(FontAwesomeSolid.UNDO));
@@ -255,7 +274,15 @@ public final class IDEMenuBarFactory {
 
         var fileMenu = new LocalizedMenu("railroad.menu.file");
         fileMenu.getItems().addAll(newFileItem, openFileItem, openProjectItem, recentProjects, saveItem, saveAsItem,
-            new SeparatorMenuItem(), exitItem);
+            saveAllItem, new SeparatorMenuItem(), exitItem);
+        fileMenu.setOnShowing(_ -> {
+            boolean hasTextEditor = Services.EDITOR_TAB_MANAGER.activeTab()
+                .map(tab -> tab.view().activeEditor() != null)
+                .orElse(false);
+            saveItem.setDisable(!hasTextEditor);
+            saveAsItem.setDisable(!hasTextEditor);
+            saveAllItem.setDisable(!Services.EDITOR_TAB_MANAGER.hasUnsavedChanges());
+        });
         fileMenu.getStyleClass().add("rr-menu");
 
         var editMenu = new LocalizedMenu("railroad.menu.edit");
@@ -331,6 +358,43 @@ public final class IDEMenuBarFactory {
         keybind.getKeys().addListener(new WeakListChangeListener<>(listener));
         menuItem.getProperties().put("railroad:keybind-listener", listener);
         updateConfiguredAccelerator(menuItem, keybind);
+    }
+
+    private static void saveActiveAs() {
+        var activeTab = Services.EDITOR_TAB_MANAGER.activeTab().orElse(null);
+        if (activeTab == null || activeTab.view().activeEditor() == null)
+            return;
+
+        var fileChooser = new FileChooser();
+        fileChooser.setTitle(L18n.localize("railroad.menu.file.save_as"));
+        Path parent = activeTab.path().getParent();
+        if (parent != null && parent.toFile().isDirectory()) {
+            fileChooser.setInitialDirectory(parent.toFile());
+        }
+        fileChooser.setInitialFileName(activeTab.path().getFileName().toString());
+        File targetFile = fileChooser.showSaveDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
+        if (targetFile == null)
+            return;
+
+        if (!Services.EDITOR_TAB_MANAGER.saveAsActive(targetFile.toPath())) {
+            showSaveFailures(new EditorTabManager.SaveResult(java.util.List.of(activeTab)));
+        }
+    }
+
+    private static void showSaveFailures(EditorTabManager.SaveResult result) {
+        if (result.successful())
+            return;
+
+        String paths = result.failedTabs().stream()
+            .map(tab -> tab.path().toString())
+            .collect(java.util.stream.Collectors.joining(System.lineSeparator()));
+        WindowBuilder.createAlert(
+            AlertType.ERROR,
+            "railroad.generic.error",
+            "railroad.ide.save_failed.title",
+            L18n.localize("railroad.ide.save_failed.content", paths),
+            alert -> alert.translateContent(false),
+            null).build();
     }
 
     private static void updateConfiguredAccelerator(MenuItem menuItem, Keybind keybind) {

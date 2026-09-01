@@ -66,6 +66,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     public IDEPane(Project project) {
         this.project = Objects.requireNonNull(project, "Project cannot be null");
         this.lifecycle = new IDEPaneLifecycle(this);
+        var windowCloseGuard = new IDEWindowCloseGuard(this);
+        this.lifecycle.onDispose(windowCloseGuard::close);
         this.viewModeController = Services.WORKSPACE.createModeController(
             mode -> mode.isAvailable(project));
         this.lifecycle.onDispose(viewModeController::close);

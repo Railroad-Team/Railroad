@@ -91,6 +91,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private final AtomicLong editVersion = new AtomicLong();
     private final AtomicLong savedVersion = new AtomicLong();
     private volatile boolean backingFileMissing;
+    private volatile boolean discardChangesOnClose;
     private boolean closed;
     private final Object saveLock = new Object();
 
@@ -134,9 +135,11 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 pendingSaveTask = null;
             }
 
-            // capture the editor directly as the pendingSnapshot may still be behind due to the multiPlainChanges
-            // debounce
-            persistSnapshot(getText(), editVersion.get());
+            if (!discardChangesOnClose) {
+                // Capture the editor directly as pendingSnapshot may still be behind the
+                // multiPlainChanges debounce.
+                persistSnapshot(getText(), editVersion.get());
+            }
         }
 
         shutdownRegistration.close();
@@ -332,6 +335,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
     private void subscribeToChanges() {
         dirtySubscription = plainTextChanges().subscribe(_ -> {
+            discardChangesOnClose = false;
             editVersion.incrementAndGet();
             setSaveState(EditorSaveState.DIRTY);
         });
@@ -371,21 +375,21 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         }
     }
 
-    private void persistSnapshot(String snapshot, long snapshotVersion) {
+    private boolean persistSnapshot(String snapshot, long snapshotVersion) {
         if (snapshot == null)
-            return;
+            return true;
 
         if (backingFileMissing) {
             updateAfterSave(snapshotVersion, EditorSaveState.ERROR);
             Railroad.LOGGER.warn("Not saving {} because its backing file was deleted", filePath);
-            return;
+            return false;
         }
 
         String lastSaved = lastSavedText.get();
         if (snapshot.equals(lastSaved)) {
             savedVersion.set(snapshotVersion);
             updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
-            return;
+            return true;
         }
 
         updateForVersion(snapshotVersion, EditorSaveState.SAVING);
@@ -401,9 +405,89 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             lastLocalWrite.set(System.nanoTime());
             updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
             Railroad.EVENT_BUS.publish(new DocumentEvent(document(), DocumentEvent.EventType.SAVED));
+            return true;
         } catch (IOException | RuntimeException exception) {
             updateAfterSave(snapshotVersion, EditorSaveState.ERROR);
             Railroad.LOGGER.error("Failed to write file {}", filePath, exception);
+            return false;
+        }
+    }
+
+    /** Immediately writes the current editor contents, bypassing the autosave delay. */
+    public boolean saveNow() {
+        synchronized (saveLock) {
+            if (closed)
+                return saveState() == EditorSaveState.CLEAN;
+
+            if (pendingSaveTask != null) {
+                pendingSaveTask.cancel(false);
+                pendingSaveTask = null;
+            }
+
+            String snapshot = getText();
+            long snapshotVersion = editVersion.get();
+            pendingSnapshot.set(snapshot);
+            pendingSnapshotVersion.set(snapshotVersion);
+            return persistSnapshot(snapshot, snapshotVersion);
+        }
+    }
+
+    /** Writes the current contents to a new path and makes it the backing file. */
+    public boolean saveAs(Path newPath) {
+        Path normalizedPath = Objects.requireNonNull(newPath, "New path cannot be null")
+            .toAbsolutePath()
+            .normalize();
+        synchronized (saveLock) {
+            if (closed)
+                return false;
+
+            if (pendingSaveTask != null) {
+                pendingSaveTask.cancel(false);
+                pendingSaveTask = null;
+            }
+
+            String snapshot = getText();
+            long snapshotVersion = editVersion.get();
+            updateForVersion(snapshotVersion, EditorSaveState.SAVING);
+            try {
+                Path parent = normalizedPath.getParent();
+                if (parent != null) {
+                    Files.createDirectories(parent);
+                }
+                Files.writeString(
+                    normalizedPath,
+                    snapshot,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING);
+
+                filePath = normalizedPath;
+                backingFileMissing = false;
+                discardChangesOnClose = false;
+                lastSavedText.set(snapshot);
+                pendingSnapshot.set(snapshot);
+                pendingSnapshotVersion.set(snapshotVersion);
+                savedVersion.set(snapshotVersion);
+                lastLocalWrite.set(System.nanoTime());
+                updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
+                restartExternalWatcher();
+                Railroad.EVENT_BUS.publish(new DocumentEvent(document(), DocumentEvent.EventType.SAVED));
+                return true;
+            } catch (IOException | RuntimeException exception) {
+                updateAfterSave(snapshotVersion, EditorSaveState.ERROR);
+                Railroad.LOGGER.error("Failed to write file {}", normalizedPath, exception);
+                return false;
+            }
+        }
+    }
+
+    /** Prevents disposal from retrying a save after the user explicitly chose Discard. */
+    public void discardChangesOnClose() {
+        synchronized (saveLock) {
+            discardChangesOnClose = true;
+            if (pendingSaveTask != null) {
+                pendingSaveTask.cancel(false);
+                pendingSaveTask = null;
+            }
         }
     }
 
