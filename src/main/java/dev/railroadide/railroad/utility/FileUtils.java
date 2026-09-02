@@ -279,6 +279,7 @@ public final class FileUtils {
         String extension = getExtension(path.toString());
         if (extension == null)
             return new FontIcon(FontAwesomeRegular.FILE);
+        extension = extension.toLowerCase(Locale.ROOT);
 
         return switch (extension) {
             case "png", "jpg", "jpeg", "gif", "bmp", "webp" -> new FontIcon(FontAwesomeRegular.FILE_IMAGE);
@@ -390,8 +391,13 @@ public final class FileUtils {
             return "0 B";
 
         int unit = 1024;
+        if (size < unit)
+            return size + " B";
+
         int exp = (int) (Math.log(size) / Math.log(unit));
-        char pre = "KMGTPE".charAt(exp - 1);
+        String prefixes = "KMGTPE";
+        exp = Math.min(exp, prefixes.length());
+        char pre = prefixes.charAt(exp - 1);
         return String.format("%.1f %sB", size / Math.pow(unit, exp), pre);
     }
 

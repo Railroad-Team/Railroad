@@ -2,9 +2,11 @@ package dev.railroadide.railroad.ide.ui.editor;
 
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.language.EditorOpenView;
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
+import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -13,13 +15,19 @@ import dev.railroadide.railroad.ui.RRStackPane;
 import dev.railroadide.railroad.ui.localized.LocalizedMenu;
 import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
+import dev.railroadide.railroad.utility.FileUtils;
+import dev.railroadide.railroad.utility.TimeFormatter;
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.RotateTransition;
 import javafx.beans.property.*;
+import javafx.beans.InvalidationListener;
+import javafx.beans.WeakInvalidationListener;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Label;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.Tooltip;
@@ -33,6 +41,7 @@ import org.kordamp.ikonli.javafx.StackedFontIcon;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.IOException;
 import java.util.Objects;
 
 public final class EditorTab {
@@ -50,8 +59,14 @@ public final class EditorTab {
     private final ReadOnlyBooleanWrapper saving;
     private final ReadOnlyBooleanWrapper saved;
     private final ReadOnlyBooleanWrapper saveFailed;
+    private final Label titleLabel = new Label();
+    private final RRStackPane fileIconSlot = new RRStackPane();
+    private final Tooltip metadataTooltip = new Tooltip();
+    private final InvalidationListener localizationListener = _ -> updateFilePresentation();
+    private final WeakInvalidationListener weakLocalizationListener = new WeakInvalidationListener(
+        localizationListener);
 
-    EditorTab(
+    public EditorTab(
         DocumentIdentity identity,
         Document document,
         EditorOpenView view,
@@ -92,8 +107,15 @@ public final class EditorTab {
         this.tab.setId("editor:" + identity.id());
         this.tab.getStyleClass().add("editor-tab");
         this.tab.setGraphic(createTabGraphic());
+        this.tab.setTooltip(metadataTooltip);
         this.tab.setClosable(false);
         this.tab.setContextMenu(createContextMenu());
+        this.path.addListener((_, _, _) -> updateFilePresentation());
+        this.saveState.addListener((_, _, _) -> updateMetadataTooltip());
+        this.pinned.addListener((_, _, _) -> updateMetadataTooltip());
+        this.preview.addListener((_, _, _) -> updateMetadataTooltip());
+        L18n.currentLanguageProperty().addListener(weakLocalizationListener);
+        updateFilePresentation();
     }
 
     public DocumentId documentId() {
@@ -188,31 +210,69 @@ public final class EditorTab {
         return saveFailed.get();
     }
 
+    public String languageId() {
+        return document.getLanguageId();
+    }
+
+    public String languageDisplayName() {
+        String displayName = LanguageSupportRegistry.get(languageId())
+            .map(support -> support.displayName())
+            .orElseGet(() -> switch (languageId()) {
+                case "image" -> "Image";
+                case "plaintext" -> "Plain Text";
+                case "binary" -> "Binary";
+                default -> languageId();
+            });
+        String localizationKey = "railroad.language.name." + languageId();
+        return L18n.hasTranslation(localizationKey) ? L18n.localize(localizationKey) : displayName;
+    }
+
+    public String displayTitle() {
+        return titleLabel.getText();
+    }
+
+    public ReadOnlyStringProperty displayTitleProperty() {
+        return titleLabel.textProperty();
+    }
+
     public ReadOnlyBooleanProperty saveFailedProperty() {
         return saveFailed.getReadOnlyProperty();
     }
 
-    void rebind(DocumentIdentity identity, Path path) {
+    public void rebind(DocumentIdentity identity, Path path) {
         this.identity.set(Objects.requireNonNull(identity));
         Path normalizedPath = Objects.requireNonNull(path).toAbsolutePath().normalize();
         this.path.set(normalizedPath);
-        this.tab.setText(normalizedPath.getFileName().toString());
         this.tab.setId(normalizedPath.toString());
     }
 
-    void setPinned(boolean pinned) {
+    public void setDisplayTitle(String displayTitle) {
+        String title = Objects.requireNonNull(displayTitle, "Display title cannot be null");
+        this.tab.setText(title);
+        this.titleLabel.setText(title);
+        updateAccessibleText();
+    }
+
+    public void setPinned(boolean pinned) {
         this.pinned.set(pinned);
     }
 
-    void setEditorGroupId(String editorGroupId) {
+    public void setEditorGroupId(String editorGroupId) {
         this.editorGroupId.set(Objects.requireNonNull(editorGroupId));
     }
 
-    void setPreview(boolean preview) {
+    public void setPreview(boolean preview) {
         this.preview.set(preview);
     }
 
     private RRHBox createTabGraphic() {
+        fileIconSlot.getStyleClass().removeAll("Railroad", "Pane", "StackPane", "background-2");
+        fileIconSlot.getStyleClass().add("editor-tab-file-icon");
+        fileIconSlot.setMinSize(22, 22);
+        fileIconSlot.setPrefSize(22, 22);
+        fileIconSlot.setMaxSize(22, 22);
+        titleLabel.getStyleClass().add("editor-tab-title");
+
         var closeIcon = new FontIcon(FontAwesomeSolid.TIMES);
         closeIcon.getStyleClass().add("editor-tab-close-icon");
 
@@ -263,11 +323,72 @@ public final class EditorTab {
             : "editor.tab.contextmenu.close"));
         Tooltip.install(actionSlot, actionTooltip);
 
-        var graphic = new RRHBox(actionSlot);
+        var graphic = new RRHBox(6, fileIconSlot, titleLabel, actionSlot);
         graphic.getStyleClass().removeAll("Railroad", "Pane", "HBox", "background-2");
         graphic.setAlignment(Pos.CENTER_LEFT);
         graphic.getStyleClass().add("editor-tab-graphic");
         return graphic;
+    }
+
+    private void updateFilePresentation() {
+        Path editorPath = path();
+        var icon = FileUtils.getIcon(editorPath);
+        icon.getStyleClass().add("editor-tab-file-type-icon");
+        icon.setAccessibleRole(AccessibleRole.TEXT);
+        icon.setAccessibleText(languageDisplayName() + " file");
+        fileIconSlot.getChildren().setAll(icon);
+        if (titleLabel.getText() == null || titleLabel.getText().isBlank()) {
+            setDisplayTitle(EditorTabPresentation.fileName(editorPath));
+        }
+        updateMetadataTooltip();
+    }
+
+    private void updateMetadataTooltip() {
+        Path editorPath = path().toAbsolutePath().normalize();
+        StringBuilder text = new StringBuilder(editorPath.toString())
+            .append('\n').append(L18n.localize("editor.tab.tooltip.language", languageDisplayName()))
+            .append('\n').append(L18n.localize("editor.tab.tooltip.save_state", saveStateText()));
+        if (Files.isRegularFile(editorPath)) {
+            text.append('\n').append(L18n.localize(
+                "editor.tab.tooltip.size",
+                FileUtils.humanReadableByteCount(editorPath)));
+            try {
+                text.append('\n').append(L18n.localize(
+                    "editor.tab.tooltip.modified",
+                    TimeFormatter.formatDateTime(Files.getLastModifiedTime(editorPath).toMillis())));
+            } catch (IOException _) {
+                // The file can disappear while its tab is still open.
+            }
+            if (!Files.isWritable(editorPath)) {
+                text.append('\n').append(L18n.localize("editor.tab.tooltip.read_only"));
+            }
+        } else {
+            text.append('\n').append(L18n.localize("editor.tab.tooltip.missing"));
+        }
+        if (pinned()) {
+            text.append('\n').append(L18n.localize("editor.tab.tooltip.pinned"));
+        }
+        if (preview()) {
+            text.append('\n').append(L18n.localize("editor.tab.tooltip.preview"));
+        }
+        metadataTooltip.setText(text.toString());
+        updateAccessibleText();
+    }
+
+    private String saveStateText() {
+        return switch (saveState()) {
+            case CLEAN -> L18n.localize("editor.tab.status.saved");
+            case DIRTY -> L18n.localize("editor.tab.status.dirty");
+            case SAVING -> L18n.localize("editor.tab.status.saving");
+            case ERROR -> L18n.localize("editor.tab.status.save_failed");
+        };
+    }
+
+    private void updateAccessibleText() {
+        if (tab.getGraphic() != null) {
+            tab.getGraphic().setAccessibleText(displayTitle() + ", " + languageDisplayName() + ", " + saveStateText()
+                + ", " + path().toAbsolutePath().normalize());
+        }
     }
 
     private static RRStackPane createIconSlot(FontIcon icon, String styleClass) {
@@ -317,7 +438,7 @@ public final class EditorTab {
         }
     }
 
-    ContextMenu createContextMenu() {
+    public ContextMenu createContextMenu() {
         var contextMenu = new ContextMenu();
 
         var pinUnpinIcon = new StackedFontIcon();

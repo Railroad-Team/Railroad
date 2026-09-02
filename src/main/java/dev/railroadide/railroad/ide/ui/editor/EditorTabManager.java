@@ -315,6 +315,7 @@ public class EditorTabManager {
 
         openTabs.put(editorTab.documentId(), editorTab);
         tabsByControl.put(editorTab.tab(), editorTab);
+        refreshTabPresentations();
         editorTab.pinnedProperty().addListener((_, _, _) -> keepPinnedTabsOnLeft(editorTab.tab().getTabPane()));
         ensureSelectionListener(tabPane, request.editorGroupId());
         Services.IDE_STATE.openDocument(document);
@@ -749,6 +750,7 @@ public class EditorTabManager {
             }
             replaceOpenTabIdentity(previousId, reboundIdentity.id());
             editorTab.rebind(reboundIdentity, normalizedTarget);
+            refreshTabPresentations();
             return true;
         } catch (RuntimeException exception) {
             editor.rebind(previousPath);
@@ -845,6 +847,7 @@ public class EditorTabManager {
         recentlyClosedTabs.removeIf(tab -> tab.documentId().equals(editorTab.documentId()));
         recentlyClosedTabs.addFirst(closedTab);
         tabsByControl.remove(editorTab.tab());
+        refreshTabPresentations();
         Services.IDE_STATE.closeDocument(editorTab.document());
         if (Services.IDE_STATE.getActiveDocument() == null) {
             Services.DOCUMENT_EDITOR_STATE.setActiveEditor(null, null);
@@ -961,11 +964,21 @@ public class EditorTabManager {
             }
 
             editorTab.rebind(reboundIdentity, normalizedNewPath);
+            refreshTabPresentations();
         });
         if (Platform.isFxApplicationThread()) {
             update.run();
         } else {
             JavaFXUtils.runOnApplicationThread(update);
+        }
+    }
+
+    private void refreshTabPresentations() {
+        List<EditorTab> tabs = List.copyOf(openTabs.values());
+        List<String> titles = EditorTabPresentation.disambiguatedTitles(
+            tabs.stream().map(EditorTab::path).toList());
+        for (int index = 0; index < tabs.size(); index++) {
+            tabs.get(index).setDisplayTitle(titles.get(index));
         }
     }
 

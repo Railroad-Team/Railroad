@@ -540,8 +540,23 @@ railroad.ide.close_tab_failed.content=Railroad could not save this document:%n%n
 
 # Editor tab context menu
 editor.tab.status.dirty=Unsaved changes
+editor.tab.status.saved=Saved
 editor.tab.status.saving=Saving changes
 editor.tab.status.save_failed=Save failed
+editor.tab.tooltip.language=Language: %s
+editor.tab.tooltip.save_state=Save state: %s
+editor.tab.tooltip.size=Size: %s
+editor.tab.tooltip.modified=Last modified: %s
+editor.tab.tooltip.read_only=Read-only
+editor.tab.tooltip.missing=Backing file is missing
+editor.tab.tooltip.pinned=Pinned tab
+editor.tab.tooltip.preview=Preview tab
+railroad.language.name.java=Java
+railroad.language.name.json=JSON
+railroad.language.name.markdown=Markdown
+railroad.language.name.plaintext=Plain Text
+railroad.language.name.image=Image
+railroad.language.name.binary=Binary
 editor.tab.contextmenu.pin=Pin Tab
 editor.tab.contextmenu.unpin=Unpin Tab
 editor.tab.contextmenu.close=Close

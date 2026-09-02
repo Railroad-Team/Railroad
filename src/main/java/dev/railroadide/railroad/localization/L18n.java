@@ -174,6 +174,18 @@ public class L18n {
     }
 
     /**
+     * Checks whether the active localization bundle contains a translation for a key.
+     * This is useful for extensible labels where plugins may optionally contribute a
+     * translated name while retaining their declared display name as a fallback.
+     *
+     * @param key localization key to check
+     * @return whether a translation is currently available
+     */
+    public static boolean hasTranslation(String key) {
+        return key != null && !key.isBlank() && LANG_CACHE.containsKey(key);
+    }
+
+    /**
      * Localizes a string and formats it with the given arguments.
      * This is equivalent to String.format(L18n.localize(key), args...).
      *

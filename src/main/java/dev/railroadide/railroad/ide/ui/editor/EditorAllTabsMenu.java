@@ -252,6 +252,7 @@ public final class EditorAllTabsMenu implements AutoCloseable {
             }
 
             editorTab.pathProperty().addListener(weakStateListener);
+            editorTab.displayTitleProperty().addListener(weakStateListener);
             editorTab.dirtyProperty().addListener(weakStateListener);
             editorTab.pinnedProperty().addListener(weakStateListener);
             editorTab.saveStateProperty().addListener(weakStateListener);
@@ -265,8 +266,10 @@ public final class EditorAllTabsMenu implements AutoCloseable {
                 return;
 
             Path editorPath = editorTab.path();
-            fileIconSlot.getChildren().setAll(FileUtils.getIcon(editorPath));
-            name.setText(fileName(editorPath));
+            Node fileIcon = FileUtils.getIcon(editorPath);
+            fileIcon.setAccessibleText(editorTab.languageDisplayName() + " file");
+            fileIconSlot.getChildren().setAll(fileIcon);
+            name.setText(editorTab.displayTitle());
             String absolutePath = editorPath.toAbsolutePath().normalize().toString();
             path.setText(absolutePath);
             path.setTooltip(new Tooltip(absolutePath));
@@ -275,7 +278,7 @@ public final class EditorAllTabsMenu implements AutoCloseable {
             pinIcon.setVisible(editorTab.pinned());
             pinIcon.setManaged(editorTab.pinned());
             updateDirtyIcon(editorTab.saveState());
-            setAccessibleText(fileName(editorPath) + ", " + absolutePath
+            setAccessibleText(editorTab.displayTitle() + ", " + editorTab.languageDisplayName() + ", " + absolutePath
                 + (editorTab.dirty() ? ", unsaved changes" : "")
                 + (editorTab.pinned() ? ", pinned" : ""));
         }
@@ -285,6 +288,7 @@ public final class EditorAllTabsMenu implements AutoCloseable {
                 return;
 
             editorTab.pathProperty().removeListener(weakStateListener);
+            editorTab.displayTitleProperty().removeListener(weakStateListener);
             editorTab.dirtyProperty().removeListener(weakStateListener);
             editorTab.pinnedProperty().removeListener(weakStateListener);
             editorTab.saveStateProperty().removeListener(weakStateListener);

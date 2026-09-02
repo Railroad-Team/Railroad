@@ -77,9 +77,9 @@ Bulk actions should protect pinned tabs by default and operate relative to the t
 
 - [x] Keep the selected tab visible when tabs overflow.
 - [x] Add a searchable all-tabs dropdown showing icons, paths, dirty state, and pin state.
-- [ ] Disambiguate duplicate filenames using parent-path suffixes.
-- [ ] Show full path, language, save state, and useful metadata in tooltips.
-- [ ] Display language/file icons.
+- [x] Disambiguate duplicate filenames using parent-path suffixes.
+- [x] Show full path, language, save state, and useful metadata in tooltips.
+- [x] Display language/file icons.
 - [x] Use a dirty dot, saving indicator, and save-error marker without changing tab width.
 - [ ] Make selected, hovered, pinned, preview, and attention states distinct in both themes.
 - [x] Keep close buttons spatially stable so closing several adjacent tabs does not move the pointer target.

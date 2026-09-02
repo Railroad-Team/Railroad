@@ -7,10 +7,10 @@
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label {
-    -fx-content-display: right;
+    -fx-content-display: graphic-only;
     -fx-graphic-text-gap: 0.3em;
     -fx-padding: 0 0.15em 0 0.15em;
-    -fx-alignment: CENTER_RIGHT;
+    -fx-alignment: CENTER_LEFT;
 }
 
 .tab-pane:focused > .tab-header-area > .headers-region > .tab.editor-tab:selected .focus-indicator {
@@ -23,7 +23,17 @@
     -fx-background-color: transparent;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-graphic .ikonli-font-icon {
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-file-icon .ikonli-font-icon {
+    -fx-icon-size: 20px !important;
+    -fx-fill: -color-fg-muted;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.editor-tab-title {
+    -fx-text-fill: -color-fg-default;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-action-slot .ikonli-font-icon {
     -fx-icon-size: 8px !important;
 }
 
