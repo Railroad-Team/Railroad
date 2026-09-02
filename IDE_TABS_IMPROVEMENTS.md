@@ -67,9 +67,8 @@ Bulk actions should protect pinned tabs by default and operate relative to the t
 - [x] `Alt+Click` on a tab closes other tabs.
 - [ ] Drag reorders tabs reliably and auto-scrolls near strip edges.
 - [ ] Mouse-wheel scrolls overflowing tab strips.
-- [ ] `Ctrl/Cmd+W`: close active tab.
-- [ ] `Ctrl/Cmd+Shift+T`: reopen last closed tab.
-- [ ] `Ctrl+Tab` / `Ctrl+Shift+Tab`: switch using most-recently-used order.
+- [x] `Ctrl/Cmd+W`: close active tab.
+- [x] `Ctrl/Cmd+Shift+T`: reopen last closed tab.
 - [ ] Add next/previous tab, move tab left/right, pin tab, and close-other-tabs keybind commands.
 - [ ] Support `Ctrl/Cmd+1` through `8` and `9` for the last tab.
 - [ ] Restore editor focus and caret after keyboard switching.

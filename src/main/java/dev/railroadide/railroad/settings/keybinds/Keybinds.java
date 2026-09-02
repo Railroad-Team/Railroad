@@ -123,6 +123,13 @@ public class Keybinds {
             _ -> Services.EDITOR_TAB_MANAGER.activeTab().ifPresent(Services.EDITOR_TAB_MANAGER::close))
         .build());
 
+    public static final Keybind REOPEN_CLOSED_EDITOR_TAB = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:reopen_closed_editor_tab")
+        .category(GENERAL)
+        .addDefaultKey(KeyCode.T, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN)
+        .addAction(IDE, _ -> Services.EDITOR_TAB_MANAGER.reopenLastClosed())
+        .build());
+
     public static final Keybind CLOSE_OTHER_EDITOR_TABS = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:close_other_editor_tabs")
         .category(GENERAL)
