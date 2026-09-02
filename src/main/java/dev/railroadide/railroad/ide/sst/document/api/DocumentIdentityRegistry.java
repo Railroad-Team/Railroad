@@ -180,6 +180,21 @@ public final class DocumentIdentityRegistry {
     }
 
     /**
+     * Finds an existing physical or virtual URI association without allocating an ID.
+     *
+     * @param documentUri document URI
+     * @return associated identity, or empty when the URI is unknown
+     */
+    public synchronized Optional<DocumentUri> find(DocumentId id) {
+        Objects.requireNonNull(id, "id");
+
+        return idsByUri.entrySet().stream()
+            .filter(entry -> entry.getValue().equals(id))
+            .findFirst()
+            .map(entry -> entry.getKey());
+    }
+
+    /**
      * Associates an existing identity with a physical path.
      *
      * @param documentId identity owned by this workspace

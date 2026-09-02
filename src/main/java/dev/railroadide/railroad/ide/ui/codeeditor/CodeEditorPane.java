@@ -6,8 +6,14 @@ import dev.railroadide.railroad.ide.completion.CompletionProvider;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
 import dev.railroadide.railroad.ide.diagnostics.DiagnosticsProvider;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic;
+import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
 import dev.railroadide.railroad.ide.signature.SignatureHelp;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.ui.DiagnosticPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRListView;
@@ -42,6 +48,8 @@ import org.fxmisc.richtext.model.StyleSpansBuilder;
 import org.jspecify.annotations.Nullable;
 
 import javax.tools.Diagnostic;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
@@ -56,7 +64,7 @@ import java.util.stream.Collectors;
 public abstract class CodeEditorPane extends TextEditorPane {
     protected final Project project;
     protected final @Nullable CompletionProvider completionProvider;
-    protected final @Nullable DiagnosticsProvider diagnosticsProvider;
+    protected final @Nullable DiagnosticsProvider<TextEditorDiagnostic> diagnosticsProvider;
     protected final @Nullable SignatureHelpProvider signatureHelpProvider;
     protected final @Nullable SyntaxHighlightingProvider highlightingProvider;
 
@@ -73,7 +81,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     protected final Map<Integer, String> lineDiagnosticMessages = new ConcurrentHashMap<>();
     protected final AtomicInteger diagnosticsGeneration = new AtomicInteger();
 
-    protected volatile List<EditorDiagnostic> visibleDiagnostics = List.of();
+    protected volatile List<TextEditorDiagnostic> visibleDiagnostics = List.of();
     protected final Popup diagnosticPopup = new Popup();
     // endregion
 
@@ -255,20 +263,30 @@ public abstract class CodeEditorPane extends TextEditorPane {
             .subscribe(changes -> requestDiagnostics(getText()));
     }
 
-    private void requestDiagnostics(String snapshot) {
+    private void requestDiagnostics(String text) {
         if (!supportsDiagnostics())
             return;
 
         int generation = diagnosticsGeneration.incrementAndGet();
+
+        var snapshot = new TextDocumentSnapshot(
+            DocumentId.create(),
+            DocumentUri.fromPath(filePath),
+            DocumentVersion.parse(Integer.toString(generation)),
+            languageId,
+            text,
+            StandardCharsets.UTF_8);
+
         CompletableFuture.supplyAsync(() -> diagnosticsProvider.compute(snapshot), worker)
-            .thenAccept(result -> Platform.runLater(() -> applyDiagnosticsIfLatest(generation, result)))
+            .thenAccept(result -> Platform.runLater(() -> applyDiagnosticsIfLatest(generation, result, snapshot)))
             .exceptionally(throwable -> {
                 Railroad.LOGGER.error("Failed to analyse diagnostics", throwable);
                 return null;
             });
     }
 
-    private void applyDiagnosticsIfLatest(int generation, List<EditorDiagnostic> diagnostics) {
+    private void applyDiagnosticsIfLatest(int generation, List<TextEditorDiagnostic> diagnostics,
+        DocumentSnapshot snapshot) {
         if (diagnosticsGeneration.get() != generation)
             return;
 
@@ -294,7 +312,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             return null;
 
         for (EditorDiagnostic diagnostic : visibleDiagnostics) {
-            if (index >= diagnostic.getStartPosition() && index <= diagnostic.getEndPosition())
+            if (diagnostic.location().range().contains(index))
                 return diagnostic;
         }
 
@@ -789,7 +807,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private static StyleSpans<Collection<String>> mergeDiagnosticStyles(
         StyleSpans<Collection<String>> baseSpans,
-        List<EditorDiagnostic> diagnostics) {
+        List<TextEditorDiagnostic> diagnostics) {
         if (baseSpans == null || diagnostics == null || diagnostics.isEmpty())
             return baseSpans;
 
@@ -799,13 +817,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
         }
 
         TreeMap<Integer, int[]> events = new TreeMap<>();
-        for (EditorDiagnostic diagnostic : diagnostics) {
-            int start = Math.clamp((int) diagnostic.getStartPosition(), 0, documentLength);
-            int end = Math.clamp((int) diagnostic.getEndPosition(), start, documentLength);
+        for (TextEditorDiagnostic diagnostic : diagnostics) {
+            int start = Math.clamp(diagnostic.location().range().start, 0, documentLength);
+            int end = Math.clamp(diagnostic.location().range().end, start, documentLength);
             if (end <= start)
                 continue;
 
-            boolean error = diagnostic.getKind() == Diagnostic.Kind.ERROR;
+            boolean error = diagnostic.kind() == Diagnostic.Kind.ERROR;
             registerDiagnosticEvent(events, start, error, 1);
             registerDiagnosticEvent(events, end, error, -1);
         }
@@ -899,12 +917,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private boolean recomputeLineDecorations() {
         Map<Integer, Diagnostic.Kind> updatedSeverity = new LinkedHashMap<>();
         Map<Integer, String> updatedMessages = new LinkedHashMap<>();
-        for (EditorDiagnostic diagnostic : visibleDiagnostics) {
-            int line = (int) diagnostic.getLineNumber();
+
+        for (TextEditorDiagnostic diagnostic : visibleDiagnostics) {
+            int line = (int) diagnostic.location().line();
             if (line <= 0)
                 continue;
 
-            Diagnostic.Kind kind = diagnostic.getKind();
+            Diagnostic.Kind kind = diagnostic.kind();
             Diagnostic.Kind effectiveKind = kind == Diagnostic.Kind.ERROR
                 ? Diagnostic.Kind.ERROR
                 : Diagnostic.Kind.WARNING;
@@ -913,7 +932,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 updatedSeverity.put(line, effectiveKind);
             }
 
-            updatedMessages.putIfAbsent(line, diagnostic.getMessage(Locale.getDefault()));
+            updatedMessages.putIfAbsent(line, diagnostic.message(Locale.getDefault()));
         }
 
         boolean changed = !lineSeverity.equals(updatedSeverity) || !lineDiagnosticMessages.equals(updatedMessages);

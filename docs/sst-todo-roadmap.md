@@ -95,14 +95,14 @@ Incremental semantic sessions and broader IDE features
 
 ## P0.3 Unified ranges and locations
 
-- [ ] **SST-P0-031** Add validated half-open `TextRange`.
-- [ ] **SST-P0-032** Add validated half-open `ByteRange`.
+- [x] **SST-P0-031** Add validated half-open `TextRange`.
+- [x] **SST-P0-032** Add validated half-open `ByteRange`.
 - [ ] **SST-P0-033** Add optional binary `AddressRange` for formats with virtual addresses.
-- [ ] **SST-P0-034** Add a language-neutral `Location` containing document identity, snapshot version, and range.
+- [x] **SST-P0-034** Add a language-neutral `Location` containing document identity, snapshot version, and range.
 - [ ] **SST-P0-035** Add `RelatedLocation` with a human-readable relationship/message.
 - [ ] **SST-P0-036** Add source-map support for generated and decompiled locations.
 - [ ] **SST-P0-037** Add a location resolver that can open physical, virtual, archive, binary, and generated targets.
-- [ ] **SST-P0-038** Replace raw diagnostic offsets with locations or snapshot-bound ranges.
+- [x] **SST-P0-038** Replace raw diagnostic offsets with locations or snapshot-bound ranges.
 - [ ] **SST-P0-039** Add conversion adapters for existing `SyntaxNode.start/end` ranges.
 - [ ] **SST-P0-040** Add validation preventing a location from being used against the wrong snapshot version.
 

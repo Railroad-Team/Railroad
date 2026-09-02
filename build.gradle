@@ -151,6 +151,7 @@ spotless {
     java {
         target 'src/main/java/**/*.java', 'src/test/java/**/*.java', 'src/formatter/java/**/*.java'
         eclipse().configFile('config/format/railroad-eclipse-formatter.xml')
+        lineEndings = 'UNIX'
         trimTrailingWhitespace()
         endWithNewline()
     }

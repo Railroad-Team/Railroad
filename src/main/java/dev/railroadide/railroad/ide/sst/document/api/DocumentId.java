@@ -53,4 +53,16 @@ public record DocumentId(UUID value) {
     public @NonNull String toString() {
         return value.toString();
     }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other instanceof DocumentId otherDocId)
+            return this.value.equals(otherDocId.value);
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
 }

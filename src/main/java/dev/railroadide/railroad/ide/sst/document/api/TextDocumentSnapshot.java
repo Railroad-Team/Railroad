@@ -2,6 +2,9 @@ package dev.railroadide.railroad.ide.sst.document.api;
 
 import java.nio.charset.Charset;
 import java.util.Objects;
+import java.util.Optional;
+
+import dev.railroadide.railroad.ide.language.LanguageSupport;
 
 /**
  * Immutable snapshot of text document content.
@@ -10,11 +13,7 @@ import java.util.Objects;
  * construction. The snapshot therefore never observes later caller mutations and is
  * safe to share across analysis threads.
  */
-public final class TextDocumentSnapshot implements DocumentSnapshot {
-    private final DocumentId id;
-    private final DocumentUri uri;
-    private final DocumentVersion version;
-    private final String languageId;
+public final class TextDocumentSnapshot extends DocumentSnapshot {
     private final String text;
     private final Charset encoding;
 
@@ -37,32 +36,9 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
         String languageId,
         CharSequence text,
         Charset encoding) {
-        this.id = Objects.requireNonNull(id, "id");
-        this.uri = Objects.requireNonNull(uri, "uri");
-        this.version = Objects.requireNonNull(version, "version");
-        this.languageId = requireLanguageId(languageId);
+        super(id, uri, version, languageId);
         this.text = Objects.requireNonNull(text, "text").toString();
         this.encoding = Objects.requireNonNull(encoding, "encoding");
-    }
-
-    @Override
-    public DocumentId id() {
-        return id;
-    }
-
-    @Override
-    public DocumentUri uri() {
-        return uri;
-    }
-
-    @Override
-    public DocumentVersion version() {
-        return version;
-    }
-
-    @Override
-    public String languageId() {
-        return languageId;
     }
 
     /**
@@ -83,10 +59,21 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
         return encoding;
     }
 
-    private static String requireLanguageId(String languageId) {
-        languageId = Objects.requireNonNull(languageId, "languageId");
-        if (languageId.isBlank())
-            throw new IllegalArgumentException("languageId cannot be blank");
-        return languageId;
+    /**
+     * Safely returns the content of a {@link DocumentSnapshot}, only if it is an
+     * instance of {@link TextDocumentSnapshot} and is supported by the provided {@link LanguageSupport}.
+     *
+     * @param snapshot Snapshot to unwrap
+     * @param language Required language
+     * @return content of the snapshot
+     */
+    public static Optional<String> unwrap(DocumentSnapshot snapshot, LanguageSupport language) {
+        if (snapshot.languageId() != language.languageId())
+            return Optional.empty();
+
+        if (snapshot instanceof TextDocumentSnapshot textDocumentSnapshot)
+            return Optional.of(textDocumentSnapshot.text());
+
+        return Optional.empty();
     }
 }

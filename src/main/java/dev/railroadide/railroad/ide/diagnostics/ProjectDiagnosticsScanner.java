@@ -1,11 +1,16 @@
 package dev.railroadide.railroad.ide.diagnostics;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
 import dev.railroadide.railroad.ide.language.LanguageSupport;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.ProjectDiagnosticsFeatureFactory;
 import dev.railroadide.railroad.ide.language.index.LanguageIndexContext;
 import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import javax.tools.Diagnostic;
@@ -78,9 +83,9 @@ public final class ProjectDiagnosticsScanner {
                     Railroad.LOGGER.warn("Failed to scan diagnostics for {}", result.path(), result.failure());
                 } else if (!result.diagnostics().isEmpty()) {
                     result.diagnostics().forEach(diagnostic -> {
-                        String code = diagnostic.getCode() == null ? "<none>" : diagnostic.getCode();
+                        String code = diagnostic.code() == null ? "<none>" : diagnostic.code();
                         countsByCode.merge(code, 1, Integer::sum);
-                        countsByKind.merge(diagnostic.getKind(), 1, Integer::sum);
+                        countsByKind.merge(diagnostic.kind(), 1, Integer::sum);
                     });
                 }
 
@@ -130,9 +135,24 @@ public final class ProjectDiagnosticsScanner {
         long fileStartedAt = System.nanoTime();
         try {
             String source = Files.readString(target.path());
-            DiagnosticsProvider provider = createDiagnosticsProvider(diagnosticsContext, target);
-            List<EditorDiagnostic> diagnostics = provider.compute(source);
-            return new FileScanResult(target.path(), target.support().languageId(), diagnostics, null, fileStartedAt);
+            var snapshot = new TextDocumentSnapshot(
+                DocumentId.create(),
+                DocumentUri.fromPath(target.path()),
+                DocumentVersion.initial(),
+                target.support.languageId(),
+                source,
+                StandardCharsets.UTF_8);
+
+            DiagnosticsProvider<?> provider = createDiagnosticsProvider(diagnosticsContext, target);
+            if (provider instanceof DiagnosticsProvider<?> tprovider) {
+                List<EditorDiagnostic> diagnostics = tprovider.compute(snapshot).stream()
+                    .map(EditorDiagnostic.class::cast)
+                    .toList();
+                return new FileScanResult(target.path(), target.support().languageId(), diagnostics, null,
+                    fileStartedAt);
+            }
+            return new FileScanResult(target.path(), target.support().languageId(), List.of(), null, fileStartedAt);
+
         } catch (Exception | StackOverflowError exception) {
             return new FileScanResult(target.path(), target.support().languageId(), List.of(), exception,
                 fileStartedAt);
@@ -265,13 +285,16 @@ public final class ProjectDiagnosticsScanner {
                 .append(" [").append(file.languageId()).append("] (")
                 .append(file.diagnostics().size()).append(")\n");
             for (EditorDiagnostic diagnostic : file.diagnostics()) {
-                report.append("  [").append(diagnostic.getKind()).append("] ")
-                    .append("line ").append(diagnostic.getLineNumber())
-                    .append(", column ").append(diagnostic.getColumnNumber())
-                    .append(", offsets ").append(diagnostic.getStartPosition())
-                    .append("-").append(diagnostic.getEndPosition())
-                    .append(", ").append(diagnostic.getCode())
-                    .append(": ").append(diagnostic.getMessage(null))
+                report.append("  [").append(diagnostic.kind()).append("] ");
+
+                if (diagnostic instanceof TextEditorDiagnostic textDiagnostic) {
+                    report.append("line ").append(textDiagnostic.location().line())
+                        .append(", column ").append(textDiagnostic.location().column());
+                }
+                report.append(", offsets ").append(diagnostic.location().range().start)
+                    .append("-").append(diagnostic.location().range().end)
+                    .append(", ").append(diagnostic.code())
+                    .append(": ").append(diagnostic.message(null))
                     .append('\n');
             }
         }
