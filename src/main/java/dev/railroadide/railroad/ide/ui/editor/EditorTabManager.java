@@ -566,6 +566,29 @@ public class EditorTabManager {
         return Optional.ofNullable(activeTab != null ? activeTab : selectedManagedTab().orElse(null));
     }
 
+    /**
+     * Selects the zero-based tab in the active editor group. Out-of-range indices are ignored.
+     *
+     * @param index the zero-based tab index
+     */
+    public void selectTab(int index) {
+        if (index < 0)
+            return;
+
+        activeTab().map(EditorTab::tab)
+            .map(Tab::getTabPane)
+            .filter(tabPane -> index < tabPane.getTabs().size())
+            .ifPresent(tabPane -> tabPane.getSelectionModel().select(index));
+    }
+
+    /** Selects the last tab in the active editor group. */
+    public void selectLastTab() {
+        activeTab().map(EditorTab::tab)
+            .map(Tab::getTabPane)
+            .filter(tabPane -> !tabPane.getTabs().isEmpty())
+            .ifPresent(tabPane -> tabPane.getSelectionModel().selectLast());
+    }
+
     public SaveResult saveActive() {
         EditorTab activeTab = activeTab().orElse(null);
         if (activeTab == null || save(activeTab))

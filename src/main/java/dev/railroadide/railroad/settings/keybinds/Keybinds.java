@@ -10,6 +10,7 @@ import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.window.WindowManager;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 
 import java.util.function.Consumer;
@@ -113,8 +114,8 @@ public class Keybinds {
         .addValidContext(EDITOR_TABS)
         .addValidContext(IDE)
         .ignoreAllContext()
-        .addAction(EDITOR_TABS, target -> {
-            EditorTab editorTab = Services.EDITOR_TAB_MANAGER.getTabAt(target);
+        .addAction(EDITOR_TABS, actionContext -> {
+            EditorTab editorTab = Services.EDITOR_TAB_MANAGER.getTabAt(actionContext.target());
             if (editorTab != null) {
                 Services.EDITOR_TAB_MANAGER.close(editorTab);
             }
@@ -130,14 +131,53 @@ public class Keybinds {
         .addAction(IDE, _ -> Services.EDITOR_TAB_MANAGER.reopenLastClosed())
         .build());
 
+    public static final Keybind SELECT_EDITOR_TAB_BY_NUMBER = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:select_editor_tab_by_number")
+        .category(GENERAL)
+        .addDefaultKey(KeyCode.DIGIT1, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT2, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT3, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT4, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT5, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT6, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT7, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT8, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT9, KeyCombination.SHORTCUT_DOWN)
+        .addAction(IDE, actionContext -> {
+            if (!(actionContext.event() instanceof KeyEvent keyEvent))
+                return;
+
+            int tabIndex = switch (keyEvent.getCode()) {
+                case DIGIT1 -> 0;
+                case DIGIT2 -> 1;
+                case DIGIT3 -> 2;
+                case DIGIT4 -> 3;
+                case DIGIT5 -> 4;
+                case DIGIT6 -> 5;
+                case DIGIT7 -> 6;
+                case DIGIT8 -> 7;
+                case DIGIT9 -> -1;
+                default -> Integer.MIN_VALUE;
+            };
+            if (tabIndex == Integer.MIN_VALUE)
+                return;
+
+            if (tabIndex < 0) {
+                Services.EDITOR_TAB_MANAGER.selectLastTab();
+            } else {
+                Services.EDITOR_TAB_MANAGER.selectTab(tabIndex);
+            }
+        })
+        .build());
+
     public static final Keybind CLOSE_OTHER_EDITOR_TABS = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:close_other_editor_tabs")
         .category(GENERAL)
         .addDefaultMouseButton(MouseButton.MIDDLE, KeyCombination.ALT_DOWN)
         .addValidContext(EDITOR_TABS)
         .ignoreAllContext()
-        .addAction(EDITOR_TABS, target -> {
-            EditorTab editorTab = Services.EDITOR_TAB_MANAGER.getTabAt(target);
+        .addAction(EDITOR_TABS, actionContext -> {
+            EditorTab editorTab = Services.EDITOR_TAB_MANAGER.getTabAt(actionContext.target());
             if (editorTab != null) {
                 Services.EDITOR_TAB_MANAGER.closeOthers(editorTab);
             }
@@ -146,6 +186,8 @@ public class Keybinds {
 
     public static void initialize() {
         CLOSE_EDITOR_TAB.resetKeys();
+        REOPEN_CLOSED_EDITOR_TAB.resetKeys();
+        SELECT_EDITOR_TAB_BY_NUMBER.resetKeys();
         CLOSE_OTHER_EDITOR_TABS.resetKeys();
     }
 

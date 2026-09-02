@@ -2,7 +2,6 @@ package dev.railroadide.railroad.settings.keybinds;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
@@ -14,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public class Keybind {
@@ -28,7 +28,7 @@ public class Keybind {
     @Getter
     private final List<KeybindContexts.KeybindContext> validContexts;
     @Getter
-    private final Map<KeybindContexts.KeybindContext, Consumer<Node>> actions;
+    private final Map<KeybindContexts.KeybindContext, Consumer<KeybindActionContext>> actions;
 
     /**
      * Creates a Keybind instance. Should not be called directly. See {@link Keybind.Builder}
@@ -42,7 +42,8 @@ public class Keybind {
      *            action will be executed.
      */
     private Keybind(String id, KeybindCategory category, List<KeybindData> defaultKeys,
-        List<KeybindContexts.KeybindContext> contexts, Map<KeybindContexts.KeybindContext, Consumer<Node>> actions) {
+        List<KeybindContexts.KeybindContext> contexts,
+        Map<KeybindContexts.KeybindContext, Consumer<KeybindActionContext>> actions) {
         this.id = id;
         this.category = category;
         this.defaultKeys = defaultKeys;
@@ -90,17 +91,38 @@ public class Keybind {
      * @return true if the KeyEvent matches any of the keybind's keys, false otherwise.
      */
     public boolean matches(KeyEvent keyEvent) {
-        for (KeybindData key : keys) {
-            KeyCombination combination = key.getKeyCodeCombination();
-            if (combination != null && combination.match(keyEvent))
-                return true;
-        }
-
-        return false;
+        return findMatchingBinding(keyEvent).isPresent();
     }
 
     public boolean matches(MouseEvent mouseEvent) {
-        return keys.stream().anyMatch(key -> key.matches(mouseEvent));
+        return findMatchingBinding(mouseEvent).isPresent();
+    }
+
+    /**
+     * Finds the configured keyboard binding matched by the supplied event.
+     *
+     * @param keyEvent the keyboard event to match
+     * @return the first matching binding, or an empty optional when none match
+     */
+    public Optional<KeybindData> findMatchingBinding(KeyEvent keyEvent) {
+        return keys.stream()
+            .filter(key -> {
+                KeyCombination combination = key.getKeyCodeCombination();
+                return combination != null && combination.match(keyEvent);
+            })
+            .findFirst();
+    }
+
+    /**
+     * Finds the configured mouse binding matched by the supplied event.
+     *
+     * @param mouseEvent the mouse event to match
+     * @return the first matching binding, or an empty optional when none match
+     */
+    public Optional<KeybindData> findMatchingBinding(MouseEvent mouseEvent) {
+        return keys.stream()
+            .filter(key -> key.matches(mouseEvent))
+            .findFirst();
     }
 
     public static Builder builder() {
@@ -116,7 +138,7 @@ public class Keybind {
         private final List<KeybindData> defaultKeys = new ArrayList<>();
         private final List<KeybindContexts.KeybindContext> validContexts = new ArrayList<>();
         private boolean ignoreAll = false;
-        private final Map<KeybindContexts.KeybindContext, Consumer<Node>> actions = new HashMap<>();
+        private final Map<KeybindContexts.KeybindContext, Consumer<KeybindActionContext>> actions = new HashMap<>();
 
         /**
          * Sets the ID of the keybind. This is used for localization and saving in settings.json.
@@ -183,10 +205,10 @@ public class Keybind {
          * Adds an action to be executed when the keybind is pressed in a specific context.
          *
          * @param context The context in which the action should be executed.
-         * @param action The action to be executed when the keybind is pressed in the specified context.
+         * @param action The action to execute with the matched binding, input event, target node, and logical context.
          * @return the modified Builder instance.
          */
-        public Builder addAction(KeybindContexts.KeybindContext context, Consumer<Node> action) {
+        public Builder addAction(KeybindContexts.KeybindContext context, Consumer<KeybindActionContext> action) {
             actions.put(context, action);
             return this;
         }

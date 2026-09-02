@@ -26,13 +26,17 @@ public class KeybindHandler {
             if (keybind.getValidContexts().contains(context)
                 || keybind.getValidContexts().contains(KeybindContexts.ALL)) {
                 captureNode.addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
-                    if (keybind.matches(keyEvent)) {
-                        keybind.getActions().forEach((keybindContext, action) -> {
-                            if (keybindContext.equals(context)) {
-                                action.accept(captureNode);
-                            }
-                        });
-                    }
+                    keybind.findMatchingBinding(keyEvent).ifPresent(binding -> {
+                        var action = keybind.getActions().get(context);
+                        if (action != null) {
+                            action.accept(new KeybindActionContext(
+                                keybind,
+                                context,
+                                binding,
+                                keyEvent,
+                                captureNode));
+                        }
+                    });
                 });
             }
         });
@@ -51,12 +55,13 @@ public class KeybindHandler {
             if (!keybind.getValidContexts().contains(context)
                 && !keybind.getValidContexts().contains(KeybindContexts.ALL))
                 continue;
-            if (!keybind.matches(event))
+            KeybindData binding = keybind.findMatchingBinding(event).orElse(null);
+            if (binding == null)
                 continue;
 
             var action = keybind.getActions().get(context);
             if (action != null) {
-                action.accept(target);
+                action.accept(new KeybindActionContext(keybind, context, binding, event, target));
                 return true;
             }
         }
