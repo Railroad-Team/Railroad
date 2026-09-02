@@ -45,8 +45,9 @@ public record JavaDiagnosticsProvider(Project project,
 
     @Override
     public @NotNull List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
-        Optional<String> snapshotText = TextDocumentSnapshot.unwrap(
-            snapshot, LanguageSupportRegistry.get(JavaLanguageSupport.LANGUAGE_ID).get());
+        var language = LanguageSupportRegistry.getExpected(JavaLanguageSupport.LANGUAGE_ID);
+        Optional<String> snapshotText = TextDocumentSnapshot.unwrap(snapshot, language);
+
         if (snapshotText.isEmpty())
             return List.of();
 

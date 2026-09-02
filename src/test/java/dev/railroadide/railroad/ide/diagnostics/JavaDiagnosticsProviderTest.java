@@ -172,7 +172,9 @@ class JavaDiagnosticsProviderTest {
             .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code()))
             .filter(diagnostic -> diagnostic.message(null).contains("'addArgs'")
                 || diagnostic.message(null).contains("'build'"))
-            .map(diagnostic -> "line " + diagnostic.location().line() + ": " + diagnostic.location().column())
+            .map(diagnostic -> "line " + diagnostic.location().line()
+                + ", column " + diagnostic.location().column()
+                + ": " + diagnostic.message(null))
             .toList();
 
         assertTrue(unresolved.isEmpty(), () -> String.join(System.lineSeparator(), unresolved));

@@ -143,9 +143,16 @@ public final class ProjectDiagnosticsScanner {
                 source,
                 StandardCharsets.UTF_8);
 
-            DiagnosticsProvider provider = createDiagnosticsProvider(diagnosticsContext, target);
-            List<EditorDiagnostic> diagnostics = provider.compute(snapshot);
-            return new FileScanResult(target.path(), target.support().languageId(), diagnostics, null, fileStartedAt);
+            DiagnosticsProvider<?> provider = createDiagnosticsProvider(diagnosticsContext, target);
+            if (provider instanceof DiagnosticsProvider<?> tprovider)
+            {
+                List<EditorDiagnostic> diagnostics = tprovider.compute(snapshot).stream()
+                    .map(EditorDiagnostic.class::cast)
+                    .toList();
+                return new FileScanResult(target.path(), target.support().languageId(), diagnostics, null, fileStartedAt);
+            }
+            return new FileScanResult(target.path(), target.support().languageId(), List.of(), null, fileStartedAt);
+
         } catch (Exception | StackOverflowError exception) {
             return new FileScanResult(target.path(), target.support().languageId(), List.of(), exception,
                 fileStartedAt);

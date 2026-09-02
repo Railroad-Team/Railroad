@@ -11,11 +11,7 @@ import java.util.Objects;
  * buffer on every call, so neither content nor shared buffer position can be mutated by
  * consumers.
  */
-public final class BinaryDocumentSnapshot implements DocumentSnapshot {
-    private final DocumentId id;
-    private final DocumentUri uri;
-    private final DocumentVersion version;
-    private final String languageId;
+public final class BinaryDocumentSnapshot extends DocumentSnapshot {
     private final byte[] content;
 
     /**
@@ -33,10 +29,7 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
         DocumentVersion version,
         String languageId,
         byte[] content) {
-        this.id = Objects.requireNonNull(id, "id");
-        this.uri = Objects.requireNonNull(uri, "uri");
-        this.version = Objects.requireNonNull(version, "version");
-        this.languageId = requireLanguageId(languageId);
+        super(id, uri, version, languageId);
         content = Objects.requireNonNull(content, "content");
         this.content = Arrays.copyOf(content, content.length);
     }
@@ -58,26 +51,6 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
         String languageId,
         ByteBuffer content) {
         this(id, uri, version, languageId, copyRemaining(content));
-    }
-
-    @Override
-    public DocumentId id() {
-        return id;
-    }
-
-    @Override
-    public DocumentUri uri() {
-        return uri;
-    }
-
-    @Override
-    public DocumentVersion version() {
-        return version;
-    }
-
-    @Override
-    public String languageId() {
-        return languageId;
     }
 
     /**
@@ -112,12 +85,5 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
         byte[] copy = new byte[source.remaining()];
         source.get(copy);
         return copy;
-    }
-
-    private static String requireLanguageId(String languageId) {
-        languageId = Objects.requireNonNull(languageId, "languageId");
-        if (languageId.isBlank())
-            throw new IllegalArgumentException("languageId cannot be blank");
-        return languageId;
     }
 }

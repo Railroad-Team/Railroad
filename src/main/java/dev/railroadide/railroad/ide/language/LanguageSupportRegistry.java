@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.language;
 
 import dev.railroadide.railroad.ide.language.impl.ImageLanguageSupport;
 import dev.railroadide.railroad.ide.language.impl.PlainTextLanguageSupport;
+import dev.railroadide.railroad.ide.language.index.LanguageNotSupportedException;
 import dev.railroadide.railroad.registry.Registry;
 import dev.railroadide.railroad.registry.RegistryManager;
 import dev.railroadide.railroad.utility.FileUtils;
@@ -35,11 +36,15 @@ public final class LanguageSupportRegistry {
         }
     }
 
-    public static Optional<LanguageSupport> get(String languageId) {
+    public static Optional<LanguageSupport> get(String languageId) throws IllegalArgumentException {
         if (languageId == null)
             throw new IllegalArgumentException("Language id cannot be null.");
 
         return Optional.ofNullable(REGISTRY.get(languageId));
+    }
+
+    public static LanguageSupport getExpected(String languageId) throws IllegalArgumentException, LanguageNotSupportedException {
+        return get(languageId).orElseThrow(() -> new LanguageNotSupportedException(languageId));
     }
 
     public static boolean contains(String languageId) {

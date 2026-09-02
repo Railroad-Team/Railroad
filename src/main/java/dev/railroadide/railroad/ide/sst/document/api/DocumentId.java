@@ -60,4 +60,9 @@ public record DocumentId(UUID value) {
             return this.value.equals(((DocumentId) other).value);
         return false;
     }
+
+    @Override
+     public int hashCode() {
+         return value.hashCode();
+     }
 }

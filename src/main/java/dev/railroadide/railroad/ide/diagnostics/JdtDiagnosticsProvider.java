@@ -27,7 +27,7 @@ public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditor
     @Override
     public @NotNull List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
         Optional<String> snapshotText = TextDocumentSnapshot.unwrap(
-            snapshot, LanguageSupportRegistry.get(JavaLanguageSupport.LANGUAGE_ID).get());
+            snapshot, LanguageSupportRegistry.getExpected(JavaLanguageSupport.LANGUAGE_ID));
         if (snapshotText.isEmpty())
             return List.of();
 
