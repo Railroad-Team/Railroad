@@ -80,7 +80,7 @@ Bulk actions should protect pinned tabs by default and operate relative to the t
 - [ ] Disambiguate duplicate filenames using parent-path suffixes.
 - [ ] Show full path, language, save state, and useful metadata in tooltips.
 - [ ] Display language/file icons.
-- [ ] Use a dirty dot, saving indicator, and save-error marker without changing tab width.
+- [x] Use a dirty dot, saving indicator, and save-error marker without changing tab width.
 - [ ] Make selected, hovered, pinned, preview, and attention states distinct in both themes.
 - [ ] Keep close buttons spatially stable so closing several adjacent tabs does not move the pointer target.
 - [ ] Return to a proper empty editor state when the last document closes instead of leaving a mutated Welcome tab.

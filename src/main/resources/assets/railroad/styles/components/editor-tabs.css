@@ -1,0 +1,64 @@
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab {
+    -fx-padding: 0 0.25em 0 0.25em;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label {
+    -fx-content-display: right;
+    -fx-graphic-text-gap: 0.3em;
+    -fx-padding: 0 0.15em 0 0.15em;
+}
+
+.tab-pane:focused > .tab-header-area > .headers-region > .tab.editor-tab:selected .focus-indicator {
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+.editor-tab-graphic,
+.editor-tab-action-slot {
+    -fx-background-color: transparent;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-graphic .ikonli-font-icon {
+    -fx-icon-size: 8px !important;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-pin-icon {
+    -fx-icon-size: 10px !important;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-action-slot.combined-status .editor-tab-status-icon {
+    -fx-icon-size: 6px !important;
+    -fx-translate-x: 4px;
+    -fx-translate-y: -4px;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-action-slot:hover {
+    -fx-background-color: -color-neutral-muted;
+    -fx-background-radius: 50%;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-pin-icon {
+    -fx-fill: -color-fg-muted;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-action-slot:hover .editor-tab-pin-icon,
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-action-slot:hover .editor-tab-close-icon {
+    -fx-fill: -color-fg-default;
+    -fx-icon-color: -color-fg-default;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-dirty-icon {
+    -fx-fill: -color-warning-fg;
+    -fx-icon-color: -color-warning-fg;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-saving-icon {
+    -fx-fill: -color-accent-fg;
+    -fx-icon-color: -color-accent-fg;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-save-failed-icon {
+    -fx-fill: -color-danger-fg;
+    -fx-icon-color: -color-danger-fg;
+}

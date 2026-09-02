@@ -525,6 +525,9 @@ railroad.ide.close_tab_failed.title=This document could not be saved
 railroad.ide.close_tab_failed.content=Railroad could not save this document:%n%n%s%n%nChoose Save to retry, Discard to close without saving, or Cancel to keep the tab open.
 
 # Editor tab context menu
+editor.tab.status.dirty=Unsaved changes
+editor.tab.status.saving=Saving changes
+editor.tab.status.save_failed=Save failed
 editor.tab.contextmenu.pin=Pin Tab
 editor.tab.contextmenu.unpin=Unpin Tab
 editor.tab.contextmenu.close=Close

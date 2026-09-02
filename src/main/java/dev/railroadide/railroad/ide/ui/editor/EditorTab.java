@@ -8,15 +8,27 @@ import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.RRStackPane;
 import dev.railroadide.railroad.ui.localized.LocalizedMenu;
 import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
+import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
+import javafx.animation.Animation;
+import javafx.animation.Interpolator;
+import javafx.animation.RotateTransition;
 import javafx.beans.property.*;
+import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Tab;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.MouseButton;
+import javafx.util.Duration;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.javafx.StackedFontIcon;
 
 import java.nio.file.Files;
@@ -78,7 +90,9 @@ public final class EditorTab {
 
         this.tab = new Tab(path.getFileName().toString(), view.content());
         this.tab.setId("editor:" + identity.id());
-        this.tab.closableProperty().bind(this.pinned.not());
+        this.tab.getStyleClass().add("editor-tab");
+        this.tab.setGraphic(createTabGraphic());
+        this.tab.setClosable(false);
         this.tab.setContextMenu(createContextMenu());
     }
 
@@ -196,6 +210,111 @@ public final class EditorTab {
 
     void setPreview(boolean preview) {
         this.preview.set(preview);
+    }
+
+    private RRHBox createTabGraphic() {
+        var closeIcon = new FontIcon(FontAwesomeSolid.TIMES);
+        closeIcon.getStyleClass().add("editor-tab-close-icon");
+
+        var pinIcon = new FontIcon(FontAwesomeSolid.THUMBTACK);
+        pinIcon.getStyleClass().add("editor-tab-pin-icon");
+
+        var statusIcon = new FontIcon();
+        statusIcon.getStyleClass().add("editor-tab-status-icon");
+        var statusTooltip = new LocalizedTooltip("editor.tab.status.dirty");
+        Tooltip.install(statusIcon, statusTooltip);
+        var savingAnimation = new RotateTransition(Duration.seconds(1), statusIcon);
+        savingAnimation.setByAngle(360);
+        savingAnimation.setCycleCount(Animation.INDEFINITE);
+        savingAnimation.setInterpolator(Interpolator.LINEAR);
+        saveStateProperty().addListener(
+            (_, _, state) -> updateSaveStatusIcon(statusIcon, statusTooltip, savingAnimation, state));
+        updateSaveStatusIcon(statusIcon, statusTooltip, savingAnimation, saveState());
+
+        var actionSlot = createIconSlot(closeIcon, "editor-tab-action-slot");
+        actionSlot.getChildren().addAll(pinIcon, statusIcon);
+        actionSlot.setMinSize(14, 14);
+        actionSlot.setPrefSize(14, 14);
+        actionSlot.setMaxSize(14, 14);
+        actionSlot.setCursor(Cursor.HAND);
+        closeIcon.visibleProperty().bind(
+            pinnedProperty().not().and(savedProperty().or(actionSlot.hoverProperty())));
+        pinIcon.visibleProperty().bind(pinnedProperty());
+        statusIcon.visibleProperty().bind(
+            dirtyProperty().and(pinnedProperty().or(actionSlot.hoverProperty().not())));
+        pinnedProperty().addListener((_, _, _) -> updateCombinedActionStyle(actionSlot));
+        dirtyProperty().addListener((_, _, _) -> updateCombinedActionStyle(actionSlot));
+        updateCombinedActionStyle(actionSlot);
+        actionSlot.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY) {
+                if (pinned()) {
+                    Services.EDITOR_TAB_MANAGER.togglePin(this);
+                } else {
+                    Services.EDITOR_TAB_MANAGER.close(this);
+                }
+                event.consume();
+            }
+        });
+        var actionTooltip = new LocalizedTooltip(pinned()
+            ? "editor.tab.contextmenu.unpin"
+            : "editor.tab.contextmenu.close");
+        pinnedProperty().addListener((_, _, isPinned) -> actionTooltip.setKey(isPinned
+            ? "editor.tab.contextmenu.unpin"
+            : "editor.tab.contextmenu.close"));
+        Tooltip.install(actionSlot, actionTooltip);
+
+        var graphic = new RRHBox(actionSlot);
+        graphic.getStyleClass().removeAll("Railroad", "Pane", "HBox", "background-2");
+        graphic.setAlignment(Pos.CENTER_LEFT);
+        graphic.getStyleClass().add("editor-tab-graphic");
+        return graphic;
+    }
+
+    private static RRStackPane createIconSlot(FontIcon icon, String styleClass) {
+        var slot = new RRStackPane(icon);
+        slot.getStyleClass().removeAll("Railroad", "Pane", "StackPane", "background-2");
+        slot.getStyleClass().add(styleClass);
+        slot.setMinWidth(9);
+        slot.setPrefWidth(9);
+        slot.setMaxWidth(9);
+        return slot;
+    }
+
+    private void updateCombinedActionStyle(RRStackPane actionSlot) {
+        if (pinned() && dirty()) {
+            if (!actionSlot.getStyleClass().contains("combined-status")) {
+                actionSlot.getStyleClass().add("combined-status");
+            }
+        } else {
+            actionSlot.getStyleClass().remove("combined-status");
+        }
+    }
+
+    private static void updateSaveStatusIcon(
+        FontIcon icon,
+        LocalizedTooltip tooltip,
+        RotateTransition savingAnimation,
+        EditorSaveState state) {
+        savingAnimation.stop();
+        icon.setRotate(0);
+        icon.getStyleClass().removeAll(
+            "editor-tab-dirty-icon",
+            "editor-tab-saving-icon",
+            "editor-tab-save-failed-icon");
+        if (state == EditorSaveState.ERROR) {
+            icon.setIconCode(FontAwesomeSolid.EXCLAMATION_CIRCLE);
+            icon.getStyleClass().add("editor-tab-save-failed-icon");
+            tooltip.setKey("editor.tab.status.save_failed");
+        } else if (state == EditorSaveState.SAVING) {
+            icon.setIconCode(FontAwesomeSolid.SYNC_ALT);
+            icon.getStyleClass().add("editor-tab-saving-icon");
+            tooltip.setKey("editor.tab.status.saving");
+            savingAnimation.playFromStart();
+        } else {
+            icon.setIconCode(FontAwesomeSolid.ASTERISK);
+            icon.getStyleClass().add("editor-tab-dirty-icon");
+            tooltip.setKey("editor.tab.status.dirty");
+        }
     }
 
     ContextMenu createContextMenu() {
