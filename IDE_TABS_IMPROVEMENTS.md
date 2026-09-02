@@ -63,8 +63,8 @@ Bulk actions should protect pinned tabs by default and operate relative to the t
 
 ## P1: Mouse and Keyboard
 
-- [ ] Middle-click closes a tab.
-- [ ] `Alt+Click` on a tab closes other tabs.
+- [x] Middle-click closes a tab.
+- [x] `Alt+Click` on a tab closes other tabs.
 - [ ] Drag reorders tabs reliably and auto-scrolls near strip edges.
 - [ ] Mouse-wheel scrolls overflowing tab strips.
 - [ ] `Ctrl/Cmd+W`: close active tab.

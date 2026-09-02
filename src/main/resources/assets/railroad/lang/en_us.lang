@@ -268,6 +268,12 @@ railroad.settings.keybinds.add_binding=Add shortcut
 railroad.settings.keybinds.no_shortcuts=No shortcuts assigned yet
 railroad.settings.keybinds.click_to_record=Click to record
 railroad.settings.keybinds.recording=Recording...
+railroad.settings.keybinds.mouse_button.primary=Left Mouse Button
+railroad.settings.keybinds.mouse_button.middle=Middle Mouse Button
+railroad.settings.keybinds.mouse_button.secondary=Right Mouse Button
+railroad.settings.keybinds.mouse_button.back=Mouse Back Button
+railroad.settings.keybinds.mouse_button.forward=Mouse Forward Button
+railroad.settings.keybinds.mouse_button.none=Mouse Button
 
 # Keybinds categories
 railroad.settings.keybinds.category.general=General
@@ -285,6 +291,7 @@ railroad.settings.keybinds.rename_project_explorer_item=Rename selected project 
 railroad.settings.keybinds.open_in_file_explorer=Open in file explorer
 railroad.settings.keybinds.open_in_terminal=Open in terminal
 railroad.settings.keybinds.fullscreen=Fullscreen
+railroad.settings.keybinds.close_editor_tab=Close editor tab
 railroad.settings.keybinds.view_mode_code=Switch to Code view mode
 railroad.settings.keybinds.view_mode_git=Switch to Git view mode
 

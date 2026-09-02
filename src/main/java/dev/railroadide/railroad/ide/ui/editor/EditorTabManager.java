@@ -21,6 +21,8 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.plugin.spi.events.DocumentRenamedEvent;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
+import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
+import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
@@ -33,12 +35,14 @@ import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
@@ -59,6 +63,7 @@ public class EditorTabManager {
     private final Map<Tab, EditorTab> tabsByControl = new IdentityHashMap<>();
     private final Map<DocumentId, ClosedEditorTab> pendingCloseSnapshots = new LinkedHashMap<>();
     private final Map<DetachableTabPane, ChangeListener<Tab>> selectionListeners = new IdentityHashMap<>();
+    private final Map<DetachableTabPane, EventHandler<MouseEvent>> mouseKeybindHandlers = new IdentityHashMap<>();
     private final Map<DetachableTabPane, String> editorGroupIds = new IdentityHashMap<>();
     private final Map<DetachableTabPane, ListChangeListener<Tab>> emptyGroupListeners = new IdentityHashMap<>();
     private final Map<DetachableTabPane, ListChangeListener<Tab>> tabOrderListeners = new IdentityHashMap<>();
@@ -341,9 +346,8 @@ public class EditorTabManager {
             return false;
         if (targetTabPane.getScene() == null
             || targetTabPane.getScene().getWindow() == null
-            || !targetTabPane.getScene().getWindow().isShowing()) {
+            || !targetTabPane.getScene().getWindow().isShowing())
             return false;
-        }
 
         return currentTabPane.getScene() == null
             || currentTabPane.getScene().getWindow() == null
@@ -389,12 +393,39 @@ public class EditorTabManager {
     private void ensureSelectionListener(DetachableTabPane tabPane, String editorGroupId) {
         editorGroupIds.putIfAbsent(tabPane, editorGroupId);
         ensureTabOrderListener(tabPane);
+        ensureMouseKeybindHandler(tabPane);
         if (selectionListeners.containsKey(tabPane))
             return;
 
         ChangeListener<Tab> listener = (_, _, selectedTab) -> queueSelectionUpdate(selectedTab);
         tabPane.getSelectionModel().selectedItemProperty().addListener(listener);
         selectionListeners.put(tabPane, listener);
+    }
+
+    private void ensureMouseKeybindHandler(DetachableTabPane tabPane) {
+        if (mouseKeybindHandlers.containsKey(tabPane))
+            return;
+
+        EventHandler<MouseEvent> handler = event -> {
+            Node tabHeader = findTabHeaderAtEventTarget(tabPane, event);
+            if (tabHeader == null)
+                return;
+
+            if (KeybindHandler.dispatchMouseEvent(Keybinds.EDITOR_TABS, event, tabHeader)) {
+                event.consume();
+            }
+        };
+        tabPane.addEventFilter(MouseEvent.MOUSE_CLICKED, handler);
+        mouseKeybindHandlers.put(tabPane, handler);
+    }
+
+    private Node findTabHeaderAtEventTarget(TabPane tabPane, MouseEvent event) {
+        for (Node current = event.getPickResult().getIntersectedNode(); current != null
+            && current != tabPane; current = current.getParent()) {
+            if (current.getStyleClass().contains("tab") && getTabAt(current) != null)
+                return current;
+        }
+        return null;
     }
 
     private void ensureTabOrderListener(DetachableTabPane tabPane) {
@@ -459,6 +490,10 @@ public class EditorTabManager {
         ChangeListener<Tab> listener = selectionListeners.remove(tabPane);
         if (listener != null) {
             tabPane.getSelectionModel().selectedItemProperty().removeListener(listener);
+        }
+        EventHandler<MouseEvent> mouseKeybindHandler = mouseKeybindHandlers.remove(tabPane);
+        if (mouseKeybindHandler != null) {
+            tabPane.removeEventFilter(MouseEvent.MOUSE_CLICKED, mouseKeybindHandler);
         }
         ListChangeListener<Tab> tabOrderListener = tabOrderListeners.remove(tabPane);
         if (tabOrderListener != null) {
@@ -855,6 +890,9 @@ public class EditorTabManager {
         emptyGroupListeners.clear();
         tabOrderListeners.forEach((tabPane, listener) -> tabPane.getTabs().removeListener(listener));
         tabOrderListeners.clear();
+        mouseKeybindHandlers.forEach(
+            (tabPane, handler) -> tabPane.removeEventFilter(MouseEvent.MOUSE_CLICKED, handler));
+        mouseKeybindHandlers.clear();
         pendingTabOrderUpdates.clear();
         editorSplitPanes.clear();
         tabsByControl.clear();
@@ -870,6 +908,45 @@ public class EditorTabManager {
     public void close(EditorTab tab) {
         requireManaged(tab);
         requestClose(tab);
+    }
+
+    public EditorTab getTabAt(Node target) {
+        if (target == null)
+            return null;
+
+        if (target instanceof TabPane tabPane)
+            return tabsByControl.get(tabPane.getSelectionModel().getSelectedItem());
+
+        String targetId = target.getId();
+        if (targetId == null)
+            return null;
+
+        EditorTab editorTab = tabsByControl.entrySet().stream()
+            .filter(entry -> targetId.equals(entry.getKey().getId()))
+            .map(Map.Entry::getValue)
+            .findFirst()
+            .orElse(null);
+        if (editorTab != null)
+            return editorTab;
+
+        Parent headerContainer = target.getParent();
+        TabPane tabPane = containingTabPane(headerContainer);
+        if (headerContainer == null || tabPane == null)
+            return null;
+
+        int headerIndex = headerContainer.getChildrenUnmodifiable().indexOf(target);
+        return headerIndex >= 0 && headerIndex < tabPane.getTabs().size()
+            ? tabsByControl.get(tabPane.getTabs().get(headerIndex))
+            : null;
+    }
+
+    private static TabPane containingTabPane(Node node) {
+        for (Node current = node; current != null; current = current.getParent()) {
+            if (current instanceof TabPane tabPane)
+                return tabPane;
+        }
+
+        return null;
     }
 
     public void closeOthers(EditorTab tab) {
@@ -1173,9 +1250,8 @@ public class EditorTabManager {
     private boolean hasAdjacentEditorGroup(EditorTab tab, int offset) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (openTabs.get(tab.documentId()) != tab
-            || !(tab.tab().getTabPane() instanceof DetachableTabPane sourceTabPane)) {
+            || !(tab.tab().getTabPane() instanceof DetachableTabPane sourceTabPane))
             return false;
-        }
 
         List<DetachableTabPane> groups = orderedEditorGroups(sourceTabPane);
         int sourceIndex = groups.indexOf(sourceTabPane);
@@ -1279,9 +1355,8 @@ public class EditorTabManager {
             && sourceTabPane.getScene() != null
             && sourceTabPane.getScene().getRoot() == sourceTabPane) {
             sourceTabPane.getScene().setRoot(splitPane);
-        } else {
+        } else
             return false;
-        }
 
         splitPane.getItems().addAll(sourceTabPane, targetTabPane);
         splitPane.setDividerPositions(0.5);
@@ -1292,9 +1367,8 @@ public class EditorTabManager {
     private static SplitPane findContainingSplitPane(Node node) {
         Parent ancestor = node.getParent();
         while (ancestor != null) {
-            if (ancestor instanceof SplitPane splitPane && splitPane.getItems().contains(node)) {
+            if (ancestor instanceof SplitPane splitPane && splitPane.getItems().contains(node))
                 return splitPane;
-            }
             ancestor = ancestor.getParent();
         }
         return null;

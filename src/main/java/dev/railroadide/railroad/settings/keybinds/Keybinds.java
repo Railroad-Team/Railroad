@@ -5,10 +5,12 @@ import dev.railroadide.railroad.ide.WorkspaceMode;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
+import dev.railroadide.railroad.ide.ui.editor.EditorTab;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.window.WindowManager;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.MouseButton;
 
 import java.util.function.Consumer;
 
@@ -20,6 +22,7 @@ public class Keybinds {
     private static final KeybindContexts.KeybindContext PROJECT_EXPLORER = KeybindContexts
         .of("railroad:project_explorer");
     private static final KeybindContexts.KeybindContext IDE = KeybindContexts.of("railroad:ide");
+    public static final KeybindContexts.KeybindContext EDITOR_TABS = KeybindContexts.of("railroad:editor_tabs");
 
     public static final Keybind OPEN_PROJECT_EXPLORER_ITEM = registerProjectExplorerKeybind(
         "railroad:open_project_explorer_item",
@@ -102,10 +105,45 @@ public class Keybinds {
         WorkspaceModes.GIT,
         KeyCode.DIGIT2);
 
+    public static final Keybind CLOSE_EDITOR_TAB = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:close_editor_tab")
+        .category(GENERAL)
+        .addDefaultMouseButton(MouseButton.MIDDLE)
+        .addDefaultKey(KeyCode.W, KeyCombination.SHORTCUT_DOWN)
+        .addValidContext(EDITOR_TABS)
+        .addValidContext(IDE)
+        .ignoreAllContext()
+        .addAction(EDITOR_TABS, target -> {
+            EditorTab editorTab = Services.EDITOR_TAB_MANAGER.getTabAt(target);
+            if (editorTab != null) {
+                Services.EDITOR_TAB_MANAGER.close(editorTab);
+            }
+        })
+        .addAction(IDE,
+            _ -> Services.EDITOR_TAB_MANAGER.activeTab().ifPresent(Services.EDITOR_TAB_MANAGER::close))
+        .build());
+
+    public static final Keybind CLOSE_OTHER_EDITOR_TABS = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:close_other_editor_tabs")
+        .category(GENERAL)
+        .addDefaultMouseButton(MouseButton.MIDDLE, KeyCombination.ALT_DOWN)
+        .addValidContext(EDITOR_TABS)
+        .ignoreAllContext()
+        .addAction(EDITOR_TABS, target -> {
+            EditorTab editorTab = Services.EDITOR_TAB_MANAGER.getTabAt(target);
+            if (editorTab != null) {
+                Services.EDITOR_TAB_MANAGER.closeOthers(editorTab);
+            }
+        })
+        .build());
+
     public static void initialize() {
+        CLOSE_EDITOR_TAB.resetKeys();
+        CLOSE_OTHER_EDITOR_TABS.resetKeys();
     }
 
-    private static Keybind registerProjectExplorerKeybind(String id, KeyCode keyCode,
+    private static Keybind registerProjectExplorerKeybind(
+        String id, KeyCode keyCode,
         Consumer<ProjectExplorerPane> action,
         KeyCombination.Modifier... modifiers) {
         Keybind keybind = KeybindHandler.registerKeybind(Keybind.builder()

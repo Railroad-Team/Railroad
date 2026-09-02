@@ -6,6 +6,8 @@ import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -58,6 +60,10 @@ public class Keybind {
         keys.add(new KeybindData(keyCode, modifiers));
     }
 
+    public void addMouseButton(MouseButton mouseButton, KeyCombination.Modifier... modifiers) {
+        keys.add(new KeybindData(mouseButton, modifiers));
+    }
+
     /**
      * Removes a key combination from the keybind.
      *
@@ -85,11 +91,16 @@ public class Keybind {
      */
     public boolean matches(KeyEvent keyEvent) {
         for (KeybindData key : keys) {
-            if (key.getKeyCodeCombination().match(keyEvent))
+            KeyCombination combination = key.getKeyCodeCombination();
+            if (combination != null && combination.match(keyEvent))
                 return true;
         }
 
         return false;
+    }
+
+    public boolean matches(MouseEvent mouseEvent) {
+        return keys.stream().anyMatch(key -> key.matches(mouseEvent));
     }
 
     public static Builder builder() {
@@ -138,6 +149,11 @@ public class Keybind {
          */
         public Builder addDefaultKey(KeyCode keyCode, KeyCombination.Modifier... modifiers) {
             defaultKeys.add(new KeybindData(keyCode, modifiers));
+            return this;
+        }
+
+        public Builder addDefaultMouseButton(MouseButton mouseButton, KeyCombination.Modifier... modifiers) {
+            defaultKeys.add(new KeybindData(mouseButton, modifiers));
             return this;
         }
 

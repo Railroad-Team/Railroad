@@ -399,7 +399,7 @@ public final class IDEMenuBarFactory {
 
     private static void updateConfiguredAccelerator(MenuItem menuItem, Keybind keybind) {
         keybind.getKeys().stream()
-            .filter(keybindData -> keybindData.keyCode() != KeyCode.UNDEFINED)
+            .filter(keybindData -> keybindData.keyCode() != null && keybindData.keyCode() != KeyCode.UNDEFINED)
             .findFirst()
             .map(KeybindData::getKeyCodeCombination)
             .ifPresentOrElse(menuItem::setAccelerator, () -> menuItem.setAccelerator(null));
