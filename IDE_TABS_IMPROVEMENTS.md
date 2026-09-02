@@ -53,17 +53,18 @@ Bulk actions should protect pinned tabs by default and operate relative to the t
 
 ## P1: Pinning and Preview
 
-- [ ] Keep pinned tabs in a compact section on the left.
-- [ ] Hide their close buttons and display a pin/file icon.
-- [ ] Prevent unpinned tabs from being dragged into the pinned section without becoming pinned.
-- [ ] Exempt pinned tabs from Close Others, Close All, and automatic eviction.
-- [ ] Persist pins per project.
+- [x] Keep pinned tabs in a compact section on the left.
+- [x] Hide their close buttons and display a pin/file icon.
+- [x] Prevent unpinned tabs from being dragged into the pinned section.
+- [x] Exempt pinned tabs from Close Others, Close All, and automatic eviction.
+- [x] Persist pins per project.
 - [ ] Add an optional preview-tab workflow: single-click opens one temporary italic tab; double-clicking, editing, or pinning makes it permanent.
 - [ ] Reuse the preview slot when navigating files, search results, diagnostics, or Git changes.
 
 ## P1: Mouse and Keyboard
 
 - [ ] Middle-click closes a tab.
+- [ ] `Alt+Click` on a tab closes other tabs.
 - [ ] Drag reorders tabs reliably and auto-scrolls near strip edges.
 - [ ] Mouse-wheel scrolls overflowing tab strips.
 - [ ] `Ctrl/Cmd+W`: close active tab.

@@ -23,7 +23,6 @@ import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.ui.id.UIIds;
-import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroad.vcs.Repository;
 import dev.railroadide.railroad.vcs.git.GitClient;
@@ -225,20 +224,19 @@ public class RailroadProject implements Project {
         List<EditorTabSessionState> editorTabs = projectConfig.getEditorTabs();
         Platform.runLater(() -> {
             if (editorTabs == null) {
+                Railroad.LOGGER.debug("Restoring {} legacy editor tabs for project {}",
+                    openDocumentPaths == null ? 0 : openDocumentPaths.size(),
+                    project.getPathString());
                 Services.EDITOR_TAB_MANAGER.restore(
                     openDocumentPaths == null ? List.of() : openDocumentPaths,
                     activeDocumentPath);
             } else {
+                Railroad.LOGGER.debug("Restoring {} editor tabs for project {}", editorTabs.size(),
+                    project.getPathString());
                 Services.EDITOR_TAB_MANAGER.restoreSession(editorTabs);
             }
             Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
                 .ifPresent(idePane -> idePane.restoreLayoutState(projectConfig.getIdeLayoutState()));
-        });
-
-        ShutdownHooks.addHook(() -> {
-            if (Railroad.PROJECT_MANAGER.getOpenProject() == project) {
-                project.close();
-            }
         });
     }
 
@@ -253,6 +251,7 @@ public class RailroadProject implements Project {
             ProjectConfig projectConfig = dataStore.readJson(PROJECT_CONFIG_LOCATION, ProjectConfig.class)
                 .orElseGet(ProjectConfig::new);
             List<EditorTabSessionState> editorTabs = Services.EDITOR_TAB_MANAGER.captureSessionState();
+            Railroad.LOGGER.debug("Persisting {} editor tabs for project {}", editorTabs.size(), getPathString());
             projectConfig.setEditorTabs(editorTabs);
             projectConfig.setOpenDocuments(editorTabs.stream()
                 .map(EditorTabSessionState::path)

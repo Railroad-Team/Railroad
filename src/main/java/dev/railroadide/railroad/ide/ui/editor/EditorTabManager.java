@@ -61,6 +61,8 @@ public class EditorTabManager {
     private final Map<DetachableTabPane, ChangeListener<Tab>> selectionListeners = new IdentityHashMap<>();
     private final Map<DetachableTabPane, String> editorGroupIds = new IdentityHashMap<>();
     private final Map<DetachableTabPane, ListChangeListener<Tab>> emptyGroupListeners = new IdentityHashMap<>();
+    private final Map<DetachableTabPane, ListChangeListener<Tab>> tabOrderListeners = new IdentityHashMap<>();
+    private final Set<DetachableTabPane> pendingTabOrderUpdates = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Set<SplitPane> editorSplitPanes = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Map<EditorTab, Stage> failedCloseDialogs = new IdentityHashMap<>();
     private final Set<EditorTab> discardApprovedTabs = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -307,6 +309,7 @@ public class EditorTabManager {
 
         openTabs.put(editorTab.documentId(), editorTab);
         tabsByControl.put(editorTab.tab(), editorTab);
+        editorTab.pinnedProperty().addListener((_, _, _) -> keepPinnedTabsOnLeft(editorTab.tab().getTabPane()));
         ensureSelectionListener(tabPane, request.editorGroupId());
         Services.IDE_STATE.openDocument(document);
         addToTabPane(tabPane, editorTab.tab(), request.insertionIndex());
@@ -380,10 +383,12 @@ public class EditorTabManager {
                 : Math.min(insertionIndex, tabPane.getTabs().size());
             tabPane.getTabs().add(targetIndex, tab);
         }
+        keepPinnedTabsOnLeft(tabPane);
     }
 
     private void ensureSelectionListener(DetachableTabPane tabPane, String editorGroupId) {
         editorGroupIds.putIfAbsent(tabPane, editorGroupId);
+        ensureTabOrderListener(tabPane);
         if (selectionListeners.containsKey(tabPane))
             return;
 
@@ -392,11 +397,74 @@ public class EditorTabManager {
         selectionListeners.put(tabPane, listener);
     }
 
+    private void ensureTabOrderListener(DetachableTabPane tabPane) {
+        if (tabOrderListeners.containsKey(tabPane))
+            return;
+
+        ListChangeListener<Tab> listener = _ -> scheduleTabOrderUpdate(tabPane);
+        tabPane.getTabs().addListener(listener);
+        tabOrderListeners.put(tabPane, listener);
+        keepPinnedTabsOnLeft(tabPane);
+    }
+
+    private void scheduleTabOrderUpdate(DetachableTabPane tabPane) {
+        if (!pendingTabOrderUpdates.add(tabPane))
+            return;
+
+        Platform.runLater(() -> {
+            pendingTabOrderUpdates.remove(tabPane);
+            if (tabOrderListeners.containsKey(tabPane)) {
+                keepPinnedTabsOnLeft(tabPane);
+            }
+        });
+    }
+
+    private void keepPinnedTabsOnLeft(TabPane tabPane) {
+        if (tabPane == null || tabPane.getTabs().size() < 2)
+            return;
+
+        boolean encounteredOtherTab = false;
+        boolean requiresReorder = false;
+        for (Tab tab : tabPane.getTabs()) {
+            EditorTab editorTab = tabsByControl.get(tab);
+            if (editorTab != null && editorTab.pinned()) {
+                if (encounteredOtherTab) {
+                    requiresReorder = true;
+                    break;
+                }
+            } else {
+                encounteredOtherTab = true;
+            }
+        }
+        if (!requiresReorder)
+            return;
+
+        List<Tab> orderedTabs = new ArrayList<>(tabPane.getTabs().size());
+        tabPane.getTabs().stream()
+            .filter(tab -> {
+                EditorTab editorTab = tabsByControl.get(tab);
+                return editorTab != null && editorTab.pinned();
+            })
+            .forEach(orderedTabs::add);
+        tabPane.getTabs().stream()
+            .filter(tab -> {
+                EditorTab editorTab = tabsByControl.get(tab);
+                return editorTab == null || !editorTab.pinned();
+            })
+            .forEach(orderedTabs::add);
+        tabPane.getTabs().setAll(orderedTabs);
+    }
+
     private void removeSelectionListener(DetachableTabPane tabPane) {
         ChangeListener<Tab> listener = selectionListeners.remove(tabPane);
         if (listener != null) {
             tabPane.getSelectionModel().selectedItemProperty().removeListener(listener);
         }
+        ListChangeListener<Tab> tabOrderListener = tabOrderListeners.remove(tabPane);
+        if (tabOrderListener != null) {
+            tabPane.getTabs().removeListener(tabOrderListener);
+        }
+        pendingTabOrderUpdates.remove(tabPane);
         editorGroupIds.remove(tabPane);
     }
 
@@ -785,6 +853,9 @@ public class EditorTabManager {
         editorGroupIds.clear();
         emptyGroupListeners.forEach((tabPane, listener) -> tabPane.getTabs().removeListener(listener));
         emptyGroupListeners.clear();
+        tabOrderListeners.forEach((tabPane, listener) -> tabPane.getTabs().removeListener(listener));
+        tabOrderListeners.clear();
+        pendingTabOrderUpdates.clear();
         editorSplitPanes.clear();
         tabsByControl.clear();
         pendingCloseSnapshots.clear();

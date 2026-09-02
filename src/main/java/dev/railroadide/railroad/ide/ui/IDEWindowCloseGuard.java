@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.ide.ui;
 
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
@@ -65,8 +67,10 @@ final class IDEWindowCloseGuard implements AutoCloseable {
             return;
 
         EditorTabManager.SaveResult saveResult = Services.EDITOR_TAB_MANAGER.saveAll();
-        if (saveResult.successful())
+        if (saveResult.successful()) {
+            closeActiveProject();
             return;
+        }
 
         event.consume();
         showSaveDialog(saveResult);
@@ -133,10 +137,18 @@ final class IDEWindowCloseGuard implements AutoCloseable {
     }
 
     private void permitAndClose(Stage dialog) {
+        closeActiveProject();
         allowClose = true;
         dialog.close();
         if (observedStage != null) {
             observedStage.close();
+        }
+    }
+
+    private static void closeActiveProject() {
+        Project project = Railroad.PROJECT_MANAGER.getOpenProject();
+        if (project != null) {
+            project.close();
         }
     }
 
