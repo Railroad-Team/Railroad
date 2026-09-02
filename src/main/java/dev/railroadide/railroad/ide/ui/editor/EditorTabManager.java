@@ -31,6 +31,7 @@ import dev.railroadide.railroad.window.DialogBuilder;
 import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.ListChangeListener;
 import javafx.event.Event;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
@@ -59,6 +60,7 @@ public class EditorTabManager {
     private final Map<DocumentId, ClosedEditorTab> pendingCloseSnapshots = new LinkedHashMap<>();
     private final Map<DetachableTabPane, ChangeListener<Tab>> selectionListeners = new IdentityHashMap<>();
     private final Map<DetachableTabPane, String> editorGroupIds = new IdentityHashMap<>();
+    private final Map<DetachableTabPane, ListChangeListener<Tab>> emptyGroupListeners = new IdentityHashMap<>();
     private final Set<SplitPane> editorSplitPanes = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Map<EditorTab, Stage> failedCloseDialogs = new IdentityHashMap<>();
     private final Set<EditorTab> discardApprovedTabs = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -266,6 +268,7 @@ public class EditorTabManager {
                 existingTab.setPreview(request.preview());
                 existingTab.setEditorGroupId(request.editorGroupId());
             }
+            reattachExistingTabIfNeeded(existingTab, tabPane);
             if (request.activate()) {
                 select(existingTab, tabPane);
                 activate(existingTab);
@@ -313,6 +316,35 @@ public class EditorTabManager {
             activate(editorTab);
         }
         return editorTab;
+    }
+
+    private void reattachExistingTabIfNeeded(EditorTab editorTab, DetachableTabPane targetTabPane) {
+        Tab tab = editorTab.tab();
+        TabPane currentTabPane = tab.getTabPane();
+        if (currentTabPane != null && !shouldReattach(currentTabPane, targetTabPane))
+            return;
+
+        if (currentTabPane != null) {
+            currentTabPane.getTabs().remove(tab);
+        }
+        String targetGroupId = ensureEditorGroupId(targetTabPane);
+        ensureSelectionListener(targetTabPane, targetGroupId);
+        addToTabPane(targetTabPane, tab, -1);
+        editorTab.setEditorGroupId(targetGroupId);
+    }
+
+    private static boolean shouldReattach(TabPane currentTabPane, TabPane targetTabPane) {
+        if (currentTabPane == targetTabPane)
+            return false;
+        if (targetTabPane.getScene() == null
+            || targetTabPane.getScene().getWindow() == null
+            || !targetTabPane.getScene().getWindow().isShowing()) {
+            return false;
+        }
+
+        return currentTabPane.getScene() == null
+            || currentTabPane.getScene().getWindow() == null
+            || !currentTabPane.getScene().getWindow().isShowing();
     }
 
     private static void select(EditorTab editorTab, DetachableTabPane fallbackTabPane) {
@@ -751,6 +783,8 @@ public class EditorTabManager {
             (tabPane, listener) -> tabPane.getSelectionModel().selectedItemProperty().removeListener(listener));
         selectionListeners.clear();
         editorGroupIds.clear();
+        emptyGroupListeners.forEach((tabPane, listener) -> tabPane.getTabs().removeListener(listener));
+        emptyGroupListeners.clear();
         editorSplitPanes.clear();
         tabsByControl.clear();
         pendingCloseSnapshots.clear();
@@ -1096,9 +1130,15 @@ public class EditorTabManager {
         DetachableTabPane targetTabPane = createSiblingTabPane(sourceTabPane);
         String targetGroupId = nextEditorGroupId();
         ensureSelectionListener(targetTabPane, targetGroupId);
-        targetTabPane.setOnRemove(_ -> removeSelectionListener(targetTabPane));
+        trackEmptySplitGroup(sourceTabPane);
+        trackEmptySplitGroup(targetTabPane);
 
         if (!insertAdjacent(sourceTabPane, targetTabPane, orientation)) {
+            SplitPane sourceParent = findContainingSplitPane(sourceTabPane);
+            if (!editorSplitPanes.contains(sourceParent)) {
+                untrackEmptySplitGroup(sourceTabPane);
+            }
+            untrackEmptySplitGroup(targetTabPane);
             removeSelectionListener(targetTabPane);
             return;
         }
@@ -1129,7 +1169,7 @@ public class EditorTabManager {
         sibling.setStageOwnerFactory(sourceTabPane.getStageOwnerFactory());
         sibling.setScope(sourceTabPane.getScope());
         sibling.setTabClosingPolicy(sourceTabPane.getTabClosingPolicy());
-        sibling.setCloseIfEmpty(true);
+        sibling.setCloseIfEmpty(false);
         sibling.setDetachableTabPaneFactory(sourceTabPane.getDetachableTabPaneFactory());
         sibling.setStageFactory(sourceTabPane.getStageFactory());
         sibling.setDropHint(sourceTabPane.getDropHint());
@@ -1140,32 +1180,31 @@ public class EditorTabManager {
         DetachableTabPane sourceTabPane,
         DetachableTabPane targetTabPane,
         Orientation orientation) {
-        Parent parent = sourceTabPane.getParent();
-        if (parent instanceof SplitPane parentSplitPane
-            && editorSplitPanes.contains(parentSplitPane)
-            && parentSplitPane.getOrientation() == orientation) {
-            int sourceIndex = parentSplitPane.getItems().indexOf(sourceTabPane);
+        SplitPane containingSplitPane = findContainingSplitPane(sourceTabPane);
+        if (editorSplitPanes.contains(containingSplitPane)
+            && containingSplitPane.getOrientation() == orientation) {
+            int sourceIndex = containingSplitPane.getItems().indexOf(sourceTabPane);
             if (sourceIndex < 0)
                 return false;
 
-            parentSplitPane.getItems().add(sourceIndex + 1, targetTabPane);
-            distributeEvenly(parentSplitPane);
+            containingSplitPane.getItems().add(sourceIndex + 1, targetTabPane);
+            distributeEvenly(containingSplitPane);
             return true;
         }
 
         var splitPane = new SplitPane();
         splitPane.setOrientation(orientation);
-        if (parent instanceof SplitPane parentSplitPane) {
-            int sourceIndex = parentSplitPane.getItems().indexOf(sourceTabPane);
+        if (containingSplitPane != null) {
+            int sourceIndex = containingSplitPane.getItems().indexOf(sourceTabPane);
             if (sourceIndex < 0)
                 return false;
-            parentSplitPane.getItems().set(sourceIndex, splitPane);
-        } else if (parent instanceof Pane parentPane) {
+            containingSplitPane.getItems().set(sourceIndex, splitPane);
+        } else if (sourceTabPane.getParent() instanceof Pane parentPane) {
             int sourceIndex = parentPane.getChildren().indexOf(sourceTabPane);
             if (sourceIndex < 0)
                 return false;
             parentPane.getChildren().set(sourceIndex, splitPane);
-        } else if (parent == null
+        } else if (sourceTabPane.getParent() == null
             && sourceTabPane.getScene() != null
             && sourceTabPane.getScene().getRoot() == sourceTabPane) {
             sourceTabPane.getScene().setRoot(splitPane);
@@ -1179,6 +1218,17 @@ public class EditorTabManager {
         return true;
     }
 
+    private static SplitPane findContainingSplitPane(Node node) {
+        Parent ancestor = node.getParent();
+        while (ancestor != null) {
+            if (ancestor instanceof SplitPane splitPane && splitPane.getItems().contains(node)) {
+                return splitPane;
+            }
+            ancestor = ancestor.getParent();
+        }
+        return null;
+    }
+
     private static void distributeEvenly(SplitPane splitPane) {
         int itemCount = splitPane.getItems().size();
         double[] positions = new double[Math.max(0, itemCount - 1)];
@@ -1188,12 +1238,84 @@ public class EditorTabManager {
         splitPane.setDividerPositions(positions);
     }
 
-    private static void removeEmptySplitPane(DetachableTabPane tabPane) {
+    private void trackEmptySplitGroup(DetachableTabPane tabPane) {
+        if (emptyGroupListeners.containsKey(tabPane))
+            return;
+
+        tabPane.setCloseIfEmpty(false);
+        ListChangeListener<Tab> listener = _ -> {
+            if (tabPane.getTabs().isEmpty()) {
+                Platform.runLater(() -> removeEmptySplitPane(tabPane));
+            }
+        };
+        tabPane.getTabs().addListener(listener);
+        emptyGroupListeners.put(tabPane, listener);
+    }
+
+    private void removeEmptySplitPane(DetachableTabPane tabPane) {
         if (!tabPane.getTabs().isEmpty())
             return;
 
-        if (tabPane.getParent() instanceof SplitPane splitPane) {
-            splitPane.getItems().remove(tabPane);
+        SplitPane splitPane = findContainingSplitPane(tabPane);
+        if (!editorSplitPanes.contains(splitPane))
+            return;
+
+        splitPane.getItems().remove(tabPane);
+        untrackEmptySplitGroup(tabPane);
+        removeSelectionListener(tabPane);
+        collapseEditorSplit(splitPane);
+    }
+
+    private void untrackEmptySplitGroup(DetachableTabPane tabPane) {
+        ListChangeListener<Tab> listener = emptyGroupListeners.remove(tabPane);
+        if (listener != null) {
+            tabPane.getTabs().removeListener(listener);
+        }
+    }
+
+    private void collapseEditorSplit(SplitPane splitPane) {
+        if (splitPane.getItems().size() > 1) {
+            distributeEvenly(splitPane);
+            return;
+        }
+
+        SplitPane parentSplitPane = findContainingSplitPane(splitPane);
+        Parent parent = splitPane.getParent();
+        Node remaining = splitPane.getItems().isEmpty() ? null : splitPane.getItems().getFirst();
+        if (remaining != null) {
+            splitPane.getItems().remove(remaining);
+        }
+        editorSplitPanes.remove(splitPane);
+
+        if (parentSplitPane != null) {
+            int splitIndex = parentSplitPane.getItems().indexOf(splitPane);
+            if (splitIndex < 0)
+                return;
+
+            if (remaining == null) {
+                parentSplitPane.getItems().remove(splitIndex);
+            } else {
+                parentSplitPane.getItems().set(splitIndex, remaining);
+            }
+
+            if (editorSplitPanes.contains(parentSplitPane)) {
+                collapseEditorSplit(parentSplitPane);
+            }
+        } else if (parent instanceof Pane parentPane) {
+            int splitIndex = parentPane.getChildren().indexOf(splitPane);
+            if (splitIndex < 0)
+                return;
+
+            if (remaining == null) {
+                parentPane.getChildren().remove(splitIndex);
+            } else {
+                parentPane.getChildren().set(splitIndex, remaining);
+            }
+        } else if (parent == null
+            && remaining instanceof Parent remainingRoot
+            && splitPane.getScene() != null
+            && splitPane.getScene().getRoot() == splitPane) {
+            splitPane.getScene().setRoot(remainingRoot);
         }
     }
 
