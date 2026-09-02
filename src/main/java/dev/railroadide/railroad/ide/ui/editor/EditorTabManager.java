@@ -64,6 +64,7 @@ public class EditorTabManager {
     private final Map<DocumentId, ClosedEditorTab> pendingCloseSnapshots = new LinkedHashMap<>();
     private final Map<DetachableTabPane, ChangeListener<Tab>> selectionListeners = new IdentityHashMap<>();
     private final Map<DetachableTabPane, EventHandler<MouseEvent>> mouseKeybindHandlers = new IdentityHashMap<>();
+    private final Map<DetachableTabPane, EditorTabStripSupport> tabStripSupport = new IdentityHashMap<>();
     private final Map<DetachableTabPane, String> editorGroupIds = new IdentityHashMap<>();
     private final Map<DetachableTabPane, ListChangeListener<Tab>> emptyGroupListeners = new IdentityHashMap<>();
     private final Map<DetachableTabPane, ListChangeListener<Tab>> tabOrderListeners = new IdentityHashMap<>();
@@ -380,7 +381,9 @@ public class EditorTabManager {
         }
 
         if (welcomeIndex >= 0) {
-            tabPane.getTabs().set(welcomeIndex, tab);
+            Tab welcomeTab = tabPane.getTabs().get(welcomeIndex);
+            IDETabLifecycle.requestClose(welcomeTab);
+            tabPane.getTabs().add(Math.min(welcomeIndex, tabPane.getTabs().size()), tab);
         } else {
             int targetIndex = insertionIndex < 0
                 ? tabPane.getTabs().size()
@@ -394,6 +397,7 @@ public class EditorTabManager {
         editorGroupIds.putIfAbsent(tabPane, editorGroupId);
         ensureTabOrderListener(tabPane);
         ensureMouseKeybindHandler(tabPane);
+        tabStripSupport.computeIfAbsent(tabPane, EditorTabStripSupport::new);
         if (selectionListeners.containsKey(tabPane))
             return;
 
@@ -495,6 +499,10 @@ public class EditorTabManager {
         if (mouseKeybindHandler != null) {
             tabPane.removeEventFilter(MouseEvent.MOUSE_CLICKED, mouseKeybindHandler);
         }
+        EditorTabStripSupport stripSupport = tabStripSupport.remove(tabPane);
+        if (stripSupport != null) {
+            stripSupport.close();
+        }
         ListChangeListener<Tab> tabOrderListener = tabOrderListeners.remove(tabPane);
         if (tabOrderListener != null) {
             tabPane.getTabs().removeListener(tabOrderListener);
@@ -563,6 +571,12 @@ public class EditorTabManager {
             .map(DocumentIdentity::id)
             .map(openTabs::get)
             .orElse(null);
+        if (activeTab != null && activeTab.tab().getTabPane() != null) {
+            EditorTab selectedInActiveGroup = tabsByControl.get(
+                activeTab.tab().getTabPane().getSelectionModel().getSelectedItem());
+            if (selectedInActiveGroup != null)
+                return Optional.of(selectedInActiveGroup);
+        }
         return Optional.ofNullable(activeTab != null ? activeTab : selectedManagedTab().orElse(null));
     }
 
@@ -578,7 +592,7 @@ public class EditorTabManager {
         activeTab().map(EditorTab::tab)
             .map(Tab::getTabPane)
             .filter(tabPane -> index < tabPane.getTabs().size())
-            .ifPresent(tabPane -> tabPane.getSelectionModel().select(index));
+            .ifPresent(tabPane -> selectFromKeyboard(tabPane, tabPane.getTabs().get(index)));
     }
 
     /**
@@ -588,7 +602,7 @@ public class EditorTabManager {
         activeTab().map(EditorTab::tab)
             .map(Tab::getTabPane)
             .filter(tabPane -> !tabPane.getTabs().isEmpty())
-            .ifPresent(tabPane -> tabPane.getSelectionModel().selectLast());
+            .ifPresent(tabPane -> selectFromKeyboard(tabPane, tabPane.getTabs().getLast()));
     }
 
     public void selectNextTab() {
@@ -624,7 +638,34 @@ public class EditorTabManager {
             return;
 
         int targetIndex = Math.floorMod(selectedIndex + offset, tabPane.getTabs().size());
-        tabPane.getSelectionModel().select(targetIndex);
+        selectFromKeyboard(tabPane, tabPane.getTabs().get(targetIndex));
+    }
+
+    private void selectFromKeyboard(TabPane tabPane, Tab tab) {
+        EditorTab editorTab = tabsByControl.get(tab);
+        if (editorTab == null)
+            return;
+
+        EditorViewState viewState = EditorViewState.capture(editorTab.view().activeEditor());
+        tabPane.getSelectionModel().select(tab);
+        Platform.runLater(() -> restoreEditorFocus(editorTab, viewState));
+    }
+
+    private void restoreEditorFocus(EditorTab editorTab, EditorViewState viewState) {
+        if (openTabs.get(editorTab.documentId()) != editorTab || !editorTab.tab().isSelected())
+            return;
+
+        TextEditorPane editor = editorTab.view().activeEditor();
+        if (editor == null) {
+            editorTab.view().content().requestFocus();
+            return;
+        }
+
+        int documentLength = editor.getLength();
+        int anchor = Math.clamp(viewState.anchorPosition(), 0, documentLength);
+        int caret = Math.clamp(viewState.caretPosition(), 0, documentLength);
+        editor.selectRange(anchor, caret);
+        editor.requestFocus();
     }
 
     private void moveActiveTab(int offset) {
@@ -808,6 +849,23 @@ public class EditorTabManager {
         if (Services.IDE_STATE.getActiveDocument() == null) {
             Services.DOCUMENT_EDITOR_STATE.setActiveEditor(null, null);
         }
+        if (openTabs.isEmpty()) {
+            restoreEmptyEditorState();
+        }
+    }
+
+    private void restoreEmptyEditorState() {
+        IDEContentRouter.routeActive(WorkspaceContentTargets.CODE_EDITOR, tabPane -> {
+            if (!openTabs.isEmpty() || tabPane.getTabs().stream()
+                .anyMatch(tab -> tab.getContent() instanceof IDEWelcomePane))
+                return;
+
+            var welcomeTab = new Tab("Welcome", new IDEWelcomePane());
+            welcomeTab.setId("editor:welcome");
+            welcomeTab.setClosable(false);
+            tabPane.getTabs().add(welcomeTab);
+            tabPane.getSelectionModel().select(welcomeTab);
+        });
     }
 
     private void handleCloseRequest(EditorTab editorTab, Event event) {
@@ -977,6 +1035,8 @@ public class EditorTabManager {
         mouseKeybindHandlers.forEach(
             (tabPane, handler) -> tabPane.removeEventFilter(MouseEvent.MOUSE_CLICKED, handler));
         mouseKeybindHandlers.clear();
+        tabStripSupport.values().forEach(EditorTabStripSupport::close);
+        tabStripSupport.clear();
         pendingTabOrderUpdates.clear();
         editorSplitPanes.clear();
         tabsByControl.clear();

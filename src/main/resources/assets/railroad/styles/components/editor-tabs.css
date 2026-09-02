@@ -1,3 +1,7 @@
+.tab-pane.editor-tab-pane {
+    -fx-close-tab-animation: NONE;
+}
+
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab {
     -fx-padding: 0 0.25em 0 0.25em;
 }
@@ -6,6 +10,7 @@
     -fx-content-display: right;
     -fx-graphic-text-gap: 0.3em;
     -fx-padding: 0 0.15em 0 0.15em;
+    -fx-alignment: CENTER_RIGHT;
 }
 
 .tab-pane:focused > .tab-header-area > .headers-region > .tab.editor-tab:selected .focus-indicator {

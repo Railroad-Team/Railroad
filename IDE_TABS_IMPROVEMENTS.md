@@ -65,25 +65,25 @@ Bulk actions should protect pinned tabs by default and operate relative to the t
 
 - [x] Middle-click closes a tab.
 - [x] `Alt+Click` on a tab closes other tabs.
-- [ ] Drag reorders tabs reliably and auto-scrolls near strip edges.
-- [ ] Mouse-wheel scrolls overflowing tab strips.
+- [x] Drag reorders tabs reliably and auto-scrolls near strip edges.
+- [x] Mouse-wheel scrolls overflowing tab strips.
 - [x] `Ctrl/Cmd+W`: close active tab.
 - [x] `Ctrl/Cmd+Shift+T`: reopen last closed tab.
 - [x] Add next/previous tab, move tab left/right, pin tab, and close-other-tabs keybind commands.
 - [x] Support `Ctrl/Cmd+1` through `8` and `9` for the last tab.
-- [ ] Restore editor focus and caret after keyboard switching.
+- [x] Restore editor focus and caret after keyboard switching.
 
 ## P1: Overflow and Visual Quality
 
-- [ ] Keep the selected tab visible when tabs overflow.
+- [x] Keep the selected tab visible when tabs overflow.
 - [ ] Add a searchable all-tabs dropdown showing icons, paths, dirty state, and pin state.
 - [ ] Disambiguate duplicate filenames using parent-path suffixes.
 - [ ] Show full path, language, save state, and useful metadata in tooltips.
 - [ ] Display language/file icons.
 - [x] Use a dirty dot, saving indicator, and save-error marker without changing tab width.
 - [ ] Make selected, hovered, pinned, preview, and attention states distinct in both themes.
-- [ ] Keep close buttons spatially stable so closing several adjacent tabs does not move the pointer target.
-- [ ] Return to a proper empty editor state when the last document closes instead of leaving a mutated Welcome tab.
+- [x] Keep close buttons spatially stable so closing several adjacent tabs does not move the pointer target.
+- [x] Return to a proper empty editor state when the last document closes instead of leaving a mutated Welcome tab.
 
 ## P2: Editor Groups and Sessions
 
