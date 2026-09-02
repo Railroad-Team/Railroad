@@ -67,3 +67,99 @@
     -fx-fill: -color-danger-fg;
     -fx-icon-color: -color-danger-fg;
 }
+
+.editor-all-tabs-menu > .scroll-arrow {
+    -fx-padding: 0;
+}
+
+.editor-all-tabs-menu-item,
+.editor-all-tabs-menu-item:focused {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+.editor-all-tabs-content {
+    -fx-padding: 8px;
+    -fx-background-color: -color-bg-overlay;
+}
+
+.editor-all-tabs-search {
+    -fx-pref-height: 32px;
+}
+
+.editor-all-tabs-list {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.editor-all-tabs-cell {
+    -fx-padding: 6px 10px;
+    -fx-cursor: hand;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-row {
+    -fx-background-color: transparent;
+    -fx-background-radius: 5px;
+    -fx-padding: 5px 8px;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-row .background-2 {
+    -fx-background-color: transparent;
+}
+
+.editor-all-tabs-cell:filled:hover .editor-all-tabs-row {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.editor-all-tabs-cell:filled:selected .editor-all-tabs-row {
+    -fx-background-color: -color-accent-subtle;
+}
+
+.editor-all-tabs-cell:filled:selected:hover .editor-all-tabs-row {
+    -fx-background-color: -color-accent-muted;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-name {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-weight: 600;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-path {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 0.85em;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-file-icon .ikonli-font-icon {
+    -fx-icon-size: 16px;
+    -fx-fill: -color-fg-muted;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-state-icon {
+    -fx-icon-size: 11px;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-state-icon.dirty {
+    -fx-fill: -color-warning-fg;
+    -fx-icon-color: -color-warning-fg;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-state-icon.dirty.saving {
+    -fx-fill: -color-accent-fg;
+    -fx-icon-color: -color-accent-fg;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-state-icon.dirty.error {
+    -fx-fill: -color-danger-fg;
+    -fx-icon-color: -color-danger-fg;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-state-icon.pinned {
+    -fx-fill: -color-fg-muted;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.tab-pane.editor-tab-pane > .tab-header-area > .control-buttons-tab > .container > .tab-down-button:hover {
+    -fx-background-color: -color-neutral-muted;
+    -fx-background-radius: 4px;
+}

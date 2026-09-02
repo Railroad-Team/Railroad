@@ -564,6 +564,11 @@ editor.tab.contextmenu.move_to_next_group=Move to Next Editor Group
 editor.tab.contextmenu.split_right=Split Right
 editor.tab.contextmenu.split_down=Split Down
 editor.tab.contextmenu.open_in_new_window=Move to New Window
+editor.tabs.dropdown.tooltip=Show All Open Tabs
+editor.tabs.dropdown.search=Search open tabs…
+editor.tabs.dropdown.empty=No matching tabs
+editor.tabs.dropdown.dirty=Unsaved changes
+editor.tabs.dropdown.pinned=Pinned
 
 railroad.menu.file.exit=Exit
 railroad.menu.file.recent_projects=Recent Projects

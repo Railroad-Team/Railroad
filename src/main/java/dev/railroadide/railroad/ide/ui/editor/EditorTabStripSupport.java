@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui.editor;
 
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
+import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -11,9 +12,11 @@ import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Skin;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.PickResult;
@@ -21,6 +24,7 @@ import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Region;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 public final class EditorTabStripSupport implements AutoCloseable {
     private static final double AUTO_SCROLL_EDGE_SIZE = 48;
@@ -29,6 +33,9 @@ public final class EditorTabStripSupport implements AutoCloseable {
     private static final double MINIMUM_STABILIZED_LABEL_WIDTH = 32;
 
     private final DetachableTabPane tabPane;
+    private final EditorAllTabsMenu allTabsMenu;
+    private final LocalizedTooltip allTabsTooltip = new LocalizedTooltip("editor.tabs.dropdown.tooltip");
+    private final EventHandler<MouseEvent> allTabsButtonHandler = this::handleAllTabsButtonMouseEvent;
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
     private final EventHandler<MouseEvent> mouseMovedHandler = this::handleMouseMoved;
     private final EventHandler<MouseEvent> mouseExitedHandler = this::handleMouseMoved;
@@ -37,8 +44,16 @@ public final class EditorTabStripSupport implements AutoCloseable {
     private final EventHandler<MouseEvent> dragDetectedHandler = this::handleDragDetected;
     private final EventHandler<ScrollEvent> scrollHandler = this::handleScroll;
     private final ChangeListener<Tab> selectionListener = (_, _, selectedTab) -> handleSelectionChanged(selectedTab);
-    private final ChangeListener<Number> widthListener = (_, _, _) -> scheduleSelectedTabVisibilityUpdate();
-    private final ChangeListener<Skin<?>> skinListener = (_, _, _) -> scheduleSelectedTabVisibilityUpdate();
+    private final ChangeListener<Number> widthListener = (_, _, _) -> {
+        scheduleSelectedTabVisibilityUpdate();
+        scheduleAllTabsButtonInstall();
+    };
+    private final ChangeListener<Skin<?>> skinListener = (_, _, _) -> {
+        uninstallAllTabsButton();
+        scheduleSelectedTabVisibilityUpdate();
+        scheduleAllTabsButtonInstall();
+    };
+    private final ChangeListener<Scene> sceneListener = (_, _, _) -> scheduleAllTabsButtonInstall();
     private final ListChangeListener<Tab> tabListListener = this::handleTabsChanged;
     private final AnimationTimer autoScrollTimer = new AnimationTimer() {
         @Override
@@ -61,6 +76,8 @@ public final class EditorTabStripSupport implements AutoCloseable {
     private boolean visibilityUpdateScheduled;
     private boolean closeStabilizationPending;
     private boolean closed;
+    private boolean allTabsButtonInstallScheduled;
+    private Node allTabsButton;
     private Tab pendingClosedTab;
     private double pendingCloseButtonSceneX;
     private Region stabilizedLabel;
@@ -68,8 +85,11 @@ public final class EditorTabStripSupport implements AutoCloseable {
     private double stabilizedLabelPrefWidth;
     private double stabilizedLabelMaxWidth;
 
-    public EditorTabStripSupport(DetachableTabPane tabPane) {
+    public EditorTabStripSupport(
+        DetachableTabPane tabPane,
+        Function<Tab, EditorTab> editorTabResolver) {
         this.tabPane = tabPane;
+        this.allTabsMenu = new EditorAllTabsMenu(tabPane, editorTabResolver);
         tabPane.getStyleClass().add("editor-tab-pane");
         tabPane.setTabDragPolicy(TabPane.TabDragPolicy.REORDER);
         tabPane.addEventFilter(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
@@ -82,8 +102,62 @@ public final class EditorTabStripSupport implements AutoCloseable {
         tabPane.getSelectionModel().selectedItemProperty().addListener(selectionListener);
         tabPane.widthProperty().addListener(widthListener);
         tabPane.skinProperty().addListener(skinListener);
+        tabPane.sceneProperty().addListener(sceneListener);
         tabPane.getTabs().addListener(tabListListener);
         scheduleSelectedTabVisibilityUpdate();
+        scheduleAllTabsButtonInstall();
+    }
+
+    private void scheduleAllTabsButtonInstall() {
+        if (closed || allTabsButtonInstallScheduled)
+            return;
+
+        allTabsButtonInstallScheduled = true;
+        Platform.runLater(() -> {
+            allTabsButtonInstallScheduled = false;
+            if (!closed) {
+                installAllTabsButton();
+            }
+        });
+    }
+
+    private void installAllTabsButton() {
+        Node button = tabPane.lookup(".tab-down-button");
+        if (button == null || button == allTabsButton)
+            return;
+
+        uninstallAllTabsButton();
+        allTabsButton = button;
+        allTabsButton.addEventFilter(MouseEvent.ANY, allTabsButtonHandler);
+        Tooltip.install(allTabsButton, allTabsTooltip);
+        allTabsButton.accessibleTextProperty().bind(allTabsTooltip.textProperty());
+    }
+
+    private void handleAllTabsButtonMouseEvent(MouseEvent event) {
+        if (event.getButton() != MouseButton.PRIMARY)
+            return;
+
+        if (event.getEventType() == MouseEvent.MOUSE_PRESSED) {
+            if (allTabsMenu.isShowing()) {
+                allTabsMenu.hide();
+            } else if (allTabsButton != null) {
+                allTabsMenu.show(allTabsButton);
+            }
+            event.consume();
+        } else if (event.getEventType() == MouseEvent.MOUSE_RELEASED
+            || event.getEventType() == MouseEvent.MOUSE_CLICKED) {
+            event.consume();
+        }
+    }
+
+    private void uninstallAllTabsButton() {
+        if (allTabsButton == null)
+            return;
+
+        allTabsButton.removeEventFilter(MouseEvent.ANY, allTabsButtonHandler);
+        Tooltip.uninstall(allTabsButton, allTabsTooltip);
+        allTabsButton.accessibleTextProperty().unbind();
+        allTabsButton = null;
     }
 
     private void handleMousePressed(MouseEvent event) {
@@ -158,6 +232,7 @@ public final class EditorTabStripSupport implements AutoCloseable {
     }
 
     private void handleTabsChanged(ListChangeListener.Change<? extends Tab> change) {
+        scheduleAllTabsButtonInstall();
         boolean handledClose = false;
         while (change.next()) {
             if (!change.wasRemoved() || pendingClosedTab == null
@@ -486,6 +561,9 @@ public final class EditorTabStripSupport implements AutoCloseable {
         tabPane.getSelectionModel().selectedItemProperty().removeListener(selectionListener);
         tabPane.widthProperty().removeListener(widthListener);
         tabPane.skinProperty().removeListener(skinListener);
+        tabPane.sceneProperty().removeListener(sceneListener);
         tabPane.getTabs().removeListener(tabListListener);
+        uninstallAllTabsButton();
+        allTabsMenu.close();
     }
 }

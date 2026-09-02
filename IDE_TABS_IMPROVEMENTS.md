@@ -76,7 +76,7 @@ Bulk actions should protect pinned tabs by default and operate relative to the t
 ## P1: Overflow and Visual Quality
 
 - [x] Keep the selected tab visible when tabs overflow.
-- [ ] Add a searchable all-tabs dropdown showing icons, paths, dirty state, and pin state.
+- [x] Add a searchable all-tabs dropdown showing icons, paths, dirty state, and pin state.
 - [ ] Disambiguate duplicate filenames using parent-path suffixes.
 - [ ] Show full path, language, save state, and useful metadata in tooltips.
 - [ ] Display language/file icons.

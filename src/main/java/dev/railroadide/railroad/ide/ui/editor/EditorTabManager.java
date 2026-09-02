@@ -397,7 +397,7 @@ public class EditorTabManager {
         editorGroupIds.putIfAbsent(tabPane, editorGroupId);
         ensureTabOrderListener(tabPane);
         ensureMouseKeybindHandler(tabPane);
-        tabStripSupport.computeIfAbsent(tabPane, EditorTabStripSupport::new);
+        tabStripSupport.computeIfAbsent(tabPane, pane -> new EditorTabStripSupport(pane, tabsByControl::get));
         if (selectionListeners.containsKey(tabPane))
             return;
 
