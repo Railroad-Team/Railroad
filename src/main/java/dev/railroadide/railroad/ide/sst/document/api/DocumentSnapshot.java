@@ -26,43 +26,49 @@ public abstract sealed class DocumentSnapshot permits TextDocumentSnapshot, Bina
      *
      * @return logical document identity
      */
-    public DocumentId id() { return id; }
+    public DocumentId id() {
+        return id;
+    }
 
     /**
      * Returns the physical or virtual location captured by this snapshot.
      *
      * @return document URI
      */
-    public DocumentUri uri() { return uri; }
+    public DocumentUri uri() {
+        return uri;
+    }
 
     /**
      * Returns the immutable content revision captured by this snapshot.
      *
      * @return document version
      */
-    public DocumentVersion version() { return version; }
+    public DocumentVersion version() {
+        return version;
+    }
 
     /**
      * Returns the provider-defined language identity for this content.
      *
      * @return non-blank language ID
      */
-    public String languageId() { return languageId; }
+    public String languageId() {
+        return languageId;
+    }
 
     protected DocumentSnapshot(
         DocumentId id,
         DocumentUri uri,
         DocumentVersion version,
-        String languageId)
-    {
+        String languageId) {
         this.id = Objects.requireNonNull(id, "id");
         this.uri = Objects.requireNonNull(uri, "uri");
         this.version = Objects.requireNonNull(version, "version");
         this.languageId = requireLanguageId(languageId, uri);
     }
 
-    private static String requireLanguageId(String languageId, DocumentUri uri)
-    {
+    private static String requireLanguageId(String languageId, DocumentUri uri) {
         languageId = Objects.requireNonNull(languageId, "languageId");
         if (languageId.isBlank())
             throw new IllegalArgumentException("languageId cannot be blank");

@@ -43,7 +43,8 @@ public final class LanguageSupportRegistry {
         return Optional.ofNullable(REGISTRY.get(languageId));
     }
 
-    public static LanguageSupport getExpected(String languageId) throws IllegalArgumentException, LanguageNotSupportedException {
+    public static LanguageSupport getExpected(String languageId)
+        throws IllegalArgumentException, LanguageNotSupportedException {
         return get(languageId).orElseThrow(() -> new LanguageNotSupportedException(languageId));
     }
 

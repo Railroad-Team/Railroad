@@ -5,8 +5,7 @@ package dev.railroadide.railroad.ide.language.index;
  */
 public class LanguageNotSupportedException extends IllegalStateException {
 
-    public LanguageNotSupportedException(String languageId)
-    {
+    public LanguageNotSupportedException(String languageId) {
         super("Language not supported: " + languageId);
     }
 }

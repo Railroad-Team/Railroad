@@ -144,12 +144,12 @@ public final class ProjectDiagnosticsScanner {
                 StandardCharsets.UTF_8);
 
             DiagnosticsProvider<?> provider = createDiagnosticsProvider(diagnosticsContext, target);
-            if (provider instanceof DiagnosticsProvider<?> tprovider)
-            {
+            if (provider instanceof DiagnosticsProvider<?> tprovider) {
                 List<EditorDiagnostic> diagnostics = tprovider.compute(snapshot).stream()
                     .map(EditorDiagnostic.class::cast)
                     .toList();
-                return new FileScanResult(target.path(), target.support().languageId(), diagnostics, null, fileStartedAt);
+                return new FileScanResult(target.path(), target.support().languageId(), diagnostics, null,
+                    fileStartedAt);
             }
             return new FileScanResult(target.path(), target.support().languageId(), List.of(), null, fileStartedAt);
 
