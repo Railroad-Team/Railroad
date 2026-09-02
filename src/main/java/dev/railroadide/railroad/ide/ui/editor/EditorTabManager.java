@@ -581,12 +581,73 @@ public class EditorTabManager {
             .ifPresent(tabPane -> tabPane.getSelectionModel().select(index));
     }
 
-    /** Selects the last tab in the active editor group. */
+    /**
+     * Selects the last tab in the active editor group.
+     */
     public void selectLastTab() {
         activeTab().map(EditorTab::tab)
             .map(Tab::getTabPane)
             .filter(tabPane -> !tabPane.getTabs().isEmpty())
             .ifPresent(tabPane -> tabPane.getSelectionModel().selectLast());
+    }
+
+    public void selectNextTab() {
+        selectAdjacentTab(1);
+    }
+
+    public void selectPreviousTab() {
+        selectAdjacentTab(-1);
+    }
+
+    public void moveActiveTabLeft() {
+        moveActiveTab(-1);
+    }
+
+    public void moveActiveTabRight() {
+        moveActiveTab(1);
+    }
+
+    private void selectAdjacentTab(int offset) {
+        EditorTab editorTab = activeTab().orElse(null);
+        if (editorTab == null)
+            return;
+
+        TabPane tabPane = editorTab.tab().getTabPane();
+        if (tabPane == null || tabPane.getTabs().isEmpty())
+            return;
+
+        int selectedIndex = tabPane.getSelectionModel().getSelectedIndex();
+        if (selectedIndex < 0) {
+            selectedIndex = tabPane.getTabs().indexOf(editorTab.tab());
+        }
+        if (selectedIndex < 0)
+            return;
+
+        int targetIndex = Math.floorMod(selectedIndex + offset, tabPane.getTabs().size());
+        tabPane.getSelectionModel().select(targetIndex);
+    }
+
+    private void moveActiveTab(int offset) {
+        EditorTab editorTab = activeTab().orElse(null);
+        if (editorTab == null)
+            return;
+
+        TabPane tabPane = editorTab.tab().getTabPane();
+        if (tabPane == null)
+            return;
+
+        int currentIndex = tabPane.getTabs().indexOf(editorTab.tab());
+        int targetIndex = currentIndex + offset;
+        if (currentIndex < 0 || targetIndex < 0 || targetIndex >= tabPane.getTabs().size())
+            return;
+
+        EditorTab adjacentTab = tabsByControl.get(tabPane.getTabs().get(targetIndex));
+        if (adjacentTab == null || adjacentTab.pinned() != editorTab.pinned())
+            return;
+
+        tabPane.getTabs().remove(currentIndex);
+        tabPane.getTabs().add(targetIndex, editorTab.tab());
+        tabPane.getSelectionModel().select(editorTab.tab());
     }
 
     public SaveResult saveActive() {
