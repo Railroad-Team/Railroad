@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.ide.projectexplorer;
 
-import com.kodedu.terminalfx.Terminal;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexCoordinator;
@@ -10,7 +9,7 @@ import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import dev.railroadide.railroad.ide.projectexplorer.task.FileCopyTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.SearchTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
-import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
+import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
@@ -153,11 +152,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     public void openSelectedItemInExplorer() {
-        selectedTreeItem().ifPresent(selectedItem -> openInExplorer(selectedItem.getValue().getPath()));
+        selectedTreeItem().ifPresent(selectedItem -> FileUtils.openInExplorer(selectedItem.getValue().getPath()));
     }
 
     public void openSelectedItemInTerminal() {
-        selectedTreeItem().ifPresent(selectedItem -> openInTerminal(selectedItem.getValue()));
+        selectedTreeItem().ifPresent(selectedItem -> FileUtils.openInTerminal(selectedItem.getValue().getPath()));
     }
 
     private Optional<TreeItem<PathItem>> selectedTreeItem() {
@@ -243,30 +242,6 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 }
             }
         }
-    }
-
-    public static void openInExplorer(Path path) {
-        FileUtils.openInExplorer(path);
-    }
-
-    public static void openInTerminal(PathItem item) {
-        Path path = item.getPath();
-
-        Services.UI_MANAGER.lookup(UIIds.IDE.IDE_BOTTOM_DOCK).ifPresent(pane -> {
-            Terminal terminal = TerminalFactory.create(Files.isDirectory(path) ? path : path.getParent());
-            if (!Files.isDirectory(path)) {
-                terminal.onTerminalFxReady(() -> terminal.command(path.getFileName().toString()));
-            }
-
-            Tab terminalTab = pane.addTab("Terminal (" +
-                pane.getTabs()
-                    .stream()
-                    .filter(tab -> tab.getContent() instanceof Terminal)
-                    .count()
-                + ")", terminal);
-
-            pane.getSelectionModel().select(terminalTab);
-        });
     }
 
     public static void expandAll(TreeItem<PathItem> treeItem) {
@@ -650,5 +625,19 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         Path path = selected.getValue().getPath();
         return Files.isDirectory(path) ? path : path.getParent();
+    }
+
+    public void revealPath(Path path) {
+        TreeItem<PathItem> item = findTreeItem(path);
+        if (item != null) {
+            TreeItem<PathItem> parent = item.getParent();
+            while (parent != null) {
+                parent.setExpanded(true);
+                parent = parent.getParent();
+            }
+
+            treeView.getSelectionModel().select(item);
+            treeView.scrollTo(treeView.getRow(item));
+        }
     }
 }

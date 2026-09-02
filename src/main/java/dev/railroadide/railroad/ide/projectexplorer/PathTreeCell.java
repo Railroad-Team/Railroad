@@ -4,6 +4,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
+import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.events.DocumentRenamedEvent;
 import dev.railroadide.railroad.ui.RRHBox;
@@ -87,8 +88,8 @@ public class PathTreeCell extends TreeCell<PathItem> {
         }
         var openInTerminal = new MenuItem("Terminal");
 
-        openInExplorer.setOnAction(_ -> ProjectExplorerPane.openInExplorer(currentPath));
-        openInTerminal.setOnAction(_ -> ProjectExplorerPane.openInTerminal(cell.getItem()));
+        openInExplorer.setOnAction(_ -> FileUtils.openInExplorer(currentPath));
+        openInTerminal.setOnAction(_ -> FileUtils.openInTerminal(cell.getItem().getPath()));
 
         newMenu.getItems().addAll(newFile, newFolder, newClass, newJson, newTxt);
         openIn.getItems().addAll(openInExplorer, openInTerminal);

@@ -523,6 +523,31 @@ railroad.ide.close_unsaved.content=The following documents still have unsaved ch
 railroad.ide.close_tab_failed.window_title=Unsaved Document
 railroad.ide.close_tab_failed.title=This document could not be saved
 railroad.ide.close_tab_failed.content=Railroad could not save this document:%n%n%s%n%nChoose Save to retry, Discard to close without saving, or Cancel to keep the tab open.
+
+# Editor tab context menu
+editor.tab.contextmenu.pin=Pin Tab
+editor.tab.contextmenu.unpin=Unpin Tab
+editor.tab.contextmenu.close=Close
+editor.tab.contextmenu.close_others=Close Others
+editor.tab.contextmenu.close_all=Close All
+editor.tab.contextmenu.close_all_unpinned=Close All Unpinned
+editor.tab.contextmenu.close_to_left=Close Tabs to the Left
+editor.tab.contextmenu.close_to_right=Close Tabs to the Right
+editor.tab.contextmenu.close_all_unmodified=Close All Unmodified
+editor.tab.contextmenu.close_all_saved=Close All Saved
+editor.tab.contextmenu.reopen_closed_tab=Reopen Closed Tab
+editor.tab.contextmenu.copy_path=Copy Path
+editor.tab.contextmenu.copy_absolute_path=Absolute Path
+editor.tab.contextmenu.copy_project_relative_path=Project-Relative Path
+editor.tab.contextmenu.reveal_in_file_explorer=Reveal in File Explorer
+editor.tab.contextmenu.reveal_in_project_explorer=Reveal in Project Explorer
+editor.tab.contextmenu.open_in_terminal=Open Containing Folder in Terminal
+editor.tab.contextmenu.move_to_previous_group=Move to Previous Editor Group
+editor.tab.contextmenu.move_to_next_group=Move to Next Editor Group
+editor.tab.contextmenu.split_right=Split Right
+editor.tab.contextmenu.split_down=Split Down
+editor.tab.contextmenu.open_in_new_window=Move to New Window
+
 railroad.menu.file.exit=Exit
 railroad.menu.file.recent_projects=Recent Projects
 

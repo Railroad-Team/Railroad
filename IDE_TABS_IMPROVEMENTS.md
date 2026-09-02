@@ -31,22 +31,23 @@ The tab work should begin with correctness, then interaction features. Right now
 
 Every document tab should provide:
 
-- [ ] Pin / Unpin
-- [ ] Close
-- [ ] Close Others
-- [ ] Close Tabs to the Right
-- [ ] Close Tabs to the Left
-- [ ] Close All
-- [ ] Close All Unpinned
-- [ ] Close Saved Tabs
-- [ ] Reopen Closed Tab
-- [ ] Copy Absolute Path
-- [ ] Copy Project-Relative Path
-- [ ] Reveal in File Explorer
-- [ ] Open Containing Folder in Terminal
-- [ ] Move to Next/Previous Editor Group
-- [ ] Split Right / Split Down
-- [ ] Move to New Window
+- [x] Pin / Unpin
+- [x] Close
+- [x] Close Others
+- [x] Close Tabs to the Right
+- [x] Close Tabs to the Left
+- [x] Close All
+- [x] Close Unmodified Tabs
+- [x] Close All Unpinned
+- [x] Close Saved Tabs
+- [x] Reopen Closed Tab
+- [x] Copy Absolute Path
+- [x] Copy Project-Relative Path
+- [x] Reveal in File Explorer
+- [x] Open Containing Folder in Terminal
+- [x] Move to Next/Previous Editor Group
+- [x] Split Right / Split Down
+- [x] Move to New Window
 
 Bulk actions should protect pinned tabs by default and operate relative to the tab that was right-clicked, not whichever tab happens to be selected.
 
