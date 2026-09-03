@@ -13,6 +13,7 @@ import dev.railroadide.railroad.ide.debug.DebuggingManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
 import dev.railroadide.railroad.ide.ui.IDEPane;
 import dev.railroadide.railroad.ide.ui.editor.EditorTabSessionState;
+import dev.railroadide.railroad.ide.ui.editor.EditorWorkspaceSessionState;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -222,8 +223,13 @@ public class RailroadProject implements Project {
         List<Path> openDocumentPaths = projectConfig.getOpenDocuments();
         Path activeDocumentPath = projectConfig.getActiveDocument();
         List<EditorTabSessionState> editorTabs = projectConfig.getEditorTabs();
+        EditorWorkspaceSessionState editorWorkspace = projectConfig.getEditorWorkspace();
         Platform.runLater(() -> {
-            if (editorTabs == null) {
+            if (editorWorkspace != null && editorWorkspace.isSupported()) {
+                Railroad.LOGGER.debug("Restoring complete editor workspace with {} tabs for project {}",
+                    editorWorkspace.tabs().size(), project.getPathString());
+                Services.EDITOR_TAB_MANAGER.restoreWorkspaceSession(editorWorkspace);
+            } else if (editorTabs == null) {
                 Railroad.LOGGER.debug("Restoring {} legacy editor tabs for project {}",
                     openDocumentPaths == null ? 0 : openDocumentPaths.size(),
                     project.getPathString());
@@ -250,8 +256,10 @@ public class RailroadProject implements Project {
             ProjectDataStore dataStore = getDataStore();
             ProjectConfig projectConfig = dataStore.readJson(PROJECT_CONFIG_LOCATION, ProjectConfig.class)
                 .orElseGet(ProjectConfig::new);
-            List<EditorTabSessionState> editorTabs = Services.EDITOR_TAB_MANAGER.captureSessionState();
+            EditorWorkspaceSessionState editorWorkspace = Services.EDITOR_TAB_MANAGER.captureWorkspaceSession();
+            List<EditorTabSessionState> editorTabs = editorWorkspace.tabs();
             Railroad.LOGGER.debug("Persisting {} editor tabs for project {}", editorTabs.size(), getPathString());
+            projectConfig.setEditorWorkspace(editorWorkspace);
             projectConfig.setEditorTabs(editorTabs);
             projectConfig.setOpenDocuments(editorTabs.stream()
                 .map(EditorTabSessionState::path)

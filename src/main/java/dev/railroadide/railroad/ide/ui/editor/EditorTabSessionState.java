@@ -15,7 +15,8 @@ public record EditorTabSessionState(
     boolean pinned,
     boolean preview,
     boolean active,
-    String editorGroupId) {
+    String editorGroupId,
+    EditorViewState viewState) {
     public static final String DEFAULT_EDITOR_GROUP_ID = "railroad:editor-group:main";
 
     public EditorTabSessionState {
@@ -33,6 +34,7 @@ public record EditorTabSessionState(
         } else {
             editorGroupId = editorGroupId.trim();
         }
+        viewState = Objects.requireNonNullElse(viewState, EditorViewState.EMPTY);
     }
 
     public EditorTabSessionState(
@@ -42,7 +44,18 @@ public record EditorTabSessionState(
         boolean preview,
         boolean active,
         String editorGroupId) {
-        this(null, path, order, pinned, preview, active, editorGroupId);
+        this(null, path, order, pinned, preview, active, editorGroupId, EditorViewState.EMPTY);
+    }
+
+    public EditorTabSessionState(
+        DocumentIdentity identity,
+        Path path,
+        int order,
+        boolean pinned,
+        boolean preview,
+        boolean active,
+        String editorGroupId) {
+        this(identity, path, order, pinned, preview, active, editorGroupId, EditorViewState.EMPTY);
     }
 
     public static EditorTabSessionState legacy(Path path, int order, boolean active) {

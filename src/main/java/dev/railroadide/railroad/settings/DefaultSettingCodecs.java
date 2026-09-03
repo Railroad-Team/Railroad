@@ -9,6 +9,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ComboBoxBase;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 
 /**
  * Default setting codecs for common data types used in the Railroad IDE.
@@ -66,6 +67,24 @@ public class DefaultSettingCodecs {
         .createNode(value -> {
             var textField = new TextField();
             textField.setText(String.valueOf(value));
+            return textField;
+        })
+        .build();
+
+    /**
+     * Integer codec for limits and counts that cannot be negative.
+     */
+    public static final SettingCodec<Integer, TextField> NON_NEGATIVE_INTEGER = SettingCodec
+        .<Integer, TextField>builder("generic.non_negative_integer")
+        .nodeToValue(textField -> parseNonNegativeInteger(textField.getText()))
+        .valueToNode((value, textField) -> textField.setText(String.valueOf(normalizeNonNegativeInteger(value))))
+        .jsonDecoder(json -> parseNonNegativeInteger(json.getAsString()))
+        .jsonEncoder(value -> new JsonPrimitive(normalizeNonNegativeInteger(value)))
+        .createNode(value -> {
+            var textField = new TextField(String.valueOf(normalizeNonNegativeInteger(value)));
+            textField.setTextFormatter(new TextFormatter<String>(change -> change.getControlNewText().matches("\\d*")
+                ? change
+                : null));
             return textField;
         })
         .build();
@@ -142,6 +161,24 @@ public class DefaultSettingCodecs {
                 return enumClass.getEnumConstants()[0];
             }
         });
+    }
+
+    private static int parseNonNegativeInteger(String text) {
+        if (text == null || text.isBlank())
+            return 0;
+        if (!text.matches("\\d+"))
+            return 0;
+
+        try {
+            long value = Long.parseLong(text);
+            return (int) Math.min(value, Integer.MAX_VALUE);
+        } catch (NumberFormatException _) {
+            return Integer.MAX_VALUE;
+        }
+    }
+
+    private static int normalizeNonNegativeInteger(Integer value) {
+        return value == null ? 0 : Math.max(0, value);
     }
 
     public static <E extends Enum<E>> SettingCodec<E, ComboBox<E>> ofEnum(String id, Class<E> enumClass,

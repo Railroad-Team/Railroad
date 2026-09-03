@@ -56,6 +56,24 @@ public final class Settings {
             .defaultValue(true)
             .build());
 
+    public static final Setting<Integer> EDITOR_TAB_LIMIT = registerSetting(
+        Setting.builder(Integer.class, "railroad:editor_tab_limit")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.editor_tabs"))
+            .codec(DefaultSettingCodecs.NON_NEGATIVE_INTEGER)
+            .defaultValue(20)
+            .canBeNull(false)
+            .build());
+
+    public static final Setting<Integer> RECENTLY_CLOSED_TAB_LIMIT = registerSetting(
+        Setting.builder(Integer.class, "railroad:recently_closed_tab_limit")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.editor_tabs"))
+            .codec(DefaultSettingCodecs.NON_NEGATIVE_INTEGER)
+            .defaultValue(20)
+            .canBeNull(false)
+            .build());
+
     public static final Setting<Boolean> SWITCH_TO_IDE_AFTER_IMPORT = registerSetting(
         Setting.builder(Boolean.class, "railroad:switch_to_ide_after_import")
             .treePath("projects")

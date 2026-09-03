@@ -29,6 +29,8 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
 import java.lang.ref.WeakReference;
@@ -48,9 +50,11 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     private final IDEContentRouter contentRouter;
     private final Map<WorkspaceMode, List<Tab>> dockTabsByMode = new LinkedHashMap<>();
     private final Map<WorkspaceMode, DetachableTabPane> editorPanesByMode = new LinkedHashMap<>();
+    private final Map<WorkspaceMode, StackPane> editorHostsByMode = new LinkedHashMap<>();
     private final Map<WorkspaceMode, IDELayoutState.ModeLayout> layoutsByMode = new LinkedHashMap<>();
     private final Map<WorkspaceMode, WeakReference<Node>> focusOwnersByMode = new LinkedHashMap<>();
     private final Set<Tab> ownedTabs = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<DetachableTabPane> ownedTabPanes = Collections.newSetFromMap(new IdentityHashMap<>());
 
     private final DetachableTabPane leftPane;
     private final DetachableTabPane rightPane;
@@ -80,10 +84,11 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         trackOwnedTabs(rightPane);
         assignWhileAttached(UIIds.IDE.IDE_RIGHT_DOCK, rightPane);
         var codeEditorPane = getOrCreateEditorPane(editorPanesByMode, WorkspaceModes.CODE);
+        var codeEditorHost = getOrCreateEditorHost(WorkspaceModes.CODE, codeEditorPane);
         this.contentRouter = new IDEContentRouter(this);
         this.bottomPane = createBottomPane();
 
-        this.centerBottomSplit = new SplitPane(codeEditorPane, bottomPane);
+        this.centerBottomSplit = new SplitPane(codeEditorHost, bottomPane);
         centerBottomSplit.setOrientation(Orientation.VERTICAL);
         centerBottomSplit.setDividerPositions(0.75);
 
@@ -135,6 +140,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
     private DetachableTabPane createCodeEditorPane() {
         var pane = new DetachableTabPane();
+        pane.setScope(editorScope(WorkspaceModes.CODE));
         trackOwnedTabs(pane);
         pane.getTabs().add(createTab("editor:welcome", "Welcome", new IDEWelcomePane()));
         trackSelectedTab(pane);
@@ -145,6 +151,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
     private DetachableTabPane createGitEditorPane() {
         var pane = new DetachableTabPane();
+        pane.setScope(editorScope(WorkspaceModes.GIT));
         trackOwnedTabs(pane);
         pane.getTabs().add(createTab("editor:git-welcome", "Welcome", new IDEWelcomePane()));
         trackSelectedTab(pane);
@@ -190,10 +197,19 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
     private DetachableTabPane createEditorPane(WorkspaceMode viewMode) {
         var pane = new DetachableTabPane();
+        pane.setScope(editorScope(viewMode));
         trackOwnedTabs(pane);
         pane.getTabs().add(createTab("editor:" + viewMode.getId(), "Welcome", new IDEWelcomePane()));
         trackSelectedTab(pane);
         return pane;
+    }
+
+    private StackPane getOrCreateEditorHost(WorkspaceMode viewMode, DetachableTabPane editorPane) {
+        return editorHostsByMode.computeIfAbsent(viewMode, _ -> new StackPane(editorPane));
+    }
+
+    private static String editorScope(WorkspaceMode viewMode) {
+        return "railroad:editor-scope:" + viewMode.getId();
     }
 
     private static Tab createTab(String id, String title, Node content) {
@@ -223,9 +239,10 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             }
 
             DetachableTabPane editorPane = getOrCreateEditorPane(editorPanesByMode, resolvedMode);
+            StackPane editorHost = getOrCreateEditorHost(resolvedMode, editorPane);
             leftPane.getTabs()
                 .setAll(dockTabsByMode.getOrDefault(resolvedMode, dockTabsByMode.get(WorkspaceModes.CODE)));
-            replaceEditorPane(editorPane);
+            replaceEditorRoot(editorHost);
 
             activeViewMode = resolvedMode;
             restoreModeLayout(resolvedMode,
@@ -239,11 +256,34 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         }
     }
 
-    private void replaceEditorPane(DetachableTabPane editorPane) {
+    private void replaceEditorRoot(Node editorRoot) {
         if (centerBottomSplit.getItems().isEmpty()) {
-            centerBottomSplit.getItems().add(editorPane);
-        } else if (centerBottomSplit.getItems().getFirst() != editorPane) {
-            centerBottomSplit.getItems().set(0, editorPane);
+            centerBottomSplit.getItems().add(editorRoot);
+        } else if (centerBottomSplit.getItems().getFirst() != editorRoot) {
+            centerBottomSplit.getItems().set(0, editorRoot);
+        }
+    }
+
+    public Node getEditorLayoutRoot(WorkspaceMode viewMode) {
+        StackPane host = editorHostsByMode.get(viewMode);
+        return host == null || host.getChildren().isEmpty() ? null : host.getChildren().getFirst();
+    }
+
+    public Node detachEditorLayoutRoot(WorkspaceMode viewMode) {
+        StackPane host = editorHostsByMode.get(viewMode);
+        if (host == null || host.getChildren().isEmpty())
+            return null;
+        return host.getChildren().removeFirst();
+    }
+
+    public void setEditorLayoutRoot(WorkspaceMode viewMode, Node root) {
+        Objects.requireNonNull(viewMode, "Workspace mode cannot be null");
+        Objects.requireNonNull(root, "Editor layout root cannot be null");
+        DetachableTabPane editorPane = getOrCreateEditorPane(editorPanesByMode, viewMode);
+        StackPane host = getOrCreateEditorHost(viewMode, editorPane);
+        host.getChildren().setAll(root);
+        if (activeViewMode == viewMode) {
+            replaceEditorRoot(host);
         }
     }
 
@@ -436,7 +476,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
     private boolean isModeContent(Node node, WorkspaceMode viewMode) {
         return isDescendantOf(node, leftPane)
-            || isDescendantOf(node, editorPanesByMode.get(viewMode))
+            || isDescendantOf(node, editorHostsByMode.get(viewMode))
             || isDescendantOf(node, rightPane)
             || isDescendantOf(node, bottomPane);
     }
@@ -665,24 +705,21 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     }
 
     private void trackOwnedTabs(DetachableTabPane pane) {
+        if (!ownedTabPanes.add(pane))
+            return;
+
         pane.setDetachableTabPaneFactory(new DetachableTabPaneFactory() {
             @Override
             protected void init(DetachableTabPane detachedPane) {
                 trackOwnedTabs(detachedPane);
+                if (editorScope(WorkspaceModes.CODE).equals(detachedPane.getScope())) {
+                    Services.EDITOR_TAB_MANAGER.registerEditorPane(detachedPane);
+                }
             }
         });
         pane.setStageFactory((priorPane, tab) -> {
             var stage = new DetachableTabPane.TabStage(priorPane, tab);
-            stage.addEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST, event -> {
-                List<Tab> detachedTabs = stage.getScene().getRoot().lookupAll(".tab-pane").stream()
-                    .filter(DetachableTabPane.class::isInstance)
-                    .map(DetachableTabPane.class::cast)
-                    .flatMap(detachedPane -> List.copyOf(detachedPane.getTabs()).stream())
-                    .toList();
-                if (detachedTabs.stream().anyMatch(detachedTab -> !IDETabLifecycle.requestClose(detachedTab))) {
-                    event.consume();
-                }
-            });
+            guardDetachedStage(stage);
             return stage;
         });
         pane.getTabs().forEach(this::trackOwnedTab);
@@ -693,6 +730,41 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         };
         pane.getTabs().addListener(listener);
         lifecycle.onDispose(() -> pane.getTabs().removeListener(listener));
+    }
+
+    public void trackEditorPane(DetachableTabPane pane) {
+        Objects.requireNonNull(pane, "Editor pane cannot be null");
+        trackOwnedTabs(pane);
+    }
+
+    public Stage createDetachedEditorStage(Node root) {
+        if (!(root instanceof javafx.scene.Parent parent))
+            throw new IllegalArgumentException("Detached editor root must be a Parent");
+
+        var stage = new Stage();
+        if (getScene() != null && getScene().getWindow() != null) {
+            stage.initOwner(getScene().getWindow());
+        }
+        var scene = new Scene(parent, 800, 600);
+        if (getScene() != null) {
+            scene.getStylesheets().addAll(getScene().getStylesheets());
+        }
+        stage.setScene(scene);
+        guardDetachedStage(stage);
+        return stage;
+    }
+
+    private static void guardDetachedStage(Stage stage) {
+        stage.addEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST, event -> {
+            List<Tab> detachedTabs = stage.getScene().getRoot().lookupAll(".tab-pane").stream()
+                .filter(DetachableTabPane.class::isInstance)
+                .map(DetachableTabPane.class::cast)
+                .flatMap(detachedPane -> List.copyOf(detachedPane.getTabs()).stream())
+                .toList();
+            if (detachedTabs.stream().anyMatch(detachedTab -> !IDETabLifecycle.requestClose(detachedTab))) {
+                event.consume();
+            }
+        });
     }
 
     private void trackOwnedTab(Tab tab) {
@@ -721,8 +793,10 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         IDEContentDisposer.dispose(getBottom(), disposed);
         IDEContentDisposer.dispose(getCenter(), disposed);
         ownedTabs.clear();
+        ownedTabPanes.clear();
         dockTabsByMode.clear();
         editorPanesByMode.clear();
+        editorHostsByMode.clear();
         layoutsByMode.clear();
         focusOwnersByMode.clear();
     }

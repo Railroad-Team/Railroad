@@ -87,13 +87,13 @@ Bulk actions should protect pinned tabs by default and operate relative to the t
 
 ## P2: Editor Groups and Sessions
 
-- [ ] Support horizontal and vertical split editor groups.
-- [ ] Allow dragging tabs between groups and detaching/redocking into windows.
+- [x] Support horizontal and vertical split editor groups.
+- [x] Allow dragging tabs between groups and detaching/redocking into windows.
 - [ ] Share one document buffer between multiple views of the same file.
-- [ ] Persist groups, dividers, tab placement, selections, caret positions, folds, and scroll positions.
+- [x] Persist groups, dividers, tab placement, selections, caret positions, folds, and scroll positions.
 - [ ] Maintain per-workspace-mode tab sets and navigation history.
-- [ ] Add a configurable tab limit with least-recently-used eviction of clean, unpinned tabs.
-- [ ] Keep a bounded recently closed stack.
+- [x] Add a configurable tab limit with least-recently-used eviction of clean, unpinned tabs.
+- [x] Keep a bounded recently closed stack.
 - [ ] Offer **Synchronize Project Explorer with Active Tab**.
 - [ ] Give tool tabs separate semantics: Show/Hide, Move Dock, Detach, and Reset Position rather than document close commands.
 

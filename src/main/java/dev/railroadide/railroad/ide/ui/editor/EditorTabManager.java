@@ -12,15 +12,18 @@ import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.ui.IDEContentRouter;
+import dev.railroadide.railroad.ide.ui.IDEPane;
 import dev.railroadide.railroad.ide.ui.IDETabLifecycle;
 import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
 import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
+import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.plugin.spi.events.DocumentRenamedEvent;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
+import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import dev.railroadide.railroad.ui.RRButton;
@@ -45,6 +48,7 @@ import javafx.scene.control.TabPane;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 
 import java.io.File;
@@ -60,6 +64,7 @@ import static dev.railroadide.railroad.ide.ui.editor.EditorTabSessionState.DEFAU
 public class EditorTabManager {
     private final Map<DocumentId, EditorTab> openTabs = new LinkedHashMap<>();
     private final Deque<ClosedEditorTab> recentlyClosedTabs = new ArrayDeque<>();
+    private final Set<EditorTab> tabsByRecency = new LinkedHashSet<>();
     private final Map<Tab, EditorTab> tabsByControl = new IdentityHashMap<>();
     private final Map<DocumentId, ClosedEditorTab> pendingCloseSnapshots = new LinkedHashMap<>();
     private final Map<DetachableTabPane, ChangeListener<Tab>> selectionListeners = new IdentityHashMap<>();
@@ -70,11 +75,13 @@ public class EditorTabManager {
     private final Map<DetachableTabPane, ListChangeListener<Tab>> tabOrderListeners = new IdentityHashMap<>();
     private final Set<DetachableTabPane> pendingTabOrderUpdates = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Set<SplitPane> editorSplitPanes = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<Window> trackedDetachedWindows = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Map<EditorTab, Stage> failedCloseDialogs = new IdentityHashMap<>();
     private final Set<EditorTab> discardApprovedTabs = Collections.newSetFromMap(new IdentityHashMap<>());
     private boolean restoring;
     private boolean selectionUpdateScheduled;
     private EditorTab pendingSelection;
+    private DetachableTabPane primaryEditorPane;
     private long selectionGeneration;
     private long editorGroupSequence;
 
@@ -134,6 +141,30 @@ public class EditorTabManager {
         Railroad.EVENT_BUS.subscribe(ProjectEvent.class, this::handleProjectClosed);
         Railroad.EVENT_BUS.subscribe(DocumentRenamedEvent.class, this::handleRenamed);
         Railroad.EVENT_BUS.subscribe(DocumentEvent.class, this::handleDocumentEvent);
+        Settings.EDITOR_TAB_LIMIT.addListener((_, _) -> JavaFXUtils.runOnApplicationThread(
+            () -> enforceTabLimit(activeTab().orElse(null))));
+        Settings.RECENTLY_CLOSED_TAB_LIMIT.addListener((_, newLimit) -> JavaFXUtils.runOnApplicationThread(
+            () -> trimRecentlyClosedTabs(newLimit)));
+    }
+
+    /** Registers a pane created by a drag split or detached-window operation. */
+    public void registerEditorPane(DetachableTabPane tabPane) {
+        Objects.requireNonNull(tabPane, "Tab pane cannot be null");
+        JavaFXUtils.runOnApplicationThread(() -> registerEditorPaneOnApplicationThread(tabPane));
+    }
+
+    private void registerEditorPaneOnApplicationThread(DetachableTabPane tabPane) {
+        String groupId = editorGroupIds.get(tabPane);
+        if (groupId == null) {
+            groupId = nextEditorGroupId();
+        }
+        ensureSelectionListener(tabPane, groupId);
+        trackEmptySplitGroup(tabPane);
+        reconcilePaneMembership(tabPane);
+        Platform.runLater(() -> {
+            registerEditorSplitAncestors(tabPane);
+            trackDetachedWindow(tabPane);
+        });
     }
 
     public void open(Path path) {
@@ -204,57 +235,27 @@ public class EditorTabManager {
 
     public void restoreSession(List<EditorTabSessionState> sessionState) {
         Objects.requireNonNull(sessionState, "Session state cannot be null");
+        restoreWorkspaceSession(EditorWorkspaceSessionState.legacy(sessionState));
+    }
+
+    public void restoreWorkspaceSession(EditorWorkspaceSessionState workspaceState) {
+        Objects.requireNonNull(workspaceState, "Editor workspace state cannot be null");
+        if (!workspaceState.isSupported()) {
+            restoreSession(workspaceState.tabs());
+            return;
+        }
+
         Project project = Services.IDE_STATE.getCurrentProject();
         if (project == null)
             return;
 
-        List<EditorTabSessionState> tabsToRestore = sessionState.stream()
+        List<EditorTabSessionState> tabsToRestore = workspaceState.tabs().stream()
             .filter(Objects::nonNull)
             .sorted(Comparator.comparingInt(EditorTabSessionState::order))
             .toList();
         IDEContentRouter.routeActive(WorkspaceContentTargets.CODE_EDITOR, tabPane -> {
-            ensureSelectionListener(tabPane, DEFAULT_EDITOR_GROUP_ID);
-            restoring = true;
-            try {
-                for (EditorTabSessionState tabState : tabsToRestore) {
-                    try {
-                        Services.IDE_STATE.restoreDocumentIdentity(tabState.identity());
-                        if (tabState.path() == null) {
-                            Railroad.LOGGER.warn("No editor provider can restore virtual document {}",
-                                tabState.identity().uri());
-                            continue;
-                        }
-                        openInTabPane(
-                            project,
-                            tabState.path(),
-                            tabPane,
-                            TabOpenRequest.restored(tabState));
-                    } catch (RuntimeException exception) {
-                        Railroad.LOGGER.error("Failed to restore editor tab for {}", tabState.path(), exception);
-                    }
-                }
-            } finally {
-                restoring = false;
-            }
-
-            EditorTab activeTab = tabsToRestore.stream()
-                .filter(EditorTabSessionState::active)
-                .map(EditorTabSessionState::path)
-                .map(this::findOpen)
-                .flatMap(Optional::stream)
-                .findFirst()
-                .orElse(null);
-            if (activeTab == null) {
-                for (EditorTabSessionState tabState : tabsToRestore) {
-                    activeTab = findOpen(tabState.path()).orElse(null);
-                    if (activeTab != null)
-                        break;
-                }
-            }
-            if (activeTab != null) {
-                tabPane.getSelectionModel().select(activeTab.tab());
-            }
-            activate(activeTab);
+            IDEPane idePane = Services.UI_MANAGER.lookup(UIIds.IDE.IDE).orElse(null);
+            restoreWorkspaceOnApplicationThread(project, idePane, tabPane, workspaceState, tabsToRestore);
         });
     }
 
@@ -263,6 +264,9 @@ public class EditorTabManager {
         Path path,
         DetachableTabPane tabPane,
         TabOpenRequest request) {
+        if (primaryEditorPane == null && DEFAULT_EDITOR_GROUP_ID.equals(request.editorGroupId())) {
+            primaryEditorPane = tabPane;
+        }
         Path normalizedPath = path.toAbsolutePath().normalize();
         if (!Files.isRegularFile(normalizedPath)) {
             Railroad.LOGGER.warn("Cannot open missing or non-file path: {}", normalizedPath);
@@ -315,8 +319,19 @@ public class EditorTabManager {
 
         openTabs.put(editorTab.documentId(), editorTab);
         tabsByControl.put(editorTab.tab(), editorTab);
+        markRecentlyUsed(editorTab);
         refreshTabPresentations();
-        editorTab.pinnedProperty().addListener((_, _, _) -> keepPinnedTabsOnLeft(editorTab.tab().getTabPane()));
+        editorTab.pinnedProperty().addListener((_, _, isPinned) -> {
+            keepPinnedTabsOnLeft(editorTab.tab().getTabPane());
+            if (!isPinned) {
+                scheduleTabLimitEnforcement();
+            }
+        });
+        editorTab.dirtyProperty().addListener((_, wasDirty, isDirty) -> {
+            if (wasDirty && !isDirty) {
+                scheduleTabLimitEnforcement();
+            }
+        });
         ensureSelectionListener(tabPane, request.editorGroupId());
         Services.IDE_STATE.openDocument(document);
         addToTabPane(tabPane, editorTab.tab(), request.insertionIndex());
@@ -325,7 +340,212 @@ public class EditorTabManager {
             tabPane.getSelectionModel().select(editorTab.tab());
             activate(editorTab);
         }
+        if (!restoring) {
+            enforceTabLimit(editorTab);
+        }
         return editorTab;
+    }
+
+    private void restoreWorkspaceOnApplicationThread(
+        Project project,
+        IDEPane idePane,
+        DetachableTabPane primaryPane,
+        EditorWorkspaceSessionState workspaceState,
+        List<EditorTabSessionState> tabsToRestore) {
+        restoring = true;
+        try {
+            primaryEditorPane = primaryPane;
+            removeWelcomeTabs(primaryPane);
+            editorSplitPanes.clear();
+
+            Map<String, DetachableTabPane> groups = new LinkedHashMap<>();
+            if (idePane != null) {
+                idePane.detachEditorLayoutRoot(WorkspaceModes.CODE);
+                detachFromParent(primaryPane);
+
+                Deque<DetachableTabPane> reusablePanes = new ArrayDeque<>();
+                reusablePanes.add(primaryPane);
+                Node mainRoot = restoreLayoutNode(
+                    workspaceState.mainLayout(), primaryPane, reusablePanes, groups);
+                idePane.setEditorLayoutRoot(WorkspaceModes.CODE, mainRoot);
+            } else {
+                assignEditorGroup(primaryPane, DEFAULT_EDITOR_GROUP_ID);
+                groups.put(DEFAULT_EDITOR_GROUP_ID, primaryPane);
+            }
+
+            Set<String> restorableGroupIds = tabsToRestore.stream()
+                .filter(tab -> tab.path() != null && Files.isRegularFile(tab.path()))
+                .map(EditorTabSessionState::editorGroupId)
+                .collect(java.util.stream.Collectors.toSet());
+
+            var detachedLayouts = new ArrayList<Map.Entry<DetachedEditorWindowState, Map<String, DetachableTabPane>>>();
+            if (idePane != null) {
+                for (DetachedEditorWindowState windowState : workspaceState.detachedWindows()) {
+                    Set<String> windowGroups = new LinkedHashSet<>();
+                    collectGroupIds(windowState.layout(), windowGroups);
+                    if (Collections.disjoint(windowGroups, restorableGroupIds))
+                        continue;
+
+                    Map<String, DetachableTabPane> windowPanes = new LinkedHashMap<>();
+                    Node windowRoot = restoreLayoutNode(
+                        windowState.layout(), primaryPane, new ArrayDeque<>(), windowPanes);
+                    groups.putAll(windowPanes);
+                    Stage stage = idePane.createDetachedEditorStage(windowRoot);
+                    stage.setX(windowState.x());
+                    stage.setY(windowState.y());
+                    stage.setWidth(windowState.width());
+                    stage.setHeight(windowState.height());
+                    stage.setMaximized(windowState.maximized());
+                    stage.show();
+                    Railroad.WINDOW_MANAGER.registerChildWindow(stage);
+                    collectEditorPanes(windowRoot).forEach(this::trackDetachedWindow);
+                    detachedLayouts.add(Map.entry(windowState, windowPanes));
+                }
+            }
+
+            Map<String, EditorTab> restoredTabs = new LinkedHashMap<>();
+            DetachableTabPane fallbackPane = groups.values().stream().findFirst().orElse(primaryPane);
+            for (EditorTabSessionState tabState : tabsToRestore) {
+                try {
+                    Services.IDE_STATE.restoreDocumentIdentity(tabState.identity());
+                    if (tabState.path() == null) {
+                        Railroad.LOGGER.warn("No editor provider can restore virtual document {}",
+                            tabState.identity().uri());
+                        continue;
+                    }
+                    DetachableTabPane destination = groups.getOrDefault(tabState.editorGroupId(), fallbackPane);
+                    EditorTab restoredTab = openInTabPane(
+                        project,
+                        tabState.path(),
+                        destination,
+                        TabOpenRequest.restored(tabState));
+                    if (restoredTab != null) {
+                        restoredTabs.put(restoredTab.documentId().toString(), restoredTab);
+                        restoreViewState(restoredTab, tabState.viewState());
+                    }
+                } catch (RuntimeException exception) {
+                    Railroad.LOGGER.error("Failed to restore editor tab for {}", tabState.path(), exception);
+                }
+            }
+
+            restoreGroupSelections(workspaceState.mainLayout(), groups, restoredTabs);
+            detachedLayouts.forEach(entry -> restoreGroupSelections(
+                entry.getKey().layout(), entry.getValue(), restoredTabs));
+
+            EditorTab activeTab = tabsToRestore.stream()
+                .filter(EditorTabSessionState::active)
+                .map(state -> state.identity().id().toString())
+                .map(restoredTabs::get)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElseGet(() -> restoredTabs.values().stream().findFirst().orElse(null));
+            if (activeTab != null && activeTab.tab().getTabPane() != null) {
+                activeTab.tab().getTabPane().getSelectionModel().select(activeTab.tab());
+            }
+            activate(activeTab);
+        } finally {
+            restoring = false;
+        }
+        enforceTabLimit(activeTab().orElse(null));
+        cleanupEmptyEditorGroups();
+        if (openTabs.isEmpty()) {
+            restoreEmptyEditorState();
+        }
+    }
+
+    private Node restoreLayoutNode(
+        EditorLayoutNodeState state,
+        DetachableTabPane template,
+        Deque<DetachableTabPane> reusablePanes,
+        Map<String, DetachableTabPane> groups) {
+        if (state == null || state.group()) {
+            DetachableTabPane pane = reusablePanes.pollFirst();
+            if (pane == null) {
+                pane = createSiblingTabPane(template);
+            }
+            String requestedGroupId = state == null ? DEFAULT_EDITOR_GROUP_ID : state.groupId();
+            String groupId = groups.containsKey(requestedGroupId) ? nextEditorGroupId() : requestedGroupId;
+            assignEditorGroup(pane, groupId);
+            groups.put(groupId, pane);
+            return pane;
+        }
+
+        List<Node> children = state.children().stream()
+            .map(child -> restoreLayoutNode(child, template, reusablePanes, groups))
+            .toList();
+        if (children.size() == 1)
+            return children.getFirst();
+
+        var splitPane = new SplitPane();
+        splitPane.setOrientation(state.orientation());
+        splitPane.getItems().addAll(children);
+        applyDividerPositions(splitPane, state.dividerPositions());
+        editorSplitPanes.add(splitPane);
+        return splitPane;
+    }
+
+    private void assignEditorGroup(DetachableTabPane pane, String groupId) {
+        editorGroupIds.put(pane, groupId);
+        pane.setCloseIfEmpty(false);
+        ensureSelectionListener(pane, groupId);
+        trackEmptySplitGroup(pane);
+        reconcilePaneMembership(pane);
+    }
+
+    private static void applyDividerPositions(SplitPane splitPane, List<Double> savedPositions) {
+        int dividerCount = Math.max(0, splitPane.getItems().size() - 1);
+        if (dividerCount == 0)
+            return;
+
+        double[] positions = new double[dividerCount];
+        for (int index = 0; index < dividerCount; index++) {
+            positions[index] = index < savedPositions.size()
+                ? savedPositions.get(index)
+                : (double) (index + 1) / (dividerCount + 1);
+        }
+        splitPane.setDividerPositions(positions);
+    }
+
+    private static void collectGroupIds(EditorLayoutNodeState state, Set<String> groupIds) {
+        if (state.group()) {
+            groupIds.add(state.groupId());
+            return;
+        }
+        state.children().forEach(child -> collectGroupIds(child, groupIds));
+    }
+
+    private static void restoreGroupSelections(
+        EditorLayoutNodeState state,
+        Map<String, DetachableTabPane> groups,
+        Map<String, EditorTab> restoredTabs) {
+        if (state.group()) {
+            DetachableTabPane pane = groups.get(state.groupId());
+            EditorTab selected = restoredTabs.get(state.selectedDocumentId());
+            if (pane != null) {
+                if (selected != null && selected.tab().getTabPane() == pane) {
+                    pane.getSelectionModel().select(selected.tab());
+                } else if (!pane.getTabs().isEmpty()) {
+                    pane.getSelectionModel().selectFirst();
+                }
+            }
+            return;
+        }
+        state.children().forEach(child -> restoreGroupSelections(child, groups, restoredTabs));
+    }
+
+    private static void removeWelcomeTabs(DetachableTabPane pane) {
+        List.copyOf(pane.getTabs()).stream()
+            .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
+            .forEach(IDETabLifecycle::requestClose);
+    }
+
+    private static void detachFromParent(Node node) {
+        Parent parent = node.getParent();
+        if (parent instanceof SplitPane splitPane) {
+            splitPane.getItems().remove(node);
+        } else if (parent instanceof Pane pane) {
+            pane.getChildren().remove(node);
+        }
     }
 
     private void reattachExistingTabIfNeeded(EditorTab editorTab, DetachableTabPane targetTabPane) {
@@ -398,7 +618,10 @@ public class EditorTabManager {
         editorGroupIds.putIfAbsent(tabPane, editorGroupId);
         ensureTabOrderListener(tabPane);
         ensureMouseKeybindHandler(tabPane);
-        tabStripSupport.computeIfAbsent(tabPane, pane -> new EditorTabStripSupport(pane, tabsByControl::get));
+        tabStripSupport.computeIfAbsent(tabPane, pane -> new EditorTabStripSupport(
+            pane,
+            tabsByControl::get,
+            this::cleanupEmptyEditorGroups));
         if (selectionListeners.containsKey(tabPane))
             return;
 
@@ -437,10 +660,88 @@ public class EditorTabManager {
         if (tabOrderListeners.containsKey(tabPane))
             return;
 
-        ListChangeListener<Tab> listener = _ -> scheduleTabOrderUpdate(tabPane);
+        ListChangeListener<Tab> listener = _ -> {
+            reconcilePaneMembership(tabPane);
+            scheduleTabOrderUpdate(tabPane);
+            Platform.runLater(() -> {
+                registerEditorSplitAncestors(tabPane);
+                trackDetachedWindow(tabPane);
+            });
+        };
         tabPane.getTabs().addListener(listener);
         tabOrderListeners.put(tabPane, listener);
         keepPinnedTabsOnLeft(tabPane);
+    }
+
+    private void reconcilePaneMembership(DetachableTabPane tabPane) {
+        String groupId = editorGroupIds.get(tabPane);
+        if (groupId == null)
+            return;
+
+        tabPane.getTabs().stream()
+            .map(tabsByControl::get)
+            .filter(Objects::nonNull)
+            .forEach(tab -> tab.setEditorGroupId(groupId));
+    }
+
+    private void registerEditorSplitAncestors(DetachableTabPane tabPane) {
+        for (Parent ancestor = tabPane.getParent(); ancestor != null; ancestor = ancestor.getParent()) {
+            if (ancestor instanceof SplitPane splitPane && isEditorOnlySplit(splitPane)) {
+                editorSplitPanes.add(splitPane);
+                collectEditorPanes(splitPane).forEach(pane -> {
+                    ensureSelectionListener(pane, ensureEditorGroupId(pane));
+                    trackEmptySplitGroup(pane);
+                    reconcilePaneMembership(pane);
+                });
+            }
+        }
+    }
+
+    private boolean isEditorOnlySplit(SplitPane splitPane) {
+        List<DetachableTabPane> panes = collectEditorPanes(splitPane);
+        return !panes.isEmpty()
+            && panes.stream().allMatch(pane -> pane.getScope().equals(tabPaneScope(panes.getFirst())));
+    }
+
+    private static String tabPaneScope(DetachableTabPane tabPane) {
+        return Objects.toString(tabPane.getScope(), "");
+    }
+
+    private static List<DetachableTabPane> collectEditorPanes(Node root) {
+        var panes = new ArrayList<DetachableTabPane>();
+        collectTabPanes(root, panes);
+        return panes;
+    }
+
+    private static void collectTabPanes(Node node, List<DetachableTabPane> panes) {
+        if (node instanceof DetachableTabPane tabPane) {
+            panes.add(tabPane);
+            return;
+        }
+        if (node instanceof Parent parent) {
+            parent.getChildrenUnmodifiable().forEach(child -> collectTabPanes(child, panes));
+        }
+    }
+
+    private void trackDetachedWindow(DetachableTabPane tabPane) {
+        if (tabPane.getScene() == null || tabPane.getScene().getWindow() == null)
+            return;
+
+        Window window = tabPane.getScene().getWindow();
+        if (!(window instanceof Stage) || !trackedDetachedWindows.add(window))
+            return;
+
+        window.addEventHandler(WindowEvent.WINDOW_HIDDEN, _ -> unregisterWindow(window));
+    }
+
+    private void unregisterWindow(Window window) {
+        trackedDetachedWindows.remove(window);
+        List.copyOf(selectionListeners.keySet()).stream()
+            .filter(pane -> pane.getScene() != null && pane.getScene().getWindow() == window)
+            .forEach(pane -> {
+                untrackEmptySplitGroup(pane);
+                removeSelectionListener(pane);
+            });
     }
 
     private void scheduleTabOrderUpdate(DetachableTabPane tabPane) {
@@ -560,10 +861,63 @@ public class EditorTabManager {
             return;
         }
 
+        markRecentlyUsed(editorTab);
         Services.IDE_STATE.setActiveDocument(editorTab.document());
         Services.DOCUMENT_EDITOR_STATE.setActiveEditor(
             editorTab.view().activeEditor(),
             editorTab.view().languageId());
+    }
+
+    private void markRecentlyUsed(EditorTab editorTab) {
+        if (openTabs.get(editorTab.documentId()) != editorTab)
+            return;
+
+        tabsByRecency.remove(editorTab);
+        tabsByRecency.add(editorTab);
+    }
+
+    private void scheduleTabLimitEnforcement() {
+        JavaFXUtils.runOnApplicationThread(
+            () -> Platform.runLater(() -> enforceTabLimit(activeTab().orElse(null))));
+    }
+
+    private void enforceTabLimit(EditorTab protectedTab) {
+        int tabLimit = EditorTabRetentionPolicy.normalizeLimit(Settings.EDITOR_TAB_LIMIT.getValue());
+        if (tabLimit == 0 || openTabs.size() <= tabLimit)
+            return;
+
+        Set<EditorTab> excluded = Collections.newSetFromMap(new IdentityHashMap<>());
+        if (protectedTab != null) {
+            excluded.add(protectedTab);
+        }
+
+        boolean evictedTab = false;
+        while (openTabs.size() > tabLimit) {
+            EditorTab candidate = EditorTabRetentionPolicy.findLeastRecentlyUsedEvictable(
+                tabsByRecency,
+                excluded,
+                tab -> openTabs.get(tab.documentId()) == tab && !tab.dirty() && !tab.pinned());
+            if (candidate == null)
+                break;
+
+            excluded.add(candidate);
+            evictedTab |= requestClose(candidate);
+        }
+
+        if (evictedTab && protectedTab != null && openTabs.get(protectedTab.documentId()) == protectedTab) {
+            TabPane tabPane = protectedTab.tab().getTabPane();
+            if (tabPane != null) {
+                tabPane.getSelectionModel().select(protectedTab.tab());
+            }
+            queueSelectionUpdate(protectedTab.tab());
+            activate(protectedTab);
+        }
+    }
+
+    private void trimRecentlyClosedTabs(Integer limit) {
+        EditorTabRetentionPolicy.trimMostRecentFirst(
+            recentlyClosedTabs,
+            EditorTabRetentionPolicy.normalizeLimit(limit));
     }
 
     public Optional<EditorTab> activeTab() {
@@ -785,10 +1139,95 @@ public class EditorTabManager {
         openTabs.putAll(reboundTabs);
     }
 
+    public EditorWorkspaceSessionState captureWorkspaceSession() {
+        List<EditorTabSessionState> tabs = captureSessionState();
+        IDEPane idePane = Services.UI_MANAGER.lookup(UIIds.IDE.IDE).orElse(null);
+        if (idePane == null)
+            return EditorWorkspaceSessionState.legacy(tabs);
+
+        Node mainRoot = idePane.getEditorLayoutRoot(WorkspaceModes.CODE);
+        EditorLayoutNodeState mainLayout = captureLayoutNode(mainRoot);
+        if (mainLayout == null) {
+            mainLayout = EditorLayoutNodeState.group(DEFAULT_EDITOR_GROUP_ID, null);
+        }
+
+        Window mainWindow = mainRoot == null || mainRoot.getScene() == null
+            ? null
+            : mainRoot.getScene().getWindow();
+        var detachedWindows = new ArrayList<DetachedEditorWindowState>();
+        Set<Window> capturedWindows = Collections.newSetFromMap(new IdentityHashMap<>());
+        selectionListeners.keySet().stream()
+            .map(DetachableTabPane::getScene)
+            .filter(Objects::nonNull)
+            .map(javafx.scene.Scene::getWindow)
+            .filter(Objects::nonNull)
+            .filter(Window::isShowing)
+            .filter(window -> window != mainWindow)
+            .filter(capturedWindows::add)
+            .forEach(window -> {
+                EditorLayoutNodeState layout = captureLayoutNode(window.getScene().getRoot());
+                if (layout != null) {
+                    detachedWindows.add(new DetachedEditorWindowState(
+                        layout,
+                        window.getX(),
+                        window.getY(),
+                        window.getWidth(),
+                        window.getHeight(),
+                        window instanceof Stage stage && stage.isMaximized()));
+                }
+            });
+
+        return new EditorWorkspaceSessionState(
+            EditorWorkspaceSessionState.CURRENT_SCHEMA_VERSION,
+            mainLayout,
+            detachedWindows,
+            tabs);
+    }
+
+    private EditorLayoutNodeState captureLayoutNode(Node node) {
+        if (node instanceof DetachableTabPane tabPane) {
+            if (!editorGroupIds.containsKey(tabPane)
+                && tabPane.getTabs().stream().noneMatch(tabsByControl::containsKey))
+                return null;
+
+            String groupId = ensureEditorGroupId(tabPane);
+            reconcilePaneMembership(tabPane);
+            EditorTab selectedTab = tabsByControl.get(tabPane.getSelectionModel().getSelectedItem());
+            return EditorLayoutNodeState.group(
+                groupId,
+                selectedTab == null ? null : selectedTab.documentId().toString());
+        }
+
+        if (node instanceof SplitPane splitPane) {
+            List<EditorLayoutNodeState> children = splitPane.getItems().stream()
+                .map(this::captureLayoutNode)
+                .filter(Objects::nonNull)
+                .toList();
+            if (children.isEmpty())
+                return null;
+            if (children.size() == 1)
+                return children.getFirst();
+
+            double[] positions = splitPane.getDividerPositions();
+            List<Double> dividers = Arrays.stream(positions).boxed().toList();
+            return EditorLayoutNodeState.split(splitPane.getOrientation(), dividers, children);
+        }
+
+        if (node instanceof Parent parent) {
+            List<EditorLayoutNodeState> children = parent.getChildrenUnmodifiable().stream()
+                .map(this::captureLayoutNode)
+                .filter(Objects::nonNull)
+                .toList();
+            return children.size() == 1 ? children.getFirst() : null;
+        }
+        return null;
+    }
+
     public List<EditorTabSessionState> captureSessionState() {
         if (selectionUpdateScheduled) {
             applyPendingSelection(selectionGeneration);
         }
+        selectionListeners.keySet().forEach(this::reconcilePaneMembership);
 
         var sessionState = new ArrayList<EditorTabSessionState>();
         Set<DocumentId> capturedTabs = new HashSet<>();
@@ -827,13 +1266,15 @@ public class EditorTabManager {
             editorTab.pinned(),
             editorTab.preview(),
             editorTab.documentId().equals(activeDocumentId),
-            editorTab.editorGroupId());
+            editorTab.editorGroupId(),
+            EditorViewState.capture(editorTab.view().activeEditor()));
     }
 
     private void handleClosed(EditorTab editorTab) {
         if (openTabs.remove(editorTab.documentId()) == null)
             return;
 
+        tabsByRecency.remove(editorTab);
         discardApprovedTabs.remove(editorTab);
         Stage failedCloseDialog = failedCloseDialogs.remove(editorTab);
         if (failedCloseDialog != null) {
@@ -846,6 +1287,7 @@ public class EditorTabManager {
         }
         recentlyClosedTabs.removeIf(tab -> tab.documentId().equals(editorTab.documentId()));
         recentlyClosedTabs.addFirst(closedTab);
+        trimRecentlyClosedTabs(Settings.RECENTLY_CLOSED_TAB_LIMIT.getValue());
         tabsByControl.remove(editorTab.tab());
         refreshTabPresentations();
         Services.IDE_STATE.closeDocument(editorTab.document());
@@ -1037,6 +1479,7 @@ public class EditorTabManager {
         selectionGeneration++;
         selectionUpdateScheduled = false;
         pendingSelection = null;
+        primaryEditorPane = null;
         selectionListeners.forEach(
             (tabPane, listener) -> tabPane.getSelectionModel().selectedItemProperty().removeListener(listener));
         selectionListeners.clear();
@@ -1052,7 +1495,9 @@ public class EditorTabManager {
         tabStripSupport.clear();
         pendingTabOrderUpdates.clear();
         editorSplitPanes.clear();
+        trackedDetachedWindows.clear();
         tabsByControl.clear();
+        tabsByRecency.clear();
         pendingCloseSnapshots.clear();
         List.copyOf(failedCloseDialogs.values()).forEach(Stage::close);
         failedCloseDialogs.clear();
@@ -1467,7 +1912,7 @@ public class EditorTabManager {
         }
     }
 
-    private static DetachableTabPane createSiblingTabPane(DetachableTabPane sourceTabPane) {
+    private DetachableTabPane createSiblingTabPane(DetachableTabPane sourceTabPane) {
         var sibling = new DetachableTabPane();
         sibling.setSceneFactory(sourceTabPane.getSceneFactory());
         sibling.setStageOwnerFactory(sourceTabPane.getStageOwnerFactory());
@@ -1477,6 +1922,7 @@ public class EditorTabManager {
         sibling.setDetachableTabPaneFactory(sourceTabPane.getDetachableTabPaneFactory());
         sibling.setStageFactory(sourceTabPane.getStageFactory());
         sibling.setDropHint(sourceTabPane.getDropHint());
+        Services.UI_MANAGER.lookup(UIIds.IDE.IDE).ifPresent(idePane -> idePane.trackEditorPane(sibling));
         return sibling;
     }
 
@@ -1555,7 +2001,9 @@ public class EditorTabManager {
     }
 
     private void removeEmptySplitPane(DetachableTabPane tabPane) {
-        if (!tabPane.getTabs().isEmpty())
+        if (!tabPane.getTabs().isEmpty()
+            || tabPane == primaryEditorPane
+            || Boolean.TRUE.equals(tabPane.getProperties().get(EditorTabStripSupport.DRAG_ACTIVE_PROPERTY)))
             return;
 
         SplitPane splitPane = findContainingSplitPane(tabPane);
@@ -1566,6 +2014,12 @@ public class EditorTabManager {
         untrackEmptySplitGroup(tabPane);
         removeSelectionListener(tabPane);
         collapseEditorSplit(splitPane);
+    }
+
+    private void cleanupEmptyEditorGroups() {
+        List.copyOf(emptyGroupListeners.keySet()).stream()
+            .filter(pane -> pane.getTabs().isEmpty())
+            .forEach(this::removeEmptySplitPane);
     }
 
     private void untrackEmptySplitGroup(DetachableTabPane tabPane) {
@@ -1707,9 +2161,29 @@ public class EditorTabManager {
         if (editor == null)
             return;
 
+        viewState = Objects.requireNonNullElse(viewState, EditorViewState.EMPTY);
+        int paragraphCount = editor.getParagraphs().size();
+        for (EditorViewState.FoldRange fold : viewState.folds()) {
+            if (paragraphCount < 2 || fold.startParagraph() >= paragraphCount - 1)
+                continue;
+            int start = Math.clamp(fold.startParagraph(), 0, paragraphCount - 2);
+            int end = Math.clamp(fold.endParagraph(), start + 1, paragraphCount - 1);
+            editor.foldParagraphs(start, end);
+        }
+
         int documentLength = editor.getLength();
         int anchor = Math.clamp(viewState.anchorPosition(), 0, documentLength);
         int caret = Math.clamp(viewState.caretPosition(), 0, documentLength);
         editor.selectRange(anchor, caret);
+        double horizontalScroll = viewState.horizontalScroll();
+        double verticalScroll = viewState.verticalScroll();
+        editor.scrollXToPixel(horizontalScroll);
+        editor.scrollYToPixel(verticalScroll);
+        Platform.runLater(() -> {
+            if (tab.view().activeEditor() == editor) {
+                editor.scrollXToPixel(horizontalScroll);
+                editor.scrollYToPixel(verticalScroll);
+            }
+        });
     }
 }

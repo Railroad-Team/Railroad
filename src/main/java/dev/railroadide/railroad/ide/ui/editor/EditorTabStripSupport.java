@@ -17,6 +17,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.Tooltip;
+import javafx.scene.input.DragEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.PickResult;
@@ -27,6 +28,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public final class EditorTabStripSupport implements AutoCloseable {
+    static final String DRAG_ACTIVE_PROPERTY = "railroad:editor-tab-drag-active";
     private static final double AUTO_SCROLL_EDGE_SIZE = 48;
     private static final double AUTO_SCROLL_DELTA = 9;
     private static final long AUTO_SCROLL_INTERVAL_NANOS = 20_000_000L;
@@ -42,7 +44,9 @@ public final class EditorTabStripSupport implements AutoCloseable {
     private final EventHandler<MouseEvent> mouseDraggedHandler = this::handleMouseDragged;
     private final EventHandler<MouseEvent> mouseReleasedHandler = _ -> stopAutoScroll();
     private final EventHandler<MouseEvent> dragDetectedHandler = this::handleDragDetected;
+    private final EventHandler<DragEvent> dockingDragHandler = this::handleDockingDrag;
     private final EventHandler<ScrollEvent> scrollHandler = this::handleScroll;
+    private final Runnable dragFinished;
     private final ChangeListener<Tab> selectionListener = (_, _, selectedTab) -> handleSelectionChanged(selectedTab);
     private final ChangeListener<Number> widthListener = (_, _, _) -> {
         scheduleSelectedTabVisibilityUpdate();
@@ -67,6 +71,7 @@ public final class EditorTabStripSupport implements AutoCloseable {
     };
 
     private boolean draggingTab;
+    private boolean dockingDragOver;
     private int autoScrollDirection;
     private double pointerSceneX;
     private double pointerSceneY;
@@ -87,17 +92,20 @@ public final class EditorTabStripSupport implements AutoCloseable {
 
     public EditorTabStripSupport(
         DetachableTabPane tabPane,
-        Function<Tab, EditorTab> editorTabResolver) {
+        Function<Tab, EditorTab> editorTabResolver,
+        Runnable dragFinished) {
         this.tabPane = tabPane;
+        this.dragFinished = Objects.requireNonNull(dragFinished, "Drag-finished action cannot be null");
         this.allTabsMenu = new EditorAllTabsMenu(tabPane, editorTabResolver);
         tabPane.getStyleClass().add("editor-tab-pane");
-        tabPane.setTabDragPolicy(TabPane.TabDragPolicy.REORDER);
+        tabPane.setTabDragPolicy(TabPane.TabDragPolicy.FIXED);
         tabPane.addEventFilter(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         tabPane.addEventFilter(MouseEvent.MOUSE_MOVED, mouseMovedHandler);
         tabPane.addEventFilter(MouseEvent.MOUSE_EXITED, mouseExitedHandler);
         tabPane.addEventFilter(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         tabPane.addEventFilter(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         tabPane.addEventFilter(MouseEvent.DRAG_DETECTED, dragDetectedHandler);
+        tabPane.addEventFilter(DragEvent.ANY, dockingDragHandler);
         tabPane.addEventHandler(ScrollEvent.SCROLL, scrollHandler);
         tabPane.getSelectionModel().selectedItemProperty().addListener(selectionListener);
         tabPane.widthProperty().addListener(widthListener);
@@ -189,10 +197,42 @@ public final class EditorTabStripSupport implements AutoCloseable {
 
     private void handleDragDetected(MouseEvent event) {
         if (draggingTab) {
-            // TiwulFX removes the selected tab here to begin a detach operation. That
-            // conflicts with TabPane's header-reorder gesture and makes same-strip
-            // reordering dependent on whichever handler runs first.
-            event.consume();
+            // TiwulFX owns the drag gesture so it can move tabs across panes and stages.
+            // Keep the source group alive until its DRAG_DONE handler has redocked or
+            // detached the tab.
+            Node tabHeader = findAncestorWithStyle(event.getPickResult().getIntersectedNode(), "tab");
+            if (tabHeader != null) {
+                tabPane.getProperties().put(DRAG_ACTIVE_PROPERTY, true);
+                @SuppressWarnings("unchecked")
+                EventHandler<DragEvent>[] completion = new EventHandler[1];
+                completion[0] = dragEvent -> {
+                    tabHeader.removeEventFilter(DragEvent.DRAG_DONE, completion[0]);
+                    handleDragDone();
+                };
+                tabHeader.addEventFilter(DragEvent.DRAG_DONE, completion[0]);
+            }
+        }
+    }
+
+    private void handleDragDone() {
+        tabPane.getProperties().remove(DRAG_ACTIVE_PROPERTY);
+        stopAutoScroll();
+        Platform.runLater(dragFinished);
+    }
+
+    private void handleDockingDrag(DragEvent event) {
+        if (event.getEventType() == DragEvent.DRAG_OVER
+            && isInsideHeaderArea(event.getPickResult().getIntersectedNode())) {
+            dockingDragOver = true;
+            pointerSceneX = event.getSceneX();
+            pointerSceneY = event.getSceneY();
+            pointerScreenX = event.getScreenX();
+            pointerScreenY = event.getScreenY();
+            updateAutoScrollDirection();
+        } else if (event.getEventType() == DragEvent.DRAG_EXITED
+            || event.getEventType() == DragEvent.DRAG_DROPPED) {
+            dockingDragOver = false;
+            stopAutoScrollTimer();
         }
     }
 
@@ -383,12 +423,13 @@ public final class EditorTabStripSupport implements AutoCloseable {
 
     private void stopAutoScroll() {
         draggingTab = false;
+        dockingDragOver = false;
         stopAutoScrollTimer();
     }
 
     private void scrollAtPointer() {
         Node headerArea = headerArea();
-        if (!draggingTab || autoScrollDirection == 0 || headerArea == null) {
+        if ((!draggingTab && !dockingDragOver) || autoScrollDirection == 0 || headerArea == null) {
             stopAutoScrollTimer();
             return;
         }
@@ -557,6 +598,8 @@ public final class EditorTabStripSupport implements AutoCloseable {
         tabPane.removeEventFilter(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         tabPane.removeEventFilter(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         tabPane.removeEventFilter(MouseEvent.DRAG_DETECTED, dragDetectedHandler);
+        tabPane.removeEventFilter(DragEvent.ANY, dockingDragHandler);
+        tabPane.getProperties().remove(DRAG_ACTIVE_PROPERTY);
         tabPane.removeEventHandler(ScrollEvent.SCROLL, scrollHandler);
         tabPane.getSelectionModel().selectedItemProperty().removeListener(selectionListener);
         tabPane.widthProperty().removeListener(widthListener);
