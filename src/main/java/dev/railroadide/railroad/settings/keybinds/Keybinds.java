@@ -106,6 +106,24 @@ public class Keybinds {
         WorkspaceModes.GIT,
         KeyCode.DIGIT2);
 
+    public static final Keybind NAVIGATE_BACK = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:navigate_back")
+        .category(GENERAL)
+        .addDefaultKey(KeyCode.LEFT, KeyCombination.ALT_DOWN)
+        .addDefaultMouseButton(MouseButton.BACK)
+        .addAction(IDE, _ -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+            .ifPresent(idePane -> idePane.navigateBack()))
+        .build());
+
+    public static final Keybind NAVIGATE_FORWARD = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:navigate_forward")
+        .category(GENERAL)
+        .addDefaultKey(KeyCode.RIGHT, KeyCombination.ALT_DOWN)
+        .addDefaultMouseButton(MouseButton.FORWARD)
+        .addAction(IDE, _ -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+            .ifPresent(idePane -> idePane.navigateForward()))
+        .build());
+
     public static final Keybind CLOSE_EDITOR_TAB = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:close_editor_tab")
         .category(GENERAL)
@@ -225,6 +243,8 @@ public class Keybinds {
         .build());
 
     public static void initialize() {
+        NAVIGATE_BACK.resetKeys();
+        NAVIGATE_FORWARD.resetKeys();
         CLOSE_EDITOR_TAB.resetKeys();
         REOPEN_CLOSED_EDITOR_TAB.resetKeys();
         SELECT_EDITOR_TAB_BY_NUMBER.resetKeys();

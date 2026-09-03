@@ -291,6 +291,8 @@ railroad.settings.keybinds.rename_project_explorer_item=Rename selected project 
 railroad.settings.keybinds.open_in_file_explorer=Open in file explorer
 railroad.settings.keybinds.open_in_terminal=Open in terminal
 railroad.settings.keybinds.fullscreen=Fullscreen
+railroad.settings.keybinds.navigate_back=Navigate back
+railroad.settings.keybinds.navigate_forward=Navigate forward
 railroad.settings.keybinds.close_editor_tab=Close editor tab
 railroad.settings.keybinds.select_editor_tab_by_number=Select editor tab by number
 railroad.settings.keybinds.select_next_editor_tab=Select next editor tab
@@ -604,6 +606,8 @@ railroad.menu.edit.find=Find...
 railroad.menu.edit.replace=Replace...
 
 railroad.menu.view=View
+railroad.menu.view.navigate_back=Navigate Back
+railroad.menu.view.navigate_forward=Navigate Forward
 railroad.menu.view.mode=View Mode
 railroad.menu.view.tool_windows=Tool Windows
 railroad.menu.view.reset_current_layout=Reset Current Layout

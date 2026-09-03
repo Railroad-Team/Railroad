@@ -17,6 +17,7 @@ import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.keybinds.Keybind;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
+import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRMenuBar;
@@ -189,6 +190,16 @@ public final class IDEMenuBarFactory {
 
         var toolWindowsMenu = createToolWindowsMenu(workspaceActions);
 
+        var navigateBackItem = new LocalizedMenuItem("railroad.menu.view.navigate_back");
+        navigateBackItem.setGraphic(new FontIcon(FontAwesomeSolid.ARROW_LEFT));
+        navigateBackItem.setOnAction(_ -> workspaceActions.navigateBack());
+        bindConfiguredAccelerator(navigateBackItem, Keybinds.NAVIGATE_BACK);
+
+        var navigateForwardItem = new LocalizedMenuItem("railroad.menu.view.navigate_forward");
+        navigateForwardItem.setGraphic(new FontIcon(FontAwesomeSolid.ARROW_RIGHT));
+        navigateForwardItem.setOnAction(_ -> workspaceActions.navigateForward());
+        bindConfiguredAccelerator(navigateForwardItem, Keybinds.NAVIGATE_FORWARD);
+
         var resetCurrentLayoutItem = new LocalizedMenuItem("railroad.menu.view.reset_current_layout");
         resetCurrentLayoutItem.setGraphic(new FontIcon(FontAwesomeSolid.UNDO));
         resetCurrentLayoutItem.setOnAction(_ -> workspaceActions.resetCurrentLayout());
@@ -300,6 +311,9 @@ public final class IDEMenuBarFactory {
 
         var viewMenu = new LocalizedMenu("railroad.menu.view");
         viewMenu.getItems().addAll(
+            navigateBackItem,
+            navigateForwardItem,
+            new SeparatorMenuItem(),
             viewModeMenu,
             new SeparatorMenuItem(),
             toolWindowsMenu,
@@ -307,6 +321,10 @@ public final class IDEMenuBarFactory {
             resetAllLayoutsItem,
             new SeparatorMenuItem(),
             fullScreenItem);
+        viewMenu.setOnShowing(_ -> {
+            navigateBackItem.setDisable(!workspaceActions.canNavigateBack());
+            navigateForwardItem.setDisable(!workspaceActions.canNavigateForward());
+        });
         viewMenu.getStyleClass().add("rr-menu");
 
         var runMenu = new LocalizedMenu("railroad.menu.run");

@@ -2,14 +2,15 @@ package dev.railroadide.railroad.ide;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Serializable IDE workspace state, split into independent snapshots for each registered workspace mode.
  * <p>
  * Only the current schema is accepted; this development format intentionally has no backwards-compatibility path.
- * Selected tab IDs are restored on a best-effort basis: tabs which no longer exist are ignored, and dynamically
- * generated Git editor tabs are intentionally session-only.
+ * Selected tab IDs and per-mode navigation histories are restored on a best-effort basis: tabs which no longer exist
+ * are ignored, and dynamically generated Git editor tabs are intentionally session-only.
  */
 public record IDELayoutState(
     int schemaVersion,
@@ -94,19 +95,88 @@ public record IDELayoutState(
         double bottomDividerPosition,
         boolean leftDockVisible,
         boolean rightDockVisible,
-        boolean bottomDockVisible) {
+        boolean bottomDockVisible,
+        TabNavigationState editorNavigation) {
         public ModeLayout {
             leftDividerPosition = validDivider(leftDividerPosition, 0.15);
             rightDividerPosition = validDivider(rightDividerPosition, 0.85);
             bottomDividerPosition = validDivider(bottomDividerPosition, 0.75);
+            editorNavigation = editorNavigation == null ? TabNavigationState.empty() : editorNavigation;
+        }
+
+        public ModeLayout(
+            String selectedLeftTab,
+            String selectedEditorTab,
+            String selectedRightTab,
+            String selectedBottomTab,
+            double leftDividerPosition,
+            double rightDividerPosition,
+            double bottomDividerPosition,
+            boolean leftDockVisible,
+            boolean rightDockVisible,
+            boolean bottomDockVisible) {
+            this(
+                selectedLeftTab,
+                selectedEditorTab,
+                selectedRightTab,
+                selectedBottomTab,
+                leftDividerPosition,
+                rightDividerPosition,
+                bottomDividerPosition,
+                leftDockVisible,
+                rightDockVisible,
+                bottomDockVisible,
+                TabNavigationState.empty());
         }
 
         public static ModeLayout defaults() {
-            return new ModeLayout(null, null, null, null, 0.15, 0.85, 0.75, true, true, true);
+            return new ModeLayout(
+                null,
+                null,
+                null,
+                null,
+                0.15,
+                0.85,
+                0.75,
+                true,
+                true,
+                true,
+                TabNavigationState.empty());
+        }
+
+        public ModeLayout withEditorNavigation(TabNavigationState navigation) {
+            return new ModeLayout(
+                selectedLeftTab,
+                selectedEditorTab,
+                selectedRightTab,
+                selectedBottomTab,
+                leftDividerPosition,
+                rightDividerPosition,
+                bottomDividerPosition,
+                leftDockVisible,
+                rightDockVisible,
+                bottomDockVisible,
+                navigation);
         }
 
         private static double validDivider(double value, double fallback) {
             return Double.isFinite(value) && value > 0.0 && value < 1.0 ? value : fallback;
+        }
+    }
+
+    public record TabNavigationState(List<String> entries, int currentIndex) {
+        public TabNavigationState {
+            entries = entries == null
+                ? List.of()
+                : entries.stream()
+                    .filter(entry -> entry != null && !entry.isBlank())
+                    .map(String::trim)
+                    .toList();
+            currentIndex = entries.isEmpty() ? -1 : Math.clamp(currentIndex, 0, entries.size() - 1);
+        }
+
+        public static TabNavigationState empty() {
+            return new TabNavigationState(List.of(), -1);
         }
     }
 }

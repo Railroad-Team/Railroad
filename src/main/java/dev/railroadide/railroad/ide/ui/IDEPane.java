@@ -8,6 +8,7 @@ import dev.railroadide.railroad.ide.IDELayoutState;
 import dev.railroadide.railroad.ide.WorkspaceMode;
 import dev.railroadide.railroad.ide.WorkspaceModeController;
 import dev.railroadide.railroad.ide.WorkspaceModes;
+import dev.railroadide.railroad.ide.WorkspaceTabNavigationHistory;
 import dev.railroadide.railroad.ide.ui.setup.PaneIconBarFactory;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.event.EventListener;
@@ -53,6 +54,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     private final Map<WorkspaceMode, StackPane> editorHostsByMode = new LinkedHashMap<>();
     private final Map<WorkspaceMode, IDELayoutState.ModeLayout> layoutsByMode = new LinkedHashMap<>();
     private final Map<WorkspaceMode, WeakReference<Node>> focusOwnersByMode = new LinkedHashMap<>();
+    private final WorkspaceTabNavigationHistory editorNavigationHistory = new WorkspaceTabNavigationHistory();
+    private final Map<DetachableTabPane, ChangeListener<Tab>> editorNavigationListeners = new IdentityHashMap<>();
     private final Set<Tab> ownedTabs = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Set<DetachableTabPane> ownedTabPanes = Collections.newSetFromMap(new IdentityHashMap<>());
 
@@ -143,7 +146,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         pane.setScope(editorScope(WorkspaceModes.CODE));
         trackOwnedTabs(pane);
         pane.getTabs().add(createTab("editor:welcome", "Welcome", new IDEWelcomePane()));
-        trackSelectedTab(pane);
+        trackEditorNavigation(pane, WorkspaceModes.CODE);
 
         assignWhileIDEAttached(UIIds.IDE.IDE_CODE_EDITOR_DOCK, pane);
         return pane;
@@ -154,7 +157,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         pane.setScope(editorScope(WorkspaceModes.GIT));
         trackOwnedTabs(pane);
         pane.getTabs().add(createTab("editor:git-welcome", "Welcome", new IDEWelcomePane()));
-        trackSelectedTab(pane);
+        trackEditorNavigation(pane, WorkspaceModes.GIT);
 
         assignWhileIDEAttached(UIIds.IDE.IDE_GIT_EDITOR_DOCK, pane);
         return pane;
@@ -200,7 +203,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         pane.setScope(editorScope(viewMode));
         trackOwnedTabs(pane);
         pane.getTabs().add(createTab("editor:" + viewMode.getId(), "Welcome", new IDEWelcomePane()));
-        trackSelectedTab(pane);
+        trackEditorNavigation(pane, viewMode);
         return pane;
     }
 
@@ -322,7 +325,10 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             bottomDivider,
             leftVisible,
             rightVisible,
-            bottomVisible);
+            bottomVisible,
+            editorNavigationHistory.snapshot(
+                viewMode.getId(),
+                tabId -> findEditorTab(viewMode, tabId) != null));
     }
 
     private void restoreModeLayout(
@@ -392,6 +398,27 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             return "content:" + content.getClass().getName();
 
         return "title:" + Objects.toString(tab.getText(), "");
+    }
+
+    private Tab findEditorTab(WorkspaceMode viewMode, String identity) {
+        if (viewMode == null || identity == null)
+            return null;
+
+        String scope = editorScope(viewMode);
+        return ownedTabPanes.stream()
+            .filter(pane -> scope.equals(pane.getScope()))
+            .flatMap(pane -> pane.getTabs().stream())
+            .filter(tab -> identity.equals(tabIdentity(tab)))
+            .findFirst()
+            .orElse(null);
+    }
+
+    private static WorkspaceMode editorMode(DetachableTabPane pane) {
+        String scope = pane.getScope();
+        return WorkspaceMode.REGISTRY.values().stream()
+            .filter(mode -> editorScope(mode).equals(scope))
+            .findFirst()
+            .orElse(null);
     }
 
     private static void selectTab(DetachableTabPane pane, String identity) {
@@ -512,6 +539,28 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         });
     }
 
+    private void trackEditorNavigation(DetachableTabPane pane, WorkspaceMode viewMode) {
+        if (editorNavigationListeners.containsKey(pane))
+            return;
+
+        ChangeListener<Tab> listener = (_, _, selectedTab) -> {
+            if (selectedTab != null) {
+                editorNavigationHistory.visit(viewMode.getId(), tabIdentity(selectedTab));
+            }
+            snapshotActiveLayout();
+        };
+        editorNavigationListeners.put(pane, listener);
+        pane.getSelectionModel().selectedItemProperty().addListener(listener);
+        Tab selectedTab = pane.getSelectionModel().getSelectedItem();
+        if (selectedTab != null) {
+            editorNavigationHistory.visit(viewMode.getId(), tabIdentity(selectedTab));
+        }
+        lifecycle.onDispose(() -> {
+            pane.getSelectionModel().selectedItemProperty().removeListener(listener);
+            editorNavigationListeners.remove(pane);
+        });
+    }
+
     private void trackSelectedTab(DetachableTabPane pane) {
         ChangeListener<Tab> listener = (_, _, _) -> snapshotActiveLayout();
         pane.getSelectionModel().selectedItemProperty().addListener(listener);
@@ -543,6 +592,55 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         if (!layoutTransitioning && layoutInitialized && activeViewMode != null) {
             layoutsByMode.put(activeViewMode, captureModeLayout(activeViewMode));
         }
+    }
+
+    @Override
+    public boolean canNavigateBack() {
+        WorkspaceMode viewMode = activeViewMode;
+        return viewMode != null && editorNavigationHistory.canGoBack(
+            viewMode.getId(),
+            tabId -> findEditorTab(viewMode, tabId) != null);
+    }
+
+    @Override
+    public boolean canNavigateForward() {
+        WorkspaceMode viewMode = activeViewMode;
+        return viewMode != null && editorNavigationHistory.canGoForward(
+            viewMode.getId(),
+            tabId -> findEditorTab(viewMode, tabId) != null);
+    }
+
+    @Override
+    public void navigateBack() {
+        JavaFXUtils.runOnApplicationThread(() -> navigateEditorHistory(false));
+    }
+
+    @Override
+    public void navigateForward() {
+        JavaFXUtils.runOnApplicationThread(() -> navigateEditorHistory(true));
+    }
+
+    private void navigateEditorHistory(boolean forward) {
+        WorkspaceMode viewMode = activeViewMode;
+        if (viewMode == null)
+            return;
+
+        var destination = forward
+            ? editorNavigationHistory.forward(viewMode.getId(), tabId -> findEditorTab(viewMode, tabId) != null)
+            : editorNavigationHistory.back(viewMode.getId(), tabId -> findEditorTab(viewMode, tabId) != null);
+        destination.map(tabId -> findEditorTab(viewMode, tabId)).ifPresent(this::selectNavigatedTab);
+    }
+
+    private void selectNavigatedTab(Tab tab) {
+        if (tab.getTabPane() == null)
+            return;
+
+        tab.getTabPane().getSelectionModel().select(tab);
+        if (tab.getTabPane().getScene() != null && tab.getTabPane().getScene().getWindow() instanceof Stage stage) {
+            stage.toFront();
+        }
+        Node content = tab.getContent();
+        Objects.requireNonNullElse(content, tab.getTabPane()).requestFocus();
     }
 
     @Override
@@ -667,6 +765,11 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         if (Platform.isFxApplicationThread() && layoutInitialized && activeViewMode != null) {
             layoutsByMode.put(activeViewMode, captureModeLayout(activeViewMode));
         }
+        editorPanesByMode.keySet().forEach(mode -> layoutsByMode.computeIfPresent(
+            mode,
+            (_, layout) -> layout.withEditorNavigation(editorNavigationHistory.snapshot(
+                mode.getId(),
+                tabId -> findEditorTab(mode, tabId) != null))));
 
         WorkspaceMode currentMode = activeViewMode == null ? WorkspaceMode.defaultMode() : activeViewMode;
         return new IDELayoutState(currentMode, layoutsByMode);
@@ -679,6 +782,10 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         Runnable restoreAction = () -> {
             layoutsByMode.clear();
             layoutsByMode.putAll(layoutState.knownModeLayouts());
+            editorNavigationHistory.clear();
+            layoutsByMode.forEach((mode, layout) -> editorNavigationHistory.restore(
+                mode.getId(),
+                layout.editorNavigation()));
             layoutInitialized = false;
             activeViewMode = null;
 
@@ -712,7 +819,11 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             @Override
             protected void init(DetachableTabPane detachedPane) {
                 trackOwnedTabs(detachedPane);
-                if (editorScope(WorkspaceModes.CODE).equals(detachedPane.getScope())) {
+                WorkspaceMode editorMode = editorMode(detachedPane);
+                if (editorMode != null) {
+                    trackEditorNavigation(detachedPane, editorMode);
+                }
+                if (editorMode == WorkspaceModes.CODE) {
                     Services.EDITOR_TAB_MANAGER.registerEditorPane(detachedPane);
                 }
             }
@@ -735,6 +846,10 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     public void trackEditorPane(DetachableTabPane pane) {
         Objects.requireNonNull(pane, "Editor pane cannot be null");
         trackOwnedTabs(pane);
+        WorkspaceMode editorMode = editorMode(pane);
+        if (editorMode != null) {
+            trackEditorNavigation(pane, editorMode);
+        }
     }
 
     public Stage createDetachedEditorStage(Node root) {

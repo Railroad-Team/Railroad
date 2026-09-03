@@ -91,7 +91,7 @@ Bulk actions should protect pinned tabs by default and operate relative to the t
 - [x] Allow dragging tabs between groups and detaching/redocking into windows.
 - [ ] Share one document buffer between multiple views of the same file.
 - [x] Persist groups, dividers, tab placement, selections, caret positions, folds, and scroll positions.
-- [ ] Maintain per-workspace-mode tab sets and navigation history.
+- [x] Maintain per-workspace-mode tab sets and navigation history.
 - [x] Add a configurable tab limit with least-recently-used eviction of clean, unpinned tabs.
 - [x] Keep a bounded recently closed stack.
 - [ ] Offer **Synchronize Project Explorer with Active Tab**.
