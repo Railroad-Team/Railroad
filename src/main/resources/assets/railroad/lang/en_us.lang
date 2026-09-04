@@ -1167,3 +1167,13 @@ railroad.markdown.image_dialog.heading=Insert Image
 railroad.markdown.image_dialog.image_alt_text=Alt Text
 railroad.markdown.image_dialog.image_uri_prompt=Image URI
 railroad.markdown.image_dialog.insert=Insert
+
+# External editor changes
+editor.external_change.title=File Changed on Disk
+editor.external_change.message=%s has changed outside Railroad and has unsaved edits. Reload discards your edits; Keep Mine saves your version over the disk version. Saving is paused until you choose.
+editor.external_change.reload=Reload
+editor.external_change.keep_mine=Keep Mine
+editor.external_change.compare=Compare
+editor.external_change.mine=My Unsaved Version
+editor.external_change.disk=Version on Disk
+editor.external_change.read_error=The file could not be read. Saving remains paused. Check that the file is accessible, then try again.

@@ -69,7 +69,6 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
     private final AtomicReference<String> lastSavedText = new AtomicReference<>("");
     private final AtomicReference<String> pendingSnapshot = new AtomicReference<>("");
-    private final AtomicLong lastLocalWrite = new AtomicLong(0L);
     private final AtomicLong pendingSnapshotVersion = new AtomicLong();
 
     private final ExecutorService watcherExecutor = Executors.newSingleThreadExecutor(
@@ -94,6 +93,10 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private volatile boolean discardChangesOnClose;
     private boolean closed;
     private final Object saveLock = new Object();
+    // Guarded by saveLock. Saving is suspended until the FX thread resolves this snapshot.
+    private String pendingExternalText;
+    private String displayedExternalText;
+    private ExternalChangeDialog externalChangeDialog;
 
     private int fontSizeIndex = 5;
 
@@ -142,6 +145,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             }
         }
 
+        JavaFXUtils.runOnApplicationThread(this::closeExternalChangeDialog);
         shutdownRegistration.close();
         Settings.TAB_WIDTH.removeListener(tabWidthListener);
         Settings.EDITOR_FONT_FAMILY.removeListener(fontFamilyListener);
@@ -379,9 +383,31 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         if (snapshot == null)
             return true;
 
+        if (pendingExternalText != null)
+            return false;
+
         if (backingFileMissing) {
             updateAfterSave(snapshotVersion, EditorSaveState.ERROR);
             Railroad.LOGGER.warn("Not saving {} because its backing file was deleted", filePath);
+            return false;
+        }
+
+        // The watcher can arrive after autosave, so also check disk before writing.
+        try {
+            if (Files.exists(filePath)) {
+                String disk = Files.readString(filePath);
+                if (!disk.equals(lastSavedText.get())) {
+                    queueExternalChange(disk);
+                    return false;
+                }
+            } else {
+                backingFileMissing = true;
+                updateAfterSave(snapshotVersion, EditorSaveState.ERROR);
+                return false;
+            }
+        } catch (IOException exception) {
+            updateAfterSave(snapshotVersion, EditorSaveState.ERROR);
+            Railroad.LOGGER.error("Failed to check file before saving {}", filePath, exception);
             return false;
         }
 
@@ -402,7 +428,6 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             Files.writeString(filePath, snapshot, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             lastSavedText.set(snapshot);
             savedVersion.set(snapshotVersion);
-            lastLocalWrite.set(System.nanoTime());
             updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
             Railroad.EVENT_BUS.publish(new DocumentEvent(document(), DocumentEvent.EventType.SAVED));
             return true;
@@ -441,6 +466,9 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             if (closed)
                 return false;
 
+            if (normalizedPath.equals(filePath.toAbsolutePath().normalize()))
+                return saveNow();
+
             if (pendingSaveTask != null) {
                 pendingSaveTask.cancel(false);
                 pendingSaveTask = null;
@@ -461,13 +489,14 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     StandardOpenOption.TRUNCATE_EXISTING);
 
                 filePath = normalizedPath;
+                pendingExternalText = null;
+                closeExternalChangeDialog();
                 backingFileMissing = false;
                 discardChangesOnClose = false;
                 lastSavedText.set(snapshot);
                 pendingSnapshot.set(snapshot);
                 pendingSnapshotVersion.set(snapshotVersion);
                 savedVersion.set(snapshotVersion);
-                lastLocalWrite.set(System.nanoTime());
                 updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
                 restartExternalWatcher();
                 Railroad.EVENT_BUS.publish(new DocumentEvent(document(), DocumentEvent.EventType.SAVED));
@@ -581,6 +610,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             }
 
             filePath = normalizedPath;
+            pendingExternalText = null;
+            closeExternalChangeDialog();
             backingFileMissing = false;
             String currentText = getText();
             boolean contentDirty;
@@ -614,6 +645,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 return;
 
             backingFileMissing = true;
+            pendingExternalText = null;
+            closeExternalChangeDialog();
             if (editVersion.get() == savedVersion.get()) {
                 editVersion.incrementAndGet();
             }
@@ -675,7 +708,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
                     Path changed = (Path) event.context();
                     if (changed != null && changed.equals(watchedPath.getFileName())) {
-                        handleExternalChange(watchedPath, kind);
+                        handleExternalChange(watchedPath);
                     }
                 }
 
@@ -689,52 +722,134 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         }
     }
 
-    private void handleExternalChange(Path watchedPath, WatchEvent.Kind<?> kind) {
-        if (!filePath.equals(watchedPath))
-            return;
-
-        long lastWriteNanos = lastLocalWrite.get();
-        if (System.nanoTime() - lastWriteNanos < TimeUnit.MILLISECONDS.toNanos(250))
-            return;
-
-        if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
-            Platform.runLater(() -> {
-                if (filePath.equals(watchedPath)) {
-                    markBackingFileDeleted();
-                }
-            });
-            return;
-        }
-
-        if (hasUnsavedChanges())
-            return;
-
-        try {
-            if (!Files.exists(watchedPath)) {
-                Platform.runLater(() -> {
-                    if (filePath.equals(watchedPath)) {
-                        markBackingFileDeleted();
-                    }
-                });
-                return;
-            }
-
-            String disk = Files.readString(watchedPath);
-            if (disk.equals(lastSavedText.get()))
+    private void handleExternalChange(Path watchedPath) {
+        synchronized (saveLock) {
+            if (closed || !filePath.equals(watchedPath))
                 return;
 
-            Platform.runLater(() -> {
-                if (!filePath.equals(watchedPath) || backingFileMissing)
+            try {
+                // Inspect the current file, including delete/create pairs from atomic saves.
+                if (!Files.exists(watchedPath)) {
+                    backingFileMissing = true;
+                    Platform.runLater(() -> {
+                        if (filePath.equals(watchedPath) && !Files.exists(watchedPath)) {
+                            markBackingFileDeleted();
+                        }
+                    });
                     return;
+                }
 
-                int caret = getCaretPosition();
-                replaceText(disk);
-                moveTo(Math.min(caret, getLength()));
-                lastSavedText.set(disk);
-                markCurrentVersionSaved();
-            });
-        } catch (IOException exception) {
-            Railroad.LOGGER.error("Failed to reload file {}", watchedPath, exception);
+                String disk = Files.readString(watchedPath);
+                boolean wasMissing = backingFileMissing;
+                backingFileMissing = false;
+                if (wasMissing || pendingExternalText != null || !disk.equals(lastSavedText.get())) {
+                    queueExternalChange(disk);
+                }
+            } catch (IOException exception) {
+                Railroad.LOGGER.error("Failed to reload file {}", watchedPath, exception);
+            }
+        }
+    }
+
+    private void queueExternalChange(String disk) {
+        if (disk.equals(pendingExternalText))
+            return;
+
+        boolean alreadyQueued = pendingExternalText != null;
+        pendingExternalText = disk;
+        if (pendingSaveTask != null) {
+            pendingSaveTask.cancel(false);
+            pendingSaveTask = null;
+        }
+        if (!alreadyQueued || displayedExternalText != null) {
+            Path changedPath = filePath;
+            Platform.runLater(() -> processExternalChange(changedPath));
+        }
+    }
+
+    private void processExternalChange(Path changedPath) {
+        synchronized (saveLock) {
+            if (closed || !filePath.equals(changedPath) || pendingExternalText == null)
+                return;
+
+            String disk = pendingExternalText;
+            if (disk.equals(getText()) || (!hasUnsavedChanges() && displayedExternalText == null)) {
+                reloadExternalText(disk);
+            } else {
+                setSaveState(EditorSaveState.DIRTY);
+                displayedExternalText = disk;
+                showExternalChangeDialog(disk);
+            }
+        }
+    }
+
+    protected void showExternalChangeDialog(String disk) {
+        if (externalChangeDialog == null) {
+            externalChangeDialog = new ExternalChangeDialog(this, () -> resolveExternalChange(true),
+                () -> resolveExternalChange(false));
+        }
+        externalChangeDialog.update(getText(), disk);
+    }
+
+    public boolean hasPendingExternalChange() {
+        synchronized (saveLock) {
+            return pendingExternalText != null;
+        }
+    }
+
+    protected void resolveExternalChange(boolean reload) {
+        synchronized (saveLock) {
+            if (closed || pendingExternalText == null)
+                return;
+
+            try {
+                String disk = Files.readString(filePath);
+                // A choice only applies to the disk version the user has been shown.
+                if (!disk.equals(displayedExternalText)) {
+                    pendingExternalText = disk;
+                    displayedExternalText = disk;
+                    showExternalChangeDialog(disk);
+                    return;
+                }
+                if (reload) {
+                    reloadExternalText(disk);
+                } else {
+                    lastSavedText.set(disk);
+                    pendingExternalText = null;
+                    closeExternalChangeDialog();
+                    saveNow();
+                }
+            } catch (IOException exception) {
+                Railroad.LOGGER.error("Failed to resolve external change for {}", filePath, exception);
+                if (Files.notExists(filePath)) {
+                    markBackingFileDeleted();
+                } else if (externalChangeDialog != null) {
+                    externalChangeDialog.showReadError();
+                }
+            }
+        }
+    }
+
+    private void reloadExternalText(String disk) {
+        int caret = getCaretPosition();
+        if (!getText().equals(disk)) {
+            replaceText(disk);
+            moveTo(Math.min(caret, getLength()));
+        }
+        lastSavedText.set(disk);
+        pendingSnapshot.set(disk);
+        pendingSnapshotVersion.set(editVersion.get());
+        pendingExternalText = null;
+        backingFileMissing = false;
+        markCurrentVersionSaved();
+        closeExternalChangeDialog();
+    }
+
+    private void closeExternalChangeDialog() {
+        displayedExternalText = null;
+        if (externalChangeDialog != null) {
+            externalChangeDialog.close();
+            externalChangeDialog = null;
         }
     }
 

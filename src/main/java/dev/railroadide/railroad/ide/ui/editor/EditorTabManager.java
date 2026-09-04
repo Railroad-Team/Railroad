@@ -1469,7 +1469,10 @@ public class EditorTabManager {
 
         if (editorTab.dirty() && !save(editorTab)) {
             event.consume();
-            showFailedCloseDialog(editorTab);
+            TextEditorPane editor = editorTab.view().activeEditor();
+            if (editor == null || !editor.hasPendingExternalChange()) {
+                showFailedCloseDialog(editorTab);
+            }
             return;
         }
 
