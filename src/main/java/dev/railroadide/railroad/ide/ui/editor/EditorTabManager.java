@@ -145,6 +145,12 @@ public class EditorTabManager {
             () -> enforceTabLimit(activeTab().orElse(null))));
         Settings.RECENTLY_CLOSED_TAB_LIMIT.addListener((_, newLimit) -> JavaFXUtils.runOnApplicationThread(
             () -> trimRecentlyClosedTabs(newLimit)));
+        Settings.SYNCHRONIZE_PROJECT_EXPLORER_WITH_ACTIVE_TAB.addListener((_, enabled) -> {
+            if (Boolean.TRUE.equals(enabled)) {
+                JavaFXUtils.runOnApplicationThread(
+                    () -> activeTab().ifPresent(this::revealInProjectExplorer));
+            }
+        });
     }
 
     /** Registers a pane created by a drag split or detached-window operation. */
@@ -866,6 +872,9 @@ public class EditorTabManager {
         Services.DOCUMENT_EDITOR_STATE.setActiveEditor(
             editorTab.view().activeEditor(),
             editorTab.view().languageId());
+        if (Boolean.TRUE.equals(Settings.SYNCHRONIZE_PROJECT_EXPLORER_WITH_ACTIVE_TAB.getValue())) {
+            revealInProjectExplorer(editorTab);
+        }
     }
 
     private void markRecentlyUsed(EditorTab editorTab) {

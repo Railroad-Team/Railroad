@@ -74,6 +74,15 @@ public final class Settings {
             .canBeNull(false)
             .build());
 
+    public static final Setting<Boolean> SYNCHRONIZE_PROJECT_EXPLORER_WITH_ACTIVE_TAB = registerSetting(
+        Setting.builder(Boolean.class, "railroad:synchronize_project_explorer_with_active_tab")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.project_explorer"))
+            .codec(DefaultSettingCodecs.BOOLEAN)
+            .defaultValue(false)
+            .canBeNull(false)
+            .build());
+
     public static final Setting<Boolean> SWITCH_TO_IDE_AFTER_IMPORT = registerSetting(
         Setting.builder(Boolean.class, "railroad:switch_to_ide_after_import")
             .treePath("projects")

@@ -628,7 +628,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     public void revealPath(Path path) {
-        TreeItem<PathItem> item = findTreeItem(path);
+        TreeItem<PathItem> item = findTreeItemForReveal(path);
         if (item != null) {
             TreeItem<PathItem> parent = item.getParent();
             while (parent != null) {
@@ -639,5 +639,30 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             treeView.getSelectionModel().select(item);
             treeView.scrollTo(treeView.getRow(item));
         }
+    }
+
+    private TreeItem<PathItem> findTreeItemForReveal(Path path) {
+        if (path == null || treeView.getRoot() == null)
+            return null;
+
+        TreeItem<PathItem> currentItem = treeView.getRoot();
+        Path rootPath = currentItem.getValue().getPath().toAbsolutePath().normalize();
+        Path targetPath = path.toAbsolutePath().normalize();
+        if (!targetPath.startsWith(rootPath))
+            return null;
+
+        Path currentPath = rootPath;
+        for (Path segment : rootPath.relativize(targetPath)) {
+            currentPath = currentPath.resolve(segment);
+            Path expectedPath = currentPath;
+            currentItem = currentItem.getChildren().stream()
+                .filter(child -> child.getValue().getPath().toAbsolutePath().normalize().equals(expectedPath))
+                .findFirst()
+                .orElse(null);
+            if (currentItem == null)
+                return null;
+        }
+
+        return currentItem;
     }
 }

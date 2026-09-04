@@ -445,6 +445,10 @@ railroad.settings.ide.editor_tabs.editor_tab_limit.title=Open Tab Limit
 railroad.settings.ide.editor_tabs.editor_tab_limit.description=Maximum number of open editor tabs. Railroad evicts the least recently used clean, unpinned tabs first. Dirty and pinned tabs are always kept. Set to 0 for no limit.
 railroad.settings.ide.editor_tabs.recently_closed_tab_limit.title=Recently Closed Tab Limit
 railroad.settings.ide.editor_tabs.recently_closed_tab_limit.description=Maximum number of closed editor tabs available to reopen. Set to 0 to disable recently closed history.
+railroad.settings.ide.project_explorer.title=Project Explorer
+railroad.settings.ide.project_explorer.description=Control how the Project Explorer follows your work in the editor.
+railroad.settings.ide.project_explorer.synchronize_project_explorer_with_active_tab.title=Synchronize Project Explorer with Active Tab
+railroad.settings.ide.project_explorer.synchronize_project_explorer_with_active_tab.description=Automatically select and reveal the active editor file in the Project Explorer.
 
 # VCS Settings
 settings.tree.vcs=VCS

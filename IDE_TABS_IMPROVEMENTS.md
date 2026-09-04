@@ -94,7 +94,7 @@ Bulk actions should protect pinned tabs by default and operate relative to the t
 - [x] Maintain per-workspace-mode tab sets and navigation history.
 - [x] Add a configurable tab limit with least-recently-used eviction of clean, unpinned tabs.
 - [x] Keep a bounded recently closed stack.
-- [ ] Offer **Synchronize Project Explorer with Active Tab**.
+- [x] Offer **Synchronize Project Explorer with Active Tab**.
 - [ ] Give tool tabs separate semantics: Show/Hide, Move Dock, Detach, and Reset Position rather than document close commands.
 
 ## Recommended Implementation Order
