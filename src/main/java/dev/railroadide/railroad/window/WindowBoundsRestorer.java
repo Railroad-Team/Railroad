@@ -61,7 +61,8 @@ public final class WindowBoundsRestorer {
 
         boolean originalMonitorAvailable = targetScreen.contains(centerX, centerY);
         double restoredX = originalMonitorAvailable
-            ? Math.clamp(finiteOr(x, targetScreen.getMinX()), targetScreen.getMinX(), targetScreen.getMaxX() - restoredWidth)
+            ? Math.clamp(finiteOr(x, targetScreen.getMinX()), targetScreen.getMinX(),
+                targetScreen.getMaxX() - restoredWidth)
             : targetScreen.getMinX() + (targetScreen.getWidth() - restoredWidth) / 2.0;
         double restoredY = originalMonitorAvailable
             ? Math.clamp(finiteOr(y, targetScreen.getMinY()), targetScreen.getMinY(),
