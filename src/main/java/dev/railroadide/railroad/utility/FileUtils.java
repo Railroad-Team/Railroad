@@ -1,7 +1,12 @@
 package dev.railroadide.railroad.utility;
 
+import com.kodedu.terminalfx.Terminal;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
+import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.scene.Node;
+import javafx.scene.control.Tab;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -274,6 +279,7 @@ public final class FileUtils {
         String extension = getExtension(path.toString());
         if (extension == null)
             return new FontIcon(FontAwesomeRegular.FILE);
+        extension = extension.toLowerCase(Locale.ROOT);
 
         return switch (extension) {
             case "png", "jpg", "jpeg", "gif", "bmp", "webp" -> new FontIcon(FontAwesomeRegular.FILE_IMAGE);
@@ -385,8 +391,13 @@ public final class FileUtils {
             return "0 B";
 
         int unit = 1024;
+        if (size < unit)
+            return size + " B";
+
         int exp = (int) (Math.log(size) / Math.log(unit));
-        char pre = "KMGTPE".charAt(exp - 1);
+        String prefixes = "KMGTPE";
+        exp = Math.min(exp, prefixes.length());
+        char pre = prefixes.charAt(exp - 1);
         return String.format("%.1f %sB", size / Math.pow(unit, exp), pre);
     }
 
@@ -438,5 +449,23 @@ public final class FileUtils {
             return null;
 
         return path.toAbsolutePath().normalize();
+    }
+
+    public static void openInTerminal(Path path) {
+        Services.UI_MANAGER.lookup(UIIds.IDE.IDE_BOTTOM_DOCK).ifPresent(pane -> {
+            Terminal terminal = TerminalFactory.create(Files.isDirectory(path) ? path : path.getParent());
+            if (!Files.isDirectory(path)) {
+                terminal.onTerminalFxReady(() -> terminal.command(path.getFileName().toString()));
+            }
+
+            Tab terminalTab = pane.addTab("Terminal (" +
+                pane.getTabs()
+                    .stream()
+                    .filter(tab -> tab.getContent() instanceof Terminal)
+                    .count()
+                + ")", terminal);
+
+            pane.getSelectionModel().select(terminalTab);
+        });
     }
 }

@@ -7,6 +7,7 @@ import dev.railroadide.railroad.ide.DefaultIDEStateService;
 import dev.railroadide.railroad.ide.DefaultWorkspaceService;
 import dev.railroadide.railroad.ide.diagnostics.LanguageInspectionRegistries;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
+import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.localization.Language;
 import dev.railroadide.railroad.localization.LocalizationService;
@@ -78,6 +79,8 @@ public class Services {
 
     public static final DefaultDocumentEditorStateService DOCUMENT_EDITOR_STATE = new DefaultDocumentEditorStateService();
 
+    public static final EditorTabManager EDITOR_TAB_MANAGER = new EditorTabManager();
+
     public static final LocalizationService LOCALIZATION_SERVICE = new LocalizationService() {
         @Override
         public String get(String key, Object... args) {
@@ -137,6 +140,8 @@ public class Services {
             return (T) Railroad.getHostServicess();
         else if (serviceClass == DocumentEditorStateService.class)
             return (T) DOCUMENT_EDITOR_STATE;
+        else if (serviceClass == EditorTabManager.class)
+            return (T) EDITOR_TAB_MANAGER;
         else if (serviceClass == LocalizationService.class)
             return (T) LOCALIZATION_SERVICE;
         else if (serviceClass == Logger.class)

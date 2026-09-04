@@ -5,10 +5,13 @@ import dev.railroadide.railroad.ide.WorkspaceMode;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
+import dev.railroadide.railroad.ide.ui.editor.EditorTab;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.window.WindowManager;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
 
 import java.util.function.Consumer;
 
@@ -20,6 +23,7 @@ public class Keybinds {
     private static final KeybindContexts.KeybindContext PROJECT_EXPLORER = KeybindContexts
         .of("railroad:project_explorer");
     private static final KeybindContexts.KeybindContext IDE = KeybindContexts.of("railroad:ide");
+    public static final KeybindContexts.KeybindContext EDITOR_TABS = KeybindContexts.of("railroad:editor_tabs");
 
     public static final Keybind OPEN_PROJECT_EXPLORER_ITEM = registerProjectExplorerKeybind(
         "railroad:open_project_explorer_item",
@@ -102,10 +106,158 @@ public class Keybinds {
         WorkspaceModes.GIT,
         KeyCode.DIGIT2);
 
+    public static final Keybind NAVIGATE_BACK = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:navigate_back")
+        .category(GENERAL)
+        .addDefaultKey(KeyCode.LEFT, KeyCombination.ALT_DOWN)
+        .addDefaultMouseButton(MouseButton.BACK)
+        .addAction(IDE, _ -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+            .ifPresent(idePane -> idePane.navigateBack()))
+        .build());
+
+    public static final Keybind NAVIGATE_FORWARD = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:navigate_forward")
+        .category(GENERAL)
+        .addDefaultKey(KeyCode.RIGHT, KeyCombination.ALT_DOWN)
+        .addDefaultMouseButton(MouseButton.FORWARD)
+        .addAction(IDE, _ -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+            .ifPresent(idePane -> idePane.navigateForward()))
+        .build());
+
+    public static final Keybind CLOSE_EDITOR_TAB = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:close_editor_tab")
+        .category(GENERAL)
+        .addDefaultMouseButton(MouseButton.MIDDLE)
+        .addDefaultKey(KeyCode.W, KeyCombination.SHORTCUT_DOWN)
+        .addValidContext(EDITOR_TABS)
+        .addValidContext(IDE)
+        .ignoreAllContext()
+        .addAction(EDITOR_TABS, actionContext -> {
+            EditorTab editorTab = Services.EDITOR_TAB_MANAGER.getTabAt(actionContext.target());
+            if (editorTab != null) {
+                Services.EDITOR_TAB_MANAGER.close(editorTab);
+            }
+        })
+        .addAction(IDE,
+            _ -> Services.EDITOR_TAB_MANAGER.activeTab().ifPresent(Services.EDITOR_TAB_MANAGER::close))
+        .build());
+
+    public static final Keybind REOPEN_CLOSED_EDITOR_TAB = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:reopen_closed_editor_tab")
+        .category(GENERAL)
+        .addDefaultKey(KeyCode.T, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN)
+        .addAction(IDE, _ -> Services.EDITOR_TAB_MANAGER.reopenLastClosed())
+        .build());
+
+    public static final Keybind SELECT_EDITOR_TAB_BY_NUMBER = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:select_editor_tab_by_number")
+        .category(GENERAL)
+        .addDefaultKey(KeyCode.DIGIT1, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT2, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT3, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT4, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT5, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT6, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT7, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT8, KeyCombination.SHORTCUT_DOWN)
+        .addDefaultKey(KeyCode.DIGIT9, KeyCombination.SHORTCUT_DOWN)
+        .addAction(IDE, actionContext -> {
+            if (!(actionContext.event() instanceof KeyEvent keyEvent))
+                return;
+
+            int tabIndex = switch (keyEvent.getCode()) {
+                case DIGIT1 -> 0;
+                case DIGIT2 -> 1;
+                case DIGIT3 -> 2;
+                case DIGIT4 -> 3;
+                case DIGIT5 -> 4;
+                case DIGIT6 -> 5;
+                case DIGIT7 -> 6;
+                case DIGIT8 -> 7;
+                case DIGIT9 -> -1;
+                default -> Integer.MIN_VALUE;
+            };
+            if (tabIndex == Integer.MIN_VALUE)
+                return;
+
+            if (tabIndex < 0) {
+                Services.EDITOR_TAB_MANAGER.selectLastTab();
+            } else {
+                Services.EDITOR_TAB_MANAGER.selectTab(tabIndex);
+            }
+        })
+        .build());
+
+    public static final Keybind SELECT_NEXT_EDITOR_TAB = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:select_next_editor_tab")
+        .category(GENERAL)
+        .addDefaultKey(KeyCode.TAB, KeyCombination.SHORTCUT_DOWN)
+        .addAction(IDE, _ -> Services.EDITOR_TAB_MANAGER.selectNextTab())
+        .build());
+
+    public static final Keybind SELECT_PREVIOUS_EDITOR_TAB = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:select_previous_editor_tab")
+        .category(GENERAL)
+        .addDefaultKey(KeyCode.TAB, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN)
+        .addAction(IDE, _ -> Services.EDITOR_TAB_MANAGER.selectPreviousTab())
+        .build());
+
+    public static final Keybind MOVE_EDITOR_TAB_LEFT = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:move_editor_tab_left")
+        .category(GENERAL)
+        .addDefaultKey(KeyCode.PAGE_UP, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN)
+        .addAction(IDE, _ -> Services.EDITOR_TAB_MANAGER.moveActiveTabLeft())
+        .build());
+
+    public static final Keybind MOVE_EDITOR_TAB_RIGHT = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:move_editor_tab_right")
+        .category(GENERAL)
+        .addDefaultKey(KeyCode.PAGE_DOWN, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN)
+        .addAction(IDE, _ -> Services.EDITOR_TAB_MANAGER.moveActiveTabRight())
+        .build());
+
+    public static final Keybind TOGGLE_PIN_EDITOR_TAB = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:toggle_pin_editor_tab")
+        .category(GENERAL)
+        .addDefaultKey(KeyCode.P, KeyCombination.SHORTCUT_DOWN, KeyCombination.ALT_DOWN)
+        .addAction(IDE,
+            _ -> Services.EDITOR_TAB_MANAGER.activeTab().ifPresent(Services.EDITOR_TAB_MANAGER::togglePin))
+        .build());
+
+    public static final Keybind CLOSE_OTHER_EDITOR_TABS = KeybindHandler.registerKeybind(Keybind.builder()
+        .id("railroad:close_other_editor_tabs")
+        .category(GENERAL)
+        .addDefaultMouseButton(MouseButton.MIDDLE, KeyCombination.ALT_DOWN)
+        .addDefaultKey(KeyCode.W, KeyCombination.SHORTCUT_DOWN, KeyCombination.ALT_DOWN)
+        .addValidContext(EDITOR_TABS)
+        .addValidContext(IDE)
+        .ignoreAllContext()
+        .addAction(EDITOR_TABS, actionContext -> {
+            EditorTab editorTab = Services.EDITOR_TAB_MANAGER.getTabAt(actionContext.target());
+            if (editorTab != null) {
+                Services.EDITOR_TAB_MANAGER.closeOthers(editorTab);
+            }
+        })
+        .addAction(IDE,
+            _ -> Services.EDITOR_TAB_MANAGER.activeTab().ifPresent(Services.EDITOR_TAB_MANAGER::closeOthers))
+        .build());
+
     public static void initialize() {
+        NAVIGATE_BACK.resetKeys();
+        NAVIGATE_FORWARD.resetKeys();
+        CLOSE_EDITOR_TAB.resetKeys();
+        REOPEN_CLOSED_EDITOR_TAB.resetKeys();
+        SELECT_EDITOR_TAB_BY_NUMBER.resetKeys();
+        SELECT_NEXT_EDITOR_TAB.resetKeys();
+        SELECT_PREVIOUS_EDITOR_TAB.resetKeys();
+        MOVE_EDITOR_TAB_LEFT.resetKeys();
+        MOVE_EDITOR_TAB_RIGHT.resetKeys();
+        TOGGLE_PIN_EDITOR_TAB.resetKeys();
+        CLOSE_OTHER_EDITOR_TABS.resetKeys();
     }
 
-    private static Keybind registerProjectExplorerKeybind(String id, KeyCode keyCode,
+    private static Keybind registerProjectExplorerKeybind(
+        String id, KeyCode keyCode,
         Consumer<ProjectExplorerPane> action,
         KeyCombination.Modifier... modifiers) {
         Keybind keybind = KeybindHandler.registerKeybind(Keybind.builder()

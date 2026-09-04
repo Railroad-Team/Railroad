@@ -208,6 +208,12 @@ public class Railroad extends Application {
     @Override
     public void stop() {
         LOGGER.info("Stopping Railroad");
+
+        Project openProject = PROJECT_MANAGER.getOpenProject();
+        if (openProject != null) {
+            openProject.close();
+        }
+
         Railroad.EVENT_BUS.publish(new ApplicationStopEvent());
         ConfigHandler.saveConfig();
         ShutdownHooks.runHooks();

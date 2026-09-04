@@ -1,9 +1,12 @@
 package dev.railroadide.railroad.ide.ui.git.commit.changes;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ui.RRCheckBoxTreeCell;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRStackPane;
 import javafx.scene.Node;
+import javafx.scene.control.CheckBox;
+import javafx.scene.input.MouseButton;
 import javafx.scene.text.Text;
 
 import java.util.Objects;
@@ -76,12 +79,27 @@ public class CommitChangeTreeCell extends RRCheckBoxTreeCell<ChangeItem> {
             setCustomContent(container);
 
             setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && !event.isConsumed()) {
+                if (event.getButton() != MouseButton.PRIMARY
+                    || event.isConsumed()
+                    || isInsideCheckBox(event.getPickResult().getIntersectedNode()))
+                    return;
+
+                if (event.getClickCount() == 1 && item instanceof FileItem fileItem) {
+                    Services.EDITOR_TAB_MANAGER.openPreview(fileItem.change().path());
+                } else if (event.getClickCount() == 2) {
                     if (item.getDoubleClickHandler() != null) {
                         item.getDoubleClickHandler().accept(event);
                     }
                 }
             });
         }
+    }
+
+    private static boolean isInsideCheckBox(Node node) {
+        for (Node current = node; current != null; current = current.getParent()) {
+            if (current instanceof CheckBox)
+                return true;
+        }
+        return false;
     }
 }

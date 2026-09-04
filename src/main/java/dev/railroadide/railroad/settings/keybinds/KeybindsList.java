@@ -21,6 +21,7 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
@@ -330,7 +331,10 @@ public class KeybindsList extends RRVBox {
             var keyList = new JsonArray();
 
             for (KeybindData combo : entry.getValue()) {
-                var comboString = new StringBuilder(combo.keyCode().toString() + ";");
+                String input = combo.mouseButton() == null
+                    ? Objects.requireNonNullElse(combo.keyCode(), KeyCode.UNDEFINED).toString()
+                    : "Mouse:" + combo.mouseButton().name();
+                var comboString = new StringBuilder(input).append(';');
                 if (combo.modifiers() == null || combo.modifiers().length == 0) {
                     keyList.add(comboString.toString());
                     continue;
@@ -365,62 +369,40 @@ public class KeybindsList extends RRVBox {
                 continue;
             }
 
-            KeybindHandler.getKeybind(id).getKeys().clear();
-
-            for (JsonElement keyCombo : keyList) {
-                String[] parts = keyCombo.getAsString().split(";");
-                KeyCode keyCode = KeyCode.valueOf(parts[0]);
-
-                if (parts.length < 2 || parts[1].isBlank()) {
-                    KeybindHandler.getKeybind(id).addKey(keyCode);
-                    continue;
-                }
-
-                String[] modParts = parts[1].split(",");
-                List<KeyCombination.Modifier> modifiers = new ArrayList<>();
-
-                for (String mod : modParts) {
-                    switch (mod.trim()) {
-                        case "Shortcut" -> modifiers.add(KeyCombination.SHORTCUT_DOWN);
-                        case "Ctrl" -> modifiers.add(KeyCombination.CONTROL_DOWN);
-                        case "Shift" -> modifiers.add(KeyCombination.SHIFT_DOWN);
-                        case "Alt" -> modifiers.add(KeyCombination.ALT_DOWN);
-                        default -> throw new IllegalArgumentException("Unknown modifier: " + mod);
-                    }
-                }
-
-                KeybindHandler.getKeybind(id).addKey(keyCode, modifiers.toArray(new KeyCombination.Modifier[0]));
-            }
-
             var keys = new ArrayList<KeybindData>();
             for (JsonElement keyCombo : keyList) {
-                var parts = keyCombo.getAsString().split(";");
-                var keyCode = KeyCode.valueOf(parts[0]);
-
-                if (parts.length == 1) {
-                    keys.add(new KeybindData(keyCode, new KeyCombination.Modifier[0]));
-                    continue;
-                }
-
-                var modParts = parts[1].split(",");
-                var modifiers = new KeyCombination.Modifier[modParts.length];
-
-                for (int i = 0; i < modParts.length; i++) {
-                    switch (modParts[i]) {
-                        case "Shortcut" -> modifiers[i] = KeyCombination.SHORTCUT_DOWN;
-                        case "Ctrl" -> modifiers[i] = KeyCombination.CONTROL_DOWN;
-                        case "Shift" -> modifiers[i] = KeyCombination.SHIFT_DOWN;
-                        case "Alt" -> modifiers[i] = KeyCombination.ALT_DOWN;
-                        default -> throw new IllegalArgumentException("Unknown modifier: " + modParts[i]);
-                    }
-                }
-
-                keys.add(new KeybindData(keyCode, modifiers));
+                keys.add(parseBinding(keyCombo.getAsString()));
             }
 
+            KeybindHandler.getKeybind(id).getKeys().setAll(keys);
             map.put(id, keys);
         }
 
         return map;
+    }
+
+    private static KeybindData parseBinding(String serialized) {
+        String[] parts = serialized.split(";", -1);
+        KeyCombination.Modifier[] modifiers = parts.length < 2 || parts[1].isBlank()
+            ? new KeyCombination.Modifier[0]
+            : Arrays.stream(parts[1].split(","))
+                .map(String::trim)
+                .map(KeybindsList::parseModifier)
+                .toArray(KeyCombination.Modifier[]::new);
+
+        if (parts[0].startsWith("Mouse:"))
+            return new KeybindData(MouseButton.valueOf(parts[0].substring("Mouse:".length())), modifiers);
+        return new KeybindData(KeyCode.valueOf(parts[0]), modifiers);
+    }
+
+    private static KeyCombination.Modifier parseModifier(String modifier) {
+        return switch (modifier) {
+            case "Shortcut" -> KeyCombination.SHORTCUT_DOWN;
+            case "Ctrl" -> KeyCombination.CONTROL_DOWN;
+            case "Shift" -> KeyCombination.SHIFT_DOWN;
+            case "Alt" -> KeyCombination.ALT_DOWN;
+            case "Meta" -> KeyCombination.META_DOWN;
+            default -> throw new IllegalArgumentException("Unknown modifier: " + modifier);
+        };
     }
 }

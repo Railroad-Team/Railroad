@@ -4,6 +4,7 @@ import dev.railroadide.railroad.registry.Registry;
 import dev.railroadide.railroad.registry.RegistryManager;
 import javafx.scene.Node;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,16 +26,46 @@ public class KeybindHandler {
             if (keybind.getValidContexts().contains(context)
                 || keybind.getValidContexts().contains(KeybindContexts.ALL)) {
                 captureNode.addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
-                    if (keybind.matches(keyEvent)) {
-                        keybind.getActions().forEach((keybindContext, action) -> {
-                            if (keybindContext.equals(context)) {
-                                action.accept(captureNode);
-                            }
-                        });
-                    }
+                    keybind.findMatchingBinding(keyEvent).ifPresent(binding -> {
+                        var action = keybind.getActions().get(context);
+                        if (action != null) {
+                            action.accept(new KeybindActionContext(
+                                keybind,
+                                context,
+                                binding,
+                                keyEvent,
+                                captureNode));
+                        }
+                    });
                 });
             }
         });
+    }
+
+    /**
+     * Dispatches a mouse event to the first matching keybind in the supplied context.
+     *
+     * @param context The active keybind context.
+     * @param event The mouse event to match.
+     * @param target The node the contextual action should operate on.
+     * @return {@code true} when a matching action was invoked.
+     */
+    public static boolean dispatchMouseEvent(KeybindContexts.KeybindContext context, MouseEvent event, Node target) {
+        for (Keybind keybind : KEYBIND_REGISTRY.values()) {
+            if (!keybind.getValidContexts().contains(context)
+                && !keybind.getValidContexts().contains(KeybindContexts.ALL))
+                continue;
+            KeybindData binding = keybind.findMatchingBinding(event).orElse(null);
+            if (binding == null)
+                continue;
+
+            var action = keybind.getActions().get(context);
+            if (action != null) {
+                action.accept(new KeybindActionContext(keybind, context, binding, event, target));
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

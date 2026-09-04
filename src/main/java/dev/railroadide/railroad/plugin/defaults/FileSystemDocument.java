@@ -10,8 +10,8 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 public class FileSystemDocument implements Document {
-    private final String name;
-    private final Path path;
+    private String name;
+    private Path path;
     private final String languageId;
     @Setter
     private boolean dirty = false;
@@ -73,5 +73,14 @@ public class FileSystemDocument implements Document {
     @Override
     public boolean isDirty() {
         return this.dirty;
+    }
+
+    /** Updates this document's location after the backing file has been moved. */
+    public void rebind(Path path) {
+        if (path == null || Files.notExists(path) || !Files.isRegularFile(path))
+            throw new IllegalArgumentException("Invalid document path: " + path);
+
+        this.path = path.toAbsolutePath().normalize();
+        this.name = this.path.getFileName().toString();
     }
 }

@@ -25,7 +25,7 @@ public class DefaultEventBus implements EventBus {
                     EventListener<Event> typedListener = (EventListener<Event>) listener;
                     try {
                         typedListener.handle(event);
-                    } catch (RuntimeException exception) {
+                    } catch (Throwable exception) {
                         Railroad.LOGGER.error("Event listener failed while handling {}", eventType.getName(),
                             exception);
                     }

@@ -6,9 +6,12 @@ import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.scene.Scene;
+import javafx.event.EventHandler;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import lombok.Setter;
 
 import java.util.ArrayList;
@@ -24,7 +27,11 @@ public class KeyComboNode extends RRButton {
 
     private boolean editing = false;
     private KeyCode pendingKeyCode;
+    private MouseButton pendingMouseButton;
     private KeyCombination.Modifier[] pendingModifiers = new KeyCombination.Modifier[0];
+    private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
+    private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
+    private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
 
     public KeyComboNode(KeybindData data) {
         super("");
@@ -50,42 +57,74 @@ public class KeyComboNode extends RRButton {
         getStyleClass().add("recording");
         setText(L18n.localize("railroad.settings.keybinds.recording"));
 
-        scene.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
-        scene.addEventFilter(KeyEvent.KEY_RELEASED, this::handleKeyReleased);
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        scene.addEventFilter(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+        scene.addEventFilter(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
     }
 
     private void handleKeyPressed(KeyEvent event) {
         event.consume();
         pendingKeyCode = event.getCode();
+        pendingMouseButton = null;
+        pendingModifiers = collectModifiers(
+            event.isShortcutDown(),
+            event.isControlDown(),
+            event.isAltDown(),
+            event.isShiftDown(),
+            event.isMetaDown());
+    }
 
+    private void handleMousePressed(MouseEvent event) {
+        if (!editing || event.getButton() == MouseButton.NONE)
+            return;
+
+        event.consume();
+        pendingKeyCode = null;
+        pendingMouseButton = event.getButton();
+        pendingModifiers = collectModifiers(
+            event.isShortcutDown(),
+            event.isControlDown(),
+            event.isAltDown(),
+            event.isShiftDown(),
+            event.isMetaDown());
+
+        commit(new KeybindData(pendingMouseButton, pendingModifiers));
+    }
+
+    private static KeyCombination.Modifier[] collectModifiers(
+        boolean shortcutDown,
+        boolean controlDown,
+        boolean altDown,
+        boolean shiftDown,
+        boolean metaDown) {
         List<KeyCombination.Modifier> modifiers = new ArrayList<>();
-        if (event.isShortcutDown()) {
+        if (shortcutDown) {
             modifiers.add(KeyCombination.SHORTCUT_DOWN);
         }
-        if (event.isControlDown()) {
+        if (controlDown) {
             modifiers.add(KeyCombination.CONTROL_DOWN);
         }
-        if (event.isAltDown()) {
+        if (altDown) {
             modifiers.add(KeyCombination.ALT_DOWN);
         }
-        if (event.isShiftDown()) {
+        if (shiftDown) {
             modifiers.add(KeyCombination.SHIFT_DOWN);
         }
-        if (event.isMetaDown()) {
+        if (metaDown) {
             modifiers.add(KeyCombination.META_DOWN);
         }
 
         if (OperatingSystem.isMac()) {
-            if (event.isMetaDown()) {
+            if (metaDown) {
                 modifiers.remove(KeyCombination.SHORTCUT_DOWN);
             }
         } else {
-            if (event.isControlDown()) {
+            if (controlDown) {
                 modifiers.remove(KeyCombination.SHORTCUT_DOWN);
             }
         }
 
-        pendingModifiers = modifiers.isEmpty() ? null : modifiers.toArray(new KeyCombination.Modifier[0]);
+        return modifiers.isEmpty() ? null : modifiers.toArray(new KeyCombination.Modifier[0]);
     }
 
     private void handleKeyReleased(KeyEvent event) {
@@ -97,8 +136,12 @@ public class KeyComboNode extends RRButton {
         if (pendingKeyCode.isModifierKey())
             return; // Wait for a non-modifier key before finalizing
 
-        var updated = new KeybindData(pendingKeyCode, pendingModifiers);
+        commit(new KeybindData(pendingKeyCode, pendingModifiers));
+    }
+
+    private void commit(KeybindData updated) {
         boolean changed = !Objects.equals(keybindData.keyCode(), updated.keyCode())
+            || !Objects.equals(keybindData.mouseButton(), updated.mouseButton())
             || !Arrays.equals(keybindData.modifiers(), updated.modifiers());
 
         if (changed && onComboModified != null) {
@@ -106,12 +149,13 @@ public class KeyComboNode extends RRButton {
         }
 
         keybindData = updated;
-        finishEditing(event.getSource());
+        finishEditing();
     }
 
-    private void finishEditing(Object source) {
+    private void finishEditing() {
         editing = false;
         pendingKeyCode = null;
+        pendingMouseButton = null;
         pendingModifiers = null;
 
         getStyleClass().remove("recording");
@@ -119,13 +163,15 @@ public class KeyComboNode extends RRButton {
 
         Scene scene = getScene();
         if (scene != null) {
-            scene.removeEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
-            scene.removeEventFilter(KeyEvent.KEY_RELEASED, this::handleKeyReleased);
+            scene.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
+            scene.removeEventFilter(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+            scene.removeEventFilter(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         }
     }
 
     private void updateLabel() {
-        if (keybindData.keyCode() == null || keybindData.keyCode() == KeyCode.UNDEFINED) {
+        if ((keybindData.keyCode() == null || keybindData.keyCode() == KeyCode.UNDEFINED)
+            && keybindData.mouseButton() == null) {
             setText(L18n.localize("railroad.settings.keybinds.click_to_record"));
             return;
         }
@@ -137,8 +183,24 @@ public class KeyComboNode extends RRButton {
                 label.append(localizeModifier(modifier)).append(" + ");
             }
         }
-        label.append(keybindData.keyCode().getName());
+        if (keybindData.mouseButton() != null) {
+            label.append(mouseButtonName(keybindData.mouseButton()));
+        } else {
+            label.append(keybindData.keyCode().getName());
+        }
         setText(label.toString());
+    }
+
+    private static String mouseButtonName(MouseButton mouseButton) {
+        String localizationKey = switch (mouseButton) {
+            case PRIMARY -> "railroad.settings.keybinds.mouse_button.primary";
+            case MIDDLE -> "railroad.settings.keybinds.mouse_button.middle";
+            case SECONDARY -> "railroad.settings.keybinds.mouse_button.secondary";
+            case BACK -> "railroad.settings.keybinds.mouse_button.back";
+            case FORWARD -> "railroad.settings.keybinds.mouse_button.forward";
+            case NONE -> "railroad.settings.keybinds.mouse_button.none";
+        };
+        return L18n.localize(localizationKey);
     }
 
     private String localizeModifier(KeyCombination.Modifier modifier) {

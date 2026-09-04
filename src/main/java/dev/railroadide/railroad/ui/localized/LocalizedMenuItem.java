@@ -71,6 +71,8 @@ public class LocalizedMenuItem extends MenuItem {
      * @param keybindData the keybind data to associate with this menu item
      */
     public void setKeybindData(KeybindData keybindData) {
-        setAccelerator(keybindData.getKeyCodeCombination());
+        if (keybindData.keyCode() != null) {
+            setAccelerator(keybindData.getKeyCodeCombination());
+        }
     }
 }

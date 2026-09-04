@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.commit.changes;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.ui.IDEContentRouter;
 import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
@@ -52,6 +53,7 @@ public record FileItem(Project project, GitFileChange change) implements ChangeI
     public Consumer<MouseEvent> getDoubleClickHandler() {
         return event -> {
             if (event.getTarget() instanceof Node) {
+                Services.EDITOR_TAB_MANAGER.open(change.path());
                 openDiffForFile(this);
             }
         };

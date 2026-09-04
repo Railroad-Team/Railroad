@@ -1,9 +1,12 @@
 package dev.railroadide.railroad.plugin.spi.services;
 
+import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Service to manage the state of the IDE, including the current project,
@@ -40,9 +43,9 @@ public interface IDEStateService {
     void setCurrentProject(Project project);
 
     /**
-     * Sets the active document in the IDE.
+     * Adds a document to the IDE's open-document state.
      *
-     * @param document the document to set as active
+     * @param document the document to mark as open
      */
     void openDocument(Document document);
 
@@ -86,4 +89,38 @@ public interface IDEStateService {
      * @return the timestamp in milliseconds since epoch, or 0 if the document was not opened
      */
     long getDocumentOpenedTimestamp(Document document);
+
+    /**
+     * Resolves the stable logical identity and current URI for a document.
+     *
+     * @param document document to identify
+     * @return stable document identity
+     */
+    DocumentIdentity identifyDocument(Document document);
+
+    /**
+     * Finds an identity previously associated with a physical or virtual URI.
+     *
+     * @param uri current or registered document URI
+     * @return the identity, if registered
+     */
+    Optional<DocumentIdentity> findDocumentIdentity(DocumentUri uri);
+
+    /**
+     * Rebinds an existing logical document after a move or rename.
+     *
+     * @param identity current document identity
+     * @param newUri new physical or virtual address
+     * @return updated identity retaining the same stable ID
+     */
+    DocumentIdentity rebindDocument(DocumentIdentity identity, DocumentUri newUri);
+
+    /**
+     * Restores a persisted identity association for the current workspace. If the URI is
+     * already known, its live identity wins so duplicate session entries cannot fork it.
+     *
+     * @param identity persisted document identity
+     * @return the live identity associated with the URI
+     */
+    DocumentIdentity restoreDocumentIdentity(DocumentIdentity identity);
 }

@@ -12,8 +12,9 @@ import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
 import dev.railroadide.railroad.ide.ui.IDEPane;
+import dev.railroadide.railroad.ide.ui.editor.EditorTabSessionState;
+import dev.railroadide.railroad.ide.ui.editor.EditorWorkspaceSessionState;
 import dev.railroadide.railroad.java.JDK;
-import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.ProjectAliasChangedEvent;
@@ -23,7 +24,6 @@ import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.ui.id.UIIds;
-import dev.railroadide.railroad.utility.ShutdownHooks;
 import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroad.vcs.Repository;
 import dev.railroadide.railroad.vcs.git.GitClient;
@@ -222,24 +222,27 @@ public class RailroadProject implements Project {
             .orElseGet(ProjectConfig::new);
         List<Path> openDocumentPaths = projectConfig.getOpenDocuments();
         Path activeDocumentPath = projectConfig.getActiveDocument();
-        if (openDocumentPaths != null) {
-            Services.IDE_STATE.setOpenDocuments(openDocumentPaths.stream()
-                .map(FileSystemDocument::new)
-                .map(Document.class::cast)
-                .toList());
-        }
-        if (activeDocumentPath != null) {
-            Services.IDE_STATE.setActiveDocument(new FileSystemDocument(activeDocumentPath));
-        }
-        if (projectConfig.getIdeLayoutState() != null) {
-            Platform.runLater(() -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
-                .ifPresent(idePane -> idePane.restoreLayoutState(projectConfig.getIdeLayoutState())));
-        }
-
-        ShutdownHooks.addHook(() -> {
-            if (Railroad.PROJECT_MANAGER.getOpenProject() == project) {
-                project.close();
+        List<EditorTabSessionState> editorTabs = projectConfig.getEditorTabs();
+        EditorWorkspaceSessionState editorWorkspace = projectConfig.getEditorWorkspace();
+        Platform.runLater(() -> {
+            if (editorWorkspace != null && editorWorkspace.isSupported()) {
+                Railroad.LOGGER.debug("Restoring complete editor workspace with {} tabs for project {}",
+                    editorWorkspace.tabs().size(), project.getPathString());
+                Services.EDITOR_TAB_MANAGER.restoreWorkspaceSession(editorWorkspace);
+            } else if (editorTabs == null) {
+                Railroad.LOGGER.debug("Restoring {} legacy editor tabs for project {}",
+                    openDocumentPaths == null ? 0 : openDocumentPaths.size(),
+                    project.getPathString());
+                Services.EDITOR_TAB_MANAGER.restore(
+                    openDocumentPaths == null ? List.of() : openDocumentPaths,
+                    activeDocumentPath);
+            } else {
+                Railroad.LOGGER.debug("Restoring {} editor tabs for project {}", editorTabs.size(),
+                    project.getPathString());
+                Services.EDITOR_TAB_MANAGER.restoreSession(editorTabs);
             }
+            Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+                .ifPresent(idePane -> idePane.restoreLayoutState(projectConfig.getIdeLayoutState()));
         });
     }
 
@@ -248,14 +251,23 @@ public class RailroadProject implements Project {
         Railroad.LOGGER.debug("Closing project: {}", getPathString());
         Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
         if (currentProject != null && ProjectPathIdentity.matches(currentProject.getPath(), getPath())) {
-            List<Document> openDocuments = Services.IDE_STATE.getOpenDocuments();
             Document activeDocument = Services.IDE_STATE.getActiveDocument();
 
             ProjectDataStore dataStore = getDataStore();
             ProjectConfig projectConfig = dataStore.readJson(PROJECT_CONFIG_LOCATION, ProjectConfig.class)
                 .orElseGet(ProjectConfig::new);
-            projectConfig.setOpenDocuments(openDocuments.stream().map(Document::getPath).toList());
-            projectConfig.setActiveDocument(activeDocument != null ? activeDocument.getPath() : null);
+            EditorWorkspaceSessionState editorWorkspace = Services.EDITOR_TAB_MANAGER.captureWorkspaceSession();
+            List<EditorTabSessionState> editorTabs = editorWorkspace.tabs();
+            Railroad.LOGGER.debug("Persisting {} editor tabs for project {}", editorTabs.size(), getPathString());
+            projectConfig.setEditorWorkspace(editorWorkspace);
+            projectConfig.setEditorTabs(editorTabs);
+            projectConfig.setOpenDocuments(editorTabs.stream()
+                .map(EditorTabSessionState::path)
+                .filter(Objects::nonNull)
+                .toList());
+            projectConfig.setActiveDocument(activeDocument == null
+                ? null
+                : activeDocument.getUri().filePath().orElse(null));
             Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
                 .map(IDEPane::captureLayoutState)
                 .ifPresent(projectConfig::setIdeLayoutState);

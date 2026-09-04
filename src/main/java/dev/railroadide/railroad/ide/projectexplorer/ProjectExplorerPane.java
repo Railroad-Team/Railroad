@@ -1,13 +1,7 @@
 package dev.railroadide.railroad.ide.projectexplorer;
 
-import com.kodedu.terminalfx.Terminal;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
-import dev.railroadide.railroad.ide.language.EditorOpenView;
-import dev.railroadide.railroad.ide.language.LanguageSupport;
-import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
-import dev.railroadide.railroad.ide.language.impl.ImageLanguageSupport;
-import dev.railroadide.railroad.ide.language.impl.PlainTextLanguageSupport;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexCoordinator;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CopyModalDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
@@ -15,15 +9,8 @@ import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import dev.railroadide.railroad.ide.projectexplorer.task.FileCopyTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.SearchTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
-import dev.railroadide.railroad.ide.ui.IDEContentRouter;
-import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
-import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
-import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
-import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
-import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
-import dev.railroadide.railroad.plugin.spi.dto.Document;
+import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
-import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.ui.RRButton;
@@ -95,9 +82,18 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         this.treeView.setEditable(true);
         this.treeView.getStyleClass().add("rr-tree-view");
         this.treeView.setCellFactory(_ -> {
-            var cell = new PathTreeCell(project, messageProperty);
+            var cell = new PathTreeCell(messageProperty);
             handleDragDrop(cell);
             return cell;
+        });
+        this.treeView.getSelectionModel().selectedItemProperty().addListener((_, _, selectedItem) -> {
+            if (selectedItem == null)
+                return;
+
+            Path selectedPath = selectedItem.getValue().getPath();
+            if (Files.isRegularFile(selectedPath)) {
+                Services.EDITOR_TAB_MANAGER.openPreview(selectedPath);
+            }
         });
         this.treeView.getRoot().setExpanded(true);
         this.treeView.prefHeightProperty().bind(heightProperty().subtract(60));
@@ -134,7 +130,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             if (Files.isDirectory(item.getPath())) {
                 this.treeView.getSelectionModel().selectNext();
             } else {
-                openFile(this.project, item);
+                Services.EDITOR_TAB_MANAGER.open(item.getPath());
             }
         });
     }
@@ -165,11 +161,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     public void openSelectedItemInExplorer() {
-        selectedTreeItem().ifPresent(selectedItem -> openInExplorer(selectedItem.getValue().getPath()));
+        selectedTreeItem().ifPresent(selectedItem -> FileUtils.openInExplorer(selectedItem.getValue().getPath()));
     }
 
     public void openSelectedItemInTerminal() {
-        selectedTreeItem().ifPresent(selectedItem -> openInTerminal(selectedItem.getValue()));
+        selectedTreeItem().ifPresent(selectedItem -> FileUtils.openInTerminal(selectedItem.getValue().getPath()));
     }
 
     private Optional<TreeItem<PathItem>> selectedTreeItem() {
@@ -255,132 +251,6 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 }
             }
         }
-    }
-
-    public static void openInExplorer(Path path) {
-        FileUtils.openInExplorer(path);
-    }
-
-    public static void openInTerminal(PathItem item) {
-        Path path = item.getPath();
-
-        Services.UI_MANAGER.lookup(UIIds.IDE.IDE_BOTTOM_DOCK).ifPresent(pane -> {
-            Terminal terminal = TerminalFactory.create(Files.isDirectory(path) ? path : path.getParent());
-            if (!Files.isDirectory(path)) {
-                terminal.onTerminalFxReady(() -> terminal.command(path.getFileName().toString()));
-            }
-
-            Tab terminalTab = pane.addTab("Terminal (" +
-                pane.getTabs()
-                    .stream()
-                    .filter(tab -> tab.getContent() instanceof Terminal)
-                    .count()
-                + ")", terminal);
-
-            pane.getSelectionModel().select(terminalTab);
-        });
-    }
-
-    // TODO: Probably just rewrite this entire method as its not designed well for IDEStateService and the way we handle
-    // documents
-    public static void openFile(Project project, PathItem item) {
-        Path path = item.getPath();
-        if (Files.isDirectory(path))
-            return;
-        Path normalizedPath = path.toAbsolutePath().normalize();
-
-        LanguageSupport support = LanguageSupportRegistry.find(path)
-            .orElseGet(() -> FileUtils.isBinaryFile(path)
-                ? (FileUtils.isImageFile(path) ? ImageLanguageSupport.INSTANCE : null)
-                : PlainTextLanguageSupport.INSTANCE);
-        if (support == null) {
-            FileUtils.openInDefaultApplication(path);
-            // TODO: This will not really work long term as everything will think its an open tab in the IDE
-            Railroad.EVENT_BUS.publish(new DocumentEvent(
-                new FileSystemDocument(path),
-                DocumentEvent.EventType.OPENED));
-            return;
-        }
-
-        if (isFileOpen(normalizedPath)) {
-            Services.IDE_STATE.setActiveDocument(new FileSystemDocument(normalizedPath, support.languageId()));
-            return;
-        }
-
-        IDEContentRouter.routeActive(WorkspaceContentTargets.CODE_EDITOR, detachableTabPane -> {
-            String fileName = path.getFileName().toString();
-            String tabId = normalizedPath.toString();
-            if (detachableTabPane.getTabs().stream().anyMatch(tab -> tabId.equals(tab.getId()))) {
-                // If a tab with the same name is already open, select it and return
-                detachableTabPane.getTabs().stream()
-                    .filter(tab -> tabId.equals(tab.getId()))
-                    .findFirst().ifPresent(existingTab -> detachableTabPane.getSelectionModel().select(existingTab));
-                return;
-            }
-
-            // Check if there's a welcome tab to replace
-            Tab welcomeTab = detachableTabPane.getTabs().stream()
-                .filter(tab -> tab.getContent() instanceof IDEWelcomePane)
-                .findFirst()
-                .orElse(null);
-
-            EditorOpenView editorOpenView = support.open(project, path);
-            if (editorOpenView == null) {
-                FileUtils.openInDefaultApplication(path);
-                // TODO: This will not really work long term as everything will think its an open tab in the IDE
-                // TODO: Also look at combining this with the other one that does the same thing
-                Railroad.EVENT_BUS.publish(new DocumentEvent(new FileSystemDocument(path, support.languageId()),
-                    DocumentEvent.EventType.OPENED));
-                return;
-            }
-
-            TextEditorPane activeEditorPane = editorOpenView.activeEditor();
-            Services.DOCUMENT_EDITOR_STATE.setActiveEditor(activeEditorPane, support.languageId());
-
-            Node content = editorOpenView.content();
-            Tab tab;
-            if (welcomeTab != null) {
-                welcomeTab.setContent(content);
-                welcomeTab.setText(fileName);
-                tab = welcomeTab;
-            } else {
-                tab = detachableTabPane.addTab(fileName, content);
-            }
-
-            tab.setId(tabId);
-            detachableTabPane.getSelectionModel().select(tab);
-
-            var document = new FileSystemDocument(path, support.languageId());
-            Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.OPENED));
-            Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.ACTIVATED));
-
-            tab.setOnClosed(_ -> {
-                Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.CLOSED));
-                if (tab.isSelected()) {
-                    Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.DEACTIVATED));
-                }
-            });
-
-            tab.setOnSelectionChanged(_ -> {
-                if (tab.isSelected()) {
-                    Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.ACTIVATED));
-                    Services.DOCUMENT_EDITOR_STATE.setActiveEditor(activeEditorPane, support.languageId());
-                } else {
-                    Railroad.EVENT_BUS.publish(new DocumentEvent(document, DocumentEvent.EventType.DEACTIVATED));
-                    Services.DOCUMENT_EDITOR_STATE.setActiveEditor(null, null);
-                }
-            });
-        });
-    }
-
-    private static boolean isFileOpen(Path path) {
-        return Services.IDE_STATE.getOpenDocuments()
-            .stream()
-            .anyMatch(document -> documentMatchesPath(document, path));
-    }
-
-    private static boolean documentMatchesPath(Document document, @NotNull Path path) {
-        return document.getPath().toAbsolutePath().normalize().equals(path.toAbsolutePath().normalize());
     }
 
     public static void expandAll(TreeItem<PathItem> treeItem) {
@@ -764,5 +634,44 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         Path path = selected.getValue().getPath();
         return Files.isDirectory(path) ? path : path.getParent();
+    }
+
+    public void revealPath(Path path) {
+        TreeItem<PathItem> item = findTreeItemForReveal(path);
+        if (item != null) {
+            TreeItem<PathItem> parent = item.getParent();
+            while (parent != null) {
+                parent.setExpanded(true);
+                parent = parent.getParent();
+            }
+
+            treeView.getSelectionModel().select(item);
+            treeView.scrollTo(treeView.getRow(item));
+        }
+    }
+
+    private TreeItem<PathItem> findTreeItemForReveal(Path path) {
+        if (path == null || treeView.getRoot() == null)
+            return null;
+
+        TreeItem<PathItem> currentItem = treeView.getRoot();
+        Path rootPath = currentItem.getValue().getPath().toAbsolutePath().normalize();
+        Path targetPath = path.toAbsolutePath().normalize();
+        if (!targetPath.startsWith(rootPath))
+            return null;
+
+        Path currentPath = rootPath;
+        for (Path segment : rootPath.relativize(targetPath)) {
+            currentPath = currentPath.resolve(segment);
+            Path expectedPath = currentPath;
+            currentItem = currentItem.getChildren().stream()
+                .filter(child -> child.getValue().getPath().toAbsolutePath().normalize().equals(expectedPath))
+                .findFirst()
+                .orElse(null);
+            if (currentItem == null)
+                return null;
+        }
+
+        return currentItem;
     }
 }
