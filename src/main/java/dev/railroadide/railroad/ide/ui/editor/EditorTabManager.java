@@ -32,6 +32,7 @@ import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
+import dev.railroadide.railroad.window.WindowBoundsRestorer;
 import dev.railroadide.railroad.window.DialogBuilder;
 import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
@@ -523,11 +524,13 @@ public class EditorTabManager {
                         windowState.layout(), primaryPane, new ArrayDeque<>(), windowPanes);
                     groups.putAll(windowPanes);
                     Stage stage = idePane.createDetachedEditorStage(windowRoot);
-                    stage.setX(windowState.x());
-                    stage.setY(windowState.y());
-                    stage.setWidth(windowState.width());
-                    stage.setHeight(windowState.height());
-                    stage.setMaximized(windowState.maximized());
+                    WindowBoundsRestorer.restore(
+                        stage,
+                        windowState.x(),
+                        windowState.y(),
+                        windowState.width(),
+                        windowState.height(),
+                        windowState.maximized());
                     stage.show();
                     Railroad.WINDOW_MANAGER.registerChildWindow(stage);
                     collectEditorPanes(windowRoot).forEach(this::trackDetachedWindow);

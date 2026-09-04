@@ -22,6 +22,7 @@ import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.id.UIId;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
+import dev.railroadide.railroad.window.WindowBoundsRestorer;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
@@ -36,15 +37,18 @@ import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWorkspaceActions {
     private final Project project;
@@ -57,6 +61,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     private final Map<WorkspaceMode, StackPane> editorHostsByMode = new LinkedHashMap<>();
     private final Map<WorkspaceMode, IDELayoutState.ModeLayout> layoutsByMode = new LinkedHashMap<>();
     private final Map<WorkspaceMode, WeakReference<Node>> focusOwnersByMode = new LinkedHashMap<>();
+    private final List<IDELayoutState.ToolWindowState> pendingToolWindows = new ArrayList<>();
     private final WorkspaceTabNavigationHistory editorNavigationHistory = new WorkspaceTabNavigationHistory();
     private final Map<DetachableTabPane, ChangeListener<Tab>> editorNavigationListeners = new IdentityHashMap<>();
     private final Set<Tab> ownedTabs = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -237,7 +242,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     }
 
     private static String toolDockScope(IDEDockItem.DockPosition position) {
-        return "railroad:tool-dock:" + position.name().toLowerCase(java.util.Locale.ROOT);
+        return "railroad:tool-dock:" + position.name().toLowerCase(Locale.ROOT);
     }
 
     private void activateViewMode(WorkspaceMode viewMode) {
@@ -508,6 +513,9 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 } else if (isUnavailable && viewModeController.getCurrentViewMode() == viewMode) {
                     requestViewMode(WorkspaceMode.defaultMode(), false);
                 }
+                if (!isUnavailable) {
+                    restorePendingToolWindows();
+                }
             };
             unavailable.addListener(listener);
             lifecycle.onDispose(() -> unavailable.removeListener(listener));
@@ -722,6 +730,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 stage.show();
                 currentPane.getSelectionModel().select(dockTab);
                 stage.toFront();
+                registerToolWindow(stage);
             }
             snapshotActiveLayout();
             return;
@@ -879,13 +888,6 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         };
     }
 
-    private static Tab findDockTab(DetachableTabPane pane, IDEDockItem dockItem) {
-        return pane.getTabs().stream()
-            .filter(tab -> dockItem.id().equals(tab.getId()))
-            .findFirst()
-            .orElse(null);
-    }
-
     public IDELayoutState captureLayoutState() {
         if (Platform.isFxApplicationThread() && layoutInitialized && activeViewMode != null) {
             layoutsByMode.put(activeViewMode, captureModeLayout(activeViewMode));
@@ -897,7 +899,56 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 tabId -> findEditorTab(mode, tabId) != null))));
 
         WorkspaceMode currentMode = activeViewMode == null ? WorkspaceMode.defaultMode() : activeViewMode;
-        return new IDELayoutState(currentMode, layoutsByMode);
+        return new IDELayoutState(currentMode, layoutsByMode, captureToolWindowStates());
+    }
+
+    private List<IDELayoutState.ToolWindowState> captureToolWindowStates() {
+        Window mainWindow = getScene() == null ? null : getScene().getWindow();
+        Map<Window, List<IDEDockTab>> tabsByWindow = new IdentityHashMap<>();
+        for (IDEDockTab dockTab : dockTabs.values()) {
+            if (!(dockTab.getTabPane() instanceof DetachableTabPane pane) || pane.getScene() == null)
+                continue;
+
+            Window window = pane.getScene().getWindow();
+            if (window == null || window == mainWindow
+                || pane == dockPane(dockTab.getDockItem().preferredDockPosition()))
+                continue;
+
+            tabsByWindow.computeIfAbsent(window, _ -> new ArrayList<>()).add(dockTab);
+        }
+
+        var states = new ArrayList<IDELayoutState.ToolWindowState>();
+        int windowIndex = 0;
+        for (Map.Entry<Window, List<IDEDockTab>> entry : tabsByWindow.entrySet()) {
+            Window window = entry.getKey();
+            List<IDEDockTab> windowTabs = entry.getValue().stream()
+                .sorted((first, second) -> Integer.compare(
+                    first.getTabPane().getTabs().indexOf(first),
+                    second.getTabPane().getTabs().indexOf(second)))
+                .toList();
+            String selectedItemId = windowTabs.stream()
+                .filter(tab -> tab.getTabPane().getSelectionModel().getSelectedItem() == tab)
+                .map(tab -> tab.getDockItem().id())
+                .findFirst()
+                .orElse(windowTabs.getFirst().getDockItem().id());
+            states.add(new IDELayoutState.ToolWindowState(
+                "tool-window:" + windowIndex++,
+                windowTabs.stream().map(tab -> tab.getDockItem().id()).toList(),
+                selectedItemId,
+                window.getX(),
+                window.getY(),
+                window.getWidth(),
+                window.getHeight(),
+                window instanceof Stage stage && stage.isMaximized(),
+                window.isShowing()));
+        }
+        Set<String> capturedItemIds = states.stream()
+            .flatMap(state -> state.dockItemIds().stream())
+            .collect(Collectors.toSet());
+        pendingToolWindows.stream()
+            .filter(state -> Collections.disjoint(state.dockItemIds(), capturedItemIds))
+            .forEach(states::add);
+        return List.copyOf(states);
     }
 
     public void restoreLayoutState(IDELayoutState layoutState) {
@@ -926,9 +977,121 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             } else {
                 requestViewMode(targetMode, false);
             }
+            pendingToolWindows.clear();
+            pendingToolWindows.addAll(layoutState.toolWindows());
+            restorePendingToolWindows();
         };
 
         JavaFXUtils.runOnApplicationThread(restoreAction);
+    }
+
+    private void restorePendingToolWindows() {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(this::restorePendingToolWindows);
+            return;
+        }
+        if (pendingToolWindows.isEmpty())
+            return;
+
+        boolean needsGitTabs = pendingToolWindows.stream()
+            .flatMap(state -> state.dockItemIds().stream())
+            .map(IDEPane::dockItemById)
+            .anyMatch(item -> item != null && item.owningMode() == WorkspaceModes.GIT);
+        if (needsGitTabs && WorkspaceModes.GIT.isAvailable(project)) {
+            dockTabsByMode.computeIfAbsent(WorkspaceModes.GIT, _ -> createGitDockTabs());
+        }
+
+        var restoredStates = new ArrayList<IDELayoutState.ToolWindowState>();
+        for (IDELayoutState.ToolWindowState state : pendingToolWindows) {
+            List<IDEDockItem> items = state.dockItemIds().stream()
+                .map(IDEPane::dockItemById)
+                .filter(Objects::nonNull)
+                .toList();
+            if (items.size() != state.dockItemIds().size() || items.isEmpty()) {
+                restoredStates.add(state);
+                continue;
+            }
+
+            List<IDEDockTab> tabs = items.stream()
+                .map(dockTabs::get)
+                .filter(Objects::nonNull)
+                .toList();
+            if (tabs.size() != items.size())
+                continue;
+
+            try {
+                restoreToolWindow(state, tabs);
+                restoredStates.add(state);
+            } catch (RuntimeException exception) {
+                Railroad.LOGGER.error("Failed to restore detached tool window {}", state.id(), exception);
+            }
+        }
+        pendingToolWindows.removeAll(restoredStates);
+    }
+
+    private void restoreToolWindow(IDELayoutState.ToolWindowState state, List<IDEDockTab> tabs) {
+        IDEDockTab firstTab = tabs.getFirst();
+        IDEDockItem.DockPosition sourcePosition = firstTab.getDockItem().preferredDockPosition();
+        DetachableTabPane sourcePane = dockPane(sourcePosition);
+        SplitPane sourceSplit = splitPane(sourcePosition);
+        boolean sourceWasVisible = sourceSplit.getItems().contains(sourcePane);
+        if (firstTab.getTabPane() != null) {
+            firstTab.getTabPane().getTabs().remove(firstTab);
+        }
+
+        // TiwulFX copies stylesheets from the source pane while creating its stage. A hidden dock is detached from
+        // the scene graph during layout restoration, so attach it just long enough for the library to build the stage.
+        if (sourcePane.getScene() == null) {
+            setDockVisible(sourceSplit, sourcePane, true, preferredDockIndex(sourcePosition));
+        }
+
+        Stage stage;
+        try {
+            stage = sourcePane.getStageFactory().createStage(sourcePane, firstTab);
+        } catch (RuntimeException exception) {
+            if (firstTab.getTabPane() == null) {
+                sourcePane.getTabs().add(firstTab);
+            }
+            throw exception;
+        } finally {
+            if (!sourceWasVisible) {
+                setDockVisible(sourceSplit, sourcePane, false, preferredDockIndex(sourcePosition));
+            }
+        }
+        if (!(firstTab.getTabPane() instanceof DetachableTabPane detachedPane))
+            return;
+
+        for (IDEDockTab tab : tabs.subList(1, tabs.size())) {
+            if (tab.getTabPane() != null) {
+                tab.getTabPane().getTabs().remove(tab);
+            }
+            detachedPane.getTabs().add(tab);
+        }
+        tabs.stream()
+            .filter(tab -> tab.getDockItem().id().equals(state.selectedDockItemId()))
+            .findFirst()
+            .ifPresentOrElse(detachedPane.getSelectionModel()::select, detachedPane.getSelectionModel()::selectFirst);
+
+        WindowBoundsRestorer.restore(
+            stage,
+            state.x(),
+            state.y(),
+            state.width(),
+            state.height(),
+            state.maximized());
+        if (!state.visible()) {
+            stage.hide();
+        }
+    }
+
+    private static IDEDockItem dockItemById(String id) {
+        if (id == null)
+            return null;
+        for (IDEDockItem dockItem : IDEDockItem.values()) {
+            if (dockItem.id().equals(id))
+                return dockItem;
+        }
+        return null;
     }
 
     @Override
@@ -959,6 +1122,9 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             var stage = new DetachableTabPane.TabStage(priorPane, tab);
             preserveDetachedPaneSize(stage, contentWidth, contentHeight);
             guardDetachedStage(stage);
+            if (tab instanceof IDEDockTab) {
+                registerToolWindow(stage);
+            }
             return stage;
         });
         pane.getTabs().forEach(this::trackOwnedTab);
@@ -982,6 +1148,12 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         if (Double.isFinite(contentHeight) && contentHeight > 0.0) {
             double verticalDecoration = Math.max(0.0, stage.getHeight() - stage.getScene().getHeight());
             stage.setHeight(contentHeight + verticalDecoration);
+        }
+    }
+
+    private static void registerToolWindow(Stage stage) {
+        if (!Railroad.WINDOW_MANAGER.getChildWindows().contains(stage)) {
+            Railroad.WINDOW_MANAGER.registerChildWindow(stage);
         }
     }
 
@@ -1059,6 +1231,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         ownedTabPanes.clear();
         dockTabsByMode.clear();
         dockTabs.clear();
+        pendingToolWindows.clear();
         editorPanesByMode.clear();
         editorHostsByMode.clear();
         layoutsByMode.clear();
@@ -1093,8 +1266,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
     private void openGradleTab(Facet<?> facet, DetachableTabPane rightPane, SplitPane mainSplit) {
         Platform.runLater(() -> {
-            if (facet.getType() != FacetManager.GRADLE || rightPane.getTabs().stream()
-                .anyMatch(tab -> IDEDockItem.GRADLE.id().equals(tab.getId())))
+            if (facet.getType() != FacetManager.GRADLE || dockTabs.containsKey(IDEDockItem.GRADLE))
                 return;
 
             rightPane.getTabs().add(createDockTab(IDEDockItem.GRADLE, IDEDockItem.DockPosition.RIGHT));
@@ -1112,6 +1284,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                     layoutsByMode.getOrDefault(activeViewMode, IDELayoutState.ModeLayout.defaults()));
                 snapshotActiveLayout();
             }
+            restorePendingToolWindows();
         });
     }
 
