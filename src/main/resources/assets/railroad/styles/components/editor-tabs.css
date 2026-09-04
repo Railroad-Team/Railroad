@@ -33,6 +33,34 @@
     -fx-text-fill: -color-fg-default;
 }
 
+/* Editor tab states deliberately use semantic palette colours so they remain
+ * distinguishable in both bundled themes and in compatible custom themes. */
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab:hover {
+    -fx-background-color: -color-neutral-emphasis, -color-neutral-subtle;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.pinned {
+    -fx-background-color: -color-warning-muted, -color-warning-subtle;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.preview {
+    -fx-background-color: -color-accent-muted, -color-accent-subtle;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.preview .editor-tab-title {
+    -fx-font-style: italic;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab:selected {
+    -fx-background-color: -color-accent-emphasis, -color-accent-muted;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.attention,
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.attention:selected {
+    -fx-background-color: -color-danger-emphasis, -color-danger-subtle;
+}
+
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-action-slot .ikonli-font-icon {
     -fx-icon-size: 8px !important;
 }
@@ -134,6 +162,11 @@
     -fx-font-weight: 600;
 }
 
+.editor-all-tabs-cell .editor-all-tabs-name.preview {
+    -fx-font-style: italic;
+    -fx-text-fill: -color-fg-muted;
+}
+
 .editor-all-tabs-cell .editor-all-tabs-path {
     -fx-text-fill: -color-fg-muted;
     -fx-font-size: 0.85em;
@@ -167,6 +200,11 @@
 .editor-all-tabs-cell .editor-all-tabs-state-icon.pinned {
     -fx-fill: -color-fg-muted;
     -fx-icon-color: -color-fg-muted;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-state-icon.preview {
+    -fx-fill: -color-accent-fg;
+    -fx-icon-color: -color-accent-fg;
 }
 
 .tab-pane.editor-tab-pane > .tab-header-area > .control-buttons-tab > .container > .tab-down-button:hover {

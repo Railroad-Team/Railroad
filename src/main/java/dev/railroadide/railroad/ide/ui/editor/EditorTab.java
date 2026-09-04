@@ -112,9 +112,19 @@ public final class EditorTab {
         this.tab.setContextMenu(createContextMenu());
         this.path.addListener((_, _, _) -> updateFilePresentation());
         this.saveState.addListener((_, _, _) -> updateMetadataTooltip());
-        this.pinned.addListener((_, _, _) -> updateMetadataTooltip());
-        this.preview.addListener((_, _, _) -> updateMetadataTooltip());
+        this.pinned.addListener((_, _, isPinned) -> {
+            updateTabStateStyle("pinned", isPinned);
+            updateMetadataTooltip();
+        });
+        this.preview.addListener((_, _, isPreview) -> {
+            updateTabStateStyle("preview", isPreview);
+            updateMetadataTooltip();
+        });
+        this.saveFailed.addListener((_, _, needsAttention) -> updateTabStateStyle("attention", needsAttention));
         L18n.currentLanguageProperty().addListener(weakLocalizationListener);
+        updateTabStateStyle("pinned", pinned());
+        updateTabStateStyle("preview", preview());
+        updateTabStateStyle("attention", saveFailed());
         updateFilePresentation();
     }
 
@@ -263,6 +273,16 @@ public final class EditorTab {
 
     public void setPreview(boolean preview) {
         this.preview.set(preview);
+    }
+
+    private void updateTabStateStyle(String styleClass, boolean enabled) {
+        if (enabled) {
+            if (!tab.getStyleClass().contains(styleClass)) {
+                tab.getStyleClass().add(styleClass);
+            }
+        } else {
+            tab.getStyleClass().remove(styleClass);
+        }
     }
 
     private RRHBox createTabGraphic() {

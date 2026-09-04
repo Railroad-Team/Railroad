@@ -42,9 +42,11 @@ import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
@@ -57,6 +59,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.IntPredicate;
+import java.util.stream.Collectors;
 
 import static dev.railroadide.railroad.ide.ui.editor.EditorTabSessionState.DEFAULT_EDITOR_GROUP_ID;
 
@@ -79,6 +82,7 @@ public class EditorTabManager {
     private final Map<EditorTab, Stage> failedCloseDialogs = new IdentityHashMap<>();
     private final Set<EditorTab> discardApprovedTabs = Collections.newSetFromMap(new IdentityHashMap<>());
     private boolean restoring;
+    private boolean replacingPreview;
     private boolean selectionUpdateScheduled;
     private EditorTab pendingSelection;
     private DetachableTabPane primaryEditorPane;
@@ -114,6 +118,17 @@ public class EditorTabManager {
                 -1);
         }
 
+        private static TabOpenRequest preview(String editorGroupId, int insertionIndex) {
+            return new TabOpenRequest(
+                true,
+                false,
+                false,
+                false,
+                true,
+                editorGroupId,
+                insertionIndex);
+        }
+
         private static TabOpenRequest restored(EditorTabSessionState state) {
             return new TabOpenRequest(
                 false,
@@ -145,6 +160,11 @@ public class EditorTabManager {
             () -> enforceTabLimit(activeTab().orElse(null))));
         Settings.RECENTLY_CLOSED_TAB_LIMIT.addListener((_, newLimit) -> JavaFXUtils.runOnApplicationThread(
             () -> trimRecentlyClosedTabs(newLimit)));
+        Settings.ENABLE_PREVIEW_TABS.addListener((_, enabled) -> {
+            if (!Boolean.TRUE.equals(enabled)) {
+                JavaFXUtils.runOnApplicationThread(() -> previewTab().ifPresent(this::promote));
+            }
+        });
         Settings.SYNCHRONIZE_PROJECT_EXPLORER_WITH_ACTIVE_TAB.addListener((_, enabled) -> {
             if (Boolean.TRUE.equals(enabled)) {
                 JavaFXUtils.runOnApplicationThread(
@@ -184,6 +204,96 @@ public class EditorTabManager {
 
         IDEContentRouter.routeActive(WorkspaceContentTargets.CODE_EDITOR,
             tabPane -> openInTabPane(project, path, tabPane, TabOpenRequest.normal()));
+    }
+
+    /**
+     * Opens a path in the reusable preview slot. When preview tabs are disabled this
+     * behaves like a normal open. Existing permanent tabs are only selected; they are
+     * never demoted back into previews.
+     */
+    public void openPreview(Path path) {
+        Objects.requireNonNull(path, "Path cannot be null");
+        if (Files.isDirectory(path))
+            return;
+
+        if (!Boolean.TRUE.equals(Settings.ENABLE_PREVIEW_TABS.getValue())) {
+            open(path);
+            return;
+        }
+
+        Project project = Services.IDE_STATE.getCurrentProject();
+        if (project == null)
+            throw new IllegalStateException("Cannot preview a file without an active project");
+
+        IDEContentRouter.routeActive(WorkspaceContentTargets.CODE_EDITOR,
+            fallbackPane -> openPreviewInTabPane(project, path, fallbackPane));
+    }
+
+    private EditorTab openPreviewInTabPane(
+        Project project,
+        Path path,
+        DetachableTabPane fallbackPane) {
+        Path normalizedPath = path.toAbsolutePath().normalize();
+        if (!Files.isRegularFile(normalizedPath))
+            return null;
+
+        EditorTab existingTab = findOpen(normalizedPath).orElse(null);
+        if (existingTab != null) {
+            DetachableTabPane targetPane = editorPaneFor(existingTab, fallbackPane);
+            return openInTabPane(
+                project,
+                normalizedPath,
+                targetPane,
+                TabOpenRequest.preview(ensureEditorGroupId(targetPane), -1));
+        }
+
+        // Do not evict a useful preview for a path Railroad cannot render.
+        if (resolveLanguageSupport(normalizedPath) == null)
+            return null;
+
+        EditorTab currentPreview = previewTab().orElse(null);
+        DetachableTabPane targetPane = activeEditorPane(fallbackPane);
+        int insertionIndex = -1;
+        if (currentPreview != null) {
+            if (currentPreview.dirty() || currentPreview.pinned()) {
+                promote(currentPreview);
+            } else {
+                targetPane = editorPaneFor(currentPreview, targetPane);
+                insertionIndex = tabIndex(currentPreview);
+                replacingPreview = true;
+                if (!requestClose(currentPreview)) {
+                    replacingPreview = false;
+                    return null;
+                }
+            }
+        }
+
+        try {
+            String groupId = ensureEditorGroupId(targetPane);
+            return openInTabPane(
+                project,
+                normalizedPath,
+                targetPane,
+                TabOpenRequest.preview(groupId, insertionIndex));
+        } finally {
+            replacingPreview = false;
+            if (openTabs.isEmpty()) {
+                restoreEmptyEditorState();
+            }
+        }
+    }
+
+    private DetachableTabPane activeEditorPane(DetachableTabPane fallbackPane) {
+        return activeTab()
+            .map(EditorTab::tab)
+            .map(Tab::getTabPane)
+            .filter(DetachableTabPane.class::isInstance)
+            .map(DetachableTabPane.class::cast)
+            .orElse(fallbackPane);
+    }
+
+    private static DetachableTabPane editorPaneFor(EditorTab tab, DetachableTabPane fallbackPane) {
+        return tab.tab().getTabPane() instanceof DetachableTabPane tabPane ? tabPane : fallbackPane;
     }
 
     public void openInNewWindow(EditorTab tab) {
@@ -283,8 +393,12 @@ public class EditorTabManager {
         if (existingTab != null) {
             if (request.applyPropertiesToExisting()) {
                 existingTab.setPinned(request.pinned());
-                existingTab.setPreview(request.preview());
+                setPreview(existingTab, request.preview()
+                    && !request.pinned()
+                    && Boolean.TRUE.equals(Settings.ENABLE_PREVIEW_TABS.getValue()));
                 existingTab.setEditorGroupId(request.editorGroupId());
+            } else if (!request.preview()) {
+                promote(existingTab);
             }
             reattachExistingTabIfNeeded(existingTab, tabPane);
             if (request.activate()) {
@@ -312,13 +426,19 @@ public class EditorTabManager {
 
         var document = new FileSystemDocument(normalizedPath, support.languageId());
         DocumentIdentity identity = Services.IDE_STATE.identifyDocument(document);
+        boolean preview = request.preview()
+            && !request.pinned()
+            && Boolean.TRUE.equals(Settings.ENABLE_PREVIEW_TABS.getValue());
+        if (preview) {
+            previewTab().ifPresent(this::promote);
+        }
         var editorTab = new EditorTab(
             identity,
             document,
             editorOpenView,
             request.editorGroupId(),
             request.pinned(),
-            request.preview());
+            preview);
         editorTab.tab().setId(normalizedPath.toString());
         editorTab.tab().addEventHandler(Tab.TAB_CLOSE_REQUEST_EVENT, event -> handleCloseRequest(editorTab, event));
         editorTab.tab().addEventHandler(Tab.CLOSED_EVENT, _ -> handleClosed(editorTab));
@@ -328,12 +448,18 @@ public class EditorTabManager {
         markRecentlyUsed(editorTab);
         refreshTabPresentations();
         editorTab.pinnedProperty().addListener((_, _, isPinned) -> {
+            if (isPinned) {
+                promote(editorTab);
+            }
             keepPinnedTabsOnLeft(editorTab.tab().getTabPane());
             if (!isPinned) {
                 scheduleTabLimitEnforcement();
             }
         });
         editorTab.dirtyProperty().addListener((_, wasDirty, isDirty) -> {
+            if (isDirty) {
+                promote(editorTab);
+            }
             if (wasDirty && !isDirty) {
                 scheduleTabLimitEnforcement();
             }
@@ -382,7 +508,7 @@ public class EditorTabManager {
             Set<String> restorableGroupIds = tabsToRestore.stream()
                 .filter(tab -> tab.path() != null && Files.isRegularFile(tab.path()))
                 .map(EditorTabSessionState::editorGroupId)
-                .collect(java.util.stream.Collectors.toSet());
+                .collect(Collectors.toSet());
 
             var detachedLayouts = new ArrayList<Map.Entry<DetachedEditorWindowState, Map<String, DetachableTabPane>>>();
             if (idePane != null) {
@@ -454,7 +580,7 @@ public class EditorTabManager {
         }
         enforceTabLimit(activeTab().orElse(null));
         cleanupEmptyEditorGroups();
-        if (openTabs.isEmpty()) {
+        if (openTabs.isEmpty() && !replacingPreview) {
             restoreEmptyEditorState();
         }
     }
@@ -644,6 +770,14 @@ public class EditorTabManager {
             Node tabHeader = findTabHeaderAtEventTarget(tabPane, event);
             if (tabHeader == null)
                 return;
+
+            if (event.getButton() == MouseButton.PRIMARY
+                && event.getClickCount() == 2) {
+                EditorTab editorTab = getTabAt(tabHeader);
+                if (editorTab != null) {
+                    promote(editorTab);
+                }
+            }
 
             if (KeybindHandler.dispatchMouseEvent(Keybinds.EDITOR_TABS, event, tabHeader)) {
                 event.consume();
@@ -1168,7 +1302,7 @@ public class EditorTabManager {
         selectionListeners.keySet().stream()
             .map(DetachableTabPane::getScene)
             .filter(Objects::nonNull)
-            .map(javafx.scene.Scene::getWindow)
+            .map(Scene::getWindow)
             .filter(Objects::nonNull)
             .filter(Window::isShowing)
             .filter(window -> window != mainWindow)
@@ -1291,12 +1425,14 @@ public class EditorTabManager {
         }
 
         ClosedEditorTab closedTab = pendingCloseSnapshots.remove(editorTab.documentId());
-        if (closedTab == null) {
-            closedTab = captureClosedTab(editorTab);
+        if (!editorTab.preview()) {
+            if (closedTab == null) {
+                closedTab = captureClosedTab(editorTab);
+            }
+            recentlyClosedTabs.removeIf(tab -> tab.documentId().equals(editorTab.documentId()));
+            recentlyClosedTabs.addFirst(closedTab);
+            trimRecentlyClosedTabs(Settings.RECENTLY_CLOSED_TAB_LIMIT.getValue());
         }
-        recentlyClosedTabs.removeIf(tab -> tab.documentId().equals(editorTab.documentId()));
-        recentlyClosedTabs.addFirst(closedTab);
-        trimRecentlyClosedTabs(Settings.RECENTLY_CLOSED_TAB_LIMIT.getValue());
         tabsByControl.remove(editorTab.tab());
         refreshTabPresentations();
         Services.IDE_STATE.closeDocument(editorTab.document());
@@ -1487,6 +1623,7 @@ public class EditorTabManager {
     private void resetTracking() {
         selectionGeneration++;
         selectionUpdateScheduled = false;
+        replacingPreview = false;
         pendingSelection = null;
         primaryEditorPane = null;
         selectionListeners.forEach(
@@ -1608,6 +1745,7 @@ public class EditorTabManager {
     public void pin(EditorTab tab) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (openTabs.containsKey(tab.documentId())) {
+            promote(tab);
             tab.setPinned(true);
         }
     }
@@ -1622,6 +1760,9 @@ public class EditorTabManager {
     public void togglePin(EditorTab tab) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (openTabs.containsKey(tab.documentId())) {
+            if (!tab.pinned()) {
+                promote(tab);
+            }
             tab.setPinned(!tab.pinned());
         }
     }
@@ -1629,7 +1770,28 @@ public class EditorTabManager {
     public void setPreview(EditorTab tab, boolean preview) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (openTabs.containsKey(tab.documentId())) {
+            if (preview && (tab.pinned() || tab.dirty()))
+                return;
+
+            if (preview) {
+                previewTab()
+                    .filter(existing -> existing != tab)
+                    .ifPresent(this::promote);
+            }
             tab.setPreview(preview);
+        }
+    }
+
+    /** Returns the single reusable preview tab, if one is currently open. */
+    public Optional<EditorTab> previewTab() {
+        return openTabs.values().stream().filter(EditorTab::preview).findFirst();
+    }
+
+    /** Makes a temporary preview a normal document tab. */
+    public void promote(EditorTab tab) {
+        Objects.requireNonNull(tab, "Tab cannot be null");
+        if (openTabs.get(tab.documentId()) == tab && tab.preview()) {
+            tab.setPreview(false);
         }
     }
 

@@ -15,6 +15,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.MouseButton;
 import javafx.stage.Window;
 
 import java.io.IOException;
@@ -141,7 +142,12 @@ public class PathTreeCell extends TreeCell<PathItem> {
 
                 // Double-click to open, not rename
                 setOnMouseClicked(event -> {
-                    if (event.getClickCount() == 2 && !event.isConsumed() && getItem() != null) {
+                    if (event.getButton() != MouseButton.PRIMARY || event.isConsumed() || getItem() == null)
+                        return;
+
+                    if (event.getClickCount() == 1 && Files.isRegularFile(getItem().getPath())) {
+                        Services.EDITOR_TAB_MANAGER.openPreview(getItem().getPath());
+                    } else if (event.getClickCount() == 2) {
                         Path path = getItem().getPath();
                         if (Files.isDirectory(path)) {
                             TreeItem<PathItem> treeItem = getTreeItem();

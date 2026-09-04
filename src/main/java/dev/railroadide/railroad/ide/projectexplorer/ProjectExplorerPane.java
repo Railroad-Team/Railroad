@@ -86,6 +86,15 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             handleDragDrop(cell);
             return cell;
         });
+        this.treeView.getSelectionModel().selectedItemProperty().addListener((_, _, selectedItem) -> {
+            if (selectedItem == null)
+                return;
+
+            Path selectedPath = selectedItem.getValue().getPath();
+            if (Files.isRegularFile(selectedPath)) {
+                Services.EDITOR_TAB_MANAGER.openPreview(selectedPath);
+            }
+        });
         this.treeView.getRoot().setExpanded(true);
         this.treeView.prefHeightProperty().bind(heightProperty().subtract(60));
         sortTreeItems(this.treeView.getRoot());

@@ -74,6 +74,15 @@ public final class Settings {
             .canBeNull(false)
             .build());
 
+    public static final Setting<Boolean> ENABLE_PREVIEW_TABS = registerSetting(
+        Setting.builder(Boolean.class, "railroad:enable_preview_tabs")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.editor_tabs"))
+            .codec(DefaultSettingCodecs.BOOLEAN)
+            .defaultValue(true)
+            .canBeNull(false)
+            .build());
+
     public static final Setting<Boolean> SYNCHRONIZE_PROJECT_EXPLORER_WITH_ACTIVE_TAB = registerSetting(
         Setting.builder(Boolean.class, "railroad:synchronize_project_explorer_with_active_tab")
             .treePath("ide")

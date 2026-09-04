@@ -1,10 +1,13 @@
 package dev.railroadide.railroad.ide.ui;
 
+import dev.railroadide.railroad.Services;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.input.MouseButton;
 import javafx.scene.text.Text;
 
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
@@ -35,6 +38,7 @@ public class DiagnosticPane extends BorderPane {
         } else {
             getStyleClass().add("warning");
         }
+        installSourceNavigation(diagnostic);
     }
 
     /**
@@ -69,5 +73,24 @@ public class DiagnosticPane extends BorderPane {
     @SafeVarargs
     public DiagnosticPane(Diagnostic<? extends JavaFileObject>... diagnostics) {
         this(List.of(diagnostics));
+    }
+
+    private void installSourceNavigation(Diagnostic<? extends JavaFileObject> diagnostic) {
+        JavaFileObject source = diagnostic.getSource();
+        if (source == null || !"file".equalsIgnoreCase(source.toUri().getScheme()))
+            return;
+
+        Path sourcePath = Path.of(source.toUri());
+        setOnMouseClicked(event -> {
+            if (event.getButton() != MouseButton.PRIMARY || event.isConsumed())
+                return;
+
+            if (event.getClickCount() == 1) {
+                Services.EDITOR_TAB_MANAGER.openPreview(sourcePath);
+            } else if (event.getClickCount() == 2) {
+                Services.EDITOR_TAB_MANAGER.open(sourcePath);
+                event.consume();
+            }
+        });
     }
 }

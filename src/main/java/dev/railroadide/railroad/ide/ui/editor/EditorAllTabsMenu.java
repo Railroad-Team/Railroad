@@ -201,6 +201,7 @@ public final class EditorAllTabsMenu implements AutoCloseable {
         private final Label path = new Label();
         private final FontIcon dirtyIcon = new FontIcon(FontAwesomeSolid.ASTERISK);
         private final FontIcon pinIcon = new FontIcon(FontAwesomeSolid.THUMBTACK);
+        private final FontIcon previewIcon = new FontIcon(FontAwesomeSolid.EYE);
         private final HBox content;
         private final InvalidationListener stateListener = _ -> updateContent();
         private final WeakInvalidationListener weakStateListener = new WeakInvalidationListener(stateListener);
@@ -215,8 +216,10 @@ public final class EditorAllTabsMenu implements AutoCloseable {
             path.getStyleClass().add("editor-all-tabs-path");
             dirtyIcon.getStyleClass().addAll("editor-all-tabs-state-icon", "dirty");
             pinIcon.getStyleClass().addAll("editor-all-tabs-state-icon", "pinned");
+            previewIcon.getStyleClass().addAll("editor-all-tabs-state-icon", "preview");
             Tooltip.install(dirtyIcon, new LocalizedTooltip("editor.tabs.dropdown.dirty"));
             Tooltip.install(pinIcon, new LocalizedTooltip("editor.tabs.dropdown.pinned"));
+            Tooltip.install(previewIcon, new LocalizedTooltip("editor.tab.tooltip.preview"));
 
             var labels = new RRVBox(1, name, path);
             labels.getStyleClass().removeAll("Railroad", "Pane", "VBox", "background-2");
@@ -228,7 +231,7 @@ public final class EditorAllTabsMenu implements AutoCloseable {
             path.setMinWidth(0);
             path.setMaxWidth(Double.MAX_VALUE);
 
-            var states = new RRHBox(8, dirtyIcon, pinIcon);
+            var states = new RRHBox(8, dirtyIcon, pinIcon, previewIcon);
             states.getStyleClass().removeAll("Railroad", "Pane", "HBox", "background-2");
             states.getStyleClass().add("editor-all-tabs-states");
             states.setAlignment(Pos.CENTER_RIGHT);
@@ -255,6 +258,7 @@ public final class EditorAllTabsMenu implements AutoCloseable {
             editorTab.displayTitleProperty().addListener(weakStateListener);
             editorTab.dirtyProperty().addListener(weakStateListener);
             editorTab.pinnedProperty().addListener(weakStateListener);
+            editorTab.previewProperty().addListener(weakStateListener);
             editorTab.saveStateProperty().addListener(weakStateListener);
             setText(null);
             setGraphic(content);
@@ -277,10 +281,20 @@ public final class EditorAllTabsMenu implements AutoCloseable {
             dirtyIcon.setManaged(editorTab.dirty());
             pinIcon.setVisible(editorTab.pinned());
             pinIcon.setManaged(editorTab.pinned());
+            previewIcon.setVisible(editorTab.preview());
+            previewIcon.setManaged(editorTab.preview());
+            if (editorTab.preview()) {
+                if (!name.getStyleClass().contains("preview")) {
+                    name.getStyleClass().add("preview");
+                }
+            } else {
+                name.getStyleClass().remove("preview");
+            }
             updateDirtyIcon(editorTab.saveState());
             setAccessibleText(editorTab.displayTitle() + ", " + editorTab.languageDisplayName() + ", " + absolutePath
                 + (editorTab.dirty() ? ", unsaved changes" : "")
-                + (editorTab.pinned() ? ", pinned" : ""));
+                + (editorTab.pinned() ? ", pinned" : "")
+                + (editorTab.preview() ? ", preview" : ""));
         }
 
         private void detachListeners() {
@@ -291,6 +305,7 @@ public final class EditorAllTabsMenu implements AutoCloseable {
             editorTab.displayTitleProperty().removeListener(weakStateListener);
             editorTab.dirtyProperty().removeListener(weakStateListener);
             editorTab.pinnedProperty().removeListener(weakStateListener);
+            editorTab.previewProperty().removeListener(weakStateListener);
             editorTab.saveStateProperty().removeListener(weakStateListener);
         }
 
