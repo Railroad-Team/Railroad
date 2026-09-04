@@ -16,6 +16,12 @@ public interface IDEWorkspaceActions {
 
     void toggleDockItem(IDEDockItem dockItem);
 
+    boolean isDockItemDetached(IDEDockItem dockItem);
+
+    void detachDockItem(IDEDockItem dockItem);
+
+    void resetDockItemPosition(IDEDockItem dockItem);
+
     void resetCurrentLayout();
 
     void resetAllLayouts();
