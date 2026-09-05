@@ -113,6 +113,20 @@ control-flow body uses braces. `else if` chains remain compact. An exact local c
 anonymous classes, fields, or multiple variables retain their explicit type. Unused-variable conventions named
 `ignored`, `$`, or `$` followed by digits use Java 25's unnamed variable `_` where the declaration context permits it;
 the original name is retained if it is referenced or cannot legally be unnamed.
+Package-qualified type references such as `java.util.List` use `List` with an import when the compiler can resolve the
+type without name conflicts. This also covers constructors, annotations, class literals, method references, and static
+member access; nested types retain their enclosing type (for example, `Map.Entry`). Existing imports are reused, and
+types in `java.lang` or the current package need no added import. Unresolved or shadowed names and references containing
+comments are retained. The Gradle tasks supply the project's compile classpath and source roots for type resolution.
+Wrapped method and constructor parameter lists start on the line after the opening parenthesis, with one parameter per
+line. The closing parenthesis sits on its own line, aligned with the declaration; single-line parameter lists remain
+inline when they fit.
+
+Package-private types, fields, methods, and constructors are rejected: choose `public`, `protected`, or `private`
+explicitly where legal. Both `formatCheck` and `format` report these declarations and fail until they are resolved;
+`format` applies other formatting fixes but does not choose access levels. Implicitly public interface members,
+implicitly private enum constructors, enum constants, record components, and local/anonymous class declarations are
+exempt. This rule follows the same changed-file ratchet as the other formatting checks.
 
 To check formatting without modifying files, run:
 

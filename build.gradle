@@ -168,6 +168,7 @@ def semanticStyleArguments = { String mode ->
             projectDir.absolutePath
         ])
     }
+    arguments.addAll(['--source-path', semanticStyleSources.asPath])
     arguments.addAll(semanticStyleSources.files.collect { it.absolutePath })
     arguments
 }
@@ -188,6 +189,17 @@ tasks.register('semanticFormatCheck', JavaExec) {
     classpath = sourceSets.formatter.runtimeClasspath
     mainClass = 'dev.railroadide.railroad.formatter.RailroadJavaStyle'
     args semanticStyleArguments('--check')
+}
+
+['semanticFormat', 'semanticFormatCheck'].each { taskName ->
+    tasks.named(taskName, JavaExec) {
+        doFirst {
+            // Passing the dependency classpath as an argument exceeds Windows' command-line limit.
+            def compilerClasspath = new File(temporaryDir, 'compiler-classpath.txt')
+            compilerClasspath.setText(configurations.testCompileClasspath.asPath, 'UTF-8')
+            environment 'RAILROAD_FORMAT_CLASSPATH_FILE', compilerClasspath.absolutePath
+        }
+    }
 }
 
 tasks.named('spotlessApply') {
