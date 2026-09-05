@@ -14,8 +14,11 @@ public class OnboardingFlow {
     @Getter
     private final String firstStepId;
 
-    public OnboardingFlow(Map<String, Supplier<OnboardingStep>> stepLookup, List<OnboardingTransition> transitions,
-        String firstStepId) {
+    public OnboardingFlow(
+        Map<String, Supplier<OnboardingStep>> stepLookup,
+        List<OnboardingTransition> transitions,
+        String firstStepId
+    ) {
         this.stepLookup = Map.copyOf(stepLookup);
         this.transitions = List.copyOf(transitions);
         this.firstStepId = firstStepId;

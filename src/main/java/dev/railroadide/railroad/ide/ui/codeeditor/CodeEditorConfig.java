@@ -24,7 +24,8 @@ public record CodeEditorConfig(
         Project project,
         Path filePath,
         LanguageSupport languageSupport,
-        @Nullable SyntaxHighlightingProvider highlightingProvider) {
+        @Nullable SyntaxHighlightingProvider highlightingProvider
+    ) {
         Objects.requireNonNull(project, "project");
         Objects.requireNonNull(filePath, "filePath");
         Objects.requireNonNull(languageSupport, "languageSupport");

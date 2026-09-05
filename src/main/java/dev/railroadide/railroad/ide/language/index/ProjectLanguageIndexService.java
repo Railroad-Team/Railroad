@@ -72,14 +72,18 @@ public final class ProjectLanguageIndexService {
     }
 
     @SuppressWarnings("unchecked")
-    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I currentTyped(Project project,
-        String languageId) {
+    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I currentTyped(
+        Project project,
+        String languageId
+    ) {
         return (I) current(project, languageId);
     }
 
     @SuppressWarnings("unchecked")
     public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I currentTyped(
-        ProjectIndexContext context, String languageId) {
+        ProjectIndexContext context,
+        String languageId
+    ) {
         return (I) current(context, languageId);
     }
 
@@ -123,14 +127,18 @@ public final class ProjectLanguageIndexService {
     }
 
     @SuppressWarnings("unchecked")
-    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I indexTyped(Project project,
-        String languageId) {
+    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I indexTyped(
+        Project project,
+        String languageId
+    ) {
         return (I) index(project, languageId);
     }
 
     @SuppressWarnings("unchecked")
     public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I indexTyped(
-        ProjectIndexContext context, String languageId) {
+        ProjectIndexContext context,
+        String languageId
+    ) {
         return (I) index(context, languageId);
     }
 
@@ -144,8 +152,11 @@ public final class ProjectLanguageIndexService {
         return rebuild(context, context.projectRoot(), languageId);
     }
 
-    private @Nullable ProjectLanguageIndex<?> rebuild(ProjectIndexContext context, Path projectRoot,
-        String languageId) {
+    private @Nullable ProjectLanguageIndex<?> rebuild(
+        ProjectIndexContext context,
+        Path projectRoot,
+        String languageId
+    ) {
         LanguageIndexContext languageContext = context.language(languageId);
         if (languageContext == null)
             return null;
@@ -162,19 +173,26 @@ public final class ProjectLanguageIndexService {
     }
 
     @SuppressWarnings("unchecked")
-    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I rebuildTyped(Project project,
-        String languageId) {
+    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I rebuildTyped(
+        Project project,
+        String languageId
+    ) {
         return (I) rebuild(project, languageId);
     }
 
     @SuppressWarnings("unchecked")
     public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I rebuildTyped(
-        ProjectIndexContext context, String languageId) {
+        ProjectIndexContext context,
+        String languageId
+    ) {
         return (I) rebuild(context, languageId);
     }
 
     public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable F updateFile(
-        ProjectIndexContext context, String languageId, Path file) {
+        ProjectIndexContext context,
+        String languageId,
+        Path file
+    ) {
         Path normalizedRoot = normalize(context.projectRoot());
         Path normalizedFile = normalize(file);
         LanguageIndexContext languageContext = context.language(languageId);
@@ -198,8 +216,11 @@ public final class ProjectLanguageIndexService {
         return indexedFile;
     }
 
-    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> void removeFile(ProjectIndexContext context,
-        String languageId, Path file) {
+    public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> void removeFile(
+        ProjectIndexContext context,
+        String languageId,
+        Path file
+    ) {
         Path normalizedRoot = normalize(context.projectRoot());
         Path normalizedFile = normalize(file);
         LanguageIndexContext languageContext = context.language(languageId);
@@ -284,7 +305,8 @@ public final class ProjectLanguageIndexService {
     private static <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> I buildUnchecked(
         ProjectLanguageIndexer<?, ?> rawIndexer,
         ProjectIndexContext context,
-        Collection<Path> sourceFiles) {
+        Collection<Path> sourceFiles
+    ) {
         ProjectLanguageIndexer<I, F> indexer = (ProjectLanguageIndexer<I, F>) rawIndexer;
         return indexer.build(context, sourceFiles);
     }

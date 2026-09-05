@@ -10,7 +10,7 @@ public final class UIId<T extends Node> {
     private final String path;
     private final Class<T> type;
 
-    UIId(String path, Class<T> type) {
+    public UIId(String path, Class<T> type) {
         if (path == null || path.isBlank())
             throw new IllegalArgumentException("Path cannot be null or blank");
 

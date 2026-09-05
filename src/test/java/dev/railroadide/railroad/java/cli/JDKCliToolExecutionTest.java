@@ -16,10 +16,10 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests the execution of various CLI tools provided by a JDK, such as keytool and the Java launcher.
  */
-class JDKCliToolExecutionTest {
+public class JDKCliToolExecutionTest {
 
     @Test
-    void keytoolVersionCommandRunsOnCurrentJdk() throws IOException {
+    public void keytoolVersionCommandRunsOnCurrentJdk() throws IOException {
         JDK jdk = TestJdks.currentRuntime();
         Process process = jdk.cli().keytool()
             .version()
@@ -38,7 +38,7 @@ class JDKCliToolExecutionTest {
     }
 
     @Test
-    void javaLauncherRunsSourceFile() throws IOException {
+    public void javaLauncherRunsSourceFile() throws IOException {
         JDK jdk = TestJdks.currentRuntime();
         Path tempDir = Files.createTempDirectory("jdk-cli-src");
         Path sourceFile = tempDir.resolve("CliHello.java");

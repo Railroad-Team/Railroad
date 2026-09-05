@@ -13,17 +13,17 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for the {@link JarCLIBuilder} class, ensuring correct argument construction and behavior
  * for the `jar` command-line tool.
  */
-class JarCLIBuilderTest {
+public class JarCLIBuilderTest {
 
     @Test
-    void releaseEntriesRejectsVersionsBelowNine() {
+    public void releaseEntriesRejectsVersionsBelowNine() {
         JarCLIBuilder builder = JarCLIBuilder.create(TestJdks.create(21));
         assertThrows(IllegalArgumentException.class, () -> builder.releaseEntries(8));
         assertDoesNotThrow(() -> builder.releaseEntries(9));
     }
 
     @Test
-    void generateIndexSetsModeAndTarget() {
+    public void generateIndexSetsModeAndTarget() {
         JarCLIBuilder builder = JarCLIBuilder.create(TestJdks.create(21));
         Path jarPath = Path.of("libs", "app.jar");
         builder.generateIndex(jarPath);
@@ -34,7 +34,7 @@ class JarCLIBuilderTest {
     }
 
     @Test
-    void modulePathUsesPlatformSeparator() {
+    public void modulePathUsesPlatformSeparator() {
         JarCLIBuilder builder = JarCLIBuilder.create(TestJdks.create(21));
         builder.modulePath("mods/one", "mods/two");
 
@@ -43,7 +43,7 @@ class JarCLIBuilderTest {
     }
 
     @Test
-    void runRequiresOperationMode() {
+    public void runRequiresOperationMode() {
         JarCLIBuilder builder = JarCLIBuilder.create(TestJdks.create(21));
         assertThrows(IllegalStateException.class, builder::run);
     }

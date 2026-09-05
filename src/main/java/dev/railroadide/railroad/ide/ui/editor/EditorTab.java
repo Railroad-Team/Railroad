@@ -72,7 +72,8 @@ public final class EditorTab {
         EditorOpenView view,
         String editorGroupId,
         boolean pinned,
-        boolean preview) {
+        boolean preview
+    ) {
         this.identity = new SimpleObjectProperty<>(this, "identity", Objects.requireNonNull(identity));
         this.document = Objects.requireNonNull(document);
         Path path = document.getPath().toAbsolutePath().normalize();
@@ -435,7 +436,8 @@ public final class EditorTab {
         FontIcon icon,
         LocalizedTooltip tooltip,
         RotateTransition savingAnimation,
-        EditorSaveState state) {
+        EditorSaveState state
+    ) {
         savingAnimation.stop();
         icon.setRotate(0);
         icon.getStyleClass().removeAll(
@@ -577,7 +579,8 @@ public final class EditorTab {
     private static void updatePinMenuItem(
         LocalizedMenuItem menuItem,
         StackedFontIcon icon,
-        boolean pinned) {
+        boolean pinned
+    ) {
         menuItem.setKey(pinned ? "editor.tab.contextmenu.unpin" : "editor.tab.contextmenu.pin");
         if (pinned) {
             icon.setIconCodes(FontAwesomeSolid.THUMBTACK);

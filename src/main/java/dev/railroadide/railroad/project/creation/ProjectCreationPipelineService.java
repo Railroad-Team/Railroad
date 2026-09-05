@@ -31,6 +31,9 @@ public interface ProjectCreationPipelineService {
      * @param type The type of the project for which default providers are registered.
      * @param services The registry of services required for the default providers.
      */
-    void registerDefaultProviders(@NotNull CreationStepRegistry registry, @NotNull ProjectType type,
-        @NotNull ProjectServiceRegistry services);
+    void registerDefaultProviders(
+        @NotNull CreationStepRegistry registry,
+        @NotNull ProjectType type,
+        @NotNull ProjectServiceRegistry services
+    );
 }

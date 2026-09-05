@@ -18,6 +18,7 @@ import org.fxmisc.richtext.model.StyleSpans;
 import org.fxmisc.richtext.model.StyleSpansBuilder;
 
 import java.util.*;
+import com.github.javaparser.Position;
 
 public class ASTJavaSyntaxHighlighting {
     private static final JavaParser PARSER = new JavaParser();
@@ -50,7 +51,7 @@ public class ASTJavaSyntaxHighlighting {
             this.text = text;
         }
 
-        private static int getIndex(com.github.javaparser.Position position, String text) {
+        private static int getIndex(Position position, String text) {
             int line = position.line;
             int column = position.column;
 

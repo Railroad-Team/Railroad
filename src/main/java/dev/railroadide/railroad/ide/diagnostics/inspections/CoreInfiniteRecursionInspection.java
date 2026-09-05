@@ -53,8 +53,11 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
         }
     }
 
-    private static boolean isImmediatelyInfiniteRecursive(JavaRuleContext context, Symbol methodSymbol,
-        SyntaxNode body) {
+    private static boolean isImmediatelyInfiniteRecursive(
+        JavaRuleContext context,
+        Symbol methodSymbol,
+        SyntaxNode body
+    ) {
         FlowAnalysisResult result = analyzeFlow(context, body, methodSymbol);
         return result.isInfiniteRecursive()
             && !result.canCompleteNormally()
@@ -104,8 +107,11 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
         return new FlowAnalysisResult(false, true, canExitWithoutRecursing);
     }
 
-    private static FlowAnalysisResult analyzeReturnStatement(JavaRuleContext context, SyntaxNode returnStatement,
-        Symbol methodSymbol) {
+    private static FlowAnalysisResult analyzeReturnStatement(
+        JavaRuleContext context,
+        SyntaxNode returnStatement,
+        Symbol methodSymbol
+    ) {
         for (SyntaxNode child : returnStatement.children()) {
             if (child instanceof SyntaxToken)
                 continue;
@@ -117,8 +123,11 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
         return FlowAnalysisResult.stops();
     }
 
-    private static FlowAnalysisResult analyzeExpressionStatement(JavaRuleContext context,
-        SyntaxNode expressionStatement, Symbol methodSymbol) {
+    private static FlowAnalysisResult analyzeExpressionStatement(
+        JavaRuleContext context,
+        SyntaxNode expressionStatement,
+        Symbol methodSymbol
+    ) {
         for (SyntaxNode child : expressionStatement.children()) {
             if (child instanceof SyntaxToken)
                 continue;
@@ -130,8 +139,11 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
         return FlowAnalysisResult.fallsThrough();
     }
 
-    private static FlowAnalysisResult analyzeIfStatement(JavaRuleContext context, SyntaxNode ifStatement,
-        Symbol methodSymbol) {
+    private static FlowAnalysisResult analyzeIfStatement(
+        JavaRuleContext context,
+        SyntaxNode ifStatement,
+        Symbol methodSymbol
+    ) {
         SyntaxNode thenBranch = context.thenBranchOf(ifStatement);
         SyntaxNode elseBranch = context.elseBranchOf(ifStatement);
 

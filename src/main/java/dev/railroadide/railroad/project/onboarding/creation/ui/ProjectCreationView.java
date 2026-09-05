@@ -135,10 +135,12 @@ public class ProjectCreationView extends RRBorderPane {
         });
     }
 
-    public void bindToService(Service<?> service,
+    public void bindToService(
+        Service<?> service,
         Runnable onCancel,
         Runnable onSuccess,
-        Consumer<Throwable> onError) {
+        Consumer<Throwable> onError
+    ) {
         spinner.progressProperty().bind(service.progressProperty());
 
         // Task message → task chip

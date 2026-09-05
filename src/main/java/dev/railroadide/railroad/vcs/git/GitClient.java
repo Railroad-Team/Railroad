@@ -246,8 +246,11 @@ public class GitClient {
      * @param progressListener consumer for parsed progress events
      * @throws GitExecutionException when command execution fails
      */
-    public void push(GitRepository repo, GitOutputListener outputListener,
-        Consumer<GitProgressEvent> progressListener) {
+    public void push(
+        GitRepository repo,
+        GitOutputListener outputListener,
+        Consumer<GitProgressEvent> progressListener
+    ) {
         GitCommand cmd = GitCommands.push(repo);
 
         GitOutputListener listener = GitListeners.withProgress(outputListener, progressListener, "Push");
@@ -271,8 +274,11 @@ public class GitClient {
      * @param progressListener consumer for parsed progress events
      * @throws GitExecutionException when command execution fails
      */
-    public void pull(GitRepository repo, GitOutputListener outputListener,
-        Consumer<GitProgressEvent> progressListener) {
+    public void pull(
+        GitRepository repo,
+        GitOutputListener outputListener,
+        Consumer<GitProgressEvent> progressListener
+    ) {
         GitCommand cmd = GitCommands.pull(repo);
 
         GitOutputListener listener = GitListeners.withProgress(outputListener, progressListener, "Pull");
@@ -1371,8 +1377,13 @@ public class GitClient {
      * @param overwrite whether overwrite is allowed
      * @throws GitExecutionException when command execution fails
      */
-    public void createTag(GitRepository repo, String tagName, String hash, @Nullable String message,
-        boolean overwrite) {
+    public void createTag(
+        GitRepository repo,
+        String tagName,
+        String hash,
+        @Nullable String message,
+        boolean overwrite
+    ) {
         GitCommand cmd = GitCommands.createTag(repo, tagName, hash, message, overwrite);
         GitResult result = runner.run(cmd, null, null, GitResultCaptureMode.TEXT_LINES);
         if (result.timedOut())
@@ -1942,8 +1953,11 @@ public class GitClient {
      * @param progressListener parsed progress listener
      * @throws GitExecutionException when command execution fails
      */
-    public void fetchAllRemotes(GitRepository repo, GitOutputListener rawListener,
-        Consumer<GitProgressEvent> progressListener) {
+    public void fetchAllRemotes(
+        GitRepository repo,
+        GitOutputListener rawListener,
+        Consumer<GitProgressEvent> progressListener
+    ) {
         GitCommand cmd = GitCommands.fetchAllRemotes(repo);
 
         GitOutputListener listener = GitListeners.withProgress(rawListener, progressListener, "Fetch");
@@ -1967,8 +1981,11 @@ public class GitClient {
      * @param progressListener parsed progress listener
      * @throws GitExecutionException when command execution fails
      */
-    public void pruneAllRemotes(GitRepository repo, GitOutputListener rawListener,
-        Consumer<GitProgressEvent> progressListener) {
+    public void pruneAllRemotes(
+        GitRepository repo,
+        GitOutputListener rawListener,
+        Consumer<GitProgressEvent> progressListener
+    ) {
         GitCommand cmd = GitCommands.pruneAllRemotes(repo);
 
         GitOutputListener listener = GitListeners.withProgress(rawListener, progressListener, "Prune");

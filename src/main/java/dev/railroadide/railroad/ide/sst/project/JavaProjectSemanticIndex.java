@@ -194,7 +194,8 @@ public final class JavaProjectSemanticIndex
     }
 
     private static Map<String, List<SymbolDescriptor>> buildMembersByOwnerQualifiedName(
-        Iterable<SourceFileIndex> files) {
+        Iterable<SourceFileIndex> files
+    ) {
         Map<String, List<SymbolDescriptor>> index = new LinkedHashMap<>();
         for (SourceFileIndex file : files) {
             for (SymbolDescriptor symbol : file.declaredSymbols()) {

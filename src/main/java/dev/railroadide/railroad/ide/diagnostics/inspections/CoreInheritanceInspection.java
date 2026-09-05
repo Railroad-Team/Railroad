@@ -217,8 +217,10 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
         }
     }
 
-    private static void reportInterfaceMethodClashesWithObject(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportInterfaceMethodClashesWithObject(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode declarationNode : localTypeDeclarationNodes(context)) {
             if (!JAVA_INTERFACE_DECLARATION.equals(declarationNode.kind().id()))
                 continue;
@@ -251,8 +253,10 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
         }
     }
 
-    private static void reportPublicMethodNotExposedByInterface(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportPublicMethodNotExposedByInterface(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode declarationNode : localTypeDeclarationNodes(context)) {
             if (!JAVA_CLASS_DECLARATION.equals(declarationNode.kind().id()))
                 continue;
@@ -290,8 +294,11 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
         }
     }
 
-    private static boolean isConcreteImplementingType(Symbol symbol, SyntaxNode declarationNode,
-        JavaRuleContext context) {
+    private static boolean isConcreteImplementingType(
+        Symbol symbol,
+        SyntaxNode declarationNode,
+        JavaRuleContext context
+    ) {
         String kindId = declarationNode.kind().id();
         if (!JAVA_CLASS_DECLARATION.equals(kindId) && !JAVA_RECORD_DECLARATION.equals(kindId))
             return false;
@@ -347,7 +354,8 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
     private static boolean areThrownTypesCompatible(
         JavaRuleContext context,
         JavaRuleContext.MethodDescriptor inherited,
-        JavaRuleContext.MethodDescriptor declared) {
+        JavaRuleContext.MethodDescriptor declared
+    ) {
         for (String declaredThrownType : declared.thrownTypes()) {
             if (!context.isCheckedExceptionType(declaredThrownType))
                 continue;
@@ -371,7 +379,8 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
 
     private static boolean hasConflictingInheritedMethods(
         JavaRuleContext context,
-        List<JavaRuleContext.MethodDescriptor> inheritedGroup) {
+        List<JavaRuleContext.MethodDescriptor> inheritedGroup
+    ) {
         for (int i = 0; i < inheritedGroup.size(); i++) {
             JavaRuleContext.MethodDescriptor left = inheritedGroup.get(i);
             if (Modifier.isStatic(left.modifiers()))
@@ -395,8 +404,10 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
         return descriptor.declaration() == null ? fallback : descriptor.declaration();
     }
 
-    private static boolean isCloneCompatibleWithObjectClone(JavaRuleContext context,
-        JavaRuleContext.MethodDescriptor method) {
+    private static boolean isCloneCompatibleWithObjectClone(
+        JavaRuleContext context,
+        JavaRuleContext.MethodDescriptor method
+    ) {
         Type returnType = method.returnType();
         if (returnType.kind() != Type.Kind.DECLARED)
             return false;
@@ -460,8 +471,12 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
         return Set.copyOf(signatures);
     }
 
-    private static void collectImplementedInterfaces(JavaRuleContext context, String qualifiedName,
-        Set<String> signatures, Set<String> visited) {
+    private static void collectImplementedInterfaces(
+        JavaRuleContext context,
+        String qualifiedName,
+        Set<String> signatures,
+        Set<String> visited
+    ) {
         if (!visited.add(qualifiedName))
             return;
 

@@ -174,7 +174,8 @@ public class GitCommitCherryPickButton extends RRButton {
     private static CompletableFuture<boolean[]> confirmCherryPickWithUncommittedChanges(
         GitManager gitManager,
         Optional<GitCommit> currentCommit,
-        GitCommit commit) {
+        GitCommit commit
+    ) {
         CompletableFuture<boolean[]> canContinueRef = new CompletableFuture<>();
         GitRepoStatus repoStatus = gitManager.getRepoStatus();
 

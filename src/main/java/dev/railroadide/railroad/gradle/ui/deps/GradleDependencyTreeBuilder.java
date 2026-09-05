@@ -79,8 +79,10 @@ public class GradleDependencyTreeBuilder implements GradleTreeBuilder<RailroadCo
         return root;
     }
 
-    private void addDependencies(TreeItem<GradleTreeElement> parent,
-        Collection<? extends RailroadDependency> dependencies) {
+    private void addDependencies(
+        TreeItem<GradleTreeElement> parent,
+        Collection<? extends RailroadDependency> dependencies
+    ) {
         if (dependencies == null)
             return;
 

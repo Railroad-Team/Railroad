@@ -4,6 +4,7 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 
 import java.util.*;
+import java.util.ArrayList;
 
 /**
  * Immutable semantic analysis output for a syntax tree.
@@ -37,7 +38,8 @@ public final class SemanticModel {
         Map<SyntaxNode, Symbol> declaredSymbols,
         Map<SyntaxNode, Symbol> resolvedSymbols,
         Map<SyntaxNode, Type> inferredTypes,
-        List<SemanticDiagnostic> diagnostics) {
+        List<SemanticDiagnostic> diagnostics
+    ) {
         this.syntaxTree = Objects.requireNonNull(syntaxTree, "syntaxTree");
         this.rootScope = Objects.requireNonNull(rootScope, "rootScope");
         this.declaredSymbols = copyIdentityMap(declaredSymbols, "declaredSymbols");
@@ -118,7 +120,7 @@ public final class SemanticModel {
         if (additionalDiagnostics.isEmpty())
             return this;
 
-        List<SemanticDiagnostic> merged = new java.util.ArrayList<>(diagnostics.size() + additionalDiagnostics.size());
+        List<SemanticDiagnostic> merged = new ArrayList<>(diagnostics.size() + additionalDiagnostics.size());
         merged.addAll(diagnostics);
         merged.addAll(additionalDiagnostics);
         return new SemanticModel(syntaxTree, rootScope, declaredSymbols, resolvedSymbols, inferredTypes, merged);
@@ -152,7 +154,7 @@ public final class SemanticModel {
         private final Map<SyntaxNode, Symbol> declaredSymbols = new IdentityHashMap<>();
         private final Map<SyntaxNode, Symbol> resolvedSymbols = new IdentityHashMap<>();
         private final Map<SyntaxNode, Type> inferredTypes = new IdentityHashMap<>();
-        private final List<SemanticDiagnostic> diagnostics = new java.util.ArrayList<>();
+        private final List<SemanticDiagnostic> diagnostics = new ArrayList<>();
 
         private Builder(SyntaxTree syntaxTree, Scope rootScope) {
             this.syntaxTree = Objects.requireNonNull(syntaxTree, "syntaxTree");

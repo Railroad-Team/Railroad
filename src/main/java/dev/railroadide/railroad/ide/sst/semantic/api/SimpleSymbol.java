@@ -15,8 +15,12 @@ public final class SimpleSymbol implements Symbol {
     private final @Nullable String qualifiedName;
     private final @Nullable SyntaxNode declaration;
 
-    public SimpleSymbol(SymbolKind kind, String simpleName, @Nullable String qualifiedName,
-        @Nullable SyntaxNode declaration) {
+    public SimpleSymbol(
+        SymbolKind kind,
+        String simpleName,
+        @Nullable String qualifiedName,
+        @Nullable SyntaxNode declaration
+    ) {
         this.kind = Objects.requireNonNull(kind, "kind");
         this.simpleName = Objects.requireNonNull(simpleName, "simpleName");
         if (simpleName.isBlank())

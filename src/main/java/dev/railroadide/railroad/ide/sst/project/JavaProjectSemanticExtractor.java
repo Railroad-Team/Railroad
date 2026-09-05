@@ -32,15 +32,22 @@ public final class JavaProjectSemanticExtractor {
         return new JavaProjectSemanticIndex.SourceFileIndex(path, packageName, imports, symbols);
     }
 
-    private List<JavaProjectSemanticIndex.SymbolDescriptor> extractSymbols(Path path, SyntaxNode root,
-        SemanticModel model) {
+    private List<JavaProjectSemanticIndex.SymbolDescriptor> extractSymbols(
+        Path path,
+        SyntaxNode root,
+        SemanticModel model
+    ) {
         List<JavaProjectSemanticIndex.SymbolDescriptor> symbols = new ArrayList<>();
         collectSymbols(path, root, model, symbols);
         return List.copyOf(symbols);
     }
 
-    private void collectSymbols(Path path, SyntaxNode node, SemanticModel model,
-        List<JavaProjectSemanticIndex.SymbolDescriptor> symbols) {
+    private void collectSymbols(
+        Path path,
+        SyntaxNode node,
+        SemanticModel model,
+        List<JavaProjectSemanticIndex.SymbolDescriptor> symbols
+    ) {
         model.declaredSymbol(node)
             .filter(symbol -> isIndexedKind(symbol.kind()))
             .ifPresent(symbol -> symbols.add(toDescriptor(path, node, symbol)));

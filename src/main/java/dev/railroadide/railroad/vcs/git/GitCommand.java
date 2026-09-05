@@ -21,7 +21,8 @@ public final class GitCommand {
         Path workingDirectory,
         long timeoutMs,
         Map<String, String> environment,
-        boolean streamStdoutToListener) {
+        boolean streamStdoutToListener
+    ) {
         this.arguments = List.copyOf(arguments);
         this.workingDirectory = workingDirectory;
         this.timeoutMs = timeoutMs;

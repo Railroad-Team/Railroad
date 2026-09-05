@@ -63,8 +63,10 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
                 CoreConstantConditionalExpressionInspection::reportConstantConditionalExpressionsWithDataFlowConstants));
     }
 
-    private static void reportConstantConditionalExpressionsWithHardcodedLiterals(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportConstantConditionalExpressionsWithHardcodedLiterals(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         context.traverse(node -> {
             String kindId = node.kind().id();
 
@@ -121,8 +123,12 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         return null;
     }
 
-    private static void checkAndReportLiteral(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode conditionNode, String conditionType) {
+    private static void checkAndReportLiteral(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode conditionNode,
+        String conditionType
+    ) {
         SyntaxNode inner = unwrapExpression(context, conditionNode);
         if (inner == null)
             return;
@@ -139,8 +145,10 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         }
     }
 
-    private static void reportConstantConditionalExpressionsWithCompileTimeConstants(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportConstantConditionalExpressionsWithCompileTimeConstants(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         context.traverse(node -> {
             String kindId = node.kind().id();
 
@@ -172,8 +180,11 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
     }
 
     @SuppressWarnings("ConstantValue")
-    private static Boolean evaluateBooleanConstant(JavaRuleContext context, SyntaxNode node,
-        Set<SyntaxNode> visitedDeclarators) {
+    private static Boolean evaluateBooleanConstant(
+        JavaRuleContext context,
+        SyntaxNode node,
+        Set<SyntaxNode> visitedDeclarators
+    ) {
         if (node == null)
             return null;
 
@@ -259,8 +270,10 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         return null;
     }
 
-    private static void reportConstantConditionalExpressionsWithDataFlowConstants(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportConstantConditionalExpressionsWithDataFlowConstants(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode root : context.nodesOfKinds(DATA_FLOW_ROOT_KINDS)) {
             SyntaxNode blockNode = context.directChild(root, JavaSyntaxKinds.BLOCK.id());
             if (blockNode != null) {
@@ -269,8 +282,12 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         }
     }
 
-    private static void analyzeBlockForDataFlowConstants(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode blockNode, Map<String, Boolean> knownFacts) {
+    private static void analyzeBlockForDataFlowConstants(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode blockNode,
+        Map<String, Boolean> knownFacts
+    ) {
         if (blockNode == null || DATA_FLOW_BARRIER_KINDS.contains(blockNode.kind().id()))
             return;
 
@@ -391,8 +408,11 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         }
     }
 
-    private static Boolean evaluateInitializerAsBooleanConstant(JavaRuleContext context, SyntaxNode declaratorNode,
-        Map<String, Boolean> knownFacts) {
+    private static Boolean evaluateInitializerAsBooleanConstant(
+        JavaRuleContext context,
+        SyntaxNode declaratorNode,
+        Map<String, Boolean> knownFacts
+    ) {
         SyntaxNode initializer = initializerOf(context, declaratorNode);
 
         if (initializer == null)
@@ -454,8 +474,11 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         return context.firstIdentifierLikeTokenText(inner);
     }
 
-    private static void applyExpressionFacts(JavaRuleContext context, SyntaxNode expression,
-        Map<String, Boolean> knownFacts) {
+    private static void applyExpressionFacts(
+        JavaRuleContext context,
+        SyntaxNode expression,
+        Map<String, Boolean> knownFacts
+    ) {
         SyntaxNode inner = unwrapExpression(context, expression);
         if (inner == null || !Objects.equals(inner.kind().id(), JavaSyntaxKinds.ASSIGNMENT_EXPRESSION.id()))
             return;
@@ -480,7 +503,8 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         JavaRuleContext context,
         JavaInspectionRuleReporter reporter,
         SyntaxNode conditionNode,
-        Map<String, Boolean> knownFacts) {
+        Map<String, Boolean> knownFacts
+    ) {
         BooleanFact fact = extractBooleanFact(context, conditionNode);
         if (fact == null)
             return;
@@ -519,8 +543,11 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         return null;
     }
 
-    private static Boolean evaluateNamedBooleanConstant(JavaRuleContext context, SyntaxNode node,
-        Set<SyntaxNode> visitedDeclarators) {
+    private static Boolean evaluateNamedBooleanConstant(
+        JavaRuleContext context,
+        SyntaxNode node,
+        Set<SyntaxNode> visitedDeclarators
+    ) {
         Symbol symbol = context.resolvedSymbol(node).orElse(null);
         if (symbol == null)
             return null;
@@ -542,8 +569,11 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         }
     }
 
-    private static Boolean evaluateBooleanDataFlowConstant(JavaRuleContext context, SyntaxNode node,
-        Map<String, Boolean> knownFacts) {
+    private static Boolean evaluateBooleanDataFlowConstant(
+        JavaRuleContext context,
+        SyntaxNode node,
+        Map<String, Boolean> knownFacts
+    ) {
         if (node == null)
             return null;
 

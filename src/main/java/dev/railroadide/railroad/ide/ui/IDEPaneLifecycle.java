@@ -11,7 +11,7 @@ import java.util.Objects;
 /**
  * Owns resources whose lifetime must not exceed that of an {@link IDEPane}.
  */
-final class IDEPaneLifecycle implements AutoCloseable {
+public final class IDEPaneLifecycle implements AutoCloseable {
     private final Node owner;
     private final List<Runnable> cleanupActions = new ArrayList<>();
 
@@ -20,7 +20,7 @@ final class IDEPaneLifecycle implements AutoCloseable {
 
     private final ChangeListener<Scene> sceneListener = (_, _, newScene) -> updateAttachment(newScene != null);
 
-    void updateAttachment(boolean attached) {
+    private void updateAttachment(boolean attached) {
         if (attached) {
             wasAttached = true;
         } else if (wasAttached) {
@@ -28,13 +28,13 @@ final class IDEPaneLifecycle implements AutoCloseable {
         }
     }
 
-    IDEPaneLifecycle(Node owner) {
+    public IDEPaneLifecycle(Node owner) {
         this.owner = Objects.requireNonNull(owner, "Lifecycle owner cannot be null");
         this.wasAttached = owner.getScene() != null;
         owner.sceneProperty().addListener(sceneListener);
     }
 
-    void onDispose(Runnable cleanupAction) {
+    public void onDispose(Runnable cleanupAction) {
         Objects.requireNonNull(cleanupAction, "Cleanup action cannot be null");
         if (closed) {
             cleanupAction.run();

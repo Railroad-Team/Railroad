@@ -82,8 +82,13 @@ public class ClassStubVisitor extends ClassVisitor {
     }
 
     @Override
-    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
-        String[] exceptions) {
+    public MethodVisitor visitMethod(
+        int access,
+        String name,
+        String descriptor,
+        String signature,
+        String[] exceptions
+    ) {
         if (name.equals("<clinit>"))
             return null; // Skip static initializer
 
@@ -372,10 +377,17 @@ public class ClassStubVisitor extends ClassVisitor {
         private final List<Type> thrownTypes;
         private int parameterIndex = 0;
 
-        public MethodStubVisitor(int access, String name, List<Type> parameterTypes, Type returnType,
-            List<String> parameterNames, List<List<AnnotationStub>> parameterAnnotations,
-            List<AnnotationStub> methodAnnotations, List<TypeParameter> finalMethodTypeParameters,
-            List<Type> thrownTypes) {
+        public MethodStubVisitor(
+            int access,
+            String name,
+            List<Type> parameterTypes,
+            Type returnType,
+            List<String> parameterNames,
+            List<List<AnnotationStub>> parameterAnnotations,
+            List<AnnotationStub> methodAnnotations,
+            List<TypeParameter> finalMethodTypeParameters,
+            List<Type> thrownTypes
+        ) {
             super(Opcodes.ASM9);
             this.access = access;
             this.name = name;

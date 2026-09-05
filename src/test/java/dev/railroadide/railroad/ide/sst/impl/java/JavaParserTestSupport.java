@@ -9,17 +9,17 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import java.util.ArrayList;
 import java.util.List;
 
-final class JavaParserTestSupport {
+public final class JavaParserTestSupport {
     private JavaParserTestSupport() {
     }
 
-    static List<Token<JavaTokenType>> lexAll(String source) {
+    public static List<Token<JavaTokenType>> lexAll(String source) {
         try (JavaLexer lexer = new JavaLexer(source)) {
             return lexAll(lexer);
         }
     }
 
-    static List<Token<JavaTokenType>> lexAll(JavaLexer lexer) {
+    public static List<Token<JavaTokenType>> lexAll(JavaLexer lexer) {
         List<Token<JavaTokenType>> tokens = new ArrayList<>();
         while (true) {
             Token<JavaTokenType> token = lexer.nextToken();
@@ -29,11 +29,11 @@ final class JavaParserTestSupport {
         }
     }
 
-    static String syntaxText(SyntaxTree tree) {
+    public static String syntaxText(SyntaxTree tree) {
         return syntaxText(tree.root());
     }
 
-    static String syntaxText(SyntaxNode node) {
+    public static String syntaxText(SyntaxNode node) {
         if (node instanceof SyntaxToken token)
             return token.text();
 
@@ -44,21 +44,21 @@ final class JavaParserTestSupport {
         return builder.toString();
     }
 
-    static List<SyntaxToken> collectSyntaxTokens(SyntaxTree tree) {
+    public static List<SyntaxToken> collectSyntaxTokens(SyntaxTree tree) {
         return collectSyntaxTokens(tree.root());
     }
 
-    static List<SyntaxToken> collectSyntaxTokens(SyntaxNode root) {
+    public static List<SyntaxToken> collectSyntaxTokens(SyntaxNode root) {
         List<SyntaxToken> tokens = new ArrayList<>();
         collectSyntaxTokens(root, tokens);
         return List.copyOf(tokens);
     }
 
-    static boolean isEofToken(Token<JavaTokenType> token) {
+    public static boolean isEofToken(Token<JavaTokenType> token) {
         return token.type() == JavaTokenType.EOF || token.flags().contains(TokenFlag.EOF);
     }
 
-    static boolean isSyntaxEofToken(SyntaxToken token) {
+    public static boolean isSyntaxEofToken(SyntaxToken token) {
         return token.kind().id().equals(JavaSyntaxKinds.tokenKind(JavaTokenType.EOF).id());
     }
 

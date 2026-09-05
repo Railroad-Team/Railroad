@@ -31,10 +31,20 @@ public class GradleSettings {
     private boolean daemonEnabled;
     private Long daemonIdleTimeout;
 
-    public GradleSettings(boolean useWrapper, String wrapperVersion, Path customGradleHome, Path gradleUserHome,
-        JDK gradleJvm, boolean offlineMode, boolean enableBuildCache, boolean parallelExecution,
-        int maxWorkerCount, List<RunConfiguration<?>> configurations,
-        boolean daemonEnabled, Long daemonIdleTimeout) {
+    public GradleSettings(
+        boolean useWrapper,
+        String wrapperVersion,
+        Path customGradleHome,
+        Path gradleUserHome,
+        JDK gradleJvm,
+        boolean offlineMode,
+        boolean enableBuildCache,
+        boolean parallelExecution,
+        int maxWorkerCount,
+        List<RunConfiguration<?>> configurations,
+        boolean daemonEnabled,
+        Long daemonIdleTimeout
+    ) {
         this.useWrapper = useWrapper;
         this.wrapperVersion = wrapperVersion;
         this.customGradleHome = customGradleHome;

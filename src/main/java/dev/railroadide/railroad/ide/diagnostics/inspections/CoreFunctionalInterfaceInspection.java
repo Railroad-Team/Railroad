@@ -34,8 +34,10 @@ public final class CoreFunctionalInterfaceInspection implements JavaInspectionRu
         return RULES;
     }
 
-    private static void reportInterfaceShouldBeFunctional(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportInterfaceShouldBeFunctional(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode node : context.nodesOfKind(JavaSyntaxKinds.INTERFACE_DECLARATION.id())) {
             Symbol declaredName = context.declaredSymbol(node).orElse(null);
             if (declaredName == null)

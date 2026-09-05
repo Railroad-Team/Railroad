@@ -52,8 +52,10 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
         return RULES;
     }
 
-    private static void reportOverridableMethodDuringConstruction(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportOverridableMethodDuringConstruction(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode methodInvocationNode : context.nodesOfKind(JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id())) {
             findThisConstructorCall(context, methodInvocationNode)
                 .ifPresent(
@@ -61,8 +63,10 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
         }
     }
 
-    private static void reportOverriddenMethodDuringConstruction(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportOverriddenMethodDuringConstruction(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         Map<String, List<String>> subtypeIndex = buildSubtypeIndex(context);
         for (SyntaxNode methodInvocationNode : context.nodesOfKind(JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id())) {
             Optional<CallSite> maybeCall = findThisConstructorCall(context, methodInvocationNode);
@@ -138,8 +142,11 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
             .of(new CallSite(currentType, invocationNode, methodSymbol, ownerQualifiedName, descriptor.signatureKey()));
     }
 
-    private static JavaRuleContext.MethodDescriptor findMethodDescriptor(JavaRuleContext context,
-        String ownerQualifiedName, Symbol methodSymbol) {
+    private static JavaRuleContext.MethodDescriptor findMethodDescriptor(
+        JavaRuleContext context,
+        String ownerQualifiedName,
+        Symbol methodSymbol
+    ) {
         for (JavaRuleContext.MethodDescriptor descriptor : context.declaredMethodDescriptors(ownerQualifiedName)) {
             if (methodSymbol.equals(descriptor.symbol()))
                 return descriptor;

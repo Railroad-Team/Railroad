@@ -6,6 +6,8 @@ import org.objectweb.asm.Opcodes;
 
 import java.nio.file.Path;
 import java.util.*;
+import dev.railroadide.railroad.ide.classparser.Type;
+import java.lang.reflect.Modifier;
 
 public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private final Set<String> declaredQualifiedNames;
@@ -16,8 +18,10 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private final Map<String, List<JavaProjectSemanticIndex.SymbolDescriptor>> symbolsByQualifiedName;
     private final Map<String, List<JavaProjectSemanticIndex.SymbolDescriptor>> membersByOwnerQualifiedName;
 
-    public JavaStubSymbolIndex(Map<String, ClassStub> classStubsByQualifiedName,
-        Map<String, Path> sourceByQualifiedName) {
+    public JavaStubSymbolIndex(
+        Map<String, ClassStub> classStubsByQualifiedName,
+        Map<String, Path> sourceByQualifiedName
+    ) {
         this.classStubsByQualifiedName = Map
             .copyOf(Objects.requireNonNull(classStubsByQualifiedName, "classStubsByQualifiedName"));
 
@@ -48,7 +52,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
                 null,
                 null,
                 sourceFile,
-                java.lang.reflect.Modifier.isStatic(stub.modifiers()),
+                Modifier.isStatic(stub.modifiers()),
                 true);
             index(symbolsBySimpleName, typeDescriptor.simpleName(), typeDescriptor);
             index(symbolsByQualifiedName, qualifiedName, typeDescriptor);
@@ -61,7 +65,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
                     qualifiedName,
                     null,
                     sourceFile,
-                    java.lang.reflect.Modifier.isStatic(field.modifiers()),
+                    Modifier.isStatic(field.modifiers()),
                     false);
                 index(symbolsBySimpleName, descriptor.simpleName(), descriptor);
                 index(symbolsByQualifiedName, descriptor.qualifiedName(), descriptor);
@@ -76,7 +80,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
                     qualifiedName,
                     renderSignature(method),
                     sourceFile,
-                    java.lang.reflect.Modifier.isStatic(method.modifiers()),
+                    Modifier.isStatic(method.modifiers()),
                     false);
                 index(symbolsBySimpleName, descriptor.simpleName(), descriptor);
                 index(symbolsByQualifiedName, descriptor.qualifiedName(), descriptor);
@@ -152,7 +156,8 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private static void index(
         Map<String, List<JavaProjectSemanticIndex.SymbolDescriptor>> index,
         String key,
-        JavaProjectSemanticIndex.SymbolDescriptor descriptor) {
+        JavaProjectSemanticIndex.SymbolDescriptor descriptor
+    ) {
         if (key == null || key.isBlank())
             return;
 
@@ -161,7 +166,8 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
 
     private static List<JavaProjectSemanticIndex.SymbolDescriptor> lookup(
         Map<String, List<JavaProjectSemanticIndex.SymbolDescriptor>> index,
-        String key) {
+        String key
+    ) {
         if (key == null || key.isBlank())
             return List.of();
 
@@ -198,7 +204,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         return renderSignature(constructor.parameters().stream().map(Parameter::type).toList());
     }
 
-    private static String renderSignature(List<dev.railroadide.railroad.ide.classparser.Type> parameterTypes) {
+    private static String renderSignature(List<Type> parameterTypes) {
         var builder = new StringBuilder("(");
         for (int index = 0; index < parameterTypes.size(); index++) {
             if (index > 0) {
@@ -210,14 +216,14 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         return builder.toString();
     }
 
-    private static String renderType(dev.railroadide.railroad.ide.classparser.Type type) {
+    private static String renderType(Type type) {
         return switch (type) {
-            case dev.railroadide.railroad.ide.classparser.Type.PrimitiveType primitive -> primitive.name();
-            case dev.railroadide.railroad.ide.classparser.Type.ArrayType array ->
+            case Type.PrimitiveType primitive -> primitive.name();
+            case Type.ArrayType array ->
                 renderType(array.componentType()) + "[]";
-            case dev.railroadide.railroad.ide.classparser.Type.ClassType clazz -> clazz.name();
-            case dev.railroadide.railroad.ide.classparser.Type.TypeVariable variable -> variable.name();
-            case dev.railroadide.railroad.ide.classparser.Type.WildcardType wildcard ->
+            case Type.ClassType clazz -> clazz.name();
+            case Type.TypeVariable variable -> variable.name();
+            case Type.WildcardType wildcard ->
                 wildcard.bound() == null ? "?" : "? " + renderType(wildcard.bound());
         };
     }

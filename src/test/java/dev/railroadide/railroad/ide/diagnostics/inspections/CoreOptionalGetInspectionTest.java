@@ -9,9 +9,9 @@ import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectio
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class CoreOptionalGetInspectionTest {
+public class CoreOptionalGetInspectionTest {
     @Test
-    void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticForPlainOptionalGet() {
+    public void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticForPlainOptionalGet() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
             class Example {
                 String run(java.util.Optional<String> opt) {
@@ -24,7 +24,7 @@ class CoreOptionalGetInspectionTest {
     }
 
     @Test
-    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideIfPresentGuard() {
+    public void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideIfPresentGuard() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
             class Example {
                 String run(java.util.Optional<String> opt) {
@@ -40,7 +40,7 @@ class CoreOptionalGetInspectionTest {
     }
 
     @Test
-    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideNegatedElseGuard() {
+    public void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideNegatedElseGuard() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
             class Example {
                 String run(java.util.Optional<String> opt) {
@@ -57,7 +57,7 @@ class CoreOptionalGetInspectionTest {
     }
 
     @Test
-    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideDoubleNegationGuard() {
+    public void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideDoubleNegationGuard() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
             class Example {
                 String run(java.util.Optional<String> opt) {
@@ -73,7 +73,7 @@ class CoreOptionalGetInspectionTest {
     }
 
     @Test
-    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideTripleNegationElseGuard() {
+    public void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideTripleNegationElseGuard() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
             class Example {
                 String run(java.util.Optional<String> opt) {
@@ -90,7 +90,7 @@ class CoreOptionalGetInspectionTest {
     }
 
     @Test
-    void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticWhenDifferentOptionalIsGuarded() {
+    public void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticWhenDifferentOptionalIsGuarded() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
             class Example {
                 String run(java.util.Optional<String> left, java.util.Optional<String> right) {
@@ -106,7 +106,7 @@ class CoreOptionalGetInspectionTest {
     }
 
     @Test
-    void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticOutsideIfPresentGuard() {
+    public void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticOutsideIfPresentGuard() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
             class Example {
                 String run(java.util.Optional<String> opt) {
@@ -122,7 +122,7 @@ class CoreOptionalGetInspectionTest {
     }
 
     @Test
-    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideWhilePresentGuard() {
+    public void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideWhilePresentGuard() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
             class Example {
                 void run(java.util.Optional<String> opt) {
@@ -138,7 +138,7 @@ class CoreOptionalGetInspectionTest {
     }
 
     @Test
-    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideForPresentGuard() {
+    public void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideForPresentGuard() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
             class Example {
                 void run(java.util.Optional<String> opt) {
@@ -154,7 +154,7 @@ class CoreOptionalGetInspectionTest {
     }
 
     @Test
-    void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticInDoWhileBody() {
+    public void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticInDoWhileBody() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
             class Example {
                 void run(java.util.Optional<String> opt) {
@@ -169,7 +169,7 @@ class CoreOptionalGetInspectionTest {
     }
 
     @Test
-    void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideIfPresentCallback() {
+    public void coreOptionalGetWithoutIsPresentCheckRuleDoesNotEmitDiagnosticInsideIfPresentCallback() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
             class Example {
                 void run(java.util.Optional<String> opt) {
@@ -184,7 +184,7 @@ class CoreOptionalGetInspectionTest {
     }
 
     @Test
-    void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticForDifferentOptionalInsideIfPresentCallback() {
+    public void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticForDifferentOptionalInsideIfPresentCallback() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
             class Example {
                 void run(java.util.Optional<String> left, java.util.Optional<String> right) {
@@ -199,7 +199,7 @@ class CoreOptionalGetInspectionTest {
     }
 
     @Test
-    void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticOutsideIfPresentCallback() {
+    public void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticOutsideIfPresentCallback() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
             class Example {
                 void run(java.util.Optional<String> opt) {

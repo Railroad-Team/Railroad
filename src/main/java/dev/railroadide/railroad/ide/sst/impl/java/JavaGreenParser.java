@@ -15,7 +15,7 @@ import java.util.*;
 import java.util.function.Predicate;
 
 @ApiStatus.Internal
-final class JavaGreenParser {
+public final class JavaGreenParser {
     private static final Set<JavaTokenType> CONTEXTUAL_IDENTIFIER_TOKENS = Set.of(
         JavaTokenType.UNDERSCORE_KEYWORD,
         JavaTokenType.EXPORTS_KEYWORD,
@@ -138,15 +138,15 @@ final class JavaGreenParser {
     private int position;
     private int pendingTypeArgumentClosers;
 
-    JavaGreenParser(Lexer<JavaTokenType> lexer) {
+    public JavaGreenParser(Lexer<JavaTokenType> lexer) {
         this.lexer = Objects.requireNonNull(lexer, "lexer");
     }
 
-    SyntaxTree parseSyntaxTree() {
+    public SyntaxTree parseSyntaxTree() {
         return SyntaxInternalFactory.treeFromGreenRoot(parseGreenTree());
     }
 
-    GreenNode parseGreenTree() {
+    public GreenNode parseGreenTree() {
         readAllTokens();
         position = 0;
         pendingTypeArgumentClosers = 0;
@@ -896,8 +896,13 @@ final class JavaGreenParser {
         return greenNode(JavaSyntaxKinds.RECORD_COMPONENT, children);
     }
 
-    private GreenNode parseTypeBody(SyntaxKind bodyKind, SyntaxKind memberKind, String ownerName,
-        boolean allowConstructors, boolean allowInitializers) {
+    private GreenNode parseTypeBody(
+        SyntaxKind bodyKind,
+        SyntaxKind memberKind,
+        String ownerName,
+        boolean allowConstructors,
+        boolean allowInitializers
+    ) {
         List<GreenElement> children = new ArrayList<>();
 
         expectSignificant(JavaTokenType.OPEN_BRACE, children);
@@ -1153,8 +1158,12 @@ final class JavaGreenParser {
         return greenNode(JavaSyntaxKinds.EMPTY_TYPE_DECLARATION, children);
     }
 
-    private GreenNode parseTypeBodyMember(SyntaxKind memberKind, String ownerName, boolean allowConstructors,
-        boolean allowInitializers) {
+    private GreenNode parseTypeBodyMember(
+        SyntaxKind memberKind,
+        String ownerName,
+        boolean allowConstructors,
+        boolean allowInitializers
+    ) {
         if (allowInitializers) {
             GreenNode staticInitializer = parseOptionalStaticInitializer();
             if (staticInitializer != null)
@@ -1172,8 +1181,12 @@ final class JavaGreenParser {
         return parseTypeBodyMemberFallback(memberKind);
     }
 
-    private GreenNode parseTypeBodyMemberWithRecovery(SyntaxKind memberKind, String ownerName,
-        boolean allowConstructors, boolean allowInitializers) {
+    private GreenNode parseTypeBodyMemberWithRecovery(
+        SyntaxKind memberKind,
+        String ownerName,
+        boolean allowConstructors,
+        boolean allowInitializers
+    ) {
         ParserCheckpoint checkpoint = mark();
         GreenNode member = parseTypeBodyMember(memberKind, ownerName, allowConstructors, allowInitializers);
         if (madeProgress(checkpoint))
@@ -3101,8 +3114,10 @@ final class JavaGreenParser {
         return prefix;
     }
 
-    private void consumeModifiersAndAnnotations(List<GreenElement> children,
-        Predicate<JavaTokenType> modifierPredicate) {
+    private void consumeModifiersAndAnnotations(
+        List<GreenElement> children,
+        Predicate<JavaTokenType> modifierPredicate
+    ) {
         consumeTrivia(children);
         boolean consumed;
         do {
@@ -3279,8 +3294,11 @@ final class JavaGreenParser {
         return synchronizeToFollowSet(children, followSet, false);
     }
 
-    private boolean synchronizeToFollowSet(List<GreenElement> children, Set<JavaTokenType> followSet,
-        boolean trackAngleDepth) {
+    private boolean synchronizeToFollowSet(
+        List<GreenElement> children,
+        Set<JavaTokenType> followSet,
+        boolean trackAngleDepth
+    ) {
         int parenDepth = 0;
         int bracketDepth = 0;
         int braceDepth = 0;

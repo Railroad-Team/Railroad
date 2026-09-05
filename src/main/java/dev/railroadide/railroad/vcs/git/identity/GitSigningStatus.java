@@ -24,8 +24,12 @@ public record GitSigningStatus(
      * @param gpgProgram value of {@code gpg.program}
      * @return normalized signing status
      */
-    public static GitSigningStatus fromGitConfigValues(String gpgSignSetting, String gpgFormatSetting,
-        String userSigningKey, String gpgProgram) {
+    public static GitSigningStatus fromGitConfigValues(
+        String gpgSignSetting,
+        String gpgFormatSetting,
+        String userSigningKey,
+        String gpgProgram
+    ) {
         boolean enabled = "true".equalsIgnoreCase(gpgSignSetting) || "always".equalsIgnoreCase(gpgSignSetting);
         Format format;
         if ("openpgp".equalsIgnoreCase(gpgFormatSetting)) {

@@ -50,7 +50,8 @@ public record IDELayoutState(
     public IDELayoutState(
         WorkspaceMode currentMode,
         Map<WorkspaceMode, ModeLayout> modes,
-        List<ToolWindowState> toolWindows) {
+        List<ToolWindowState> toolWindows
+    ) {
         this(
             CURRENT_SCHEMA_VERSION,
             resolve(currentMode).getId(),
@@ -129,7 +130,8 @@ public record IDELayoutState(
             double bottomDividerPosition,
             boolean leftDockVisible,
             boolean rightDockVisible,
-            boolean bottomDockVisible) {
+            boolean bottomDockVisible
+        ) {
             this(
                 selectedLeftTab,
                 selectedEditorTab,

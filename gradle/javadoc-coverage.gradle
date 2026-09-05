@@ -1,0 +1,59 @@
+// Kept separate from application dependencies so coverage also works before the app compiles.
+sourceSets {
+    javadocCoverageTool
+    javadocCoverageTest
+}
+
+dependencies {
+    javadocCoverageToolImplementation 'org.freemarker:freemarker:2.3.35'
+    javadocCoverageTestImplementation sourceSets.javadocCoverageTool.output
+    javadocCoverageTestImplementation 'org.junit.jupiter:junit-jupiter-api:6.0.0'
+    javadocCoverageTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:6.0.0'
+    javadocCoverageTestRuntimeOnly 'org.junit.platform:junit-platform-launcher:6.0.0'
+}
+
+configurations.javadocCoverageTestImplementation.extendsFrom configurations.javadocCoverageToolImplementation
+
+def coverageSources = sourceSets.main.allJava
+def coverageRoot = layout.projectDirectory
+def coverageReport = layout.buildDirectory.dir('reports/javadoc-coverage')
+
+tasks.register('javadocCoverage', JavaExec) {
+    group = 'documentation'
+    description = 'Generates searchable HTML coverage for public API Javadocs in main Java sources.'
+    classpath = sourceSets.javadocCoverageTool.runtimeClasspath
+    mainClass = 'dev.railroadide.railroad.docs.JavadocCoverage'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    inputs.files(coverageSources).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.dir(coverageReport)
+    doFirst {
+        def manifest = new File(temporaryDir, 'sources.txt')
+        manifest.setText(coverageSources.files.collect { it.absolutePath }.sort().join('\n'), 'UTF-8')
+        setArgs([coverageRoot.asFile.absolutePath, manifest.absolutePath, coverageReport.get().asFile.absolutePath])
+    }
+}
+
+tasks.register('javadocCoverageCheck') {
+    group = 'verification'
+    description = 'Generates the Javadoc coverage report and fails if any public API documentation is incomplete.'
+    dependsOn tasks.named('javadocCoverage')
+    doLast {
+        def report = coverageReport.get().asFile
+        def violations = new File(report, 'violations.txt').getText('UTF-8').trim().toInteger()
+        if (violations > 0) {
+            throw new GradleException("${violations} public API declarations have incomplete Javadocs. Report: ${new File(report, 'index.html').toURI()}")
+        }
+    }
+}
+
+tasks.register('javadocCoverageTest', Test) {
+    group = 'verification'
+    description = 'Tests Javadoc coverage rules and HTML generation without compiling the application.'
+    testClassesDirs = sourceSets.javadocCoverageTest.output.classesDirs
+    classpath = sourceSets.javadocCoverageTest.runtimeClasspath
+    useJUnitPlatform()
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('javadocCoverageTest')
+}

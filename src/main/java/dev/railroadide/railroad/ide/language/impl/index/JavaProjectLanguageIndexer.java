@@ -35,14 +35,20 @@ public final class JavaProjectLanguageIndexer
     }
 
     @Override
-    public JavaProjectSemanticIndex.SourceFileIndex indexFile(ProjectIndexContext context, Path sourceFile,
-        String sourceContent) {
+    public JavaProjectSemanticIndex.SourceFileIndex indexFile(
+        ProjectIndexContext context,
+        Path sourceFile,
+        String sourceContent
+    ) {
         return indexer.indexFile(sourceFile, sourceContent);
     }
 
     @Override
-    public JavaProjectSemanticIndex withUpdatedFile(JavaProjectSemanticIndex index, Path sourceFile,
-        JavaProjectSemanticIndex.SourceFileIndex indexedFile) {
+    public JavaProjectSemanticIndex withUpdatedFile(
+        JavaProjectSemanticIndex index,
+        Path sourceFile,
+        JavaProjectSemanticIndex.SourceFileIndex indexedFile
+    ) {
         JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
         index.files().forEach((path, fileIndex) -> {
             if (!path.equals(sourceFile)) {

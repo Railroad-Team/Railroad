@@ -46,7 +46,7 @@ public class GitLocalBranchesListView extends AbstractGitBranchesListView<GitBra
     }
 
     @Override
-    Node createDetailsNode(GitBranch.LocalGitBranch branch) {
+    protected Node createDetailsNode(GitBranch.LocalGitBranch branch) {
         var rows = new ArrayList<Node>();
         String upstream = branch.remoteName();
         if (upstream == null || upstream.isBlank()) {

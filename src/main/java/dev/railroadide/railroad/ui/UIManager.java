@@ -71,7 +71,7 @@ public final class UIManager {
             private Registration active;
             private boolean closed;
 
-            void update(Scene scene) {
+            private void update(Scene scene) {
                 if (closed)
                     return;
 
@@ -85,7 +85,7 @@ public final class UIManager {
                 }
             }
 
-            void close() {
+            private void close() {
                 closed = true;
                 owner.sceneProperty().removeListener(listener);
 
@@ -95,7 +95,7 @@ public final class UIManager {
                 }
             }
 
-            final ChangeListener<Scene> listener = (_, _, scene) -> update(scene);
+            private final ChangeListener<Scene> listener = (_, _, scene) -> update(scene);
         }
 
         var binding = new SceneBinding();

@@ -16,13 +16,13 @@ import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaParserCorpusTest {
+public class JavaParserCorpusTest {
     private static final String CORPUS_RESOURCE_ROOT = "/dev/railroadide/railroad/ide/sst/impl/java/corpus";
     private static final String MANIFEST_FILENAME = "manifest.csv";
     private static final String MANIFEST_HEADER = "relative_path,kind,features";
 
     @TestFactory
-    List<DynamicTest> validCorpusSyntaxRoundTrips() throws IOException {
+    public List<DynamicTest> validCorpusSyntaxRoundTrips() throws IOException {
         return manifestEntries().stream()
             .filter(entry -> entry.kind().equals("valid"))
             .map(entry -> DynamicTest.dynamicTest("syntax roundtrip: " + entry.relativePath(), () -> {
@@ -33,7 +33,7 @@ class JavaParserCorpusTest {
     }
 
     @TestFactory
-    List<DynamicTest> validCorpusHasNoSyntaxRecoveryArtifacts() throws IOException {
+    public List<DynamicTest> validCorpusHasNoSyntaxRecoveryArtifacts() throws IOException {
         return manifestEntries().stream()
             .filter(entry -> entry.kind().equals("valid"))
             .map(entry -> DynamicTest.dynamicTest("syntax strict: " + entry.relativePath(), () -> {
@@ -44,7 +44,7 @@ class JavaParserCorpusTest {
     }
 
     @TestFactory
-    List<DynamicTest> recoveryCorpusProducesRecoveryMarkersAndSyntaxTrees() throws IOException {
+    public List<DynamicTest> recoveryCorpusProducesRecoveryMarkersAndSyntaxTrees() throws IOException {
         return manifestEntries().stream()
             .filter(entry -> entry.kind().equals("recovery"))
             .map(entry -> DynamicTest.dynamicTest("recovery: " + entry.relativePath(), () -> {

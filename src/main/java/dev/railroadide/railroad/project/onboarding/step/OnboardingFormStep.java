@@ -41,8 +41,11 @@ public final class OnboardingFormStep implements OnboardingStep {
     private final Consumer<OnboardingContext> onDispose;
     private final Function<OnboardingContext, CompletableFuture<Void>> beforeNext;
 
-    private OnboardingFormStep(Builder builder, Supplier<OnboardingSection> section,
-        ReadOnlyBooleanProperty validProperty) {
+    private OnboardingFormStep(
+        Builder builder,
+        Supplier<OnboardingSection> section,
+        ReadOnlyBooleanProperty validProperty
+    ) {
         this.id = Objects.requireNonNull(builder.id, "id");
         this.title = Objects.requireNonNull(builder.title, "title");
         this.description = Objects.requireNonNull(builder.description, "description");
@@ -64,8 +67,11 @@ public final class OnboardingFormStep implements OnboardingStep {
             null);
     }
 
-    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder,
-        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
+    public static ComponentSpec component(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer
+    ) {
         return component(builder, builder != null ? builder.dataKey() : null, transformer, reverseTransformer, null);
     }
 
@@ -73,8 +79,12 @@ public final class OnboardingFormStep implements OnboardingStep {
         return component(builder, contextKey, Function.identity(), Function.identity(), null);
     }
 
-    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, String contextKey,
-        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
+    public static ComponentSpec component(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        String contextKey,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer
+    ) {
         return new ComponentSpec(builder, null, contextKey, transformer, reverseTransformer, null);
     }
 
@@ -83,8 +93,11 @@ public final class OnboardingFormStep implements OnboardingStep {
             Function.identity(), null);
     }
 
-    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, Function<Object, Object> transformer,
-        Function<Object, Object> reverseTransformer) {
+    public static ComponentSpec component(
+        FormComponent<?, ?, ?, ?> component,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer
+    ) {
         return component(component, component != null ? component.dataKey() : null, transformer, reverseTransformer,
             null);
     }
@@ -93,32 +106,48 @@ public final class OnboardingFormStep implements OnboardingStep {
         return component(component, contextKey, Function.identity(), Function.identity(), null);
     }
 
-    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, String contextKey,
-        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
+    public static ComponentSpec component(
+        FormComponent<?, ?, ?, ?> component,
+        String contextKey,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer
+    ) {
         return new ComponentSpec(null, component, contextKey, transformer, reverseTransformer, null);
     }
 
-    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder,
-        Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+    public static ComponentSpec component(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        Consumer<FormComponent<?, ?, ?, ?>> customizer
+    ) {
         return component(builder, builder != null ? builder.dataKey() : null, Function.identity(), Function.identity(),
             customizer);
     }
 
-    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, String contextKey,
-        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer,
-        Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+    public static ComponentSpec component(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        String contextKey,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer,
+        Consumer<FormComponent<?, ?, ?, ?>> customizer
+    ) {
         return new ComponentSpec(builder, null, contextKey, transformer, reverseTransformer, customizer);
     }
 
-    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component,
-        Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+    public static ComponentSpec component(
+        FormComponent<?, ?, ?, ?> component,
+        Consumer<FormComponent<?, ?, ?, ?>> customizer
+    ) {
         return component(component, component != null ? component.dataKey() : null, Function.identity(),
             Function.identity(), customizer);
     }
 
-    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, String contextKey,
-        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer,
-        Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+    public static ComponentSpec component(
+        FormComponent<?, ?, ?, ?> component,
+        String contextKey,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer,
+        Consumer<FormComponent<?, ?, ?, ?>> customizer
+    ) {
         return new ComponentSpec(null, component, contextKey, transformer, reverseTransformer, customizer);
     }
 
@@ -126,9 +155,14 @@ public final class OnboardingFormStep implements OnboardingStep {
         String contextKey, Function<Object, Object> transformer,
         Function<Object, Object> reverseTransformer,
         Consumer<FormComponent<?, ?, ?, ?>> customizer) {
-        public ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component,
-            String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer,
-            Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+        public ComponentSpec(
+            FormComponentBuilder<?, ?, ?, ?> builder,
+            FormComponent<?, ?, ?, ?> component,
+            String contextKey,
+            Function<Object, Object> transformer,
+            Function<Object, Object> reverseTransformer,
+            Consumer<FormComponent<?, ?, ?, ?>> customizer
+        ) {
             if (builder == null && component == null)
                 throw new IllegalArgumentException(
                     "Component specification must provide a builder or component instance");
@@ -279,8 +313,11 @@ public final class OnboardingFormStep implements OnboardingStep {
             }, specs);
         }
 
-        public Builder appendSection(String titleKey, Consumer<FormSection.Builder> customizer,
-            FormComponent<?, ?, ?, ?>... components) {
+        public Builder appendSection(
+            String titleKey,
+            Consumer<FormSection.Builder> customizer,
+            FormComponent<?, ?, ?, ?>... components
+        ) {
             ComponentSpec[] specs = Arrays.stream(components)
                 .map(OnboardingFormStep::component)
                 .toArray(ComponentSpec[]::new);
@@ -295,8 +332,11 @@ public final class OnboardingFormStep implements OnboardingStep {
             }, specs);
         }
 
-        public Builder appendSection(String titleKey, Consumer<FormSection.Builder> customizer,
-            FormComponentBuilder<?, ?, ?, ?>... componentBuilders) {
+        public Builder appendSection(
+            String titleKey,
+            Consumer<FormSection.Builder> customizer,
+            FormComponentBuilder<?, ?, ?, ?>... componentBuilders
+        ) {
             ComponentSpec[] specs = Arrays.stream(componentBuilders)
                 .map(OnboardingFormStep::component)
                 .toArray(ComponentSpec[]::new);
@@ -308,8 +348,11 @@ public final class OnboardingFormStep implements OnboardingStep {
             }, components);
         }
 
-        public Builder appendSection(String titleKey, Consumer<FormSection.Builder> customizer,
-            ComponentSpec... components) {
+        public Builder appendSection(
+            String titleKey,
+            Consumer<FormSection.Builder> customizer,
+            ComponentSpec... components
+        ) {
             Objects.requireNonNull(titleKey, "titleKey");
             Objects.requireNonNull(customizer, "customizer");
             Objects.requireNonNull(components, "components");

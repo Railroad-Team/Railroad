@@ -536,8 +536,14 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return token(type, startOffset, startLine, startColumn);
     }
 
-    private Token<JavaTokenType> readIntegerLiteral(StringBuilder text, JavaTokenType type,
-        Predicate<Character> isCharValid, int startOffset, int startLine, int startColumn) {
+    private Token<JavaTokenType> readIntegerLiteral(
+        StringBuilder text,
+        JavaTokenType type,
+        Predicate<Character> isCharValid,
+        int startOffset,
+        int startLine,
+        int startColumn
+    ) {
         boolean seenDigit = false, lastUnderscore = false;
         while (hasNext()) {
             char current = peek(0);
@@ -577,8 +583,12 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return token(type, startOffset, startLine, startColumn);
     }
 
-    private Token<JavaTokenType> readDecimalLiteral(StringBuilder text, int startOffset, int startLine,
-        int startColumn) {
+    private Token<JavaTokenType> readDecimalLiteral(
+        StringBuilder text,
+        int startOffset,
+        int startLine,
+        int startColumn
+    ) {
         boolean sawFracDigits = false, lastUnderscore = false;
         while (hasNext()) {
             char current = peek(0);
@@ -620,8 +630,12 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return token(JavaTokenType.NUMBER_FLOATING_POINT_LITERAL, startOffset, startLine, startColumn);
     }
 
-    private Token<JavaTokenType> readDecimalExponent(StringBuilder text, int startOffset, int startLine,
-        int startColumn) {
+    private Token<JavaTokenType> readDecimalExponent(
+        StringBuilder text,
+        int startOffset,
+        int startLine,
+        int startColumn
+    ) {
         char current = consume();
         text.append(current);
 
@@ -779,18 +793,35 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return token(type, startOff, startLine, startCol, TokenChannel.DEFAULT);
     }
 
-    private Token<JavaTokenType> token(JavaTokenType type, int startOff, int startLine, int startCol,
-        TokenChannel channel) {
+    private Token<JavaTokenType> token(
+        JavaTokenType type,
+        int startOff,
+        int startLine,
+        int startCol,
+        TokenChannel channel
+    ) {
         return token(type, startOff, startLine, startCol, channel, EnumSet.noneOf(TokenFlag.class));
     }
 
-    private Token<JavaTokenType> token(JavaTokenType type, int startOff, int startLine, int startCol,
-        TokenChannel channel, TokenFlag... flags) {
+    private Token<JavaTokenType> token(
+        JavaTokenType type,
+        int startOff,
+        int startLine,
+        int startCol,
+        TokenChannel channel,
+        TokenFlag... flags
+    ) {
         return token(type, startOff, startLine, startCol, channel, EnumSet.copyOf(Arrays.asList(flags)));
     }
 
-    private Token<JavaTokenType> token(JavaTokenType type, int startOff, int startLine, int startCol,
-        TokenChannel channel, Set<TokenFlag> flags) {
+    private Token<JavaTokenType> token(
+        JavaTokenType type,
+        int startOff,
+        int startLine,
+        int startCol,
+        TokenChannel channel,
+        Set<TokenFlag> flags
+    ) {
         return new Token.SimpleToken<>(type, slice(startOff, pos), startOff, pos, startLine, startCol, channel, flags);
     }
 

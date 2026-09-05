@@ -23,7 +23,7 @@ public final class ProjectManager {
         this(ConfigHandler::saveConfig);
     }
 
-    ProjectManager(Runnable configSaver) {
+    public ProjectManager(Runnable configSaver) {
         this.configSaver = Objects.requireNonNull(configSaver, "configSaver");
     }
 

@@ -28,7 +28,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public final class EditorTabStripSupport implements AutoCloseable {
-    static final String DRAG_ACTIVE_PROPERTY = "railroad:editor-tab-drag-active";
+    public static final String DRAG_ACTIVE_PROPERTY = "railroad:editor-tab-drag-active";
     private static final double AUTO_SCROLL_EDGE_SIZE = 48;
     private static final double AUTO_SCROLL_DELTA = 9;
     private static final long AUTO_SCROLL_INTERVAL_NANOS = 20_000_000L;
@@ -93,7 +93,8 @@ public final class EditorTabStripSupport implements AutoCloseable {
     public EditorTabStripSupport(
         DetachableTabPane tabPane,
         Function<Tab, EditorTab> editorTabResolver,
-        Runnable dragFinished) {
+        Runnable dragFinished
+    ) {
         this.tabPane = tabPane;
         this.dragFinished = Objects.requireNonNull(dragFinished, "Drag-finished action cannot be null");
         this.allTabsMenu = new EditorAllTabsMenu(tabPane, editorTabResolver);
@@ -507,7 +508,8 @@ public final class EditorTabStripSupport implements AutoCloseable {
         double delta,
         Point2D local,
         double screenX,
-        double screenY) {
+        double screenY
+    ) {
         var scrollEvent = new ScrollEvent(
             ScrollEvent.SCROLL,
             local.getX(),

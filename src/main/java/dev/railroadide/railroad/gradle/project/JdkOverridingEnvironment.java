@@ -14,7 +14,7 @@ import java.util.Optional;
  * @param delegate the original Gradle environment to delegate to
  * @param overrideJvm the JDK to use instead of the one from the delegate
  */
-record JdkOverridingEnvironment(GradleEnvironment delegate, JDK overrideJvm) implements GradleEnvironment {
+public record JdkOverridingEnvironment(GradleEnvironment delegate, JDK overrideJvm) implements GradleEnvironment {
     @Override
     public Project project() {
         return delegate.project();

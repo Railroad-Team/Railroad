@@ -18,14 +18,14 @@ import java.util.*;
 /**
  * Presents run configurations grouped by type and optional folder hierarchy.
  */
-final class RunConfigurationTreeView extends TreeView<RunConfigurationTreeView.TreeEntry> {
+public final class RunConfigurationTreeView extends TreeView<RunConfigurationTreeView.TreeEntry> {
     private final ObservableList<RunConfiguration<?>> configurations;
     private final Map<UUID, TreeItem<TreeEntry>> configurationTreeItems = new HashMap<>();
     private final ObjectProperty<RunConfiguration<?>> selectedConfiguration = new SimpleObjectProperty<>();
     private boolean updatingSelection;
     private UUID pendingSelectionId;
 
-    RunConfigurationTreeView(ObservableList<RunConfiguration<?>> configurations) {
+    public RunConfigurationTreeView(ObservableList<RunConfiguration<?>> configurations) {
         this.configurations = configurations;
         setShowRoot(false);
         getStyleClass().add("run-configuration-tree-view");
@@ -73,7 +73,7 @@ final class RunConfigurationTreeView extends TreeView<RunConfigurationTreeView.T
         rebuildTree();
     }
 
-    ObjectProperty<RunConfiguration<?>> selectedConfigurationProperty() {
+    public ObjectProperty<RunConfiguration<?>> selectedConfigurationProperty() {
         return selectedConfiguration;
     }
 
@@ -247,7 +247,7 @@ final class RunConfigurationTreeView extends TreeView<RunConfigurationTreeView.T
         return icon;
     }
 
-    interface TreeEntry {
+    public interface TreeEntry {
     }
 
     private record TypeTreeEntry(RunConfigurationType<?> type) implements TreeEntry {

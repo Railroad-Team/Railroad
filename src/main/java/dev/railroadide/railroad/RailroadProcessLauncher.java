@@ -27,7 +27,8 @@ public final class RailroadProcessLauncher {
     }
 
     private static void launchDevelopmentProcess(
-        String projectArgument) throws IOException {
+        String projectArgument
+    ) throws IOException {
         Path javaExecutable = Path.of(
             System.getProperty("java.home"),
             "bin",

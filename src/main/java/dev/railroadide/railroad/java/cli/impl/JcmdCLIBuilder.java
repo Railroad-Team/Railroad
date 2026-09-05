@@ -255,15 +255,15 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
      * Represents the target JVM for the {@code jcmd} command.
      */
     private record Target(TargetType type, String value) {
-        static Target none() {
+        private static Target none() {
             return new Target(TargetType.NONE, null);
         }
 
-        static Target pid(String pid) {
+        private static Target pid(String pid) {
             return new Target(TargetType.PID, pid);
         }
 
-        static Target mainClass(String mainClass) {
+        private static Target mainClass(String mainClass) {
             return new Target(TargetType.MAIN_CLASS, mainClass);
         }
     }

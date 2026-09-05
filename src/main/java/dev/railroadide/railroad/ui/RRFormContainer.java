@@ -6,6 +6,8 @@ import javafx.scene.Node;
 import javafx.scene.layout.VBox;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
+import java.util.Arrays;
+import javafx.scene.layout.Priority;
 
 /**
  * A modern form container component that provides a clean, elevated container for entire forms.
@@ -48,7 +50,7 @@ public class RRFormContainer extends VBox {
             getStyleClass().add("rr-form-container-custom-padding");
         }
 
-        VBox.setVgrow(formContent, javafx.scene.layout.Priority.ALWAYS);
+        VBox.setVgrow(formContent, Priority.ALWAYS);
         updateLayout();
 
         titleLabel.visibleProperty().addListener(_observable -> updateLayout());
@@ -106,7 +108,7 @@ public class RRFormContainer extends VBox {
      * Add content to the form container at a specific index
      */
     public void addContent(int index, Node... nodes) {
-        formContent.getChildren().addAll(index, java.util.Arrays.asList(nodes));
+        formContent.getChildren().addAll(index, Arrays.asList(nodes));
     }
 
     /**

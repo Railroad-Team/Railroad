@@ -76,7 +76,7 @@ public final class LanguageSupportRegistry {
         return REGISTRY.values();
     }
 
-    static void clear() {
+    public static void clear() {
         for (String languageId : REGISTRY.keys()) {
             REGISTRY.unregister(languageId);
         }

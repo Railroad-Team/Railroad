@@ -17,6 +17,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.lang.reflect.Modifier;
+import java.util.function.Function;
+import org.objectweb.asm.Opcodes;
 
 /**
  * Java semantic analysis entry point.
@@ -175,7 +178,8 @@ public final class JavaSemanticAnalyzer {
     private static SemanticModel performAnalysis(
         SyntaxTree syntaxTree,
         boolean includeResolutionAndTypes,
-        @Nullable JavaSymbolIndex projectIndex) {
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         Scope rootScope = Scope.root();
         SemanticModel.Builder builder = SemanticModel.builder(syntaxTree, rootScope);
 
@@ -777,9 +781,10 @@ public final class JavaSemanticAnalyzer {
         private boolean isConstructorCandidateAccessible(
             String ownerQualifiedName,
             MemberCandidate candidate,
-            SyntaxNode usageSite) {
+            SyntaxNode usageSite
+        ) {
             int modifiers = constructorModifiers(ownerQualifiedName, candidate);
-            if (java.lang.reflect.Modifier.isPublic(modifiers))
+            if (Modifier.isPublic(modifiers))
                 return true;
 
             ClassStub ownerStub = binaryClassStubsByQualifiedName.get(ownerQualifiedName);
@@ -787,7 +792,7 @@ public final class JavaSemanticAnalyzer {
             if (Objects.equals(context.currentPackageName, ownerPackage))
                 return true;
 
-            if (java.lang.reflect.Modifier.isPrivate(modifiers)) {
+            if (Modifier.isPrivate(modifiers)) {
                 Symbol currentTopLevel = context.topLevelEnclosingTypeSymbol(usageSite);
                 String currentName = currentTopLevel == null
                     ? null
@@ -800,7 +805,7 @@ public final class JavaSemanticAnalyzer {
                 return Objects.equals(currentName, ownerTopLevel);
             }
 
-            if (!java.lang.reflect.Modifier.isProtected(modifiers))
+            if (!Modifier.isProtected(modifiers))
                 return false;
             if (directChild(usageSite, JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id()) != null)
                 return true;
@@ -814,17 +819,17 @@ public final class JavaSemanticAnalyzer {
             SyntaxNode declaration = candidate.symbol().declaration().orElse(null);
             if (declaration != null) {
                 if (hasDirectTokenKind(declaration, JavaTokenType.PUBLIC_KEYWORD))
-                    return java.lang.reflect.Modifier.PUBLIC;
+                    return Modifier.PUBLIC;
                 if (hasDirectTokenKind(declaration, JavaTokenType.PROTECTED_KEYWORD))
-                    return java.lang.reflect.Modifier.PROTECTED;
+                    return Modifier.PROTECTED;
                 if (hasDirectTokenKind(declaration, JavaTokenType.PRIVATE_KEYWORD))
-                    return java.lang.reflect.Modifier.PRIVATE;
+                    return Modifier.PRIVATE;
                 return 0;
             }
 
             ClassStub ownerStub = binaryClassStubsByQualifiedName.get(ownerQualifiedName);
             if (ownerStub == null)
-                return java.lang.reflect.Modifier.PUBLIC;
+                return Modifier.PUBLIC;
             String candidateSignature = signatureSuffix(candidate.parameterTypes());
             return ownerStub.constructors().stream()
                 .filter(constructor -> candidateSignature.equals(signatureSuffix(
@@ -833,7 +838,7 @@ public final class JavaSemanticAnalyzer {
                         .toList())))
                 .findFirst()
                 .map(ConstructorStub::modifiers)
-                .orElse(java.lang.reflect.Modifier.PUBLIC);
+                .orElse(Modifier.PUBLIC);
         }
 
         private @Nullable MemberCandidate resolveCallableOnOwner(
@@ -842,7 +847,8 @@ public final class JavaSemanticAnalyzer {
             boolean staticAccess,
             List<Type> argumentTypes,
             CallableKind kind,
-            boolean lenient) {
+            boolean lenient
+        ) {
             List<MemberCandidate> candidates = collectCallableCandidates(ownerQualifiedName, callableName, staticAccess,
                 kind);
             boolean allowArityFallback = staticAccess
@@ -864,7 +870,8 @@ public final class JavaSemanticAnalyzer {
             SyntaxNode targetNode,
             String ownerQualifiedName,
             String methodName,
-            List<Type> argumentTypes) {
+            List<Type> argumentTypes
+        ) {
             String fallbackOwnerQualifiedName = genericReceiverOwnerQualifiedName(targetNode);
             if (fallbackOwnerQualifiedName == null || fallbackOwnerQualifiedName.isBlank())
                 return null;
@@ -954,8 +961,10 @@ public final class JavaSemanticAnalyzer {
             return new MemberLookup(ownerQualifiedName, staticAccess);
         }
 
-        private @Nullable String deferredQualifiedTypeNameOfExpression(SyntaxNode expressionNode,
-            SyntaxNode usageSite) {
+        private @Nullable String deferredQualifiedTypeNameOfExpression(
+            SyntaxNode expressionNode,
+            SyntaxNode usageSite
+        ) {
             Symbol resolved = context.resolvedSymbol(expressionNode);
             if (resolved != null) {
                 if (isTypeSymbol(resolved.kind()))
@@ -975,7 +984,8 @@ public final class JavaSemanticAnalyzer {
             String ownerQualifiedName,
             String callableName,
             boolean staticAccess,
-            CallableKind kind) {
+            CallableKind kind
+        ) {
             if (kind == CallableKind.CONSTRUCTOR)
                 return findConstructorCandidates(ownerQualifiedName);
 
@@ -1156,8 +1166,11 @@ public final class JavaSemanticAnalyzer {
             return uniqueByQualifiedName(resolved);
         }
 
-        private List<Symbol> resolveStaticImportedMethods(String methodName, SyntaxNode invocationNode,
-            int argumentCountOrUnknown) {
+        private List<Symbol> resolveStaticImportedMethods(
+            String methodName,
+            SyntaxNode invocationNode,
+            int argumentCountOrUnknown
+        ) {
             List<Symbol> resolved = new ArrayList<>();
 
             List<ImportSpec> singleStaticImports = staticSingleImportsByMemberName.get(methodName);
@@ -1487,7 +1500,8 @@ public final class JavaSemanticAnalyzer {
             SyntaxNode invocation,
             SyntaxNode argumentList,
             SyntaxNode contextualArgument,
-            Symbol callable) {
+            Symbol callable
+        ) {
             List<Type> parameterTypes = callableParameterTypes(callable);
             if (parameterTypes.isEmpty())
                 return parameterTypes;
@@ -1618,7 +1632,8 @@ public final class JavaSemanticAnalyzer {
             Type.DeclaredType functionalType,
             String qualifiedType,
             int parameterIndex,
-            Set<String> visited) {
+            Set<String> visited
+        ) {
             if (!visited.add(qualifiedType))
                 return new Type.UnknownType("<unknown>");
             ClassStub stub = binaryClassStubsByQualifiedName.get(qualifiedType);
@@ -1632,8 +1647,8 @@ public final class JavaSemanticAnalyzer {
             }
 
             Map<String, MethodStub> abstractMethods = stub.methods().stream()
-                .filter(method -> java.lang.reflect.Modifier.isAbstract(method.modifiers()))
-                .filter(method -> !java.lang.reflect.Modifier.isStatic(method.modifiers()))
+                .filter(method -> Modifier.isAbstract(method.modifiers()))
+                .filter(method -> !Modifier.isStatic(method.modifiers()))
                 .filter(method -> !isObjectMethodSignature(method.name(), method.parameters().size()))
                 .collect(Collectors.toMap(
                     method -> method.name() + signatureSuffix(method.parameters().stream()
@@ -1684,7 +1699,7 @@ public final class JavaSemanticAnalyzer {
             List<JavaRuleContext.MethodDescriptor> projectMethods = projectSourceMethodDescriptors(qualifiedType)
                 .stream()
                 .filter(method -> method.isAbstract()
-                    && !java.lang.reflect.Modifier.isStatic(method.modifiers()))
+                    && !Modifier.isStatic(method.modifiers()))
                 .filter(method -> !isObjectMethodSignature(method.name(), method.parameterTypes().size()))
                 .toList();
             if (projectMethods.size() != 1)
@@ -1697,7 +1712,8 @@ public final class JavaSemanticAnalyzer {
 
         private @Nullable String resolveFunctionalSuperTypeName(
             Type.DeclaredType parentType,
-            String childQualifiedType) {
+            String childQualifiedType
+        ) {
             String rawName = eraseTypeArguments(parentType.displayName());
             String resolved = resolveQualifiedTypeName(rawName, null);
             if (resolved != null && binaryClassStubsByQualifiedName.containsKey(resolved))
@@ -1984,7 +2000,8 @@ public final class JavaSemanticAnalyzer {
         private void bindFunctionalResultType(
             Type parameterType,
             SyntaxNode argument,
-            Map<String, Type> substitutions) {
+            Map<String, Type> substitutions
+        ) {
             Type expectedResult = functionalReturnType(substituteFunctionalType(parameterType, substitutions));
             if (expectedResult.kind() == Type.Kind.UNKNOWN)
                 return;
@@ -2026,7 +2043,8 @@ public final class JavaSemanticAnalyzer {
         private Type functionalReturnType(
             Type.DeclaredType functionalType,
             String qualifiedType,
-            Set<String> visited) {
+            Set<String> visited
+        ) {
             if (!visited.add(qualifiedType))
                 return new Type.UnknownType("<unknown>");
             ClassStub stub = binaryClassStubsByQualifiedName.get(qualifiedType);
@@ -2040,8 +2058,8 @@ public final class JavaSemanticAnalyzer {
             }
 
             Map<String, MethodStub> abstractMethods = stub.methods().stream()
-                .filter(method -> java.lang.reflect.Modifier.isAbstract(method.modifiers()))
-                .filter(method -> !java.lang.reflect.Modifier.isStatic(method.modifiers()))
+                .filter(method -> Modifier.isAbstract(method.modifiers()))
+                .filter(method -> !Modifier.isStatic(method.modifiers()))
                 .filter(method -> !isObjectMethodSignature(method.name(), method.parameters().size()))
                 .collect(Collectors.toMap(
                     method -> method.name() + signatureSuffix(method.parameters().stream()
@@ -2150,7 +2168,8 @@ public final class JavaSemanticAnalyzer {
 
         private @Nullable SourceTypeParameterInfo sourceTypeParameterInfo(
             String ownerQualifiedName,
-            String variableName) {
+            String variableName
+        ) {
             for (Symbol symbol : context.allTypeSymbols()) {
                 if (!Objects.equals(symbol.qualifiedName().orElse(null), ownerQualifiedName))
                     continue;
@@ -2190,7 +2209,8 @@ public final class JavaSemanticAnalyzer {
             SemanticModel model,
             JavaRuleContext sourceContext,
             String ownerQualifiedName,
-            String variableName) {
+            String variableName
+        ) {
             Symbol declared = model.declaredSymbol(node).orElse(null);
             if (declared != null && isTypeSymbol(declared.kind())
                 && Objects.equals(declared.qualifiedName().orElse(null), ownerQualifiedName))
@@ -2207,7 +2227,8 @@ public final class JavaSemanticAnalyzer {
         private @Nullable SourceTypeParameterInfo sourceTypeParameterInfo(
             SyntaxNode declaration,
             String variableName,
-            @Nullable JavaRuleContext sourceContext) {
+            @Nullable JavaRuleContext sourceContext
+        ) {
             SyntaxNode typeParameters = directChild(declaration, JavaSyntaxKinds.TYPE_PARAMETERS.id());
             if (typeParameters == null)
                 return null;
@@ -2332,15 +2353,21 @@ public final class JavaSemanticAnalyzer {
             return List.copyOf(candidates);
         }
 
-        private List<MemberCandidate> findFieldCandidates(String ownerQualifiedName, String fieldName,
-            boolean staticAccess) {
+        private List<MemberCandidate> findFieldCandidates(
+            String ownerQualifiedName,
+            String fieldName,
+            boolean staticAccess
+        ) {
             List<MemberCandidate> candidates = new ArrayList<>();
             collectFieldCandidates(ownerQualifiedName, fieldName, staticAccess, candidates, new HashSet<>());
             return List.copyOf(candidates);
         }
 
-        private List<MemberCandidate> findMethodCandidates(String ownerQualifiedName, String methodName,
-            boolean staticAccess) {
+        private List<MemberCandidate> findMethodCandidates(
+            String ownerQualifiedName,
+            String methodName,
+            boolean staticAccess
+        ) {
             List<MemberCandidate> candidates = new ArrayList<>();
             collectMethodCandidates(ownerQualifiedName, methodName, staticAccess, candidates, new HashSet<>());
             return dedupeCallableCandidates(candidates);
@@ -2351,7 +2378,8 @@ public final class JavaSemanticAnalyzer {
             String fieldName,
             boolean staticAccess,
             List<MemberCandidate> out,
-            Set<String> visitedOwners) {
+            Set<String> visitedOwners
+        ) {
             if (!visitedOwners.add(ownerQualifiedName))
                 return;
 
@@ -2369,7 +2397,8 @@ public final class JavaSemanticAnalyzer {
             String methodName,
             boolean staticAccess,
             List<MemberCandidate> out,
-            Set<String> visitedOwners) {
+            Set<String> visitedOwners
+        ) {
             if (!visitedOwners.add(ownerQualifiedName))
                 return;
 
@@ -2390,7 +2419,8 @@ public final class JavaSemanticAnalyzer {
         private @Nullable MemberCandidate implicitEnumMethodCandidate(
             String ownerQualifiedName,
             String methodName,
-            boolean staticAccess) {
+            boolean staticAccess
+        ) {
             if (!staticAccess || !isSourceEnumType(ownerQualifiedName))
                 return null;
 
@@ -2474,7 +2504,8 @@ public final class JavaSemanticAnalyzer {
             String ownerQualifiedName,
             String fieldName,
             boolean staticAccess,
-            List<MemberCandidate> out) {
+            List<MemberCandidate> out
+        ) {
             Map<String, List<MemberCandidate>> fields = localFieldsByOwner.get(ownerQualifiedName);
             if (fields != null) {
                 for (MemberCandidate candidate : fields.getOrDefault(fieldName, List.of())) {
@@ -2495,7 +2526,8 @@ public final class JavaSemanticAnalyzer {
             String ownerQualifiedName,
             String methodName,
             boolean staticAccess,
-            List<MemberCandidate> out) {
+            List<MemberCandidate> out
+        ) {
             Map<String, List<MemberCandidate>> methods = localMethodsByOwner.get(ownerQualifiedName);
             if (methods != null) {
                 for (MemberCandidate candidate : methods.getOrDefault(methodName, List.of())) {
@@ -2517,7 +2549,8 @@ public final class JavaSemanticAnalyzer {
             String ownerQualifiedName,
             String fieldName,
             boolean staticAccess,
-            List<MemberCandidate> out) {
+            List<MemberCandidate> out
+        ) {
             if (projectIndex == null)
                 return;
 
@@ -2556,14 +2589,15 @@ public final class JavaSemanticAnalyzer {
             String ownerQualifiedName,
             String methodName,
             boolean staticAccess,
-            List<MemberCandidate> out) {
+            List<MemberCandidate> out
+        ) {
             if (projectIndex == null)
                 return;
 
             List<JavaRuleContext.MethodDescriptor> sourceMethods = projectSourceMethodDescriptors(ownerQualifiedName);
             if (!sourceMethods.isEmpty()) {
                 for (JavaRuleContext.MethodDescriptor method : sourceMethods) {
-                    boolean methodStatic = java.lang.reflect.Modifier.isStatic(method.modifiers());
+                    boolean methodStatic = Modifier.isStatic(method.modifiers());
                     if (!method.name().equals(methodName) || methodStatic != staticAccess)
                         continue;
                     List<Type> parameterTypes = method.parameterTypes();
@@ -2666,7 +2700,8 @@ public final class JavaSemanticAnalyzer {
             String ownerQualifiedName,
             String fieldName,
             boolean staticAccess,
-            List<MemberCandidate> out) {
+            List<MemberCandidate> out
+        ) {
             ClassStub stub = binaryClassStubsByQualifiedName.get(ownerQualifiedName);
             if (stub == null)
                 return;
@@ -2674,7 +2709,7 @@ public final class JavaSemanticAnalyzer {
             for (FieldStub field : stub.fields()) {
                 if (!field.name().equals(fieldName))
                     continue;
-                if (java.lang.reflect.Modifier.isStatic(field.modifiers()) != staticAccess)
+                if (Modifier.isStatic(field.modifiers()) != staticAccess)
                     continue;
                 Type valueType = toSemanticType(field.type());
                 out.add(new MemberCandidate(
@@ -2698,7 +2733,8 @@ public final class JavaSemanticAnalyzer {
             String ownerQualifiedName,
             String methodName,
             boolean staticAccess,
-            List<MemberCandidate> out) {
+            List<MemberCandidate> out
+        ) {
             ClassStub stub = binaryClassStubsByQualifiedName.get(ownerQualifiedName);
             if (stub == null)
                 return;
@@ -2706,7 +2742,7 @@ public final class JavaSemanticAnalyzer {
             for (MethodStub method : stub.methods()) {
                 if (!method.name().equals(methodName))
                     continue;
-                if (java.lang.reflect.Modifier.isStatic(method.modifiers()) != staticAccess)
+                if (Modifier.isStatic(method.modifiers()) != staticAccess)
                     continue;
                 List<Type> parameterTypes = method.parameters().stream()
                     .map(parameter -> toSemanticType(parameter.type()))
@@ -2733,15 +2769,18 @@ public final class JavaSemanticAnalyzer {
             return candidates.isEmpty() ? null : candidates.getFirst();
         }
 
-        private @Nullable MemberCandidate selectBestCallable(List<MemberCandidate> candidates,
-            List<Type> argumentTypes) {
+        private @Nullable MemberCandidate selectBestCallable(
+            List<MemberCandidate> candidates,
+            List<Type> argumentTypes
+        ) {
             return selectBestCallable(candidates, argumentTypes, new Type.UnknownType("<unknown>"));
         }
 
         private @Nullable MemberCandidate selectBestCallable(
             List<MemberCandidate> candidates,
             List<Type> argumentTypes,
-            Type contextualReturnType) {
+            Type contextualReturnType
+        ) {
             MemberCandidate best = null;
             List<Integer> bestCost = null;
             int bestReturnCost = Integer.MAX_VALUE;
@@ -2781,15 +2820,18 @@ public final class JavaSemanticAnalyzer {
         private @Nullable MemberCandidate chooseCallableCandidate(
             List<MemberCandidate> candidates,
             List<Type> argumentTypes,
-            boolean allowArityFallback) {
+            boolean allowArityFallback
+        ) {
             MemberCandidate chosen = selectBestCallable(candidates, argumentTypes);
             if (chosen == null && allowArityFallback)
                 return fallbackCallableCandidate(candidates, argumentTypes.size());
             return chosen;
         }
 
-        private @Nullable MemberCandidate fallbackCallableCandidate(List<MemberCandidate> candidates,
-            int argumentCount) {
+        private @Nullable MemberCandidate fallbackCallableCandidate(
+            List<MemberCandidate> candidates,
+            int argumentCount
+        ) {
             for (MemberCandidate candidate : candidates) {
                 if (isArityCompatible(candidate.parameterTypes(), argumentCount))
                     return candidate;
@@ -2963,8 +3005,11 @@ public final class JavaSemanticAnalyzer {
             return isSubtype(candidateQualifiedTypeName, targetQualifiedTypeName, new HashSet<>());
         }
 
-        private boolean isSubtype(String candidateQualifiedTypeName, String targetQualifiedTypeName,
-            Set<String> visited) {
+        private boolean isSubtype(
+            String candidateQualifiedTypeName,
+            String targetQualifiedTypeName,
+            Set<String> visited
+        ) {
             if (sameQualifiedTypeName(candidateQualifiedTypeName, targetQualifiedTypeName))
                 return true;
             if (candidateQualifiedTypeName == null
@@ -3143,7 +3188,8 @@ public final class JavaSemanticAnalyzer {
         private void collectDirectSuperTypesFromSourceFile(
             JavaRuleContext sourceContext,
             SyntaxNode node,
-            Map<String, List<String>> out) {
+            Map<String, List<String>> out
+        ) {
             sourceContext.declaredSymbol(node).ifPresent(symbol -> {
                 if (!isTypeSymbol(symbol.kind()))
                     return;
@@ -3328,7 +3374,8 @@ public final class JavaSemanticAnalyzer {
             SemanticModel model,
             JavaRuleContext sourceContext,
             String ownerQualifiedName,
-            Map<String, Type> out) {
+            Map<String, Type> out
+        ) {
             Symbol declared = model.declaredSymbol(node).orElse(null);
             if (declared != null
                 && declared.kind() == SymbolKind.RECORD
@@ -3367,7 +3414,8 @@ public final class JavaSemanticAnalyzer {
 
         private @Nullable MemberCandidate localRecordFieldCandidate(
             String ownerQualifiedName,
-            String fieldName) {
+            String fieldName
+        ) {
             MemberCandidate accessor = localRecordAccessorCandidate(ownerQualifiedName, fieldName);
             if (accessor == null)
                 return null;
@@ -3452,7 +3500,8 @@ public final class JavaSemanticAnalyzer {
             JavaProjectSemanticIndex.SymbolDescriptor target,
             SyntaxNode node,
             SemanticModel model,
-            JavaRuleContext sourceContext) {
+            JavaRuleContext sourceContext
+        ) {
             Symbol declared = model.declaredSymbol(node).orElse(null);
             if (declared != null && matchesProjectMemberSymbol(target, declared, node)) {
                 SyntaxNode parameterList = directChild(node, JavaSyntaxKinds.PARAMETER_LIST.id());
@@ -3495,8 +3544,8 @@ public final class JavaSemanticAnalyzer {
             if (stub != null) {
                 Map<String, Integer> abstractMethods = new LinkedHashMap<>();
                 for (MethodStub method : stub.methods()) {
-                    if (!java.lang.reflect.Modifier.isAbstract(method.modifiers())
-                        || java.lang.reflect.Modifier.isStatic(method.modifiers())
+                    if (!Modifier.isAbstract(method.modifiers())
+                        || Modifier.isStatic(method.modifiers())
                         || isObjectMethodSignature(method.name(), method.parameters().size()))
                         continue;
                     List<Type> parameterTypes = method.parameters().stream()
@@ -3587,7 +3636,8 @@ public final class JavaSemanticAnalyzer {
             JavaProjectSemanticIndex.SymbolDescriptor target,
             SyntaxNode node,
             SemanticModel model,
-            JavaRuleContext sourceContext) {
+            JavaRuleContext sourceContext
+        ) {
             Symbol declared = model.declaredSymbol(node).orElse(null);
             if (declared != null && matchesProjectMemberSymbol(target, declared, node)) {
                 if (target.kind() == SymbolKind.FIELD) {
@@ -3767,8 +3817,11 @@ public final class JavaSemanticAnalyzer {
             return null;
         }
 
-        private boolean matchesProjectMemberSymbol(JavaProjectSemanticIndex.SymbolDescriptor target, Symbol declared,
-            SyntaxNode node) {
+        private boolean matchesProjectMemberSymbol(
+            JavaProjectSemanticIndex.SymbolDescriptor target,
+            Symbol declared,
+            SyntaxNode node
+        ) {
             if (declared.kind() != target.kind())
                 return false;
             if (!Objects.equals(declared.simpleName(), target.simpleName()))
@@ -3822,8 +3875,12 @@ public final class JavaSemanticAnalyzer {
             }
         }
 
-        private void collectDirectSuperTypes(JavaRuleContext sourceContext, SyntaxNode declarationNode,
-            String clauseKindId, List<String> out) {
+        private void collectDirectSuperTypes(
+            JavaRuleContext sourceContext,
+            SyntaxNode declarationNode,
+            String clauseKindId,
+            List<String> out
+        ) {
             SyntaxNode clause = directChild(declarationNode, clauseKindId);
             if (clause == null)
                 return;
@@ -3905,7 +3962,8 @@ public final class JavaSemanticAnalyzer {
 
         private @Nullable String qualifiedEnclosingInstanceOwner(
             SyntaxNode targetNode,
-            SyntaxNode usageSite) {
+            SyntaxNode usageSite
+        ) {
             String resolvedQualifier = resolvedTypeQualifier(targetNode);
             if (resolvedQualifier != null)
                 return resolvedQualifier;
@@ -4031,7 +4089,8 @@ public final class JavaSemanticAnalyzer {
 
         private List<String> qualifiedResolvedReceiverTypeVariableBounds(
             SyntaxNode receiver,
-            SyntaxNode usageSite) {
+            SyntaxNode usageSite
+        ) {
             Symbol symbol = context.resolvedSymbol(receiver);
             if (symbol == null)
                 return List.of();
@@ -4058,7 +4117,8 @@ public final class JavaSemanticAnalyzer {
         private void collectTopLevelDescendantsOfKind(
             SyntaxNode node,
             String kindId,
-            List<SyntaxNode> out) {
+            List<SyntaxNode> out
+        ) {
             for (SyntaxNode child : node.children()) {
                 if (kindId.equals(child.kind().id())) {
                     out.add(child);
@@ -4194,8 +4254,11 @@ public final class JavaSemanticAnalyzer {
             return null;
         }
 
-        private @Nullable String resolveMemberTypeInHierarchy(String ownerQualifiedName, String simpleName,
-            Set<String> visited) {
+        private @Nullable String resolveMemberTypeInHierarchy(
+            String ownerQualifiedName,
+            String simpleName,
+            Set<String> visited
+        ) {
             if (!visited.add(ownerQualifiedName))
                 return null;
 
@@ -4244,11 +4307,14 @@ public final class JavaSemanticAnalyzer {
 
             return jdkStub.fields().stream()
                 .anyMatch(
-                    field -> field.name().equals(fieldName) && java.lang.reflect.Modifier.isStatic(field.modifiers()));
+                    field -> field.name().equals(fieldName) && Modifier.isStatic(field.modifiers()));
         }
 
-        private boolean hasResolvableStaticMethod(String ownerQualifiedName, String methodName,
-            int argumentCountOrUnknown) {
+        private boolean hasResolvableStaticMethod(
+            String ownerQualifiedName,
+            String methodName,
+            int argumentCountOrUnknown
+        ) {
             Map<String, Set<Integer>> localMethods = localStaticMethodAritiesByOwner.get(ownerQualifiedName);
             if (localMethods != null) {
                 Set<Integer> arities = localMethods.get(methodName);
@@ -4272,7 +4338,7 @@ public final class JavaSemanticAnalyzer {
 
             return jdkStub.methods().stream()
                 .anyMatch(method -> method.name().equals(methodName)
-                    && java.lang.reflect.Modifier.isStatic(method.modifiers())
+                    && Modifier.isStatic(method.modifiers())
                     && (argumentCountOrUnknown < 0 || method.parameters().size() == argumentCountOrUnknown));
         }
 
@@ -4412,8 +4478,11 @@ public final class JavaSemanticAnalyzer {
             return false;
         }
 
-        private Symbol typeSymbolForQualifiedName(String simpleName, String qualifiedName,
-            SyntaxNode declarationOrUsageSite) {
+        private Symbol typeSymbolForQualifiedName(
+            String simpleName,
+            String qualifiedName,
+            SyntaxNode declarationOrUsageSite
+        ) {
             if (projectIndex != null) {
                 List<JavaProjectSemanticIndex.SymbolDescriptor> projectMatches = projectIndex
                     .lookupQualifiedName(qualifiedName).stream()
@@ -4431,7 +4500,8 @@ public final class JavaSemanticAnalyzer {
         private SyntheticMemberSymbol syntheticProjectMemberSymbol(
             JavaProjectSemanticIndex.SymbolDescriptor symbol,
             Type valueType,
-            List<Type> parameterTypes) {
+            List<Type> parameterTypes
+        ) {
             String qualifiedName = symbol.qualifiedName();
             if (qualifiedName != null && symbol.signature() != null && !qualifiedName.endsWith(symbol.signature())) {
                 qualifiedName = qualifiedName + symbol.signature();
@@ -4901,7 +4971,8 @@ public final class JavaSemanticAnalyzer {
             SyntaxNode invocation,
             SyntaxNode argumentList,
             SyntaxNode contextualArgument,
-            Symbol callable) {
+            Symbol callable
+        ) {
             List<Type> parameterTypes = methodParameterTypes(callable);
             if (parameterTypes.isEmpty())
                 return parameterTypes;
@@ -5046,7 +5117,8 @@ public final class JavaSemanticAnalyzer {
         private void bindContextualReturnType(
             SyntaxNode invocationNode,
             Type rawReturnType,
-            Map<String, Type> substitutions) {
+            Map<String, Type> substitutions
+        ) {
             Type contextualTarget = directContextualTargetType(invocationNode);
             if (contextualTarget.kind() == Type.Kind.UNKNOWN) {
                 contextualTarget = contextualInvocationTargetType(invocationNode);
@@ -5165,7 +5237,8 @@ public final class JavaSemanticAnalyzer {
         private void bindMethodTypeArguments(
             SyntaxNode invocationNode,
             Symbol methodSymbol,
-            Map<String, Type> substitutions) {
+            Map<String, Type> substitutions
+        ) {
             bindExplicitMethodTypeArguments(invocationNode, methodSymbol, substitutions);
 
             SyntaxNode argumentList = directChild(invocationNode, JavaSyntaxKinds.ARGUMENT_LIST.id());
@@ -5203,7 +5276,8 @@ public final class JavaSemanticAnalyzer {
         private void bindExplicitMethodTypeArguments(
             SyntaxNode invocationNode,
             Symbol methodSymbol,
-            Map<String, Type> substitutions) {
+            Map<String, Type> substitutions
+        ) {
             SyntaxNode typeArguments = directChild(invocationNode, JavaSyntaxKinds.TYPE_ARGUMENTS.id());
             if (typeArguments == null)
                 return;
@@ -5276,7 +5350,7 @@ public final class JavaSemanticAnalyzer {
                     .toList();
                 if (!qualifiedName.endsWith(method.name() + signatureSuffix(parameterTypes)))
                     continue;
-                return (method.modifiers() & org.objectweb.asm.Opcodes.ACC_VARARGS) != 0;
+                return (method.modifiers() & Opcodes.ACC_VARARGS) != 0;
             }
             return false;
         }
@@ -5284,7 +5358,8 @@ public final class JavaSemanticAnalyzer {
         private void bindFunctionalArgumentType(
             Type parameterType,
             SyntaxNode argumentNode,
-            Map<String, Type> substitutions) {
+            Map<String, Type> substitutions
+        ) {
             FunctionalSignature signature = functionalSignature(
                 substituteTypeVariables(parameterType, substitutions));
             if (signature == null)
@@ -5316,8 +5391,8 @@ public final class JavaSemanticAnalyzer {
             }
 
             List<MethodStub> abstractMethods = stub.methods().stream()
-                .filter(method -> java.lang.reflect.Modifier.isAbstract(method.modifiers()))
-                .filter(method -> !java.lang.reflect.Modifier.isStatic(method.modifiers()))
+                .filter(method -> Modifier.isAbstract(method.modifiers()))
+                .filter(method -> !Modifier.isStatic(method.modifiers()))
                 .toList();
             if (abstractMethods.size() != 1)
                 return null;
@@ -5382,7 +5457,7 @@ public final class JavaSemanticAnalyzer {
             for (MethodStub method : ownerStub.methods()) {
                 if (!method.name().equals(methodName))
                     continue;
-                boolean isStatic = java.lang.reflect.Modifier.isStatic(method.modifiers());
+                boolean isStatic = Modifier.isStatic(method.modifiers());
                 int expectedArity = method.parameters().size() + (typeReceiver && !isStatic ? 1 : 0);
                 if (expectedArity != signature.parameterTypes().size())
                     continue;
@@ -5606,7 +5681,8 @@ public final class JavaSemanticAnalyzer {
         private @Nullable Type.DeclaredType declaredViewAs(
             Type.DeclaredType candidate,
             String targetQualifiedName,
-            Set<String> visited) {
+            Set<String> visited
+        ) {
             String candidateQualifiedName = resolveQualifiedTypeName(candidate.displayName());
             if (candidateQualifiedName == null) {
                 candidateQualifiedName = candidate.displayName();
@@ -5685,7 +5761,8 @@ public final class JavaSemanticAnalyzer {
             SyntaxNode node,
             SemanticModel model,
             JavaRuleContext sourceContext,
-            String ownerQualifiedName) {
+            String ownerQualifiedName
+        ) {
             Symbol symbol = model.declaredSymbol(node).orElse(null);
             if (symbol != null && isTypeSymbol(symbol.kind())
                 && ownerQualifiedName.equals(symbol.qualifiedName().orElse(null)))
@@ -5757,7 +5834,8 @@ public final class JavaSemanticAnalyzer {
 
         private List<Type.DeclaredType> declaredDirectSuperTypes(
             SyntaxNode declaration,
-            java.util.function.Function<SyntaxNode, Type> typeResolver) {
+            Function<SyntaxNode, Type> typeResolver
+        ) {
             List<Type.DeclaredType> directSupers = new ArrayList<>();
             for (SyntaxNode child : declaration.children()) {
                 if (!JavaSyntaxKinds.EXTENDS_CLAUSE.id().equals(child.kind().id())
@@ -5848,7 +5926,8 @@ public final class JavaSemanticAnalyzer {
         private List<String> findDeclaredTypeParameterNames(
             SyntaxNode node,
             SemanticModel model,
-            String ownerQualifiedName) {
+            String ownerQualifiedName
+        ) {
             Symbol symbol = model.declaredSymbol(node).orElse(null);
             if (symbol != null && isTypeSymbol(symbol.kind())
                 && ownerQualifiedName.equals(symbol.qualifiedName().orElse(null)))
@@ -6472,7 +6551,8 @@ public final class JavaSemanticAnalyzer {
             @Nullable SyntaxNode declaration,
             Type valueType,
             List<Type> parameterTypes,
-            boolean staticMember) {
+            boolean staticMember
+        ) {
             this.kind = Objects.requireNonNull(kind, "kind");
             this.simpleName = Objects.requireNonNull(simpleName, "simpleName");
             this.qualifiedName = qualifiedName;
@@ -6526,7 +6606,8 @@ public final class JavaSemanticAnalyzer {
     private static Type commonConditionalType(
         Type whenTrue,
         Type whenFalse,
-        @Nullable JavaSymbolIndex projectIndex) {
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         if (whenTrue.kind() == Type.Kind.UNKNOWN)
             return whenFalse;
         if (whenFalse.kind() == Type.Kind.UNKNOWN)
@@ -6568,7 +6649,8 @@ public final class JavaSemanticAnalyzer {
         @Nullable String candidate,
         @Nullable String target,
         Map<String, ClassStub> stubs,
-        Set<String> visited) {
+        Set<String> visited
+    ) {
         if (candidate == null || target == null)
             return false;
         if (candidate.equals(target))
@@ -6729,7 +6811,7 @@ public final class JavaSemanticAnalyzer {
         return false;
     }
 
-    static @Nullable String identifierAfterKeyword(SyntaxNode node, JavaTokenType keywordTokenType) {
+    public static @Nullable String identifierAfterKeyword(SyntaxNode node, JavaTokenType keywordTokenType) {
         String keywordKindId = JavaSyntaxKinds.tokenKind(keywordTokenType).id();
         boolean foundKeyword = false;
         for (SyntaxNode child : node.children()) {
@@ -6887,7 +6969,7 @@ public final class JavaSemanticAnalyzer {
         }
     }
 
-    static boolean isTypeSymbol(SymbolKind symbolKind) {
+    public static boolean isTypeSymbol(SymbolKind symbolKind) {
         return switch (symbolKind) {
             case CLASS, INTERFACE, ENUM, ANNOTATION, RECORD -> true;
             default -> false;

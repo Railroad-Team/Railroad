@@ -137,7 +137,7 @@ public final class RailroadJavaStyle {
                 + "Choose visibility manually; format does not change access levels.%n",
                 visibilityViolations, visibilityViolations == 1 ? "" : "s");
         }
-        if ((checkOnly && changedFiles > 0) || visibilityViolations > 0) {
+        if (checkOnly && (changedFiles > 0 || visibilityViolations > 0)) {
             System.exit(1);
         }
     }

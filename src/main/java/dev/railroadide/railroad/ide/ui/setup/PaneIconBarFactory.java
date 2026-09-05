@@ -29,7 +29,8 @@ public final class PaneIconBarFactory {
         DetachableTabPane pane,
         SplitPane split,
         Orientation orientation,
-        int originalIndex) {
+        int originalIndex
+    ) {
         var bar = orientation == Orientation.HORIZONTAL ? new RRHBox(4) : new RRVBox(4);
         bar.getStyleClass().add("icon-bar-" + orientation.name().toLowerCase(Locale.ROOT));
 

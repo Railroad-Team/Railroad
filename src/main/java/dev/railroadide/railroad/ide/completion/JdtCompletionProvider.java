@@ -134,8 +134,13 @@ public record JdtCompletionProvider(Path filePath, String[] systemModulePaths) i
         return declaration.getName().getFullyQualifiedName();
     }
 
-    private void addMembers(ITypeBinding type, boolean staticContext, String currentPackage,
-        LinkedHashSet<CompletionItem> results, Set<String> visited) {
+    private void addMembers(
+        ITypeBinding type,
+        boolean staticContext,
+        String currentPackage,
+        LinkedHashSet<CompletionItem> results,
+        Set<String> visited
+    ) {
         if (type == null)
             return;
 

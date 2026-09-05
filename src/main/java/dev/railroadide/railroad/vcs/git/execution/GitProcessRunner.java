@@ -52,8 +52,12 @@ public class GitProcessRunner {
      * @return execution result containing exit status and captured output
      * @throws GitExecutionException when process startup or IO handling fails
      */
-    public GitResult run(GitCommand command, GitOutputListener listener, GitCancellationToken token,
-        GitResultCaptureMode captureMode) throws GitExecutionException {
+    public GitResult run(
+        GitCommand command,
+        GitOutputListener listener,
+        GitCancellationToken token,
+        GitResultCaptureMode captureMode
+    ) throws GitExecutionException {
         List<String> stdoutChunks = Collections.synchronizedList(new ArrayList<>());
         List<String> stderrChunks = Collections.synchronizedList(new ArrayList<>());
 

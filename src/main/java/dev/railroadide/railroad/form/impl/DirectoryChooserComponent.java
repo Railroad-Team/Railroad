@@ -45,10 +45,17 @@ public class DirectoryChooserComponent
      * @param keyTypedHandler the key typed handler for the directory chooser
      * @param visible the visibility of the directory chooser
      */
-    public DirectoryChooserComponent(String dataKey, Data data, FormComponentValidator<TextField> validator,
-        FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo,
-        Property<BrowseButton> bindBrowseButtonTo, List<FormTransformer<TextField, String, ?>> transformers,
-        EventHandler<? super KeyEvent> keyTypedHandler, @Nullable BooleanBinding visible) {
+    public DirectoryChooserComponent(
+        String dataKey,
+        Data data,
+        FormComponentValidator<TextField> validator,
+        FormComponentChangeListener<TextField, String> listener,
+        Property<TextField> bindTextFieldTo,
+        Property<BrowseButton> bindBrowseButtonTo,
+        List<FormTransformer<TextField, String, ?>> transformers,
+        EventHandler<? super KeyEvent> keyTypedHandler,
+        @Nullable BooleanBinding visible
+    ) {
         super(dataKey, data, dataCurrent -> new FormDirectoryChooser(dataCurrent.label, dataCurrent.required,
             dataCurrent.defaultPath, dataCurrent.includeButton), validator, listener, transformers, visible);
 
@@ -260,8 +267,11 @@ public class DirectoryChooserComponent
          * @return this builder
          */
         @Override
-        public <X> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<X> toComponentFunction,
-            Function<String, X> valueMapper) {
+        public <X> Builder addTransformer(
+            ObservableValue<TextField> fromComponent,
+            Consumer<X> toComponentFunction,
+            Function<String, X> valueMapper
+        ) {
             this.transformers
                 .add(new FormTransformer<>(fromComponent, TextField::getText, toComponentFunction, valueMapper));
             return this;
@@ -278,8 +288,11 @@ public class DirectoryChooserComponent
          * @return this builder
          */
         @Override
-        public <U extends Node, X> Builder addTransformer(ObservableValue<TextField> fromComponent,
-            ObservableValue<U> toComponent, Function<String, X> valueMapper) {
+        public <U extends Node, X> Builder addTransformer(
+            ObservableValue<TextField> fromComponent,
+            ObservableValue<U> toComponent,
+            Function<String, X> valueMapper
+        ) {
             this.transformers.add(new FormTransformer<>(fromComponent, TextField::getText, value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());

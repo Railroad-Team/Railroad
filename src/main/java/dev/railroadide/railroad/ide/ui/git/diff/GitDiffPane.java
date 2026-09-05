@@ -208,8 +208,11 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
         return builder.create();
     }
 
-    private static void appendLineStyles(StyleSpansBuilder<Collection<String>> builder, RenderLine line,
-        boolean hasNewline) {
+    private static void appendLineStyles(
+        StyleSpansBuilder<Collection<String>> builder,
+        RenderLine line,
+        boolean hasNewline
+    ) {
         String text = line.text();
         if (text.isEmpty()) {
             builder.add(styleForKind(line.kind()), hasNewline ? 1 : 0);
@@ -435,11 +438,11 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
     }
 
     private record DiffResult(String diffText, List<RenderLine> lines, String placeholderText) {
-        static DiffResult content(String diffText, List<RenderLine> lines) {
+        private static DiffResult content(String diffText, List<RenderLine> lines) {
             return new DiffResult(diffText, lines, null);
         }
 
-        static DiffResult placeholder(String placeholder) {
+        private static DiffResult placeholder(String placeholder) {
             return new DiffResult(null, List.of(), placeholder);
         }
     }
@@ -465,7 +468,7 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
             this.codeLine = codeLine;
         }
 
-        boolean isCodeLine() {
+        private boolean isCodeLine() {
             return codeLine;
         }
     }

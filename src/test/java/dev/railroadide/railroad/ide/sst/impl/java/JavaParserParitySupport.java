@@ -10,8 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-final class JavaParserParitySupport {
-    static final Set<String> TOP_LEVEL_TYPE_KIND_IDS = Set.of(
+public final class JavaParserParitySupport {
+    public static final Set<String> TOP_LEVEL_TYPE_KIND_IDS = Set.of(
         JavaSyntaxKinds.CLASS_DECLARATION.id(),
         JavaSyntaxKinds.INTERFACE_DECLARATION.id(),
         JavaSyntaxKinds.ENUM_DECLARATION.id(),
@@ -25,7 +25,7 @@ final class JavaParserParitySupport {
     private JavaParserParitySupport() {
     }
 
-    static List<Path> collectProjectJavaSources() throws IOException {
+    public static List<Path> collectProjectJavaSources() throws IOException {
         List<Path> roots = List.of(Path.of("src", "main", "java"), Path.of("src", "test", "java"));
         List<Path> files = new ArrayList<>();
         for (Path root : roots) {
@@ -43,7 +43,7 @@ final class JavaParserParitySupport {
         return List.copyOf(files);
     }
 
-    static ParityResult analyzeSyntaxOnly(String source) {
+    public static ParityResult analyzeSyntaxOnly(String source) {
         SyntaxTree syntaxTree = JavaSyntaxParser.parse(source);
         String syntaxText = JavaParserTestSupport.syntaxText(syntaxTree);
         TopLevelShape syntaxTopLevelShape = topLevelShapeFromSyntax(syntaxTree);
@@ -55,7 +55,7 @@ final class JavaParserParitySupport {
             syntaxDiagSummary);
     }
 
-    static List<String> syntaxOnlyIssues(ParityResult result) {
+    public static List<String> syntaxOnlyIssues(ParityResult result) {
         List<String> issues = new ArrayList<>();
         if (!result.source().equals(result.syntaxText())) {
             issues.add("syntax roundtrip mismatch (source and syntax text differ)");
@@ -70,7 +70,7 @@ final class JavaParserParitySupport {
         return List.copyOf(issues);
     }
 
-    static String formatIssues(Path sourcePath, List<String> issues, ParityResult result) {
+    public static String formatIssues(Path sourcePath, List<String> issues, ParityResult result) {
         var builder = new StringBuilder();
         builder.append(sourcePath).append('\n');
         builder.append("syntaxTopLevel=").append(result.syntaxTopLevelShape()).append('\n');
@@ -81,7 +81,7 @@ final class JavaParserParitySupport {
         return builder.toString().trim();
     }
 
-    static String formatIssues(String label, List<String> issues, ParityResult result) {
+    public static String formatIssues(String label, List<String> issues, ParityResult result) {
         return formatIssues(Path.of(label), issues, result);
     }
 
@@ -153,11 +153,11 @@ final class JavaParserParitySupport {
         return count;
     }
 
-    static String readSource(Path file) throws IOException {
+    public static String readSource(Path file) throws IOException {
         return Files.readString(file, StandardCharsets.UTF_8);
     }
 
-    record TopLevelShape(
+    public record TopLevelShape(
         int packageDeclarations,
         int importDeclarations,
         int typeDeclarations,
@@ -165,10 +165,10 @@ final class JavaParserParitySupport {
         int moduleDirectives) {
     }
 
-    record SyntaxDiagnostics(long errors, long warnings, long missingTokens, long errorNodes) {
+    public record SyntaxDiagnostics(long errors, long warnings, long missingTokens, long errorNodes) {
     }
 
-    record ParityResult(
+    public record ParityResult(
         String source,
         String syntaxText,
         TopLevelShape syntaxTopLevelShape,

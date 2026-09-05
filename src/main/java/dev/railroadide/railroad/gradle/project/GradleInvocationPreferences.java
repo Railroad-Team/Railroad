@@ -37,7 +37,7 @@ public record GradleInvocationPreferences(boolean offlineMode,
      *
      * @return the default preferences
      */
-    static GradleInvocationPreferences defaults() {
+    public static GradleInvocationPreferences defaults() {
         return new GradleInvocationPreferences(false, false, false, true, null, null, null, null);
     }
 
@@ -46,7 +46,7 @@ public record GradleInvocationPreferences(boolean offlineMode,
      *
      * @return the daemon idle timeout in minutes, or null if not set
      */
-    Long daemonIdleTimeout() {
+    public Long daemonIdleTimeout() {
         return daemonIdleTimeoutMinutes;
     }
 }

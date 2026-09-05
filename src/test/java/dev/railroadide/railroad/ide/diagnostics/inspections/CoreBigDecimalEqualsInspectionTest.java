@@ -9,9 +9,9 @@ import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectio
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class CoreBigDecimalEqualsInspectionTest {
+public class CoreBigDecimalEqualsInspectionTest {
     @Test
-    void coreBigDecimalEqualsRuleEmitsDiagnosticForBigDecimalEqualsCall() {
+    public void coreBigDecimalEqualsRuleEmitsDiagnosticForBigDecimalEqualsCall() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreBigDecimalEqualsInspection(), """
             class Example {
                 boolean same(java.math.BigDecimal left, java.math.BigDecimal right) {
@@ -24,7 +24,7 @@ class CoreBigDecimalEqualsInspectionTest {
     }
 
     @Test
-    void coreBigDecimalEqualsRuleEmitsDiagnosticForImportedBigDecimalEqualsCall() {
+    public void coreBigDecimalEqualsRuleEmitsDiagnosticForImportedBigDecimalEqualsCall() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreBigDecimalEqualsInspection(), """
             import java.math.BigDecimal;
 
@@ -39,7 +39,7 @@ class CoreBigDecimalEqualsInspectionTest {
     }
 
     @Test
-    void coreBigDecimalEqualsRuleEmitsDiagnosticForBigDecimalLiteralEqualsCall() {
+    public void coreBigDecimalEqualsRuleEmitsDiagnosticForBigDecimalLiteralEqualsCall() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreBigDecimalEqualsInspection(), """
             class Example {
                 boolean same() {
@@ -52,7 +52,7 @@ class CoreBigDecimalEqualsInspectionTest {
     }
 
     @Test
-    void coreBigDecimalEqualsRuleDoesNotEmitDiagnosticForCompareToEqualityCheck() {
+    public void coreBigDecimalEqualsRuleDoesNotEmitDiagnosticForCompareToEqualityCheck() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreBigDecimalEqualsInspection(), """
             class Example {
                 boolean same(java.math.BigDecimal left, java.math.BigDecimal right) {
@@ -65,7 +65,7 @@ class CoreBigDecimalEqualsInspectionTest {
     }
 
     @Test
-    void coreBigDecimalEqualsRuleDoesNotEmitDiagnosticForNonBigDecimalEqualsCall() {
+    public void coreBigDecimalEqualsRuleDoesNotEmitDiagnosticForNonBigDecimalEqualsCall() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreBigDecimalEqualsInspection(), """
             class Example {
                 boolean same(String left, String right) {
@@ -78,7 +78,7 @@ class CoreBigDecimalEqualsInspectionTest {
     }
 
     @Test
-    void coreBigDecimalEqualsRuleEmitsDiagnosticWhenArgumentIsBigDecimalSubtype() {
+    public void coreBigDecimalEqualsRuleEmitsDiagnosticWhenArgumentIsBigDecimalSubtype() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreBigDecimalEqualsInspection(), """
             class CustomBigDecimal extends java.math.BigDecimal {
                 CustomBigDecimal(String value) {
@@ -97,7 +97,7 @@ class CoreBigDecimalEqualsInspectionTest {
     }
 
     @Test
-    void coreBigDecimalEqualsRuleDoesNotEmitDiagnosticWhenArgumentIsNotBigDecimal() {
+    public void coreBigDecimalEqualsRuleDoesNotEmitDiagnosticWhenArgumentIsNotBigDecimal() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreBigDecimalEqualsInspection(), """
             class Example {
                 boolean same(java.math.BigDecimal value, Object other) {
@@ -110,7 +110,7 @@ class CoreBigDecimalEqualsInspectionTest {
     }
 
     @Test
-    void coreBigDecimalEqualsRuleEmitsDiagnosticForParenthesizedBigDecimalEqualsCall() {
+    public void coreBigDecimalEqualsRuleEmitsDiagnosticForParenthesizedBigDecimalEqualsCall() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreBigDecimalEqualsInspection(), """
             class Example {
                 boolean same(java.math.BigDecimal left, java.math.BigDecimal right) {

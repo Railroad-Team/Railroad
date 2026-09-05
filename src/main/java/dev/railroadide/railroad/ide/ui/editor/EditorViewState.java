@@ -31,7 +31,7 @@ public record EditorViewState(
         this(caretPosition, anchorPosition, 0.0, 0.0, List.of());
     }
 
-    static EditorViewState capture(@Nullable TextEditorPane editor) {
+    public static EditorViewState capture(@Nullable TextEditorPane editor) {
         if (editor == null)
             return EMPTY;
 

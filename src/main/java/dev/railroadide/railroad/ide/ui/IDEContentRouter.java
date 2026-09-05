@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 public final class IDEContentRouter {
     private final IDEPane idePane;
 
-    IDEContentRouter(IDEPane idePane) {
+    public IDEContentRouter(IDEPane idePane) {
         this.idePane = Objects.requireNonNull(idePane, "IDE pane cannot be null");
     }
 

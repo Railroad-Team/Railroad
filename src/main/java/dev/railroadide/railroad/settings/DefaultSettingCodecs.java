@@ -181,15 +181,23 @@ public class DefaultSettingCodecs {
         return value == null ? 0 : Math.max(0, value);
     }
 
-    public static <E extends Enum<E>> SettingCodec<E, ComboBox<E>> ofEnum(String id, Class<E> enumClass,
-        ToStringFunction<E> toStringFunction, FromStringFunction<E> fromStringFunction) {
+    public static <E extends Enum<E>> SettingCodec<E, ComboBox<E>> ofEnum(
+        String id,
+        Class<E> enumClass,
+        ToStringFunction<E> toStringFunction,
+        FromStringFunction<E> fromStringFunction
+    ) {
         return ofEnum(id, enumClass, toStringFunction, fromStringFunction,
             new ComboBoxConverter<>(toStringFunction, fromStringFunction));
     }
 
-    public static <E extends Enum<E>> SettingCodec<E, ComboBox<E>> ofEnum(String id, Class<E> enumClass,
-        ToStringFunction<E> toStringFunction, FromStringFunction<E> fromStringFunction,
-        ComboBoxConverter<E> comboBoxConverter) {
+    public static <E extends Enum<E>> SettingCodec<E, ComboBox<E>> ofEnum(
+        String id,
+        Class<E> enumClass,
+        ToStringFunction<E> toStringFunction,
+        FromStringFunction<E> fromStringFunction,
+        ComboBoxConverter<E> comboBoxConverter
+    ) {
         return SettingCodec.<E, ComboBox<E>>builder(id)
             .nodeToValue(ComboBoxBase::getValue)
             .valueToNode((value, comboBox) -> comboBox.setValue(value))

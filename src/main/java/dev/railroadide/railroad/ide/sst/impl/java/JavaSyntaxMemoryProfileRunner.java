@@ -290,36 +290,36 @@ public final class JavaSyntaxMemoryProfileRunner {
         private long tokenChars;
         private int maxDepth;
 
-        void recordNode() {
+        private void recordNode() {
             nodeCount++;
         }
 
-        void recordToken(int chars) {
+        private void recordToken(int chars) {
             tokenCount++;
             tokenChars += chars;
         }
 
-        void recordDepth(int depth) {
+        private void recordDepth(int depth) {
             maxDepth = Math.max(maxDepth, depth);
         }
 
-        long nodeCount() {
+        private long nodeCount() {
             return nodeCount;
         }
 
-        long tokenCount() {
+        private long tokenCount() {
             return tokenCount;
         }
 
-        long tokenChars() {
+        private long tokenChars() {
             return tokenChars;
         }
 
-        int maxDepth() {
+        private int maxDepth() {
             return maxDepth;
         }
 
-        long totalElements() {
+        private long totalElements() {
             return nodeCount + tokenCount;
         }
     }

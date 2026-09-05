@@ -38,8 +38,10 @@ public class CoreConditionalExpressionWithIdenticalBranchesInspection implements
         return RULES;
     }
 
-    private static void reportConditionalExpressionWithIdenticalBranches(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportConditionalExpressionWithIdenticalBranches(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode syntaxNode : context.nodesOfKind(JavaSyntaxKinds.CONDITIONAL_EXPRESSION.id())) {
             List<SyntaxNode> expressions = context.directExpressionChildren(syntaxNode);
             SyntaxNode thenExpr = context.unwrapTransparentExpression(expressions.get(1));

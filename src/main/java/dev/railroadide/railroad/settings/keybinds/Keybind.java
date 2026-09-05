@@ -41,9 +41,13 @@ public class Keybind {
      * @param actions A map of contexts to actions, when the keybind is pressed in that context, the corresponding
      *            action will be executed.
      */
-    private Keybind(String id, KeybindCategory category, List<KeybindData> defaultKeys,
+    private Keybind(
+        String id,
+        KeybindCategory category,
+        List<KeybindData> defaultKeys,
         List<KeybindContexts.KeybindContext> contexts,
-        Map<KeybindContexts.KeybindContext, Consumer<KeybindActionContext>> actions) {
+        Map<KeybindContexts.KeybindContext, Consumer<KeybindActionContext>> actions
+    ) {
         this.id = id;
         this.category = category;
         this.defaultKeys = defaultKeys;

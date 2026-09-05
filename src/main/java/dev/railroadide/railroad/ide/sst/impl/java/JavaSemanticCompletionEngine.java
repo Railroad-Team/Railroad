@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.lang.reflect.Modifier;
 
 /**
  * SST-backed dot completion for source/project/JDK members.
@@ -30,7 +31,8 @@ public final class JavaSemanticCompletionEngine {
     public static @Nullable CompletionResult compute(
         String document,
         int triggerAt,
-        @Nullable JavaSymbolIndex projectIndex) {
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         if (document == null || document.isEmpty() || triggerAt < 0 || triggerAt >= document.length())
             return null;
         if (document.charAt(triggerAt) != '.')
@@ -72,7 +74,8 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable CompletionTarget resolveCompletionTarget(
         SyntaxNode node,
         SemanticModel model,
-        @Nullable JavaSymbolIndex projectIndex) {
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         for (SyntaxNode current = node; current != null; current = current.parent().orElse(null)) {
             SyntaxNode receiver = JavaSemanticAnalyzer.explicitReceiver(current);
             if (receiver != null)
@@ -85,7 +88,8 @@ public final class JavaSemanticCompletionEngine {
         SyntaxNode receiver,
         SyntaxNode usageSite,
         SemanticModel model,
-        @Nullable JavaSymbolIndex projectIndex) {
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         if (JavaSyntaxKinds.THIS_EXPRESSION.id().equals(receiver.kind().id())) {
             Symbol enclosing = enclosingTypeSymbol(usageSite, model);
             String ownerQualifiedName = enclosing == null ? null : enclosing.qualifiedName().orElse(null);
@@ -126,8 +130,10 @@ public final class JavaSemanticCompletionEngine {
         return null;
     }
 
-    private static @Nullable CompletionTarget completionTarget(@Nullable String ownerQualifiedName,
-        boolean staticContext) {
+    private static @Nullable CompletionTarget completionTarget(
+        @Nullable String ownerQualifiedName,
+        boolean staticContext
+    ) {
         if (ownerQualifiedName == null || ownerQualifiedName.isBlank())
             return null;
         return new CompletionTarget(ownerQualifiedName, staticContext);
@@ -140,7 +146,8 @@ public final class JavaSemanticCompletionEngine {
         boolean staticContext,
         String currentPackage,
         Map<String, CompletionItem> out,
-        Set<String> visitedOwners) {
+        Set<String> visitedOwners
+    ) {
         if (!visitedOwners.add(ownerQualifiedName))
             return;
 
@@ -157,7 +164,8 @@ public final class JavaSemanticCompletionEngine {
         SemanticModel model,
         String ownerQualifiedName,
         boolean staticContext,
-        Map<String, CompletionItem> out) {
+        Map<String, CompletionItem> out
+    ) {
         collectLocalMembersRecursive(model.syntaxTree().root(), model, ownerQualifiedName, staticContext, out);
     }
 
@@ -166,7 +174,8 @@ public final class JavaSemanticCompletionEngine {
         SemanticModel model,
         String ownerQualifiedName,
         boolean staticContext,
-        Map<String, CompletionItem> out) {
+        Map<String, CompletionItem> out
+    ) {
         Symbol declared = model.declaredSymbol(node).orElse(null);
         if (declared != null) {
             String declarationOwnerQualifiedName = ownerQualifiedName(declared.qualifiedName().orElse(null));
@@ -203,7 +212,8 @@ public final class JavaSemanticCompletionEngine {
         @Nullable JavaSymbolIndex projectIndex,
         String ownerQualifiedName,
         boolean staticContext,
-        Map<String, CompletionItem> out) {
+        Map<String, CompletionItem> out
+    ) {
         if (projectIndex == null)
             return;
 
@@ -235,13 +245,14 @@ public final class JavaSemanticCompletionEngine {
         boolean staticContext,
         String currentPackage,
         Map<String, CompletionItem> out,
-        @Nullable JavaSymbolIndex projectIndex) {
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         ClassStub stub = lookupBinaryClassStub(ownerQualifiedName, projectIndex);
         if (stub == null)
             return;
 
         for (FieldStub field : stub.fields()) {
-            boolean isStatic = java.lang.reflect.Modifier.isStatic(field.modifiers());
+            boolean isStatic = Modifier.isStatic(field.modifiers());
             if (isStatic != staticContext)
                 continue;
             if (!isAccessible(field.modifiers(), stub.packageName(), currentPackage))
@@ -250,7 +261,7 @@ public final class JavaSemanticCompletionEngine {
         }
 
         for (MethodStub method : stub.methods()) {
-            boolean isStatic = java.lang.reflect.Modifier.isStatic(method.modifiers());
+            boolean isStatic = Modifier.isStatic(method.modifiers());
             if (isStatic != staticContext)
                 continue;
             if (!isAccessible(method.modifiers(), stub.packageName(), currentPackage))
@@ -272,7 +283,8 @@ public final class JavaSemanticCompletionEngine {
         String name,
         List<String> parameterTypes,
         String returnType,
-        boolean isStatic) {
+        boolean isStatic
+    ) {
         String prefix = isStatic ? "static " : "";
         String parameters = String.join(", ", parameterTypes);
         String display = prefix + name + "(" + parameters + ") : " + returnType;
@@ -343,9 +355,9 @@ public final class JavaSemanticCompletionEngine {
     }
 
     private static boolean isAccessible(int modifiers, String declaringPackage, String currentPackage) {
-        if (java.lang.reflect.Modifier.isPublic(modifiers) || java.lang.reflect.Modifier.isProtected(modifiers))
+        if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers))
             return true;
-        if (java.lang.reflect.Modifier.isPrivate(modifiers))
+        if (Modifier.isPrivate(modifiers))
             return false;
         return Objects.equals(declaringPackage, currentPackage);
     }
@@ -369,7 +381,8 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable String superTypeQualifiedName(
         @Nullable String ownerQualifiedName,
         SemanticModel model,
-        @Nullable JavaSymbolIndex projectIndex) {
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         List<String> superTypes = directSuperTypes(ownerQualifiedName, model, projectIndex);
         return superTypes.isEmpty() ? null : superTypes.get(0);
     }
@@ -377,7 +390,8 @@ public final class JavaSemanticCompletionEngine {
     private static List<String> directSuperTypes(
         @Nullable String ownerQualifiedName,
         SemanticModel model,
-        @Nullable JavaSymbolIndex projectIndex) {
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         if (ownerQualifiedName == null || ownerQualifiedName.isBlank())
             return List.of();
 
@@ -418,7 +432,8 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable TypeDeclarationInfo typeDeclarationInfoForOwner(
         String ownerQualifiedName,
         SemanticModel model,
-        @Nullable JavaSymbolIndex projectIndex) {
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         TypeDeclarationInfo inCurrentModel = typeDeclarationInfoInModel(ownerQualifiedName, model, projectIndex);
         if (inCurrentModel != null)
             return inCurrentModel;
@@ -439,7 +454,8 @@ public final class JavaSemanticCompletionEngine {
     private static @Nullable TypeDeclarationInfo typeDeclarationInfoInModel(
         String ownerQualifiedName,
         SemanticModel model,
-        @Nullable JavaSymbolIndex projectIndex) {
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         SyntaxNode declarationNode = findTypeDeclarationNodeByQualifiedName(model, ownerQualifiedName);
         if (declarationNode == null)
             return null;
@@ -469,7 +485,8 @@ public final class JavaSemanticCompletionEngine {
         @Nullable SyntaxNode clauseNode,
         SyntaxNode usageSite,
         SemanticModel model,
-        @Nullable JavaSymbolIndex projectIndex) {
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         if (clauseNode == null)
             return;
 
@@ -503,7 +520,8 @@ public final class JavaSemanticCompletionEngine {
 
     private static @Nullable Path sourceFileForType(
         String ownerQualifiedName,
-        @Nullable JavaSymbolIndex projectIndex) {
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         if (projectIndex == null)
             return null;
 
@@ -514,8 +532,10 @@ public final class JavaSemanticCompletionEngine {
         return null;
     }
 
-    private static @Nullable SyntaxNode findTypeDeclarationNodeByQualifiedName(SemanticModel model,
-        String ownerQualifiedName) {
+    private static @Nullable SyntaxNode findTypeDeclarationNodeByQualifiedName(
+        SemanticModel model,
+        String ownerQualifiedName
+    ) {
         ArrayDeque<SyntaxNode> stack = new ArrayDeque<>();
         stack.push(model.syntaxTree().root());
         while (!stack.isEmpty()) {
@@ -537,7 +557,8 @@ public final class JavaSemanticCompletionEngine {
         @Nullable String text,
         SyntaxNode usageSite,
         SemanticModel model,
-        @Nullable JavaSymbolIndex projectIndex) {
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         if (text == null || text.isBlank())
             return null;
         while (text.endsWith("[]")) {
@@ -615,8 +636,10 @@ public final class JavaSemanticCompletionEngine {
         return JavaSemanticAnalyzer.loadJdkQualifiedTypeNames().contains(qualifiedName);
     }
 
-    private static @Nullable ClassStub lookupBinaryClassStub(String qualifiedName,
-        @Nullable JavaSymbolIndex projectIndex) {
+    private static @Nullable ClassStub lookupBinaryClassStub(
+        String qualifiedName,
+        @Nullable JavaSymbolIndex projectIndex
+    ) {
         if (qualifiedName == null || qualifiedName.isBlank())
             return null;
         if (projectIndex != null)

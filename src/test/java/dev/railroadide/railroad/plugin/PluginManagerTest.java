@@ -14,10 +14,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class PluginManagerTest {
+public class PluginManagerTest {
 
     @Test
-    void loadsRegistersAndUnregistersJavaInspectionRuleProviders() {
+    public void loadsRegistersAndUnregistersJavaInspectionRuleProviders() {
         PluginDescriptor descriptor = testDescriptor("plugin-lifecycle-" + UUID.randomUUID());
         JavaInspectionRuleProvider provider = PluginManager.loadJavaInspectionRuleProviders(
             TestJavaInspectionRuleProvider.class.getClassLoader()).stream()
@@ -53,7 +53,7 @@ class PluginManagerTest {
     }
 
     @Test
-    void registerJavaInspectionRuleProvidersRollsBackDuplicateIds() {
+    public void registerJavaInspectionRuleProvidersRollsBackDuplicateIds() {
         PluginDescriptor descriptor = testDescriptor("plugin-duplicate-" + UUID.randomUUID());
         JavaInspectionRuleProvider provider = new TestJavaInspectionRuleProvider();
         String registrationId = PluginManager.javaInspectionRuleProviderRegistrationId(descriptor, provider);

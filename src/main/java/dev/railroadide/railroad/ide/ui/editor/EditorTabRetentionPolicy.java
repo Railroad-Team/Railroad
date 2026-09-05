@@ -16,7 +16,8 @@ public final class EditorTabRetentionPolicy {
     public static <T> T findLeastRecentlyUsedEvictable(
         Iterable<T> leastRecentlyUsedFirst,
         Set<T> excluded,
-        Predicate<T> evictable) {
+        Predicate<T> evictable
+    ) {
         for (T candidate : leastRecentlyUsedFirst) {
             if (!excluded.contains(candidate) && evictable.test(candidate))
                 return candidate;

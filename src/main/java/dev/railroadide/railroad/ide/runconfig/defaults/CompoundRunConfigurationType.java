@@ -23,8 +23,10 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
     }
 
     @Override
-    public CompletableFuture<Void> debug(Project project,
-        RunConfiguration<CompoundRunConfigurationData> configuration) {
+    public CompletableFuture<Void> debug(
+        Project project,
+        RunConfiguration<CompoundRunConfigurationData> configuration
+    ) {
         return executeChildren(project, configuration, true);
     }
 
@@ -70,8 +72,10 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
         return CompoundRunConfigurationData.class;
     }
 
-    private List<RunConfiguration<?>> getResolvedChildren(Project project,
-        RunConfiguration<CompoundRunConfigurationData> configuration) {
+    private List<RunConfiguration<?>> getResolvedChildren(
+        Project project,
+        RunConfiguration<CompoundRunConfigurationData> configuration
+    ) {
         List<RunConfiguration<?>> resolved = configuration.data()
             .resolveConfigurations(project.getRunConfigManager().getConfigurations());
         List<RunConfiguration<?>> valid = new ArrayList<>(resolved.size());
@@ -88,9 +92,11 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
         return valid;
     }
 
-    private CompletableFuture<Void> executeChildren(Project project,
+    private CompletableFuture<Void> executeChildren(
+        Project project,
         RunConfiguration<CompoundRunConfigurationData> configuration,
-        boolean debug) {
+        boolean debug
+    ) {
         var children = getResolvedChildren(project, configuration);
         if (children.isEmpty())
             return CompletableFuture.completedFuture(null);
@@ -117,9 +123,11 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
             : runSequential(children, project, debug);
     }
 
-    private CompletableFuture<Void> runParallel(List<RunConfiguration<?>> children,
+    private CompletableFuture<Void> runParallel(
+        List<RunConfiguration<?>> children,
         Project project,
-        boolean debug) {
+        boolean debug
+    ) {
         List<CompletableFuture<Void>> futures = new ArrayList<>(children.size());
         for (RunConfiguration<?> child : children) {
             futures.add(invokeChild(child, project, debug));
@@ -128,9 +136,11 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
-    private CompletableFuture<Void> runSequential(List<RunConfiguration<?>> children,
+    private CompletableFuture<Void> runSequential(
+        List<RunConfiguration<?>> children,
         Project project,
-        boolean debug) {
+        boolean debug
+    ) {
         CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
         for (RunConfiguration<?> child : children) {
             chain = chain.thenCompose(_ -> invokeChild(child, project, debug));
@@ -139,9 +149,11 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
         return chain;
     }
 
-    private CompletableFuture<Void> invokeChild(RunConfiguration<?> child,
+    private CompletableFuture<Void> invokeChild(
+        RunConfiguration<?> child,
         Project project,
-        boolean debug) {
+        boolean debug
+    ) {
         try {
             return debug ? child.debug(project) : child.run(project);
         } catch (Throwable throwable) {

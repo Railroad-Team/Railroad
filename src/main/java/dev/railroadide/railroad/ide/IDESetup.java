@@ -27,8 +27,10 @@ public class IDESetup {
         return new Scene(new IDEPane(project));
     }
 
-    public static void showEditRunConfigurationsWindow(@NotNull Project project,
-        @Nullable RunConfiguration<?> runConfiguration) {
+    public static void showEditRunConfigurationsWindow(
+        @NotNull Project project,
+        @Nullable RunConfiguration<?> runConfiguration
+    ) {
         var editorPane = new RunConfigurationEditorPane(project);
         WindowBuilder.create()
             .owner(Railroad.WINDOW_MANAGER.getPrimaryStage())

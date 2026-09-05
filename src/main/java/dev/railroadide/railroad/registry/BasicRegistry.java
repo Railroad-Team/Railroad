@@ -16,7 +16,7 @@ public class BasicRegistry<T> implements Registry<T> {
     @Getter
     private final Type type;
 
-    BasicRegistry(String id, Type type) {
+    public BasicRegistry(String id, Type type) {
         if (id == null || id.isBlank())
             throw new IllegalArgumentException("Registry ID cannot be null or empty");
         if (type == null)
@@ -78,7 +78,7 @@ public class BasicRegistry<T> implements Registry<T> {
         return Map.copyOf(registry);
     }
 
-    static Class<?> rawType(Type type) {
+    public static Class<?> rawType(Type type) {
         if (type instanceof Class<?> clazz)
             return clazz;
         else if (type instanceof ParameterizedType pType)

@@ -30,7 +30,8 @@ public final class ProjectLanguageIndexCoordinator {
     public ProjectLanguageIndexCoordinator(
         ProjectIndexContext context,
         ProjectLanguageIndexService indexService,
-        Collection<LanguageSupport> supports) {
+        Collection<LanguageSupport> supports
+    ) {
         this.context = Objects.requireNonNull(context, "context");
         this.indexService = Objects.requireNonNull(indexService, "indexService");
         this.supports = List.copyOf(Objects.requireNonNull(supports, "supports"));

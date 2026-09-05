@@ -40,8 +40,10 @@ public class CoreIntegerDivisionInFloatingPointContextInspection implements Java
                 CoreIntegerDivisionInFloatingPointContextInspection::reportIntegerDivisionInFloatingPointContext));
     }
 
-    private static void reportIntegerDivisionInFloatingPointContext(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportIntegerDivisionInFloatingPointContext(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode binaryExpression : context.nodesOfKind(JavaSyntaxKinds.BINARY_EXPRESSION.id())) {
             if (!isIntegerDivision(context, binaryExpression))
                 continue;
@@ -84,8 +86,11 @@ public class CoreIntegerDivisionInFloatingPointContextInspection implements Java
         }
     }
 
-    private static boolean isInFloatingPointMethodArgContext(JavaRuleContext context, SyntaxNode current,
-        SyntaxNode invocation) {
+    private static boolean isInFloatingPointMethodArgContext(
+        JavaRuleContext context,
+        SyntaxNode current,
+        SyntaxNode invocation
+    ) {
         return false;
     }
 

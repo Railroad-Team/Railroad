@@ -8,9 +8,9 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.Objects;
 import java.util.Set;
 
-final class SimpleJavaInspectionRule implements JavaInspectionRule {
+public final class SimpleJavaInspectionRule implements JavaInspectionRule {
     @FunctionalInterface
-    interface Evaluator {
+    public interface Evaluator {
         void evaluate(JavaRuleContext context, JavaInspectionRuleReporter reporter);
     }
 
@@ -20,12 +20,13 @@ final class SimpleJavaInspectionRule implements JavaInspectionRule {
     private final Set<String> tags;
     private final Evaluator evaluator;
 
-    SimpleJavaInspectionRule(
+    public SimpleJavaInspectionRule(
         String id,
         SemanticDiagnostic.Severity severity,
         String template,
         Set<String> tags,
-        Evaluator evaluator) {
+        Evaluator evaluator
+    ) {
         this.id = Objects.requireNonNull(id, "id");
         this.severity = Objects.requireNonNull(severity, "severity");
         this.template = Objects.requireNonNull(template, "template");

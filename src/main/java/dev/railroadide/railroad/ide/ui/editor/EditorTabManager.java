@@ -233,7 +233,8 @@ public class EditorTabManager {
     private EditorTab openPreviewInTabPane(
         Project project,
         Path path,
-        DetachableTabPane fallbackPane) {
+        DetachableTabPane fallbackPane
+    ) {
         Path normalizedPath = path.toAbsolutePath().normalize();
         if (!Files.isRegularFile(normalizedPath))
             return null;
@@ -380,7 +381,8 @@ public class EditorTabManager {
         Project project,
         Path path,
         DetachableTabPane tabPane,
-        TabOpenRequest request) {
+        TabOpenRequest request
+    ) {
         if (primaryEditorPane == null && DEFAULT_EDITOR_GROUP_ID.equals(request.editorGroupId())) {
             primaryEditorPane = tabPane;
         }
@@ -484,7 +486,8 @@ public class EditorTabManager {
         IDEPane idePane,
         DetachableTabPane primaryPane,
         EditorWorkspaceSessionState workspaceState,
-        List<EditorTabSessionState> tabsToRestore) {
+        List<EditorTabSessionState> tabsToRestore
+    ) {
         restoring = true;
         try {
             primaryEditorPane = primaryPane;
@@ -592,7 +595,8 @@ public class EditorTabManager {
         EditorLayoutNodeState state,
         DetachableTabPane template,
         Deque<DetachableTabPane> reusablePanes,
-        Map<String, DetachableTabPane> groups) {
+        Map<String, DetachableTabPane> groups
+    ) {
         if (state == null || state.group()) {
             DetachableTabPane pane = reusablePanes.pollFirst();
             if (pane == null) {
@@ -652,7 +656,8 @@ public class EditorTabManager {
     private static void restoreGroupSelections(
         EditorLayoutNodeState state,
         Map<String, DetachableTabPane> groups,
-        Map<String, EditorTab> restoredTabs) {
+        Map<String, EditorTab> restoredTabs
+    ) {
         if (state.group()) {
             DetachableTabPane pane = groups.get(state.groupId());
             EditorTab selected = restoredTabs.get(state.selectedDocumentId());
@@ -2106,7 +2111,8 @@ public class EditorTabManager {
     private boolean insertAdjacent(
         DetachableTabPane sourceTabPane,
         DetachableTabPane targetTabPane,
-        Orientation orientation) {
+        Orientation orientation
+    ) {
         SplitPane containingSplitPane = findContainingSplitPane(sourceTabPane);
         if (editorSplitPanes.contains(containingSplitPane)
             && containingSplitPane.getOrientation() == orientation) {
@@ -2319,7 +2325,8 @@ public class EditorTabManager {
         Project project,
         DetachableTabPane tabPane,
         ClosedEditorTab closedTab,
-        boolean activate) {
+        boolean activate
+    ) {
         EditorTab reopenedTab = openInTabPane(
             project,
             closedTab.path(),

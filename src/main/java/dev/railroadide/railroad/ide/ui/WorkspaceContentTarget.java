@@ -39,7 +39,8 @@ public final class WorkspaceContentTarget {
     public static WorkspaceContentTarget register(
         String id,
         WorkspaceMode mode,
-        UIId<DetachableTabPane> dockId) {
+        UIId<DetachableTabPane> dockId
+    ) {
         if (id == null || id.isBlank())
             throw new IllegalArgumentException("Workspace content-target ID cannot be null or blank");
 

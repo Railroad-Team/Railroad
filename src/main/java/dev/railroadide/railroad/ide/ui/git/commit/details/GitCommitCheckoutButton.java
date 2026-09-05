@@ -33,8 +33,11 @@ public class GitCommitCheckoutButton extends RRButton {
         });
     }
 
-    private static void onCheckoutWithUncommittedChanges(GitManager gitManager, Optional<GitCommit> fromCommit,
-        GitCommit toCommit) {
+    private static void onCheckoutWithUncommittedChanges(
+        GitManager gitManager,
+        Optional<GitCommit> fromCommit,
+        GitCommit toCommit
+    ) {
         GitRepoStatus repoStatus = gitManager.getRepoStatus();
 
         var content = new RRVBox(2);

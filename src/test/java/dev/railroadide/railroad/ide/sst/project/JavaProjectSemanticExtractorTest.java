@@ -4,13 +4,14 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.List;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaProjectSemanticExtractorTest {
+public class JavaProjectSemanticExtractorTest {
 
     @Test
-    void extractsPackageImportsAndProjectSymbolsFromSource() {
+    public void extractsPackageImportsAndProjectSymbolsFromSource() {
         String source = """
             package demo.sample;
             import java.util.List;
@@ -86,7 +87,7 @@ class JavaProjectSemanticExtractorTest {
     }
 
     @Test
-    void preservesVarargsInCallableSignatures() {
+    public void preservesVarargsInCallableSignatures() {
         JavaProjectSemanticIndex.SourceFileIndex fileIndex = new JavaProjectSemanticExtractor().extract(
             Path.of("Box.java"), """
                 class Box<T> {
@@ -96,11 +97,11 @@ class JavaProjectSemanticExtractorTest {
                 """);
 
         JavaProjectSemanticIndex.SymbolDescriptor constructor = fileIndex.declaredSymbols().stream()
-            .filter(symbol -> symbol.kind() == dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind.CONSTRUCTOR)
+            .filter(symbol -> symbol.kind() == SymbolKind.CONSTRUCTOR)
             .findFirst()
             .orElseThrow();
         JavaProjectSemanticIndex.SymbolDescriptor method = fileIndex.declaredSymbols().stream()
-            .filter(symbol -> symbol.kind() == dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind.METHOD)
+            .filter(symbol -> symbol.kind() == SymbolKind.METHOD)
             .findFirst()
             .orElseThrow();
 
@@ -112,7 +113,8 @@ class JavaProjectSemanticExtractorTest {
         List<JavaProjectSemanticIndex.ImportDescriptor> imports,
         String qualifiedName,
         boolean isStatic,
-        boolean isWildcard) {
+        boolean isWildcard
+    ) {
         assertTrue(imports.stream().anyMatch(importDescriptor -> qualifiedName.equals(importDescriptor.qualifiedName())
             && isStatic == importDescriptor.isStatic()
             && isWildcard == importDescriptor.isWildcard()));
@@ -120,7 +122,8 @@ class JavaProjectSemanticExtractorTest {
 
     private static JavaProjectSemanticIndex.SymbolDescriptor findSymbol(
         List<JavaProjectSemanticIndex.SymbolDescriptor> symbols,
-        String qualifiedName) {
+        String qualifiedName
+    ) {
         return symbols.stream()
             .filter(symbol -> qualifiedName.equals(symbol.qualifiedName()))
             .findFirst()

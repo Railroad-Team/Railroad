@@ -6,17 +6,18 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 
 import java.util.Objects;
 
-final class DefaultLanguageInspectionRuleReporter<C extends LanguageRuleContext>
+public final class DefaultLanguageInspectionRuleReporter<C extends LanguageRuleContext>
     implements
         LanguageInspectionRuleReporter {
     private final LanguageInspectionRule<C> rule;
     private final LanguageInspectionReporter sink;
     private final InspectionSettingsAccess settings;
 
-    DefaultLanguageInspectionRuleReporter(
+    public DefaultLanguageInspectionRuleReporter(
         LanguageInspectionRule<C> rule,
         LanguageInspectionReporter sink,
-        InspectionSettingsAccess settings) {
+        InspectionSettingsAccess settings
+    ) {
         this.rule = Objects.requireNonNull(rule, "rule");
         this.sink = Objects.requireNonNull(sink, "sink");
         this.settings = Objects.requireNonNull(settings, "settings");

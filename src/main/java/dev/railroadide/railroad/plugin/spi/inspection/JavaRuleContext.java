@@ -125,8 +125,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         this(filePath, documentText, semanticModel, null);
     }
 
-    public JavaRuleContext(Path filePath, String documentText, SemanticModel semanticModel,
-        @Nullable JavaSymbolIndex symbolIndex) {
+    public JavaRuleContext(
+        Path filePath,
+        String documentText,
+        SemanticModel semanticModel,
+        @Nullable JavaSymbolIndex symbolIndex
+    ) {
         this.filePath = Objects.requireNonNull(filePath, "filePath");
         this.documentText = Objects.requireNonNull(documentText, "documentText");
         this.semanticModel = Objects.requireNonNull(semanticModel, "semanticModel");
@@ -1113,8 +1117,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return text;
     }
 
-    private @Nullable String resolvableQualifiedTypeName(String qualifiedTypeName,
-        Set<String> availableQualifiedTypeNames) {
+    private @Nullable String resolvableQualifiedTypeName(
+        String qualifiedTypeName,
+        Set<String> availableQualifiedTypeNames
+    ) {
         if (qualifiedTypeName == null || qualifiedTypeName.isBlank())
             return null;
         if (localTypeSymbolsByQualifiedName().containsKey(qualifiedTypeName)
@@ -1136,7 +1142,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private @Nullable String resolveNestedQualifiedTypeName(
         String text,
         Set<String> availableQualifiedTypeNames,
-        @Nullable SyntaxNode usageSite) {
+        @Nullable SyntaxNode usageSite
+    ) {
         int dot = text.lastIndexOf('.');
         if (dot <= 0 || dot >= text.length() - 1)
             return null;
@@ -1151,7 +1158,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private @Nullable String resolveInheritedMemberType(
         String simpleName,
         Set<String> availableQualifiedTypeNames,
-        @Nullable SyntaxNode usageSite) {
+        @Nullable SyntaxNode usageSite
+    ) {
         String ownerQualifiedName = usageSite == null
             ? null
             : topLevelEnclosingTypeSymbol(usageSite).flatMap(Symbol::qualifiedName).orElse(null);
@@ -1188,7 +1196,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
         String ownerQualifiedName,
         String simpleName,
         Set<String> availableQualifiedTypeNames,
-        Set<String> visited) {
+        Set<String> visited
+    ) {
         if (!visited.add(ownerQualifiedName))
             return null;
 
@@ -1485,8 +1494,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return importIndex().resolveStaticImportedFields(fieldName, referenceNode);
     }
 
-    public List<Symbol> resolveStaticImportedMethods(String methodName, SyntaxNode invocationNode,
-        int argumentCountOrUnknown) {
+    public List<Symbol> resolveStaticImportedMethods(
+        String methodName,
+        SyntaxNode invocationNode,
+        int argumentCountOrUnknown
+    ) {
         return importIndex().resolveStaticImportedMethods(methodName, invocationNode, argumentCountOrUnknown);
     }
 
@@ -2476,8 +2488,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return List.copyOf(constructors);
     }
 
-    private MethodDescriptor sourceConstructorDescriptor(String ownerQualifiedName, Symbol symbol,
-        SyntaxNode declaration) {
+    private MethodDescriptor sourceConstructorDescriptor(
+        String ownerQualifiedName,
+        Symbol symbol,
+        SyntaxNode declaration
+    ) {
         List<Type> parameterTypes = new ArrayList<>();
         SyntaxNode parameterList = directChild(declaration, JAVA_PARAMETER_LIST);
         if (parameterList != null) {
@@ -2673,8 +2688,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return selectApplicableMethod(new MethodOwner(ownerQualifiedTypeName, false), methodName, argumentTypes);
     }
 
-    private @Nullable MethodDescriptor selectApplicableMethod(MethodOwner owner, String methodName,
-        List<Type> argumentTypes) {
+    private @Nullable MethodDescriptor selectApplicableMethod(
+        MethodOwner owner,
+        String methodName,
+        List<Type> argumentTypes
+    ) {
         List<MethodDescriptor> methods = new ArrayList<>(declaredMethodDescriptors(owner.qualifiedTypeName()));
         methods.addAll(inheritedMethodDescriptors(owner.qualifiedTypeName()));
         for (MethodDescriptor method : methods) {
@@ -2862,7 +2880,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     private synchronized Map<String, List<DeclaredType>> rememberIndexedSourceDirectSuperTypes(
-        Map<String, List<DeclaredType>> additional) {
+        Map<String, List<DeclaredType>> additional
+    ) {
         Map<String, List<DeclaredType>> merged = new LinkedHashMap<>();
         if (cachedIndexedSourceDirectSuperTypesByQualifiedName != null) {
             merged.putAll(cachedIndexedSourceDirectSuperTypesByQualifiedName);
@@ -2877,7 +2896,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
         String ownerQualifiedTypeName,
         List<MethodDescriptor> out,
         Set<String> visited,
-        Map<String, Type> substitutions) {
+        Map<String, Type> substitutions
+    ) {
         String visitKey = ownerQualifiedTypeName + substitutions.entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
             .map(entry -> ";" + entry.getKey() + "=" + typeKey(entry.getValue()))
@@ -2951,8 +2971,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return type.displayName();
     }
 
-    private void collectInheritedFieldDescriptors(String ownerQualifiedTypeName, List<FieldDescriptor> out,
-        Set<String> visited) {
+    private void collectInheritedFieldDescriptors(
+        String ownerQualifiedTypeName,
+        List<FieldDescriptor> out,
+        Set<String> visited
+    ) {
         if (!visited.add(ownerQualifiedTypeName))
             return;
 
@@ -3154,7 +3177,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
     private static <T> Map<String, List<T>> mergeDescriptorMaps(
         @Nullable Map<String, List<T>> existing,
-        Map<String, List<T>> additional) {
+        Map<String, List<T>> additional
+    ) {
         Map<String, List<T>> merged = new LinkedHashMap<>();
         if (existing != null) {
             merged.putAll(existing);
@@ -3497,7 +3521,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
             Set<String> availableQualifiedTypeNames,
             Map<String, ClassStub> jdkClassStubsByQualifiedName,
             Map<String, Set<String>> localStaticFieldsByOwner,
-            Map<String, Map<String, Set<Integer>>> localStaticMethodAritiesByOwner) {
+            Map<String, Map<String, Set<Integer>>> localStaticMethodAritiesByOwner
+        ) {
             this.imports = imports;
             this.staticSingleImportsByMemberName = staticSingleImportsByMemberName;
             this.onDemandStaticImports = onDemandStaticImports;
@@ -3563,8 +3588,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return uniqueByQualifiedName(resolved);
         }
 
-        public List<Symbol> resolveStaticImportedMethods(String methodName, SyntaxNode invocationNode,
-            int argumentCountOrUnknown) {
+        public List<Symbol> resolveStaticImportedMethods(
+            String methodName,
+            SyntaxNode invocationNode,
+            int argumentCountOrUnknown
+        ) {
             List<Symbol> resolved = new ArrayList<>();
             List<ImportEntry> singleStaticImports = staticSingleImportsByMemberName.get(methodName);
             if (singleStaticImports != null) {
@@ -3666,7 +3694,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
         private static void collectLocalStaticMembers(
             JavaRuleContext context,
             Map<String, Set<String>> localStaticFieldsByOwner,
-            Map<String, Map<String, Set<Integer>>> localStaticMethodAritiesByOwner) {
+            Map<String, Map<String, Set<Integer>>> localStaticMethodAritiesByOwner
+        ) {
             context.traverse(node -> {
                 Symbol symbol = context.declaredSymbol(node).orElse(null);
                 if (symbol == null)
@@ -3739,8 +3768,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 .anyMatch(field -> field.name().equals(fieldName) && Modifier.isStatic(field.modifiers()));
         }
 
-        private boolean hasResolvableStaticMethod(String ownerQualifiedName, String methodName,
-            int argumentCountOrUnknown) {
+        private boolean hasResolvableStaticMethod(
+            String ownerQualifiedName,
+            String methodName,
+            int argumentCountOrUnknown
+        ) {
             Map<String, Set<Integer>> localMethods = localStaticMethodAritiesByOwner.get(ownerQualifiedName);
             if (localMethods != null) {
                 Set<Integer> arities = localMethods.get(methodName);
@@ -3773,7 +3805,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
         }
 
         private static Map<String, Map<String, Set<Integer>>> copyNestedSetMap(
-            Map<String, Map<String, Set<Integer>>> source) {
+            Map<String, Map<String, Set<Integer>>> source
+        ) {
             Map<String, Map<String, Set<Integer>>> copy = new LinkedHashMap<>();
             source.forEach((owner, members) -> {
                 Map<String, Set<Integer>> memberCopy = new LinkedHashMap<>();

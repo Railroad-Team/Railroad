@@ -46,7 +46,8 @@ public final class EditorAllTabsMenu implements AutoCloseable {
 
     public EditorAllTabsMenu(
         DetachableTabPane tabPane,
-        Function<Tab, EditorTab> editorTabResolver) {
+        Function<Tab, EditorTab> editorTabResolver
+    ) {
         this.tabPane = Objects.requireNonNull(tabPane, "Tab pane cannot be null");
         this.editorTabResolver = Objects.requireNonNull(editorTabResolver, "Editor tab resolver cannot be null");
 

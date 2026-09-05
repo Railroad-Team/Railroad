@@ -29,12 +29,14 @@ import java.util.function.Supplier;
 public class RadioButtonGroupComponent<E extends Enum<E>>
     extends
         FormComponent<FormRadioButtonGroup<E>, RadioButtonGroupComponent.Data<E>, FormRadioButtonGroup<E>, E> {
-    public RadioButtonGroupComponent(String dataKey,
+    public RadioButtonGroupComponent(
+        String dataKey,
         Data<E> data,
         FormComponentValidator<FormRadioButtonGroup<E>> validator,
         FormComponentChangeListener<FormRadioButtonGroup<E>, E> listener,
         List<FormTransformer<FormRadioButtonGroup<E>, E, ?>> transformers,
-        @Nullable BooleanBinding visible) {
+        @Nullable BooleanBinding visible
+    ) {
         super(dataKey, data, currentData -> {
             var component = new FormRadioButtonGroup<>(
                 currentData.label,
@@ -208,16 +210,22 @@ public class RadioButtonGroupComponent<E extends Enum<E>>
         }
 
         @Override
-        public <X> Builder<E> addTransformer(ObservableValue<FormRadioButtonGroup<E>> fromComponent,
-            Consumer<X> toComponentFunction, Function<E, X> valueMapper) {
+        public <X> Builder<E> addTransformer(
+            ObservableValue<FormRadioButtonGroup<E>> fromComponent,
+            Consumer<X> toComponentFunction,
+            Function<E, X> valueMapper
+        ) {
             transformers.add(
                 new FormTransformer<>(fromComponent, FormRadioButtonGroup::getValue, toComponentFunction, valueMapper));
             return this;
         }
 
         @Override
-        public <U extends Node, X> Builder<E> addTransformer(ObservableValue<FormRadioButtonGroup<E>> fromComponent,
-            ObservableValue<U> toComponent, Function<E, X> valueMapper) {
+        public <U extends Node, X> Builder<E> addTransformer(
+            ObservableValue<FormRadioButtonGroup<E>> fromComponent,
+            ObservableValue<U> toComponent,
+            Function<E, X> valueMapper
+        ) {
             transformers.add(new FormTransformer<>(fromComponent, FormRadioButtonGroup::getValue, value -> {
                 Node target = toComponent.getValue();
                 if (target instanceof HasSetValue hasSetValue) {

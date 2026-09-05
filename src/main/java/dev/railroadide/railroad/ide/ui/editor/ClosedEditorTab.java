@@ -31,7 +31,7 @@ public record ClosedEditorTab(
         return identity.id();
     }
 
-    static ClosedEditorTab capture(EditorTab tab, int index) {
+    public static ClosedEditorTab capture(EditorTab tab, int index) {
         return new ClosedEditorTab(
             tab.identity(),
             tab.path(),

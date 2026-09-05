@@ -30,8 +30,14 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
         this(labelKey, required, promptText, editable, translate, null);
     }
 
-    public FormTextField(String labelKey, boolean required, String promptText, boolean editable, boolean translate,
-        AutoCompleteOptions autoCompleteOptions) {
+    public FormTextField(
+        String labelKey,
+        boolean required,
+        String promptText,
+        boolean editable,
+        boolean translate,
+        AutoCompleteOptions autoCompleteOptions
+    ) {
         super(labelKey, required, createParams(promptText, editable, translate, autoCompleteOptions));
     }
 
@@ -43,8 +49,12 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
      * @param translate whether to use localization
      * @return a map containing the component parameters
      */
-    private static Map<String, Object> createParams(String promptText, boolean editable, boolean translate,
-        AutoCompleteOptions autoCompleteOptions) {
+    private static Map<String, Object> createParams(
+        String promptText,
+        boolean editable,
+        boolean translate,
+        AutoCompleteOptions autoCompleteOptions
+    ) {
         Map<String, Object> params = new HashMap<>();
         if (promptText != null) {
             params.put("promptText", promptText);

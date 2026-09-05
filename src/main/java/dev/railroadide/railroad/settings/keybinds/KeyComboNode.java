@@ -96,7 +96,8 @@ public class KeyComboNode extends RRButton {
         boolean controlDown,
         boolean altDown,
         boolean shiftDown,
-        boolean metaDown) {
+        boolean metaDown
+    ) {
         List<KeyCombination.Modifier> modifiers = new ArrayList<>();
         if (shortcutDown) {
             modifiers.add(KeyCombination.SHORTCUT_DOWN);

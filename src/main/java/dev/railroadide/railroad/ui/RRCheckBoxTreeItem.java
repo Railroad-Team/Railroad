@@ -22,7 +22,9 @@ public class RRCheckBoxTreeItem<T> extends TreeItem<T> {
     private final BooleanProperty propagateSelectionToParent = new SimpleBooleanProperty(this,
         "propagateSelectionToParent", true);
     private boolean updatingState;
-    private final ChangeListener<Boolean> childStateListener = (observable, oldValue,
+    private final ChangeListener<Boolean> childStateListener = (
+        observable,
+        oldValue,
         newValue) -> updateStateFromChildren();
     private final ListChangeListener<TreeItem<T>> childrenListener = change -> {
         while (change.next()) {

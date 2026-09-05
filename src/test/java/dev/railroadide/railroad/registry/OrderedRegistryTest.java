@@ -6,10 +6,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class OrderedRegistryTest {
+public class OrderedRegistryTest {
 
     @Test
-    void preservesRegistrationOrder() {
+    public void preservesRegistrationOrder() {
         Registry<String> registry = RegistryManager.createOrderedRegistry(
             "test:ordered-registry-" + System.nanoTime(),
             String.class);

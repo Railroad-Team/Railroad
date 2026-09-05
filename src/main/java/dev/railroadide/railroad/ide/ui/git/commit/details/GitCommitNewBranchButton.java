@@ -126,8 +126,12 @@ public class GitCommitNewBranchButton extends RRButton {
         });
     }
 
-    private static void validateBranchName(Project project, String string, LocalizedText errorText,
-        RRButton confirmButton) {
+    private static void validateBranchName(
+        Project project,
+        String string,
+        LocalizedText errorText,
+        RRButton confirmButton
+    ) {
         boolean hasControlChars = string.chars().anyMatch(c -> c < 32 || c == 127);
         if (hasControlChars) {
             errorText.setKeyAndArgs("railroad.git.commit.details.new_branch_dialog.error_invalid_characters");

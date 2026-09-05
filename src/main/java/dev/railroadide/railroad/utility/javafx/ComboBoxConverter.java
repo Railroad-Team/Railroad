@@ -21,8 +21,10 @@ public class ComboBoxConverter<T> extends StringConverter<T> {
      * @param fromStringFunction A function that converts a String to an object of type T.
      * @throws NullPointerException if either toStringFunction or fromStringFunction is null.
      */
-    public ComboBoxConverter(@NotNull ToStringFunction<T> toStringFunction,
-        @NotNull FromStringFunction<T> fromStringFunction) {
+    public ComboBoxConverter(
+        @NotNull ToStringFunction<T> toStringFunction,
+        @NotNull FromStringFunction<T> fromStringFunction
+    ) {
         this.toStringFunction = toStringFunction;
         this.fromStringFunction = fromStringFunction;
     }

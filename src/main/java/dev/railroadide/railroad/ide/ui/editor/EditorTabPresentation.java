@@ -56,7 +56,8 @@ public final class EditorTabPresentation {
         Path path,
         int pathIndex,
         List<Integer> duplicateIndexes,
-        List<Path> paths) {
+        List<Path> paths
+    ) {
         Path parent = path.getParent();
         int maximumDepth = parent == null ? 1 : parent.getNameCount() + 1;
         for (int depth = 1; depth <= maximumDepth; depth++) {

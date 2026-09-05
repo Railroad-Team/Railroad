@@ -25,7 +25,8 @@ import java.util.function.Function;
  * File picker counterpart to {@link DirectoryChooserComponent}.
  */
 public class FileChooserComponent extends FormComponent<FormFileChooser, FileChooserComponent.Data, TextField, String> {
-    public FileChooserComponent(String dataKey,
+    public FileChooserComponent(
+        String dataKey,
         Data data,
         FormComponentValidator<TextField> validator,
         FormComponentChangeListener<TextField, String> listener,
@@ -33,7 +34,8 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
         Property<BrowseButton> bindBrowseButtonTo,
         List<FormTransformer<TextField, String, ?>> transformers,
         EventHandler<? super KeyEvent> keyTypedHandler,
-        @Nullable BooleanBinding visible) {
+        @Nullable BooleanBinding visible
+    ) {
         super(dataKey, data, d -> new FormFileChooser(d.label, d.required, d.defaultPath, d.includeButton), validator,
             listener, transformers, visible);
 
@@ -175,16 +177,22 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
         }
 
         @Override
-        public <X> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<X> toComponentFunction,
-            Function<String, X> valueMapper) {
+        public <X> Builder addTransformer(
+            ObservableValue<TextField> fromComponent,
+            Consumer<X> toComponentFunction,
+            Function<String, X> valueMapper
+        ) {
             transformers
                 .add(new FormTransformer<>(fromComponent, TextField::getText, toComponentFunction, valueMapper));
             return this;
         }
 
         @Override
-        public <U extends Node, X> Builder addTransformer(ObservableValue<TextField> fromComponent,
-            ObservableValue<U> toComponent, Function<String, X> valueMapper) {
+        public <U extends Node, X> Builder addTransformer(
+            ObservableValue<TextField> fromComponent,
+            ObservableValue<U> toComponent,
+            Function<String, X> valueMapper
+        ) {
             transformers.add(new FormTransformer<>(fromComponent, TextField::getText, value -> {
                 if (toComponent.getValue() instanceof TextField target) {
                     target.setText(value.toString());

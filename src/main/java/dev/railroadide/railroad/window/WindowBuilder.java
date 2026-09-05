@@ -44,13 +44,24 @@ public class WindowBuilder {
         return createAlert(alertType, title, subtitle, content, null);
     }
 
-    public static WindowBuilder createAlert(AlertType alertType, String title, String subtitle, String content,
-        Runnable onClose) {
+    public static WindowBuilder createAlert(
+        AlertType alertType,
+        String title,
+        String subtitle,
+        String content,
+        Runnable onClose
+    ) {
         return createAlert(alertType, title, subtitle, content, null, onClose);
     }
 
-    public static WindowBuilder createAlert(AlertType alertType, String title, String subtitle, String content,
-        Consumer<AlertBuilder<?>> alertModifier, Runnable onClose) {
+    public static WindowBuilder createAlert(
+        AlertType alertType,
+        String title,
+        String subtitle,
+        String content,
+        Consumer<AlertBuilder<?>> alertModifier,
+        Runnable onClose
+    ) {
         AlertBuilder<?> alertBuilder = AlertBuilder.create()
             .alertType(alertType)
             .title(subtitle)
@@ -84,16 +95,25 @@ public class WindowBuilder {
             onClose).build();
     }
 
-    public static Stage createDialog(String title, String subtitle, String content, Runnable onConfirm,
-        Runnable onCancel) {
+    public static Stage createDialog(
+        String title,
+        String subtitle,
+        String content,
+        Runnable onConfirm,
+        Runnable onCancel
+    ) {
         return createDialog(title, subtitle, content, dialogBuilder -> {
             dialogBuilder.onConfirm(onConfirm);
             dialogBuilder.onCancel(onCancel);
         });
     }
 
-    public static Stage createDialog(String title, String subtitle, String content,
-        Consumer<DialogBuilder> dialogModifier) {
+    public static Stage createDialog(
+        String title,
+        String subtitle,
+        String content,
+        Consumer<DialogBuilder> dialogModifier
+    ) {
         DialogBuilder dialogBuilder = DialogBuilder.create()
             .title(subtitle)
             .content(content);

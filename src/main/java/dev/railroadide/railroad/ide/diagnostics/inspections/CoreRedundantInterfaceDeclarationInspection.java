@@ -31,8 +31,10 @@ public class CoreRedundantInterfaceDeclarationInspection implements JavaInspecti
                 CoreRedundantInterfaceDeclarationInspection::reportRedundantInterfaceDeclaration));
     }
 
-    private static void reportRedundantInterfaceDeclaration(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportRedundantInterfaceDeclaration(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (Map.Entry<String, SyntaxNode> entry : context.localTypeDeclarations().entrySet()) {
             String ownerQualifiedName = entry.getKey();
             SyntaxNode declarationNode = entry.getValue();

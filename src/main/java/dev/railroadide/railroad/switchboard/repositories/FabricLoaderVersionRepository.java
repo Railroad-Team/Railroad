@@ -73,8 +73,10 @@ public record FabricLoaderVersionRepository(SwitchboardClient client, CacheManag
         return getLatestVersionFor(minecraftVersionId, false);
     }
 
-    public CompletableFuture<FabricLoaderVersion> getLatestVersionFor(String minecraftVersionId,
-        boolean includePrereleases) {
+    public CompletableFuture<FabricLoaderVersion> getLatestVersionFor(
+        String minecraftVersionId,
+        boolean includePrereleases
+    ) {
         Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
         String normalized = minecraftVersionId.toLowerCase(Locale.ROOT);
         String key = "fabric:loader:latest:" + normalized + (includePrereleases ? ":prereleases" : "");

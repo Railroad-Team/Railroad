@@ -39,8 +39,11 @@ public record Layout(Tree<LayoutItem> tree) {
         }
     }
 
-    private static void bindChildSize(Either<Pane, DetachableTabPane> child, LayoutItem node,
-        Either<Pane, DetachableTabPane> parent) {
+    private static void bindChildSize(
+        Either<Pane, DetachableTabPane> child,
+        LayoutItem node,
+        Either<Pane, DetachableTabPane> parent
+    ) {
         // TODO: Can't get size of a node, so I'm not sure how we can do this
         // if (node.hasProperty("size")) {
         // String size = node.getProperty("size").toString().replace("%", "");
@@ -103,8 +106,10 @@ public record Layout(Tree<LayoutItem> tree) {
         }
     }
 
-    private @Nullable Either<Pane, DetachableTabPane> parseItem(LayoutItem node,
-        Either<Pane, DetachableTabPane> parent) {
+    private @Nullable Either<Pane, DetachableTabPane> parseItem(
+        LayoutItem node,
+        Either<Pane, DetachableTabPane> parent
+    ) {
         Railroad.LOGGER.info("[LayoutBuilder] Adding new Item: {}", node.getName());
         try {
             Either<Pane, DetachableTabPane> pane = createPaneForItem(node);

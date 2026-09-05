@@ -25,8 +25,10 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
     }
 
     @Override
-    public CompletableFuture<Void> run(Project project,
-        RunConfiguration<JarApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> run(
+        Project project,
+        RunConfiguration<JarApplicationRunConfigurationData> configuration
+    ) {
         return CompletableFuture.runAsync(() -> {
             JarApplicationRunConfigurationData data = configuration.data();
             JDK jre = requireJre(data);
@@ -77,15 +79,19 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
     }
 
     @Override
-    public CompletableFuture<Void> debug(Project project,
-        RunConfiguration<JarApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> debug(
+        Project project,
+        RunConfiguration<JarApplicationRunConfigurationData> configuration
+    ) {
         return CompletableFuture.failedFuture(
             new UnsupportedOperationException("Debugging is not supported for Jar Application run configurations."));
     }
 
     @Override
-    public CompletableFuture<Void> stop(Project project,
-        RunConfiguration<JarApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> stop(
+        Project project,
+        RunConfiguration<JarApplicationRunConfigurationData> configuration
+    ) {
         Process process = runningProcesses.get(configuration);
         if (process != null && process.isAlive()) {
             process.destroy();

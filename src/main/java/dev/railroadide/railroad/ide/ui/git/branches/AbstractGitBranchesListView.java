@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListView<T> {
+public abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListView<T> {
     private final Project project;
     private final ObservableList<T> branches = FXCollections.observableArrayList();
     private final StringProperty filterText = new SimpleStringProperty("");
@@ -58,7 +58,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         Project project,
         String styleClass,
         Function<Project, List<T>> branchProvider,
-        Callback<ListView<T>, ListCell<T>> cellFactory) {
+        Callback<ListView<T>, ListCell<T>> cellFactory
+    ) {
         this.project = project;
 
         Callback<ListView<T>, ListCell<T>> newCellFactory = cellFactory == null ? null : listView -> {
@@ -133,7 +134,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         activeDetailsPopup = popup;
     }
 
-    abstract Node createDetailsNode(T branch);
+    protected abstract Node createDetailsNode(T branch);
 
     protected final Node createCommonDetailsNode(T branch, List<Node> extraRows) {
         var root = new RRVBox(8);
@@ -281,9 +282,13 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         var confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
         if (confirmButton != null) {
             validateUpstreamSelection(upstreamComboBox.getEditor().getText(), remoteBranches, errorText, confirmButton);
-            upstreamComboBox.getEditor().textProperty().addListener((obs, oldText,
+            upstreamComboBox.getEditor().textProperty().addListener((
+                obs,
+                oldText,
                 newText) -> validateUpstreamSelection(newText, remoteBranches, errorText, confirmButton));
-            upstreamComboBox.valueProperty().addListener((obs, oldValue,
+            upstreamComboBox.valueProperty().addListener((
+                obs,
+                oldValue,
                 newValue) -> validateUpstreamSelection(newValue, remoteBranches, errorText, confirmButton));
         }
     }
@@ -292,7 +297,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         @Nullable String selectedUpstream,
         List<String> remoteBranches,
         LocalizedText errorText,
-        RRButton confirmButton) {
+        RRButton confirmButton
+    ) {
         String value = Objects.requireNonNullElse(selectedUpstream, "").trim();
         if (value.isBlank()) {
             errorText.setKeyAndArgs("");
@@ -383,7 +389,9 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         var confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
         if (confirmButton != null) {
             validateRenameBranchName(localBranch.name(), newNameField.getText(), errorText, confirmButton);
-            newNameField.textProperty().addListener((obs, oldText,
+            newNameField.textProperty().addListener((
+                obs,
+                oldText,
                 newText) -> validateRenameBranchName(localBranch.name(), newText, errorText, confirmButton));
         }
     }
@@ -397,7 +405,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         String currentName,
         @Nullable String proposedName,
         LocalizedText errorText,
-        RRButton confirmButton) {
+        RRButton confirmButton
+    ) {
         String value = Objects.requireNonNullElse(proposedName, "").trim();
         if (value.isBlank()) {
             errorText.setKeyAndArgs("");
@@ -528,7 +537,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         GitManager gitManager,
         Optional<GitCommit> fromCommit,
         String targetBranchName,
-        GitRepoStatus repoStatus) {
+        GitRepoStatus repoStatus
+    ) {
         var content = new RRVBox();
         content.getStyleClass().add("git-commit-checkout-uncommitted-changes-dialog-content");
 

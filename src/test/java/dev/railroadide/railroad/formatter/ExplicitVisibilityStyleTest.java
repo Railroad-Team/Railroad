@@ -107,22 +107,33 @@ public class ExplicitVisibilityStyleTest {
     }
 
     @Test
-    public void checkAndApplyRejectPackagePrivateWithoutChangingAccess(@TempDir Path directory) throws Exception {
+    public void applyFormatsAllFilesDespiteVisibilityViolationsWhileCheckStillFails(@TempDir Path directory)
+        throws Exception {
         Path input = directory.resolve("Example.java");
-        String source = "class Example { int value; }\n";
+        String source = "class Example { int value; void run(boolean ready) { if (ready) { return; } } }\n";
         Files.writeString(input, source);
+        Path secondInput = directory.resolve("Other.java");
+        String secondSource = source.replace("Example", "Other");
+        Files.writeString(secondInput, secondSource);
+        String formatted = RailroadJavaStyle.rewrite(source);
+        assertTrue(!source.equals(formatted), "fixture must need structural formatting");
         String formatterClasspath = Path
             .of(RailroadJavaStyle.class.getProtectionDomain().getCodeSource().getLocation().toURI())
             .toString();
         for (String mode : List.of("--check", "--apply")) {
             Process process = new ProcessBuilder(
                 Path.of(System.getProperty("java.home"), "bin", "java").toString(), "-cp", formatterClasspath,
-                RailroadJavaStyle.class.getName(), mode, "--all", input.toString()).redirectErrorStream(true).start();
+                RailroadJavaStyle.class.getName(), mode, "--all", directory.toString()).redirectErrorStream(true)
+                .start();
             var output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            assertEquals(1, process.waitFor(), output);
+            boolean checkOnly = mode.equals("--check");
+            assertEquals(checkOnly ? 1 : 0, process.waitFor(), output);
             assertTrue(output.contains("Example.java:1: Package-private type 'Example'"), output);
             assertTrue(output.contains("Package-private field 'value'"), output);
-            assertEquals(source, Files.readString(input));
+            assertTrue(output.contains("Other.java:1: Package-private type 'Other'"), output);
+            assertEquals(checkOnly ? source : formatted, Files.readString(input));
+            assertEquals(checkOnly ? secondSource : formatted.replace("Example", "Other"),
+                Files.readString(secondInput));
         }
     }
 

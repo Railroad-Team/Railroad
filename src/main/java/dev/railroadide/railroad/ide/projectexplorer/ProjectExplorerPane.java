@@ -540,8 +540,10 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 }
 
                 @Override
-                public @NotNull FileVisitResult preVisitDirectory(@NotNull Path dir,
-                    @NotNull BasicFileAttributes attrs) {
+                public @NotNull FileVisitResult preVisitDirectory(
+                    @NotNull Path dir,
+                    @NotNull BasicFileAttributes attrs
+                ) {
                     addPathToTree(dir);
                     return FileVisitResult.CONTINUE;
                 }

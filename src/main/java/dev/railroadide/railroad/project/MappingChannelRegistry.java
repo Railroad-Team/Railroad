@@ -61,14 +61,16 @@ public class MappingChannelRegistry {
 
     private static Function<MinecraftVersion, List<String>> fromRepository(
         String registryId,
-        ThrowingFunction<String, List<String>> versionFetcher) {
+        ThrowingFunction<String, List<String>> versionFetcher
+    ) {
         return minecraftVersion -> fetchVersions(registryId, minecraftVersion.id(), versionFetcher);
     }
 
     private static <T> List<T> fetchVersions(
         String registryId,
         String minecraftVersionId,
-        ThrowingFunction<String, List<T>> fetcher) {
+        ThrowingFunction<String, List<T>> fetcher
+    ) {
         try {
             return fetcher.apply(minecraftVersionId);
         } catch (ExecutionException exception) {

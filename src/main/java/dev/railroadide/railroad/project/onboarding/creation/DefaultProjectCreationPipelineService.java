@@ -37,8 +37,11 @@ public final class DefaultProjectCreationPipelineService implements ProjectCreat
     }
 
     @Override
-    public void registerDefaultProviders(@NotNull CreationStepRegistry registry, @NotNull ProjectType type,
-        @NotNull ProjectServiceRegistry services) {
+    public void registerDefaultProviders(
+        @NotNull CreationStepRegistry registry,
+        @NotNull ProjectType type,
+        @NotNull ProjectServiceRegistry services
+    ) {
         if (type.equals(ProjectTypeRegistry.FABRIC)) {
             registry.addAll(
                 new CreateDirectoriesStep(services.get(FilesService.class)),

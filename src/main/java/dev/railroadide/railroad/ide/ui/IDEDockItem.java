@@ -126,7 +126,8 @@ public enum IDEDockItem {
         DockPosition preferredDockPosition,
         @Nullable WorkspaceMode owningMode,
         InitializationPolicy initializationPolicy,
-        Function<Project, ? extends Node> contentFactory) {
+        Function<Project, ? extends Node> contentFactory
+    ) {
         this.id = Objects.requireNonNull(id, "Dock-item ID cannot be null");
         this.localizationKey = Objects.requireNonNull(localizationKey, "Localization key cannot be null");
         this.icon = Objects.requireNonNull(icon, "Dock-item icon cannot be null");

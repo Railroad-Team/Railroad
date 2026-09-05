@@ -43,7 +43,8 @@ public record EditorTabSessionState(
         boolean pinned,
         boolean preview,
         boolean active,
-        String editorGroupId) {
+        String editorGroupId
+    ) {
         this(null, path, order, pinned, preview, active, editorGroupId, EditorViewState.EMPTY);
     }
 
@@ -54,7 +55,8 @@ public record EditorTabSessionState(
         boolean pinned,
         boolean preview,
         boolean active,
-        String editorGroupId) {
+        String editorGroupId
+    ) {
         this(identity, path, order, pinned, preview, active, editorGroupId, EditorViewState.EMPTY);
     }
 

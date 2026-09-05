@@ -28,7 +28,8 @@ public interface CacheManager {
         String key,
         TypeToken<T> typeToken,
         Duration ttl,
-        Supplier<CompletableFuture<T>> fetcher) {
+        Supplier<CompletableFuture<T>> fetcher
+    ) {
         return get(key, typeToken).thenCompose(opt -> opt.map(entry -> CompletableFuture.completedFuture(entry.data()))
             .orElseGet(() -> fetcher.get().thenApply(fresh -> {
                 put(key, fresh, ttl, typeToken);
@@ -40,7 +41,8 @@ public interface CacheManager {
         String key,
         Class<T> typeToken,
         Duration ttl,
-        Supplier<CompletableFuture<T>> fetcher) {
+        Supplier<CompletableFuture<T>> fetcher
+    ) {
         return getOrFetch(key, TypeToken.get(typeToken), ttl, fetcher);
     }
 
@@ -48,7 +50,8 @@ public interface CacheManager {
         String key,
         TypeToken<T> typeToken,
         Duration ttl,
-        Supplier<CompletableFuture<Optional<T>>> fetcher) {
+        Supplier<CompletableFuture<Optional<T>>> fetcher
+    ) {
         return get(key, typeToken)
             .thenCompose(opt -> opt.map(entry -> CompletableFuture.completedFuture(Optional.of(entry.data())))
                 .orElseGet(() -> fetcher.get().thenApply(freshOpt -> {
@@ -61,7 +64,8 @@ public interface CacheManager {
         String key,
         Class<T> typeToken,
         Duration ttl,
-        Supplier<CompletableFuture<Optional<T>>> fetcher) {
+        Supplier<CompletableFuture<Optional<T>>> fetcher
+    ) {
         return getOrFetchOptional(key, TypeToken.get(typeToken), ttl, fetcher);
     }
 }

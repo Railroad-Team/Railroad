@@ -64,8 +64,12 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * @see String#format(String, Object...)
      * @see InformationType
      */
-    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType,
-        @Nullable StringProperty bindTo, Object... args) {
+    public void addInformationLabel(
+        @NotNull String informativeText,
+        @NotNull InformationType informationType,
+        @Nullable StringProperty bindTo,
+        Object... args
+    ) {
         addInformationLabel(informativeText, t -> TRUE_BINDING, informationType, bindTo, args);
     }
 
@@ -78,8 +82,11 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * @see String#format(String, Object...)
      * @see InformationType
      */
-    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType,
-        Object... args) {
+    public void addInformationLabel(
+        @NotNull String informativeText,
+        @NotNull InformationType informationType,
+        Object... args
+    ) {
         addInformationLabel(informativeText, informationType, null, args);
     }
 
@@ -118,9 +125,12 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * @see String#format(String, Object...)
      * @see InformationType
      */
-    public void addInformationLabel(@NotNull String informativeText,
-        @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType,
-        Object... args) {
+    public void addInformationLabel(
+        @NotNull String informativeText,
+        @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding,
+        @NotNull InformationType informationType,
+        Object... args
+    ) {
         addInformationLabel(informativeText, informativeTextVisibleBinding, informationType, null, args);
     }
 
@@ -135,9 +145,13 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * @see String#format(String, Object...)
      * @see InformationType
      */
-    public void addInformationLabel(@NotNull String informativeText,
-        @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType,
-        @Nullable StringProperty bindTo, Object... args) {
+    public void addInformationLabel(
+        @NotNull String informativeText,
+        @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding,
+        @NotNull InformationType informationType,
+        @Nullable StringProperty bindTo,
+        Object... args
+    ) {
         var informationLabel = new InformationLabel(informativeText, informationType, args);
         informationLabel.visibleProperty().bind(informativeTextVisibleBinding.apply(labeledHBox.getPrimaryComponent()));
         informationLabels.add(informationLabel);

@@ -66,9 +66,11 @@ public record DefaultGradleEnvironment(Project project, Path gradleInstallationP
         return Optional.ofNullable(settings.getDaemonIdleTimeout());
     }
 
-    private boolean matchesConfiguration(GradleTaskExecutionRequest request,
+    private boolean matchesConfiguration(
+        GradleTaskExecutionRequest request,
         JDK jvm,
-        GradleRunConfigurationData data) {
+        GradleRunConfigurationData data
+    ) {
         if (request == null || data == null)
             return false;
 

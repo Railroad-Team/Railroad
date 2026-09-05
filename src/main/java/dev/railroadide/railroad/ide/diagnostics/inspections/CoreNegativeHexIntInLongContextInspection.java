@@ -38,8 +38,10 @@ public class CoreNegativeHexIntInLongContextInspection implements JavaInspection
                 CoreNegativeHexIntInLongContextInspection::reportNegativeHexIntInLongContext));
     }
 
-    private static void reportNegativeHexIntInLongContext(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportNegativeHexIntInLongContext(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode literalExprNode : context.nodesOfKinds(JavaSyntaxKinds.LITERAL_EXPRESSION.id())) {
             if (!isHexIntegerLiteral(literalExprNode))
                 continue;

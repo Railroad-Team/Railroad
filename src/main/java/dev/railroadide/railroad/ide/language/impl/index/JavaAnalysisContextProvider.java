@@ -116,7 +116,8 @@ public final class JavaAnalysisContextProvider {
         JavaLanguageIndexContext context,
         @Nullable JavaProjectSemanticIndex projectIndex,
         JavaLibrarySymbolIndex libraryIndex,
-        JavaJdkSymbolIndex jdkIndex) {
+        JavaJdkSymbolIndex jdkIndex
+    ) {
         Railroad.LOGGER.warn(
             "Java analysis index context: sourceRoots={}, generatedRoots={}, dependencyRoots={}, classpathRoots={}, modulePathRoots={}, jdkHome={}",
             context.sourceRoots().size(),

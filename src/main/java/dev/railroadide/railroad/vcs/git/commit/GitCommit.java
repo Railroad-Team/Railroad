@@ -47,8 +47,15 @@ public record GitCommit(
      * @param authorTimestamp author timestamp in epoch seconds
      * @param parentHashes parent commit hashes
      */
-    public GitCommit(String hash, String shortHash, String subject, String authorName, String authorEmail,
-        long authorTimestamp, String... parentHashes) {
+    public GitCommit(
+        String hash,
+        String shortHash,
+        String subject,
+        String authorName,
+        String authorEmail,
+        long authorTimestamp,
+        String... parentHashes
+    ) {
         this(
             hash,
             shortHash,

@@ -492,7 +492,7 @@ public class PluginManager {
         return resources;
     }
 
-    static List<JavaInspectionRuleProvider> loadJavaInspectionRuleProviders(ClassLoader classLoader) {
+    public static List<JavaInspectionRuleProvider> loadJavaInspectionRuleProviders(ClassLoader classLoader) {
         Objects.requireNonNull(classLoader, "classLoader");
 
         List<JavaInspectionRuleProvider> providers = new ArrayList<>();
@@ -506,9 +506,10 @@ public class PluginManager {
         return List.copyOf(providers);
     }
 
-    static List<String> registerJavaInspectionRuleProviders(
+    public static List<String> registerJavaInspectionRuleProviders(
         PluginDescriptor descriptor,
-        List<JavaInspectionRuleProvider> providers) {
+        List<JavaInspectionRuleProvider> providers
+    ) {
         Objects.requireNonNull(descriptor, "descriptor");
         if (providers == null || providers.isEmpty())
             return List.of();
@@ -533,15 +534,16 @@ public class PluginManager {
         }
     }
 
-    static void unregisterJavaInspectionRuleProviders(PluginLoadResult loadResult) {
+    public static void unregisterJavaInspectionRuleProviders(PluginLoadResult loadResult) {
         Objects.requireNonNull(loadResult, "loadResult");
         unregisterJavaInspectionRuleProviders(loadResult.javaInspectionRuleProviderRegistrationIds());
         loadResult.clearJavaInspectionRuleProviderRegistrationIds();
     }
 
-    static String javaInspectionRuleProviderRegistrationId(
+    public static String javaInspectionRuleProviderRegistrationId(
         PluginDescriptor descriptor,
-        JavaInspectionRuleProvider provider) {
+        JavaInspectionRuleProvider provider
+    ) {
         Objects.requireNonNull(descriptor, "descriptor");
         Objects.requireNonNull(provider, "provider");
 

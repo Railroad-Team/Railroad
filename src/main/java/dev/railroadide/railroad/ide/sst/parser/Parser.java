@@ -515,8 +515,12 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
         private final List<ParseDiagnostic> diagnosticsCopy;
         private boolean active = true;
 
-        private Marker(Lexer.Snapshot lexSnapshot, ArrayDeque<Token<T>> laCopy, Token<T> prevCopy,
-            List<ParseDiagnostic> diagnosticsCopy) {
+        private Marker(
+            Lexer.Snapshot lexSnapshot,
+            ArrayDeque<Token<T>> laCopy,
+            Token<T> prevCopy,
+            List<ParseDiagnostic> diagnosticsCopy
+        ) {
             this.lexSnapshot = lexSnapshot;
             this.laCopy = laCopy;
             this.prevCopy = prevCopy;

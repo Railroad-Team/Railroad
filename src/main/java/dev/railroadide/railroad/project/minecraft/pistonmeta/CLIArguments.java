@@ -25,8 +25,10 @@ public class CLIArguments {
             .findFirst();
     }
 
-    private static List<Argument> readKeyValues(JsonArray array,
-        BiConsumer<List<Argument>, JsonElement> notPrimitiveHandler) {
+    private static List<Argument> readKeyValues(
+        JsonArray array,
+        BiConsumer<List<Argument>, JsonElement> notPrimitiveHandler
+    ) {
         List<Argument> arguments = new ArrayList<>();
         if (array == null || array.isEmpty())
             return arguments;

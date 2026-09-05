@@ -6,11 +6,11 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import java.util.List;
 import java.util.Optional;
 
-final class SyntaxTreeValidator {
+public final class SyntaxTreeValidator {
     private SyntaxTreeValidator() {
     }
 
-    static void validate(SyntaxNode root) {
+    public static void validate(SyntaxNode root) {
         if (root.start() != 0)
             throw new IllegalStateException("syntax root must start at 0, got " + root.start());
 

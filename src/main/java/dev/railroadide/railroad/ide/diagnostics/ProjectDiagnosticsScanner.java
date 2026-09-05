@@ -21,6 +21,8 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
+import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Runs registered language diagnostics over every source file in a project.
@@ -96,7 +98,7 @@ public final class ProjectDiagnosticsScanner {
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Project diagnostics scan was interrupted", exception);
-        } catch (java.util.concurrent.ExecutionException exception) {
+        } catch (ExecutionException exception) {
             throw new IllegalStateException("Project diagnostics scan failed", exception.getCause());
         } finally {
             executor.shutdownNow();
@@ -139,8 +141,10 @@ public final class ProjectDiagnosticsScanner {
         }
     }
 
-    private static DiagnosticsProvider createDiagnosticsProvider(ProjectDiagnosticsContext diagnosticsContext,
-        ScanTarget target) {
+    private static DiagnosticsProvider createDiagnosticsProvider(
+        ProjectDiagnosticsContext diagnosticsContext,
+        ScanTarget target
+    ) {
         ProjectDiagnosticsFeatureFactory<DiagnosticsProvider> projectDiagnosticsFactory = target.support()
             .projectDiagnosticsFactory();
         if (projectDiagnosticsFactory != null)
@@ -170,7 +174,8 @@ public final class ProjectDiagnosticsScanner {
         int total,
         int diagnosticCount,
         long fileStartedAt,
-        long scanStartedAt) {
+        long scanStartedAt
+    ) {
         long fileNanos = System.nanoTime() - fileStartedAt;
         long elapsedNanos = System.nanoTime() - scanStartedAt;
         long remainingNanos = completed == 0
@@ -182,7 +187,7 @@ public final class ProjectDiagnosticsScanner {
             "Project diagnostics progress: {}/{} ({}%), file={}, diagnostics={}, fileTime={}, elapsed={}, eta={}",
             completed,
             total,
-            String.format(java.util.Locale.ROOT, "%.1f", percentage),
+            String.format(Locale.ROOT, "%.1f", percentage),
             displayPath(projectRoot, sourceFile),
             diagnosticCount,
             formatDuration(fileNanos),
@@ -246,7 +251,8 @@ public final class ProjectDiagnosticsScanner {
         int scannedFiles,
         List<FileDiagnostics> files,
         Map<Diagnostic.Kind, Integer> countsByKind,
-        Map<String, Integer> countsByCode) {
+        Map<String, Integer> countsByCode
+    ) {
         var report = new StringBuilder();
         int diagnosticCount = countsByCode.values().stream().mapToInt(Integer::intValue).sum();
         report.append("Project: ").append(context.project().getAlias()).append('\n');

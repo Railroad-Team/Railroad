@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.lang.reflect.Modifier;
 
 @RegisteredInspection
 public final class CoreDefiniteAssignmentInspection implements JavaInspectionRuleProvider {
@@ -113,7 +114,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
     private static void analyzeExecutableBodies(
         JavaRuleContext context,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         context.traverse(node -> {
             String kindId = node.kind().id();
             if (!JAVA_METHOD_DECLARATION.equals(kindId)
@@ -195,8 +197,10 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         });
     }
 
-    private static void reportIllegalFinalFieldAssignments(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportIllegalFinalFieldAssignments(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         context.traverse(typeNode -> {
             String kindId = typeNode.kind().id();
             if (!JAVA_CLASS_DECLARATION.equals(kindId)
@@ -228,7 +232,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode block,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         FlowState current = state;
         for (SyntaxNode child : block.children()) {
             if (child instanceof SyntaxToken)
@@ -245,7 +250,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         String kindId = node.kind().id();
         return switch (kindId) {
             case JAVA_BLOCK -> analyzeBlock(context, node, state, unassignedReporter, illegalFinalReporter);
@@ -277,7 +283,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         FlowState current = state;
         for (SyntaxNode child : node.children()) {
             if (!JAVA_VARIABLE_DECLARATOR.equals(child.kind().id()))
@@ -301,7 +308,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         List<SyntaxNode> children = structuralChildren(node);
         if (children.isEmpty())
             return state;
@@ -322,7 +330,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         String label = labelName(node);
         SyntaxNode target = labeledStatementTarget(node);
         if (target == null)
@@ -339,7 +348,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         @Nullable String label,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         return switch (target.kind().id()) {
             case JAVA_WHILE_STATEMENT ->
                 analyzeWhileStatement(context, target, state, unassignedReporter, illegalFinalReporter, label);
@@ -356,7 +366,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         return analyzeWhileStatement(context, node, state, unassignedReporter, illegalFinalReporter, null);
     }
 
@@ -366,7 +377,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
         @Nullable JavaInspectionRuleReporter illegalFinalReporter,
-        @Nullable String loopLabel) {
+        @Nullable String loopLabel
+    ) {
         List<SyntaxNode> children = structuralChildren(node);
         if (children.isEmpty())
             return state;
@@ -388,7 +400,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         return analyzeDoWhileStatement(context, node, state, unassignedReporter, illegalFinalReporter, null);
     }
 
@@ -398,7 +411,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
         @Nullable JavaInspectionRuleReporter illegalFinalReporter,
-        @Nullable String loopLabel) {
+        @Nullable String loopLabel
+    ) {
         List<SyntaxNode> children = structuralChildren(node);
         if (children.isEmpty())
             return state;
@@ -421,7 +435,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         return analyzeForStatement(context, node, state, unassignedReporter, illegalFinalReporter, null);
     }
 
@@ -431,7 +446,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
         @Nullable JavaInspectionRuleReporter illegalFinalReporter,
-        @Nullable String loopLabel) {
+        @Nullable String loopLabel
+    ) {
         FlowState inheritedExits = state;
         state = state.withoutAbruptExits();
         List<SyntaxNode> children = structuralChildren(node);
@@ -464,7 +480,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
         @Nullable JavaInspectionRuleReporter illegalFinalReporter,
-        @Nullable String loopLabel) {
+        @Nullable String loopLabel
+    ) {
         BasicForSegments segments = basicForSegments(header);
         FlowState initState = analyzeNodeSequence(context, segments.initNodes(), state, unassignedReporter,
             illegalFinalReporter);
@@ -488,7 +505,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
         @Nullable JavaInspectionRuleReporter illegalFinalReporter,
-        @Nullable String loopLabel) {
+        @Nullable String loopLabel
+    ) {
         FlowState baseHead = state.withoutAbruptExits();
         FlowState loopHead = baseHead;
         for (int i = 0; i < LOOP_FIXPOINT_ITERATION_LIMIT; i++) {
@@ -512,7 +530,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         FlowState initState,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
         @Nullable JavaInspectionRuleReporter illegalFinalReporter,
-        @Nullable String loopLabel) {
+        @Nullable String loopLabel
+    ) {
         FlowState baseHead = initState.withoutAbruptExits();
         FlowState loopHead = baseHead;
         for (int i = 0; i < LOOP_FIXPOINT_ITERATION_LIMIT; i++) {
@@ -539,7 +558,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode header,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         FlowState current = state;
         for (SyntaxNode child : structuralChildren(header)) {
             if (JAVA_PARAMETER.equals(child.kind().id())) {
@@ -562,7 +582,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         FlowState current = state;
         for (SyntaxNode resource : directChildrenOfKind(node, "JAVA_TRY_RESOURCE")) {
             current = analyzeNode(context, resource, current, unassignedReporter, illegalFinalReporter);
@@ -604,7 +625,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         List<SyntaxNode> children = structuralChildren(node);
         if (children.isEmpty())
             return state;
@@ -646,7 +668,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode rule,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         FlowState current = state;
         boolean pastLabel = false;
         for (SyntaxNode child : structuralChildren(rule)) {
@@ -666,7 +689,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         FlowState analyzed = analyzeGenericNode(context, node, state, unassignedReporter, illegalFinalReporter);
         return switch (node.kind().id()) {
             case JAVA_BREAK_STATEMENT -> analyzed.breakExit(breakOrContinueLabel(context, node));
@@ -680,7 +704,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         String kindId = node.kind().id();
         if (ANALYSIS_BARRIERS.contains(kindId))
             return state;
@@ -708,7 +733,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         List<SyntaxNode> expressions = context.directExpressionChildren(node);
         if (expressions.size() < 2)
             return analyzeGenericNode(context, node, state, unassignedReporter, illegalFinalReporter);
@@ -729,7 +755,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         SyntaxNode target = context.firstDirectExpressionChild(node);
         if (target == null)
             return state;
@@ -742,7 +769,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         String kindId = node.kind().id();
         if (ANALYSIS_BARRIERS.contains(kindId))
             return state;
@@ -775,7 +803,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         JavaRuleContext context,
         SyntaxNode target,
         FlowState state,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         Symbol symbol = context.resolvedSymbol(target).orElse(null);
         if (!isTrackedVariable(symbol) || !isVisibleAtUse(symbol, target))
             return state;
@@ -804,7 +833,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
     }
 
     private static boolean isFinalVariable(JavaRuleContext context, Symbol symbol) {
-        return java.lang.reflect.Modifier.isFinal(context.symbolModifiers(symbol));
+        return Modifier.isFinal(context.symbolModifiers(symbol));
     }
 
     private static boolean isIncrementExpression(SyntaxNode node) {
@@ -872,7 +901,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         List<SyntaxNode> nodes,
         FlowState state,
         @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter) {
+        @Nullable JavaInspectionRuleReporter illegalFinalReporter
+    ) {
         FlowState current = state;
         for (SyntaxNode node : nodes) {
             if (!current.reachable())
@@ -887,7 +917,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         List<SyntaxNode> nodes,
         Symbol fieldSymbol,
         FieldFlowState state,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         FieldFlowState current = state;
         for (SyntaxNode node : nodes) {
             if (!current.reachable())
@@ -967,29 +998,39 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 continue;
             for (SyntaxNode declarator : directChildrenOfKind(child, JAVA_VARIABLE_DECLARATOR)) {
                 Symbol symbol = context.declaredSymbol(declarator).orElse(null);
-                if (symbol == null || !java.lang.reflect.Modifier.isFinal(context.symbolModifiers(symbol)))
+                if (symbol == null || !Modifier.isFinal(context.symbolModifiers(symbol)))
                     continue;
                 boolean hasInitializer = context.firstDirectExpressionChild(declarator) != null;
                 fields.add(new FieldSymbolInfo(symbol, declarator,
-                    java.lang.reflect.Modifier.isStatic(context.symbolModifiers(symbol)), !hasInitializer));
+                    Modifier.isStatic(context.symbolModifiers(symbol)), !hasInitializer));
             }
         }
 
         return List.copyOf(fields);
     }
 
-    private static boolean assignedByStaticInitialization(JavaRuleContext context, SyntaxNode typeNode,
-        Symbol fieldSymbol) {
+    private static boolean assignedByStaticInitialization(
+        JavaRuleContext context,
+        SyntaxNode typeNode,
+        Symbol fieldSymbol
+    ) {
         return assignedByInitializers(context, typeNode, fieldSymbol, true);
     }
 
-    private static boolean assignedByInstanceInitialization(JavaRuleContext context, SyntaxNode typeNode,
-        Symbol fieldSymbol) {
+    private static boolean assignedByInstanceInitialization(
+        JavaRuleContext context,
+        SyntaxNode typeNode,
+        Symbol fieldSymbol
+    ) {
         return assignedByInitializers(context, typeNode, fieldSymbol, false);
     }
 
-    private static boolean assignedByInitializers(JavaRuleContext context, SyntaxNode typeNode, Symbol fieldSymbol,
-        boolean staticField) {
+    private static boolean assignedByInitializers(
+        JavaRuleContext context,
+        SyntaxNode typeNode,
+        Symbol fieldSymbol,
+        boolean staticField
+    ) {
         FieldFlowState state = staticField
             ? analyzeStaticFieldInitializers(context, typeNode, fieldSymbol, null)
             : analyzeInstanceFieldInitializers(context, typeNode, fieldSymbol, null);
@@ -1052,7 +1093,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         Symbol fieldSymbol,
         FieldFlowState state,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         String kindId = node.kind().id();
         if (ANALYSIS_BARRIERS.contains(kindId))
             return state;
@@ -1078,7 +1120,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         Symbol fieldSymbol,
         FieldFlowState state,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         String label = labelName(node);
         SyntaxNode target = labeledStatementTarget(node);
         if (target == null)
@@ -1094,7 +1137,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         @Nullable String label,
         Symbol fieldSymbol,
         FieldFlowState state,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         return switch (target.kind().id()) {
             case JAVA_WHILE_STATEMENT -> analyzeFieldWhile(context, target, fieldSymbol, state, reporter, label);
             case JAVA_DO_WHILE_STATEMENT -> analyzeFieldDoWhile(context, target, fieldSymbol, state, reporter, label);
@@ -1108,7 +1152,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode block,
         Symbol fieldSymbol,
         FieldFlowState state,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         FieldFlowState current = state;
         for (SyntaxNode child : block.children()) {
             if (child instanceof SyntaxToken)
@@ -1125,7 +1170,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         Symbol fieldSymbol,
         FieldFlowState state,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         List<SyntaxNode> children = structuralChildren(node);
         FieldFlowState thenState = children.size() > 1
             ? analyzeFieldFlow(context, children.get(1), fieldSymbol, state, reporter)
@@ -1141,7 +1187,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         Symbol fieldSymbol,
         FieldFlowState state,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         SyntaxNode tryBlock = context.directChild(node, JAVA_BLOCK);
         FieldFlowState merged = tryBlock == null
             ? state
@@ -1168,7 +1215,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         Symbol fieldSymbol,
         FieldFlowState state,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         List<SyntaxNode> rules = directChildrenOfKind(node, JAVA_SWITCH_RULE);
         if (rules.isEmpty())
             return state;
@@ -1201,7 +1249,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode rule,
         Symbol fieldSymbol,
         FieldFlowState state,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         FieldFlowState current = state;
         boolean pastLabel = false;
         for (SyntaxNode child : structuralChildren(rule)) {
@@ -1221,7 +1270,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         Symbol fieldSymbol,
         FieldFlowState state,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         return analyzeFieldWhile(context, node, fieldSymbol, state, reporter, null);
     }
 
@@ -1231,7 +1281,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         Symbol fieldSymbol,
         FieldFlowState state,
         @Nullable JavaInspectionRuleReporter reporter,
-        @Nullable String loopLabel) {
+        @Nullable String loopLabel
+    ) {
         List<SyntaxNode> children = structuralChildren(node);
         if (children.isEmpty())
             return state;
@@ -1249,7 +1300,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         Symbol fieldSymbol,
         FieldFlowState state,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         return analyzeFieldDoWhile(context, node, fieldSymbol, state, reporter, null);
     }
 
@@ -1259,7 +1311,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         Symbol fieldSymbol,
         FieldFlowState state,
         @Nullable JavaInspectionRuleReporter reporter,
-        @Nullable String loopLabel) {
+        @Nullable String loopLabel
+    ) {
         List<SyntaxNode> children = structuralChildren(node);
         if (children.isEmpty())
             return state;
@@ -1273,7 +1326,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         Symbol fieldSymbol,
         FieldFlowState state,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         return analyzeFieldFor(context, node, fieldSymbol, state, reporter, null);
     }
 
@@ -1283,7 +1337,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         Symbol fieldSymbol,
         FieldFlowState state,
         @Nullable JavaInspectionRuleReporter reporter,
-        @Nullable String loopLabel) {
+        @Nullable String loopLabel
+    ) {
         List<SyntaxNode> children = structuralChildren(node);
         if (children.isEmpty())
             return state;
@@ -1303,7 +1358,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         Symbol fieldSymbol,
         FieldFlowState state,
         @Nullable JavaInspectionRuleReporter reporter,
-        @Nullable String loopLabel) {
+        @Nullable String loopLabel
+    ) {
         BasicForSegments segments = basicForSegments(header);
         FieldFlowState initState = analyzeFieldNodeSequence(context, segments.initNodes(), fieldSymbol, state,
             reporter);
@@ -1327,7 +1383,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         Symbol fieldSymbol,
         FieldFlowState state,
         @Nullable JavaInspectionRuleReporter reporter,
-        @Nullable String loopLabel) {
+        @Nullable String loopLabel
+    ) {
         FieldFlowState baseHead = state.withoutAbruptExits();
         FieldFlowState loopHead = baseHead;
         for (int i = 0; i < LOOP_FIXPOINT_ITERATION_LIMIT; i++) {
@@ -1350,7 +1407,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         Symbol fieldSymbol,
         FieldFlowState initState,
         @Nullable JavaInspectionRuleReporter reporter,
-        @Nullable String loopLabel) {
+        @Nullable String loopLabel
+    ) {
         FieldFlowState baseHead = initState.withoutAbruptExits();
         FieldFlowState loopHead = baseHead;
         for (int i = 0; i < LOOP_FIXPOINT_ITERATION_LIMIT; i++) {
@@ -1382,7 +1440,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode node,
         Symbol fieldSymbol,
         FieldFlowState state,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         if (JAVA_ASSIGNMENT_EXPRESSION.equals(node.kind().id())) {
             List<SyntaxNode> expressions = context.directExpressionChildren(node);
             if (expressions.size() >= 2) {
@@ -1423,7 +1482,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         JavaRuleContext context,
         SyntaxNode typeNode,
         Symbol fieldSymbol,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         return analyzeFieldInitializers(context, typeNode, fieldSymbol, true, reporter);
     }
 
@@ -1431,7 +1491,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         JavaRuleContext context,
         SyntaxNode typeNode,
         Symbol fieldSymbol,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         return analyzeFieldInitializers(context, typeNode, fieldSymbol, false, reporter);
     }
 
@@ -1440,7 +1501,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode typeNode,
         Symbol fieldSymbol,
         boolean staticField,
-        @Nullable JavaInspectionRuleReporter reporter) {
+        @Nullable JavaInspectionRuleReporter reporter
+    ) {
         SyntaxNode body = typeBody(typeNode);
         if (body == null)
             return FieldFlowState.initial();

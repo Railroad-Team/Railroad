@@ -12,8 +12,14 @@ public class JavaLexerSnapshot extends AbstractLexerSnapshot {
     public final List<Lexer.LexError> diagnostics;
     public final Deque<Token<JavaTokenType>> lookaheadBuffer;
 
-    public JavaLexerSnapshot(int offset, int line, int column, int mode, List<Lexer.LexError> diagnostics,
-        Deque<Token<JavaTokenType>> lookaheadBuffer) {
+    public JavaLexerSnapshot(
+        int offset,
+        int line,
+        int column,
+        int mode,
+        List<Lexer.LexError> diagnostics,
+        Deque<Token<JavaTokenType>> lookaheadBuffer
+    ) {
         super(offset, line, column, mode);
 
         this.diagnostics = diagnostics;

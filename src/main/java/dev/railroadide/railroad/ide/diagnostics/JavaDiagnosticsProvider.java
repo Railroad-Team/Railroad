@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Map;
 
 /**
  * Diagnostics provider backed by the SST semantic analyzer.
@@ -91,8 +92,11 @@ public record JavaDiagnosticsProvider(Project project, Path filePath,
         return List.copyOf(diagnostics);
     }
 
-    private List<SemanticDiagnostic> runRegisteredInspections(String document, SemanticModel semanticModel,
-        JavaSymbolIndex symbolIndex) {
+    private List<SemanticDiagnostic> runRegisteredInspections(
+        String document,
+        SemanticModel semanticModel,
+        JavaSymbolIndex symbolIndex
+    ) {
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
         var context = new JavaRuleContext(filePath, document, semanticModel, symbolIndex);
         JavaInspectionReporter reporter = diagnostic -> diagnostics
@@ -115,8 +119,8 @@ public record JavaDiagnosticsProvider(Project project, Path filePath,
 
     private static List<JavaInspectionRuleProvider> sortedRuleProviders() {
         return JavaInspectionRegistries.ruleProviderEntries().entrySet().stream()
-            .sorted(java.util.Map.Entry.comparingByKey())
-            .map(java.util.Map.Entry::getValue)
+            .sorted(Map.Entry.comparingByKey())
+            .map(Map.Entry::getValue)
             .toList();
     }
 

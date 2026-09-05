@@ -25,11 +25,13 @@ public class RunConfigurationPickerComponent
         FormComponent<FormRunConfigurationPicker, RunConfigurationPickerComponent.Data, FormRunConfigurationPicker, RunConfiguration<?>[]> {
     private final Supplier<List<RunConfiguration<?>>> initialSelectionSupplier;
 
-    public RunConfigurationPickerComponent(String dataKey,
+    public RunConfigurationPickerComponent(
+        String dataKey,
         Data data,
         FormComponentValidator<FormRunConfigurationPicker> validator,
         FormComponentChangeListener<FormRunConfigurationPicker, RunConfiguration<?>[]> listener,
-        BooleanBinding visible) {
+        BooleanBinding visible
+    ) {
         super(dataKey,
             data,
             currentData -> new FormRunConfigurationPicker(
@@ -52,7 +54,8 @@ public class RunConfigurationPickerComponent
 
     @Override
     protected void applyListener(
-        FormComponentChangeListener<FormRunConfigurationPicker, RunConfiguration<?>[]> listener) {
+        FormComponentChangeListener<FormRunConfigurationPicker, RunConfiguration<?>[]> listener
+    ) {
         AtomicReference<ChangeListener<RunConfiguration<?>[]>> listenerRef = new AtomicReference<>();
         componentProperty().addListener((_, oldValue, newValue) -> {
             if (oldValue != null && listenerRef.get() != null) {
@@ -149,21 +152,28 @@ public class RunConfigurationPickerComponent
 
         @Override
         public Builder listener(
-            FormComponentChangeListener<FormRunConfigurationPicker, RunConfiguration<?>[]> listener) {
+            FormComponentChangeListener<FormRunConfigurationPicker, RunConfiguration<?>[]> listener
+        ) {
             this.listener = listener;
             return this;
         }
 
         @Override
-        public <X> Builder addTransformer(ObservableValue<FormRunConfigurationPicker> fromComponent,
-            Consumer<X> toComponentFunction, Function<RunConfiguration<?>[], X> valueMapper) {
+        public <X> Builder addTransformer(
+            ObservableValue<FormRunConfigurationPicker> fromComponent,
+            Consumer<X> toComponentFunction,
+            Function<RunConfiguration<?>[], X> valueMapper
+        ) {
             throw new UnsupportedOperationException(
                 "Transformers are not supported for RunConfigurationPickerComponent.");
         }
 
         @Override
-        public <U extends Node, X> Builder addTransformer(ObservableValue<FormRunConfigurationPicker> fromComponent,
-            ObservableValue<U> toComponent, Function<RunConfiguration<?>[], X> valueMapper) {
+        public <U extends Node, X> Builder addTransformer(
+            ObservableValue<FormRunConfigurationPicker> fromComponent,
+            ObservableValue<U> toComponent,
+            Function<RunConfiguration<?>[], X> valueMapper
+        ) {
             throw new UnsupportedOperationException(
                 "Transformers are not supported for RunConfigurationPickerComponent.");
         }

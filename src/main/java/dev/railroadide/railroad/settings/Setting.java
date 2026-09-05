@@ -175,10 +175,20 @@ public class Setting<T> {
      * @param canBeNull Indicates if the setting's value can be null.
      * @param defaultValue The default value for the setting, can be null if allowed.
      */
-    public Setting(String id, String treePath, SettingCodec<T, ?> codec, Class<T> type, boolean canBeNull,
-        @Nullable T defaultValue, SettingCategory category,
-        @Nullable String title, @Nullable String description, boolean hasTitle, boolean hasDescription,
-        boolean persisted) {
+    public Setting(
+        String id,
+        String treePath,
+        SettingCodec<T, ?> codec,
+        Class<T> type,
+        boolean canBeNull,
+        @Nullable T defaultValue,
+        SettingCategory category,
+        @Nullable String title,
+        @Nullable String description,
+        boolean hasTitle,
+        boolean hasDescription,
+        boolean persisted
+    ) {
         this.id = id;
         this.treePath = treePath;
         this.codec = codec;

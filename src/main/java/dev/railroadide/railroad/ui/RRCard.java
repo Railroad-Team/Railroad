@@ -5,6 +5,7 @@ import javafx.scene.Node;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import org.jetbrains.annotations.Nullable;
+import javafx.geometry.Insets;
 
 /**
  * A modern card component with enhanced styling and hover effects.
@@ -21,7 +22,7 @@ public class RRCard extends VBox {
         this(cornerRadius, null);
     }
 
-    public RRCard(double cornerRadius, @Nullable javafx.geometry.Insets padding) {
+    public RRCard(double cornerRadius, @Nullable Insets padding) {
         content = new VBox();
         content.getStyleClass().add("rr-card-content");
         if (padding != null) {

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.LinkedHashMap;
 
 /**
  * Global registries for Java inspection extension points.
@@ -120,7 +121,7 @@ public final class JavaInspectionRegistries {
                 Map.Entry::getKey,
                 entry -> (JavaInspectionRuleProvider) entry.getValue(),
                 (left, right) -> left,
-                java.util.LinkedHashMap::new));
+                LinkedHashMap::new));
     }
 
     private static JavaInspectionRuleProvider asJavaProvider(LanguageInspectionProvider provider) {

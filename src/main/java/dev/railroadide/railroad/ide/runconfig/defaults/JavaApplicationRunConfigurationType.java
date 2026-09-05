@@ -32,8 +32,10 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
     }
 
     @Override
-    public CompletableFuture<Void> run(Project project,
-        RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> run(
+        Project project,
+        RunConfiguration<JavaApplicationRunConfigurationData> configuration
+    ) {
         return execute(project, configuration, false).whenComplete((unused, throwable) -> {
             if (throwable != null) {
                 Railroad.LOGGER.error("Failed to start run session for configuration: {}",
@@ -43,8 +45,10 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
     }
 
     @Override
-    public CompletableFuture<Void> debug(Project project,
-        RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> debug(
+        Project project,
+        RunConfiguration<JavaApplicationRunConfigurationData> configuration
+    ) {
         return execute(project, configuration, true).whenComplete((unused, throwable) -> {
             if (throwable != null) {
                 Railroad.LOGGER.error("Failed to start debug session for configuration: {}",
@@ -54,8 +58,10 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
     }
 
     @Override
-    public CompletableFuture<Void> stop(Project project,
-        RunConfiguration<JavaApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> stop(
+        Project project,
+        RunConfiguration<JavaApplicationRunConfigurationData> configuration
+    ) {
         Process process = runningProcesses.get(configuration);
         if (process != null && process.isAlive()) {
             process.destroy();
@@ -85,8 +91,11 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         return JavaApplicationRunConfigurationData.class;
     }
 
-    private CompletableFuture<Void> execute(Project project,
-        RunConfiguration<JavaApplicationRunConfigurationData> configuration, boolean debug) {
+    private CompletableFuture<Void> execute(
+        Project project,
+        RunConfiguration<JavaApplicationRunConfigurationData> configuration,
+        boolean debug
+    ) {
         JavaApplicationRunConfigurationData data = configuration.data();
         final JDK jdk = data.getJdk();
         final String mainClass = data.getMainClass();
@@ -164,9 +173,15 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         }));
     }
 
-    private static String[] buildCommand(JDK jdk, String mainClass,
-        String[] classpathEntries, String[] programArguments,
-        String[] vmOptions, boolean debug, int debugPort) {
+    private static String[] buildCommand(
+        JDK jdk,
+        String mainClass,
+        String[] classpathEntries,
+        String[] programArguments,
+        String[] vmOptions,
+        boolean debug,
+        int debugPort
+    ) {
         String javaExecutable = jdk.path().resolve("bin").resolve(JDKManager.JAVA_EXECUTABLE_NAME).toString();
         String[] vm = vmOptions == null ? new String[0] : vmOptions;
         String[] args = programArguments == null ? new String[0] : programArguments;

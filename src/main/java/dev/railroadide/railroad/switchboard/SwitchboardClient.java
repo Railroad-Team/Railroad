@@ -153,8 +153,10 @@ public record SwitchboardClient(String baseUrl) {
         return fetchLatestFabricApiVersion(minecraftVersionId, false);
     }
 
-    public CompletableFuture<String> fetchLatestFabricApiVersion(String minecraftVersionId,
-        boolean includePrereleases) {
+    public CompletableFuture<String> fetchLatestFabricApiVersion(
+        String minecraftVersionId,
+        boolean includePrereleases
+    ) {
         Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
         String endpoint = "fabric/api/latest/" + minecraftVersionId.toLowerCase(Locale.ROOT);
         if (includePrereleases) {
@@ -191,8 +193,10 @@ public record SwitchboardClient(String baseUrl) {
         return fetchLatestFabricLoaderVersion(minecraftVersionId, false);
     }
 
-    public CompletableFuture<FabricLoaderVersion> fetchLatestFabricLoaderVersion(String minecraftVersionId,
-        boolean includePrereleases) {
+    public CompletableFuture<FabricLoaderVersion> fetchLatestFabricLoaderVersion(
+        String minecraftVersionId,
+        boolean includePrereleases
+    ) {
         Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
         String endpoint = "fabric/loader/latest/" + minecraftVersionId.toLowerCase(Locale.ROOT);
         if (includePrereleases) {

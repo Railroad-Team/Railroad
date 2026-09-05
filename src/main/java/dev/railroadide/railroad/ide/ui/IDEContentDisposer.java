@@ -13,13 +13,13 @@ import java.util.IdentityHashMap;
 import java.util.Set;
 
 /** Disposes resources held by an IDE-owned content tree. */
-final class IDEContentDisposer {
+public final class IDEContentDisposer {
     private static final Object DISPOSED_MARKER = new Object();
 
     private IDEContentDisposer() {
     }
 
-    static void dispose(Tab tab, Set<Object> disposed) {
+    public static void dispose(Tab tab, Set<Object> disposed) {
         if (tab == null || !disposed.add(tab) || tab.getProperties().putIfAbsent(DISPOSED_MARKER, true) != null)
             return;
 
@@ -28,11 +28,11 @@ final class IDEContentDisposer {
         dispose(content, disposed);
     }
 
-    static void dispose(Node root) {
+    public static void dispose(Node root) {
         dispose(root, Collections.newSetFromMap(new IdentityHashMap<>()));
     }
 
-    static void dispose(Node node, Set<Object> disposed) {
+    public static void dispose(Node node, Set<Object> disposed) {
         if (node == null || !disposed.add(node) || node.getProperties().putIfAbsent(DISPOSED_MARKER, true) != null)
             return;
 

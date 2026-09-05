@@ -63,11 +63,13 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
         }
     }
 
-    public FormRunConfigurationPicker(String labelKey,
+    public FormRunConfigurationPicker(
+        String labelKey,
         boolean required,
         ObservableList<RunConfiguration<?>> availableConfigurations,
         Predicate<RunConfiguration<?>> filter,
-        List<RunConfiguration<?>> initialSelection) {
+        List<RunConfiguration<?>> initialSelection
+    ) {
         super(labelKey, required, Map.of(
             "availableConfigurations", availableConfigurations,
             "filter", filter == null ? (Predicate<RunConfiguration<?>>) Objects::nonNull : filter,

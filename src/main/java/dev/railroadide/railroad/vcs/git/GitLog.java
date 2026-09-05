@@ -7,6 +7,7 @@ import ch.qos.logback.core.FileAppender;
 import dev.railroadide.railroad.config.ConfigHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.spi.ILoggingEvent;
 
 /**
  * Routes Git subsystem logging to its own file without console propagation.
@@ -47,13 +48,13 @@ public final class GitLog {
         jgitLogger.setAdditive(false);
     }
 
-    private static FileAppender<ch.qos.logback.classic.spi.ILoggingEvent> createFileAppender(LoggerContext context) {
+    private static FileAppender<ILoggingEvent> createFileAppender(LoggerContext context) {
         var encoder = new PatternLayoutEncoder();
         encoder.setContext(context);
         encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n");
         encoder.start();
 
-        var appender = new FileAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
+        var appender = new FileAppender<ILoggingEvent>();
         appender.setContext(context);
         appender.setName(APPENDER_NAME);
         appender.setFile(ConfigHandler.getConfigDirectory().resolve("logs").resolve("git.log").toString());

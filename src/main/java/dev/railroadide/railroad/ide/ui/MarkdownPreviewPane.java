@@ -401,8 +401,12 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         }
     }
 
-    private void createDialogButtons(RRButton cancelButton, RRButton insertButton, RRTextField uriTextField,
-        RRTextField altTextField) {
+    private void createDialogButtons(
+        RRButton cancelButton,
+        RRButton insertButton,
+        RRTextField uriTextField,
+        RRTextField altTextField
+    ) {
         insertButton.setVariant(ButtonVariant.PRIMARY);
         insertButton.setButtonSize(ButtonSize.LARGE);
         insertButton.getStyleClass().add("markdown-image-dialog-button");

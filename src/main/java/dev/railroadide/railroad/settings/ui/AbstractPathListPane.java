@@ -34,10 +34,12 @@ public abstract class AbstractPathListPane extends RRVBox {
     @Getter
     private final ListView<Path> listView = new RRListView<>(paths);
 
-    protected AbstractPathListPane(Collection<Path> initialPaths,
+    protected AbstractPathListPane(
+        Collection<Path> initialPaths,
         String placeholderKey,
         String addTooltipKey,
-        String removeTooltipKey) {
+        String removeTooltipKey
+    ) {
         setFillWidth(true);
         getStyleClass().add("path-list-pane");
 
@@ -92,9 +94,11 @@ public abstract class AbstractPathListPane extends RRVBox {
         setPaths(initialPaths);
     }
 
-    protected AbstractPathListPane(String placeholderKey,
+    protected AbstractPathListPane(
+        String placeholderKey,
         String addTooltipKey,
-        String removeTooltipKey) {
+        String removeTooltipKey
+    ) {
         this(Collections.emptyList(), placeholderKey, addTooltipKey, removeTooltipKey);
     }
 

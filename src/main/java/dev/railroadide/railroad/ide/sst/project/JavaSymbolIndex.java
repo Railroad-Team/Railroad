@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.LinkedHashSet;
 
 public interface JavaSymbolIndex {
     Set<String> declaredQualifiedNames();
@@ -15,7 +16,7 @@ public interface JavaSymbolIndex {
      * should cache this set because inspection contexts query it for every file.
      */
     default Set<String> typeNames() {
-        java.util.LinkedHashSet<String> names = new java.util.LinkedHashSet<>();
+        LinkedHashSet<String> names = new LinkedHashSet<>();
         for (String qualifiedName : declaredQualifiedNames()) {
             names.add(qualifiedName);
             int separator = Math.max(qualifiedName.lastIndexOf('.'), qualifiedName.lastIndexOf('$'));

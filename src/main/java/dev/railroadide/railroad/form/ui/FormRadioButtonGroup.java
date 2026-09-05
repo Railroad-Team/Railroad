@@ -26,8 +26,14 @@ public class FormRadioButtonGroup<E extends Enum<E>> extends InformativeLabeledH
     private final ObjectProperty<E> value = new SimpleObjectProperty<>();
     private Map<E, RadioButton> radioButtons;
 
-    public FormRadioButtonGroup(String labelKey, boolean required, List<E> values,
-        Function<E, String> optionLabelProvider, boolean translateOptions, double spacing) {
+    public FormRadioButtonGroup(
+        String labelKey,
+        boolean required,
+        List<E> values,
+        Function<E, String> optionLabelProvider,
+        boolean translateOptions,
+        double spacing
+    ) {
         super(labelKey, required, Map.of(
             "values", values,
             "labelProvider", optionLabelProvider,

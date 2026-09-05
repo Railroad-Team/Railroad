@@ -132,8 +132,10 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         });
     }
 
-    private void executeGradleBuild(RunConfiguration<GradleRunConfigurationData> configuration,
-        CompletableFuture<Void> future) {
+    private void executeGradleBuild(
+        RunConfiguration<GradleRunConfigurationData> configuration,
+        CompletableFuture<Void> future
+    ) {
         GradleRunConfigurationData data = configuration.data();
         String task = requireTask(data);
         Path gradleProjectPath = requireGradleProjectPath(data);

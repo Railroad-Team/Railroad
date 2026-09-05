@@ -132,7 +132,7 @@ public final class JavaSyntaxKinds {
         return TOKEN_KINDS.get(tokenType);
     }
 
-    static SyntaxKind missingTokenKind(JavaTokenType tokenType) {
+    public static SyntaxKind missingTokenKind(JavaTokenType tokenType) {
         return MISSING_TOKEN_KINDS.getOrDefault(tokenType, SyntaxKind.MISSING_TOKEN);
     }
 

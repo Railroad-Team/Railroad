@@ -12,8 +12,10 @@ import java.util.List;
 import java.util.Map;
 
 public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
-    private JavaJdkSymbolIndex(Map<String, ClassStub> classStubsByQualifiedName,
-        Map<String, Path> sourceByQualifiedName) {
+    private JavaJdkSymbolIndex(
+        Map<String, ClassStub> classStubsByQualifiedName,
+        Map<String, Path> sourceByQualifiedName
+    ) {
         super(classStubsByQualifiedName, sourceByQualifiedName);
     }
 

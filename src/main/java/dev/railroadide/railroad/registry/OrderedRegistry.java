@@ -15,7 +15,7 @@ public class OrderedRegistry<T> implements Registry<T> {
     @Getter
     private final Type type;
 
-    OrderedRegistry(String id, Type type) {
+    public OrderedRegistry(String id, Type type) {
         if (id == null || id.isBlank())
             throw new IllegalArgumentException("Registry ID cannot be null or empty");
         if (type == null)

@@ -14,6 +14,7 @@ import org.joml.Matrix3x2d;
 
 import java.io.InputStream;
 import java.util.*;
+import dev.railroadide.railroad.Railroad;
 
 /**
  * Centralized manager for all application windows and popups.
@@ -178,7 +179,7 @@ public class WindowManager {
     }
 
     public static void toggleFullScreen() {
-        Stage primaryStage = dev.railroadide.railroad.Railroad.WINDOW_MANAGER.getPrimaryStage();
+        Stage primaryStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
         primaryStage.setFullScreen(!primaryStage.isFullScreen());
     }
 }

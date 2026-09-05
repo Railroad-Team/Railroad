@@ -61,7 +61,8 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForMethodInvocation(
         MethodInvocation invocation,
         int caretPosition,
-        String text) {
+        String text
+    ) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(invocation, text)))
             return null;
 
@@ -76,7 +77,8 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForSuperMethodInvocation(
         SuperMethodInvocation invocation,
         int caretPosition,
-        String text) {
+        String text
+    ) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(invocation, text)))
             return null;
 
@@ -91,7 +93,8 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForClassInstanceCreation(
         ClassInstanceCreation creation,
         int caretPosition,
-        String text) {
+        String text
+    ) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(creation, text)))
             return null;
 
@@ -106,7 +109,8 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForConstructorInvocation(
         ConstructorInvocation invocation,
         int caretPosition,
-        String text) {
+        String text
+    ) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(invocation, text)))
             return null;
 
@@ -121,7 +125,8 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForSuperConstructorInvocation(
         SuperConstructorInvocation invocation,
         int caretPosition,
-        String text) {
+        String text
+    ) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(invocation, text)))
             return null;
 

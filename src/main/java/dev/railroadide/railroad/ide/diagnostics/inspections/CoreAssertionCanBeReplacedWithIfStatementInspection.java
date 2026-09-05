@@ -36,8 +36,10 @@ public class CoreAssertionCanBeReplacedWithIfStatementInspection implements Java
         return RULES;
     }
 
-    private static void reportAssertionCanBeReplacedWithIfStatement(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportAssertionCanBeReplacedWithIfStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode assertNode : context.nodesOfKind(JavaSyntaxKinds.ASSERT_STATEMENT.id())) {
             SyntaxNode enclosingMethod = enclosingMethod(assertNode);
             if (enclosingMethod == null)

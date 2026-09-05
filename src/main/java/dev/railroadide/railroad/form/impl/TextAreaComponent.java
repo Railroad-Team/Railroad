@@ -41,10 +41,16 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
      * @param keyTypedHandler the key typed handler for the text area
      * @param visible the visibility of the text area
      */
-    public TextAreaComponent(String dataKey, Data data, FormComponentValidator<TextArea> validator,
-        FormComponentChangeListener<TextArea, String> listener, Property<TextArea> bindTextAreaTo,
-        List<FormTransformer<TextArea, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler,
-        @Nullable BooleanBinding visible) {
+    public TextAreaComponent(
+        String dataKey,
+        Data data,
+        FormComponentValidator<TextArea> validator,
+        FormComponentChangeListener<TextArea, String> listener,
+        Property<TextArea> bindTextAreaTo,
+        List<FormTransformer<TextArea, String, ?>> transformers,
+        EventHandler<? super KeyEvent> keyTypedHandler,
+        @Nullable BooleanBinding visible
+    ) {
         super(dataKey, data, currentData -> {
             String initialText = currentData.text == null ? "" : currentData.text.get();
             return new FormTextArea(currentData.label, currentData.required, initialText, currentData.promptText,
@@ -282,8 +288,11 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          * @return this builder
          */
         @Override
-        public <X> Builder addTransformer(ObservableValue<TextArea> fromComponent, Consumer<X> toComponentFunction,
-            Function<String, X> valueMapper) {
+        public <X> Builder addTransformer(
+            ObservableValue<TextArea> fromComponent,
+            Consumer<X> toComponentFunction,
+            Function<String, X> valueMapper
+        ) {
             this.transformers
                 .add(new FormTransformer<>(fromComponent, TextArea::getText, toComponentFunction, valueMapper));
             return this;
@@ -300,8 +309,11 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
          * @return this builder
          */
         @Override
-        public <U extends Node, X> Builder addTransformer(ObservableValue<TextArea> fromComponent,
-            ObservableValue<U> toComponent, Function<String, X> valueMapper) {
+        public <U extends Node, X> Builder addTransformer(
+            ObservableValue<TextArea> fromComponent,
+            ObservableValue<U> toComponent,
+            Function<String, X> valueMapper
+        ) {
             this.transformers.add(new FormTransformer<>(fromComponent, TextArea::getText, value -> {
                 if (toComponent.getValue() instanceof TextArea textArea) {
                     textArea.setText(value.toString());

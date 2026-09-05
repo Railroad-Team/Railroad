@@ -279,7 +279,8 @@ public class GitRemoteActionsPane extends RRVBox {
         RRTextField fetchUrlField,
         RRTextField pushUrlField,
         LocalizedText errorText,
-        RRButton confirmButton) {
+        RRButton confirmButton
+    ) {
         String name = nameField.getText() == null ? "" : nameField.getText().trim();
         String fetchUrl = fetchUrlField.getText() == null ? "" : fetchUrlField.getText().trim();
         String pushUrl = pushUrlField.getText() == null ? "" : pushUrlField.getText().trim();
@@ -321,7 +322,8 @@ public class GitRemoteActionsPane extends RRVBox {
         RRTextField fetchUrlField,
         RRTextField pushUrlField,
         LocalizedText errorText,
-        RRButton confirmButton) {
+        RRButton confirmButton
+    ) {
         String name = nameField.getText() == null ? "" : nameField.getText().trim();
         String fetchUrl = fetchUrlField.getText() == null ? "" : fetchUrlField.getText().trim();
         String pushUrl = pushUrlField.getText() == null ? "" : pushUrlField.getText().trim();

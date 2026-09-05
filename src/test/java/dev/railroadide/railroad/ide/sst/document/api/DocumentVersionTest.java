@@ -7,14 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class DocumentVersionTest {
+public class DocumentVersionTest {
     @Test
-    void initialVersionStartsAtZero() {
+    public void initialVersionStartsAtZero() {
         assertEquals(0, DocumentVersion.initial().value());
     }
 
     @Test
-    void nextProducesAStrictlyLaterVersion() {
+    public void nextProducesAStrictlyLaterVersion() {
         var current = new DocumentVersion(41);
         DocumentVersion next = current.next();
 
@@ -25,7 +25,7 @@ class DocumentVersionTest {
     }
 
     @Test
-    void decimalExternalFormRoundTrips() {
+    public void decimalExternalFormRoundTrips() {
         var version = new DocumentVersion(123456789);
 
         assertEquals("123456789", version.toString());
@@ -34,7 +34,7 @@ class DocumentVersionTest {
     }
 
     @Test
-    void rejectsInvalidVersions() {
+    public void rejectsInvalidVersions() {
         assertThrows(IllegalArgumentException.class, () -> new DocumentVersion(-1));
         assertThrows(NullPointerException.class, () -> DocumentVersion.parse(null));
         assertThrows(IllegalArgumentException.class, () -> DocumentVersion.parse("  "));
@@ -43,7 +43,7 @@ class DocumentVersionTest {
     }
 
     @Test
-    void failsExplicitlyAtVersionExhaustion() {
+    public void failsExplicitlyAtVersionExhaustion() {
         assertThrows(IllegalStateException.class, () -> new DocumentVersion(Long.MAX_VALUE).next());
     }
 }

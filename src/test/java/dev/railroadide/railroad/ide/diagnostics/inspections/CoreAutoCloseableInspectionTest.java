@@ -9,9 +9,9 @@ import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectio
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class CoreAutoCloseableInspectionTest {
+public class CoreAutoCloseableInspectionTest {
     @Test
-    void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForDirectConstructorAcquisition() {
+    public void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForDirectConstructorAcquisition() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
             class Example {
                 static final class Resource implements AutoCloseable {
@@ -30,7 +30,7 @@ class CoreAutoCloseableInspectionTest {
     }
 
     @Test
-    void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForVarConstructorAcquisition() {
+    public void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForVarConstructorAcquisition() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
             class Example {
                 static final class Resource implements AutoCloseable {
@@ -49,7 +49,7 @@ class CoreAutoCloseableInspectionTest {
     }
 
     @Test
-    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticInsideTryWithResources() {
+    public void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticInsideTryWithResources() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
             class Example {
                 static final class Resource implements AutoCloseable {
@@ -70,7 +70,7 @@ class CoreAutoCloseableInspectionTest {
     }
 
     @Test
-    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForDeclarationWithoutInitializer() {
+    public void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForDeclarationWithoutInitializer() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
             class Example {
                 static final class Resource implements AutoCloseable {
@@ -90,7 +90,7 @@ class CoreAutoCloseableInspectionTest {
     }
 
     @Test
-    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForFieldDeclaration() {
+    public void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForFieldDeclaration() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
             class Example {
                 static final class Resource implements AutoCloseable {
@@ -107,7 +107,7 @@ class CoreAutoCloseableInspectionTest {
     }
 
     @Test
-    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForAliasInitializer() {
+    public void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForAliasInitializer() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
             class Example {
                 static final class Resource implements AutoCloseable {
@@ -126,7 +126,7 @@ class CoreAutoCloseableInspectionTest {
     }
 
     @Test
-    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForFieldAccessInitializer() {
+    public void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForFieldAccessInitializer() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
             class Example {
                 static final class Resource implements AutoCloseable {
@@ -147,7 +147,7 @@ class CoreAutoCloseableInspectionTest {
     }
 
     @Test
-    void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForOpenMethodFactory() {
+    public void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForOpenMethodFactory() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
             class Example {
                 static final class Resource implements AutoCloseable {
@@ -170,7 +170,7 @@ class CoreAutoCloseableInspectionTest {
     }
 
     @Test
-    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForMethodFactoryOutsideHeuristic() {
+    public void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForMethodFactoryOutsideHeuristic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
             class Example {
                 static final class Resource implements AutoCloseable {
@@ -193,7 +193,7 @@ class CoreAutoCloseableInspectionTest {
     }
 
     @Test
-    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForOpenMethodReturningNonCloseable() {
+    public void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForOpenMethodReturningNonCloseable() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
             class Example {
                 Object openValue() {
@@ -211,7 +211,7 @@ class CoreAutoCloseableInspectionTest {
     }
 
     @Test
-    void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForConditionalFactoryBranch() {
+    public void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForConditionalFactoryBranch() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
             class Example {
                 static final class Resource implements AutoCloseable {
@@ -234,7 +234,7 @@ class CoreAutoCloseableInspectionTest {
     }
 
     @Test
-    void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForConditionalAliases() {
+    public void coreAutoCloseableWithoutTryWithResourcesRuleDoesNotEmitDiagnosticForConditionalAliases() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
             class Example {
                 static final class Resource implements AutoCloseable {
@@ -253,7 +253,7 @@ class CoreAutoCloseableInspectionTest {
     }
 
     @Test
-    void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForCastWrappedConstructorAcquisition() {
+    public void coreAutoCloseableWithoutTryWithResourcesRuleEmitsDiagnosticForCastWrappedConstructorAcquisition() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAutoCloseableWithoutTryWithResourcesInspection(), """
             class Example {
                 static final class Resource implements AutoCloseable {

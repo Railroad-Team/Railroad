@@ -651,13 +651,19 @@ public class ForgeProjectOnboarding {
             .build();
     }
 
-    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder,
-        String descriptionKey) {
+    private static OnboardingFormStep.ComponentSpec described(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        String descriptionKey
+    ) {
         return OnboardingFormStep.component(builder, createDescriptionCustomizer(descriptionKey));
     }
 
-    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder,
-        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, String descriptionKey) {
+    private static OnboardingFormStep.ComponentSpec described(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer,
+        String descriptionKey
+    ) {
         return OnboardingFormStep.component(builder, builder != null ? builder.dataKey() : null, transformer,
             reverseTransformer, createDescriptionCustomizer(descriptionKey));
     }

@@ -115,8 +115,13 @@ public record UpdateGradleFilesStep(FilesService files, HttpService http, Templa
         updateContent(ctx, projectDir, settingsGradlePath, templateSettingsGradlePath, templateContent);
     }
 
-    private void updateContent(ProjectContext ctx, Path projectDir, Path settingsGradlePath,
-        Path templateSettingsGradlePath, String templateContent) throws Exception {
+    private void updateContent(
+        ProjectContext ctx,
+        Path projectDir,
+        Path settingsGradlePath,
+        Path templateSettingsGradlePath,
+        String templateContent
+    ) throws Exception {
         Map<String, Object> args = createGradleBindings(ctx.data());
         var binding = new Binding(args);
         binding.setVariable("defaultName", projectDir.relativize(settingsGradlePath.toAbsolutePath()).toString());

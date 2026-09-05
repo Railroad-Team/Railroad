@@ -45,8 +45,11 @@ public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider
         analyzeExecutableBodies(context, reporter, "JAVA_LAMBDA_EXPRESSION");
     }
 
-    private static void analyzeExecutableBodies(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        String bodyKind) {
+    private static void analyzeExecutableBodies(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        String bodyKind
+    ) {
         for (SyntaxNode owner : context.nodesOfKind(bodyKind)) {
             SyntaxNode block = context.directChild(owner, "JAVA_BLOCK");
             if (block != null) {
@@ -55,8 +58,11 @@ public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider
         }
     }
 
-    private static boolean analyzeBlock(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode block) {
+    private static boolean analyzeBlock(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode block
+    ) {
         boolean reachable = true;
         for (SyntaxNode statement : directExecutableChildren(block)) {
             if (!reachable) {
@@ -73,8 +79,11 @@ public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider
         return reachable;
     }
 
-    public static boolean completesNormally(JavaRuleContext context, @Nullable JavaInspectionRuleReporter reporter,
-        SyntaxNode statement) {
+    public static boolean completesNormally(
+        JavaRuleContext context,
+        @Nullable JavaInspectionRuleReporter reporter,
+        SyntaxNode statement
+    ) {
         String kindId = statement.kind().id();
         return switch (kindId) {
             case "JAVA_RETURN_STATEMENT",
@@ -92,8 +101,11 @@ public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider
         };
     }
 
-    private static boolean analyzeWhileStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode whileStatement) {
+    private static boolean analyzeWhileStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode whileStatement
+    ) {
         SyntaxNode body = firstDirectStatementChild(whileStatement);
         if (body == null)
             return true;
@@ -102,8 +114,11 @@ public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider
         return true;
     }
 
-    private static boolean analyzeDoWhileStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode doWhileStatement) {
+    private static boolean analyzeDoWhileStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode doWhileStatement
+    ) {
         SyntaxNode body = firstDirectStatementChild(doWhileStatement);
         if (body == null)
             return true;
@@ -112,8 +127,11 @@ public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider
         return true;
     }
 
-    private static boolean analyzeForStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode forStatement) {
+    private static boolean analyzeForStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode forStatement
+    ) {
         SyntaxNode body = lastDirectStatementChild(forStatement);
         if (body == null)
             return true;
@@ -122,8 +140,11 @@ public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider
         return true;
     }
 
-    private static boolean analyzeSwitchStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode switchStatement) {
+    private static boolean analyzeSwitchStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode switchStatement
+    ) {
         for (SyntaxNode child : switchStatement.children()) {
             if (child instanceof SyntaxToken)
                 continue;
@@ -136,8 +157,11 @@ public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider
         return true;
     }
 
-    private static void analyzeSwitchRule(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode switchRule) {
+    private static void analyzeSwitchRule(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode switchRule
+    ) {
         boolean reachable = true;
         for (SyntaxNode child : switchRule.children()) {
             if (child instanceof SyntaxToken)
@@ -158,8 +182,11 @@ public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider
         }
     }
 
-    private static boolean analyzeIfStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode ifStatement) {
+    private static boolean analyzeIfStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode ifStatement
+    ) {
         List<SyntaxNode> statements = directStatementChildren(ifStatement);
         if (statements.isEmpty())
             return true;

@@ -108,8 +108,12 @@ public class ToolingGradleModelService implements GradleModelService {
         }
     }
 
-    private static <T> T requestOptionalModel(ProjectConnection connection, Class<T> modelClass,
-        String[] initScriptArgs, GradleEnvironment environment) {
+    private static <T> T requestOptionalModel(
+        ProjectConnection connection,
+        Class<T> modelClass,
+        String[] initScriptArgs,
+        GradleEnvironment environment
+    ) {
         try {
             return configureJvm(connection.model(modelClass), environment)
                 .withArguments(initScriptArgs)
@@ -190,9 +194,11 @@ public class ToolingGradleModelService implements GradleModelService {
         return refresh;
     }
 
-    private void completeRefresh(CompletableFuture<GradleBuildModel> refresh,
+    private void completeRefresh(
+        CompletableFuture<GradleBuildModel> refresh,
         GradleBuildModel model,
-        Throwable throwable) {
+        Throwable throwable
+    ) {
         synchronized (lock) {
             if (throwable == null && model != null) {
                 cachedModel.set(model);

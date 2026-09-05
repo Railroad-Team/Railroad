@@ -59,6 +59,8 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Builds the main IDE menu bar with all menu items, accelerators, and icons.
@@ -71,7 +73,8 @@ public final class IDEMenuBarFactory {
         Project project,
         WorkspaceModeController viewModeController,
         Consumer<WorkspaceMode> viewModeRequester,
-        IDEWorkspaceActions workspaceActions) {
+        IDEWorkspaceActions workspaceActions
+    ) {
         var newFileItem = new LocalizedMenuItem("railroad.menu.file.new_file");
         newFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE));
         newFileItem
@@ -395,7 +398,7 @@ public final class IDEMenuBarFactory {
             return;
 
         if (!Services.EDITOR_TAB_MANAGER.saveAsActive(targetFile.toPath())) {
-            showSaveFailures(new EditorTabManager.SaveResult(java.util.List.of(activeTab)));
+            showSaveFailures(new EditorTabManager.SaveResult(List.of(activeTab)));
         }
     }
 
@@ -405,7 +408,7 @@ public final class IDEMenuBarFactory {
 
         String paths = result.failedTabs().stream()
             .map(tab -> tab.path().toString())
-            .collect(java.util.stream.Collectors.joining(System.lineSeparator()));
+            .collect(Collectors.joining(System.lineSeparator()));
         WindowBuilder.createAlert(
             AlertType.ERROR,
             "railroad.generic.error",

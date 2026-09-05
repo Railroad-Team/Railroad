@@ -123,8 +123,9 @@ line. The closing parenthesis sits on its own line, aligned with the declaration
 inline when they fit.
 
 Package-private types, fields, methods, and constructors are rejected: choose `public`, `protected`, or `private`
-explicitly where legal. Both `formatCheck` and `format` report these declarations and fail until they are resolved;
-`format` applies other formatting fixes but does not choose access levels. Implicitly public interface members,
+explicitly where legal. `formatCheck` reports these declarations and fails until they are resolved. `format` reports
+them but completes all formatting, including with `-PformatAll`, without failing or changing access levels. Implicitly
+public interface members,
 implicitly private enum constructors, enum constants, record components, and local/anonymous class declarations are
 exempt. This rule follows the same changed-file ratchet as the other formatting checks.
 
@@ -143,6 +144,50 @@ To intentionally reformat every Java source file instead of only current changes
 The canonical whitespace and wrapping settings are stored in
 `config/format/railroad-eclipse-formatter.xml`. Structural rules and their tests live under `src/formatter/java` and
 `src/test/java/dev/railroadide/railroad/formatter`, respectively.
+
+## Javadoc coverage
+
+Generate a searchable, self-contained HTML report for the public API in `sourceSets.main.allJava`:
+
+```sh
+./gradlew javadocCoverage
+```
+
+Open `build/reports/javadoc-coverage/index.html`. The report includes overall, package, and class coverage,
+expandable package → class → member navigation, search, an incomplete-only filter, and source file/line locations.
+Each declaration counts as complete only when all its documentation requirements pass.
+
+Coverage requires a nonempty Javadoc description on public types, explicitly declared public methods and constructors,
+and public `static final` fields (including interface constants and enum constants). Every method/constructor value
+and type parameter needs a nonempty `@param` tag; non-void methods also need a nonempty `@return` tag (block or inline).
+Type parameters and record components need `@param` tags on the type. Java 25 Markdown Javadocs are supported.
+
+Public interfaces, enums, records, annotation types, and publicly accessible nested types are included. Private,
+protected, and package-private declarations, members inside inaccessible types, test/tool sources, inherited members,
+and generated members (including Lombok methods and implicit record accessors) are excluded. Overrides require their
+own documentation; `{@inheritDoc}` is reported as unverified because this source-only check does not resolve inheritance.
+This checks documentation presence, not prose accuracy or full Javadoc validity.
+
+To enforce complete coverage, run:
+
+```sh
+./gradlew javadocCoverageCheck
+```
+
+This generates the same report, then fails if any declarations are incomplete. The reporting task itself succeeds
+with incomplete coverage, so it can be used while improving documentation. Neither task compiles the application or
+requires its dependencies; invalid Java syntax fails report generation. `javadocCoverageCheck` is opt-in and is not
+attached to `check`, since the existing documentation is not yet complete.
+
+Run the coverage tool's focused tests with `./gradlew javadocCoverageTest` (also included in `check`). The implementation,
+report assets, and tests live in `src/javadocCoverageTool` and `src/javadocCoverageTest`; Gradle wiring is in
+`gradle/javadoc-coverage.gradle`. Both Java source sets are included in `format` and `formatCheck`, including the
+semantic style rules and Spotless checks.
+
+The HTML layout lives in `src/javadocCoverageTool/resources/dev/railroadide/railroad/docs/report.ftlh`, rendered with
+FreeMarker and automatic HTML escaping. Edit that template to change the report structure; `report.css` and `report.js`
+are embedded verbatim so the output remains a single self-contained HTML file. FreeMarker is a coverage-tool dependency
+and is not added to the application.
 
 ## Running
 

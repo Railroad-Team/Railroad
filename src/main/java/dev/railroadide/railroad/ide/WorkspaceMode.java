@@ -28,7 +28,8 @@ public final class WorkspaceMode {
         Ikon graphic,
         String acceleratorId,
         Predicate<Project> availability,
-        Function<Project, ObservableBooleanValue> unavailableBindingFactory) {
+        Function<Project, ObservableBooleanValue> unavailableBindingFactory
+    ) {
         this.id = id;
         this.localizationKey = localizationKey;
         this.graphic = graphic;
@@ -67,7 +68,8 @@ public final class WorkspaceMode {
         Ikon graphic,
         String acceleratorId,
         Predicate<Project> availability,
-        Function<Project, ObservableBooleanValue> unavailableBindingFactory) {
+        Function<Project, ObservableBooleanValue> unavailableBindingFactory
+    ) {
         if (id == null || id.isBlank())
             throw new IllegalArgumentException("Workspace-mode ID cannot be null or blank");
         if (localizationKey == null || localizationKey.isBlank())

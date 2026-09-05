@@ -42,8 +42,10 @@ public class CorePublicClassNotNamedAfterFileInspection implements JavaInspectio
         return RULES;
     }
 
-    private static void reportPublicClassNotNamedAfterFile(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportPublicClassNotNamedAfterFile(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         String fileName = context.filePath().getFileName().toString();
         if (!fileName.endsWith(".java"))
             return;

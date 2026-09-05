@@ -29,8 +29,10 @@ public class GradleTasksPane extends GradleTreeViewPane<RailroadGradleTask> {
     }
 
     @Override
-    protected Collection<RailroadGradleTask> getElementsFromModel(GradleModelService modelService,
-        GradleBuildModel model) {
+    protected Collection<RailroadGradleTask> getElementsFromModel(
+        GradleModelService modelService,
+        GradleBuildModel model
+    ) {
         Optional<GradleBuildModel> cachedModel = modelService.getCachedModel();
         if (cachedModel.isEmpty())
             return List.of();

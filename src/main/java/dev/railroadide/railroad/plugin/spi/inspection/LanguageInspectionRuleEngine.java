@@ -11,8 +11,12 @@ public final class LanguageInspectionRuleEngine {
     private LanguageInspectionRuleEngine() {
     }
 
-    public static <C extends LanguageRuleContext> void runRules(LanguageInspectionRuleProvider<C> provider, C context,
-        LanguageInspectionReporter reporter, InspectionSettingsAccess settings) {
+    public static <C extends LanguageRuleContext> void runRules(
+        LanguageInspectionRuleProvider<C> provider,
+        C context,
+        LanguageInspectionReporter reporter,
+        InspectionSettingsAccess settings
+    ) {
         Objects.requireNonNull(provider, "provider");
         Objects.requireNonNull(context, "context");
         Objects.requireNonNull(reporter, "reporter");
@@ -41,7 +45,8 @@ public final class LanguageInspectionRuleEngine {
     public static <C extends LanguageRuleContext> List<SemanticDiagnostic> collectDiagnostics(
         LanguageInspectionRuleProvider<C> provider,
         C context,
-        InspectionSettingsAccess settings) {
+        InspectionSettingsAccess settings
+    ) {
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
         runRules(provider, context, diagnostics::add, settings);
         return List.copyOf(diagnostics);

@@ -43,7 +43,8 @@ public final class DefaultWorkspaceService implements WorkspaceService {
      */
     public Registration attachWorkspace(
         Predicate<WorkspaceMode> activation,
-        Predicate<WorkspaceMode> availability) {
+        Predicate<WorkspaceMode> availability
+    ) {
         var adapter = new WorkspaceAdapter(
             Objects.requireNonNull(activation, "Activation predicate cannot be null"),
             Objects.requireNonNull(availability, "Availability predicate cannot be null"));

@@ -30,13 +30,13 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ProjectLanguageIndexServiceTest {
+public class ProjectLanguageIndexServiceTest {
 
     @TempDir
-    Path tempDir;
+    public Path tempDir;
 
     @Test
-    void cachesIndexesPerProjectRoot() throws Exception {
+    public void cachesIndexesPerProjectRoot() throws Exception {
         Path root = createProject(
             "src/main/java/demo/A.java", """
                 package demo;
@@ -54,7 +54,7 @@ class ProjectLanguageIndexServiceTest {
     }
 
     @Test
-    void rebuildRefreshesProjectIndex() throws Exception {
+    public void rebuildRefreshesProjectIndex() throws Exception {
         Path root = createProject(
             "src/main/java/demo/A.java", """
                 package demo;
@@ -81,7 +81,7 @@ class ProjectLanguageIndexServiceTest {
     }
 
     @Test
-    void updateFileReplacesOneIndexedFile() throws Exception {
+    public void updateFileReplacesOneIndexedFile() throws Exception {
         Path root = createProject(
             "src/main/java/demo/A.java", """
                 package demo;
@@ -109,7 +109,7 @@ class ProjectLanguageIndexServiceTest {
     }
 
     @Test
-    void removeFileDropsIndexedFacts() throws Exception {
+    public void removeFileDropsIndexedFacts() throws Exception {
         Path root = createProject(
             "src/main/java/demo/A.java", """
                 package demo;
@@ -136,7 +136,7 @@ class ProjectLanguageIndexServiceTest {
     }
 
     @Test
-    void invalidateRemovesInMemoryCacheOnly() throws Exception {
+    public void invalidateRemovesInMemoryCacheOnly() throws Exception {
         Path root = createProject(
             "src/main/java/demo/A.java", """
                 package demo;
@@ -158,7 +158,7 @@ class ProjectLanguageIndexServiceTest {
     }
 
     @Test
-    void loadsPersistedIndexAfterCacheMiss() throws Exception {
+    public void loadsPersistedIndexAfterCacheMiss() throws Exception {
         Path root = createProject(
             "src/main/java/demo/A.java", """
                 package demo;
@@ -178,7 +178,7 @@ class ProjectLanguageIndexServiceTest {
     }
 
     @Test
-    void reloadsFromSourceWhenPersistedIndexIsStale() throws Exception {
+    public void reloadsFromSourceWhenPersistedIndexIsStale() throws Exception {
         Path root = createProject(
             "src/main/java/demo/A.java", """
                 package demo;
@@ -206,7 +206,7 @@ class ProjectLanguageIndexServiceTest {
     }
 
     @Test
-    void reloadsFromSourceWhenAFileWasAddedWhileTheProjectWasClosed() throws Exception {
+    public void reloadsFromSourceWhenAFileWasAddedWhileTheProjectWasClosed() throws Exception {
         Path root = createProject(
             "src/main/java/demo/A.java", """
                 package demo;

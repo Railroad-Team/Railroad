@@ -789,7 +789,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private static StyleSpans<Collection<String>> mergeDiagnosticStyles(
         StyleSpans<Collection<String>> baseSpans,
-        List<EditorDiagnostic> diagnostics) {
+        List<EditorDiagnostic> diagnostics
+    ) {
         if (baseSpans == null || diagnostics == null || diagnostics.isEmpty())
             return baseSpans;
 
@@ -872,7 +873,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private static boolean styleSpansEqual(
         StyleSpans<Collection<String>> left,
-        StyleSpans<Collection<String>> right) {
+        StyleSpans<Collection<String>> right
+    ) {
         if (left == right)
             return true;
 

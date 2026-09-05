@@ -49,7 +49,7 @@ public final class LanguageSupports {
         }
     }
 
-    static void reset() {
+    public static void reset() {
         initialized = false;
         LanguageSupportRegistry.clear();
     }

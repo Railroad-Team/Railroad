@@ -5,10 +5,10 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import java.util.ArrayList;
 import java.util.List;
 
-final class RedNode extends RedElement {
+public final class RedNode extends RedElement {
     private volatile List<SyntaxNode> children;
 
-    RedNode(GreenNode green, RedNode parent, int start) {
+    public RedNode(GreenNode green, RedNode parent, int start) {
         super(green, parent, start);
     }
 

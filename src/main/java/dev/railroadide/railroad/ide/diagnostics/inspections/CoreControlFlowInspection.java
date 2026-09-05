@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
+import org.jetbrains.annotations.Nullable;
 
 @RegisteredInspection
 public final class CoreControlFlowInspection implements JavaInspectionRuleProvider {
@@ -126,8 +128,11 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         });
     }
 
-    private static void reportBreakStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode node) {
+    private static void reportBreakStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode node
+    ) {
         String label = breakOrContinueLabel(context, node);
         if (label == null) {
             if (!hasBreakTarget(node)) {
@@ -142,8 +147,11 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         }
     }
 
-    private static void reportContinueStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode node) {
+    private static void reportContinueStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode node
+    ) {
         String label = breakOrContinueLabel(context, node);
         if (label == null) {
             if (!hasContinueTarget(node)) {
@@ -164,8 +172,11 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         }
     }
 
-    private static void reportReturnStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode node) {
+    private static void reportReturnStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode node
+    ) {
         SyntaxNode enclosingCallable = nearestCallableOrLambda(node);
         if (enclosingCallable == null) {
             reporter.report(node, "'return' is only allowed inside methods, constructors, or lambdas");
@@ -273,9 +284,9 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         }
     }
 
-    private static @org.jetbrains.annotations.Nullable SyntaxNode labeledStatementTarget(SyntaxNode labeledStatement) {
+    private static @Nullable SyntaxNode labeledStatementTarget(SyntaxNode labeledStatement) {
         for (SyntaxNode child : labeledStatement.children()) {
-            if (!(child instanceof dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken)
+            if (!(child instanceof SyntaxToken)
                 && !JAVA_LABELED_STATEMENT.equals(child.kind().id()))
                 return child;
         }
@@ -308,7 +319,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
     }
 
     private static void collectIdentifierLikeTokens(SyntaxNode node, List<String> out) {
-        if (node instanceof dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken token) {
+        if (node instanceof SyntaxToken token) {
             String text = token.text();
             if (!text.isBlank()
                 && Character.isJavaIdentifierStart(text.charAt(0))
@@ -323,16 +334,16 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         }
     }
 
-    private static @org.jetbrains.annotations.Nullable SyntaxNode returnExpression(SyntaxNode returnStatement) {
+    private static @Nullable SyntaxNode returnExpression(SyntaxNode returnStatement) {
         for (SyntaxNode child : returnStatement.children()) {
-            if (child instanceof dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken)
+            if (child instanceof SyntaxToken)
                 continue;
             return child;
         }
         return null;
     }
 
-    private static @org.jetbrains.annotations.Nullable SyntaxNode nearestCallableOrLambda(SyntaxNode node) {
+    private static @Nullable SyntaxNode nearestCallableOrLambda(SyntaxNode node) {
         SyntaxNode current = node;
         while (true) {
             Optional<SyntaxNode> parent = current.parent();
@@ -429,7 +440,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
 
     private static boolean blockDefinitelyReturnsOrThrows(JavaRuleContext context, SyntaxNode block) {
         for (SyntaxNode child : block.children()) {
-            if (child instanceof dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken)
+            if (child instanceof SyntaxToken)
                 continue;
             if (definitelyReturnsOrThrows(context, child))
                 return true;
@@ -491,7 +502,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
 
     private static boolean switchRuleDefinitelyReturnsOrThrows(JavaRuleContext context, SyntaxNode rule) {
         for (SyntaxNode child : rule.children()) {
-            if (child instanceof dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken)
+            if (child instanceof SyntaxToken)
                 continue;
             if (JAVA_SWITCH_LABEL.equals(child.kind().id()))
                 continue;
@@ -520,7 +531,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
     private static List<SyntaxNode> directNonTokenChildrenExcluding(SyntaxNode node, String excludedKindId) {
         List<SyntaxNode> children = new ArrayList<>();
         for (SyntaxNode child : node.children()) {
-            if (child instanceof dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken)
+            if (child instanceof SyntaxToken)
                 continue;
             if (excludedKindId.equals(child.kind().id()))
                 continue;
@@ -530,7 +541,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
     }
 
     private static void collectLeafTokenTexts(SyntaxNode node, List<String> out) {
-        if (node instanceof dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken token) {
+        if (node instanceof SyntaxToken token) {
             out.add(token.text());
             return;
         }

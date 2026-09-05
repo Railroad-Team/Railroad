@@ -116,8 +116,11 @@ public class BrowseButton extends RRButton {
      * @param filter An optional file extension filter.
      * @return A {@link FileChooser} instance.
      */
-    public static FileChooser fileBrowser(File defaultPath, String title,
-        @Nullable FileChooser.ExtensionFilter filter) {
+    public static FileChooser fileBrowser(
+        File defaultPath,
+        String title,
+        @Nullable FileChooser.ExtensionFilter filter
+    ) {
         var fileChooser = new FileChooser();
         fileChooser.setTitle(title);
         fileChooser.setInitialDirectory(defaultPath);

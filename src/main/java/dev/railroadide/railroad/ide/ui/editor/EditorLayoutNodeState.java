@@ -46,7 +46,8 @@ public record EditorLayoutNodeState(
     public static EditorLayoutNodeState split(
         Orientation orientation,
         List<Double> dividerPositions,
-        List<EditorLayoutNodeState> children) {
+        List<EditorLayoutNodeState> children
+    ) {
         return new EditorLayoutNodeState(null, null, orientation, dividerPositions, children);
     }
 

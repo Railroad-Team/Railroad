@@ -29,7 +29,7 @@ public class GitRemoteBranchesListView extends AbstractGitBranchesListView<GitBr
     }
 
     @Override
-    Node createDetailsNode(GitBranch.RemoteGitBranch branch) {
+    protected Node createDetailsNode(GitBranch.RemoteGitBranch branch) {
         var rows = new ArrayList<Node>();
         rows.add(createTextDetailsRow("railroad.git.branches.details.remote", branch.remoteName()));
         return createCommonDetailsNode(branch, rows);

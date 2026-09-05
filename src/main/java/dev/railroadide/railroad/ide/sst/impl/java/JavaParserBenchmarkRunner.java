@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.HashMap;
 
 public final class JavaParserBenchmarkRunner {
     private static final int DEFAULT_WARMUP_ITERATIONS = 5;
@@ -60,7 +61,7 @@ public final class JavaParserBenchmarkRunner {
 
     private static BenchmarkResult runBenchmark(ParseMode mode, BenchmarkDataset dataset, BenchmarkOptions options) {
         ParseStrategy strategy = strategyFor(mode);
-        Map<Path, MutableFileTiming> perFile = new java.util.HashMap<>();
+        Map<Path, MutableFileTiming> perFile = new HashMap<>();
 
         for (int i = 0; i < options.warmupIterations(); i++) {
             runIteration(dataset.units(), options.repeatPerIteration(), strategy, null, mode);
@@ -73,7 +74,7 @@ public final class JavaParserBenchmarkRunner {
             iterationNanos.add(System.nanoTime() - start);
         }
 
-        Map<Path, FileTiming> fileTiming = new java.util.HashMap<>(perFile.size());
+        Map<Path, FileTiming> fileTiming = new HashMap<>(perFile.size());
         for (Map.Entry<Path, MutableFileTiming> entry : perFile.entrySet()) {
             fileTiming.put(entry.getKey(), entry.getValue().freeze());
         }
@@ -89,7 +90,8 @@ public final class JavaParserBenchmarkRunner {
         int repeats,
         ParseStrategy strategy,
         Map<Path, MutableFileTiming> perFile,
-        ParseMode mode) {
+        ParseMode mode
+    ) {
         for (int repeat = 0; repeat < repeats; repeat++) {
             for (SourceUnit unit : units) {
                 long parseStart = perFile == null ? 0L : System.nanoTime();
@@ -168,8 +170,11 @@ public final class JavaParserBenchmarkRunner {
         }
     }
 
-    private static void printRunHeader(BenchmarkOptions options, List<SourceUnit> corpus,
-        List<BenchmarkDataset> datasets) {
+    private static void printRunHeader(
+        BenchmarkOptions options,
+        List<SourceUnit> corpus,
+        List<BenchmarkDataset> datasets
+    ) {
         long bytes = 0L;
         long lines = 0L;
         for (SourceUnit unit : corpus) {
@@ -482,13 +487,13 @@ public final class JavaParserBenchmarkRunner {
         private long maxNanos;
         private long samples;
 
-        void record(long nanos) {
+        private void record(long nanos) {
             totalNanos += nanos;
             maxNanos = Math.max(maxNanos, nanos);
             samples++;
         }
 
-        FileTiming freeze() {
+        private FileTiming freeze() {
             long average = samples == 0 ? 0L : totalNanos / samples;
             return new FileTiming(average, maxNanos, samples);
         }

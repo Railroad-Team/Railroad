@@ -44,8 +44,10 @@ public class CoreThisReferenceEscapedObjectConstructionInspection implements Jav
                 CoreThisReferenceEscapedObjectConstructionInspection::reportThisReferenceEscapedObjectConstruction));
     }
 
-    private static void reportThisReferenceEscapedObjectConstruction(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportThisReferenceEscapedObjectConstruction(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode constructorNode : context.nodesOfKinds(JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id(),
             JavaSyntaxKinds.RECORD_COMPACT_CONSTRUCTOR.id())) {
             SyntaxNode body = context.directChild(constructorNode, JavaSyntaxKinds.BLOCK.id());

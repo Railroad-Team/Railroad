@@ -257,9 +257,11 @@ public class Keybinds {
     }
 
     private static Keybind registerProjectExplorerKeybind(
-        String id, KeyCode keyCode,
+        String id,
+        KeyCode keyCode,
         Consumer<ProjectExplorerPane> action,
-        KeyCombination.Modifier... modifiers) {
+        KeyCombination.Modifier... modifiers
+    ) {
         Keybind keybind = KeybindHandler.registerKeybind(Keybind.builder()
             .id(id)
             .category(GENERAL)

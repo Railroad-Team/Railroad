@@ -38,14 +38,15 @@ public final class WorkspaceModeController implements AutoCloseable {
         this(stateProperty, availability, JavaFXUtils::runOnApplicationThread);
     }
 
-    WorkspaceModeController(ObjectProperty<WorkspaceMode> stateProperty, Executor applicationThreadExecutor) {
+    public WorkspaceModeController(ObjectProperty<WorkspaceMode> stateProperty, Executor applicationThreadExecutor) {
         this(stateProperty, _ -> true, applicationThreadExecutor);
     }
 
-    WorkspaceModeController(
+    public WorkspaceModeController(
         ObjectProperty<WorkspaceMode> stateProperty,
         Predicate<WorkspaceMode> availability,
-        Executor applicationThreadExecutor) {
+        Executor applicationThreadExecutor
+    ) {
         this.stateProperty = Objects.requireNonNull(stateProperty, "State property cannot be null");
         this.availability = Objects.requireNonNull(availability, "Availability predicate cannot be null");
         this.applicationThreadExecutor = Objects.requireNonNull(applicationThreadExecutor,

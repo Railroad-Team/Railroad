@@ -54,7 +54,8 @@ public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTa
         RailroadModule module,
         Map<String, RailroadModule> projectsByPath,
         Map<String, TreeItem<GradleTreeElement>> projectNodes,
-        TreeItem<GradleTreeElement> root) {
+        TreeItem<GradleTreeElement> root
+    ) {
         return projectNodes.computeIfAbsent(module.getPath(), path -> {
             TreeItem<GradleTreeElement> parentNode = root;
             String parentPath = getParentProjectPath(path);
@@ -71,8 +72,11 @@ public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTa
         });
     }
 
-    private void addTasksToProjectNode(Project project, TreeItem<GradleTreeElement> projectNode,
-        List<RailroadGradleTask> projectTasks) {
+    private void addTasksToProjectNode(
+        Project project,
+        TreeItem<GradleTreeElement> projectNode,
+        List<RailroadGradleTask> projectTasks
+    ) {
         Map<String, List<RailroadGradleTask>> tasksByGroup = projectTasks.stream()
             .collect(Collectors.groupingBy(task -> {
                 String group = task.getGroup();

@@ -17,7 +17,8 @@ public final class WindowBoundsRestorer {
         double y,
         double width,
         double height,
-        boolean maximized) {
+        boolean maximized
+    ) {
         Objects.requireNonNull(stage, "Stage cannot be null");
         List<Rectangle2D> screens = Screen.getScreens().stream()
             .map(Screen::getVisualBounds)
@@ -36,7 +37,8 @@ public final class WindowBoundsRestorer {
         double width,
         double height,
         List<Rectangle2D> screens,
-        Rectangle2D primaryScreen) {
+        Rectangle2D primaryScreen
+    ) {
         Objects.requireNonNull(screens, "Screens cannot be null");
         primaryScreen = Objects.requireNonNull(primaryScreen, "Primary screen cannot be null");
 

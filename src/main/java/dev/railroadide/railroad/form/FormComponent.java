@@ -45,9 +45,16 @@ public abstract class FormComponent<T extends Node & HasSetValue, U, V extends N
      * @apiNote This constructor is internal and should not be used, only override it.
      */
     @ApiStatus.Internal
-    protected FormComponent(String dataKey, U data, Function<U, T> componentFactory,
-        FormComponentValidator<V> validator, FormComponentChangeListener<V, W> listener,
-        List<FormTransformer<V, W, ?>> transformers, @Nullable BooleanBinding visible, Runnable setup) {
+    protected FormComponent(
+        String dataKey,
+        U data,
+        Function<U, T> componentFactory,
+        FormComponentValidator<V> validator,
+        FormComponentChangeListener<V, W> listener,
+        List<FormTransformer<V, W, ?>> transformers,
+        @Nullable BooleanBinding visible,
+        Runnable setup
+    ) {
         this.dataKey = dataKey;
         this.validator = node -> {
             if (validator == null || node == null || !isVisible(node))
@@ -99,9 +106,15 @@ public abstract class FormComponent<T extends Node & HasSetValue, U, V extends N
      * @implNote This constructor is internal and should not be used, only override it.
      */
     @ApiStatus.Internal
-    protected FormComponent(String dataKey, U data, Function<U, T> componentFactory,
-        FormComponentValidator<V> validator, FormComponentChangeListener<V, W> listener,
-        List<FormTransformer<V, W, ?>> transformers, @Nullable BooleanBinding visible) {
+    protected FormComponent(
+        String dataKey,
+        U data,
+        Function<U, T> componentFactory,
+        FormComponentValidator<V> validator,
+        FormComponentChangeListener<V, W> listener,
+        List<FormTransformer<V, W, ?>> transformers,
+        @Nullable BooleanBinding visible
+    ) {
         this(dataKey, data, componentFactory, validator, listener, transformers, visible, () -> {
         });
     }
@@ -137,8 +150,11 @@ public abstract class FormComponent<T extends Node & HasSetValue, U, V extends N
      * @apiNote The {@param itemClazz} is used to determine the type of the items in the combo box,
      *          however, it is not actually used in the implementation.
      */
-    public static <T> ComboBoxComponent.Builder<T> comboBox(@NotNull String dataKey, @NotNull String label,
-        @NotNull Class<T> itemClazz) {
+    public static <T> ComboBoxComponent.Builder<T> comboBox(
+        @NotNull String dataKey,
+        @NotNull String label,
+        @NotNull Class<T> itemClazz
+    ) {
         return new ComboBoxComponent.Builder<>(dataKey, label);
     }
 
@@ -194,8 +210,11 @@ public abstract class FormComponent<T extends Node & HasSetValue, U, V extends N
      * @param enumClass The enum class providing the options.
      * @return The builder for the radio button group component.
      */
-    public static <E extends Enum<E>> RadioButtonGroupComponent.Builder<E> radioButtonGroup(@NotNull String dataKey,
-        @NotNull String label, @NotNull Class<E> enumClass) {
+    public static <E extends Enum<E>> RadioButtonGroupComponent.Builder<E> radioButtonGroup(
+        @NotNull String dataKey,
+        @NotNull String label,
+        @NotNull Class<E> enumClass
+    ) {
         return new RadioButtonGroupComponent.Builder<>(dataKey, label, enumClass);
     }
 

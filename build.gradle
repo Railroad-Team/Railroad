@@ -15,6 +15,8 @@ sourceSets {
     }
 }
 
+apply from: 'gradle/javadoc-coverage.gradle'
+
 group 'dev.railroadide'
 version '0.1.0'
 
@@ -149,14 +151,16 @@ spotless {
         ratchetFrom providers.gradleProperty('formatRatchetFrom').getOrElse('HEAD')
 
     java {
-        target 'src/main/java/**/*.java', 'src/test/java/**/*.java', 'src/formatter/java/**/*.java'
+        target 'src/main/java/**/*.java', 'src/test/java/**/*.java', 'src/formatter/java/**/*.java',
+            'src/javadocCoverageTool/java/**/*.java', 'src/javadocCoverageTest/java/**/*.java'
         eclipse().configFile('config/format/railroad-eclipse-formatter.xml')
         trimTrailingWhitespace()
         endWithNewline()
     }
 }
 
-def semanticStyleSources = files('src/main/java', 'src/test/java', 'src/formatter/java')
+def semanticStyleSources = files('src/main/java', 'src/test/java', 'src/formatter/java',
+    'src/javadocCoverageTool/java', 'src/javadocCoverageTest/java')
 def semanticStyleArguments = { String mode ->
     def arguments = [mode]
     if (providers.gradleProperty('formatAll').isPresent()) {
@@ -196,7 +200,8 @@ tasks.register('semanticFormatCheck', JavaExec) {
         doFirst {
             // Passing the dependency classpath as an argument exceeds Windows' command-line limit.
             def compilerClasspath = new File(temporaryDir, 'compiler-classpath.txt')
-            compilerClasspath.setText(configurations.testCompileClasspath.asPath, 'UTF-8')
+            compilerClasspath.setText(files(configurations.testCompileClasspath,
+                configurations.javadocCoverageTestCompileClasspath).asPath, 'UTF-8')
             environment 'RAILROAD_FORMAT_CLASSPATH_FILE', compilerClasspath.absolutePath
         }
     }

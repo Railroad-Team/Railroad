@@ -49,8 +49,10 @@ public class GradleTaskContextMenu extends ContextMenu {
      * @param task the Gradle task
      * @return the run configuration
      */
-    public static @NotNull RunConfiguration<GradleRunConfigurationData> getOrCreateRunConfig(Project project,
-        RailroadGradleTask task) {
+    public static @NotNull RunConfiguration<GradleRunConfigurationData> getOrCreateRunConfig(
+        Project project,
+        RailroadGradleTask task
+    ) {
         RunConfigurationManager runConfigManager = project.getRunConfigManager();
         @SuppressWarnings("unchecked")
         Optional<RunConfiguration<GradleRunConfigurationData>> existingRunConfig = runConfigManager.getConfigurations()
@@ -69,8 +71,10 @@ public class GradleTaskContextMenu extends ContextMenu {
      * @param runConfigManager the run configuration manager
      * @return the newly created run configuration
      */
-    public static @NotNull RunConfiguration<GradleRunConfigurationData> createRunConfig(RailroadGradleTask task,
-        RunConfigurationManager runConfigManager) {
+    public static @NotNull RunConfiguration<GradleRunConfigurationData> createRunConfig(
+        RailroadGradleTask task,
+        RunConfigurationManager runConfigManager
+    ) {
         var configurationData = new GradleRunConfigurationData();
         RailroadModule module = task.module();
         if (module == null || module.getGradleProject() == null)

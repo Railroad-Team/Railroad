@@ -6,7 +6,7 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import java.util.Objects;
 import java.util.Optional;
 
-abstract class RedElement implements SyntaxNode {
+public abstract class RedElement implements SyntaxNode {
     private final GreenElement green;
     private final RedNode parent;
     private final int start;

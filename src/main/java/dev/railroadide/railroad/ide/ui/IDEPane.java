@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javafx.scene.Parent;
 
 public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWorkspaceActions {
     private final Project project;
@@ -173,7 +174,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         return pane;
     }
 
-    IDEContentRouter getContentRouter() {
+    public IDEContentRouter getContentRouter() {
         return contentRouter;
     }
 
@@ -197,7 +198,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
     private DetachableTabPane getOrCreateEditorPane(
         Map<WorkspaceMode, DetachableTabPane> editorPanesByMode,
-        WorkspaceMode viewMode) {
+        WorkspaceMode viewMode
+    ) {
         WorkspaceMode resolvedMode = viewMode == null ? WorkspaceModes.CODE : viewMode;
         return editorPanesByMode.computeIfAbsent(resolvedMode, mode -> {
             if (mode == WorkspaceModes.CODE)
@@ -359,7 +361,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     private void restoreModeLayout(
         WorkspaceMode viewMode,
         IDELayoutState.ModeLayout layout,
-        DetachableTabPane editorPane) {
+        DetachableTabPane editorPane
+    ) {
         setDockVisible(mainSplit, leftPane, layout.leftDockVisible(), 0);
         setDockVisible(mainSplit, rightPane, layout.rightDockVisible() && !rightPane.getTabs().isEmpty(), 2);
         setDockVisible(centerBottomSplit, bottomPane, layout.bottomDockVisible(), 1);
@@ -1167,7 +1170,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     }
 
     public Stage createDetachedEditorStage(Node root) {
-        if (!(root instanceof javafx.scene.Parent parent))
+        if (!(root instanceof Parent parent))
             throw new IllegalArgumentException("Detached editor root must be a Parent");
 
         var stage = new Stage();
