@@ -14,7 +14,8 @@ public record SignatureHelp(
     int activeParameter,
     boolean constructor,
     String returnType,
-    boolean varargs) {
+    boolean varargs
+) {
     /**
      * Immutable descriptor for a single parameter in a signature.
      */

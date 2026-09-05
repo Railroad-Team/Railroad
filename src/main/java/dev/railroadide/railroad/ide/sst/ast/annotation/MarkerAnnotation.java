@@ -11,7 +11,8 @@ import java.util.List;
 
 public record MarkerAnnotation(
     Span span,
-    NameExpression name) implements Annotation {
+    NameExpression name
+) implements Annotation {
     @Override
     public AstKind kind() {
         return AstKind.MARKER_ANNOTATION;

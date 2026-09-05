@@ -11,7 +11,8 @@ import java.util.List;
 
 public record FinallyClause(
     Span span,
-    BlockStatement body) implements AstNode {
+    BlockStatement body
+) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.FINALLY_CLAUSE;

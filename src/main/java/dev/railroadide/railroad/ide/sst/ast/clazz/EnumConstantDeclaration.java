@@ -13,9 +13,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-public record EnumConstantDeclaration(Span span, List<Annotation> annotations, NameExpression name,
+public record EnumConstantDeclaration(
+    Span span,
+    List<Annotation> annotations,
+    NameExpression name,
     List<Expression> arguments,
-    List<ClassBodyDeclaration> body) implements ClassMember {
+    List<ClassBodyDeclaration> body
+) implements ClassMember {
     @Override
     public AstKind kind() {
         return AstKind.ENUM_CONSTANT_DECLARATION;

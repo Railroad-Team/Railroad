@@ -25,7 +25,8 @@ public record ConstructorDeclaration(
     NameExpression name,
     List<Parameter> parameters,
     List<TypeRef> thrownTypes,
-    Optional<BlockStatement> body) implements ClassBodyDeclaration {
+    Optional<BlockStatement> body
+) implements ClassBodyDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.CONSTRUCTOR_DECLARATION;

@@ -9,5 +9,6 @@ public record BasicLanguageIndexContext(
     String languageId,
     List<Path> sourceRoots,
     List<Path> generatedRoots,
-    List<Path> dependencyRoots) implements LanguageIndexContext {
+    List<Path> dependencyRoots
+) implements LanguageIndexContext {
 }

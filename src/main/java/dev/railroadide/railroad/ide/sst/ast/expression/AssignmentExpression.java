@@ -14,7 +14,8 @@ public record AssignmentExpression(
     Span span,
     Expression left,
     LexerToken<JavaTokenType> operator,
-    Expression right) implements Expression {
+    Expression right
+) implements Expression {
     public static boolean isValidLeftHandSide(Expression left) {
         return left instanceof NameExpression || left instanceof FieldAccessExpression
             || left instanceof ArrayAccessExpression;

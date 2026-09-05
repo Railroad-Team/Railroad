@@ -14,9 +14,14 @@ import java.util.function.Function;
  * @see Setting
  * @see DefaultSettingCodecs
  */
-public record SettingCodec<T, N extends Node>(String id, Function<N, T> nodeToValue, BiConsumer<T, N> valueToNode,
+public record SettingCodec<T, N extends Node>(
+    String id,
+    Function<N, T> nodeToValue,
+    BiConsumer<T, N> valueToNode,
     Function<JsonElement, T> jsonDecoder,
-    Function<T, JsonElement> jsonEncoder, Function<T, N> createNode) {
+    Function<T, JsonElement> jsonEncoder,
+    Function<T, N> createNode
+) {
     /**
      * Serializes the setting value to JSON.
      *

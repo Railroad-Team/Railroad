@@ -62,7 +62,8 @@ public sealed interface GitBranch permits GitBranch.LocalGitBranch, GitBranch.Re
         int aheadCount,
         int behindCount,
         @Nullable GitBranchLastCommit lastCommit,
-        GitBranchStatus status) implements GitBranch {
+        GitBranchStatus status
+    ) implements GitBranch {
         /**
          * Returns {@code false} for local branches.
          *
@@ -86,7 +87,8 @@ public sealed interface GitBranch permits GitBranch.LocalGitBranch, GitBranch.Re
         String name,
         String remoteName,
         @Nullable GitBranchLastCommit lastCommit,
-        GitBranchStatus status) implements GitBranch {
+        GitBranchStatus status
+    ) implements GitBranch {
         /**
          * Returns {@code true} for remote branches.
          *

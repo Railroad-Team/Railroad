@@ -275,7 +275,8 @@ public final class JavaSyntaxMemoryProfileRunner {
         List<Path> inputs,
         int maxFiles,
         boolean materializeRed,
-        boolean measureHeap) {
+        boolean measureHeap
+    ) {
     }
 
     private record GreenFrame(GreenElement element, int depth) {

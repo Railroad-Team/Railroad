@@ -14,14 +14,16 @@ import java.nio.file.Path;
  * @param customGradleHome a custom Gradle home directory, or null to use the default
  * @param gradleUserHome a custom Gradle user home directory, or null to use the default
  */
-public record GradleInvocationPreferences(boolean offlineMode,
+public record GradleInvocationPreferences(
+    boolean offlineMode,
     boolean enableBuildCache,
     boolean parallelExecution,
     boolean isDaemonEnabled,
     Long daemonIdleTimeoutMinutes,
     Integer maxWorkerCount,
     Path customGradleHome,
-    Path gradleUserHome) {
+    Path gradleUserHome
+) {
     /**
      * Returns the default Gradle invocation preferences.
      * <p>

@@ -15,7 +15,8 @@ public record SemanticDiagnostic(
     String message,
     int startOffset,
     int endOffset,
-    @Nullable SyntaxNode node) {
+    @Nullable SyntaxNode node
+) {
     public SemanticDiagnostic {
         severity = Objects.requireNonNull(severity, "severity");
         code = Objects.requireNonNull(code, "code");

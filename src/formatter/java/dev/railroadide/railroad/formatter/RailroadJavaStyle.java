@@ -309,8 +309,11 @@ public final class RailroadJavaStyle {
             throw new IllegalArgumentException("Java formatter could not parse source:\n" + String.join("\n", errors));
     }
 
-    private record RewriteResult(String source, List<Integer> changedLines,
-        List<ExplicitVisibilityStyle.Violation> visibilityViolations) {
+    private record RewriteResult(
+        String source,
+        List<Integer> changedLines,
+        List<ExplicitVisibilityStyle.Violation> visibilityViolations
+    ) {
     }
 
     public record TextEdit(int start, int end, String replacement) {

@@ -12,7 +12,8 @@ public record FloatingPointLiteralExpression(
     Span span,
     String rawValue,
     double value,
-    boolean isFloat) implements LiteralExpression {
+    boolean isFloat
+) implements LiteralExpression {
     @Override
     public AstKind kind() {
         return AstKind.FLOATING_POINT_LITERAL;

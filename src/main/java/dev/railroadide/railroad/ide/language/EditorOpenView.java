@@ -7,5 +7,6 @@ import org.jspecify.annotations.Nullable;
 public record EditorOpenView(
     Node content,
     @Nullable TextEditorPane activeEditor,
-    String languageId) {
+    String languageId
+) {
 }

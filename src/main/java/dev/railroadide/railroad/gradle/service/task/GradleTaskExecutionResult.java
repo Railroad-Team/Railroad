@@ -12,5 +12,6 @@ public record GradleTaskExecutionResult(
     GradleTaskState state,
     int exitCode,
     String output,
-    String errorOutput) {
+    String errorOutput
+) {
 }

@@ -19,7 +19,8 @@ public record ObjectCreationExpression(
     TypeRef type,
     List<TypeRef> constructorTypeArguments,
     List<Expression> arguments,
-    Optional<AnonymousClassDeclaration> anonymousClassDeclaration) implements Expression {
+    Optional<AnonymousClassDeclaration> anonymousClassDeclaration
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.OBJECT_CREATION_EXPRESSION;

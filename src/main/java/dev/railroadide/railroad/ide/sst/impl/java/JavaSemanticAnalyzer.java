@@ -4768,7 +4768,8 @@ public final class JavaSemanticAnalyzer {
             String ownerQualifiedName,
             boolean staticMember,
             Type valueType,
-            List<Type> parameterTypes) {
+            List<Type> parameterTypes
+        ) {
         }
     }
 
@@ -7090,6 +7091,7 @@ public final class JavaSemanticAnalyzer {
         String ownerName,
         String importedName,
         boolean isStatic,
-        boolean isWildcard) {
+        boolean isWildcard
+    ) {
     }
 }

@@ -15,7 +15,8 @@ public record SugarTypeRef(
     Span span,
     List<Modifier> modifiers,
     List<Annotation> annotations,
-    TypeRef baseType) implements TypeRef {
+    TypeRef baseType
+) implements TypeRef {
 
     @Override
     public AstKind kind() {

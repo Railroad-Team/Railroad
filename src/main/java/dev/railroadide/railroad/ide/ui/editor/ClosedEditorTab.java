@@ -13,7 +13,8 @@ public record ClosedEditorTab(
     boolean preview,
     String editorGroupId,
     int previousIndex,
-    EditorViewState viewState) {
+    EditorViewState viewState
+) {
     public ClosedEditorTab {
         Objects.requireNonNull(identity, "identity must not be null");
         Objects.requireNonNull(path, "path must not be null");

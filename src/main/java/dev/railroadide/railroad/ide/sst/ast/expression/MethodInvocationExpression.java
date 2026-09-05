@@ -16,7 +16,8 @@ public record MethodInvocationExpression(
     Optional<Expression> scope,
     List<TypeRef> typeArguments,
     NameExpression methodName,
-    List<Expression> arguments) implements Expression {
+    List<Expression> arguments
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.METHOD_INVOCATION_EXPRESSION;

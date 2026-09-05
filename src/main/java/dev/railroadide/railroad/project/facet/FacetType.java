@@ -12,7 +12,8 @@ public record FacetType<D>(
     String name,
     String description,
     String iconPath,
-    Class<D> dataClass) {
+    Class<D> dataClass
+) {
     public FacetType {
         if (id == null || id.isBlank())
             throw new IllegalArgumentException("Facet ID cannot be null or blank");

@@ -13,7 +13,8 @@ public record TypeCastExpression(
     Span span,
     TypeRef target,
     List<TypeRef> additionalBounds,
-    Expression expression) implements Expression {
+    Expression expression
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.TYPE_CAST_EXPRESSION;

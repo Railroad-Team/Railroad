@@ -268,7 +268,8 @@ public final class JavaProjectSemanticIndex
         Path path,
         @Nullable String packageName,
         List<ImportDescriptor> imports,
-        List<SymbolDescriptor> declaredSymbols) implements LanguageFileIndex {
+        List<SymbolDescriptor> declaredSymbols
+    ) implements LanguageFileIndex {
         public SourceFileIndex {
             path = FileUtils.normalizePath(path);
             packageName = normalizeOptionalName(packageName);
@@ -291,7 +292,8 @@ public final class JavaProjectSemanticIndex
     public record ImportDescriptor(
         String qualifiedName,
         boolean isStatic,
-        boolean isWildcard) {
+        boolean isWildcard
+    ) {
         public ImportDescriptor {
             qualifiedName = requireName(qualifiedName, "qualifiedName");
         }
@@ -305,7 +307,8 @@ public final class JavaProjectSemanticIndex
         @Nullable String signature,
         Path sourceFile,
         boolean isStatic,
-        boolean isTopLevel) {
+        boolean isTopLevel
+    ) {
         public SymbolDescriptor {
             kind = Objects.requireNonNull(kind, "kind");
             simpleName = requireName(simpleName, "simpleName");

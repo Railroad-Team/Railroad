@@ -11,7 +11,8 @@ import java.util.List;
 public record ArrayAccessExpression(
     Span span,
     Expression array,
-    Expression index) implements Expression {
+    Expression index
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.ARRAY_ACCESS_EXPRESSION;

@@ -29,7 +29,8 @@ public record MethodDeclaration(
     Optional<ReceiverParameter> receiverParameter,
     List<Parameter> parameters,
     List<TypeRef> thrownTypes,
-    Optional<BlockStatement> body) implements ClassMember {
+    Optional<BlockStatement> body
+) implements ClassMember {
     @Override
     public AstKind kind() {
         return AstKind.METHOD_DECLARATION;

@@ -456,7 +456,8 @@ public final class JavaParserBenchmarkRunner {
         int repeatPerIteration,
         int slowestFiles,
         Set<ParseMode> modes,
-        List<Path> inputs) {
+        List<Path> inputs
+    ) {
     }
 
     private record BenchmarkResult(
@@ -465,7 +466,8 @@ public final class JavaParserBenchmarkRunner {
         long bytesPerIteration,
         int parsesPerIteration,
         List<Long> iterationNanos,
-        Map<Path, FileTiming> perFileTiming) {
+        Map<Path, FileTiming> perFileTiming
+    ) {
         private double operationsPerSecond() {
             double meanNanos = meanNanos(iterationNanos);
             if (meanNanos <= 0.0)

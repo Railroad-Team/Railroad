@@ -21,7 +21,8 @@ public record AnnotationTypeMemberDeclaration(
     List<Annotation> annotations,
     TypeRef type,
     NameExpression name,
-    Optional<Expression> defaultValue) implements AnnotationMember {
+    Optional<Expression> defaultValue
+) implements AnnotationMember {
     @Override
     public AstKind kind() {
         return AstKind.ANNOTATION_TYPE_MEMBER_DECLARATION;

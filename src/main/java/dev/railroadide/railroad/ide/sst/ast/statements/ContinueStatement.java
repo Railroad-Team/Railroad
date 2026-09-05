@@ -13,7 +13,8 @@ import java.util.Optional;
 
 public record ContinueStatement(
     Span span,
-    Optional<NameExpression> label) implements Statement {
+    Optional<NameExpression> label
+) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.CONTINUE_STATEMENT;

@@ -17,7 +17,8 @@ public record RecordComponent(
     List<Modifier> modifiers,
     List<Annotation> annotations,
     TypeRef type,
-    NameExpression name) implements AstNode {
+    NameExpression name
+) implements AstNode {
 
     @Override
     public AstKind kind() {

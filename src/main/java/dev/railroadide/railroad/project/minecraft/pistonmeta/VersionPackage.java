@@ -9,10 +9,22 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-public record VersionPackage(Arguments arguments, AssetIndex assetIndex, String assets, int complianceLevel,
-    Downloads downloads, String id, JavaVersion javaVersion, List<Library> libraries,
-    Logging logging, String mainClass, int minimumLauncherVersion, String releaseTime,
-    String time, String type) {
+public record VersionPackage(
+    Arguments arguments,
+    AssetIndex assetIndex,
+    String assets,
+    int complianceLevel,
+    Downloads downloads,
+    String id,
+    JavaVersion javaVersion,
+    List<Library> libraries,
+    Logging logging,
+    String mainClass,
+    int minimumLauncherVersion,
+    String releaseTime,
+    String time,
+    String type
+) {
     public static VersionPackage fromJson(JsonObject json) {
         JsonObject argumentsJson = json.getAsJsonObject("arguments");
         JsonArray gameJson = argumentsJson.getAsJsonArray("game");

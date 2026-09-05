@@ -15,7 +15,8 @@ public record ReceiverParameter(
     Span span,
     List<Annotation> annotations,
     TypeRef type,
-    ReceiverType receiverType) implements AstNode {
+    ReceiverType receiverType
+) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.RECEIVER_PARAMETER;

@@ -303,7 +303,8 @@ public final class ProjectDiagnosticsScanner {
         String languageId,
         List<EditorDiagnostic> diagnostics,
         Throwable failure,
-        long startedAtNanos) {
+        long startedAtNanos
+    ) {
         private FileScanResult {
             diagnostics = List.copyOf(diagnostics);
         }

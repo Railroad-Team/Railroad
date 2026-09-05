@@ -11,7 +11,8 @@ import java.util.List;
 
 public record ThrowsClause(
     Span span,
-    List<ExceptionType> exceptions) implements AstNode {
+    List<ExceptionType> exceptions
+) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.THROWS_CLAUSE;
@@ -29,7 +30,8 @@ public record ThrowsClause(
 
     public record ExceptionType(
         Span span,
-        ClassOrInterfaceTypeRef type) implements AstNode {
+        ClassOrInterfaceTypeRef type
+    ) implements AstNode {
         @Override
         public AstKind kind() {
             return AstKind.EXCEPTION_TYPE;

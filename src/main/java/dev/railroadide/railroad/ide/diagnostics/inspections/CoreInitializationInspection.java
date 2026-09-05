@@ -224,6 +224,7 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
         SyntaxNode invocationNode,
         Symbol methodSymbol,
         String ownerQualifiedName,
-        String signatureKey) {
+        String signatureKey
+    ) {
     }
 }

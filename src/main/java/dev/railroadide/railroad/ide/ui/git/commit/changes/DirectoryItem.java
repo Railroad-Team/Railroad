@@ -14,8 +14,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
 
-public record DirectoryItem(Project project, Path path, List<GitFileChange> changes,
-    String displayTitle) implements ChangeItem {
+public record DirectoryItem(
+    Project project,
+    Path path,
+    List<GitFileChange> changes,
+    String displayTitle
+) implements ChangeItem {
     public DirectoryItem(Project project, Path path, List<GitFileChange> changes) {
         this(project, path, changes, path.getFileName().toString());
     }

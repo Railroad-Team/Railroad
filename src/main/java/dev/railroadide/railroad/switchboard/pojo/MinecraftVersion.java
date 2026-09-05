@@ -11,7 +11,8 @@ public record MinecraftVersion(
     String type,
     String url,
     LocalDateTime releaseTime,
-    LocalDateTime time) implements Comparable<MinecraftVersion> {
+    LocalDateTime time
+) implements Comparable<MinecraftVersion> {
     public static MinecraftVersion determineDefaultMinecraftVersion(List<MinecraftVersion> versions) {
         if (versions == null || versions.isEmpty())
             return null;

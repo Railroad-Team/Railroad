@@ -19,7 +19,8 @@ public record LocalVariableDeclarationStatement(
     List<Modifier> modifiers,
     TypeRef type,
     boolean isVar,
-    List<VariableDeclarator> declarations) implements Statement {
+    List<VariableDeclarator> declarations
+) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.LOCAL_VARIABLE_DECLARATION_STATEMENT;

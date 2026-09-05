@@ -23,7 +23,8 @@ public record ClassDeclaration(
     List<TypeParameter> typeParameters,
     Optional<TypeRef> extendsType,
     List<TypeRef> implementsTypes,
-    List<ClassBodyDeclaration> members) implements TypeDeclaration {
+    List<ClassBodyDeclaration> members
+) implements TypeDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.CLASS_DECLARATION;

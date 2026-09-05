@@ -11,7 +11,8 @@ public record JavaLanguageIndexContext(
     List<Path> dependencyRoots,
     List<Path> classpathRoots,
     List<Path> modulePathRoots,
-    Path jdkHome) implements LanguageIndexContext {
+    Path jdkHome
+) implements LanguageIndexContext {
     @Override
     public String languageId() {
         return "java";

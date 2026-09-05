@@ -16,7 +16,8 @@ public record EditorTabSessionState(
     boolean preview,
     boolean active,
     String editorGroupId,
-    EditorViewState viewState) {
+    EditorViewState viewState
+) {
     public static final String DEFAULT_EDITOR_GROUP_ID = "railroad:editor-group:main";
 
     public EditorTabSessionState {

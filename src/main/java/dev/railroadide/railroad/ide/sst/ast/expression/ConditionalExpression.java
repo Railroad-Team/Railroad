@@ -12,7 +12,8 @@ public record ConditionalExpression(
     Span span,
     Expression condition,
     Expression trueExpression,
-    Expression falseExpression) implements Expression {
+    Expression falseExpression
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.CONDITIONAL_EXPRESSION;

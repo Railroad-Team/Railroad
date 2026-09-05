@@ -13,7 +13,8 @@ import java.util.List;
 public record SwitchExpression(
     Span span,
     Expression selector,
-    List<SwitchRule> switchRule) implements Expression {
+    List<SwitchRule> switchRule
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.SWITCH_EXPRESSION;

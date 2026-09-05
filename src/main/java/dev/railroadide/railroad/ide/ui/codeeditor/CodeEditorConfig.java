@@ -15,7 +15,8 @@ public record CodeEditorConfig(
     @Nullable CompletionProvider completionProvider,
     @Nullable DiagnosticsProvider diagnosticsProvider,
     @Nullable SignatureHelpProvider signatureHelpProvider,
-    @Nullable SyntaxHighlightingProvider highlightingProvider) {
+    @Nullable SyntaxHighlightingProvider highlightingProvider
+) {
     public CodeEditorConfig {
         Objects.requireNonNull(languageId, "languageId");
     }

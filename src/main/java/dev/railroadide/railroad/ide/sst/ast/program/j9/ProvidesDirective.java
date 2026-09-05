@@ -13,7 +13,8 @@ import java.util.List;
 public record ProvidesDirective(
     Span span,
     NameExpression service,
-    List<NameExpression> implementations) implements ModuleDirective {
+    List<NameExpression> implementations
+) implements ModuleDirective {
     @Override
     public AstKind kind() {
         return AstKind.PROVIDES_DIRECTIVE;

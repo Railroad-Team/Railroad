@@ -12,5 +12,6 @@ public record GitIdentity(
     String userName,
     String email,
     GitSigningStatus signing,
-    String gitVersion) {
+    String gitVersion
+) {
 }

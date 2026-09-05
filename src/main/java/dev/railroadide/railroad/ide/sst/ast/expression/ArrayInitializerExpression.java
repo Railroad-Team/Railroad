@@ -10,7 +10,8 @@ import java.util.List;
 
 public record ArrayInitializerExpression(
     Span span,
-    List<Expression> values) implements Expression {
+    List<Expression> values
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.ARRAY_INITIALIZER;

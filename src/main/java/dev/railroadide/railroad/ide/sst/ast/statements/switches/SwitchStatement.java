@@ -14,7 +14,8 @@ import java.util.List;
 public record SwitchStatement(
     Span span,
     Expression selectionExpression,
-    List<SwitchRule> rule) implements Statement {
+    List<SwitchRule> rule
+) implements Statement {
 
     @Override
     public AstKind kind() {

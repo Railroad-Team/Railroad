@@ -15,7 +15,8 @@ public record EditorDiagnostic(
     long column,
     String message,
     String code,
-    JavaFileObject source) implements Diagnostic<JavaFileObject> {
+    JavaFileObject source
+) implements Diagnostic<JavaFileObject> {
     @Override
     public Diagnostic.Kind getKind() {
         return kind;

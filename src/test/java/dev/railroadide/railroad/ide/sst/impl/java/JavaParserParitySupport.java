@@ -162,7 +162,8 @@ public final class JavaParserParitySupport {
         int importDeclarations,
         int typeDeclarations,
         int moduleDeclarations,
-        int moduleDirectives) {
+        int moduleDirectives
+    ) {
     }
 
     public record SyntaxDiagnostics(long errors, long warnings, long missingTokens, long errorNodes) {
@@ -172,6 +173,7 @@ public final class JavaParserParitySupport {
         String source,
         String syntaxText,
         TopLevelShape syntaxTopLevelShape,
-        SyntaxDiagnostics syntaxDiagnostics) {
+        SyntaxDiagnostics syntaxDiagnostics
+    ) {
     }
 }

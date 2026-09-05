@@ -11,7 +11,8 @@ import java.util.List;
 public record FieldAccessExpression(
     Span span,
     Expression expression,
-    NameExpression name) implements Expression {
+    NameExpression name
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.FIELD_ACCESS_EXPRESSION;

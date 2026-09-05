@@ -3440,7 +3440,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
     public record NegationUnwrapResult(
         SyntaxNode expression,
-        int negationCount) {
+        int negationCount
+    ) {
         public boolean isNegated() {
             return negationCount % 2 != 0;
         }
@@ -3453,7 +3454,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
         String ownerName,
         String importedName,
         boolean isStatic,
-        boolean isWildcard) {
+        boolean isWildcard
+    ) {
     }
 
     public record MethodDescriptor(
@@ -3464,7 +3466,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
         List<String> thrownTypes,
         int modifiers,
         @Nullable SyntaxNode declaration,
-        @Nullable Symbol symbol) {
+        @Nullable Symbol symbol
+    ) {
         public String signatureKey() {
             StringBuilder builder = new StringBuilder(name).append('(');
             for (int index = 0; index < parameterTypes.size(); index++) {
@@ -3492,7 +3495,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
         Type type,
         int modifiers,
         @Nullable SyntaxNode declaration,
-        @Nullable Symbol symbol) {
+        @Nullable Symbol symbol
+    ) {
     }
 
     private record MethodOwner(String qualifiedTypeName, boolean staticAccess) {
@@ -3500,7 +3504,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
     private record IndexedSourceDescriptors(
         Map<String, List<MethodDescriptor>> methodsByOwner,
-        Map<String, List<FieldDescriptor>> fieldsByOwner) {
+        Map<String, List<FieldDescriptor>> fieldsByOwner
+    ) {
     }
 
     public static final class ImportIndex {

@@ -11,7 +11,8 @@ import java.util.List;
 public record UnionTypeRef(
     Span span,
     TypeRef left,
-    TypeRef right) implements TypeRef {
+    TypeRef right
+) implements TypeRef {
     @Override
     public AstKind kind() {
         return AstKind.UNION_TYPE;

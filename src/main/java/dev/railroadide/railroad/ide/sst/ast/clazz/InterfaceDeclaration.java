@@ -21,7 +21,8 @@ public record InterfaceDeclaration(
     NameExpression name,
     List<TypeParameter> typeParameters,
     List<TypeRef> extendsTypes,
-    List<ClassBodyDeclaration> declarations) implements TypeDeclaration {
+    List<ClassBodyDeclaration> declarations
+) implements TypeDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.INTERFACE_DECLARATION;

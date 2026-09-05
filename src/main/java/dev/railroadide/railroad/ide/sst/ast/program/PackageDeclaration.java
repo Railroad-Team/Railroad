@@ -11,7 +11,8 @@ import java.util.List;
 
 public record PackageDeclaration(
     Span span,
-    NameExpression name) implements AstNode {
+    NameExpression name
+) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.PACKAGE_DECLARATION;

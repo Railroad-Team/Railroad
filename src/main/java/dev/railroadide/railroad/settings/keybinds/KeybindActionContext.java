@@ -19,7 +19,8 @@ public record KeybindActionContext(
     KeybindContexts.KeybindContext context,
     KeybindData binding,
     InputEvent event,
-    Node target) {
+    Node target
+) {
     public KeybindActionContext {
         Objects.requireNonNull(keybind, "Keybind cannot be null");
         Objects.requireNonNull(context, "Keybind context cannot be null");

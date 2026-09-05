@@ -23,7 +23,8 @@ public record RecordDeclaration(
     List<TypeParameter> typeParameters,
     List<RecordComponent> components,
     List<TypeRef> implementsTypes,
-    List<ClassBodyDeclaration> bodyDeclarations) implements TypeDeclaration {
+    List<ClassBodyDeclaration> bodyDeclarations
+) implements TypeDeclaration {
 
     @Override
     public AstKind kind() {

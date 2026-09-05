@@ -107,7 +107,8 @@ public class EditorTabManager {
         boolean pinned,
         boolean preview,
         String editorGroupId,
-        int insertionIndex) {
+        int insertionIndex
+    ) {
         private static TabOpenRequest normal() {
             return new TabOpenRequest(
                 true,

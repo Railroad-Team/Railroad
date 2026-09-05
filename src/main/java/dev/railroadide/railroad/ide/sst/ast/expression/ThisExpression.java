@@ -12,7 +12,8 @@ import java.util.Optional;
 
 public record ThisExpression(
     Span span,
-    Optional<Expression> qualifier) implements Expression {
+    Optional<Expression> qualifier
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.THIS_EXPRESSION;

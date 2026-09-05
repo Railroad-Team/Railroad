@@ -14,7 +14,8 @@ import java.util.Optional;
 public record AssertStatement(
     Span span,
     Expression condition,
-    Optional<Expression> message) implements Statement {
+    Optional<Expression> message
+) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.ASSERT_STATEMENT;

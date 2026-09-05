@@ -13,7 +13,8 @@ public record RequiresDirective(
     Span span,
     boolean isStatic,
     boolean isTransitive,
-    NameExpression moduleName) implements ModuleDirective {
+    NameExpression moduleName
+) implements ModuleDirective {
     @Override
     public AstKind kind() {
         return AstKind.REQUIRES_DIRECTIVE;

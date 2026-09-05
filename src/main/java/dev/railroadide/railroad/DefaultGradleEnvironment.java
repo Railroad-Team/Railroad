@@ -13,8 +13,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public record DefaultGradleEnvironment(Project project, Path gradleInstallationPath,
-    GradleSettings settings) implements GradleEnvironment {
+public record DefaultGradleEnvironment(
+    Project project,
+    Path gradleInstallationPath,
+    GradleSettings settings
+) implements GradleEnvironment {
     @Override
     public boolean useWrapper() {
         return settings.isUseWrapper();

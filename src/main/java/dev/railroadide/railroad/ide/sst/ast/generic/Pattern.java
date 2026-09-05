@@ -15,9 +15,13 @@ import java.util.Optional;
 
 public sealed interface Pattern extends AstNode
     permits Pattern.MatchAllPattern, Pattern.RecordPattern, Pattern.TypeTestPattern {
-    record TypeTestPattern(Span span,
-        List<Annotation> annotations, List<Modifier> modifiers,
-        TypeRef type, Optional<NameExpression> variable) implements Pattern {
+    record TypeTestPattern(
+        Span span,
+        List<Annotation> annotations,
+        List<Modifier> modifiers,
+        TypeRef type,
+        Optional<NameExpression> variable
+    ) implements Pattern {
         @Override
         public AstKind kind() {
             return AstKind.TYPE_TEST_PATTERN;

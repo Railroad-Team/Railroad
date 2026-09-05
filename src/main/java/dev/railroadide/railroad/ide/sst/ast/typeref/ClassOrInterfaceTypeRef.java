@@ -27,8 +27,12 @@ public record ClassOrInterfaceTypeRef(Span span, List<Part> parts) implements Ty
         return visitor.visitClassOrInterfaceType(this);
     }
 
-    public record Part(Span span, List<Annotation> annotations, NameExpression name,
-        List<TypeRef> typeArguments) implements AstNode {
+    public record Part(
+        Span span,
+        List<Annotation> annotations,
+        NameExpression name,
+        List<TypeRef> typeArguments
+    ) implements AstNode {
         @Override
         public AstKind kind() {
             return AstKind.CLASS_OR_INTERFACE_TYPE_PART;

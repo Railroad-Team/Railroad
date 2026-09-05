@@ -17,7 +17,8 @@ public record AnnotationTypeDeclaration(
     List<Modifier> modifiers,
     List<Annotation> annotations,
     NameExpression name,
-    List<AnnotationBodyDeclaration> declarations) implements TypeDeclaration {
+    List<AnnotationBodyDeclaration> declarations
+) implements TypeDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.ANNOTATION_TYPE_DECLARATION;

@@ -11,7 +11,8 @@ import java.util.List;
 public record StringLiteralExpression(
     Span span,
     String value,
-    boolean isTextBlock) implements LiteralExpression {
+    boolean isTextBlock
+) implements LiteralExpression {
     @Override
     public AstKind kind() {
         return AstKind.STRING_LITERAL;

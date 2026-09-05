@@ -15,7 +15,8 @@ public record IfStatement(
     Span span,
     Expression condition,
     Statement thenStatement,
-    Optional<Statement> elseStatement) implements Statement {
+    Optional<Statement> elseStatement
+) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.IF_STATEMENT;

@@ -13,7 +13,8 @@ import java.util.Optional;
 public record WildcardTypeRef(
     Span span,
     Variance variance,
-    Optional<TypeRef> bound) implements TypeRef {
+    Optional<TypeRef> bound
+) implements TypeRef {
     @Override
     public AstKind kind() {
         return AstKind.WILDCARD_TYPE;

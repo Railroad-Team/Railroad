@@ -25,8 +25,11 @@ import java.util.Map;
 /**
  * Diagnostics provider backed by the SST semantic analyzer.
  */
-public record JavaDiagnosticsProvider(Project project, Path filePath,
-    @Nullable JavaSymbolIndex projectIndex) implements DiagnosticsProvider {
+public record JavaDiagnosticsProvider(
+    Project project,
+    Path filePath,
+    @Nullable JavaSymbolIndex projectIndex
+) implements DiagnosticsProvider {
     public JavaDiagnosticsProvider(Path filePath) {
         this(null, filePath, null);
     }

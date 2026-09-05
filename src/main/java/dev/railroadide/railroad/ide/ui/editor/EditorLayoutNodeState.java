@@ -10,7 +10,8 @@ public record EditorLayoutNodeState(
     String selectedDocumentId,
     Orientation orientation,
     List<Double> dividerPositions,
-    List<EditorLayoutNodeState> children) {
+    List<EditorLayoutNodeState> children
+) {
 
     public EditorLayoutNodeState {
         groupId = normalize(groupId);

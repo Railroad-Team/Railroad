@@ -151,10 +151,14 @@ public final class OnboardingFormStep implements OnboardingStep {
         return new ComponentSpec(null, component, contextKey, transformer, reverseTransformer, customizer);
     }
 
-    public record ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component,
-        String contextKey, Function<Object, Object> transformer,
+    public record ComponentSpec(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        FormComponent<?, ?, ?, ?> component,
+        String contextKey,
+        Function<Object, Object> transformer,
         Function<Object, Object> reverseTransformer,
-        Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+        Consumer<FormComponent<?, ?, ?, ?>> customizer
+    ) {
         public ComponentSpec(
             FormComponentBuilder<?, ?, ?, ?> builder,
             FormComponent<?, ?, ?, ?> component,
@@ -627,8 +631,11 @@ public final class OnboardingFormStep implements OnboardingStep {
             return null;
         }
 
-        private record DataMapping(String contextKey, Function<Object, Object> transformer,
-            Function<Object, Object> reverseTransformer) {
+        private record DataMapping(
+            String contextKey,
+            Function<Object, Object> transformer,
+            Function<Object, Object> reverseTransformer
+        ) {
         }
     }
 }

@@ -7,7 +7,8 @@ public record EditorWorkspaceSessionState(
     int schemaVersion,
     EditorLayoutNodeState mainLayout,
     List<DetachedEditorWindowState> detachedWindows,
-    List<EditorTabSessionState> tabs) {
+    List<EditorTabSessionState> tabs
+) {
     public static final int CURRENT_SCHEMA_VERSION = 1;
 
     public EditorWorkspaceSessionState {

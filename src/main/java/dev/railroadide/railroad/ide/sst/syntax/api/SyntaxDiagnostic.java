@@ -10,7 +10,8 @@ public record SyntaxDiagnostic(
     String code,
     String message,
     int startOffset,
-    int endOffset) {
+    int endOffset
+) {
     public SyntaxDiagnostic {
         severity = Objects.requireNonNull(severity, "severity");
         code = Objects.requireNonNull(code, "code");

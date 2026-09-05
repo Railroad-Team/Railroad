@@ -13,7 +13,8 @@ import java.util.List;
 public record AnnotationElement(
     Span span,
     NameExpression name,
-    ElementValue value) implements AstNode {
+    ElementValue value
+) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.ANNOTATION_ELEMENT;

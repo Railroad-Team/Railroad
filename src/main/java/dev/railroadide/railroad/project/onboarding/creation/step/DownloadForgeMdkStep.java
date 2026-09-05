@@ -12,8 +12,12 @@ import dev.railroadide.railroad.project.onboarding.keys.ForgeProjectKeys;
 import java.net.URI;
 import java.nio.file.Path;
 
-public record DownloadForgeMdkStep(HttpService http, FilesService files, ZipService zip,
-    ChecksumService checksum) implements CreationStep {
+public record DownloadForgeMdkStep(
+    HttpService http,
+    FilesService files,
+    ZipService zip,
+    ChecksumService checksum
+) implements CreationStep {
     @Override
     public String id() {
         return "railroad:download_forge_mdk";

@@ -553,13 +553,15 @@ public final class JavaSyntaxParser {
         int oldReparseStart,
         int oldReparseEnd,
         int newReparseStart,
-        int newReparseEnd) {
+        int newReparseEnd
+    ) {
     }
 
     public record TextEdit(
         int startOffset,
         int removedLength,
-        String insertedText) {
+        String insertedText
+    ) {
         public TextEdit {
             if (startOffset < 0)
                 throw new IllegalArgumentException("startOffset cannot be negative");
@@ -582,7 +584,8 @@ public final class JavaSyntaxParser {
         int oldStartOffset,
         int oldEndOffset,
         int newStartOffset,
-        int newEndOffset) {
+        int newEndOffset
+    ) {
     }
 
     public record ReusePlan(
@@ -591,18 +594,21 @@ public final class JavaSyntaxParser {
         int newReparseStart,
         int newReparseEnd,
         int lengthDelta,
-        List<ReuseCandidate> candidates) {
+        List<ReuseCandidate> candidates
+    ) {
     }
 
     public record IncrementalParseResult(
         SyntaxTree tree,
         ReusePlan reusePlan,
-        boolean fullReparse) {
+        boolean fullReparse
+    ) {
     }
 
     public record ParseResult(
         SyntaxTree tree,
-        List<SyntaxDiagnostic> diagnostics) {
+        List<SyntaxDiagnostic> diagnostics
+    ) {
         public ParseResult {
             tree = Objects.requireNonNull(tree, "tree");
             diagnostics = List.copyOf(Objects.requireNonNull(diagnostics, "diagnostics"));

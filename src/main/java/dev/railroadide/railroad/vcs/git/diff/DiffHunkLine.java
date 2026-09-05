@@ -16,7 +16,8 @@ public record DiffHunkLine(
     @Nullable Integer oldLineNumber,
     @Nullable Integer newLineNumber,
     String content,
-    boolean noNewlineAtEnd) {
+    boolean noNewlineAtEnd
+) {
     /**
      * Returns a copy with the no-newline marker enabled.
      *

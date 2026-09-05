@@ -147,7 +147,8 @@ public final class DefaultWorkspaceService implements WorkspaceService {
 
     private record WorkspaceAdapter(
         Predicate<WorkspaceMode> activation,
-        Predicate<WorkspaceMode> availability) {
+        Predicate<WorkspaceMode> availability
+    ) {
     }
 
     public static final class Registration implements AutoCloseable {

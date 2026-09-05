@@ -99,7 +99,8 @@ public class JavaParserCorpusTest {
     private record CorpusEntry(
         String relativePath,
         String kind,
-        String features) {
+        String features
+    ) {
     }
 
     private static Path corpusRoot() {

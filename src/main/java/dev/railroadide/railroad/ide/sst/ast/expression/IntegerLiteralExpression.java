@@ -13,7 +13,8 @@ public record IntegerLiteralExpression(
     String rawValue,
     long value,
     int base,
-    boolean isLong) implements LiteralExpression {
+    boolean isLong
+) implements LiteralExpression {
     @Override
     public AstKind kind() {
         return AstKind.INTEGER_LITERAL;

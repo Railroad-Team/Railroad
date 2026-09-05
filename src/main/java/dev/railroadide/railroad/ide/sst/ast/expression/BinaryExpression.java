@@ -14,7 +14,8 @@ public record BinaryExpression(
     Span span,
     Expression left,
     LexerToken<JavaTokenType> operator,
-    Expression right) implements Expression {
+    Expression right
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.BINARY_EXPRESSION;

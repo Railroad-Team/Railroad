@@ -11,7 +11,8 @@ import java.util.List;
 public record CharacterLiteralExpression(
     Span span,
     String rawValue,
-    char value) implements LiteralExpression {
+    char value
+) implements LiteralExpression {
     @Override
     public AstKind kind() {
         return AstKind.CHARACTER_LITERAL;

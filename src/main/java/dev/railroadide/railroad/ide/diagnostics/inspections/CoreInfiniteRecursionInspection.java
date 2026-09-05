@@ -229,8 +229,11 @@ public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvid
         return true;
     }
 
-    private record FlowAnalysisResult(boolean isInfiniteRecursive, boolean canCompleteNormally,
-        boolean canExitWithoutRecursing) {
+    private record FlowAnalysisResult(
+        boolean isInfiniteRecursive,
+        boolean canCompleteNormally,
+        boolean canExitWithoutRecursing
+    ) {
         private static FlowAnalysisResult recurses() {
             return new FlowAnalysisResult(true, false, false);
         }

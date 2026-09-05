@@ -15,7 +15,8 @@ public record LambdaExpression(
     Span span,
     List<Parameter> parameters,
     boolean inferredParameters,
-    LambdaBody body) implements Expression {
+    LambdaBody body
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.LAMBDA_EXPRESSION;

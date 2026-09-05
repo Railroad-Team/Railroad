@@ -16,7 +16,8 @@ public record TypeParameter(
     Span span,
     List<Annotation> annotations,
     NameExpression name,
-    List<TypeRef> bounds) implements AstNode {
+    List<TypeRef> bounds
+) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.TYPE_PARAMETER;

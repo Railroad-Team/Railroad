@@ -20,7 +20,8 @@ public record Parameter(
     List<Annotation> annotations,
     Optional<TypeRef> type,
     boolean isVarArgs,
-    NameExpression name) implements AstNode {
+    NameExpression name
+) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.PARAMETER;

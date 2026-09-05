@@ -16,7 +16,8 @@ public record ModularCompilationUnit(
     boolean isOpen,
     NameExpression name,
     List<Annotation> annotations,
-    List<ModuleDirective> directives) implements AstNode {
+    List<ModuleDirective> directives
+) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.MODULAR_COMPILATION_UNIT;

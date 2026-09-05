@@ -118,9 +118,9 @@ type without name conflicts. This also covers constructors, annotations, class l
 member access; nested types retain their enclosing type (for example, `Map.Entry`). Existing imports are reused, and
 types in `java.lang` or the current package need no added import. Unresolved or shadowed names and references containing
 comments are retained. The Gradle tasks supply the project's compile classpath and source roots for type resolution.
-Wrapped method and constructor parameter lists start on the line after the opening parenthesis, with one parameter per
-line. The closing parenthesis sits on its own line, aligned with the declaration; single-line parameter lists remain
-inline when they fit.
+Wrapped method and constructor parameter lists, and record component lists, start on the line after the opening
+parenthesis, with one parameter or component per line. The closing parenthesis sits on its own line, aligned with the
+declaration; single-line lists remain inline when they fit.
 
 Package-private types, fields, methods, and constructors are rejected: choose `public`, `protected`, or `private`
 explicitly where legal. `formatCheck` reports these declarations and fails until they are resolved. `format` reports

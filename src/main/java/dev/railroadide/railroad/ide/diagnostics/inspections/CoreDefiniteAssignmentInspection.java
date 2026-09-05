@@ -1654,7 +1654,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         Set<VariableKey> maybeAssigned,
         boolean reachable,
         List<FlowExit> breakExits,
-        List<FlowExit> continueExits) {
+        List<FlowExit> continueExits
+    ) {
         private static FlowState initial() {
             return new FlowState(Set.of(), Set.of(), true, List.of(), List.of());
         }
@@ -1825,7 +1826,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         boolean maybeAssigned,
         boolean reachable,
         List<FieldFlowExit> breakExits,
-        List<FieldFlowExit> continueExits) {
+        List<FieldFlowExit> continueExits
+    ) {
         private static FieldFlowState initial() {
             return new FieldFlowState(false, false, true, List.of(), List.of());
         }
@@ -1960,7 +1962,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
     private record BasicForSegments(
         List<SyntaxNode> initNodes,
         List<SyntaxNode> conditionNodes,
-        List<SyntaxNode> updateNodes) {
+        List<SyntaxNode> updateNodes
+    ) {
     }
 
     private static boolean matchesLabel(@Nullable String exitLabel, @Nullable String targetLabel) {

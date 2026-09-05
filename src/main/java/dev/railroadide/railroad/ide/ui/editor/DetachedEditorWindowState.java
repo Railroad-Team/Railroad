@@ -8,7 +8,8 @@ public record DetachedEditorWindowState(
     double y,
     double width,
     double height,
-    boolean maximized) {
+    boolean maximized
+) {
 
     public DetachedEditorWindowState {
         Objects.requireNonNull(layout, "layout must not be null");

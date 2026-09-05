@@ -13,7 +13,8 @@ import java.util.List;
 public record ExportsDirective(
     Span span,
     NameExpression packageName,
-    List<NameExpression> moduleNames) implements ModuleDirective {
+    List<NameExpression> moduleNames
+) implements ModuleDirective {
     @Override
     public AstKind kind() {
         return AstKind.EXPORTS_DIRECTIVE;

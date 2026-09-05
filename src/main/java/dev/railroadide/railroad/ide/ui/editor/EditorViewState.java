@@ -12,7 +12,8 @@ public record EditorViewState(
     int anchorPosition,
     double horizontalScroll,
     double verticalScroll,
-    List<FoldRange> folds) {
+    List<FoldRange> folds
+) {
     public static final EditorViewState EMPTY = new EditorViewState(0, 0, 0.0, 0.0, List.of());
 
     public EditorViewState {

@@ -14,7 +14,8 @@ import java.util.StringJoiner;
 public record GitSigningStatus(
     boolean enabled,
     Format format,
-    String signingKey) {
+    String signingKey
+) {
     /**
      * Creates signing status from raw git config values.
      *

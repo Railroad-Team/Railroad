@@ -447,8 +447,13 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
         }
     }
 
-    private record RenderLine(String text, LineKind kind, Integer oldLineNumber, Integer newLineNumber,
-        String languageId) {
+    private record RenderLine(
+        String text,
+        LineKind kind,
+        Integer oldLineNumber,
+        Integer newLineNumber,
+        String languageId
+    ) {
     }
 
     private static String resolveTitle(Path path) {

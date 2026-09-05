@@ -16,7 +16,8 @@ public record CatchClause(
     Span span,
     List<SugarTypeRef> exceptionTypes,
     NameExpression variableName,
-    BlockStatement body) implements AstNode {
+    BlockStatement body
+) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.CATCH_CLAUSE;

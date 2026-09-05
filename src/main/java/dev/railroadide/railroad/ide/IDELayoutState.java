@@ -17,7 +17,8 @@ public record IDELayoutState(
     int schemaVersion,
     String currentModeId,
     Map<String, ModeLayout> modes,
-    List<ToolWindowState> toolWindows) {
+    List<ToolWindowState> toolWindows
+) {
     public static final int CURRENT_SCHEMA_VERSION = 1;
 
     public IDELayoutState {
@@ -112,7 +113,8 @@ public record IDELayoutState(
         boolean leftDockVisible,
         boolean rightDockVisible,
         boolean bottomDockVisible,
-        TabNavigationState editorNavigation) {
+        TabNavigationState editorNavigation
+    ) {
         public ModeLayout {
             leftDividerPosition = validDivider(leftDividerPosition, 0.15);
             rightDividerPosition = validDivider(rightDividerPosition, 0.85);
@@ -206,7 +208,8 @@ public record IDELayoutState(
         double width,
         double height,
         boolean maximized,
-        boolean visible) {
+        boolean visible
+    ) {
         public ToolWindowState {
             id = normalizeValue(id);
             dockItemIds = dockItemIds == null

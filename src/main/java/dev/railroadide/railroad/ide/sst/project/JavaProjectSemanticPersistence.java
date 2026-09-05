@@ -293,6 +293,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
 
     private record PersistedFile(
         ManifestEntry manifestEntry,
-        JavaProjectSemanticIndex.SourceFileIndex fileIndex) {
+        JavaProjectSemanticIndex.SourceFileIndex fileIndex
+    ) {
     }
 }

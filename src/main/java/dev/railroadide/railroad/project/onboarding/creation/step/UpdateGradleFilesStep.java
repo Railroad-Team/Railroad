@@ -20,8 +20,13 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-public record UpdateGradleFilesStep(FilesService files, HttpService http, TemplateEngineService templateEngine,
-    String branch, boolean includeSettingsGradle) implements CreationStep {
+public record UpdateGradleFilesStep(
+    FilesService files,
+    HttpService http,
+    TemplateEngineService templateEngine,
+    String branch,
+    boolean includeSettingsGradle
+) implements CreationStep {
     private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/%s/templates/fabric/%s/template_build.gradle";
     private static final String TEMPLATE_SETTINGS_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/%s/templates/fabric/%s/template_settings.gradle";
 

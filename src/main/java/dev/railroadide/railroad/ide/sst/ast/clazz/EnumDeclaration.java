@@ -20,7 +20,8 @@ public record EnumDeclaration(
     NameExpression name,
     List<TypeRef> implementedInterfaces,
     List<EnumConstantDeclaration> constants,
-    List<ClassBodyDeclaration> bodyDeclarations) implements TypeDeclaration {
+    List<ClassBodyDeclaration> bodyDeclarations
+) implements TypeDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.ENUM_DECLARATION;

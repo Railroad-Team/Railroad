@@ -21,7 +21,8 @@ public record FieldDeclaration(
     List<Modifier> modifiers,
     TypeRef type,
     NameExpression name,
-    List<VariableDeclarator> variableDeclarators) implements ClassMember, AnnotationMember {
+    List<VariableDeclarator> variableDeclarators
+) implements ClassMember, AnnotationMember {
     @Override
     public AstKind kind() {
         return AstKind.FIELD_DECLARATION;
