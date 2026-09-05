@@ -8,8 +8,8 @@ import java.util.Objects;
 /**
  * Utility class for normalizing and comparing project paths.
  */
-public final class ProjectPathIdentityUtility {
-    private ProjectPathIdentityUtility() {
+public final class ProjectPathIdentityUtils {
+    private ProjectPathIdentityUtils() {
     }
 
     /**

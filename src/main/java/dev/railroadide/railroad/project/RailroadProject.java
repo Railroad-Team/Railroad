@@ -24,7 +24,7 @@ import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.ui.id.UIIds;
-import dev.railroadide.railroad.utility.ProjectPathIdentityUtility;
+import dev.railroadide.railroad.utility.ProjectPathIdentityUtils;
 import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroad.vcs.Repository;
 import dev.railroadide.railroad.vcs.git.GitClient;
@@ -105,7 +105,7 @@ public class RailroadProject implements Project {
      * @param icon  the project icon, or {@code null} to generate a default icon
      */
     public RailroadProject(Path path, String alias, Image icon) {
-        this.path.set(ProjectPathIdentityUtility.normalize(path));
+        this.path.set(ProjectPathIdentityUtils.normalize(path));
         this.alias.set(alias);
         this.icon.set(icon == null ? createIcon() : icon);
         this.dataStore = new ProjectDataStore(this);
@@ -244,7 +244,7 @@ public class RailroadProject implements Project {
     @Override
     public void open(@Nullable Stage stage) {
         Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
-        if (currentProject != null && !ProjectPathIdentityUtility.matches(currentProject.getPath(), getPath())) {
+        if (currentProject != null && !ProjectPathIdentityUtils.matches(currentProject.getPath(), getPath())) {
             currentProject.close();
         }
 
@@ -290,7 +290,7 @@ public class RailroadProject implements Project {
     public void close() {
         Railroad.LOGGER.debug("Closing project: {}", getPathString());
         Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
-        if (currentProject != null && ProjectPathIdentityUtility.matches(currentProject.getPath(), getPath())) {
+        if (currentProject != null && ProjectPathIdentityUtils.matches(currentProject.getPath(), getPath())) {
             Document activeDocument = Services.IDE_STATE.getActiveDocument();
 
             ProjectDataStore dataStore = getDataStore();
@@ -331,12 +331,12 @@ public class RailroadProject implements Project {
             return false;
 
         RailroadProject project = (RailroadProject) obj;
-        return ProjectPathIdentityUtility.matches(getPath(), project.getPath());
+        return ProjectPathIdentityUtils.matches(getPath(), project.getPath());
     }
 
     @Override
     public int hashCode() {
-        return ProjectPathIdentityUtility.key(getPath()).hashCode();
+        return ProjectPathIdentityUtils.key(getPath()).hashCode();
     }
 
     @Override
@@ -383,11 +383,11 @@ public class RailroadProject implements Project {
             if (pathElement.isJsonPrimitive()) {
                 JsonPrimitive pathPrimitive = pathElement.getAsJsonPrimitive();
                 if (pathPrimitive.isString()) {
-                    this.path.set(ProjectPathIdentityUtility.normalize(Path.of(pathElement.getAsString())));
+                    this.path.set(ProjectPathIdentityUtils.normalize(Path.of(pathElement.getAsString())));
                 } else if (pathPrimitive.isNumber()) {
                     try {
                         this.path
-                            .set(ProjectPathIdentityUtility.normalize(Path.of(String.valueOf(pathPrimitive.getAsNumber()))));
+                            .set(ProjectPathIdentityUtils.normalize(Path.of(String.valueOf(pathPrimitive.getAsNumber()))));
                     } catch (Exception exception) {
                         Railroad.LOGGER.warn("Project JSON 'Path' is not a valid path: {}", pathElement, exception);
                     }

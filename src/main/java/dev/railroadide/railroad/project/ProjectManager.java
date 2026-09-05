@@ -4,7 +4,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
-import dev.railroadide.railroad.utility.ProjectPathIdentityUtility;
+import dev.railroadide.railroad.utility.ProjectPathIdentityUtils;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.Getter;
@@ -72,9 +72,9 @@ public final class ProjectManager {
      * @return an Optional containing the found project, or empty if not found
      */
     public Optional<Project> findProject(Path path) {
-        String pathKey = ProjectPathIdentityUtility.key(path);
+        String pathKey = ProjectPathIdentityUtils.key(path);
         return projects.stream()
-            .filter(project -> ProjectPathIdentityUtility.key(project.getPath()).equals(pathKey))
+            .filter(project -> ProjectPathIdentityUtils.key(project.getPath()).equals(pathKey))
             .findFirst();
     }
 
@@ -91,7 +91,7 @@ public final class ProjectManager {
             if (project == null)
                 continue;
 
-            String pathKey = ProjectPathIdentityUtility.key(project.getPath());
+            String pathKey = ProjectPathIdentityUtils.key(project.getPath());
             Project existing = projectsByPath.get(pathKey);
             if (existing == null || project.getLastOpened() > existing.getLastOpened()) {
                 projectsByPath.put(pathKey, project);
@@ -119,8 +119,8 @@ public final class ProjectManager {
     public void removeProject(Project project) {
         Objects.requireNonNull(project, "project");
         Railroad.LOGGER.info("Removing project: {}", project.getId());
-        String pathKey = ProjectPathIdentityUtility.key(project.getPath());
-        projects.removeIf(projectObj -> ProjectPathIdentityUtility.key(projectObj.getPath()).equals(pathKey));
+        String pathKey = ProjectPathIdentityUtils.key(project.getPath());
+        projects.removeIf(projectObj -> ProjectPathIdentityUtils.key(projectObj.getPath()).equals(pathKey));
         configSaver.run();
     }
 
